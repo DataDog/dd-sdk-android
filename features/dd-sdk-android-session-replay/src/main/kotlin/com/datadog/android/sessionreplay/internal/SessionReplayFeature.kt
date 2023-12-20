@@ -222,7 +222,8 @@ internal class SessionReplayFeature(
      * Resumes the replay recorder.
      */
     internal fun startRecording() {
-        if (!isRecording.getAndSet(true)) {
+        // Check initialization again so we don't forget to do it when this method is made public
+        if (checkIfInitialized() && !isRecording.getAndSet(true)) {
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.resumeRecorders()
         }

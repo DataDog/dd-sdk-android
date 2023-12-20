@@ -324,6 +324,20 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M log warning and do nothing W startRecording() { feature is not initialized }`() {
+        // When
+        testedFeature.startRecording()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
+        )
+        verifyNoInteractions(mockRecorder)
+    }
+
+    @Test
     fun `M log warning and do nothing W onInitialize() { context is not Application }`() {
         // When
         testedFeature.onInitialize(mock())
