@@ -20,13 +20,13 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
+import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.DataUploader
+import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.data.upload.v2.DataFlusher
-import com.datadog.android.core.internal.data.upload.v2.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.v2.DataUploader
-import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.MetricsDispatcher

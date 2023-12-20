@@ -6,7 +6,13 @@
 
 package com.datadog.android.core.internal.data.upload
 
-internal interface DataUploader {
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.storage.RawBatchEvent
 
-    fun upload(data: ByteArray): UploadStatus
+internal interface DataUploader {
+    fun upload(
+        context: DatadogContext,
+        batch: List<RawBatchEvent>,
+        batchMeta: ByteArray?
+    ): UploadStatus
 }

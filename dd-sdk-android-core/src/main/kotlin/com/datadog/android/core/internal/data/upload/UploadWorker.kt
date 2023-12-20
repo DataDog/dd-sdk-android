@@ -17,7 +17,6 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import java.util.LinkedList

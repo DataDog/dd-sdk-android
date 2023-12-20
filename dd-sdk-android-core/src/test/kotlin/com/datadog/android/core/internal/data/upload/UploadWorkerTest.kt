@@ -18,7 +18,6 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
