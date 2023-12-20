@@ -395,24 +395,18 @@ public abstract interface class com/datadog/android/api/storage/EventBatchWriter
 
 public final class com/datadog/android/api/storage/FeatureStorageConfiguration {
 	public static final field Companion Lcom/datadog/android/api/storage/FeatureStorageConfiguration$Companion;
-	public fun <init> (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;)V
+	public fun <init> (JIJJ)V
 	public final fun component1 ()J
 	public final fun component2 ()I
 	public final fun component3 ()J
 	public final fun component4 ()J
-	public final fun component5 ()Lcom/datadog/android/core/configuration/UploadFrequency;
-	public final fun component6 ()Lcom/datadog/android/core/configuration/BatchSize;
-	public final fun component7 ()Lcom/datadog/android/core/configuration/BatchProcessingLevel;
-	public final fun copy (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;ILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public final fun copy (JIJJ)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getBatchProcessingLevel ()Lcom/datadog/android/core/configuration/BatchProcessingLevel;
-	public final fun getBatchSize ()Lcom/datadog/android/core/configuration/BatchSize;
 	public final fun getMaxBatchSize ()J
 	public final fun getMaxItemSize ()J
 	public final fun getMaxItemsPerBatch ()I
 	public final fun getOldBatchThreshold ()J
-	public final fun getUploadFrequency ()Lcom/datadog/android/core/configuration/UploadFrequency;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
