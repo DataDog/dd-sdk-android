@@ -112,10 +112,12 @@
     <string name="granted">GRANTED</string>
     <string name="not_granted">NOT GRANTED</string>
     <string name="text_view">Default Text View</string>
+    <string name="ellipsize_text_view">Default Text View with some super long text for ellipsis. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text.</string>
     <string name="material_text_view">Material Text View</string>
     <string name="app_compat_text_view">App Compat Text View</string>
     <string name="auto_complete_text_view">Default Auto Complete Text View</string>
     <string name="edit_text_view">Edit Text View</string>
+    <string name="edit_text_view_multiline">Edit Text View on 2 lines</string>
     <string name="app_compat_edit_text_view">App Compat Edit Text View</string>
     <string name="app_compat_auto_complete_text_view">App Compat Auto Complete Text View</string>
     <string name="material_auto_complete_text_view">Material Auto Complete Text View</string>

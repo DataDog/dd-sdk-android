@@ -19,8 +19,19 @@
         android:textColor="@color/datadog_violet"
         android:text="@string/text_view" />
 
-    <com.google.android.material.textview.MaterialTextView
+    <TextView
         app:layout_constraintTop_toBottomOf="@+id/text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:ellipsize="start"
+        android:id="@+id/ellipsize_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/ellipsize_text_view" />
+
+    <com.google.android.material.textview.MaterialTextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_text_view"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/material_text_view"
@@ -50,8 +61,20 @@
         android:hint="@string/edit_text_view"
         android:textColorHint="@color/datadog_violet"/>
 
-    <AutoCompleteTextView
+    <EditText
         app:layout_constraintTop_toBottomOf="@+id/edit_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/edit_text_view_multiline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/datadog_violet"
+        android:hint="@string/edit_text_view_multiline"
+        android:textColorHint="@color/datadog_violet"
+        android:maxLines="2"/>
+
+    <AutoCompleteTextView
+        app:layout_constraintTop_toBottomOf="@+id/edit_text_view_multiline"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/auto_complete_text_view"
