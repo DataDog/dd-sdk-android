@@ -591,6 +591,14 @@ internal open class RumViewScope(
             val entry = iterator.next()
             val scope = entry.value.handleEvent(event, writer)
             if (scope == null) {
+                // if we finalized this scope and it was by error, we won't have resource
+                // event written, but error event instead
+                if (event is RumRawEvent.StopResourceWithError ||
+                    event is RumRawEvent.StopResourceWithStackTrace
+                ) {
+                    pendingResourceCount--
+                    pendingErrorCount++
+                }
                 iterator.remove()
             }
         }
