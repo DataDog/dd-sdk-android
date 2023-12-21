@@ -8,23 +8,17 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aRumEvent
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -38,7 +32,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -47,8 +40,7 @@ import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -82,7 +74,6 @@ internal class RumEventMapperTest {
         whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
 
         testedRumEventMapper = RumEventMapper(
-            sdkCore = rumMonitor.mockSdkCore,
             actionEventMapper = mockActionEventMapper,
             viewEventMapper = mockViewEventMapper,
             resourceEventMapper = mockResourceEventMapper,
@@ -167,7 +158,6 @@ internal class RumEventMapperTest {
     fun `M return the original event W map { no internal mapper used }`(forge: Forge) {
         // GIVEN
         testedRumEventMapper = RumEventMapper(
-            sdkCore = rumMonitor.mockSdkCore,
             internalLogger = mockInternalLogger
         )
         val fakeRumEvent = forge.aRumEvent()
@@ -184,7 +174,6 @@ internal class RumEventMapperTest {
     fun `M return the original event W map { bundled event unknown }`() {
         // GIVEN
         testedRumEventMapper = RumEventMapper(
-            sdkCore = rumMonitor.mockSdkCore,
             internalLogger = mockInternalLogger
         )
         val fakeRumEvent = Any()
@@ -569,117 +558,5 @@ internal class RumEventMapperTest {
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
         )
-    }
-
-    @Test
-    fun `𝕄 warn the RUM Monitor 𝕎 map() {action dropped}`(
-        @Forgery fakeRumEvent: ActionEvent
-    ) {
-        // Given
-        whenever(mockActionEventMapper.map(fakeRumEvent)) doReturn null
-
-        // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
-
-        // THEN
-        assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(
-                fakeRumEvent.view.id,
-                StorageEvent.Action(
-                    frustrationCount = fakeRumEvent.action.frustration?.type?.size ?: 0
-                )
-            )
-    }
-
-    @Test
-    fun `𝕄 warn the RUM Monitor 𝕎 map() {resource dropped}`(
-        @Forgery fakeRumEvent: ResourceEvent
-    ) {
-        // Given
-        whenever(mockResourceEventMapper.map(fakeRumEvent)) doReturn null
-
-        // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
-
-        // THEN
-        assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeRumEvent.view.id, StorageEvent.Resource)
-    }
-
-    @Test
-    fun `𝕄 warn the RUM Monitor 𝕎 map() {error dropped}`(
-        @Forgery fakeRumEvent: ErrorEvent
-    ) {
-        // Given
-        val fakeNoCrashEvent = fakeRumEvent.copy(
-            error = fakeRumEvent.error.copy(isCrash = false)
-        )
-        whenever(mockErrorEventMapper.map(fakeNoCrashEvent)) doReturn null
-
-        // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeNoCrashEvent)
-
-        // THEN
-        assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeNoCrashEvent.view.id, StorageEvent.Error)
-    }
-
-    @Test
-    fun `𝕄 warn the RUM Monitor 𝕎 map() {longTask dropped}`(
-        @Forgery longTaskEvent: LongTaskEvent
-    ) {
-        // Given
-        val fakeRumEvent = longTaskEvent.copy(
-            longTask = LongTaskEvent.LongTask(
-                id = longTaskEvent.longTask.id,
-                duration = longTaskEvent.longTask.duration,
-                isFrozenFrame = false
-            )
-        )
-
-        // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
-
-        // THEN
-        assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(longTaskEvent.view.id, StorageEvent.LongTask)
-    }
-
-    @Test
-    fun `𝕄 warn the RUM Monitor 𝕎 map() {frozenFrame dropped}`(
-        @Forgery longTaskEvent: LongTaskEvent
-    ) {
-        // Given
-        val fakeRumEvent = longTaskEvent.copy(
-            longTask = LongTaskEvent.LongTask(
-                id = longTaskEvent.longTask.id,
-                duration = longTaskEvent.longTask.duration,
-                isFrozenFrame = true
-            )
-        )
-
-        // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
-
-        // THEN
-        assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventDropped(
-            longTaskEvent.view.id,
-            StorageEvent.FrozenFrame
-        )
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
     }
 }

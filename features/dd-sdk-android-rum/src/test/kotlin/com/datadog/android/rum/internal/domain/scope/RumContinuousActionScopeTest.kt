@@ -146,6 +146,7 @@ internal class RumContinuousActionScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn true
 
         testedScope = RumActionScope(
             mockParentScope,

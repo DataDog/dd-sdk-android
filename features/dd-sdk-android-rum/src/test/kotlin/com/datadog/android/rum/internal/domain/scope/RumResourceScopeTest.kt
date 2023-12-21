@@ -25,6 +25,8 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.utils.asTimingsPayload
@@ -35,6 +37,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
+import com.datadog.tools.unit.forge.anException
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -59,7 +62,9 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -187,6 +192,7 @@ internal class RumResourceScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn true
 
         testedScope = RumResourceScope(
             mockParentScope,
@@ -2654,6 +2660,162 @@ internal class RumResourceScopeTest {
             assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
         }
     }
+
+    // region write notification
+
+    @Test
+    fun `𝕄 notify about success 𝕎 handleEvent() { resource write succeeded }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent() { resource write failed }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>())) doReturn false
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent() { resource write throws }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>())
+        ) doThrow forge.anException()
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+    }
+
+    @Test
+    fun `𝕄 notify about success 𝕎 handleEvent() { error write succeeded }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent() { error write failed }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent() { error write throws }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
+        ) doThrow forge.anException()
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Error)
+    }
+
+    // endregion
 
     // region Internal
 

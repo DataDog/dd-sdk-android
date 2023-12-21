@@ -13,14 +13,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.StorageEvent
-import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.model.ErrorEvent
-import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 
 internal class RumDataWriter(
@@ -70,36 +63,7 @@ internal class RumDataWriter(
     @WorkerThread
     internal fun onDataWritten(data: Any, rawData: ByteArray) {
         when (data) {
-            is ViewEvent -> persistViewEvent(rawData)
-            is ActionEvent -> notifyEventSent(
-                data.view.id,
-                StorageEvent.Action(data.action.frustration?.type?.size ?: 0)
-            )
-            is ResourceEvent -> notifyEventSent(data.view.id, StorageEvent.Resource)
-            is ErrorEvent -> {
-                if (data.error.isCrash != true) {
-                    notifyEventSent(data.view.id, StorageEvent.Error)
-                }
-            }
-            is LongTaskEvent -> {
-                if (data.longTask.isFrozenFrame == true) {
-                    notifyEventSent(data.view.id, StorageEvent.FrozenFrame)
-                } else {
-                    notifyEventSent(data.view.id, StorageEvent.LongTask)
-                }
-            }
-        }
-    }
-
-    @WorkerThread
-    private fun persistViewEvent(data: ByteArray) {
-        sdkCore.writeLastViewEvent(data)
-    }
-
-    private fun notifyEventSent(viewId: String, storageEvent: StorageEvent) {
-        val rumMonitor = GlobalRumMonitor.get(sdkCore)
-        if (rumMonitor is AdvancedRumMonitor) {
-            rumMonitor.eventSent(viewId, storageEvent)
+            is ViewEvent -> sdkCore.writeLastViewEvent(rawData)
         }
     }
 
