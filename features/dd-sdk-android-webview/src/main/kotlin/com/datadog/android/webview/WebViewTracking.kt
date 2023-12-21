@@ -72,9 +72,13 @@ object WebViewTracking {
                 { JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE }
             )
         }
-        val webViewEventConsumer = buildWebViewEventConsumer(sdkCore as FeatureSdkCore, logsSampleRate)
+        val featureSdkCore = sdkCore as FeatureSdkCore
+        val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
+        val privacyLevel = (featureContext[SESSION_REPLAY_PRIVACY_KEY] as? String)
+            ?: SESSION_REPLAY_MASK_ALL_PRIVACY
+        val webViewEventConsumer = buildWebViewEventConsumer(featureSdkCore, logsSampleRate)
         webView.addJavascriptInterface(
-            DatadogEventBridge(webViewEventConsumer, allowedHosts),
+            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel),
             DATADOG_EVENT_BRIDGE_NAME
         )
     }
@@ -151,6 +155,9 @@ object WebViewTracking {
             consumer.consume(event)
         }
     }
+
+    internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
+    internal const val SESSION_REPLAY_MASK_ALL_PRIVACY = "mask"
 
     internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =
         "You are trying to enable the WebView" +
