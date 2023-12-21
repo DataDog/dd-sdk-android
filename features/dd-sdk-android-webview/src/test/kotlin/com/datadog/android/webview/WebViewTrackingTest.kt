@@ -29,6 +29,7 @@ import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -97,7 +98,6 @@ internal class WebViewTrackingTest {
         whenever(
             mockCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
-
         whenever(
             mockRumFeatureScope.unwrap<StorageBackedFeature>()
         ) doReturn mockRumFeature
@@ -133,6 +133,66 @@ internal class WebViewTrackingTest {
             argThat { this is DatadogEventBridge },
             eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
         )
+    }
+
+    @Test
+    fun `M extract and provide the SR privacy level W enable {privacy level provided}`(
+        @Forgery fakeUrls: List<URL>,
+        @StringForgery fakePrivacyLevel: String
+    ) {
+        // Given
+        val mockSrFeatureContext = mapOf<String, Any>(
+            WebViewTracking.SESSION_REPLAY_PRIVACY_KEY to fakePrivacyLevel
+        )
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            mockSrFeatureContext
+        val fakeHosts = fakeUrls.map { it.host }
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argumentCaptor.capture(),
+            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+        assertThat(argumentCaptor.firstValue.getPrivacyLevel()).isEqualTo(fakePrivacyLevel)
+    }
+
+    @Test
+    fun `M used the default SR privacy level W enable {privacy level not provided}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val mockSrFeatureContext = mapOf<String, Any>()
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            mockSrFeatureContext
+        val fakeHosts = fakeUrls.map { it.host }
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argumentCaptor.capture(),
+            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+        assertThat(argumentCaptor.firstValue.getPrivacyLevel())
+            .isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_ALL_PRIVACY)
     }
 
     @Test
