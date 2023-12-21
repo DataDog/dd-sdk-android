@@ -353,6 +353,7 @@ internal class RumResourceScope(
                     rumContext.viewId.orEmpty()
                 )
                 val errorEvent = ErrorEvent(
+                    buildId = datadogContext.appBuildId,
                     date = eventTimestamp,
                     error = ErrorEvent.Error(
                         message = message,

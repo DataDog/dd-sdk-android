@@ -15,10 +15,12 @@ import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -45,6 +47,7 @@ import org.mockito.quality.Strictness
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class ProcessLifecycleCallbackTest {
 
     lateinit var testedCallback: ProcessLifecycleCallback

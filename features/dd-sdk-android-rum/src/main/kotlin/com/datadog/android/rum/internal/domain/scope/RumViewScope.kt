@@ -406,6 +406,7 @@ internal open class RumViewScope(
                     ErrorEvent.ErrorEventSessionType.SYNTHETICS
                 }
                 val errorEvent = ErrorEvent(
+                    buildId = datadogContext.appBuildId,
                     date = event.eventTime.timestamp + serverTimeOffsetInMs,
                     featureFlags = ErrorEvent.Context(featureFlags),
                     error = ErrorEvent.Error(

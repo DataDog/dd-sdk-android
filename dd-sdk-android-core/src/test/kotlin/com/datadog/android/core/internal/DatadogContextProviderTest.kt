@@ -151,6 +151,7 @@ internal class DatadogContextProviderTest {
         assertThat(context.userInfo.additionalProperties)
             .isEqualTo(fakeUserInfo.additionalProperties)
 
+        assertThat(context.appBuildId).isEqualTo(coreFeature.mockInstance.appBuildId)
         assertThat(context.trackingConsent).isEqualTo(fakeTrackingConsent)
 
         assertThat(context.featuresContext).isEqualTo(coreFeature.mockInstance.featuresContext)

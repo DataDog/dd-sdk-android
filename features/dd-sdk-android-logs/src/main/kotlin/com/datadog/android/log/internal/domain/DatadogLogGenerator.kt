@@ -153,6 +153,9 @@ internal class DatadogLogGenerator(
             status = resolveLogLevelStatus(level),
             message = message,
             date = formattedDate,
+            // TODO RUM-0000 If NDK crash, the it should be a value from previous build
+            //  (or whatever distinguishes debug symbols for native libs)
+            buildId = datadogContext.appBuildId,
             error = error,
             logger = loggerInfo,
             dd = LogEvent.Dd(

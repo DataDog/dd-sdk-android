@@ -13,6 +13,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.util.UUID
 
 internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
     override fun getForgery(forge: Forge): LogEvent {
@@ -29,6 +30,7 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
             status = forge.aValueFrom(LogEvent.Status::class.java),
             message = forge.anAlphabeticalString(),
             date = forge.aFormattedTimestamp(),
+            buildId = forge.aNullable { getForgery<UUID>().toString() },
             error = forge.aNullable {
                 val throwable = forge.aNullable { aThrowable() }
                 LogEvent.Error(

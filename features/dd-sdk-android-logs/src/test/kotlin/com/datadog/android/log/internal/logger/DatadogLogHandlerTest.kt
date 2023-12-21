@@ -175,6 +175,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -247,6 +248,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -302,6 +304,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -465,6 +468,7 @@ internal class DatadogLogHandlerTest {
                 .hasDate((customTimestamp + serverTimeOffsetMs).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -517,6 +521,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -567,6 +572,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -626,6 +632,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(emptyMap())
                 .hasExactlyTags(
                     setOf(
@@ -823,6 +830,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

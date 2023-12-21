@@ -394,6 +394,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -459,6 +460,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -610,6 +612,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -659,6 +662,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -708,6 +712,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasUserInfo(fakeUserInfo)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -814,6 +819,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

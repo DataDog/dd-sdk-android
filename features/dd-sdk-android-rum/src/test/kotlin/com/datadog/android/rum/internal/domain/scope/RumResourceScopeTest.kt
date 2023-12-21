@@ -1216,6 +1216,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1290,6 +1291,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1382,6 +1384,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1475,6 +1478,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1565,6 +1569,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1656,6 +1661,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1733,6 +1739,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1810,6 +1817,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1886,6 +1894,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1963,6 +1972,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2045,6 +2055,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2127,6 +2138,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

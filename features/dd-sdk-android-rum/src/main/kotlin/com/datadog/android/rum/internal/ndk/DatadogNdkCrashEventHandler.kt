@@ -109,6 +109,9 @@ internal class DatadogNdkCrashEventHandler(
         val deviceInfo = datadogContext.deviceInfo
 
         return ErrorEvent(
+            // TODO RUM-0000 once NDK stackstrace symbolication is supported, add build ID
+            //  (or whatever will distinguish debug symbols for native libs) from
+            //  previous RUM event here
             date = timestamp + datadogContext.time.serverTimeOffsetMs,
             application = ErrorEvent.Application(viewEvent.application.id),
             service = viewEvent.service,

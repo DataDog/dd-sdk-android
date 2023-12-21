@@ -10,6 +10,8 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.res.AssetManager
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
 import org.mockito.kotlin.any
@@ -18,6 +20,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.file.Files
+import java.util.UUID
 
 internal open class ApplicationContextTestConfiguration<T : Context>(klass: Class<T>) :
     MockTestConfiguration<T>(klass) {
@@ -26,10 +29,12 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
     lateinit var fakeVersionName: String
     var fakeVersionCode: Int = 0
     lateinit var fakeVariant: String
+    lateinit var fakeBuildId: String
 
     lateinit var fakePackageInfo: PackageInfo
     lateinit var fakeAppInfo: ApplicationInfo
     lateinit var mockPackageManager: PackageManager
+    lateinit var mockAssetManager: AssetManager
 
     lateinit var fakeSandboxDir: File
     lateinit var fakeCacheDir: File
@@ -42,11 +47,13 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
 
         createFakeInfo(forge)
         mockPackageManager()
+        mockAssetManager()
 
         whenever(mockInstance.applicationContext) doReturn mockInstance
         whenever(mockInstance.packageManager) doReturn mockPackageManager
         whenever(mockInstance.packageName) doReturn fakePackageName
         whenever(mockInstance.applicationInfo) doReturn fakeAppInfo
+        whenever(mockInstance.assets) doReturn mockAssetManager
 
         // ???
         whenever(mockInstance.getSystemService(Context.ACTIVITY_SERVICE)) doReturn mock()
@@ -74,6 +81,7 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
         fakeVersionName = forge.aStringMatching("[0-9](\\.[0-9]{1,3}){2,3}")
         fakeVersionCode = forge.anInt(1, 65536)
         fakeVariant = forge.anElementFrom(forge.anAlphabeticalString(), "")
+        fakeBuildId = forge.getForgery<UUID>().toString()
 
         fakePackageInfo = PackageInfo()
         fakePackageInfo.packageName = fakePackageName
@@ -93,8 +101,14 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
                 PackageManager.PackageInfoFlags.of(0)
             )
         ) doReturn fakePackageInfo
-        @Suppress("DEPRECATION")
         whenever(mockPackageManager.getPackageInfo(fakePackageName, 0)) doReturn fakePackageInfo
+    }
+
+    private fun mockAssetManager() {
+        mockAssetManager = mock()
+        whenever(
+            mockAssetManager.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doReturn fakeBuildId.byteInputStream()
     }
 
     // endregion

@@ -233,6 +233,16 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
+    fun hasBuildId(buildId: String?): LogEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected LogEvent to have build ID: $buildId" +
+                    " but instead was ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+        return this
+    }
+
     companion object {
 
         private val dateFormatter =
