@@ -25,7 +25,6 @@ class ApiUsage(
 ) : AbstractCallExpressionRule(config, simplifyLocalTypes = true, includeTypeArguments = false) {
 
     private val outputFileName: String by config(defaultValue = "apiUsage.log")
-    private val apiPackageNamePrefix: String by config(defaultValue = "")
     private val outputFile: File by lazy { File(outputFileName) }
 
     private var visitingTestFunction = false
@@ -63,10 +62,8 @@ class ApiUsage(
         expression: KtCallExpression,
         resolvedCall: ResolvedFunCall
     ) {
-        if (resolvedCall.containerFqName.startsWith(apiPackageNamePrefix)) {
-            outputFile.appendText(resolvedCall.call)
-            outputFile.appendText("\n")
-        }
+        outputFile.appendText(resolvedCall.call)
+        outputFile.appendText("\n")
     }
 
     // endregion

@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
+import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtParameterList
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
@@ -24,6 +25,8 @@ import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.getChildrenOfType
+import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
 /**
@@ -50,6 +53,9 @@ class ApiSurface(
         if (klass.hasModifier(KtTokens.PRIVATE_KEYWORD) || klass.hasModifier(KtTokens.INTERNAL_KEYWORD)) {
             return
         }
+        if (klass.isInterface()) {
+            return
+        }
         super.visitClass(klass)
     }
 
@@ -71,15 +77,30 @@ class ApiSurface(
         outputFile.appendText(")\n")
     }
 
+    @Suppress("ReturnCount")
     override fun visitNamedFunction(function: KtNamedFunction) {
         if (function.hasModifier(KtTokens.PRIVATE_KEYWORD) || function.hasModifier(KtTokens.INTERNAL_KEYWORD)) {
             return
         }
-        val parentName = function.containingClassOrObject?.fqName
-            ?: function.containingKtFile.packageFqName
-        outputFile.appendText("$parentName.${function.nameAsSafeName}(")
-
         val parameterList = function.getChildrenOfType<KtParameterList>().firstOrNull()
+        if (function.name == "toString" && parameterList?.children.isNullOrEmpty()) {
+            return
+        }
+        if (function.getStrictParentOfType<KtObjectLiteralExpression>() != null) {
+            // Function is overriding something in an anonymous object
+            // e.g.: val x = object : Interface { override fun foo() {} }
+            return
+        }
+        if (function.isExtensionDeclaration()) {
+            val target = function.receiverTypeReference?.nameForReceiverLabel()
+            val fqName = target?.resolveFullType()
+            outputFile.appendText("$fqName.${function.nameAsSafeName}(")
+        } else {
+            val parentName = function.containingClassOrObject?.fqName
+                ?: function.containingKtFile.packageFqName
+            outputFile.appendText("$parentName.${function.nameAsSafeName}(")
+        }
+
         parameterList?.children?.filterIsInstance<KtParameter>()?.forEachIndexed { idx, p ->
             val typeElement = p.typeReference?.typeElement
             if (idx > 0) outputFile.appendText(", ")
@@ -113,4 +134,6 @@ class ApiSurface(
     private fun KtUserType.fullUserType(): String {
         return referencedName?.resolveFullType() ?: text.resolveFullType()
     }
+
+    // endregion
 }
