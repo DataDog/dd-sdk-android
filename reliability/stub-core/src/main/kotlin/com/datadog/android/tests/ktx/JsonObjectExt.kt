@@ -6,30 +6,103 @@
 
 package com.datadog.android.tests.ktx
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
 /**
  * A utility method to retrieve a nested attribute using the dotted notation.
  * E.g.: assuming the `this` JsonObject represents the json below, calling
- * `getString("foo.bar.spam")` will return the String `"42"`.
+ * `getString("foo.bar[0].spam")` will return the String `"lorem ipsum"`.
  *
  * {
  *   "foo": {
- *     "bar" : {
- *       "spam": "42"
- *     }
+ *     "bar" : [
+ *       {
+ *         "spam": "lorem ipsum"
+ *       }
+ *     ]
  *   }
  * }
  */
 @Suppress("UnsafeThirdPartyFunctionCall")
 fun JsonObject.getString(path: String): String? {
-    return if (has(path)) {
-        getAsJsonPrimitive(path)?.asString
+    return getAtPath(path)?.asJsonPrimitive?.asString
+}
+
+/**
+ * A utility method to retrieve a nested attribute using the dotted notation.
+ * E.g.: assuming the `this` JsonObject represents the json below, calling
+ * `getString("foo.bar[0].spam")` will return the long `42L`.
+ *
+ * {
+ *   "foo": {
+ *     "bar" : [
+ *       {
+ *         "spam": 42
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+@Suppress("UnsafeThirdPartyFunctionCall")
+fun JsonObject.getInt(path: String): Int? {
+    return getAtPath(path)?.asJsonPrimitive?.asInt
+}
+
+/**
+ * A utility method to retrieve a nested attribute using the dotted notation.
+ * E.g.: assuming the `this` JsonObject represents the json below, calling
+ * `getString("foo.bar[0].spam")` will return the long `42L`.
+ *
+ * {
+ *   "foo": {
+ *     "bar" : [
+ *       {
+ *         "spam": 42
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+@Suppress("UnsafeThirdPartyFunctionCall")
+fun JsonObject.getLong(path: String): Long? {
+    return getAtPath(path)?.asJsonPrimitive?.asLong
+}
+
+/**
+ * A utility method to retrieve a nested attribute using the dotted notation.
+ * E.g.: assuming the `this` JsonObject represents the json below, calling
+ * `getString("foo.bar[0].spam")` will return the double `3.14`.
+ *
+ * {
+ *   "foo": {
+ *     "bar" : [
+ *       {
+ *         "spam": 3.14
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+@Suppress("UnsafeThirdPartyFunctionCall")
+fun JsonObject.getDouble(path: String): Double? {
+    return getAtPath(path)?.asJsonPrimitive?.asDouble
+}
+
+@Suppress("UnsafeThirdPartyFunctionCall")
+internal fun JsonObject.getAtPath(path: String): JsonElement? {
+    val matchResult = Regex("""(\w+)\[(\d+)]""").matchEntire(path)
+    return if (matchResult != null) {
+        val arrayName = matchResult.groupValues[1]
+        val index = matchResult.groupValues[2].toInt()
+        getAsJsonArray(arrayName).get(index)
+    } else if (has(path)) {
+        get(path)
     } else if (path.contains('.')) {
         val head = path.substringBefore('.')
         val tail = path.substringAfter('.')
-        getAsJsonObject(head)?.getString(tail)
+        getAtPath(head)?.asJsonObject?.getAtPath(tail)
     } else {
-        getAsJsonPrimitive(path)?.asString
+        null
     }
 }

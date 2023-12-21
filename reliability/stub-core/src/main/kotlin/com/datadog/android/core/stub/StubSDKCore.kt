@@ -47,10 +47,19 @@ class StubSDKCore(
     /**
      * Lists all the events written by a given feature.
      * @param featureName the name of the feature
-     * @return a list of pairs, each pair holds
+     * @return a list of [StubEvent]
      */
     fun eventsWritten(featureName: String): List<StubEvent> {
         return featureScopes[featureName]?.eventsWritten() ?: emptyList()
+    }
+
+    /**
+     * Lists all the events sent to the given feature.
+     * @param featureName the name of the feature
+     * @return a list of objects
+     */
+    fun eventsReceived(featureName: String): List<Any> {
+        return featureScopes[featureName]?.eventsReceived() ?: emptyList()
     }
 
     /**
@@ -68,6 +77,22 @@ class StubSDKCore(
     fun stubUserInfo(userInfo: UserInfo) {
         networkInfo
         datadogContext = datadogContext.copy(userInfo = userInfo)
+    }
+
+    /**
+     * Stubs a feature with a mock.
+     * This is useful when a feature under tests checks for the presence of another one,
+     * or sends events to another feature for cross feature communication.
+     * @param featureName the name of the feature to mock
+     * @param prepare a lambda used to configure how the stubbed feature should behave
+     */
+    fun stubFeature(featureName: String, prepare: (Feature) -> Unit = {}) {
+        registerFeature(
+            mock<Feature>().apply {
+                whenever(name) doReturn featureName
+                prepare(this)
+            }
+        )
     }
 
     // endregion
@@ -115,6 +140,10 @@ class StubSDKCore(
                 put(featureName, featureContext)
             }
         )
+    }
+
+    override fun getFeatureContext(featureName: String): Map<String, Any?> {
+        return datadogContext.featuresContext[featureName].orEmpty()
     }
 
     // endregion
