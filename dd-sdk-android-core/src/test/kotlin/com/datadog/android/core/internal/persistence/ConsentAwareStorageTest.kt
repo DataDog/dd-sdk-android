@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.fail
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -41,6 +40,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -52,7 +52,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
-import java.util.concurrent.AbstractExecutorService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -359,7 +358,7 @@ internal class ConsentAwareStorageTest {
     // region readNextBatch
 
     @Test
-    fun `𝕄 provide reader 𝕎 readNextBatch()`(
+    fun `𝕄 provide batchData 𝕎 readNextBatch()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @StringForgery metadata: String,
         @Forgery batchFile: File
@@ -377,42 +376,37 @@ internal class ConsentAwareStorageTest {
         whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn mockMetadata
 
         // Whenever
-        var readData: List<RawBatchEvent>? = null
-        var readMetadata: ByteArray? = null
-        testedStorage.readNextBatch { _, reader ->
-            readMetadata = reader.currentMetadata()
-            readData = reader.read()
-        }
+        val batchData = testedStorage.readNextBatch()
 
         // Then
-        assertThat(readData).isEqualTo(fakeData)
-        assertThat(readMetadata).isEqualTo(mockMetadata)
+        assertThat(batchData).isNotNull
+        assertThat(batchData?.id).isNotNull
+        assertThat(batchData?.data).isEqualTo(fakeData)
+        assertThat(batchData?.metadata).isEqualTo(mockMetadata)
     }
 
     @Test
-    fun `𝕄 provide reader 𝕎 readNextBatch() { no metadata file provided }`(
+    fun `𝕄 provide batchData 𝕎 readNextBatch() { no metadata file provided }`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery batchFile: File
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
         whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
+        whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn null
 
         // Whenever
-        var readData: List<RawBatchEvent>? = null
-        var readMetadata: ByteArray? = null
-        testedStorage.readNextBatch { _, reader ->
-            readMetadata = reader.currentMetadata()
-            readData = reader.read()
-        }
+        val batchData = testedStorage.readNextBatch()
 
         // Then
-        assertThat(readData).isEqualTo(fakeData)
-        assertThat(readMetadata).isNull()
+        assertThat(batchData).isNotNull
+        assertThat(batchData?.id).isNotNull
+        assertThat(batchData?.data).isEqualTo(fakeData)
+        assertThat(batchData?.metadata).isNull()
     }
 
     @Test
-    fun `𝕄 provide reader 𝕎 readNextBatch() { metadata file doesn't exist }`(
+    fun `𝕄 provide batchData 𝕎 readNextBatch() { metadata file doesn't exist }`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery batchFile: File
     ) {
@@ -427,61 +421,53 @@ internal class ConsentAwareStorageTest {
         whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn mockMetaFile
 
         // Whenever
-        var readData: List<RawBatchEvent>? = null
-        var readMetadata: ByteArray? = null
-        testedStorage.readNextBatch { _, reader ->
-            readMetadata = reader.currentMetadata()
-            readData = reader.read()
-        }
+        val batchData = testedStorage.readNextBatch()
 
         // Then
-        assertThat(readData).isEqualTo(fakeData)
-        assertThat(readMetadata).isNull()
+        assertThat(batchData).isNotNull
+        assertThat(batchData?.id).isNotNull
+        assertThat(batchData?.data).isEqualTo(fakeData)
+        assertThat(batchData?.metadata).isNull()
     }
 
     @Test
-    fun `𝕄 provide reader only once 𝕎 readNextBatch()`(
-        @Forgery fakeData: List<RawBatchEvent>,
-        @Forgery file: File
-    ) {
-        // Given
-        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
-        whenever(mockBatchReaderWriter.readData(file)) doReturn fakeData
-
-        // When
-        var readData: List<RawBatchEvent>? = null
-        testedStorage.readNextBatch { _, reader ->
-            readData = reader.read()
-        }
-        testedStorage.readNextBatch { _, _ ->
-            fail { "Callback should not have been called again" }
-        }
-
-        // Then
-        assertThat(readData).isEqualTo(fakeData)
-    }
-
-    @Test
-    fun `𝕄 notify no batch available 𝕎 readNextBatch() {no file}`() {
+    fun `𝕄 return null no batch available 𝕎 readNextBatch() {no file}`() {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn null
-        val mockNoBatchCallback = mock<() -> Unit>()
 
-        // When
-        testedStorage.readNextBatch(
-            noBatchCallback = mockNoBatchCallback
-        ) { _, _ ->
-            fail { "Callback should not have been called here" }
-        }
+        // Whenever
+        val batchData = testedStorage.readNextBatch()
 
         // Then
-        verify(mockNoBatchCallback).invoke()
+        assertThat(batchData).isNull()
     }
 
     // endregion
 
     // region confirmBatchRead
+
+    @Test
+    fun `𝕄 read batch twice if released 𝕎 readNextBatch()+confirmBatchRead() {delete=false}`(
+        @Forgery reason: RemovalReason,
+        @Forgery file: File
+    ) {
+        // Given
+        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
+
+        // When
+        val batchData1 = testedStorage.readNextBatch()
+        testedStorage.confirmBatchRead(batchData1!!.id, reason, false)
+        val batchData2 = testedStorage.readNextBatch()
+
+        // Then
+        verify(mockFileMover, never()).delete(file)
+        verify(mockFileMover, never()).delete(mockMetaFile)
+        assertThat(batchData1).isEqualTo(batchData2)
+    }
 
     @Test
     fun `𝕄 delete batch files 𝕎 readNextBatch()+confirmBatchRead() {delete=true}`(
@@ -511,52 +497,14 @@ internal class ConsentAwareStorageTest {
         doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
 
         // When
-        var batchId: BatchId? = null
-        testedStorage.readNextBatch { id, _ ->
-            batchId = id
-        }
-        testedStorage.confirmBatchRead(batchId!!, reason) { confirm ->
-            confirm.markAsRead(true)
-        }
+        val batchData1 = testedStorage.readNextBatch()
+        testedStorage.confirmBatchRead(batchData1!!.id, reason, true)
+        testedStorage.readNextBatch()
 
         // Then
         verify(mockFileMover).delete(file)
         verify(mockFileMover).delete(mockMetaFile)
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(eq(file), eq(reason))
-    }
-
-    @Test
-    fun `𝕄 read batch twice if released 𝕎 readNextBatch()+confirmBatchRead() {delete=false}`(
-        @Forgery reason: RemovalReason,
-        @Forgery file: File
-    ) {
-        // Given
-        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        val mockMetaFile: File = mock()
-        whenever(mockMetaFile.exists()) doReturn true
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
-
-        // When
-        var batchId1: BatchId? = null
-        var batchId2: BatchId? = null
-        testedStorage.readNextBatch { id, _ ->
-            batchId1 = id
-        }
-        testedStorage.readNextBatch { _, _ ->
-            fail { "Callback should not have been called here" }
-        }
-        testedStorage.confirmBatchRead(batchId1!!, reason) { confirm ->
-            confirm.markAsRead(false)
-        }
-        testedStorage.readNextBatch { id, _ ->
-            batchId2 = id
-        }
-
-        // Then
-        verify(mockFileMover, never()).delete(file)
-        verify(mockFileMover, never()).delete(mockMetaFile)
-        assertThat(batchId1).isEqualTo(batchId2)
     }
 
     @Test
@@ -572,15 +520,9 @@ internal class ConsentAwareStorageTest {
         whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
 
         // When
-        testedStorage.readNextBatch { _, _ ->
-            // no-op
-        }
-        testedStorage.confirmBatchRead(BatchId.fromFile(anotherFile), reason) { confirm ->
-            confirm.markAsRead(true)
-        }
-        testedStorage.readNextBatch { _, _ ->
-            fail { "Callback should not have been called here" }
-        }
+        testedStorage.readNextBatch()
+        testedStorage.confirmBatchRead(BatchId.fromFile(anotherFile), reason, false)
+        testedStorage.readNextBatch()
 
         // Then
         verify(mockFileMover, never()).delete(file)
@@ -598,13 +540,9 @@ internal class ConsentAwareStorageTest {
         whenever(mockFileMover.delete(file)) doReturn false
 
         // When
-        var batchId: BatchId? = null
-        testedStorage.readNextBatch { id, _ ->
-            batchId = id
-        }
-        testedStorage.confirmBatchRead(batchId!!, reason) { confirm ->
-            confirm.markAsRead(true)
-        }
+        val batchData1 = testedStorage.readNextBatch()
+        testedStorage.confirmBatchRead(batchData1!!.id, reason, true)
+        testedStorage.readNextBatch()
 
         // Then
         verify(mockFileMover).delete(file)
@@ -633,13 +571,8 @@ internal class ConsentAwareStorageTest {
         doReturn(false).whenever(mockFileMover).delete(mockMetaFile)
 
         // When
-        var batchId: BatchId? = null
-        testedStorage.readNextBatch { id, _ ->
-            batchId = id
-        }
-        testedStorage.confirmBatchRead(batchId!!, reason) { confirm ->
-            confirm.markAsRead(true)
-        }
+        val batchData1 = testedStorage.readNextBatch()
+        testedStorage.confirmBatchRead(batchData1!!.id, reason, true)
 
         // Then
         verify(mockFileMover).delete(file)
@@ -714,9 +647,9 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 delete everything 𝕎 dropAll() { there is locked batch }`(
-        @Forgery file: File,
-        @StringForgery fakeMetaFilePath: String
+    fun `𝕄 delete everything 𝕎 dropAll() { there are locked batches }`(
+        @Forgery files: List<File>,
+        forge: Forge
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
@@ -731,57 +664,41 @@ internal class ConsentAwareStorageTest {
             mockMetricsDispatcher
         )
 
-        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        val mockMetaFile: File = mock()
-        whenever(mockMetaFile.exists()) doReturn true
-        whenever(mockMetaFile.path) doReturn fakeMetaFilePath
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockFileMover.delete(file)) doReturn true
-        doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
+        whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturnConsecutively files
+        val mockMetaFiles = files.map {
+            val fakeMetaFilePath = forge.anAlphabeticalString()
+            val mockMetaFile = mock<File>()
+            whenever(mockMetaFile.exists()) doReturn true
+            whenever(mockMetaFile.path) doReturn fakeMetaFilePath
+            whenever(mockGrantedOrchestrator.getMetadataFile(it)) doReturn mockMetaFile
+            doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
+            mockMetaFile
+        }
+        files.forEach {
+            whenever(mockFileMover.delete(it)) doReturn true
+        }
 
-        testedStorage.readNextBatch { _, _ ->
-            // no-op
+        // ConcurrentModificationException is thrown only during the next check after remove,
+        // so to make sure it is not thrown we need at least 2 locked batches
+        repeat(files.size) {
+            testedStorage.readNextBatch()
         }
 
         // When
         testedStorage.dropAll()
 
         // Then
-        verify(mockFileMover).delete(file)
-        verify(mockFileMover).delete(mockMetaFile)
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(file),
-            argThat {
-                this is RemovalReason.Flushed
-            }
-        )
+        files.forEachIndexed { index, file ->
+            verify(mockFileMover).delete(file)
+            verify(mockFileMover).delete(mockMetaFiles[index])
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(file),
+                argThat {
+                    this is RemovalReason.Flushed
+                }
+            )
+        }
     }
 
     // endregion
-
-    class FakeSameThreadExecutorService : AbstractExecutorService() {
-
-        private var isShutdown = false
-
-        override fun execute(command: Runnable?) {
-            command?.run()
-        }
-
-        override fun shutdown() {
-            isShutdown = true
-        }
-
-        override fun shutdownNow(): MutableList<Runnable> {
-            isShutdown = true
-            return mutableListOf()
-        }
-
-        override fun isShutdown(): Boolean = isShutdown
-
-        override fun isTerminated(): Boolean = isShutdown
-
-        override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean {
-            return true
-        }
-    }
 }

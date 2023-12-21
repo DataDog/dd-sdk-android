@@ -32,11 +32,12 @@ internal class Base64Serializer private constructor(
     private val drawableUtils: DrawableUtils,
     private val base64Utils: Base64Utils,
     private val webPImageCompression: ImageCompression,
-    private val base64LRUCache: Cache<Drawable, String>?,
+    private val base64LRUCache: Cache<Drawable, CacheData>,
     private val bitmapPool: BitmapPool?,
-    private val logger: InternalLogger
+    private val logger: InternalLogger,
+    private val md5HashGenerator: MD5HashGenerator
 ) {
-    private var isCacheRegisteredForCallbacks: Boolean = false
+    private var isBase64CacheRegisteredForCallbacks: Boolean = false
     private var isBitmapPoolRegisteredForCallbacks: Boolean = false
 
     // region internal
@@ -53,7 +54,11 @@ internal class Base64Serializer private constructor(
     ) {
         registerCallbacks(applicationContext)
 
-        tryToGetBase64FromCache(drawable, imageWireframe, base64SerializerCallback)
+        tryToGetBase64FromCache(
+            drawable = drawable,
+            imageWireframe = imageWireframe,
+            base64SerializerCallback = base64SerializerCallback
+        )
             ?: tryToGetBitmapFromBitmapDrawable(
                 drawable = drawable,
                 displayMetrics = displayMetrics,
@@ -98,31 +103,54 @@ internal class Base64Serializer private constructor(
         // basically we only allow one attempt to recreate the bitmap
         didCallOriginateFromFailover: Boolean
     ) {
-        val base64String = convertBitmapToBase64(
-            drawable = drawable,
-            displayMetrics = displayMetrics,
-            bitmap = bitmap,
-            shouldCacheBitmap = shouldCacheBitmap,
-            imageWireframe = imageWireframe,
-            base64SerializerCallback = base64SerializerCallback,
-            didCallOriginateFromFailover = didCallOriginateFromFailover
-        )
+        val byteArray = webPImageCompression.compressBitmap(bitmap)
 
-        if (base64String.isNotEmpty()) {
-            finalizeRecordedDataItem(base64String, imageWireframe, base64SerializerCallback)
+        // failed to get byteArray potentially because the bitmap was recycled before imageCompression
+        // Try once to recreate bitmap from the drawable
+        if (byteArray.isEmpty() && bitmap.isRecycled && !didCallOriginateFromFailover) {
+            tryToDrawNewBitmap(
+                drawable = drawable,
+                drawableWidth = bitmap.width,
+                drawableHeight = bitmap.height,
+                displayMetrics = displayMetrics,
+                imageWireframe = imageWireframe,
+                base64SerializerCallback = base64SerializerCallback,
+                didCallOriginateFromFailover = true
+            )
+
+            return
         }
+
+        if (byteArray.isEmpty()) {
+            // failed to get image data
+            base64SerializerCallback.onReady()
+            return
+        }
+
+        val base64String = convertBitmapToBase64(
+            byteArray = byteArray,
+            bitmap = bitmap,
+            shouldCacheBitmap = shouldCacheBitmap
+        ).toByteArray(Charsets.UTF_8)
+        val resourceId = md5HashGenerator.generate(byteArray)?.toByteArray(Charsets.UTF_8)
+        val cacheData = CacheData(base64String, resourceId)
+
+        if (base64String.isNotEmpty() || resourceId != null) {
+            base64LRUCache.put(drawable, cacheData)
+        }
+
+        finalizeRecordedDataItem(cacheData, imageWireframe)
+        base64SerializerCallback.onReady()
     }
 
     @MainThread
-    private fun registerCacheForCallbacks(applicationContext: Context) {
-        if (isCacheRegisteredForCallbacks) return
+    private fun registerBase64LruCacheForCallbacks(applicationContext: Context) {
+        if (isBase64CacheRegisteredForCallbacks) return
 
         if (base64LRUCache is ComponentCallbacks2) {
             applicationContext.registerComponentCallbacks(base64LRUCache)
-            isCacheRegisteredForCallbacks = true
+            isBase64CacheRegisteredForCallbacks = true
         } else {
-            // Temporarily use UNBOUND logger
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
             logger.log(
                 level = InternalLogger.Level.WARN,
                 target = InternalLogger.Target.MAINTAINER,
@@ -141,43 +169,11 @@ internal class Base64Serializer private constructor(
 
     @WorkerThread
     private fun convertBitmapToBase64(
-        drawable: Drawable,
-        displayMetrics: DisplayMetrics,
+        byteArray: ByteArray,
         bitmap: Bitmap,
-        shouldCacheBitmap: Boolean,
-        imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback,
-
-        // this parameter is used to avoid infinite recursion
-        // basically we only allow one attempt to recreate the bitmap
-        didCallOriginateFromFailover: Boolean
+        shouldCacheBitmap: Boolean
     ): String {
-        val base64Result: String
-
-        val byteArray = webPImageCompression.compressBitmap(bitmap)
-
-        // failed to get byteArray
-        // Try once to recreate bitmap from the drawable
-        if (byteArray.isEmpty() && bitmap.isRecycled && !didCallOriginateFromFailover) {
-            tryToDrawNewBitmap(
-                drawable = drawable,
-                drawableWidth = bitmap.width,
-                drawableHeight = bitmap.height,
-                displayMetrics = displayMetrics,
-                imageWireframe = imageWireframe,
-                base64SerializerCallback = base64SerializerCallback,
-                didCallOriginateFromFailover = true
-            )
-
-            return ""
-        }
-
-        base64Result = base64Utils.serializeToBase64String(byteArray)
-
-        if (base64Result.isNotEmpty()) {
-            // if we got a base64 string then cache it
-            base64LRUCache?.put(drawable, base64Result)
-        }
+        val base64Result = base64Utils.serializeToBase64String(byteArray)
 
         if (shouldCacheBitmap) {
             bitmapPool?.put(bitmap)
@@ -200,7 +196,6 @@ internal class Base64Serializer private constructor(
             drawableWidth = drawableWidth,
             drawableHeight = drawableHeight,
             displayMetrics = displayMetrics,
-            base64SerializerCallback = base64SerializerCallback,
             bitmapCreationCallback = object : BitmapCreationCallback {
                 override fun onReady(bitmap: Bitmap) {
                     Runnable {
@@ -217,6 +212,10 @@ internal class Base64Serializer private constructor(
                     }.let {
                         threadPoolExecutor.executeSafe("tryToDrawNewBitmap", logger, it)
                     }
+                }
+
+                override fun onFailure() {
+                    base64SerializerCallback.onReady()
                 }
             }
         )
@@ -270,23 +269,38 @@ internal class Base64Serializer private constructor(
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
         base64SerializerCallback: Base64SerializerCallback
     ): String? {
-        return base64LRUCache?.get(drawable)?.let { base64String ->
-            finalizeRecordedDataItem(base64String, imageWireframe, base64SerializerCallback)
-            base64String
-        }
-    }
+        val cacheData = base64LRUCache.get(drawable)
 
-    private fun finalizeRecordedDataItem(
-        base64String: String,
-        wireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback
-    ) {
-        if (base64String.isNotEmpty()) {
-            wireframe.base64 = base64String
-            wireframe.isEmpty = false
+        if (cacheData?.resourceId == null) {
+            return null
+        }
+
+        if (cacheData.base64Encoding.isNotEmpty()) {
+            finalizeRecordedDataItem(cacheData, imageWireframe)
         }
 
         base64SerializerCallback.onReady()
+
+        return String(cacheData.base64Encoding, Charsets.UTF_8)
+    }
+
+    private fun finalizeRecordedDataItem(
+        cacheData: CacheData,
+        wireframe: MobileSegment.Wireframe.ImageWireframe
+    ) {
+        val base64 = String(cacheData.base64Encoding, Charsets.UTF_8)
+        val resourceId = cacheData.resourceId?.let {
+            String(it, Charsets.UTF_8)
+        }
+
+        if (resourceId != null) {
+            wireframe.resourceId = resourceId
+        }
+
+        if (base64.isNotEmpty()) {
+            wireframe.base64 = base64
+            wireframe.isEmpty = false
+        }
     }
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
@@ -298,7 +312,7 @@ internal class Base64Serializer private constructor(
 
     @MainThread
     private fun registerCallbacks(applicationContext: Context) {
-        registerCacheForCallbacks(applicationContext)
+        registerBase64LruCacheForCallbacks(applicationContext)
         registerBitmapPoolForCallbacks(applicationContext)
     }
 
@@ -306,18 +320,18 @@ internal class Base64Serializer private constructor(
 
     // region builder
     internal class Builder(
-        // Temporarily use UNBOUND until we handle the loggers
         private var logger: InternalLogger = InternalLogger.UNBOUND,
         private var threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
-        private var bitmapPool: BitmapPool? = null,
-        private var base64LRUCache: Cache<Drawable, String>? = null,
+        private var bitmapPool: BitmapPool,
+        private var base64LRUCache: Cache<Drawable, CacheData>,
         private var drawableUtils: DrawableUtils = DrawableUtils(
             bitmapPool = bitmapPool,
             threadPoolExecutor = threadPoolExecutor,
             logger = logger
         ),
         private var base64Utils: Base64Utils = Base64Utils(),
-        private var webPImageCompression: ImageCompression = WebPImageCompression()
+        private var webPImageCompression: ImageCompression = WebPImageCompression(),
+        private var md5HashGenerator: MD5HashGenerator = MD5HashGenerator(logger)
     ) {
         internal fun build() =
             Base64Serializer(
@@ -327,7 +341,8 @@ internal class Base64Serializer private constructor(
                 base64LRUCache = base64LRUCache,
                 drawableUtils = drawableUtils,
                 base64Utils = base64Utils,
-                webPImageCompression = webPImageCompression
+                webPImageCompression = webPImageCompression,
+                md5HashGenerator = md5HashGenerator
             )
 
         private companion object {
@@ -348,6 +363,7 @@ internal class Base64Serializer private constructor(
 
     internal interface BitmapCreationCallback {
         fun onReady(bitmap: Bitmap)
+        fun onFailure()
     }
 
     // endregion

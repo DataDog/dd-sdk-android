@@ -17,20 +17,19 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.core.configuration.BatchProcessingLevel
-import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
+import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.DataUploader
+import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.data.upload.v2.DataFlusher
-import com.datadog.android.core.internal.data.upload.v2.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.v2.DataUploader
-import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
+import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
@@ -41,6 +40,7 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -64,31 +64,26 @@ internal class SdkFeature(
 
     // region SdkFeature
 
-    fun initialize(context: Context) {
+    fun initialize(context: Context, instanceId: String) {
         if (initialized.get()) {
             return
         }
 
         var dataUploadConfiguration: DataUploadConfiguration? = null
         if (wrappedFeature is StorageBackedFeature) {
-            val uploadFrequency = resolveUploadFrequency()
-            val batchProcessingLevel = resolveBatchProcessingLevel()
+            val uploadFrequency = coreFeature.uploadFrequency
+            val batchProcessingLevel = coreFeature.batchProcessingLevel
             dataUploadConfiguration = DataUploadConfiguration(
                 uploadFrequency,
                 batchProcessingLevel.maxBatchesPerUploadJob
             )
-            val storageConfiguration = wrappedFeature.storageConfiguration
-            val recentDelayMs = resolveBatchingDelay(coreFeature, storageConfiguration)
-            val filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
-                maxBatchSize = storageConfiguration.maxBatchSize,
-                maxItemSize = storageConfiguration.maxItemSize,
-                maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
-                oldFileThreshold = storageConfiguration.oldBatchThreshold,
-                recentDelayMs = recentDelayMs
+            storage = prepareStorage(
+                dataUploadConfiguration,
+                wrappedFeature,
+                context,
+                instanceId,
+                coreFeature.persistenceStrategyFactory
             )
-            setupMetricsDispatcher(dataUploadConfiguration, filePersistenceConfig, context)
-
-            storage = createStorage(wrappedFeature.name, filePersistenceConfig)
         }
 
         wrappedFeature.onInitialize(context)
@@ -194,30 +189,6 @@ internal class SdkFeature(
         }
     }
 
-    private fun resolveBatchingDelay(
-        coreFeature: CoreFeature,
-        featureStorageConfiguration: FeatureStorageConfiguration
-    ): Long {
-        return featureStorageConfiguration.batchSize?.windowDurationMs
-            ?: coreFeature.batchSize.windowDurationMs
-    }
-
-    private fun resolveUploadFrequency(): UploadFrequency {
-        return if (wrappedFeature is StorageBackedFeature) {
-            wrappedFeature.storageConfiguration.uploadFrequency ?: coreFeature.uploadFrequency
-        } else {
-            coreFeature.uploadFrequency
-        }
-    }
-    private fun resolveBatchProcessingLevel(): BatchProcessingLevel {
-        return if (wrappedFeature is StorageBackedFeature) {
-            wrappedFeature.storageConfiguration.batchProcessingLevel
-                ?: coreFeature.batchProcessingLevel
-        } else {
-            coreFeature.batchProcessingLevel
-        }
-    }
-
     private fun setupUploader(
         requestFactory: RequestFactory,
         uploadConfiguration: DataUploadConfiguration
@@ -242,7 +213,49 @@ internal class SdkFeature(
 
     // region Feature setup
 
-    private fun createStorage(
+    private fun prepareStorage(
+        dataUploadConfiguration: DataUploadConfiguration,
+        wrappedFeature: StorageBackedFeature,
+        context: Context,
+        instanceId: String,
+        persistenceStrategyFactory: PersistenceStrategy.Factory?
+    ): Storage {
+        val storageConfiguration = wrappedFeature.storageConfiguration
+        return if (persistenceStrategyFactory == null) {
+            val recentDelayMs = coreFeature.batchSize.windowDurationMs
+            val filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
+                maxBatchSize = storageConfiguration.maxBatchSize,
+                maxItemSize = storageConfiguration.maxItemSize,
+                maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
+                oldFileThreshold = storageConfiguration.oldBatchThreshold,
+                recentDelayMs = recentDelayMs
+            )
+            setupMetricsDispatcher(dataUploadConfiguration, filePersistenceConfig, context)
+
+            createFileStorage(wrappedFeature.name, filePersistenceConfig)
+        } else {
+            createCustomStorage(instanceId, wrappedFeature.name, storageConfiguration, persistenceStrategyFactory)
+        }
+    }
+
+    private fun createCustomStorage(
+        instanceId: String,
+        featureName: String,
+        storageConfiguration: FeatureStorageConfiguration,
+        persistenceStrategyFactory: PersistenceStrategy.Factory
+    ): Storage {
+        return AbstractStorage(
+            instanceId,
+            featureName,
+            persistenceStrategyFactory,
+            coreFeature.persistenceExecutorService,
+            internalLogger,
+            storageConfiguration,
+            coreFeature.trackingConsentProvider
+        )
+    }
+
+    private fun createFileStorage(
         featureName: String,
         filePersistenceConfig: FilePersistenceConfig
     ): Storage {

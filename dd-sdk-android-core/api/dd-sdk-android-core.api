@@ -395,24 +395,18 @@ public abstract interface class com/datadog/android/api/storage/EventBatchWriter
 
 public final class com/datadog/android/api/storage/FeatureStorageConfiguration {
 	public static final field Companion Lcom/datadog/android/api/storage/FeatureStorageConfiguration$Companion;
-	public fun <init> (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;)V
+	public fun <init> (JIJJ)V
 	public final fun component1 ()J
 	public final fun component2 ()I
 	public final fun component3 ()J
 	public final fun component4 ()J
-	public final fun component5 ()Lcom/datadog/android/core/configuration/UploadFrequency;
-	public final fun component6 ()Lcom/datadog/android/core/configuration/BatchSize;
-	public final fun component7 ()Lcom/datadog/android/core/configuration/BatchProcessingLevel;
-	public final fun copy (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;ILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public final fun copy (JIJJ)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getBatchProcessingLevel ()Lcom/datadog/android/core/configuration/BatchProcessingLevel;
-	public final fun getBatchSize ()Lcom/datadog/android/core/configuration/BatchSize;
 	public final fun getMaxBatchSize ()J
 	public final fun getMaxItemSize ()J
 	public final fun getMaxItemsPerBatch ()I
 	public final fun getOldBatchThreshold ()J
-	public final fun getUploadFrequency ()Lcom/datadog/android/core/configuration/UploadFrequency;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -498,6 +492,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public final fun setEncryption (Lcom/datadog/android/security/Encryption;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setFirstPartyHosts (Ljava/util/List;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setFirstPartyHostsWithHeaderType (Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setPersistenceStrategyFactory (Lcom/datadog/android/core/persistence/PersistenceStrategy$Factory;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setProxy (Ljava/net/Proxy;Lokhttp3/Authenticator;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUploadFrequency (Lcom/datadog/android/core/configuration/UploadFrequency;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUseDeveloperModeWhenDebuggable (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
@@ -610,6 +605,36 @@ public final class com/datadog/android/core/internal/utils/NumberExtKt {
 
 public final class com/datadog/android/core/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/core/persistence/PersistenceStrategy {
+	public abstract fun currentMetadata ()[B
+	public abstract fun dropAll ()V
+	public abstract fun lockAndReadNext ()Lcom/datadog/android/core/persistence/PersistenceStrategy$Batch;
+	public abstract fun migrateData (Lcom/datadog/android/core/persistence/PersistenceStrategy;)V
+	public abstract fun unlockAndDelete (Ljava/lang/String;)V
+	public abstract fun unlockAndKeep (Ljava/lang/String;)V
+	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[B)Z
+}
+
+public final class com/datadog/android/core/persistence/PersistenceStrategy$Batch {
+	public fun <init> (Ljava/lang/String;[BLjava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;[BLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()[B
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;[BLjava/util/List;)Lcom/datadog/android/core/persistence/PersistenceStrategy$Batch;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/persistence/PersistenceStrategy$Batch;Ljava/lang/String;[BLjava/util/List;ILjava/lang/Object;)Lcom/datadog/android/core/persistence/PersistenceStrategy$Batch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBatchId ()Ljava/lang/String;
+	public final fun getEvents ()Ljava/util/List;
+	public final fun getMetadata ()[B
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/core/persistence/PersistenceStrategy$Factory {
+	public abstract fun create (Ljava/lang/String;IJ)Lcom/datadog/android/core/persistence/PersistenceStrategy;
 }
 
 public abstract interface class com/datadog/android/core/persistence/Serializer {

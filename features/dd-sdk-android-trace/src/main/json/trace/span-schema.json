@@ -104,6 +104,39 @@
               "description": "The trace source",
               "default": "android",
               "readOnly": true
+            },
+            "application": {
+              "type": "object",
+              "description": "The RUM Application attributes",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "RUM Application ID",
+                  "readOnly": true
+                }
+              }
+            },
+            "session": {
+              "type": "object",
+              "description": "The active RUM Session attributes",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The RUM Session ID",
+                  "readOnly": true
+                }
+              }
+            },
+            "view": {
+              "type": "object",
+              "description": "The active RUM View attributes",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The RUM View ID",
+                  "readOnly": true
+                }
+              }
             }
           },
           "readOnly": true

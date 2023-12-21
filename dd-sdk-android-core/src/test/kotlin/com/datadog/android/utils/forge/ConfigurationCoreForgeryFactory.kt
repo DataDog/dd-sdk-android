@@ -8,12 +8,16 @@ package com.datadog.android.utils.forge
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.NoOpEncryption
 import com.datadog.android.trace.TracingHeaderType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import okhttp3.Authenticator
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.net.Proxy
 import java.net.URL
 
@@ -42,7 +46,12 @@ internal class ConfigurationCoreForgeryFactory :
             proxyAuth = auth,
             encryption = forge.aNullable { NoOpEncryption() },
             site = forge.aValueFrom(DatadogSite::class.java),
-            batchProcessingLevel = forge.getForgery()
+            batchProcessingLevel = forge.getForgery(),
+            persistenceStrategyFactory = forge.aNullable {
+                mock<PersistenceStrategy.Factory>().apply {
+                    whenever(create(any(), any(), any())) doReturn mock()
+                }
+            }
         )
     }
 }

@@ -253,7 +253,7 @@ internal class RumResourceScope(
                         hasReplay = hasReplay
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ResourceEvent.Source.tryFromSource(
+                    source = ResourceEvent.ResourceEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -274,7 +274,10 @@ internal class RumResourceScope(
                         traceId = traceId,
                         spanId = spanId,
                         rulePsr = rulePsr,
-                        session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1),
+                        session = ResourceEvent.DdSession(
+                            plan = ResourceEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toResourceSessionPrecondition()
+                        ),
                         configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
@@ -407,7 +410,10 @@ internal class RumResourceScope(
                     ),
                     context = ErrorEvent.Context(additionalProperties = attributes),
                     dd = ErrorEvent.Dd(
-                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                        session = ErrorEvent.DdSession(
+                            plan = ErrorEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
+                        ),
                         configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,

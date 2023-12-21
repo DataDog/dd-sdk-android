@@ -39,33 +39,27 @@ internal interface Storage {
     )
 
     /**
-     * Utility to read a batch, asynchronously.
-     * @param noBatchCallback an optional callback which is called when there is no batch available to read.
-     * @param batchCallback an operation to perform with a [BatchId] and [BatchReader] that will target
-     * the next readable Batch
+     * Utility to read a batch, synchronously.
      */
     @WorkerThread
-    fun readNextBatch(
-        noBatchCallback: () -> Unit = {},
-        batchCallback: (BatchId, BatchReader) -> Unit
-    )
+    fun readNextBatch(): BatchData?
 
     /**
-     * Utility to update the state of a batch, asynchronously.
+     * Utility to update the state of a batch, synchronously.
      * @param batchId the id of the Batch to confirm
      * @param removalReason the reason why the batch is being removed
-     * @param callback an operation to perform with a [BatchConfirmation]
+     * @param deleteBatch if `true` the batch will be deleted, otherwise it will be marked as
+     * not readable.
      */
     @WorkerThread
     fun confirmBatchRead(
         batchId: BatchId,
         removalReason: RemovalReason,
-        callback: (BatchConfirmation) -> Unit
+        deleteBatch: Boolean
     )
 
     /**
      * Removes all the files backed by this storage, synchronously.
      */
-    @WorkerThread
     fun dropAll()
 }

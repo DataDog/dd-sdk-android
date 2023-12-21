@@ -71,11 +71,11 @@ internal class WireframeUtilsTest {
             forge.getForgery<MobileSegment.Wireframe>().apply {
                 whenever(mockBoundsUtils.resolveBounds(this)).thenReturn(fakeParentBounds)
             }
-        val fakExpectedClip = MobileSegment.WireframeClip(
-            top = fakeExpectedClipTop.longOrNull(),
-            bottom = fakeExpectedClipBottom.longOrNull(),
-            right = fakeExpectedClipRight.longOrNull(),
-            left = fakeExpectedClipLeft.longOrNull()
+        val fakeExpectedClip = MobileSegment.WireframeClip(
+            top = fakeExpectedClipTop,
+            bottom = fakeExpectedClipBottom,
+            right = fakeExpectedClipRight,
+            left = fakeExpectedClipLeft
         )
 
         val fakeRandomParents: List<MobileSegment.Wireframe> = forge.aList {
@@ -88,9 +88,11 @@ internal class WireframeUtilsTest {
             add(randomIndex, fakeParentWireframe)
         }
 
+        // When
+        val resultClip = testedWireframeUtils.resolveWireframeClip(fakeWireframe, fakeParents)
+
         // Then
-        assertThat(testedWireframeUtils.resolveWireframeClip(fakeWireframe, fakeParents))
-            .isEqualTo(fakExpectedClip)
+        assertThat(resultClip).isEqualTo(fakeExpectedClip)
     }
 
     @Test
@@ -657,14 +659,6 @@ internal class WireframeUtilsTest {
             opacity = 1f,
             cornerRadius = aPositiveLong()
         )
-    }
-
-    private fun Long.longOrNull(): Long? {
-        return if (this == 0L) {
-            null
-        } else {
-            this
-        }
     }
 
     private fun Long?.toLong(): Long {

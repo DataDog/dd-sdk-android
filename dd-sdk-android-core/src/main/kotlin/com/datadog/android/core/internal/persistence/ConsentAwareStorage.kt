@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
-import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -84,17 +83,10 @@ internal class ConsentAwareStorage(
 
     /** @inheritdoc */
     @WorkerThread
-    override fun readNextBatch(
-        noBatchCallback: () -> Unit,
-        batchCallback: (BatchId, BatchReader) -> Unit
-    ) {
+    override fun readNextBatch(): BatchData? {
         val (batchFile, metaFile) = synchronized(lockedBatches) {
             val batchFile = grantedOrchestrator
-                .getReadableFile(lockedBatches.map { it.file }.toSet())
-            if (batchFile == null) {
-                noBatchCallback()
-                return
-            }
+                .getReadableFile(lockedBatches.map { it.file }.toSet()) ?: return null
 
             val metaFile = grantedOrchestrator.getMetadataFile(batchFile)
             lockedBatches.add(Batch(batchFile, metaFile))
@@ -102,21 +94,14 @@ internal class ConsentAwareStorage(
         }
 
         val batchId = BatchId.fromFile(batchFile)
-        val reader = object : BatchReader {
-
-            @WorkerThread
-            override fun currentMetadata(): ByteArray? {
-                if (metaFile == null || !metaFile.existsSafe(internalLogger)) return null
-
-                return batchMetadataReaderWriter.readData(metaFile)
-            }
-
-            @WorkerThread
-            override fun read(): List<RawBatchEvent> {
-                return batchEventsReaderWriter.readData(batchFile)
-            }
+        val batchMetadata = if (metaFile == null || !metaFile.existsSafe(internalLogger)) {
+            null
+        } else {
+            batchMetadataReaderWriter.readData(metaFile)
         }
-        batchCallback(batchId, reader)
+        val batchData = batchEventsReaderWriter.readData(batchFile)
+
+        return BatchData(id = batchId, data = batchData, metadata = batchMetadata)
     }
 
     /** @inheritdoc */
@@ -124,23 +109,18 @@ internal class ConsentAwareStorage(
     override fun confirmBatchRead(
         batchId: BatchId,
         removalReason: RemovalReason,
-        callback: (BatchConfirmation) -> Unit
+        deleteBatch: Boolean
     ) {
         val batch = synchronized(lockedBatches) {
             lockedBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
-        val confirmation = object : BatchConfirmation {
-            @WorkerThread
-            override fun markAsRead(deleteBatch: Boolean) {
-                if (deleteBatch) {
-                    deleteBatch(batch, removalReason)
-                }
-                synchronized(lockedBatches) {
-                    lockedBatches.remove(batch)
-                }
-            }
+
+        if (deleteBatch) {
+            deleteBatch(batch, removalReason)
         }
-        callback(confirmation)
+        synchronized(lockedBatches) {
+            lockedBatches.remove(batch)
+        }
     }
 
     /** @inheritdoc */
@@ -149,8 +129,8 @@ internal class ConsentAwareStorage(
         synchronized(lockedBatches) {
             lockedBatches.forEach {
                 deleteBatch(it, RemovalReason.Flushed)
-                lockedBatches.remove(it)
             }
+            lockedBatches.clear()
         }
 
         arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->

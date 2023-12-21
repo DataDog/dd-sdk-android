@@ -291,8 +291,8 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                     ?: MobileSegment.WireframeClip(0, 0, 0, 0)
             )
         }
-        if (prevWireframe.base64 != currentWireframe.base64) {
-            mutation = mutation.copy(base64 = currentWireframe.base64)
+        if (prevWireframe.resourceId != currentWireframe.resourceId) {
+            mutation = mutation.copy(resourceId = currentWireframe.resourceId)
         }
         if (prevWireframe.mimeType != currentWireframe.mimeType) {
             mutation = mutation.copy(mimeType = currentWireframe.mimeType)

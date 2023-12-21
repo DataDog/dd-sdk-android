@@ -42,15 +42,15 @@ internal class RumEventSourceExtTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        // we are using the ViewEvent.Source here as the source enum for all the events is
+        // we are using the ViewEvent.ViewEventSource here as the source enum for all the events is
         // generated from the same _common-schema.json
         fakeInvalidSource = forge.aStringNotMatchingSet(
-            ViewEvent.Source.values()
+            ViewEvent.ViewEventSource.values()
                 .map {
                     it.toJson().asString
                 }.toSet()
         )
-        fakeValidRumSource = forge.aValueFrom(ViewEvent.Source::class.java).toJson().asString
+        fakeValidRumSource = forge.aValueFrom(ViewEvent.ViewEventSource::class.java).toJson().asString
     }
 
     // region ViewEvent
@@ -58,7 +58,7 @@ internal class RumEventSourceExtTest {
     @Test
     fun `M resolve the ViewEvent source W viewEventSource`() {
         // When
-        val source = ViewEvent.Source.tryFromSource(fakeValidRumSource, mockInternalLogger)
+        val source = ViewEvent.ViewEventSource.tryFromSource(fakeValidRumSource, mockInternalLogger)
             ?.toJson()?.asString
 
         // Then
@@ -68,13 +68,13 @@ internal class RumEventSourceExtTest {
 
     @Test
     fun `M return null W viewEventSource { unknown source }`() {
-        assertThat(ViewEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)).isNull()
+        assertThat(ViewEvent.ViewEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)).isNull()
     }
 
     @Test
     fun `M send an error dev log W viewEventSource { unknown source }`() {
         // When
-        ViewEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
+        ViewEvent.ViewEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
         mockInternalLogger.verifyLog(
@@ -92,7 +92,7 @@ internal class RumEventSourceExtTest {
     @Test
     fun `M resolve the Action source W actionEventSource`() {
         // When
-        val source = ActionEvent.Source.tryFromSource(fakeValidRumSource, mockInternalLogger)
+        val source = ActionEvent.ActionEventSource.tryFromSource(fakeValidRumSource, mockInternalLogger)
             ?.toJson()?.asString
 
         // Then
@@ -101,13 +101,13 @@ internal class RumEventSourceExtTest {
 
     @Test
     fun `M return null W actionEventSource { unknown source }`() {
-        assertThat(ActionEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)).isNull()
+        assertThat(ActionEvent.ActionEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)).isNull()
     }
 
     @Test
     fun `M send an error dev log W actionEventSource { unknown source }`() {
         // When
-        ActionEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
+        ActionEvent.ActionEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
         mockInternalLogger.verifyLog(
@@ -160,7 +160,7 @@ internal class RumEventSourceExtTest {
     @Test
     fun `M resolve the ResourceEvent source W resourceEventSource`() {
         // When
-        val source = ResourceEvent.Source.tryFromSource(fakeValidRumSource, mockInternalLogger)
+        val source = ResourceEvent.ResourceEventSource.tryFromSource(fakeValidRumSource, mockInternalLogger)
             ?.toJson()?.asString
 
         // Then
@@ -170,14 +170,14 @@ internal class RumEventSourceExtTest {
     @Test
     fun `M return null W resourceEventSource { unknown source }`() {
         assertThat(
-            ResourceEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
+            ResourceEvent.ResourceEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)
         ).isNull()
     }
 
     @Test
     fun `M send an error dev log W resourceEventSource { unknown source }`() {
         // When
-        ResourceEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
+        ResourceEvent.ResourceEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
         mockInternalLogger.verifyLog(
@@ -195,7 +195,7 @@ internal class RumEventSourceExtTest {
     @Test
     fun `M resolve the LongTaskEvent source W longTaskEventSource`() {
         // When
-        val source = LongTaskEvent.Source.tryFromSource(fakeValidRumSource, mockInternalLogger)
+        val source = LongTaskEvent.LongTaskEventSource.tryFromSource(fakeValidRumSource, mockInternalLogger)
             ?.toJson()?.asString
 
         // Then
@@ -204,14 +204,14 @@ internal class RumEventSourceExtTest {
 
     @Test
     fun `M return null W longTaskEventSource { unknown source }`() {
-        assertThat(LongTaskEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger))
+        assertThat(LongTaskEvent.LongTaskEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger))
             .isNull()
     }
 
     @Test
     fun `M send an error dev log W longTaskEventSource { unknown source }`() {
         // When
-        LongTaskEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
+        LongTaskEvent.LongTaskEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
         mockInternalLogger.verifyLog(

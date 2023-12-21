@@ -27,6 +27,7 @@ internal class ImageWireframeForgeryFactory :
                 )
             },
             base64 = forge.aNullable { aString() },
+            resourceId = forge.aNullable() { aString() },
             clip = forge.aNullable {
                 getForgery()
             }

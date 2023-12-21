@@ -9,6 +9,7 @@ package com.datadog.android.trace.internal.domain.event
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.opentracing.DDSpan
 
@@ -68,9 +69,15 @@ internal class DdSpanToSpanEventMapper(
             email = userInfo.email,
             additionalProperties = userInfo.additionalProperties.toMutableMap()
         )
+        val dd = SpanEvent.Dd(
+            source = datadogContext.source,
+            application = event.tags[LogAttributes.RUM_APPLICATION_ID]?.let { SpanEvent.Application(it as? String) },
+            session = event.tags[LogAttributes.RUM_SESSION_ID]?.let { SpanEvent.Session(it as? String) },
+            view = event.tags[LogAttributes.RUM_VIEW_ID]?.let { SpanEvent.View(it as? String) }
+        )
         return SpanEvent.Meta(
             version = datadogContext.version,
-            dd = SpanEvent.Dd(source = datadogContext.source),
+            dd = dd,
             span = SpanEvent.Span(),
             tracer = SpanEvent.Tracer(
                 version = datadogContext.sdkVersion

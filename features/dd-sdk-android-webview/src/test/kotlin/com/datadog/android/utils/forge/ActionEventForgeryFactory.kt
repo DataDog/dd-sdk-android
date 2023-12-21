@@ -79,7 +79,7 @@ internal class ActionEventForgeryFactory :
                 type = ActionEvent.ActionEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
-            source = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) },
+            source = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) },
             ciTest = forge.aNullable {
                 ActionEvent.CiTest(anHexadecimalString())
             },

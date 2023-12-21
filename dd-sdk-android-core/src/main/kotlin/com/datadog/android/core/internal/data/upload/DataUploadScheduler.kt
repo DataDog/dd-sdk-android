@@ -7,32 +7,35 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.ContextProvider
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.persistence.DataReader
+import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class DataUploadScheduler(
-    reader: DataReader,
+    storage: Storage,
     dataUploader: DataUploader,
+    contextProvider: ContextProvider,
     networkInfoProvider: NetworkInfoProvider,
     systemInfoProvider: SystemInfoProvider,
-    uploadFrequency: UploadFrequency,
+    uploadConfiguration: DataUploadConfiguration,
     private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
     private val internalLogger: InternalLogger
 ) : UploadScheduler {
 
-    private val runnable = DataUploadRunnable(
+    internal val runnable = DataUploadRunnable(
         scheduledThreadPoolExecutor,
-        reader,
+        storage,
         dataUploader,
+        contextProvider,
         networkInfoProvider,
         systemInfoProvider,
-        uploadFrequency,
-        internalLogger
+        uploadConfiguration,
+        internalLogger = internalLogger
     )
 
     override fun startScheduling() {

@@ -111,20 +111,22 @@ internal class RumContinuousActionScopeTest {
 
     var fakeSampleRate: Float = 0.0f
 
-    var fakeSourceActionEvent: ActionEvent.Source? = null
+    var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
+        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
 
         fakeDatadogContext = fakeDatadogContext.copy(
             source = with(fakeSourceActionEvent) {
                 this?.toJson()?.asString ?: forge.anAlphabeticalString()
             }
         )
+
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = null, syntheticsResultId = null)
 
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
@@ -241,6 +243,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -308,6 +311,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -373,6 +377,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -441,6 +446,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -523,6 +529,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -610,6 +617,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -678,6 +686,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -753,6 +762,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -822,6 +832,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -898,6 +909,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -951,6 +963,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1008,6 +1021,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1065,6 +1079,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1127,6 +1142,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1191,6 +1207,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1246,6 +1263,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1335,6 +1353,7 @@ internal class RumContinuousActionScopeTest {
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1417,6 +1436,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1484,6 +1504,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1545,6 +1566,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1610,6 +1632,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1676,6 +1699,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1735,6 +1759,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1798,6 +1823,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1857,6 +1883,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -1983,6 +2010,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -2046,6 +2074,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
@@ -2103,6 +2132,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(

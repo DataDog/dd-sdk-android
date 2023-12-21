@@ -114,7 +114,7 @@ internal class ResourceEventForgeryFactory :
                 type = ResourceEvent.ResourceEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
-            source = forge.aNullable { aValueFrom(ResourceEvent.Source::class.java) },
+            source = forge.aNullable { aValueFrom(ResourceEvent.ResourceEventSource::class.java) },
             ciTest = forge.aNullable {
                 ResourceEvent.CiTest(anHexadecimalString())
             },

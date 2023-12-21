@@ -267,6 +267,7 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.NOT_TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -286,6 +287,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -305,6 +307,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.NOT_TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -358,6 +361,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -378,6 +382,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -396,6 +401,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -414,6 +420,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -434,6 +441,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -454,6 +462,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -475,6 +484,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
     }
 
     @Test
@@ -496,6 +506,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
     }
 
     @Test
@@ -518,6 +529,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
     }
 
     @Test
@@ -540,6 +552,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
     }
 
     @Test
@@ -560,6 +573,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -580,6 +594,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
     }
 
     @Test
@@ -606,6 +621,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.MAX_DURATION)
     }
 
     @Test
@@ -632,6 +648,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.MAX_DURATION)
     }
 
     @Test
@@ -658,6 +675,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.MAX_DURATION)
     }
 
     @Test
@@ -678,6 +696,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.EXPLICIT_STOP)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }

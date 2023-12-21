@@ -72,11 +72,10 @@ internal class Base64SerializerTest {
     lateinit var mockApplicationContext: Context
 
     @Mock
+    lateinit var mockMD5HashGenerator: MD5HashGenerator
+
+    @Mock
     lateinit var mockSerializerCallback: Base64SerializerCallback
-
-    private lateinit var fakeBase64String: String
-
-    private lateinit var fakeByteArray: ByteArray
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
@@ -111,17 +110,29 @@ internal class Base64SerializerTest {
     @Forgery
     lateinit var fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe
 
+    private lateinit var fakeBase64Encoding: ByteArray
+
+    private lateinit var fakeCacheData: CacheData
+
+    private lateinit var fakeImageCompressionByteArray: ByteArray
+
     @BeforeEach
     fun setup(forge: Forge) {
-        fakeBase64String = forge.aString()
-        fakeByteArray = forge.aString().toByteArray()
+        val fakeResourceId = forge.aNullable { aString() }
+        val fakeResourceIdByteArray = fakeResourceId?.toByteArray(Charsets.UTF_8)
+        fakeBase64Encoding = forge.aString().toByteArray(Charsets.UTF_8)
+        fakeImageCompressionByteArray = forge.aString().toByteArray()
+
+        fakeCacheData = CacheData(fakeBase64Encoding, fakeResourceIdByteArray)
 
         fakeImageWireframe.base64 = ""
         fakeImageWireframe.isEmpty = true
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
-            .thenReturn(fakeByteArray)
-        whenever(mockBase64Utils.serializeToBase64String(any())).thenReturn(fakeBase64String)
+            .thenReturn(fakeImageCompressionByteArray)
+        whenever(mockBase64Utils.serializeToBase64String(any())).thenReturn(
+            String(fakeBase64Encoding, Charsets.UTF_8)
+        )
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
@@ -131,11 +142,10 @@ internal class Base64SerializerTest {
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
                 config = anyOrNull(),
-                base64SerializerCallback = any(),
                 bitmapCreationCallback = any()
             )
         ).then {
-            (it.arguments[7] as Base64Serializer.BitmapCreationCallback).onReady(mockBitmap)
+            (it.arguments[6] as Base64Serializer.BitmapCreationCallback).onReady(mockBitmap)
         }
 
         whenever(mockExecutorService.execute(any())).then {
@@ -149,37 +159,6 @@ internal class Base64SerializerTest {
         whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
 
         testedBase64Serializer = createBase64Serializer()
-    }
-
-    @Test
-    fun `M callback with finishProcessingImage W handleBitmap() { failed to create bmp }`() {
-        // Given
-        whenever(
-            mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                drawable = any(),
-                drawableWidth = any(),
-                drawableHeight = any(),
-                displayMetrics = any(),
-                requestedSizeInBytes = anyOrNull(),
-                config = anyOrNull(),
-                base64SerializerCallback = any(),
-                bitmapCreationCallback = any()
-            )
-        ).then { mockSerializerCallback.onReady() }
-
-        // When
-        testedBase64Serializer.handleBitmap(
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            base64SerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        verify(mockSerializerCallback).onReady()
     }
 
     @Test
@@ -197,19 +176,19 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        assertThat(fakeImageWireframe.base64).isEqualTo(fakeBase64String)
+        assertThat(fakeImageWireframe.base64).isEqualTo(String(fakeBase64Encoding, Charsets.UTF_8))
         assertThat(fakeImageWireframe.isEmpty).isFalse
         verify(mockSerializerCallback).onReady()
     }
 
     @Test
-    fun `M get base64 from cache W handleBitmap() { cache hit }`(forge: Forge) {
+    fun `M get data from cache and update wireframe W handleBitmap() { cache hit with resourceId }`(forge: Forge) {
         // Given
-        val fakeBase64String = forge.anAsciiString()
-        whenever(mockBase64LRUCache.get(mockDrawable)).thenReturn(fakeBase64String)
+        fakeCacheData.resourceId = forge.aString().toByteArray(Charsets.UTF_8)
+        whenever(mockBase64LRUCache.get(mockDrawable)).thenReturn(fakeCacheData)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
-            .thenReturn(fakeByteArray)
+            .thenReturn(fakeImageCompressionByteArray)
 
         // When
         testedBase64Serializer.handleBitmap(
@@ -224,6 +203,42 @@ internal class Base64SerializerTest {
 
         // Then
         verifyNoInteractions(mockDrawableUtils)
+        assertThat(fakeImageWireframe.isEmpty).isFalse()
+        assertThat(fakeImageWireframe.base64).isEqualTo(String(fakeBase64Encoding, Charsets.UTF_8))
+        assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId!!, Charsets.UTF_8))
+        verify(mockSerializerCallback).onReady()
+    }
+
+    @Test
+    fun `M get data from cache but failover to creation W handleBitmap() { cache hit without resourceId }`() {
+        // Given
+        fakeCacheData.resourceId = null
+        whenever(mockBase64LRUCache.get(mockDrawable)).thenReturn(fakeCacheData)
+
+        whenever(mockWebPImageCompression.compressBitmap(any()))
+            .thenReturn(fakeImageCompressionByteArray)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
+        )
         verify(mockSerializerCallback).onReady()
     }
 
@@ -247,9 +262,65 @@ internal class Base64SerializerTest {
     }
 
     @Test
+    fun `M retry image creation only once W handleBitmap() { image was recycled while working on it }`() {
+        // Given
+        whenever(mockBitmap.isRecycled)
+            .thenReturn(true)
+            .thenReturn(false)
+
+        val emptyByteArray = ByteArray(0)
+
+        whenever(mockWebPImageCompression.compressBitmap(any()))
+            .thenReturn(emptyByteArray)
+            .thenReturn(fakeImageCompressionByteArray)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockBase64Utils, times(1)).serializeToBase64String(any())
+    }
+
+    @Test
+    fun `M send onReady W handleBitmap { failed to get image data }`() {
+        // Given
+        whenever(mockBitmap.isRecycled)
+            .thenReturn(true)
+            .thenReturn(false)
+
+        val emptyByteArray = ByteArray(0)
+
+        whenever(mockWebPImageCompression.compressBitmap(any()))
+            .thenReturn(emptyByteArray)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
+        )
+
+        // Then
+        verifyNoInteractions(mockBase64Utils)
+        verify(mockSerializerCallback).onReady()
+    }
+
+    @Test
     fun `M log error W handleBitmap() { base64Lru does not subclass ComponentCallbacks2 }`() {
         // Given
-        val fakeBase64CacheInstance = FakeBase64LruCache()
+        val fakeBase64CacheInstance = FakeNonComponentsCallbackCache()
         testedBase64Serializer = Base64Serializer.Builder(
             logger = mockLogger,
             threadPoolExecutor = mockExecutorService,
@@ -329,7 +400,6 @@ internal class Base64SerializerTest {
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
             config = anyOrNull(),
-            base64SerializerCallback = any(),
             bitmapCreationCallback = any()
         )
     }
@@ -337,8 +407,14 @@ internal class Base64SerializerTest {
     @Test
     fun `M use the same ThreadPoolExecutor W build()`() {
         // When
-        val instance1 = Base64Serializer.Builder().build()
-        val instance2 = Base64Serializer.Builder().build()
+        val instance1 = Base64Serializer.Builder(
+            bitmapPool = mockBitmapPool,
+            base64LRUCache = mockBase64LRUCache
+        ).build()
+        val instance2 = Base64Serializer.Builder(
+            bitmapPool = mockBitmapPool,
+            base64LRUCache = mockBase64LRUCache
+        ).build()
 
         // Then
         assertThat(instance1.getThreadPoolExecutor()).isEqualTo(
@@ -347,7 +423,13 @@ internal class Base64SerializerTest {
     }
 
     @Test
-    fun `M cache base64 string W handleBitmap() { and got base64 string }`() {
+    fun `M cache base64 string W handleBitmap() { and got only base64 string }`() {
+        // Given
+        whenever(mockBase64Utils.serializeToBase64String(any()))
+            .thenReturn(String(fakeBase64Encoding, Charsets.UTF_8))
+        whenever(mockMD5HashGenerator.generate(any())).thenReturn(null)
+        val expectedHash = CacheData(fakeBase64Encoding, null)
+
         // When
         testedBase64Serializer.handleBitmap(
             applicationContext = mockApplicationContext,
@@ -360,13 +442,14 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        verify(mockBase64LRUCache, times(1)).put(mockStateListDrawable, fakeBase64String)
+        verify(mockBase64LRUCache, times(1)).put(mockStateListDrawable, expectedHash)
     }
 
     @Test
     fun `M not try to cache base64 W handleBitmap() { and did not get base64 }`() {
         // Given
         whenever(mockBase64Utils.serializeToBase64String(any())).thenReturn("")
+        whenever(mockMD5HashGenerator.generate(any())).thenReturn(null)
 
         // When
         testedBase64Serializer.handleBitmap(
@@ -407,7 +490,6 @@ internal class Base64SerializerTest {
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
             config = anyOrNull(),
-            base64SerializerCallback = any(),
             bitmapCreationCallback = any()
         )
     }
@@ -436,7 +518,6 @@ internal class Base64SerializerTest {
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
             config = anyOrNull(),
-            base64SerializerCallback = any(),
             bitmapCreationCallback = any()
         )
     }
@@ -489,7 +570,6 @@ internal class Base64SerializerTest {
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
             config = anyOrNull(),
-            base64SerializerCallback = any(),
             bitmapCreationCallback = any()
         )
     }
@@ -522,7 +602,6 @@ internal class Base64SerializerTest {
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
             config = anyOrNull(),
-            base64SerializerCallback = any(),
             bitmapCreationCallback = any()
         )
     }
@@ -656,7 +735,7 @@ internal class Base64SerializerTest {
     }
 
     @Test
-    fun `M failover to manual bitmap creation W handleBitmap { bitmapDrawable returned empty bytearray }`(
+    fun `M failover to bitmap creation W handleBitmap { bitmapDrawable returned empty bytearray }`(
         @Mock mockCreatedBitmap: Bitmap
     ) {
         // Given
@@ -673,14 +752,14 @@ internal class Base64SerializerTest {
             .thenReturn(emptyByteArray)
 
         whenever(mockWebPImageCompression.compressBitmap(mockCreatedBitmap))
-            .thenReturn(fakeByteArray)
+            .thenReturn(fakeImageCompressionByteArray)
 
         whenever(mockDrawableUtils.createScaledBitmap(mockBitmap))
             .thenReturn(mockBitmap)
             .thenReturn(mockCreatedBitmap)
 
-        whenever(mockBase64Utils.serializeToBase64String(fakeByteArray))
-            .thenReturn(fakeBase64String)
+        whenever(mockBase64Utils.serializeToBase64String(fakeImageCompressionByteArray))
+            .thenReturn(String(fakeBase64Encoding, Charsets.UTF_8))
 
         // When
         testedBase64Serializer.handleBitmap(
@@ -697,7 +776,6 @@ internal class Base64SerializerTest {
         val intCaptor = argumentCaptor<Int>()
         val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
         val configCaptor = argumentCaptor<Bitmap.Config>()
-        val base64SerializerCallbackCaptor = argumentCaptor<Base64SerializerCallback>()
         val bitmapCreationCallbackCaptor = argumentCaptor<Base64Serializer.BitmapCreationCallback>()
 
         // Then
@@ -708,7 +786,6 @@ internal class Base64SerializerTest {
             displayMetrics = displayMetricsCaptor.capture(),
             requestedSizeInBytes = intCaptor.capture(),
             config = configCaptor.capture(),
-            base64SerializerCallback = base64SerializerCallbackCaptor.capture(),
             bitmapCreationCallback = bitmapCreationCallbackCaptor.capture()
         )
 
@@ -718,7 +795,6 @@ internal class Base64SerializerTest {
         assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
         assertThat(intCaptor.thirdValue).isEqualTo(MAX_BITMAP_SIZE_IN_BYTES)
         assertThat(configCaptor.firstValue).isEqualTo(Bitmap.Config.ARGB_8888)
-        assertThat(base64SerializerCallbackCaptor.firstValue).isEqualTo(mockSerializerCallback)
     }
 
     private fun createBase64Serializer(): Base64Serializer {
@@ -729,29 +805,28 @@ internal class Base64SerializerTest {
             base64LRUCache = mockBase64LRUCache,
             drawableUtils = mockDrawableUtils,
             base64Utils = mockBase64Utils,
-            webPImageCompression = mockWebPImageCompression
+            webPImageCompression = mockWebPImageCompression,
+            md5HashGenerator = mockMD5HashGenerator
         )
         return builder.build()
     }
 
     // this is in order to test having a class that implements
     // Cache, but does NOT implement ComponentCallbacks2
-    private class FakeBase64LruCache : Cache<Drawable, String> {
-        override fun put(value: String) {
+    private class FakeNonComponentsCallbackCache : Cache<Drawable, CacheData> {
+        override fun put(value: CacheData) {
             super.put(value)
         }
 
-        override fun put(element: Drawable, value: String) {
+        override fun put(element: Drawable, value: CacheData) {
             super.put(element, value)
         }
 
-        override fun get(element: Drawable): String? {
+        override fun get(element: Drawable): CacheData? {
             return super.get(element)
         }
 
-        override fun size(): Int {
-            return 0
-        }
+        override fun size(): Int = 0
 
         override fun clear() {}
     }

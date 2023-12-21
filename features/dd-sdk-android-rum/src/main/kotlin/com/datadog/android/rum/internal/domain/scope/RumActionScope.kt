@@ -262,7 +262,7 @@ internal class RumActionScope(
                         hasReplay = hasReplay
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ActionEvent.Source.tryFromSource(
+                    source = ActionEvent.ActionEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -290,7 +290,10 @@ internal class RumActionScope(
                     ),
                     context = ActionEvent.Context(additionalProperties = attributes),
                     dd = ActionEvent.Dd(
-                        session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1),
+                        session = ActionEvent.DdSession(
+                            plan = ActionEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
+                        ),
                         configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     connectivity = networkInfo.toActionConnectivity(),

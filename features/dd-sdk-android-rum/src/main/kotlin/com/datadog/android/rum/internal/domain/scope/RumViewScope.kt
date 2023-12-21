@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -67,6 +68,9 @@ internal open class RumViewScope(
         set(value) {
             oldViewIds += field
             field = value
+            if (getRumContext().syntheticsTestId != null) {
+                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
+            }
         }
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
@@ -141,6 +145,9 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
+        if (parentScope.getRumContext().syntheticsTestId != null) {
+            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
+        }
     }
 
     // region RumScope
@@ -237,6 +244,7 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
+        if (stopped) return
         val startedKey = keyRef.get()
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
@@ -433,8 +441,8 @@ internal open class RumViewScope(
                     ),
                     synthetics = syntheticsAttribute,
                     source = ErrorEvent.ErrorEventSource.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
+                        source = datadogContext.source,
+                        internalLogger = sdkCore.internalLogger
                     ),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
@@ -450,7 +458,10 @@ internal open class RumViewScope(
                     ),
                     context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                     dd = ErrorEvent.Dd(
-                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                        session = ErrorEvent.DdSession(
+                            plan = ErrorEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
+                        ),
                         configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
@@ -581,6 +592,14 @@ internal open class RumViewScope(
             val entry = iterator.next()
             val scope = entry.value.handleEvent(event, writer)
             if (scope == null) {
+                // if we finalized this scope and it was by error, we won't have resource
+                // event written, but error event instead
+                if (event is RumRawEvent.StopResourceWithError ||
+                    event is RumRawEvent.StopResourceWithStackTrace
+                ) {
+                    pendingResourceCount--
+                    pendingErrorCount++
+                }
                 iterator.remove()
             }
         }
@@ -781,7 +800,7 @@ internal open class RumViewScope(
                         isActive = rumContext.isSessionActive
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ViewEvent.Source.tryFromSource(
+                    source = ViewEvent.ViewEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -800,7 +819,10 @@ internal open class RumViewScope(
                     context = ViewEvent.Context(additionalProperties = attributes),
                     dd = ViewEvent.Dd(
                         documentVersion = eventVersion,
-                        session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1),
+                        session = ViewEvent.DdSession(
+                            plan = ViewEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
+                        ),
                         replayStats = replayStats,
                         configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
@@ -915,7 +937,7 @@ internal open class RumViewScope(
                         hasReplay = false
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ActionEvent.Source.tryFromSource(
+                    source = ActionEvent.ActionEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -935,7 +957,10 @@ internal open class RumViewScope(
                         additionalProperties = globalAttributes
                     ),
                     dd = ActionEvent.Dd(
-                        session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1),
+                        session = ActionEvent.DdSession(
+                            plan = ActionEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
+                        ),
                         configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     connectivity = datadogContext.networkInfo.toActionConnectivity(),
@@ -1014,7 +1039,7 @@ internal open class RumViewScope(
                         hasReplay = hasReplay
                     ),
                     synthetics = syntheticsAttribute,
-                    source = LongTaskEvent.Source.tryFromSource(
+                    source = LongTaskEvent.LongTaskEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -1032,7 +1057,10 @@ internal open class RumViewScope(
                     ),
                     context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                     dd = LongTaskEvent.Dd(
-                        session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1),
+                        session = LongTaskEvent.DdSession(
+                            plan = LongTaskEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
+                        ),
                         configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
@@ -1155,7 +1183,7 @@ internal open class RumViewScope(
          *
          * As we take the inverse, the min of the inverse is the inverse of the max and
          * vice-versa.
-         * For instance, if the the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
+         * For instance, if the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
          * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
          *
          * As the frame times are reported in nanoseconds, we need to add a multiplier.

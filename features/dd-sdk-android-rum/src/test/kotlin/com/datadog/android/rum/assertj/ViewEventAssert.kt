@@ -8,7 +8,9 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toViewSessionPrecondition
 import com.datadog.android.rum.model.ViewEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions
@@ -513,7 +515,17 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasSource(source: ViewEvent.Source?): ViewEventAssert {
+    fun hasStartReason(reason: RumSessionScope.StartReason): ViewEventAssert {
+        assertThat(actual.dd.session?.sessionPrecondition)
+            .overridingErrorMessage(
+                "Expected event to have a session sessionPrecondition of ${reason.name} " +
+                    "but was ${actual.dd.session?.sessionPrecondition}"
+            )
+            .isEqualTo(reason.toViewSessionPrecondition())
+        return this
+    }
+
+    fun hasSource(source: ViewEvent.ViewEventSource?): ViewEventAssert {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +

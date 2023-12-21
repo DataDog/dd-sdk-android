@@ -20,19 +20,21 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.data.upload.v2.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
+import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -99,6 +101,9 @@ internal class SdkFeatureTest {
     lateinit var fakeStorageConfiguration: FeatureStorageConfiguration
 
     @StringForgery
+    lateinit var fakeInstanceId: String
+
+    @StringForgery
     lateinit var fakeFeatureName: String
 
     private lateinit var fakeCoreUploadFrequency: UploadFrequency
@@ -109,12 +114,6 @@ internal class SdkFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        // make sure this has a clean state
-        fakeStorageConfiguration = fakeStorageConfiguration.copy(
-            uploadFrequency = null,
-            batchSize = null,
-            batchProcessingLevel = null
-        )
         fakeCoreUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeCoreBatchSize = forge.aValueFrom(BatchSize::class.java)
         fakeCoreBatchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
@@ -136,7 +135,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -145,7 +144,7 @@ internal class SdkFeatureTest {
     @Test
     fun `M register ProcessLifecycleMonitor for MetricsDispatcher W initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         argumentCaptor<Application.ActivityLifecycleCallbacks>() {
@@ -160,7 +159,7 @@ internal class SdkFeatureTest {
     fun `M not throw W initialize(){ no app context }`() {
         // When
         assertDoesNotThrow {
-            testedFeature.initialize(mock())
+            testedFeature.initialize(mock(), fakeInstanceId)
         }
     }
 
@@ -173,7 +172,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -196,50 +195,6 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the storage frequency if set 𝕎 initialize()`(forge: Forge) {
-        // Given
-        val fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
-        val expectedUploadConfiguration: DataUploadConfiguration =
-            forge.getForgery<DataUploadConfiguration>().copy(frequency = fakeUploadFrequency)
-        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
-            .copy(uploadFrequency = fakeUploadFrequency)
-        whenever(mockWrappedFeature.storageConfiguration)
-            .thenReturn(fakeStorageConfig)
-
-        // When
-        testedFeature.initialize(appContext.mockInstance)
-
-        // Then
-        assertThat(testedFeature.uploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
-        val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
-        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
-        assertThat(dataUploadRunnable.currentDelayIntervalMs)
-            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
-    }
-
-    @Test
-    fun `𝕄 use the storage batchProcessingLevel if set 𝕎 initialize()`(forge: Forge) {
-        // Given
-        val fakeBatchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
-        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
-            .copy(batchProcessingLevel = fakeBatchProcessingLevel)
-        whenever(mockWrappedFeature.storageConfiguration)
-            .thenReturn(fakeStorageConfig)
-
-        // When
-        testedFeature.initialize(appContext.mockInstance)
-
-        // Then
-        assertThat(testedFeature.uploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
-        val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.maxBatchesPerJob)
-            .isEqualTo(fakeBatchProcessingLevel.maxBatchesPerUploadJob)
-    }
-
-    @Test
     fun `𝕄 initialize the storage 𝕎 initialize()`() {
         // Given
         val fakeCorePersistenceConfig = FilePersistenceConfig()
@@ -247,7 +202,7 @@ internal class SdkFeatureTest {
             .thenReturn(fakeCorePersistenceConfig)
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.storage).isInstanceOf(ConsentAwareStorage::class.java)
@@ -263,30 +218,27 @@ internal class SdkFeatureTest {
             maxItemSize = fakeStorageConfiguration.maxItemSize,
             maxItemsPerBatch = fakeStorageConfiguration.maxItemsPerBatch,
             oldFileThreshold = fakeStorageConfiguration.oldBatchThreshold,
-            recentDelayMs = fakeStorageConfiguration.batchSize?.windowDurationMs
-                ?: fakeCoreBatchSize.windowDurationMs
+            recentDelayMs = fakeCoreBatchSize.windowDurationMs
         )
         assertThat(pendingFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
         assertThat(grantedFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
     }
 
     @Test
-    fun `𝕄 use the storage batchSize if set 𝕎 initialize()`(forge: Forge) {
+    fun `𝕄 initialize the storage 𝕎 initialize() {custom persistence strategy}`() {
         // Given
-        val fakeBatchSize = forge.aValueFrom(BatchSize::class.java)
-        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
-            .copy(batchSize = fakeBatchSize)
-        whenever(mockWrappedFeature.storageConfiguration)
-            .thenReturn(fakeStorageConfig)
+        val mockPersistenceStrategy = mock<PersistenceStrategy.Factory>()
+        whenever(coreFeature.mockInstance.persistenceStrategyFactory) doReturn mockPersistenceStrategy
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        assertThat(testedFeature.storage).isInstanceOf(ConsentAwareStorage::class.java)
-        val consentAwareStorage = testedFeature.storage as ConsentAwareStorage
-        assertThat(consentAwareStorage.filePersistenceConfig.recentDelayMs)
-            .isEqualTo(fakeBatchSize.windowDurationMs)
+        assertThat(testedFeature.storage).isInstanceOf(AbstractStorage::class.java)
+        val abstractStorage = testedFeature.storage as AbstractStorage
+        assertThat(abstractStorage.sdkCoreId).isEqualTo(fakeInstanceId)
+        assertThat(abstractStorage.persistenceStrategyFactory)
+            .isEqualTo(mockPersistenceStrategy)
     }
 
     @Test
@@ -300,7 +252,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         verify(coreFeature.mockInstance.trackingConsentProvider)
@@ -320,7 +272,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue
@@ -338,7 +290,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -352,7 +304,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 unregister ProcessLifecycleMonitor 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -366,7 +318,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -387,7 +339,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -399,7 +351,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 call wrapped feature onStop 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -419,7 +371,7 @@ internal class SdkFeatureTest {
             wrappedFeature = mockFeature,
             internalLogger = mockInternalLogger
         )
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -431,14 +383,14 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 initialize only once 𝕎 initialize() twice`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
         val uploadScheduler = testedFeature.uploadScheduler
         val uploader = testedFeature.uploader
         val storage = testedFeature.storage
         val fileOrchestrator = testedFeature.fileOrchestrator
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
@@ -453,7 +405,7 @@ internal class SdkFeatureTest {
         whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)

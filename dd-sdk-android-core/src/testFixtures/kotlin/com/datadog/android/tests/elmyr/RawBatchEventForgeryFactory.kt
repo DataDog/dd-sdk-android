@@ -13,14 +13,13 @@ import fr.xgouchet.elmyr.ForgeryFactory
 class RawBatchEventForgeryFactory : ForgeryFactory<RawBatchEvent> {
     override fun getForgery(forge: Forge): RawBatchEvent {
         return RawBatchEvent(
-            data = forge.aString().toByteArray(),
-            metadata = forge.aString(
-                forge.anInt(min = 0, max = DATA_SIZE_LIMIT + 1)
-            ).toByteArray()
+            data = forge.aString(forge.anInt(1, EVENT_MAX_SIZE + 1)).toByteArray(),
+            metadata = forge.aString(forge.anInt(0, METADATA_MAX_SIZE + 1)).toByteArray()
         )
     }
 
     companion object {
-        const val DATA_SIZE_LIMIT = 32
+        const val EVENT_MAX_SIZE = 512
+        const val METADATA_MAX_SIZE = 32
     }
 }

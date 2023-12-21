@@ -6,8 +6,10 @@
 
 package com.datadog.android.core.internal.data.upload
 
-import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
+import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class DataUploadSchedulerTest {
 
     lateinit var testedScheduler: DataUploadScheduler
@@ -38,7 +41,7 @@ internal class DataUploadSchedulerTest {
     lateinit var mockExecutor: ScheduledThreadPoolExecutor
 
     @Forgery
-    lateinit var fakeUploadFrequency: UploadFrequency
+    lateinit var fakeUploadConfiguration: DataUploadConfiguration
 
     @BeforeEach
     fun `set up`() {
@@ -47,7 +50,8 @@ internal class DataUploadSchedulerTest {
             mock(),
             mock(),
             mock(),
-            fakeUploadFrequency,
+            mock(),
+            fakeUploadConfiguration,
             mockExecutor,
             mock()
         )
@@ -61,7 +65,7 @@ internal class DataUploadSchedulerTest {
         // Then
         verify(mockExecutor).schedule(
             any(),
-            eq(fakeUploadFrequency.baseStepMs * DataUploadRunnable.DEFAULT_DELAY_FACTOR),
+            eq(fakeUploadConfiguration.defaultDelayMs),
             eq(TimeUnit.MILLISECONDS)
         )
     }
@@ -78,7 +82,7 @@ internal class DataUploadSchedulerTest {
         val argumentCaptor = argumentCaptor<Runnable>()
         verify(mockExecutor).schedule(
             argumentCaptor.capture(),
-            eq(fakeUploadFrequency.baseStepMs * DataUploadRunnable.DEFAULT_DELAY_FACTOR),
+            eq(fakeUploadConfiguration.defaultDelayMs),
             eq(TimeUnit.MILLISECONDS)
         )
         verify(mockExecutor).remove(argumentCaptor.firstValue)

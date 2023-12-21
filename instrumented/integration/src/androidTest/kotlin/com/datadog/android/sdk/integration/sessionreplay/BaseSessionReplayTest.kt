@@ -241,7 +241,7 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
         // will be executed in Bitrise and currently Bitrise does not own a specific model for the
         // API 33. They only have a standard emulator for this API with the required screen size and
         // X,Y positions are different from the ones we have in our local emulator.
-        // Also the base64 encoded images values are inconsistent from one run to another so will
+        // Also the base64 and resourceId encoded images values are inconsistent from one run to another so will
         // be removed from the payload.
 
         return this.asJsonObject.apply {
@@ -254,6 +254,7 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
                         wireframeJson.remove("x")
                         wireframeJson.remove("y")
                         wireframeJson.remove("base64")
+                        wireframeJson.remove("resourceId")
                         wireframeJson
                     }?.fold(JsonArray()) { acc, jsonObject ->
                         acc.add(jsonObject)

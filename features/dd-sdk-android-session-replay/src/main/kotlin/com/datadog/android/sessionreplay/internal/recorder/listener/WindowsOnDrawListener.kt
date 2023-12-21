@@ -22,9 +22,7 @@ internal class WindowsOnDrawListener(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val debouncer: Debouncer = Debouncer(),
-    private val miscUtils: MiscUtils = MiscUtils,
-    private val recordedDataQueueRefs: RecordedDataQueueRefs =
-        RecordedDataQueueRefs(recordedDataQueueHandler)
+    private val miscUtils: MiscUtils = MiscUtils
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
@@ -56,6 +54,8 @@ internal class WindowsOnDrawListener(
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation)
             ?: return@Runnable
 
+        val recordedDataQueueRefs =
+            RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
         val nodes = views

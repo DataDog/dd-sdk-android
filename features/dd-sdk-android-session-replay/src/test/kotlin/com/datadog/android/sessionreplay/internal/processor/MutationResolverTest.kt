@@ -458,7 +458,7 @@ internal class MutationResolverTest {
     // region ImageWireframe update mutations
 
     @Test
-    fun `M identify the updated wireframes W resolveMutations {Image, valid base64}`(forge: Forge) {
+    fun `M identify the updated wireframes W resolveMutations {Image, valid resourceId}`(forge: Forge) {
         // Given
         val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
             forge.getForgery(MobileSegment.Wireframe.ImageWireframe::class.java)
@@ -466,12 +466,12 @@ internal class MutationResolverTest {
         val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
         val fakeUpdatedWireframes = fakePrevSnapshot
             .take(fakeUpdateSize)
-            .map { it.copy(base64 = forge.aString()) }
+            .map { it.copy(resourceId = forge.aString()) }
         val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
         val expectedUpdates = fakeUpdatedWireframes.map {
             MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
                 id = it.id(),
-                base64 = it.base64
+                resourceId = it.resourceId
             )
         }
 

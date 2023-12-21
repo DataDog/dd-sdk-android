@@ -21,7 +21,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64SerializerCallback
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
@@ -49,7 +48,6 @@ internal class DrawableUtils(
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES,
         config: Config = Config.ARGB_8888,
-        base64SerializerCallback: Base64SerializerCallback,
         bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
     ) {
         Runnable {
@@ -68,14 +66,13 @@ internal class DrawableUtils(
                             drawOnCanvas(
                                 bitmap,
                                 drawable,
-                                base64SerializerCallback,
                                 bitmapCreationCallback
                             )
                         }
                     }
 
                     override fun onFailure() {
-                        base64SerializerCallback.onReady()
+                        bitmapCreationCallback.onFailure()
                     }
                 }
             )
@@ -110,13 +107,12 @@ internal class DrawableUtils(
     private fun drawOnCanvas(
         bitmap: Bitmap,
         drawable: Drawable,
-        base64SerializerCallback: Base64SerializerCallback,
         bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
     ) {
         val canvas = canvasWrapper.createCanvas(bitmap)
 
         if (canvas == null) {
-            base64SerializerCallback.onReady()
+            bitmapCreationCallback.onFailure()
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts

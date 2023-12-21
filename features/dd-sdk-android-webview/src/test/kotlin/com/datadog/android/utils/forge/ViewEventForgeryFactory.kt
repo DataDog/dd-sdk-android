@@ -99,7 +99,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 type = ViewEvent.ViewEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
-            source = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) },
+            source = forge.aNullable { aValueFrom(ViewEvent.ViewEventSource::class.java) },
             ciTest = forge.aNullable {
                 ViewEvent.CiTest(anHexadecimalString())
             },

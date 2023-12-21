@@ -12,6 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.datadog.android.core.allowThreadDiskReads
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -20,6 +21,18 @@ import java.io.File
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class StrictModeTest {
+
+    @After
+    fun tearDown() {
+        // Restore default StrictMode policy
+        StrictMode.setThreadPolicy(
+            ThreadPolicy.Builder()
+                .permitAll()
+                .penaltyLog()
+                .build()
+        )
+    }
+
     @Test
     fun M_disable_disk_read_checks_W_allowThreadDiskReads() {
         // Given
