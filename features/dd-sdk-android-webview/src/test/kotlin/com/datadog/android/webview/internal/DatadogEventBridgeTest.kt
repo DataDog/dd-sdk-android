@@ -37,11 +37,15 @@ internal class DatadogEventBridgeTest {
     @Mock
     lateinit var mockWebViewEventConsumer: MixedWebViewEventConsumer
 
+    @StringForgery
+    lateinit var fakePrivacyLevel: String
+
     @BeforeEach
     fun `set up`() {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
-            emptyList()
+            emptyList(),
+            fakePrivacyLevel
         )
     }
 
@@ -63,7 +67,7 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mock(), hosts)
+        testedDatadogEventBridge = DatadogEventBridge(mock(), hosts, fakePrivacyLevel)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -81,7 +85,11 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, hosts)
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            hosts,
+            fakePrivacyLevel
+        )
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -99,12 +107,25 @@ internal class DatadogEventBridgeTest {
         // Given
         val expectedHosts = hosts.map { URL(it).host }
             .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, hosts)
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            hosts,
+            fakePrivacyLevel
+        )
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
 
         // Then
         assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M return the provided privacy level W getPrivacyLevel()`() {
+        // When
+        val privacyLevel = testedDatadogEventBridge.getPrivacyLevel()
+
+        // Then
+        assertThat(privacyLevel).isEqualTo(fakePrivacyLevel)
     }
 }

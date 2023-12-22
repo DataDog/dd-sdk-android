@@ -19,7 +19,8 @@ import com.google.gson.JsonArray
  */
 internal class DatadogEventBridge(
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
-    private val allowedHosts: List<String>
+    private val allowedHosts: List<String>,
+    private val privacyLevel: String
 ) {
 
     // region Bridge
@@ -49,6 +50,15 @@ internal class DatadogEventBridge(
                 origins.add(it)
             }
         return origins.toString()
+    }
+
+    /**
+     * Called from the browser-sdk to get the privacy level of the session replay feature.
+     * @return the privacy level as a String ("allow", "mask", "mask_user_input")
+     */
+    @JavascriptInterface
+    fun getPrivacyLevel(): String {
+        return privacyLevel
     }
 
     // endregion
