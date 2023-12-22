@@ -62,6 +62,7 @@ internal class SessionReplayFragment :
             R.id.navigation_unsupported_views -> R.id.fragment_unsupported_views
             R.id.navigation_image_components -> R.id.fragment_image_components
             R.id.navigation_image_scaling -> R.id.fragment_image_scaling
+            R.id.navigation_webview_recording -> R.id.fragment_webview_record
 
             else -> null
         }
