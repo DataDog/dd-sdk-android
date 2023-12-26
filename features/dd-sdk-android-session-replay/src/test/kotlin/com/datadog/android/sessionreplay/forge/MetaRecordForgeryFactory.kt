@@ -14,12 +14,13 @@ internal class MetaRecordForgeryFactory :
     ForgeryFactory<MobileSegment.MobileRecord.MetaRecord> {
     override fun getForgery(forge: Forge): MobileSegment.MobileRecord.MetaRecord {
         return MobileSegment.MobileRecord.MetaRecord(
-            forge.aPositiveLong(),
-            MobileSegment.Data1(
+            timestamp = forge.aPositiveLong(),
+            data = MobileSegment.Data1(
                 forge.aPositiveLong(),
                 forge.aPositiveLong(),
                 forge.aNullable { forge.aString() }
-            )
+            ),
+            slotId = forge.aNullable { aPositiveLong().toString() }
         )
     }
 }

@@ -208,6 +208,8 @@ internal class NodeFlattenerTest {
                 this.copy(id = id)
             is MobileSegment.Wireframe.PlaceholderWireframe ->
                 this.copy(id = id)
+            is MobileSegment.Wireframe.WebviewWireframe ->
+                this.copy(id = id)
         }
     }
 
@@ -279,6 +281,14 @@ internal class NodeFlattenerTest {
                 height = height,
                 clip = null
             )
+            is MobileSegment.Wireframe.WebviewWireframe -> fakeWireframe.copy(
+                id = id,
+                x = x,
+                y = y,
+                width = width,
+                height = height,
+                clip = null
+            )
         }
     }
 
@@ -291,6 +301,8 @@ internal class NodeFlattenerTest {
             is MobileSegment.Wireframe.ImageWireframe ->
                 Bounds(this.x, this.y, this.width, this.height)
             is MobileSegment.Wireframe.PlaceholderWireframe ->
+                Bounds(this.x, this.y, this.width, this.height)
+            is MobileSegment.Wireframe.WebviewWireframe ->
                 Bounds(this.x, this.y, this.width, this.height)
         }
     }
@@ -305,6 +317,8 @@ internal class NodeFlattenerTest {
                 clip
             is MobileSegment.Wireframe.PlaceholderWireframe ->
                 clip
+            is MobileSegment.Wireframe.WebviewWireframe ->
+                clip
         }
     }
 
@@ -316,6 +330,7 @@ internal class NodeFlattenerTest {
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
+            is MobileSegment.Wireframe.WebviewWireframe -> this.id
         }
     }
 
