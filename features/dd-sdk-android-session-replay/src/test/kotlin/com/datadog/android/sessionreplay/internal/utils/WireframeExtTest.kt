@@ -146,6 +146,24 @@ internal class WireframeExtTest {
         assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
     }
 
+    @Test
+    fun `M return true W hasOpaqueBackground { WebViewWireframe}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.WebviewWireframe
+    ) {
+        assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
+    }
+
+    @Test
+    fun `M return true W hasOpaqueBackground { WebViewWireframe no shapeStyle}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.WebviewWireframe
+    ) {
+        // Given
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null)
+
+        // Then
+        assertThat(fakeTestWireframe.hasOpaqueBackground()).isTrue
+    }
+
     // endregion
 
     // region shapeStyle
@@ -189,6 +207,7 @@ internal class WireframeExtTest {
             is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.PlaceholderWireframe -> this
+            is MobileSegment.Wireframe.WebviewWireframe -> this.copy(shapeStyle = shapeStyle)
         }
     }
 

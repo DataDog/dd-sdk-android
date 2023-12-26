@@ -371,11 +371,9 @@ internal class WireframeUtilsTest {
         val topWireframes = forge.opaqueWireframes()
         topWireframes.forEach {
             val topWireframeBounds: WireframeBounds = forge.getForgery<WireframeBounds>()
-            it.copy(shapeStyle = forge.forgeNonTransparentShapeStyle()).apply {
-                whenever(mockBoundsUtils.resolveBounds(this)).thenReturn(topWireframeBounds)
-                whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
-                    .thenReturn(true)
-            }
+            whenever(mockBoundsUtils.resolveBounds(it)).thenReturn(topWireframeBounds)
+            whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
+                .thenReturn(true)
         }
 
         // Then
@@ -415,16 +413,12 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val topWireframes = forge.wireframesWithNoBackgroundColor()
+
         topWireframes.forEach {
             val topWireframeBounds: WireframeBounds = forge.getForgery()
-            it.copy(
-                shapeStyle = forge.forgeNonTransparentShapeStyle()
-                    .copy(backgroundColor = null)
-            ).apply {
-                whenever(mockBoundsUtils.resolveBounds(this)).thenReturn(topWireframeBounds)
-                whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
-                    .thenReturn(true)
-            }
+            whenever(mockBoundsUtils.resolveBounds(it)).thenReturn(topWireframeBounds)
+            whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
+                .thenReturn(true)
         }
 
         // Then
@@ -465,10 +459,60 @@ internal class WireframeUtilsTest {
         }
         val topWireframes = forge.aList {
             forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>()
-        }
-        topWireframes.forEach {
+        }.map {
             val topWireframeBounds: WireframeBounds = forge.getForgery()
             it.copy(shapeStyle = null).apply {
+                whenever(mockBoundsUtils.resolveBounds(this)).thenReturn(topWireframeBounds)
+                whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
+                    .thenReturn(true)
+            }
+        }
+
+        // Then
+        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
+            .isTrue
+    }
+
+    @Test
+    fun `M return true W checkWireframeIsCovered(){top WebView wireframe, no shapeStyle}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWireframeBounds: WireframeBounds = forge.getForgery<WireframeBounds>().apply {
+            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
+        }
+        val topWireframes = forge.aList {
+            forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
+        }.map {
+            val topWireframeBounds: WireframeBounds = forge.getForgery()
+            it.copy(shapeStyle = null).apply {
+                whenever(mockBoundsUtils.resolveBounds(this)).thenReturn(topWireframeBounds)
+                whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
+                    .thenReturn(true)
+            }
+        }
+
+        // Then
+        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
+            .isTrue
+    }
+
+    @Test
+    fun `M return true W checkWireframeIsCovered(){top WebView wireframe, transparent shapeStyle}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWireframeBounds: WireframeBounds = forge.getForgery<WireframeBounds>().apply {
+            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
+        }
+        val topWireframes = forge.aList {
+            forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
+        }.map {
+            val topWireframeBounds: WireframeBounds = forge.getForgery()
+            val shapeStyle = forge.forgeNonTransparentShapeStyle().copy(opacity = 0)
+            it.copy(shapeStyle = shapeStyle).apply {
                 whenever(mockBoundsUtils.resolveBounds(this)).thenReturn(topWireframeBounds)
                 whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
                     .thenReturn(true)
@@ -491,9 +535,7 @@ internal class WireframeUtilsTest {
         }
         val topWireframes = forge.aList {
             forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
-                .copy(shapeStyle = null, base64 = null)
-        }
-        topWireframes.forEach {
+        }.map {
             val topWireframeBounds: WireframeBounds = forge.getForgery()
             it.copy(shapeStyle = null).apply {
                 whenever(mockBoundsUtils.resolveBounds(this))
@@ -523,12 +565,10 @@ internal class WireframeUtilsTest {
         }
         topWireframes.forEach {
             val topWireframeBounds: WireframeBounds = forge.getForgery()
-            it.copy(shapeStyle = null).apply {
-                whenever(mockBoundsUtils.resolveBounds(this))
-                    .thenReturn(topWireframeBounds)
-                whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
-                    .thenReturn(true)
-            }
+            whenever(mockBoundsUtils.resolveBounds(it))
+                .thenReturn(topWireframeBounds)
+            whenever(mockBoundsUtils.isCovering(topWireframeBounds, fakeWireframeBounds))
+                .thenReturn(true)
         }
 
         // Then
@@ -650,6 +690,7 @@ internal class WireframeUtilsTest {
             is MobileSegment.Wireframe.TextWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.ImageWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.PlaceholderWireframe -> clip?.normalized()
+            is MobileSegment.Wireframe.WebviewWireframe -> clip?.normalized()
         }
     }
 
@@ -692,6 +733,7 @@ internal class WireframeUtilsTest {
             )
 
             is MobileSegment.Wireframe.PlaceholderWireframe -> this
+            is MobileSegment.Wireframe.WebviewWireframe -> this
         }
     }
 
@@ -705,7 +747,8 @@ internal class WireframeUtilsTest {
                 shapeStyle = getForgery(),
                 border = getForgery()
             ),
-            getForgery<MobileSegment.Wireframe.PlaceholderWireframe>()
+            getForgery<MobileSegment.Wireframe.PlaceholderWireframe>(),
+            getForgery<MobileSegment.Wireframe.WebviewWireframe>()
         )
     }
 
@@ -757,18 +800,12 @@ internal class WireframeUtilsTest {
             getForgery<MobileSegment.Wireframe.ShapeWireframe>()
                 .copy(
                     shapeStyle = forgeNonTransparentShapeStyle()
-                        .copy(backgroundColor = null)
+                        .copy(backgroundColor = aStringMatching("#[0-9A-Fa-f]{6}[a-eA-E]{2}"))
                 ),
             getForgery<MobileSegment.Wireframe.TextWireframe>()
                 .copy(
                     shapeStyle = forgeNonTransparentShapeStyle()
-                        .copy(backgroundColor = null)
-                ),
-            getForgery<MobileSegment.Wireframe.ImageWireframe>()
-                .copy(
-                    shapeStyle = forgeNonTransparentShapeStyle()
-                        .copy(backgroundColor = null),
-                    base64 = null
+                        .copy(backgroundColor = aStringMatching("#[0-9A-Fa-f]{6}[a-eA-E]{2}"))
                 )
         )
     }

@@ -93,28 +93,28 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJson(kotlin.String): MobileIncrementalSnapshotRecord
         fun fromJsonObject(com.google.gson.JsonObject): MobileIncrementalSnapshotRecord
     data class MetaRecord : MobileRecord
-      constructor(kotlin.Long, Data1)
+      constructor(kotlin.Long, kotlin.String? = null, Data1)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): MetaRecord
         fun fromJsonObject(com.google.gson.JsonObject): MetaRecord
     data class FocusRecord : MobileRecord
-      constructor(kotlin.Long, Data2)
+      constructor(kotlin.Long, kotlin.String? = null, Data2)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): FocusRecord
         fun fromJsonObject(com.google.gson.JsonObject): FocusRecord
     data class ViewEndRecord : MobileRecord
-      constructor(kotlin.Long)
+      constructor(kotlin.Long, kotlin.String? = null)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ViewEndRecord
         fun fromJsonObject(com.google.gson.JsonObject): ViewEndRecord
     data class VisualViewportRecord : MobileRecord
-      constructor(kotlin.Long, Data3)
+      constructor(kotlin.Long, kotlin.String? = null, Data3)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
@@ -210,6 +210,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): PlaceholderWireframe
         fun fromJsonObject(com.google.gson.JsonObject): PlaceholderWireframe
+    data class WebviewWireframe : Wireframe
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): WebviewWireframe
+        fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframe
     companion object 
       fun fromJson(kotlin.String): Wireframe
       fun fromJsonObject(com.google.gson.JsonObject): Wireframe
@@ -255,6 +262,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): PlaceholderWireframeUpdate
         fun fromJsonObject(com.google.gson.JsonObject): PlaceholderWireframeUpdate
+    data class WebviewWireframeUpdate : WireframeUpdateMutation
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): WebviewWireframeUpdate
+        fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframeUpdate
     companion object 
       fun fromJson(kotlin.String): WireframeUpdateMutation
       fun fromJsonObject(com.google.gson.JsonObject): WireframeUpdateMutation
@@ -347,3 +361,16 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vertical
+data class com.datadog.android.sessionreplay.model.ResourceMetadata
+  constructor(Application)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ResourceMetadata
+    fun fromJsonObject(com.google.gson.JsonObject): ResourceMetadata
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application

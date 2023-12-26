@@ -625,6 +625,7 @@ internal class MutationResolverTest {
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
+            is MobileSegment.Wireframe.WebviewWireframe -> this.id
         }
     }
 
@@ -645,6 +646,7 @@ internal class MutationResolverTest {
                 is MobileSegment.Wireframe.TextWireframe -> this.id
                 is MobileSegment.Wireframe.ImageWireframe -> this.id
                 is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
+                is MobileSegment.Wireframe.WebviewWireframe -> this.id
             }
         }
 
@@ -710,6 +712,22 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevWebViewSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.WebviewWireframe>()
+            val fakeWebViewUpdatedWireframes = forgeMutatedWireframes(fakePrevWebViewSnapshot) {
+                it.copy(x = forge.aLong(), y = forge.aLong())
+            }
+            val fakeCurrentWebViewSnapshot = fakeWebViewUpdatedWireframes +
+                fakePrevWebViewSnapshot.drop(fakeWebViewUpdatedWireframes.size)
+            val expectedWebViewUpdates = fakeWebViewUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                    id = it.id(),
+                    slotId = it.slotId,
+                    x = it.x,
+                    y = it.y
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -730,6 +748,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevPlaceholderSnapshot,
                     newSnapshot = fakeCurrentPlaceholderSnapshot,
                     expectedMutation = expectedPlaceholderUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevWebViewSnapshot,
+                    newSnapshot = fakeCurrentWebViewSnapshot,
+                    expectedMutation = expectedWebViewUpdates
                 )
             )
         }
@@ -796,6 +819,22 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevWebViewSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.WebviewWireframe>()
+            val fakeWebViewUpdatedWireframes = forgeMutatedWireframes(fakePrevWebViewSnapshot) {
+                it.copy(width = forge.aLong(), height = forge.aLong())
+            }
+            val fakeCurrentWebViewSnapshot = fakeWebViewUpdatedWireframes +
+                fakePrevWebViewSnapshot.drop(fakeWebViewUpdatedWireframes.size)
+            val expectedWebViewUpdates = fakeWebViewUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                    id = it.id(),
+                    slotId = it.slotId,
+                    width = it.width,
+                    height = it.height
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -816,6 +855,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevPlaceholderSnapshot,
                     newSnapshot = fakeCurrentPlaceholderSnapshot,
                     expectedMutation = expectedPlaceholderUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevWebViewSnapshot,
+                    newSnapshot = fakeCurrentWebViewSnapshot,
+                    expectedMutation = expectedWebViewUpdates
                 )
             )
         }
@@ -878,6 +922,21 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevWebViewSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.WebviewWireframe>()
+            val fakeWebViewUpdatedWireframes = forgeMutatedWireframes(fakePrevWebViewSnapshot) {
+                it.copy(clip = forge.forgeDifferent(it.clip))
+            }
+            val fakeCurrentWebViewSnapshot = fakeWebViewUpdatedWireframes +
+                fakePrevWebViewSnapshot.drop(fakeWebViewUpdatedWireframes.size)
+            val expectedWebViewUpdates = fakeWebViewUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                    id = it.id(),
+                    clip = it.clip,
+                    slotId = it.slotId
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -898,6 +957,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevPlaceholderSnapshot,
                     newSnapshot = fakeCurrentPlaceholderSnapshot,
                     expectedMutation = expectedPlaceholderUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevWebViewSnapshot,
+                    newSnapshot = fakeCurrentWebViewSnapshot,
+                    expectedMutation = expectedWebViewUpdates
                 )
             )
         }
@@ -964,6 +1028,22 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevWebViewSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.WebviewWireframe>()
+                    .map { it.copy(clip = forge.getForgery()) }
+            val fakeWebViewUpdatedWireframes = forgeMutatedWireframes(fakePrevWebViewSnapshot) {
+                it.copy(clip = null)
+            }
+            val fakeCurrentWebViewSnapshot = fakeWebViewUpdatedWireframes +
+                fakePrevWebViewSnapshot.drop(fakeWebViewUpdatedWireframes.size)
+            val expectedWebViewUpdates = fakeWebViewUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                    id = it.id(),
+                    clip = nullClipWireframe,
+                    slotId = it.slotId
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -984,6 +1064,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevPlaceholderSnapshot,
                     newSnapshot = fakeCurrentPlaceholderSnapshot,
                     expectedMutation = expectedPlaceholderUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevWebViewSnapshot,
+                    newSnapshot = fakeCurrentWebViewSnapshot,
+                    expectedMutation = expectedWebViewUpdates
                 )
             )
         }
@@ -1093,6 +1178,21 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevWebViewSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.WebviewWireframe>()
+            val fakeWebViewUpdatedWireframes = forgeMutatedWireframes(fakePrevWebViewSnapshot) {
+                it.copy(shapeStyle = forge.getForgery())
+            }
+            val fakeCurrentWebViewSnapshot = fakeWebViewUpdatedWireframes +
+                fakePrevWebViewSnapshot.drop(fakeWebViewUpdatedWireframes.size)
+            val expectedWebViewUpdates = fakeWebViewUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                    id = it.id(),
+                    shapeStyle = it.shapeStyle,
+                    slotId = it.slotId
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1108,6 +1208,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevImageSnapshot,
                     newSnapshot = fakeCurrentImageSnapshot,
                     expectedMutation = expectedImageUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevWebViewSnapshot,
+                    newSnapshot = fakeCurrentWebViewSnapshot,
+                    expectedMutation = expectedWebViewUpdates
                 )
             )
         }
@@ -1137,6 +1242,12 @@ internal class MutationResolverTest {
                 forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(id = it.id)
             }
 
+            val fakePrevWebViewSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.WebviewWireframe>()
+            val fakeCurrentWebViewSnapshot = fakePrevWebViewSnapshot.map {
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
+                    id = it.id
+                )
+            }
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1156,6 +1267,11 @@ internal class MutationResolverTest {
                 MutationTestData(
                     prevSnapshot = fakePrevPlaceholderSnapshot,
                     newSnapshot = fakeCurrentPlaceholderSnapshot,
+                    expectedMutation = emptyList()
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevWebViewSnapshot,
+                    newSnapshot = fakeCurrentWebViewSnapshot,
                     expectedMutation = emptyList()
                 )
             )

@@ -951,6 +951,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.PlaceholderWireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.WebviewWireframe)"
       - "kotlin.collections.listOf(java.io.File)"
       - "kotlin.collections.listOf(kotlin.Array)"
       - "kotlin.collections.listOf(kotlin.String)"
