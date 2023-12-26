@@ -133,8 +133,7 @@ internal open class SwitchCompatMapper(
         return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
-    private fun resolveThumbShapeStyle(view: SwitchCompat, checkBoxColor: String):
-        MobileSegment.ShapeStyle {
+    private fun resolveThumbShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
             view.alpha,
@@ -142,8 +141,7 @@ internal open class SwitchCompatMapper(
         )
     }
 
-    protected fun resolveTrackShapeStyle(view: SwitchCompat, checkBoxColor: String):
-        MobileSegment.ShapeStyle {
+    protected fun resolveTrackShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
             view.alpha

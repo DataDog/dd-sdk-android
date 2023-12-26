@@ -42,7 +42,8 @@ import java.io.InputStream
  * be kept, `100.0` means all traces will be kept (default value is `20.0`).
  */
 open class DatadogGlideModule
-@JvmOverloads constructor(
+@JvmOverloads
+constructor(
     private val sdkInstanceName: String? = null,
     private val firstPartyHosts: List<String> = emptyList(),
     private val sampleRate: Float = DEFAULT_SAMPLE_RATE

@@ -29,16 +29,14 @@ internal abstract class CheckableTextViewMapper<T>(
         view: T,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe> {
+    ): List<MobileSegment.Wireframe> {
         return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback)
     }
 
     override fun resolveCheckedCheckable(
         view: T,
         mappingContext: MappingContext
-    ):
-        List<MobileSegment.Wireframe>? {
+    ): List<MobileSegment.Wireframe>? {
         val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
             CHECKABLE_KEY_NAME
@@ -66,8 +64,7 @@ internal abstract class CheckableTextViewMapper<T>(
     override fun resolveNotCheckedCheckable(
         view: T,
         mappingContext: MappingContext
-    ):
-        List<MobileSegment.Wireframe>? {
+    ): List<MobileSegment.Wireframe>? {
         val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
             CHECKABLE_KEY_NAME
@@ -102,29 +99,25 @@ internal abstract class CheckableTextViewMapper<T>(
         return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
-    protected open fun resolveCheckedShapeStyle(view: T, checkBoxColor: String):
-        MobileSegment.ShapeStyle? {
+    protected open fun resolveCheckedShapeStyle(view: T, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
             view.alpha
         )
     }
 
-    protected open fun resolveCheckedShapeBorder(view: T, checkBoxColor: String):
-        MobileSegment.ShapeBorder? {
+    protected open fun resolveCheckedShapeBorder(view: T, checkBoxColor: String): MobileSegment.ShapeBorder? {
         return MobileSegment.ShapeBorder(
             color = checkBoxColor,
             width = CHECKABLE_BORDER_WIDTH
         )
     }
 
-    protected open fun resolveNotCheckedShapeStyle(view: T, checkBoxColor: String):
-        MobileSegment.ShapeStyle? {
+    protected open fun resolveNotCheckedShapeStyle(view: T, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return null
     }
 
-    protected open fun resolveNotCheckedShapeBorder(view: T, checkBoxColor: String):
-        MobileSegment.ShapeBorder? {
+    protected open fun resolveNotCheckedShapeBorder(view: T, checkBoxColor: String): MobileSegment.ShapeBorder? {
         return MobileSegment.ShapeBorder(
             color = checkBoxColor,
             width = CHECKABLE_BORDER_WIDTH

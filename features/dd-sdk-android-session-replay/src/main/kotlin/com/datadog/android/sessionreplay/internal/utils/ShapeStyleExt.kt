@@ -13,9 +13,9 @@ private const val FULL_OPACITY_STRING_HEXA = "ff"
 private const val FULL_OPACITY_ALPHA = 1f
 
 internal fun MobileSegment.ShapeStyle.hasNonTranslucentColor(): Boolean {
-    return this.backgroundColor != null &&
-        @Suppress("UnsafeThirdPartyFunctionCall") // 2 cannot be negative
-    this.backgroundColor.takeLast(2).lowercase(Locale.US) == FULL_OPACITY_STRING_HEXA
+    @Suppress("UnsafeThirdPartyFunctionCall") // 2 cannot be negative
+    val alphaComponent = backgroundColor?.takeLast(2)?.lowercase(Locale.US)
+    return alphaComponent == FULL_OPACITY_STRING_HEXA
 }
 
 internal fun MobileSegment.ShapeStyle.isFullyOpaque(): Boolean {

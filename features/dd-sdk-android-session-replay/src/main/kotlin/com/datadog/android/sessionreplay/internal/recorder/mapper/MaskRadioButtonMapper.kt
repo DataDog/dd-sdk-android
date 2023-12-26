@@ -24,8 +24,7 @@ internal class MaskRadioButtonMapper(
     viewUtils
 ) {
 
-    override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String):
-        MobileSegment.ShapeStyle {
+    override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
             backgroundColor = null,
             view.alpha,

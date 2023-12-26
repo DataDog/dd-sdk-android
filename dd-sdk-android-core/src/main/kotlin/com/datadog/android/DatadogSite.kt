@@ -9,9 +9,9 @@ package com.datadog.android
 /**
  * Defines the Datadog sites you can send tracked data to.
  *
- * @property siteName Explicit site name property introduced in order to have a consistent SDK
+ * @param siteName Explicit site name property introduced in order to have a consistent SDK
  * instance ID (because this value is used there) in case if enum values are renamed.
- * @property intakeHostName the host name for the given site.
+ * @param intakeHostName the host name for the given site.
  */
 enum class DatadogSite(internal val siteName: String, private val intakeHostName: String) {
 

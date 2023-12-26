@@ -40,8 +40,7 @@ internal fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
     }
 }
 
-internal fun MobileSegment.Wireframe.copy(shapeStyle: MobileSegment.ShapeStyle?):
-    MobileSegment.Wireframe {
+internal fun MobileSegment.Wireframe.copy(shapeStyle: MobileSegment.ShapeStyle?): MobileSegment.Wireframe {
     return when (this) {
         is MobileSegment.Wireframe.TextWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)

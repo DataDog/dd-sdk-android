@@ -49,8 +49,7 @@ internal class NoOpScheduledExecutorService : ScheduledExecutorService {
         return null
     }
 
-    override fun <T : Any?> invokeAll(tasks: MutableCollection<out Callable<T>>?):
-        MutableList<Future<T>>? {
+    override fun <T : Any?> invokeAll(tasks: MutableCollection<out Callable<T>>?): MutableList<Future<T>>? {
         return null
     }
 

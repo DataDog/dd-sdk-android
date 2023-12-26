@@ -200,7 +200,9 @@ internal constructor(internal var handler: LogHandler) {
      *
      * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      */
-    class Builder @JvmOverloads constructor(sdkCore: SdkCore = Datadog.getInstance()) {
+    class Builder
+    @JvmOverloads
+    constructor(sdkCore: SdkCore = Datadog.getInstance()) {
 
         private val sdkCore: FeatureSdkCore = sdkCore as FeatureSdkCore
 

@@ -25,7 +25,9 @@ import java.io.File
  * @param sdkCore SDK instance to use for the reporting. If not provided, default instance
  * will be used.
  */
-class DatadogCoilRequestListener @JvmOverloads constructor(
+class DatadogCoilRequestListener
+@JvmOverloads
+constructor(
     private val sdkCore: SdkCore = Datadog.getInstance()
 ) : ImageRequest.Listener {
 

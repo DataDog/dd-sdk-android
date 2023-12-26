@@ -25,7 +25,9 @@ import java.io.InputStream
  * instance will be used.
  */
 @Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
-class RumResourceInputStream @JvmOverloads constructor(
+class RumResourceInputStream
+@JvmOverloads
+constructor(
     val delegate: InputStream,
     val url: String,
     val sdkCore: SdkCore = Datadog.getInstance()

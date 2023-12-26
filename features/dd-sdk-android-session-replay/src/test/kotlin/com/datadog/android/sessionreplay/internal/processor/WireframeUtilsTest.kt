@@ -676,8 +676,7 @@ internal class WireframeUtilsTest {
 
     private fun MobileSegment.Wireframe.copy(
         shapeStyle: MobileSegment.ShapeStyle?
-    ):
-        MobileSegment.Wireframe {
+    ): MobileSegment.Wireframe {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> copy(
                 shapeStyle = shapeStyle
@@ -751,8 +750,7 @@ internal class WireframeUtilsTest {
         )
     }
 
-    private fun Forge.wireframesWithTranslucentBackgroundColor():
-        List<MobileSegment.Wireframe> {
+    private fun Forge.wireframesWithTranslucentBackgroundColor(): List<MobileSegment.Wireframe> {
         return listOf(
             getForgery<MobileSegment.Wireframe.ShapeWireframe>()
                 .copy(

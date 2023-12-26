@@ -52,8 +52,7 @@ internal class SessionReplayRequestFactory(
         )
     }
 
-    private fun resolveHeaders(datadogContext: DatadogContext, requestId: String):
-        Map<String, String> {
+    private fun resolveHeaders(datadogContext: DatadogContext, requestId: String): Map<String, String> {
         return mapOf(
             RequestFactory.HEADER_API_KEY to datadogContext.clientToken,
             RequestFactory.HEADER_EVP_ORIGIN to datadogContext.source,

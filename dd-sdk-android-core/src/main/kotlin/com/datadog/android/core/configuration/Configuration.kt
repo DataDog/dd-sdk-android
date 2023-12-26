@@ -58,7 +58,9 @@ internal constructor(
      * package name, e.g.: com.example.android)
      */
     @Suppress("TooManyFunctions")
-    class Builder @JvmOverloads constructor(
+    class Builder
+    @JvmOverloads
+    constructor(
         private val clientToken: String,
         private val env: String,
         private val variant: String = NO_VARIANT,

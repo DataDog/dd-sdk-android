@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicReference
  * SDK instance will be checked.
  * @param onSdkInstanceCaptured Callback which will be fired once SDK instance is acquired.
  */
-class SdkReference @JvmOverloads constructor(
+class SdkReference
+@JvmOverloads
+constructor(
     private val sdkInstanceName: String? = null,
     private val onSdkInstanceCaptured: (SdkCore) -> Unit = {}
 ) {

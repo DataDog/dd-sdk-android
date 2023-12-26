@@ -23,7 +23,9 @@ import com.facebook.cache.common.CacheKey
  * @param sdkCore SDK instance to use for reporting. If not provided, default instance will be used.
  */
 
-class DatadogFrescoCacheListener @JvmOverloads constructor(
+class DatadogFrescoCacheListener
+@JvmOverloads
+constructor(
     private val sdkCore: SdkCore = Datadog.getInstance()
 ) : CacheEventListener {
 

@@ -56,9 +56,9 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
             .forEach { it() }
     }
 
-    open fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float):
-        SessionReplayConfiguration =
-        RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
+    open fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
+        return RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
             .setPrivacy(privacy)
             .build()
+    }
 }

@@ -183,7 +183,8 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `not connected (connected but no internet)`() {
-        stubNetworkInfo(-1 /* @hide ConnectivityManager.TYPE_NONE*/, -1)
+        // @hide ConnectivityManager.TYPE_NONE = -1
+        stubNetworkInfo(-1, -1)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
