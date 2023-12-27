@@ -4,45 +4,46 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.webview.internal.rum
+package com.datadog.android.webview.internal.replay
 
-import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
 import java.lang.UnsupportedOperationException
 
-internal class WebViewRumEventConsumer(
+internal class WebViewReplayEventConsumer(
     private val sdkCore: FeatureSdkCore,
     internal val dataWriter: DataWriter<JsonObject>,
-    internal val offsetProvider: TimestampOffsetProvider,
-    private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
-    private val contextProvider: WebViewRumEventContextProvider =
-        WebViewRumEventContextProvider(sdkCore.internalLogger)
+    private val contextProvider: WebViewRumEventContextProvider,
+    internal val webViewReplayEventMapper: WebViewReplayEventMapper
 ) : WebViewEventConsumer<JsonObject> {
 
-    @WorkerThread
     override fun consume(event: JsonObject) {
-        // make sure we send a noop event to the RumSessionScope to refresh the session if needed
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
-            mapOf(
-                "type" to "web_view_ingested_notification"
-            )
-        )
-        sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+        sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
-                if (rumContext != null && rumContext.sessionState == "TRACKED") {
-                    val mappedEvent = map(event, datadogContext, rumContext)
-                    @Suppress("ThreadSafety") // inside worker thread context
-                    dataWriter.write(eventBatchWriter, mappedEvent)
+                val sessionReplayFeatureContext = datadogContext.featuresContext[
+                    Feature.SESSION_REPLAY_FEATURE_NAME
+                ]
+                val sessionReplayEnabled = sessionReplayFeatureContext?.get(
+                    SESSION_REPLAY_ENABLED_KEY
+                ) as? Boolean ?: false
+                if (rumContext != null &&
+                    rumContext.sessionState == "TRACKED" &&
+                    sessionReplayEnabled
+                ) {
+                    map(event, datadogContext, rumContext)?.let { mappedEvent ->
+                        @Suppress("ThreadSafety") // inside worker thread context
+                        dataWriter.write(eventBatchWriter, mappedEvent)
+                    }
                 }
             }
     }
@@ -50,12 +51,10 @@ internal class WebViewRumEventConsumer(
     private fun map(
         event: JsonObject,
         datadogContext: DatadogContext,
-        rumContext: RumContext?
-    ): JsonObject {
+        rumContext: RumContext
+    ): JsonObject? {
         try {
-            val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
-                ?.asString?.let { offsetProvider.getOffset(it, datadogContext) } ?: 0L
-            return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
+            return webViewReplayEventMapper.mapEvent(event, rumContext, datadogContext)
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -85,26 +84,16 @@ internal class WebViewRumEventConsumer(
                 e
             )
         }
-        return event
+        return null
     }
 
     companion object {
-        const val VIEW_EVENT_TYPE = "view"
-        const val ACTION_EVENT_TYPE = "action"
-        const val RESOURCE_EVENT_TYPE = "resource"
-        const val ERROR_EVENT_TYPE = "error"
-        const val LONG_TASK_EVENT_TYPE = "long_task"
-        const val RUM_EVENT_TYPE = "rum"
-        const val VIEW_KEY_NAME = "view"
-        const val VIEW_ID_KEY_NAME = "id"
-        const val JSON_PARSING_ERROR_MESSAGE = "The bundled web RUM event could not be deserialized"
-        val RUM_EVENT_TYPES = setOf(
-            VIEW_EVENT_TYPE,
-            ACTION_EVENT_TYPE,
-            RESOURCE_EVENT_TYPE,
-            LONG_TASK_EVENT_TYPE,
-            ERROR_EVENT_TYPE,
-            RUM_EVENT_TYPE
-        )
+        private const val RECORD_KEY = "record"
+        const val SESSION_TRACKED_STATE = "TRACKED"
+        val REPLAY_EVENT_TYPES = setOf(RECORD_KEY)
+        const val JSON_PARSING_ERROR_MESSAGE =
+            "The bundled web Replay event could not be deserialized"
+        internal const val SESSION_REPLAY_ENABLED_KEY =
+            "session_replay_is_enabled"
     }
 }

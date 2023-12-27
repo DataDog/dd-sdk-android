@@ -212,6 +212,9 @@ internal class SessionReplayFeature(
             return
         }
         if (!isRecording.getAndSet(true)) {
+            sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
+                it[SESSION_REPLAY_ENABLED_KEY] = true
+            }
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.resumeRecorders()
         }
@@ -227,6 +230,9 @@ internal class SessionReplayFeature(
      */
     internal fun stopRecording() {
         if (isRecording.getAndSet(false)) {
+            sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
+                it[SESSION_REPLAY_ENABLED_KEY] = false
+            }
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.stopRecorders()
         }
@@ -271,5 +277,7 @@ internal class SessionReplayFeature(
         internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
         internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
             "session_replay_requires_manual_recording"
+        internal const val SESSION_REPLAY_ENABLED_KEY =
+            "session_replay_is_enabled"
     }
 }

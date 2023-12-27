@@ -30,7 +30,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -45,12 +44,9 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -107,6 +103,9 @@ internal class WebViewRumEventConsumerTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Mock
+    lateinit var mockOffsetProvider: TimestampOffsetProvider
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeRumContext = fakeRumContext.copy(sessionState = "TRACKED")
@@ -137,10 +136,16 @@ internal class WebViewRumEventConsumerTest {
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-
+        whenever(
+            mockOffsetProvider.getOffset(
+                any(),
+                eq(fakeDatadogContext)
+            )
+        ) doReturn fakeServerTimeOffsetInMillis
         testedConsumer = WebViewRumEventConsumer(
             mockSdkCore,
             mockDataWriter,
+            mockOffsetProvider,
             mockWebViewRumEventMapper,
             mockRumContextProvider
         )
@@ -641,226 +646,6 @@ internal class WebViewRumEventConsumerTest {
     // endregion
 
     // region Offset Correction
-
-    @Test
-    fun `M use same offset correct W consume { consecutive event updates }`(forge: Forge) {
-        // Given
-        var invocationCount = 0
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(
-                fakeDatadogContext.copy(
-                    time = fakeDatadogContext.time.copy(
-                        serverTimeOffsetMs = if (invocationCount == 0) {
-                            fakeServerTimeOffsetInMillis
-                        } else {
-                            forge.aLong()
-                        }
-                    )
-                ),
-                mockEventBatchWriter
-            )
-            invocationCount++
-            Unit
-        }
-
-        val fakeEvent = forge.aRumEventAsJson()
-        whenever(
-            mockWebViewRumEventMapper.mapEvent(
-                any(),
-                eq(fakeRumContext),
-                eq(fakeServerTimeOffsetInMillis)
-            )
-        ).thenReturn(fakeMappedViewEvent)
-
-        // When
-        testedConsumer.consume(fakeEvent)
-        testedConsumer.consume(fakeEvent)
-        testedConsumer.consume(fakeEvent)
-
-        // Then
-        verify(mockWebViewRumEventMapper, times(3)).mapEvent(
-            fakeEvent,
-            fakeRumContext,
-            fakeServerTimeOffsetInMillis
-        )
-    }
-
-    @Test
-    fun `M use dedicated offset correction W consume { consecutive different views }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeSecondServerTimeOffset = forge.aLong()
-        var invocationCount = 0
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(
-                fakeDatadogContext.copy(
-                    time = fakeDatadogContext.time.copy(
-                        serverTimeOffsetMs = if (invocationCount == 0) {
-                            fakeServerTimeOffsetInMillis
-                        } else {
-                            fakeSecondServerTimeOffset
-                        }
-                    )
-                ),
-                mockEventBatchWriter
-            )
-            invocationCount++
-            Unit
-        }
-
-        val fakeEvent = forge.aRumEventAsJson()
-        val fakeEvent2 = forge.aRumEventAsJson()
-        whenever(
-            mockWebViewRumEventMapper.mapEvent(
-                fakeEvent,
-                fakeRumContext,
-                fakeServerTimeOffsetInMillis
-            )
-        ).thenReturn(fakeEvent)
-        whenever(
-            mockWebViewRumEventMapper.mapEvent(
-                fakeEvent2,
-                fakeRumContext,
-                fakeSecondServerTimeOffset
-            )
-        ).thenReturn(fakeEvent2)
-
-        // When
-        testedConsumer.consume(fakeEvent)
-        testedConsumer.consume(fakeEvent2)
-
-        // Then
-        verify(mockWebViewRumEventMapper).mapEvent(
-            fakeEvent,
-            fakeRumContext,
-            fakeServerTimeOffsetInMillis
-        )
-        verify(mockWebViewRumEventMapper).mapEvent(
-            fakeEvent2,
-            fakeRumContext,
-            fakeSecondServerTimeOffset
-        )
-    }
-
-    @Test
-    fun `M purge the last used view W consume{ consecutive different views }`(forge: Forge) {
-        // Given
-        val size = forge.anInt(min = 1, max = 10)
-        val fakeServerOffsets = forge.aList(size) {
-            forge.aLong()
-        }
-        val fakeViewEvents = forge.aList(size) {
-            forge.getForgery(ViewEvent::class.java)
-        }
-
-        var invocationCount = 0
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(
-                fakeDatadogContext.copy(
-                    time = fakeDatadogContext.time.copy(
-                        serverTimeOffsetMs = fakeServerOffsets[invocationCount]
-                    )
-                ),
-                mockEventBatchWriter
-            )
-            invocationCount++
-            Unit
-        }
-
-        val expectedOffsets = LinkedHashMap<String, Long>()
-        val expectedOffsetsKeys =
-            fakeViewEvents
-                .takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
-                .map { it.view.id }
-        val expectedOffsetsValues =
-            fakeServerOffsets.takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
-        expectedOffsetsKeys.forEachIndexed { index, key ->
-            expectedOffsets[key] = expectedOffsetsValues[index]
-        }
-        whenever(
-            mockWebViewRumEventMapper.mapEvent(
-                any(),
-                eq(fakeRumContext),
-                any()
-            )
-        ).thenReturn(fakeMappedViewEvent)
-
-        // When
-        fakeViewEvents.forEach {
-            testedConsumer.consume(it.toJson().asJsonObject)
-        }
-
-        // Then
-        val rumEventConsumer = testedConsumer as WebViewRumEventConsumer
-        assertThat(rumEventConsumer.offsets.entries)
-            .containsExactlyElementsOf(expectedOffsets.entries)
-    }
-
-    @Test
-    fun `M purge the last used view W consume{ consecutive different views, async EWC }`(
-        forge: Forge
-    ) {
-        // Given
-        val size = forge.anInt(min = 1, max = 10)
-        val fakeServerOffsets = forge.aList(size) {
-            forge.aLong()
-        }
-        val fakeViewEvents = forge.aList(size) {
-            forge.getForgery(ViewEvent::class.java)
-        }
-
-        var invocationCount = 0
-        val latch = CountDownLatch(size)
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            val invocation = invocationCount
-            Thread {
-                callback.invoke(
-                    fakeDatadogContext.copy(
-                        time = fakeDatadogContext.time.copy(
-                            serverTimeOffsetMs = fakeServerOffsets[invocation]
-                        )
-                    ),
-                    mockEventBatchWriter
-                )
-                latch.countDown()
-            }.start()
-            invocationCount++
-            Unit
-        }
-
-        val expectedOffsets = LinkedHashMap<String, Long>()
-        val expectedOffsetsKeys = fakeViewEvents.map { it.view.id }
-        expectedOffsetsKeys.forEachIndexed { index, key ->
-            expectedOffsets[key] = fakeServerOffsets[index]
-        }
-        whenever(
-            mockWebViewRumEventMapper.mapEvent(
-                any(),
-                eq(fakeRumContext),
-                any()
-            )
-        ).thenReturn(fakeMappedViewEvent)
-
-        // When
-        fakeViewEvents.forEach {
-            testedConsumer.consume(it.toJson().asJsonObject)
-        }
-        latch.await(1, TimeUnit.SECONDS)
-
-        // Then
-        val rumEventConsumer = testedConsumer as WebViewRumEventConsumer
-        // Because the threads are processed in any order,
-        // we can't guarantee the order of the entries, and can only assert
-        // the size of the offsets, and the pairs of key values in it
-        assertThat(rumEventConsumer.offsets.entries)
-            .containsAnyElementsOf(expectedOffsets.entries)
-            .hasSizeLessThanOrEqualTo(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
-    }
 
     // endregion
 
