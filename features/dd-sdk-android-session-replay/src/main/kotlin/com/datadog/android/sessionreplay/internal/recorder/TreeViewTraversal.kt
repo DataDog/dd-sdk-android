@@ -67,8 +67,7 @@ internal class TreeViewTraversal(
         return !View::class.java.isAssignableFrom(viewParent.javaClass)
     }
 
-    private fun List<MapperTypeWrapper>.findFirstForType(type: Class<*>):
-        WireframeMapper<View, *>? {
+    private fun List<MapperTypeWrapper>.findFirstForType(type: Class<*>): WireframeMapper<View, *>? {
         return firstOrNull {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             it.type.isAssignableFrom(type)

@@ -20,8 +20,7 @@ import com.google.android.material.tabs.TabLayout
  */
 class MaterialExtensionSupport : ExtensionSupport {
     @Suppress("UNCHECKED_CAST")
-    override fun getCustomViewMappers():
-        Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
+    override fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
         val maskUserInputSliderMapper = MaskSliderWireframeMapper() as WireframeMapper<View, *>
         val maskSliderMapper = MaskSliderWireframeMapper() as WireframeMapper<View, *>
         val allowSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>

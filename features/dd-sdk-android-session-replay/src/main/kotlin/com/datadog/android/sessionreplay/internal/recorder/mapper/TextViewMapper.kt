@@ -58,8 +58,7 @@ open class TextViewMapper :
         view: TextView,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe> {
+    ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
@@ -139,8 +138,7 @@ open class TextViewMapper :
         )
     }
 
-    private fun resolveTextStyle(textView: TextView, pixelsDensity: Float):
-        MobileSegment.TextStyle {
+    private fun resolveTextStyle(textView: TextView, pixelsDensity: Float): MobileSegment.TextStyle {
         return MobileSegment.TextStyle(
             resolveFontFamily(textView.typeface),
             textView.textSize.toLong().densityNormalized(pixelsDensity),
@@ -174,8 +172,7 @@ open class TextViewMapper :
         }
     }
 
-    private fun resolveTextPosition(textView: TextView, pixelsDensity: Float):
-        MobileSegment.TextPosition {
+    private fun resolveTextPosition(textView: TextView, pixelsDensity: Float): MobileSegment.TextPosition {
         return MobileSegment.TextPosition(
             resolvePadding(textView, pixelsDensity),
             resolveAlignment(textView)

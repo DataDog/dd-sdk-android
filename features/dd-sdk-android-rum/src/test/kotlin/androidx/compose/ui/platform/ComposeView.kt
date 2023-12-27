@@ -10,7 +10,9 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.ViewGroup
 
-abstract class ComposeView @JvmOverloads constructor(
+abstract class ComposeView
+@JvmOverloads
+constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

@@ -21,7 +21,9 @@ import io.reactivex.rxjava3.functions.Consumer
  * @param sdkCore the SDK instance to forward the errors to. If not provided, default instance
  * will be used.
  */
-class DatadogRumErrorConsumer @JvmOverloads constructor(
+class DatadogRumErrorConsumer
+@JvmOverloads
+constructor(
     private val sdkCore: SdkCore = Datadog.getInstance()
 ) : Consumer<Throwable> {
 

@@ -26,8 +26,7 @@ internal open class RadioButtonMapper(
 
     // region CheckableTextViewMapper
 
-    override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String):
-        MobileSegment.ShapeStyle? {
+    override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
             view.alpha,
@@ -35,8 +34,7 @@ internal open class RadioButtonMapper(
         )
     }
 
-    override fun resolveNotCheckedShapeStyle(view: RadioButton, checkBoxColor: String):
-        MobileSegment.ShapeStyle? {
+    override fun resolveNotCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = null,
             view.alpha,

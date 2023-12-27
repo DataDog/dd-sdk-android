@@ -19,8 +19,10 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.rules.GesturesTrackingActivityTestRule
 
 internal abstract class GesturesTrackingTest :
-    RumTest<GesturesTrackingPlaygroundActivity,
-        GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>>() {
+    RumTest<
+            GesturesTrackingPlaygroundActivity,
+            GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>
+            >() {
 
     // region RumTest
 
@@ -90,9 +92,9 @@ internal abstract class GesturesTrackingTest :
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_TARGET_PARENT_INDEX to 2,
                     RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
-                        activity.recyclerView.javaClass.canonicalName,
+                            activity.recyclerView.javaClass.canonicalName,
                     RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to
-                        "recyclerView"
+                            "recyclerView"
                 )
             ),
             ExpectedGestureEvent(

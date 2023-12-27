@@ -180,8 +180,11 @@ internal class ImageWireframeHelper(
         }
     }
 
-    private fun createContentPlaceholderWireframe(view: View, id: Long, density: Float):
-        MobileSegment.Wireframe.PlaceholderWireframe {
+    private fun createContentPlaceholderWireframe(
+        view: View,
+        id: Long,
+        density: Float
+    ): MobileSegment.Wireframe.PlaceholderWireframe {
         val coordinates = IntArray(2)
         // this will always have size >= 2
         @Suppress("UnsafeThirdPartyFunctionCall")

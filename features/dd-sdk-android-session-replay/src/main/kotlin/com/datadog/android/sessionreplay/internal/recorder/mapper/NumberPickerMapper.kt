@@ -28,8 +28,7 @@ internal open class NumberPickerMapper(
         view: NumberPicker,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe> {
+    ): List<MobileSegment.Wireframe> {
         val prevIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
             PREV_INDEX_KEY_NAME

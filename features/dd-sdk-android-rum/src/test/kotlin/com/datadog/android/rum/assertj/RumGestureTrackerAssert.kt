@@ -35,21 +35,18 @@ internal class RumGestureTrackerAssert(actual: DatadogGesturesTracker) :
         return this
     }
 
-    fun hasCustomTargetAttributesProviders(customProviders: Array<ViewAttributesProvider>):
-        RumGestureTrackerAssert {
+    fun hasCustomTargetAttributesProviders(customProviders: Array<ViewAttributesProvider>): RumGestureTrackerAssert {
         assertThat(actual.targetAttributesProviders)
             .containsAll(customProviders.toMutableList())
         return this
     }
 
-    fun hasInteractionPredicate(interactionPredicate: InteractionPredicate):
-        RumGestureTrackerAssert {
+    fun hasInteractionPredicate(interactionPredicate: InteractionPredicate): RumGestureTrackerAssert {
         assertThat(actual.interactionPredicate).isEqualTo(interactionPredicate)
         return this
     }
 
-    fun hasInteractionPredicateOfType(type: Class<*>):
-        RumGestureTrackerAssert {
+    fun hasInteractionPredicateOfType(type: Class<*>): RumGestureTrackerAssert {
         assertThat(actual.interactionPredicate).isInstanceOf(type)
         return this
     }

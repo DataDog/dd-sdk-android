@@ -23,5 +23,5 @@ enum class BatchSize(
     MEDIUM(10000L),
 
     /** Prefer large batches. **/
-    LARGE(35000L);
+    LARGE(35000L)
 }

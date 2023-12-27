@@ -33,8 +33,7 @@ internal class NodeFlattener(private val wireframeUtils: WireframeUtils = Wirefr
         return filterOutInvalidWireframes(list)
     }
 
-    private fun filterOutInvalidWireframes(wireframes: List<MobileSegment.Wireframe>):
-        List<MobileSegment.Wireframe> {
+    private fun filterOutInvalidWireframes(wireframes: List<MobileSegment.Wireframe>): List<MobileSegment.Wireframe> {
         return wireframes.filterIndexed { index, wireframe ->
             wireframeUtils.checkWireframeIsValid(wireframe) &&
                 !wireframeUtils.checkWireframeIsCovered(wireframe, wireframes.drop(index + 1))

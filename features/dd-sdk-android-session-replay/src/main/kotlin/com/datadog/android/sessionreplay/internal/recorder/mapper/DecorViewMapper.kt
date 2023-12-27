@@ -22,8 +22,7 @@ internal class DecorViewMapper(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe.ShapeWireframe> {
+    ): List<MobileSegment.Wireframe.ShapeWireframe> {
         val wireframes = viewWireframeMapper.map(view, mappingContext)
             .toMutableList()
         if (mappingContext.systemInformation.themeColor != null) {

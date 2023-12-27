@@ -19,8 +19,7 @@ internal class ButtonMapper(
         view: Button,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe> {
+    ): List<MobileSegment.Wireframe> {
         return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback).map {
             if (it is MobileSegment.Wireframe.TextWireframe &&
                 it.shapeStyle == null && it.border == null

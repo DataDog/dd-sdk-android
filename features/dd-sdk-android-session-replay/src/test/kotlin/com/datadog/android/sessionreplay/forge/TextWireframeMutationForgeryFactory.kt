@@ -12,8 +12,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class TextWireframeMutationForgeryFactory :
     ForgeryFactory<MobileSegment.WireframeUpdateMutation.TextWireframeUpdate> {
-    override fun getForgery(forge: Forge):
-        MobileSegment.WireframeUpdateMutation.TextWireframeUpdate {
+    override fun getForgery(forge: Forge): MobileSegment.WireframeUpdateMutation.TextWireframeUpdate {
         return MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
             id = forge.aPositiveInt().toLong(),
             x = forge.aNullable { aPositiveLong() },

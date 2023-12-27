@@ -12,8 +12,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class PointerInteractionDataForgeryFactory :
     ForgeryFactory<MobileSegment.MobileIncrementalData.PointerInteractionData> {
-    override fun getForgery(forge: Forge):
-        MobileSegment.MobileIncrementalData.PointerInteractionData {
+    override fun getForgery(forge: Forge): MobileSegment.MobileIncrementalData.PointerInteractionData {
         return MobileSegment.MobileIncrementalData.PointerInteractionData(
             pointerEventType = forge.aValueFrom(MobileSegment.PointerEventType::class.java),
             pointerType = forge.aValueFrom(MobileSegment.PointerType::class.java),

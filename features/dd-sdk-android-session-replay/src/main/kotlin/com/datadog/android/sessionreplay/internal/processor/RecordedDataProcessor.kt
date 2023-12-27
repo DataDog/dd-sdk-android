@@ -152,8 +152,7 @@ internal class RecordedDataProcessor(
     private fun bundleRecordInEnrichedRecord(
         rumContext: SessionReplayRumContext,
         records: List<MobileSegment.MobileRecord>
-    ):
-        EnrichedRecord {
+    ): EnrichedRecord {
         return EnrichedRecord(
             rumContext.applicationId,
             rumContext.sessionId,

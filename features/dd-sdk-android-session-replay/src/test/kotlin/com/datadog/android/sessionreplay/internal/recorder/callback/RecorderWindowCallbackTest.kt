@@ -437,8 +437,9 @@ internal class RecorderWindowCallbackTest {
 
     // region Internal
 
-    private fun Forge.touchRecords(eventType: MobileSegment.PointerEventType):
-        List<MobileRecord.MobileIncrementalSnapshotRecord> {
+    private fun Forge.touchRecords(
+        eventType: MobileSegment.PointerEventType
+    ): List<MobileRecord.MobileIncrementalSnapshotRecord> {
         val pointerIds = aList { anInt(min = 1) }
         val positionMaxValue = (FLOAT_MAX_INT_VALUE / fakeDensity).toLong()
         return pointerIds
@@ -459,8 +460,7 @@ internal class RecorderWindowCallbackTest {
             }
     }
 
-    private fun List<MobileRecord.MobileIncrementalSnapshotRecord>.asMotionEvent():
-        MotionEvent {
+    private fun List<MobileRecord.MobileIncrementalSnapshotRecord>.asMotionEvent(): MotionEvent {
         val mockMotionEvent: MotionEvent = mock { event ->
             whenever(event.pointerCount).thenReturn(this@asMotionEvent.size)
         }

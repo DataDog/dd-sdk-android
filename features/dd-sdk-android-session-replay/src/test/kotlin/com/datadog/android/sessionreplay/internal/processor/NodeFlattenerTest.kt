@@ -211,8 +211,7 @@ internal class NodeFlattenerTest {
         }
     }
 
-    private fun Forge.snapshots(parent: Node, treeLevel: Int, maxTreeLevel: Int, childrenSize: Int):
-        List<Node> {
+    private fun Forge.snapshots(parent: Node, treeLevel: Int, maxTreeLevel: Int, childrenSize: Int): List<Node> {
         val startIdIndex = childrenSize * parent.wireframes.last().id()
         val parentMinWidth = parent.wireframes.map { it.bounds() }.minOf { it.width }
         val parentMinHeight = parent.wireframes.map { it.bounds() }.minOf { it.height }
@@ -246,8 +245,7 @@ internal class NodeFlattenerTest {
         }
     }
 
-    private fun Forge.forgeWireframe(id: Long, x: Long, y: Long, width: Long, height: Long):
-        MobileSegment.Wireframe {
+    private fun Forge.forgeWireframe(id: Long, x: Long, y: Long, width: Long, height: Long): MobileSegment.Wireframe {
         return when (val fakeWireframe = getForgery<MobileSegment.Wireframe>()) {
             is MobileSegment.Wireframe.ShapeWireframe -> fakeWireframe.copy(
                 id = id,

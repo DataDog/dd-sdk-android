@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit
  * @param componentPredicate to accept the Activities that will be taken into account as
  * valid RUM View events.
  */
-class ActivityViewTrackingStrategy @JvmOverloads constructor(
+class ActivityViewTrackingStrategy
+@JvmOverloads
+constructor(
     internal val trackExtras: Boolean,
     internal val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
 ) :

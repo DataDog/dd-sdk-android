@@ -46,7 +46,7 @@ interface InternalLogger {
         DEBUG,
         INFO,
         WARN,
-        ERROR;
+        ERROR
     }
 
     /**

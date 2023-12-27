@@ -25,7 +25,9 @@ import java.util.Locale
  * @param sdkCore the SDK instance to forward the errors to. If not provided, default instance
  * will be used.
  */
-class DatadogSqliteCallback @JvmOverloads constructor(
+class DatadogSqliteCallback
+@JvmOverloads
+constructor(
     schema: SqlDriver.Schema,
     private val sdkCore: SdkCore = Datadog.getInstance()
 ) : AndroidSqliteDriver.Callback(schema) {
