@@ -36,6 +36,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.Locale
 
@@ -330,9 +331,13 @@ internal constructor(
 
     private fun getBodyLength(response: Response, internalLogger: InternalLogger): Long? {
         return try {
-            val body = response.peekBody(MAX_BODY_PEEK)
-            val contentLength = body.contentLength()
-            if (contentLength == 0L) null else contentLength
+            val body = response.body ?: return null
+            // if there is a Content-Length available, we can read it directly
+            // however, OkHttp will drop Content-Length header if transparent compression is
+            // used (since the value reported cannot be applied to decompressed body), so to be
+            // able to still read it, we force decompression by calling peekBody
+            body.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK)
+                .contentLengthOrNull()
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -342,9 +347,10 @@ internal constructor(
             )
             null
         } catch (e: IllegalStateException) {
+            // this happens if we cannot read body at all (ex. WebSocket, etc.), no need to report to telemetry
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                target = InternalLogger.Target.MAINTAINER,
                 { ERROR_PEEK_BODY },
                 e
             )
@@ -376,6 +382,12 @@ internal constructor(
                 )
                 RumResourceMethod.GET
             }
+        }
+    }
+
+    private fun ResponseBody.contentLengthOrNull(): Long? {
+        return contentLength().let {
+            if (it <= 0L) null else it
         }
     }
 
