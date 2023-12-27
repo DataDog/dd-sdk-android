@@ -226,6 +226,41 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M stop all the recorders in the recorder W stopRecording()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+
+        // When
+        testedFeature.stopRecording()
+
+        // Then
+        verify(mockRecorder).stopRecorders()
+    }
+
+    @Test
+    fun `M update the isEnabled flag into the context W stopRecording()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+
+        // When
+        testedFeature.stopRecording()
+
+        // Then
+        argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
+            val updatedContext = mutableMapOf<String, Any?>()
+            verify(mockSdkCore, times(3)).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+            allValues.forEach { it.invoke(updatedContext) }
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_ENABLED_KEY])
+                .isEqualTo(false)
+        }
+    }
+
+    @Test
     fun `M do nothing W stopRecording() { was already stopped }`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -269,6 +304,25 @@ internal class SessionReplayFeatureTest {
         // Then
         verify(mockRecorder, times(2))
             .resumeRecorders()
+    }
+
+    @Test
+    fun `M update the isEnabled flag into the context W startRecording()`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+
+        // Then
+        argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
+            val updatedContext = mutableMapOf<String, Any?>()
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+            allValues.forEach { it.invoke(updatedContext) }
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_ENABLED_KEY])
+                .isEqualTo(true)
+        }
     }
 
     @Test

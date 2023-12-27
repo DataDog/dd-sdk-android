@@ -9,6 +9,7 @@ package com.datadog.android.webview.internal
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -17,6 +18,7 @@ import java.util.Locale.US
 
 internal class MixedWebViewEventConsumer(
     internal val rumEventConsumer: WebViewEventConsumer<JsonObject>,
+    internal val replayEventConsumer: WebViewEventConsumer<JsonObject>,
     internal val logsEventConsumer: WebViewEventConsumer<Pair<JsonObject, String>>,
     private val internalLogger: InternalLogger
 ) : WebViewEventConsumer<String> {
@@ -55,6 +57,9 @@ internal class MixedWebViewEventConsumer(
                 }
                 in (WebViewRumEventConsumer.RUM_EVENT_TYPES) -> {
                     rumEventConsumer.consume(wrappedEvent)
+                }
+                in (WebViewReplayEventConsumer.REPLAY_EVENT_TYPES) -> {
+                    replayEventConsumer.consume(webEvent)
                 }
                 else -> {
                     internalLogger.log(
