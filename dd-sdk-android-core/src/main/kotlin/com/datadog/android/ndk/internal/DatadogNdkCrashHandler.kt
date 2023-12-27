@@ -128,7 +128,19 @@ internal class DatadogNdkCrashHandler(
         return if (content.isEmpty()) {
             null
         } else {
-            String(content)
+            String(content).also {
+                // temporary, to have more telemetry data
+                if (it.contains("\\u0000") || it.contains("\u0000")) {
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.TELEMETRY,
+                        {
+                        "Decoded file (${file.name}) content contains NULL character, file content={$it}," +
+                                " raw_bytes=${content.joinToString(",")}"
+                        }
+                    )
+                }
+            }
         }
     }
 
