@@ -47,7 +47,7 @@ internal class WebViewTrackingE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking#fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore, String? = null)
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -64,7 +64,7 @@ internal class WebViewTrackingE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking#fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore, String? = null)
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -86,7 +86,7 @@ internal class WebViewTrackingE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking#fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore, String? = null)
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -104,7 +104,7 @@ internal class WebViewTrackingE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking#fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore, String? = null)
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -117,7 +117,7 @@ internal class WebViewTrackingE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking#fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore, String? = null)
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -131,7 +131,7 @@ internal class WebViewTrackingE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking#fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore, String? = null)
      * apiMethodSignature: com.datadog.android.webview.WebViewTracking$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test

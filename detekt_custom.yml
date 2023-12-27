@@ -690,6 +690,7 @@ datadog:
       - "java.lang.Class.hashCode()"
       - "java.lang.IllegalArgumentException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String)"
+      - "java.lang.IllegalStateException.constructor(kotlin.String?)"
       - "java.lang.Object.constructor()"
       - "java.lang.Runtime.availableProcessors()"
       - "java.lang.Runtime.getRuntime()"
