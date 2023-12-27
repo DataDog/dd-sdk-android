@@ -77,7 +77,19 @@ style:
 
 datadog:
   active: true
-  excludes: [ '**/build/**', '**/test/**', '**/testDebug/**','**/testRelease/**', '**/androidTest/**', '**/testFixtures/**', '**/buildSrc/**', '**/*.kts', '**/instrumented/**', '**/sample/**', '**/tools/**' ]
+  excludes:
+    - '**/build/**'
+    - '**/test/**'
+    - '**/testDebug/**'
+    - '**/testRelease/**'
+    - '**/androidTest/**'
+    - '**/testFixtures/**'
+    - '**/buildSrc/**'
+    - '**/*.kts'
+    - '**/instrumented/**'
+    - '**/reliability/**'
+    - '**/sample/**'
+    - '**/tools/**'
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'

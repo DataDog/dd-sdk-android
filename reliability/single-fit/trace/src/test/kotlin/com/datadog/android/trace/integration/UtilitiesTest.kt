@@ -89,7 +89,6 @@ class UtilitiesTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
@@ -106,7 +105,7 @@ class UtilitiesTest {
         assertThat(event0.getString("spans[0].meta.error.msg")).isEqualTo(fakeThrowable.message)
         assertThat(event0.getString("spans[0].meta.error.stack")).isEqualTo(fakeThrowable.stackTraceToString())
         val eventsReceived = stubSdkCore.eventsReceived(Feature.LOGS_FEATURE_NAME)
-        assertThat(eventsReceived).hasSize(0)
+        assertThat(eventsReceived).isEmpty()
     }
 
     @RepeatedTest(16)
@@ -135,7 +134,6 @@ class UtilitiesTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId.toHexString())
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId.toHexString())
@@ -152,7 +150,6 @@ class UtilitiesTest {
         val eventsReceived = stubSdkCore.eventsReceived(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsReceived).hasSize(1)
         val logEvent0: Map<String, Any?> = eventsReceived[0] as Map<String, Any?>
-        println(logEvent0)
         assertThat(logEvent0).containsEntry("type", "span_log")
         assertThat(logEvent0).containsEntry("loggerName", "trace")
         assertThat(logEvent0).containsEntry("message", fakeErrorMessage)
@@ -185,7 +182,6 @@ class UtilitiesTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
@@ -202,7 +198,7 @@ class UtilitiesTest {
         assertThat(event0.getString("spans[0].meta.error.msg")).isEqualTo(fakeThrowable.message)
         assertThat(event0.getString("spans[0].meta.error.stack")).isEqualTo(fakeThrowable.stackTraceToString())
         val eventsReceived = stubSdkCore.eventsReceived(Feature.LOGS_FEATURE_NAME)
-        assertThat(eventsReceived).hasSize(0)
+        assertThat(eventsReceived).isEmpty()
     }
 
     @RepeatedTest(16)
@@ -231,7 +227,6 @@ class UtilitiesTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId.toHexString())
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId.toHexString())
@@ -248,7 +243,6 @@ class UtilitiesTest {
         val eventsReceived = stubSdkCore.eventsReceived(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsReceived).hasSize(1)
         val logEvent0: Map<String, Any?> = eventsReceived[0] as Map<String, Any?>
-        println(logEvent0)
         assertThat(logEvent0).containsEntry("type", "span_log")
         assertThat(logEvent0).containsEntry("loggerName", "trace")
         assertThat(logEvent0).containsEntry("message", fakeErrorMessage)
@@ -279,7 +273,6 @@ class UtilitiesTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
@@ -331,9 +324,6 @@ class UtilitiesTest {
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         val event1 = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
         val event2 = JsonParser.parseString(eventsWritten[2].eventData) as JsonObject
-        println(event0)
-        println(event1)
-        println(event2)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId0)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId0)
         assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation0)
@@ -379,7 +369,6 @@ class UtilitiesTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)

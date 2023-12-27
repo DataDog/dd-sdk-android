@@ -29,7 +29,7 @@ fun Span.spanIdAsHexString(): String {
 }
 
 /**
- * Returns the span's traceId in hex format.
+ * Returns the span's traceId as a Long.
  * The [SpanContext.toTraceId] method returns a string in decimal format,
  * which doesn't match what we send in our events
  */

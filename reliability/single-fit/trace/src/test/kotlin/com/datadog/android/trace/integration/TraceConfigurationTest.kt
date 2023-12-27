@@ -145,7 +145,6 @@ class TraceConfigurationTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
@@ -189,7 +188,6 @@ class TraceConfigurationTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
@@ -241,7 +239,6 @@ class TraceConfigurationTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        println(event0)
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)

@@ -24,7 +24,6 @@ import com.google.gson.JsonObject
  *   }
  * }
  */
-@Suppress("UnsafeThirdPartyFunctionCall")
 fun JsonObject.getString(path: String): String? {
     return getAtPath(path)?.asJsonPrimitive?.asString
 }
@@ -44,7 +43,6 @@ fun JsonObject.getString(path: String): String? {
  *   }
  * }
  */
-@Suppress("UnsafeThirdPartyFunctionCall")
 fun JsonObject.getInt(path: String): Int? {
     return getAtPath(path)?.asJsonPrimitive?.asInt
 }
@@ -64,7 +62,6 @@ fun JsonObject.getInt(path: String): Int? {
  *   }
  * }
  */
-@Suppress("UnsafeThirdPartyFunctionCall")
 fun JsonObject.getLong(path: String): Long? {
     return getAtPath(path)?.asJsonPrimitive?.asLong
 }
@@ -89,7 +86,6 @@ fun JsonObject.getDouble(path: String): Double? {
     return getAtPath(path)?.asJsonPrimitive?.asDouble
 }
 
-@Suppress("UnsafeThirdPartyFunctionCall")
 internal fun JsonObject.getAtPath(path: String): JsonElement? {
     val matchResult = Regex("""(\w+)\[(\d+)]""").matchEntire(path)
     return if (matchResult != null) {
