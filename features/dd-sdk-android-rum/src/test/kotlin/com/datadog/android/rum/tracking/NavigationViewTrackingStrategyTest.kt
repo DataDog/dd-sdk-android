@@ -96,8 +96,6 @@ internal class NavigationViewTrackingStrategyTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    private lateinit var mockNavigationKey: NavigationViewTrackingStrategy.NavigationKey
-
     @IntForgery
     var fakeNavViewId: Int = 0
 
@@ -124,9 +122,6 @@ internal class NavigationViewTrackingStrategyTest {
             rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
-
-        mockNavigationKey =
-            NavigationViewTrackingStrategy.NavigationKey(mockNavController, mockNavDestination)
 
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
@@ -316,7 +311,7 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
         verify(rumMonitor.mockInstance).startView(
-            mockNavigationKey,
+            mockNavDestination,
             fakeDestinationName,
             emptyMap()
         )
@@ -342,7 +337,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
-        verify(rumMonitor.mockInstance).startView(mockNavigationKey, customName, emptyMap())
+        verify(rumMonitor.mockInstance).startView(mockNavDestination, customName, emptyMap())
     }
 
     @Test
@@ -363,7 +358,7 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, arguments)
 
         verify(rumMonitor.mockInstance).startView(
-            mockNavigationKey,
+            mockNavDestination,
             fakeDestinationName,
             expectedAttrs
         )
@@ -387,7 +382,7 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, arguments)
 
         verify(rumMonitor.mockInstance).startView(
-            mockNavigationKey,
+            mockNavDestination,
             fakeDestinationName,
             emptyMap()
         )
@@ -409,12 +404,12 @@ internal class NavigationViewTrackingStrategyTest {
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).startView(
-                mockNavigationKey,
+                mockNavDestination,
                 fakeDestinationName,
                 emptyMap()
             )
             verify(rumMonitor.mockInstance).startView(
-                NavigationViewTrackingStrategy.NavigationKey(mockNavController, newDestination),
+                newDestination,
                 newDestinationName,
                 emptyMap()
             )
