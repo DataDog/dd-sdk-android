@@ -1173,6 +1173,7 @@ datadog:
       - "okhttp3.Response.code()"
       - "okhttp3.Response.header(kotlin.String, kotlin.String?)"
       - "okhttp3.ResponseBody.contentLength()"
+      - "okhttp3.ResponseBody.contentLengthOrNull()"
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json
