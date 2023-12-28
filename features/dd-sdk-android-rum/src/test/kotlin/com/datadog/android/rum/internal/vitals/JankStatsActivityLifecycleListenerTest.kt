@@ -16,6 +16,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -325,19 +326,20 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 doFrame() {too small duration}`(
+    fun `𝕄 cap sample at 60fps 𝕎 doFrame() {small duration}`(
         @LongForgery timestampNs: Long,
         @LongForgery(1, ONE_MILLISECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean
     ) {
         // Given
+        val expectedFrameRate: Double = 60.0
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
 
         // When
         testedJankListener.onFrame(frameData)
 
         // Then
-        verify(mockObserver, never()).onNewSample(any())
+        verify(mockObserver).onNewSample(eq(expectedFrameRate, 0.0001))
     }
 
     @Test
@@ -356,8 +358,34 @@ internal class JankStatsActivityLifecycleListenerTest {
         verify(mockObserver, never()).onNewSample(any())
     }
 
+    @Test
+    fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {refresh rate over 60hz}`(
+        @LongForgery timestampNs: Long,
+        @LongForgery(SEVENTEEN_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
+        @BoolForgery isJank: Boolean,
+        @DoubleForgery(60.0, 120.0) displayRefreshRate: Double
+    ) {
+        // Given
+        val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
+        val refreshRateMultiplier = 60.0 / displayRefreshRate
+        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
+
+        val variableRefreshRateListener = JankStatsActivityLifecycleListener(
+            mockObserver,
+            mockInternalLogger,
+            mockJankStatsProvider,
+            displayRefreshRate
+        )
+        // When
+        variableRefreshRateListener.onFrame(frameData)
+
+        // Then
+        verify(mockObserver).onNewSample(eq(expectedFrameRate * refreshRateMultiplier, 0.0001))
+    }
+
     companion object {
         const val ONE_MILLISECOND_NS: Long = 1000L * 1000L
+        const val SEVENTEEN_MILLISECOND_NS: Long = 17L * 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
         const val TEN_SECOND_NS: Long = 10L * ONE_SECOND_NS
         const val ONE_MINUTE_NS: Long = 60L * ONE_SECOND_NS

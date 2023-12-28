@@ -8,9 +8,17 @@ package com.datadog.android.rum.internal.vitals
 
 import android.app.Activity
 import android.app.Application.ActivityLifecycleCallbacks
+import android.content.Context
+import android.hardware.display.DisplayManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Display
+import android.view.FrameMetrics
 import android.view.Window
 import androidx.annotation.MainThread
+import androidx.annotation.RequiresApi
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
@@ -24,21 +32,41 @@ import java.util.concurrent.TimeUnit
 internal class JankStatsActivityLifecycleListener(
     private val vitalObserver: VitalObserver,
     private val internalLogger: InternalLogger,
-    private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT
+    private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
+    internal var screenRefreshRate: Double = 60.0
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
     internal val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
+    internal var display: Display? = null
 
     // region ActivityLifecycleCallbacks
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
+    inner class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
+        @RequiresApi(Build.VERSION_CODES.S)
+        override fun onFrameMetricsAvailable(
+        window: Window,
+        frameMetrics: FrameMetrics,
+        dropCountSinceLastInvocation: Int
+        ) {
+            val frameDeadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)
+            screenRefreshRate = ONE_SECOND_NS / frameDeadline
+        }
+    }
+
     @MainThread
     override fun onActivityStarted(activity: Activity) {
         val window = activity.window
         trackActivity(window, activity)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val handler = Handler(Looper.getMainLooper())
+            window.addOnFrameMetricsAvailableListener(DDFrameMetricsListener(), handler)
+        }
 
         val knownJankStats = activeWindowsListener[window]
         if (knownJankStats != null) {
@@ -64,6 +92,12 @@ internal class JankStatsActivityLifecycleListener(
             } else {
                 activeWindowsListener[window] = jankStats
             }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val displayManager =
+                activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
         }
     }
 
@@ -143,8 +177,21 @@ internal class JankStatsActivityLifecycleListener(
     override fun onFrame(volatileFrameData: FrameData) {
         val durationNs = volatileFrameData.frameDurationUiNanos
         if (durationNs > 0.0) {
-            val frameRate = (ONE_SECOND_NS / durationNs)
-            if (frameRate in VALID_FPS_RANGE) {
+            var frameRate = (ONE_SECOND_NS / durationNs)
+
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                screenRefreshRate = (display?.refreshRate ?: SIXTY_FPS).toDouble()
+            }
+
+            frameRate *= (SIXTY_FPS / screenRefreshRate)
+
+            // If normalized frame rate is still at over 60fps it means the frame rendered
+            // quickly enough for the devices refresh rate.
+            if (frameRate > MAX_FPS) {
+               frameRate = MAX_FPS
+            }
+
+            if (frameRate > MIN_FPS) {
                 vitalObserver.onNewSample(frameRate)
             }
         }
@@ -173,7 +220,7 @@ internal class JankStatsActivityLifecycleListener(
         private val ONE_SECOND_NS: Double = TimeUnit.SECONDS.toNanos(1).toDouble()
 
         private const val MIN_FPS: Double = 1.0
-        private const val MAX_FPS: Double = 240.0
-        private val VALID_FPS_RANGE = MIN_FPS.rangeTo(MAX_FPS)
+        private const val MAX_FPS: Double = 60.0
+        private const val SIXTY_FPS: Double = 60.0
     }
 }
