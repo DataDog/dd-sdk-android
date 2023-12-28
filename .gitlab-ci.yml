@@ -16,7 +16,7 @@ variables:
   DD_INSIDE_CI: "true"
 
   KUBERNETES_MEMORY_REQUEST: "8Gi"
-  KUBERNETES_MEMORY_LIMIT: "10Gi"
+  KUBERNETES_MEMORY_LIMIT: "16Gi"
 
 stages:
   - ci-image
