@@ -120,8 +120,7 @@ internal class SessionReplayFeature(
     override val requestFactory: RequestFactory =
         SessionReplayRequestFactory(
             customEndpointUrl,
-            BatchesToSegmentsMapper(),
-            uploader = SessionReplayOkHttpUploader((sdkCore as InternalSdkCore).getOkHttpClient())
+            BatchesToSegmentsMapper()
         )
 
     override val storageConfiguration: FeatureStorageConfiguration =

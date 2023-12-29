@@ -19,80 +19,49 @@ import java.util.Locale
 import java.util.UUID
 
 internal class SessionReplayRequestFactory(
-    internal val customEndpointUrl: String?,
-    private val batchToSegmentsMapper: BatchesToSegmentsMapper,
-    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory(),
-    private val uploader: SessionReplayOkHttpUploader
+        internal val customEndpointUrl: String?,
+        private val batchToSegmentsMapper: BatchesToSegmentsMapper,
+        private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory(),
+//    private val uploader: SessionReplayOkHttpUploader
 ) : RequestFactory {
 
     lateinit var storageFile: File
     override fun create(
-        context: DatadogContext,
-        batchData: List<RawBatchEvent>,
-        batchMetadata: ByteArray?
+            context: DatadogContext,
+            batchData: List<RawBatchEvent>,
+            batchMetadata: ByteArray?
     ): Request {
         val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
         if (serializedSegmentPair == null) {
             @Suppress("ThrowingInternalException")
             throw InvalidPayloadFormatException(
-                "The payload format was broken and an upload" +
-                    " request could not be created"
+                    "The payload format was broken and an upload" +
+                            " request could not be created"
             )
         }
         if (!storageFile.exists()) {
             storageFile.createNewFile()
         }
-
-        if (serializedSegmentPair.size > 1) {
-            serializedSegmentPair.forEach {
-                val body = requestBodyFactory.create(
-                    it.first,
-                    it.second
-                )
-                // We are storing the segments here to be able to assess them in the
-                // check_sr_output.py script
-                storageFile.appendText(it.second.toString())
-                storageFile.appendText("\n")
-                val request = resolveRequest(context, body)
-                uploader.upload(context, request)
-            }
-            return Request(
-                UUID.randomUUID().toString(),
-                "",
-                buildUrl(context),
-                mapOf(
-                    RequestFactory.HEADER_API_KEY to context.clientToken
-                ),
-                ByteArray(0)
-            )
-        } else {
-            storageFile.appendText(serializedSegmentPair[0].second.toString())
-            storageFile.appendText("\n")
-
-            val body = requestBodyFactory.create(
-                serializedSegmentPair[0].first,
-                serializedSegmentPair[0].second
-            )
-            return resolveRequest(context, body)
-        }
+        val body = requestBodyFactory.create(serializedSegmentPair)
+        return resolveRequest(context, body)
     }
 
     private fun buildUrl(datadogContext: DatadogContext): String {
         return String.format(
-            Locale.US,
-            UPLOAD_URL,
-            customEndpointUrl ?: datadogContext.site.intakeEndpoint,
-            "replay"
+                Locale.US,
+                UPLOAD_URL,
+                customEndpointUrl ?: datadogContext.site.intakeEndpoint,
+                "replay"
         )
     }
 
     private fun resolveHeaders(datadogContext: DatadogContext, requestId: String):
-        Map<String, String> {
+            Map<String, String> {
         return mapOf(
-            RequestFactory.HEADER_API_KEY to datadogContext.clientToken,
-            RequestFactory.HEADER_EVP_ORIGIN to datadogContext.source,
-            RequestFactory.HEADER_EVP_ORIGIN_VERSION to datadogContext.sdkVersion,
-            RequestFactory.HEADER_REQUEST_ID to requestId
+                RequestFactory.HEADER_API_KEY to datadogContext.clientToken,
+                RequestFactory.HEADER_EVP_ORIGIN to datadogContext.source,
+                RequestFactory.HEADER_EVP_ORIGIN_VERSION to datadogContext.sdkVersion,
+                RequestFactory.HEADER_REQUEST_ID to requestId
         )
     }
 
@@ -104,12 +73,12 @@ internal class SessionReplayRequestFactory(
         val headers = resolveHeaders(context, requestId)
         val requestUrl = buildUrl(context)
         return Request(
-            requestId,
-            description,
-            requestUrl,
-            headers,
-            body = bodyAsByteArray,
-            contentType = body.contentType().toString()
+                requestId,
+                description,
+                requestUrl,
+                headers,
+                body = bodyAsByteArray,
+                contentType = body.contentType().toString()
         )
     }
 
