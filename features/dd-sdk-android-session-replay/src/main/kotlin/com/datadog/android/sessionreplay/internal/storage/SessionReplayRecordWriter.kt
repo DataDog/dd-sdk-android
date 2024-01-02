@@ -17,15 +17,19 @@ internal class SessionReplayRecordWriter(
     private val sdkCore: FeatureSdkCore,
     private val recordCallback: RecordCallback
 ) : RecordWriter {
-    private var lastRumContextId: String = ""
     override fun write(record: EnrichedRecord) {
-        val forceNewBatch = resolveForceNewBatch(record)
         sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
-            ?.withWriteContext(forceNewBatch) { _, eventBatchWriter ->
+            ?.withWriteContext() { _, eventBatchWriter ->
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
-                    if (eventBatchWriter.write(RawBatchEvent(data = serializedRecord), batchMetadata = null)) {
+                    if (eventBatchWriter.write(
+                    RawBatchEvent(
+                                    data = serializedRecord
+                    ),
+                                    batchMetadata = null
+                    )
+                    ) {
                         updateViewSent(record)
                     }
                 }
@@ -40,16 +44,5 @@ internal class SessionReplayRecordWriter(
          * that it takes to process the nodes, the view may not be relevant anymore.
          */
         recordCallback.onRecordForViewSent(record)
-    }
-
-    private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {
-        val newRumContextId = resoleRumContextId(record)
-        val forceNewBatch = lastRumContextId != newRumContextId
-        lastRumContextId = newRumContextId
-        return forceNewBatch
-    }
-
-    private fun resoleRumContextId(record: EnrichedRecord): String {
-        return "${record.applicationId}-${record.sessionId}-${record.viewId}"
     }
 }
