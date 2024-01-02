@@ -40,6 +40,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -361,7 +362,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     @Test
     fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {refresh rate over 60hz}`(
         @LongForgery timestampNs: Long,
-        @LongForgery(SEVENTEEN_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
+        @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean,
         @DoubleForgery(60.0, 120.0) displayRefreshRate: Double
     ) {
@@ -380,14 +381,19 @@ internal class JankStatsActivityLifecycleListenerTest {
         variableRefreshRateListener.onFrame(frameData)
 
         // Then
-        verify(mockObserver).onNewSample(eq(expectedFrameRate * refreshRateMultiplier, 0.0001))
+        if (expectedFrameRate * refreshRateMultiplier > MIN_FPS) {
+            verify(mockObserver).onNewSample(eq(min(expectedFrameRate * refreshRateMultiplier, MAX_FPS), 0.0001))
+        } else {
+            verify(mockObserver, never()).onNewSample(any())
+        }
     }
 
     companion object {
         const val ONE_MILLISECOND_NS: Long = 1000L * 1000L
-        const val SEVENTEEN_MILLISECOND_NS: Long = 17L * 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
         const val TEN_SECOND_NS: Long = 10L * ONE_SECOND_NS
         const val ONE_MINUTE_NS: Long = 60L * ONE_SECOND_NS
+        const val MIN_FPS: Double = 1.0
+        const val MAX_FPS: Double = 60.0
     }
 }
