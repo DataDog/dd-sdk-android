@@ -17,7 +17,9 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -32,6 +34,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -259,7 +263,7 @@ internal class BitmapPoolTest {
 
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
-        assertThat(testedCache.bitmapsBySize.get(key)?.size).isEqualTo(3)
+        assertThat(testedCache.bitmapsBySize[key]?.size).isEqualTo(3)
     }
 
     @Test
@@ -356,6 +360,38 @@ internal class BitmapPoolTest {
         val captor = argumentCaptor<Int>()
         verify(mockCacheUtils).handleTrimMemory(captor.capture(), any())
         assertThat(captor.firstValue).isEqualTo(0)
+    }
+
+    @RepeatedTest(30)
+    fun `M not receive ConcurrentModificationException W get() { and onLowMemory }`(
+        forge: Forge
+    ) {
+        // when this issue occurs, the frequency is roughly once per 3000 runs,
+
+        // Given
+        val numberOfThreads = 3
+        val executor = Executors.newFixedThreadPool(numberOfThreads)
+        val tasks = mutableListOf<Future<*>>()
+
+        val allThreadsStartedLatch = CountDownLatch(numberOfThreads)
+        testedCache.put(mockBitmap)
+        val bitmapKey = spyBitmapPoolHelper.generateKey(mockBitmap)
+
+        // When
+        repeat(numberOfThreads) {
+            tasks += executor.submit {
+                allThreadsStartedLatch.countDown()
+                allThreadsStartedLatch.await()
+                if (forge.aBool()) {
+                    testedCache.get(bitmapKey)
+                } else {
+                    testedCache.onLowMemory()
+                }
+            }
+        }
+
+        // Then
+        tasks.forEach { assertDoesNotThrow { it.get() } }
     }
 
     // endregion
