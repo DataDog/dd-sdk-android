@@ -28,7 +28,7 @@ class NightlyTestRule : ExternalResource() {
         // - once error is written it will trigger event saying it is written. This event is
         // submitted to RUM (which was already stopped), so that we can send 1st view event
         // (impossible to process - RUM is stopped; impossible to write - persistence executor is stopped)
-        Thread.sleep(200)
+        Thread.sleep(400)
 
         flushAndShutdownExecutors()
         stopSdk()
