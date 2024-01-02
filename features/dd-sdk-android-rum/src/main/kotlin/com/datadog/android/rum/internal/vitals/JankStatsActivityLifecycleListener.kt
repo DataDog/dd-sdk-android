@@ -33,7 +33,7 @@ internal class JankStatsActivityLifecycleListener(
     private val vitalObserver: VitalObserver,
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
-    internal var screenRefreshRate: Double = 60.0
+    private var screenRefreshRate: Double = 60.0
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
@@ -46,15 +46,28 @@ internal class JankStatsActivityLifecycleListener(
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    inner class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
-        @RequiresApi(Build.VERSION_CODES.S)
+    interface DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
         override fun onFrameMetricsAvailable(
-        window: Window,
-        frameMetrics: FrameMetrics,
-        dropCountSinceLastInvocation: Int
-        ) {
-            val frameDeadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)
-            screenRefreshRate = ONE_SECOND_NS / frameDeadline
+            window: Window,
+            frameMetrics: FrameMetrics,
+            dropCountSinceLastInvocation: Int
+        )
+
+        var frameDeadline: Long
+
+        companion object {
+            val DEFAULT = object : DDFrameMetricsListener {
+                @RequiresApi(Build.VERSION_CODES.S)
+                override fun onFrameMetricsAvailable(
+                    window: Window,
+                    frameMetrics: FrameMetrics,
+                    dropCountSinceLastInvocation: Int
+                ) {
+                    frameDeadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)
+                }
+
+                override var frameDeadline: Long = 0
+            }
         }
     }
 
@@ -62,11 +75,6 @@ internal class JankStatsActivityLifecycleListener(
     override fun onActivityStarted(activity: Activity) {
         val window = activity.window
         trackActivity(window, activity)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val handler = Handler(Looper.getMainLooper())
-            window.addOnFrameMetricsAvailableListener(DDFrameMetricsListener(), handler)
-        }
 
         val knownJankStats = activeWindowsListener[window]
         if (knownJankStats != null) {
@@ -94,11 +102,7 @@ internal class JankStatsActivityLifecycleListener(
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val displayManager =
-                activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-            display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
-        }
+        registerMetricListener(window, activity)
     }
 
     @MainThread
@@ -167,6 +171,7 @@ internal class JankStatsActivityLifecycleListener(
         if (activeActivities[activity.window].isNullOrEmpty()) {
             activeWindowsListener.remove(activity.window)
             activeActivities.remove(activity.window)
+            unregisterMetricListener(activity.window)
         }
     }
 
@@ -179,8 +184,11 @@ internal class JankStatsActivityLifecycleListener(
         if (durationNs > 0.0) {
             var frameRate = (ONE_SECOND_NS / durationNs)
 
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-                screenRefreshRate = (display?.refreshRate ?: SIXTY_FPS).toDouble()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                screenRefreshRate =
+                    ONE_SECOND_NS / DDFrameMetricsListener.DEFAULT.frameDeadline
+            } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                screenRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
             }
 
             frameRate *= (SIXTY_FPS / screenRefreshRate)
@@ -188,7 +196,7 @@ internal class JankStatsActivityLifecycleListener(
             // If normalized frame rate is still at over 60fps it means the frame rendered
             // quickly enough for the devices refresh rate.
             if (frameRate > MAX_FPS) {
-               frameRate = MAX_FPS
+                frameRate = MAX_FPS
             }
 
             if (frameRate > MIN_FPS) {
@@ -205,6 +213,27 @@ internal class JankStatsActivityLifecycleListener(
         val list = activeActivities[window] ?: mutableListOf()
         list.add(WeakReference(activity))
         activeActivities[window] = list
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun registerMetricListener(window: Window, activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val handler = Handler(Looper.getMainLooper())
+            window.addOnFrameMetricsAvailableListener(DDFrameMetricsListener.DEFAULT, handler)
+        } else {
+        // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
+        // Frame Metrics callbacks available
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+        }
+    }
+}
+
+    private fun unregisterMetricListener(window: Window) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                window.removeOnFrameMetricsAvailableListener(DDFrameMetricsListener.DEFAULT)
+        }
     }
 
     // endregion
