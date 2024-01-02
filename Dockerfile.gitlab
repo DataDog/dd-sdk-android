@@ -99,6 +99,6 @@ RUN npm install -g @datadog/datadog-ci
 
 # Install Datadog Java tracer
 ENV DD_TRACER_FOLDER $PWD/dd-java-tracer
-mkdir -p DD_TRACER_FOLDER
+mkdir -p $DD_TRACER_FOLDER
 wget -O $DD_TRACER_FOLDER/dd-java-agent.jar 'https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/1.26.1/dd-java-agent-1.26.1.jar'
 
