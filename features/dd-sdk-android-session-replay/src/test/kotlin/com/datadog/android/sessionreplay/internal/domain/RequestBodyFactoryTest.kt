@@ -9,12 +9,12 @@ package com.datadog.android.sessionreplay.internal.domain
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.BytesCompressor
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.MultipartBody.Part
 import okhttp3.RequestBody
@@ -46,76 +46,66 @@ internal class RequestBodyFactoryTest {
     @Mock
     lateinit var mockCompressor: BytesCompressor
 
-    lateinit var fakeCompressedData: ByteArray
+    lateinit var fakeGroupedSegments: List<Pair<MobileSegment, JsonObject>>
 
-    @Forgery
-    lateinit var fakeSegment: MobileSegment
-
-    @Forgery
-    lateinit var fakeSegmentAsJson: JsonObject
-
-    lateinit var fakeSerializedSegmentWithNewLine: String
+    lateinit var fakeCompresseData: List<ByteArray>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeSerializedSegmentWithNewLine = fakeSegmentAsJson.toString() + "\n"
-        fakeCompressedData = forge.aString().toByteArray()
-        whenever(mockCompressor.compressBytes(fakeSerializedSegmentWithNewLine.toByteArray()))
-            .thenReturn(fakeCompressedData)
+        fakeGroupedSegments = forge.aList(size = forge.anInt(min = 1, max = 10)) {
+            val segment = forge.getForgery<MobileSegment>()
+            val json = forge.getForgery<JsonObject>()
+            Pair(segment, json)
+        }
+        fakeCompresseData = fakeGroupedSegments.map { forge.aString().toByteArray() }
+        fakeGroupedSegments.forEachIndexed { index, pair ->
+            val compressedData = fakeCompresseData[index]
+            whenever(mockCompressor.compressBytes((pair.second.toString() + "\n").toByteArray()))
+                .thenReturn(compressedData)
+        }
         testedRequestBodyFactory = RequestBodyFactory(mockCompressor)
     }
 
     @Test
     fun `M return a multipart body W create`() {
+        // Given
+        val expectedFormMetadata = fakeGroupedSegments
+                .mapIndexed { index, pair ->
+                    pair.first.toJson().asJsonObject.apply {
+                        addProperty(
+                        RequestBodyFactory.COMPRESSED_SEGMENT_SIZE_FORM_KEY,
+                                fakeCompresseData[index].size
+                        )
+                        addProperty(
+                        RequestBodyFactory.RAW_SEGMENT_SIZE_FORM_KEY,
+                                (pair.second.toString() + "\n").toByteArray().size
+                        )
+                    }
+        }.fold(JsonArray()) { acc, element ->
+            acc.add(element)
+            acc
+        }
+
         // When
-        val body = testedRequestBodyFactory.create(fakeSegment, fakeSegmentAsJson)
+        val body = testedRequestBodyFactory.create(fakeGroupedSegments)
 
         // Then
         assertThat(body).isInstanceOf(MultipartBody::class.java)
         val multipartBody = body as MultipartBody
         assertThat(multipartBody.type).isEqualTo(MultipartBody.FORM)
         val parts = multipartBody.parts
-        val compressedSegmentPart = Part.createFormData(
-            RequestBodyFactory.SEGMENT_FORM_KEY,
-            fakeSegment.session.id,
-            fakeCompressedData
-                .toRequestBody(RequestBodyFactory.CONTENT_TYPE_BINARY.toMediaTypeOrNull())
-        )
-        val applicationIdPart = Part.createFormData(
-            RequestBodyFactory.APPLICATION_ID_FORM_KEY,
-            fakeSegment.application.id
-        )
-        val sessionIdPart = Part.createFormData(
-            RequestBodyFactory.SESSION_ID_FORM_KEY,
-            fakeSegment.session.id
-        )
-        val viewIdPart = Part.createFormData(
-            RequestBodyFactory.VIEW_ID_FORM_KEY,
-            fakeSegment.view.id
-        )
-        val hasFullSnapshotPart = Part.createFormData(
-            RequestBodyFactory.HAS_FULL_SNAPSHOT_FORM_KEY,
-            fakeSegment.hasFullSnapshot.toString()
-        )
-        val recordsCountPart = Part.createFormData(
-            RequestBodyFactory.RECORDS_COUNT_FORM_KEY,
-            fakeSegment.recordsCount.toString()
-        )
-        val rawSegmentSizePart = Part.createFormData(
-            RequestBodyFactory.RAW_SEGMENT_SIZE_FORM_KEY,
-            fakeCompressedData.size.toString()
-        )
-        val segmentsStartPart = Part.createFormData(
-            RequestBodyFactory.START_TIMESTAMP_FORM_KEY,
-            fakeSegment.start.toString()
-        )
-        val segmentsEndPart = Part.createFormData(
-            RequestBodyFactory.END_TIMESTAMP_FORM_KEY,
-            fakeSegment.end.toString()
-        )
-        val segmentSourcePart = Part.createFormData(
-            RequestBodyFactory.SOURCE_FORM_KEY,
-            fakeSegment.source.toJson().asString
+        val compressedSegmentParts = fakeCompresseData.mapIndexed { index, bytes ->
+            Part.createFormData(
+                    RequestBodyFactory.SEGMENT_DATA_FORM_KEY,
+                    "${RequestBodyFactory.BINARY_FILENAME_PREFIX}$index",
+                    bytes.toRequestBody(RequestBodyFactory.CONTENT_TYPE_BINARY_TYPE)
+            )
+        }
+        val metadataPart = Part.createFormData(
+                RequestBodyFactory.EVENT_NAME_FORM_KEY,
+                filename = RequestBodyFactory.BLOB_FILENAME,
+                expectedFormMetadata.toString()
+                        .toRequestBody(RequestBodyFactory.CONTENT_TYPE_JSON_TYPE)
         )
 
         assertThat(parts)
@@ -129,16 +119,8 @@ internal class RequestBodyFactoryTest {
                 }
             }
             .containsExactlyInAnyOrder(
-                compressedSegmentPart,
-                applicationIdPart,
-                sessionIdPart,
-                viewIdPart,
-                hasFullSnapshotPart,
-                recordsCountPart,
-                rawSegmentSizePart,
-                segmentsStartPart,
-                segmentsEndPart,
-                segmentSourcePart
+                *compressedSegmentParts.toTypedArray(),
+                metadataPart
             )
     }
 
@@ -148,7 +130,7 @@ internal class RequestBodyFactoryTest {
         whenever(mockCompressor.compressBytes(any())).thenThrow(fakeException)
 
         // Then
-        assertThatThrownBy { testedRequestBodyFactory.create(fakeSegment, fakeSegmentAsJson) }
+        assertThatThrownBy { testedRequestBodyFactory.create(fakeGroupedSegments) }
             .isEqualTo(fakeException)
     }
 

@@ -19,17 +19,12 @@ internal class SessionReplayRecordWriter(
 ) : RecordWriter {
     override fun write(record: EnrichedRecord) {
         sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
-            ?.withWriteContext() { _, eventBatchWriter ->
+            ?.withWriteContext { _, eventBatchWriter ->
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
+                val rawBatchEvent = RawBatchEvent(data = serializedRecord)
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
-                    if (eventBatchWriter.write(
-                    RawBatchEvent(
-                                    data = serializedRecord
-                    ),
-                                    batchMetadata = null
-                    )
-                    ) {
+                    if (eventBatchWriter.write(rawBatchEvent, batchMetadata = null)) {
                         updateViewSent(record)
                     }
                 }
