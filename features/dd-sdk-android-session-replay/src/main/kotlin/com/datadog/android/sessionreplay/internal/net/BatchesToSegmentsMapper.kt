@@ -24,14 +24,14 @@ import com.google.gson.JsonParser
  */
 internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogger) {
 
-    fun map(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
+    fun map(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
         return groupBatchDataIntoSegments(batchData)
     }
 
     // region Internal
 
-    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
-        val reducedEnrichedRecord = batchData
+    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
+        return batchData
             .asSequence()
             .mapNotNull {
                 @Suppress("SwallowedException")
@@ -64,14 +64,17 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
                     Pair(rumContext, records)
                 }
             }
-            .reduceOrNull { accumulator, pair ->
-                val records = accumulator.second
-                val newRecords = pair.second
-                records.addAll(newRecords)
-                Pair(accumulator.first, records)
-            } ?: return null
-
-        return mapToSegment(reducedEnrichedRecord.first, reducedEnrichedRecord.second)
+                .groupBy { it.first }
+                .mapValues {
+                    it.value.fold(JsonArray()) { acc, pair ->
+                        acc.addAll(pair.second)
+                        acc
+                    }
+                }
+                .filter { !it.value.isEmpty }
+                .mapNotNull {
+                    mapToSegment(it.key, it.value)
+                }
     }
 
     @Suppress("ReturnCount")
