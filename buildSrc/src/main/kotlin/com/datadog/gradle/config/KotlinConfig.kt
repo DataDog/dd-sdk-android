@@ -28,7 +28,7 @@ fun Project.kotlinConfig(
     }
 
     val moduleName = this@kotlinConfig.name
-    val javaAgentJar = File(File(rootDir, "libs"), "dd-java-agent-0.98.1.jar")
+    val javaAgentJar = File(File(rootDir, "libs"), "dd-java-agent-1.26.1.jar")
     taskConfig<AndroidUnitTest> {
         if (environment["DD_INTEGRATION_JUNIT_5_ENABLED"] == "true") {
             val variant = variantName.substringBeforeLast("UnitTest")
