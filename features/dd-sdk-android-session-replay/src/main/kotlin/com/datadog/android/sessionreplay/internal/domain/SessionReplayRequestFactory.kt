@@ -28,18 +28,15 @@ internal class SessionReplayRequestFactory(
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
-        val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
-        if (serializedSegmentPair == null) {
+        val serializedSegmentPairs = batchToSegmentsMapper.map(batchData.map { it.data })
+        if (serializedSegmentPairs.isEmpty()) {
             @Suppress("ThrowingInternalException")
             throw InvalidPayloadFormatException(
                 "The payload format was broken and an upload" +
                     " request could not be created"
             )
         }
-        val body = requestBodyFactory.create(
-            serializedSegmentPair.first,
-            serializedSegmentPair.second
-        )
+        val body = requestBodyFactory.create(serializedSegmentPairs)
         return resolveRequest(context, body)
     }
 
