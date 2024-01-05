@@ -13,6 +13,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.api.context.NetworkInfo
@@ -20,7 +21,6 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")

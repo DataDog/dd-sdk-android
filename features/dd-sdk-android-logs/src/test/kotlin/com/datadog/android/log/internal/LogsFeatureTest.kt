@@ -20,6 +20,7 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat as assertThatLog
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.internal.storage.LogsDataWriter
@@ -35,6 +36,9 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.Executors
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -56,10 +60,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.Executors
-import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat as assertThatLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

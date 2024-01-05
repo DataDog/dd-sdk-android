@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.trace.TracingHeaderType
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import java.util.Locale
 
 /**
  * Default implementation of [FirstPartyHostHeaderTypeResolver].

@@ -7,11 +7,11 @@
 package com.datadog.tools.unit.assertj
 
 import com.google.gson.JsonElement
-import org.assertj.core.api.AbstractObjectAssert
-import org.assertj.core.api.Assertions.assertThat
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.Date
+import org.assertj.core.api.AbstractObjectAssert
+import org.assertj.core.api.Assertions.assertThat
 
 /**
  * Assertion methods for [JsonElement].

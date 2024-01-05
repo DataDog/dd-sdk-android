@@ -12,6 +12,7 @@ import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.Test
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(ForgeExtension::class)

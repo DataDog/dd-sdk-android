@@ -14,17 +14,17 @@ import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Proxy
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Handshake
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.Proxy
 
 /**
  * Datadog's RUM implementation of OkHttp [EventListener].

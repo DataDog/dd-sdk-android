@@ -12,9 +12,9 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
-import org.mockito.kotlin.mock
 import kotlin.reflect.full.declaredFunctions
 import kotlin.reflect.jvm.isAccessible
+import org.mockito.kotlin.mock
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
 internal class GlobalRumMonitorTestConfiguration(

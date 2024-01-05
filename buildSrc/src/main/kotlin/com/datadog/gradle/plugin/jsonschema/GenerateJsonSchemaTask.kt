@@ -7,6 +7,7 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import com.datadog.gradle.plugin.jsonschema.generator.FileGenerator
+import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.tasks.CacheableTask
@@ -16,7 +17,6 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
 

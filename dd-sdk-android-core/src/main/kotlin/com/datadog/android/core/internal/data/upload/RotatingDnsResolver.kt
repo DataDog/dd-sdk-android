@@ -6,11 +6,11 @@
 
 package com.datadog.android.core.internal.data.upload
 
-import okhttp3.Dns
 import java.net.InetAddress
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.nanoseconds
+import okhttp3.Dns
 
 internal class RotatingDnsResolver(
     private val delegate: Dns = Dns.SYSTEM,

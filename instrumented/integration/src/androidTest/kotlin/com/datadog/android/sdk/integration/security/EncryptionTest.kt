@@ -32,14 +32,14 @@ import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
+import java.io.File
+import java.util.Random
+import kotlin.experimental.inv
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.io.File
-import java.util.Random
-import kotlin.experimental.inv
 
 @MediumTest
 internal class EncryptionTest {

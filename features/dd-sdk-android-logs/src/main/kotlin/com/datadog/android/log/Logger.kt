@@ -6,6 +6,7 @@
 
 package com.datadog.android.log
 
+import android.util.Log as AndroidLog
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -23,7 +24,6 @@ import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
-import android.util.Log as AndroidLog
 
 /**
  * A class enabling Datadog logging features.

@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.Request as DatadogRequest
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.system.AndroidInfoProvider
@@ -21,6 +22,8 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.IOException
+import java.util.Locale
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -48,9 +51,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.IOException
-import java.util.Locale
-import com.datadog.android.api.net.Request as DatadogRequest
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

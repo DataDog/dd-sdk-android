@@ -7,13 +7,13 @@
 package com.datadog.android.sdk.rules
 
 import androidx.test.platform.app.InstrumentationRegistry
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlin.math.max
 
 internal abstract class AbstractProfilingRule(
     private val name: String

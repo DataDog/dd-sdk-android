@@ -18,6 +18,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
+import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
@@ -44,7 +45,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 /**
  * Defines the Session Replay privacy policy when recording the sessions.

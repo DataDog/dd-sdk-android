@@ -6,13 +6,13 @@
 
 package com.datadog.gradle.plugin.apisurface
 
+import java.io.File
 import kotlinx.ast.common.AstSource
 import kotlinx.ast.common.ast.Ast
 import kotlinx.ast.common.ast.AstNode
 import kotlinx.ast.common.ast.AstTerminal
 import kotlinx.ast.common.print
 import kotlinx.ast.grammar.kotlin.target.antlr.kotlin.KotlinGrammarAntlrKotlinParser
-import java.io.File
 
 class KotlinFileVisitor {
 

@@ -32,12 +32,12 @@ import io.opentracing.propagation.TextMapExtractAdapter
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.tag.Tags
 import io.opentracing.util.GlobalTracer
+import java.net.HttpURLConnection
+import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.net.HttpURLConnection
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Provides automatic trace integration for [OkHttpClient] by way of the [Interceptor] system.

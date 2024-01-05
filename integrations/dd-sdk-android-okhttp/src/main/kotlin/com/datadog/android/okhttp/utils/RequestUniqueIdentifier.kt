@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp.utils
 
-import okhttp3.Request
 import java.io.IOException
+import okhttp3.Request
 
 /**
  * Generates an identifier to uniquely track requests.

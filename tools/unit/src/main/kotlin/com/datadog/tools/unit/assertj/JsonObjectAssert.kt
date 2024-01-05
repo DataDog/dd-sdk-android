@@ -12,11 +12,11 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import java.math.BigInteger
+import java.util.Date
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import java.math.BigInteger
-import java.util.Date
 
 /**
  * Assertion methods for [JsonObject].

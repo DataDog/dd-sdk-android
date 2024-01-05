@@ -12,12 +12,12 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
+import java.io.File
+import java.nio.file.Files
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.io.File
-import java.nio.file.Files
 
 internal open class ApplicationContextTestConfiguration<T : Context>(klass: Class<T>) :
     MockTestConfiguration<T>(klass) {

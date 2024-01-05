@@ -23,6 +23,8 @@ import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.ref.WeakReference
+import java.util.stream.Stream
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -42,8 +44,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
-import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

@@ -6,13 +6,13 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.io.File
 
 @RunWith(Parameterized::class)
 class JsonSchemaReaderTest(

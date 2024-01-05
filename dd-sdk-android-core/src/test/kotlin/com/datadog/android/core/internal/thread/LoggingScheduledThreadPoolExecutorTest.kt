@@ -10,12 +10,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import org.mockito.kotlin.verifyNoInteractions
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.verifyNoInteractions
 
 internal class LoggingScheduledThreadPoolExecutorTest :
     AbstractLoggingExecutorServiceTest<ScheduledThreadPoolExecutor>() {

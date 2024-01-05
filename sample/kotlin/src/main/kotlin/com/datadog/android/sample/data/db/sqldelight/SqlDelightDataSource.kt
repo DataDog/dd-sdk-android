@@ -14,9 +14,9 @@ import com.datadog.android.sample.datalist.DataSourceType
 import com.datadog.android.sqldelight.transactionTraced
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
-import timber.log.Timber
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
+import timber.log.Timber
 
 internal class SqlDelightDataSource(val context: Context) : DataSource {
 

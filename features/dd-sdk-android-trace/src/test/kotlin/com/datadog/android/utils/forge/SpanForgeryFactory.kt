@@ -12,8 +12,8 @@ import com.datadog.opentracing.DDTracer.DDSpanBuilder
 import com.datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import org.mockito.kotlin.mock
 import java.security.SecureRandom
+import org.mockito.kotlin.mock
 
 internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
 

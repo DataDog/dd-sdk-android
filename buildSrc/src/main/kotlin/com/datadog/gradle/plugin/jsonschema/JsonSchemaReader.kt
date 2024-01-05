@@ -8,8 +8,8 @@ package com.datadog.gradle.plugin.jsonschema
 
 import com.datadog.gradle.utils.toCamelCase
 import com.google.gson.Gson
-import org.gradle.api.logging.Logger
 import java.io.File
+import org.gradle.api.logging.Logger
 
 class JsonSchemaReader(
     private val nameMapping: Map<String, String>,

@@ -9,15 +9,15 @@ package com.datadog.android.core.internal.data.upload
 import android.net.TrafficStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.Request as DatadogRequest
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import java.util.Locale
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.Locale
-import com.datadog.android.api.net.Request as DatadogRequest
 
 internal class DataOkHttpUploader(
     val requestFactory: RequestFactory,

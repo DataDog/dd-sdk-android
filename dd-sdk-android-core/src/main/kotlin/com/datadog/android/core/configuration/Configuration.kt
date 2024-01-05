@@ -11,8 +11,8 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
-import okhttp3.Authenticator
 import java.net.Proxy
+import okhttp3.Authenticator
 
 /**
  * An object describing the configuration of the Datadog SDK.

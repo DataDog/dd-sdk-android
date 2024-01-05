@@ -26,16 +26,16 @@ import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.lyft.kronos.KronosClock
 import fr.xgouchet.elmyr.Forge
-import okhttp3.OkHttpClient
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.ref.WeakReference
 import java.nio.file.Files
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import okhttp3.OkHttpClient
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal class CoreFeatureTestConfiguration<T : Context>(
     val appContext: ApplicationContextTestConfiguration<T>

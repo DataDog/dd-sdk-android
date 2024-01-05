@@ -6,13 +6,13 @@
 
 package com.datadog.gradle.plugin.transdeps
 
+import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 open class TransitiveDependenciesTask : DefaultTask() {
 

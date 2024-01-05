@@ -10,8 +10,8 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build

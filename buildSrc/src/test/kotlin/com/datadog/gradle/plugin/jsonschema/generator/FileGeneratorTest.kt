@@ -35,14 +35,14 @@ import com.datadog.gradle.plugin.jsonschema.User
 import com.datadog.gradle.plugin.jsonschema.UserMerged
 import com.datadog.gradle.plugin.jsonschema.Version
 import com.datadog.gradle.plugin.jsonschema.Video
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
 
 @RunWith(Parameterized::class)
 class FileGeneratorTest(

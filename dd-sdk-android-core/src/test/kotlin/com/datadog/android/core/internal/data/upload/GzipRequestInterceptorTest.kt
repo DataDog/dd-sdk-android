@@ -11,6 +11,7 @@ import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
 import okhttp3.Interceptor
 import okhttp3.MultipartBody
 import okhttp3.Protocol
@@ -32,7 +33,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.ByteArrayOutputStream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

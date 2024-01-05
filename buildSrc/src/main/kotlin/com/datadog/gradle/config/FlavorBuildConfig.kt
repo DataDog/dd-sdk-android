@@ -8,9 +8,9 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.ApplicationProductFlavor
 import com.google.gson.Gson
-import org.gradle.api.Project
 import java.io.File
 import java.util.Locale
+import org.gradle.api.Project
 
 fun sampleAppConfig(filePath: String): SampleAppConfig {
     val file = File(filePath)

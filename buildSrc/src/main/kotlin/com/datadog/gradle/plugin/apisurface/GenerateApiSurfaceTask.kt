@@ -6,11 +6,11 @@
 
 package com.datadog.gradle.plugin.apisurface
 
+import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 open class GenerateApiSurfaceTask : DefaultTask() {
     @get:Input

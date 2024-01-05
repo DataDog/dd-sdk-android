@@ -6,13 +6,13 @@
 
 package com.datadog.gradle.plugin.apisurface
 
+import java.io.File
+import java.lang.IllegalStateException
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
-import java.lang.IllegalStateException
 
 internal class KotlinFileVisitorTest {
 

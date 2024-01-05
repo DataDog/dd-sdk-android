@@ -7,13 +7,13 @@
 package com.datadog.tools.unit.assertj
 
 import android.util.Log
+import java.io.ByteArrayOutputStream
+import java.util.UnknownFormatConversionException
 import junit.framework.AssertionFailedError
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.Matcher
-import java.io.ByteArrayOutputStream
-import java.util.UnknownFormatConversionException
 
 /**
  * Assertion methods for [ByteArrayOutputStream].

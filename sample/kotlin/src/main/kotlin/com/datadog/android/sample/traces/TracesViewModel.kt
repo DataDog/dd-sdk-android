@@ -23,6 +23,8 @@ import com.datadog.android.vendor.sample.LocalServer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
+import java.util.Locale
+import java.util.Random
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -33,8 +35,6 @@ import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.util.Locale
-import java.util.Random
 
 @Suppress("DEPRECATION")
 internal class TracesViewModel(

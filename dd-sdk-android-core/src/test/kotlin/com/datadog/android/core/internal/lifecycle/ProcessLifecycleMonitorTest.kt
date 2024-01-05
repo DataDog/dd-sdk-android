@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.lifecycle
 
 import android.app.Activity
+import java.util.concurrent.CountDownLatch
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -21,7 +22,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
-import java.util.concurrent.CountDownLatch
 
 @Extensions(
     ExtendWith(MockitoExtension::class)

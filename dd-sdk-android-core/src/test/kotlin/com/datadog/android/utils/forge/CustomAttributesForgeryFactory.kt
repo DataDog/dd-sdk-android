@@ -10,12 +10,12 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import org.json.JSONArray
+import org.json.JSONObject
 
 internal class CustomAttributesForgeryFactory : ForgeryFactory<CustomAttributes> {
     override fun getForgery(forge: Forge): CustomAttributes {

@@ -12,10 +12,10 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
-import okhttp3.RequestBody
-import okio.Buffer
 import java.util.Locale
 import java.util.UUID
+import okhttp3.RequestBody
+import okio.Buffer
 
 internal class SessionReplayRequestFactory(
     internal val customEndpointUrl: String?,

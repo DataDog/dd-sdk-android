@@ -14,11 +14,11 @@ import com.datadog.tools.unit.ConditionWatcher
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 internal open class TelemetryTest {
 

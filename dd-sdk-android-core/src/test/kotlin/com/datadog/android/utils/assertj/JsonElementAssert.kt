@@ -14,11 +14,11 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.google.gson.internal.LazilyParsedNumber
+import java.util.Date
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.Date
 
 internal class JsonElementAssert(actual: JsonElement) :
     AbstractAssert<JsonElementAssert, JsonElement>(

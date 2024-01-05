@@ -11,8 +11,8 @@ import androidx.preference.PreferenceManager
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.datalist.DataSourceType
 import com.datadog.android.sample.picture.ImageLoaderType
-import timber.log.Timber
 import java.lang.IllegalArgumentException
+import timber.log.Timber
 
 internal object Preferences {
 

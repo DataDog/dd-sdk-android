@@ -7,10 +7,10 @@
 package com.datadog.android.utils.assertj
 
 import com.datadog.android.core.internal.system.SystemInfo
+import kotlin.math.max
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import kotlin.math.max
 
 internal class SystemInfoAssert(actual: SystemInfo) :
     AbstractObjectAssert<SystemInfoAssert, SystemInfo>(actual, SystemInfoAssert::class.java) {

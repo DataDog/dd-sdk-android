@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
+import android.util.Log as AndroidLog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -15,7 +16,6 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
-import android.util.Log as AndroidLog
 
 internal class DatadogLogHandler(
     internal val loggerName: String,

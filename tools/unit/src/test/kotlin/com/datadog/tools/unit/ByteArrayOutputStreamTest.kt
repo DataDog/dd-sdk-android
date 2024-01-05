@@ -8,11 +8,11 @@ package com.datadog.tools.unit
 
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
+import java.io.PrintWriter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import java.io.ByteArrayOutputStream
-import java.io.PrintWriter
 
 @ExtendWith(ForgeExtension::class)
 internal class ByteArrayOutputStreamTest {

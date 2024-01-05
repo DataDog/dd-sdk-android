@@ -33,6 +33,8 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
+import java.io.IOException
+import java.util.Locale
 import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Response
@@ -59,8 +61,6 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.IOException
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

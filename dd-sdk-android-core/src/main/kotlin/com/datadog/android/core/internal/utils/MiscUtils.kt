@@ -13,9 +13,9 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import java.util.Date
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.Date
 
 internal fun retryWithDelay(
     times: Int,

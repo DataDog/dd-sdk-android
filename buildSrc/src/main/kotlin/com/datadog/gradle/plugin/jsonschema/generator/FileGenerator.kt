@@ -10,8 +10,8 @@ import com.datadog.gradle.plugin.jsonschema.TypeDefinition
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
-import org.gradle.api.logging.Logger
 import java.io.File
+import org.gradle.api.logging.Logger
 
 class FileGenerator(
     private val outputDir: File,

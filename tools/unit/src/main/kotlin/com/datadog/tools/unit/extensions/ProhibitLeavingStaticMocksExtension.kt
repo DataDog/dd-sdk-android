@@ -7,9 +7,6 @@
 package com.datadog.tools.unit.extensions
 
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
-import org.junit.jupiter.api.extension.AfterEachCallback
-import org.junit.jupiter.api.extension.ExtensionContext
-import org.mockito.internal.util.MockUtil
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.LinkedList
@@ -24,6 +21,9 @@ import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaGetter
 import kotlin.reflect.jvm.jvmName
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
+import org.mockito.internal.util.MockUtil
 
 /**
  * Extension which allows to see mocks left in static fields after test run.

@@ -28,6 +28,7 @@ import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.C
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.tools.unit.forge.aThrowable
@@ -40,6 +41,8 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
+import java.util.Locale
+import kotlin.reflect.jvm.jvmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -64,9 +67,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
-import java.util.Locale
-import kotlin.reflect.jvm.jvmName
-import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

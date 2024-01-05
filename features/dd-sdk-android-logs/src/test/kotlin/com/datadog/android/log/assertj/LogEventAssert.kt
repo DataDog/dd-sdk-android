@@ -10,12 +10,12 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
-import org.assertj.core.api.AbstractObjectAssert
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import org.assertj.core.api.AbstractObjectAssert
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 internal class LogEventAssert(actual: LogEvent) :
     AbstractObjectAssert<LogEventAssert, LogEvent>(actual, LogEventAssert::class.java) {

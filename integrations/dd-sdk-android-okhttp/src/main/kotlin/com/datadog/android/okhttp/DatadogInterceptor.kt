@@ -32,13 +32,13 @@ import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import io.opentracing.Span
 import io.opentracing.Tracer
+import java.io.IOException
+import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
-import java.io.IOException
-import java.util.Locale
 
 /**
  * Provides automatic RUM & APM integration for [OkHttpClient] by way of the [Interceptor] system.

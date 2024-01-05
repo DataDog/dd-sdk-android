@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.view.View
 import android.widget.Toolbar
 import androidx.appcompat.widget.ActionBarContainer
+import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.AppcompatToolbarCustomSubclass
@@ -29,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

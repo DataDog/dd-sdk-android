@@ -13,13 +13,13 @@ import com.datadog.android.security.NoOpEncryption
 import com.datadog.android.trace.TracingHeaderType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.net.Proxy
+import java.net.URL
 import okhttp3.Authenticator
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.net.Proxy
-import java.net.URL
 
 internal class ConfigurationCoreForgeryFactory :
     ForgeryFactory<Configuration.Core> {

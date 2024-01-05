@@ -12,8 +12,8 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
-import okhttp3.HttpUrl
 import java.io.File
+import okhttp3.HttpUrl
 
 /**
  * Provides an implementation of [coil.request.ImageRequest.Listener] already set up to send relevant information

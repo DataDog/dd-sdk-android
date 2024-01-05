@@ -7,6 +7,8 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import java.io.IOException
+import kotlin.jvm.Throws
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -16,8 +18,6 @@ import okhttp3.Response
 import okio.BufferedSink
 import okio.GzipSink
 import okio.buffer
-import java.io.IOException
-import kotlin.jvm.Throws
 
 /**
  * This interceptor compresses the HTTP request body.

@@ -24,15 +24,15 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import com.google.gson.internal.LazilyParsedNumber
-import okio.Buffer
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration
-import org.junit.After
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.zip.Inflater
+import okio.Buffer
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration
+import org.junit.After
 
 internal abstract class BaseSessionReplayTest<R : Activity> {
 

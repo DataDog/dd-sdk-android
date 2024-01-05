@@ -16,13 +16,13 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.mock
-import java.util.Locale
 
 @Extensions(
     ExtendWith(ForgeExtension::class)

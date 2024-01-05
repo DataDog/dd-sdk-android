@@ -9,6 +9,8 @@ package com.datadog.android.trace.coroutines
 import com.datadog.android.trace.withinSpan
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -19,8 +21,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 private const val TAG_DISPATCHER: String = "coroutine.dispatcher"
 

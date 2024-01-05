@@ -12,6 +12,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,7 +32,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.File
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

@@ -8,9 +8,9 @@ import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.nightlyTestsCoverageConfig
 import com.datadog.gradle.config.registerSubModuleAggregationTask
+import java.util.Properties
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
-import java.util.Properties
 
 plugins {
     `maven-publish`

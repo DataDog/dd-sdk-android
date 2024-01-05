@@ -11,6 +11,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.InetAddress
+import kotlin.time.Duration.Companion.milliseconds
 import okhttp3.Dns
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -24,8 +26,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.net.InetAddress
-import kotlin.time.Duration.Companion.milliseconds
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

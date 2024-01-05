@@ -21,6 +21,10 @@ import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.InputStream
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -34,10 +38,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
-import java.io.InputStream
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
 
 @Extensions(
     ExtendWith(

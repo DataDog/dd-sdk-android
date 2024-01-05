@@ -8,10 +8,10 @@ package com.datadog.android.rum.utils.assertj
 
 import com.datadog.android.rum.utils.assertj.JsonElementAssert.Companion.assertThat
 import com.google.gson.JsonElement
+import java.util.Date
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import java.util.Date
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
 internal class DeserializedMapAssert(actual: Map<String, Any?>) :

@@ -12,9 +12,9 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.util.Date
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.Date
 
 fun JsonObjectAssert.containsExtraAttributes(
     attributes: Map<String, Any?>,

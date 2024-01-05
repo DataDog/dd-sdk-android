@@ -17,9 +17,9 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
+import java.io.IOException
 import okhttp3.Request
 import timber.log.Timber
-import java.io.IOException
 
 /**
  * An [WidgetIntentService] to showcase tracking interactions with a home screen widget.

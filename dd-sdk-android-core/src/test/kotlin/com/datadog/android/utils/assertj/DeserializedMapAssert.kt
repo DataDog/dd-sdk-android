@@ -8,10 +8,10 @@ package com.datadog.android.utils.assertj
 
 import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
 import com.google.gson.JsonElement
+import java.util.Date
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import java.util.Date
 
 internal class DeserializedMapAssert(actual: Map<String, Any?>) :
     AbstractAssert<DeserializedMapAssert, Map<String, Any?>>(

@@ -12,12 +12,12 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toViewSessionPrecondition
 import com.datadog.android.rum.model.ViewEvent
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.assertj.core.data.Percentage
-import java.util.concurrent.TimeUnit
 
 internal class ViewEventAssert(actual: ViewEvent) :
     AbstractObjectAssert<ViewEventAssert, ViewEvent>(

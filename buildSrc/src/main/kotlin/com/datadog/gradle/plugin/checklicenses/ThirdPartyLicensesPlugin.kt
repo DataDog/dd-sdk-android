@@ -7,9 +7,9 @@
 package com.datadog.gradle.plugin.checklicenses
 
 import com.android.build.gradle.internal.tasks.factory.dependsOn
+import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import java.io.File
 
 class ThirdPartyLicensesPlugin : Plugin<Project> {
 

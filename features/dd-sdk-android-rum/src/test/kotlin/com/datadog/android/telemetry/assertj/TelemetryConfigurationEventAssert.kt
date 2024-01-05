@@ -7,9 +7,9 @@
 package com.datadog.android.telemetry.assertj
 
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
-import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
 internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationEvent) :
     AbstractObjectAssert<TelemetryConfigurationEventAssert, TelemetryConfigurationEvent>(

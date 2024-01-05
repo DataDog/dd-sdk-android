@@ -21,6 +21,11 @@ import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.net.HttpURLConnection
+import java.util.zip.GZIPInputStream
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -28,11 +33,6 @@ import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.mockwebserver.SocketPolicy
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.net.HttpURLConnection
-import java.util.zip.GZIPInputStream
 
 internal open class MockServerActivityTestRule<T : Activity>(
     val activityClass: Class<T>,
