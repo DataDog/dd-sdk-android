@@ -20,6 +20,11 @@ import com.datadog.tools.annotation.NoOpImplementation
 @Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
 interface RumMonitor {
+    /**
+     * The current active session id. May return null if a session has not been started yet.
+     * Will return a "null session id" (all zeros) if the current session is not tracked.
+     */
+    val currentSessionId: String?
 
     /**
      * Notifies that a View is being shown to the user, linked with the [key] instance.

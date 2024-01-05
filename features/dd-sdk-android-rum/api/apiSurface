@@ -88,6 +88,7 @@ enum com.datadog.android.rum.RumErrorSource
   - AGENT
   - WEBVIEW
 interface com.datadog.android.rum.RumMonitor
+  val currentSessionId: String?
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addAction(RumActionType, String, Map<String, Any?>)

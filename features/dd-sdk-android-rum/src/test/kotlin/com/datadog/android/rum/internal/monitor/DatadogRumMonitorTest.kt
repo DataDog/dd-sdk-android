@@ -194,6 +194,27 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M returns null id for current session W no session started`() {
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            fakeSampleRate,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener
+        )
+
+        assertThat(testedMonitor.currentSessionId).isEqualTo(RumContext.NULL_UUID)
+    }
+
+    @Test
     fun `M delegate event to rootScope W startView()`(
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
@@ -210,6 +231,64 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M currentSessionId returns correct sessionId W session started { sampled in }`(
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
+    ) {
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            100.0f,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener
+        )
+
+        testedMonitor.startView(key, name, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<String> {
+            verify(mockSessionListener).onSessionStarted(capture(), any())
+
+            assertThat(testedMonitor.currentSessionId).isEqualTo(firstValue)
+        }
+    }
+
+    @Test
+    fun `M currentSessionId returns null session W session started { sampled out }`(
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
+    ) {
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            0.0f,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener
+        )
+
+        testedMonitor.startView(key, name, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        assertThat(testedMonitor.currentSessionId).isEqualTo(RumContext.NULL_UUID)
     }
 
     @Test

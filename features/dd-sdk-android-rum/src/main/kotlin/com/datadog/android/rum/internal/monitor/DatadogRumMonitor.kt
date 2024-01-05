@@ -27,6 +27,7 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -97,6 +98,17 @@ internal class DatadogRumMonitor(
     private val isDebugEnabled = AtomicBoolean(false)
 
     // region RumMonitor
+
+    override val currentSessionId: String?
+        get() {
+            val applicationScope = rootScope as? RumApplicationScope
+            val sessionScope = applicationScope?.activeSession as? RumSessionScope
+            if (sessionScope != null && sessionScope.sessionState == RumSessionScope.State.NOT_TRACKED) {
+                // Aligns with iOS which assigns a NULL session id when the session is not tracked
+                return RumContext.NULL_UUID
+            }
+            return sessionScope?.sessionId
+        }
 
     override var debug: Boolean
         get() = isDebugEnabled.get()
