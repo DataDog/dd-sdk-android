@@ -48,6 +48,14 @@ fun isLogEnabledInRelease(): String {
     return project.findProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as? String ?: "false"
 }
 
+/**
+ * Checks whether the SDK should enable core testing.
+ * @return true if core testing should be enabled
+ */
+fun isBuiltForCoreTesting(): String {
+    return project.findProperty(GradlePropertiesKeys.BUILD_FOR_CORE_TESTING) as? String ?: "false"
+}
+
 android {
     defaultConfig {
         buildFeatures {
@@ -62,6 +70,11 @@ android {
             "String",
             "SDK_VERSION_NAME",
             "\"${AndroidConfig.VERSION.name}\""
+        )
+        buildConfigField(
+            "Boolean",
+            BuildConfigPropertiesKeys.BUILD_FOR_CORE_TESTING,
+            isBuiltForCoreTesting()
         )
     }
 

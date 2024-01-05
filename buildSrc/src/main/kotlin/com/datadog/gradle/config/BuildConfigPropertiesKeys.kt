@@ -8,4 +8,5 @@ package com.datadog.gradle.config
 
 object BuildConfigPropertiesKeys {
     const val LOGCAT_ENABLED = "LOGCAT_ENABLED"
+    const val BUILD_FOR_CORE_TESTING = "BUILD_FOR_CORE_TESTING"
 }

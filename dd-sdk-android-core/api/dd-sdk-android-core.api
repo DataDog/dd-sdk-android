@@ -1,4 +1,5 @@
 public final class com/datadog/android/BuildConfig {
+	public static final field BUILD_FOR_CORE_TESTING Ljava/lang/Boolean;
 	public static final field BUILD_TYPE Ljava/lang/String;
 	public static final field DEBUG Z
 	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
@@ -59,6 +60,7 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 public final class com/datadog/android/_InternalProxy {
 	public static final field Companion Lcom/datadog/android/_InternalProxy$Companion;
 	public final fun get_telemetry ()Lcom/datadog/android/_InternalProxy$_TelemetryProxy;
+	public final fun registerCoreWithProxy ()Lcom/datadog/android/core/DatadogCoreProxy;
 	public final fun setCustomAppVersion (Ljava/lang/String;)V
 }
 

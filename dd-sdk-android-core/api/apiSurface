@@ -29,6 +29,7 @@ class com.datadog.android._InternalProxy
     fun error(String, String?, String?)
   val _telemetry: _TelemetryProxy
   fun setCustomAppVersion(String)
+  fun registerCoreWithProxy(): com.datadog.android.core.DatadogCoreProxy?
   companion object 
     fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
 interface com.datadog.android.api.InternalLogger

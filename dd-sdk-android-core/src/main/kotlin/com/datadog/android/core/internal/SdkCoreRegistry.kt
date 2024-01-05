@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.DatadogCoreProxy
@@ -73,12 +74,14 @@ internal class SdkCoreRegistry(
      * This must be called before any feature is registered.
      */
     fun wrapCoreWithProxy(name: String?): DatadogCoreProxy? {
-        val key = name ?: DEFAULT_INSTANCE_NAME
-        val sdkCore = instances[key]
-        if (sdkCore != null) {
-            val proxiedCore = DatadogCoreProxy(sdkCore as InternalSdkCore)
-            instances[key] = proxiedCore
-            return proxiedCore
+        if (BuildConfig.BUILD_FOR_CORE_TESTING) {
+            val key = name ?: DEFAULT_INSTANCE_NAME
+            val sdkCore = instances[key]
+            if (sdkCore != null) {
+                val proxiedCore = DatadogCoreProxy(sdkCore as InternalSdkCore)
+                instances[key] = proxiedCore
+                return proxiedCore
+            }
         }
         return null
     }
