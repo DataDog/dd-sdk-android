@@ -8,6 +8,8 @@ package com.datadog.android.core.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.DatadogCoreProxy
+import com.datadog.android.core.InternalSdkCore
 
 /**
  * A Registry for all [SdkCore] instances, allowing customers to retrieve the one
@@ -64,6 +66,21 @@ internal class SdkCoreRegistry(
      */
     fun clear() {
         instances.clear()
+    }
+
+    /**
+     * Wraps the core with a proxy to start listening to feature events.
+     * This must be called before any feature is registered.
+     */
+    fun wrapCoreWithProxy(name: String?): DatadogCoreProxy? {
+        val key = name ?: DEFAULT_INSTANCE_NAME
+        val sdkCore = instances[key]
+        if (sdkCore != null) {
+            val proxiedCore = DatadogCoreProxy(sdkCore as InternalSdkCore)
+            instances[key] = proxiedCore
+            return proxiedCore
+        }
+        return null
     }
 
     // endregion

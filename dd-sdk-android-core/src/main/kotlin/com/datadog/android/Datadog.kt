@@ -319,7 +319,7 @@ object Datadog {
     @InternalApi
     @Suppress("FunctionNaming", "FunctionName")
     fun _internalProxy(instanceName: String? = null): _InternalProxy {
-        return _InternalProxy(getInstance(instanceName))
+        return _InternalProxy(getInstance(instanceName), registry)
     }
 
     // endregion
