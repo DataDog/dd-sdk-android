@@ -22,14 +22,14 @@ internal sealed class RumRawEvent {
     abstract val eventTime: Time
 
     internal data class StartView(
-        val key: Any,
+        val key: RumScopeKey,
         val name: String,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
     internal data class StopView(
-        val key: Any,
+        val key: RumScopeKey,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()
     ) : RumRawEvent()

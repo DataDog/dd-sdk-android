@@ -31,6 +31,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumResourceScope
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
@@ -235,7 +236,7 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartView
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
             assertThat(event.name).isEqualTo(name)
         }
@@ -326,7 +327,7 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StopView
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -757,7 +758,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.StartView
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
             assertThat(event.name).isEqualTo(name)
         }
@@ -778,7 +779,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.StopView
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1825,7 +1826,7 @@ internal class DatadogRumMonitorTest {
                         attributes = emptyMap()
                     ),
                     RumRawEvent.StartView(
-                        key = Any(),
+                        key = forge.getForgery(),
                         name = forge.anAlphaNumericalString(),
                         attributes = emptyMap()
                     )

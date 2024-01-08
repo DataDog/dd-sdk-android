@@ -34,6 +34,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
@@ -149,14 +150,14 @@ internal class DatadogRumMonitor(
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartView(key, name, attributes, eventTime)
+            RumRawEvent.StartView(RumScopeKey.from(key), name, attributes, eventTime)
         )
     }
 
     override fun stopView(key: Any, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopView(key, attributes, eventTime)
+            RumRawEvent.StopView(RumScopeKey.from(key), attributes, eventTime)
         )
     }
 

@@ -212,7 +212,7 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                assertThat(it.keyRef.get()).isEqualTo(fakeEvent.key)
+                assertThat(it.key).isEqualTo(fakeEvent.key)
                 assertThat(it.name).isEqualTo(fakeEvent.name)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
                 assertThat(it.attributes).containsAllEntriesOf(fakeEvent.attributes)
@@ -240,7 +240,7 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                assertThat(it.keyRef.get()).isEqualTo(fakeEvent.key)
+                assertThat(it.key).isEqualTo(fakeEvent.key)
                 assertThat(it.name).isEqualTo(fakeEvent.name)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
                 assertThat(it.attributes).containsAllEntriesOf(fakeEvent.attributes)
@@ -347,7 +347,7 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.key.url).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -377,7 +377,7 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.key.url).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -418,7 +418,7 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.key.url).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -576,7 +576,7 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeAppStartEvent.eventTime.timestamp))
-                assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
+                assertThat(it.key.url).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)

@@ -20,7 +20,6 @@ import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -149,21 +148,12 @@ internal class RumApplicationScope(
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
             lastActiveViewInfo?.let {
-                val key = it.keyRef.get()
-                if (key != null) {
-                    val startViewEvent = RumRawEvent.StartView(
-                        key = key,
-                        name = it.name,
-                        attributes = it.attributes
-                    )
-                    newSession.handleEvent(startViewEvent, writer)
-                } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE.format(Locale.US, it.name) }
-                    )
-                }
+                val startViewEvent = RumRawEvent.StartView(
+                    key = it.key,
+                    name = it.name,
+                    attributes = it.attributes
+                )
+                newSession.handleEvent(startViewEvent, writer)
             }
         }
 
@@ -181,7 +171,7 @@ internal class RumApplicationScope(
     private fun sendApplicationStartEvent(eventTime: Time, writer: DataWriter<Any>) {
         val processImportance = DdRumContentProvider.processImportance
         val isForegroundProcess = processImportance ==
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         if (isForegroundProcess) {
             val processStartTimeNs = appStartTimeProvider.appStartTimeNs
             // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
@@ -189,8 +179,8 @@ internal class RumApplicationScope(
             // To do so, we take the offset of those times in the event time, which should be consistent,
             // then add that to our processStartTime to get the correct value.
             val timestampNs = (
-                TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
-                ) + processStartTimeNs
+                    TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
+                    ) + processStartTimeNs
             val applicationLaunchViewTime = Time(
                 timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
                 nanoTime = processStartTimeNs
@@ -207,8 +197,8 @@ internal class RumApplicationScope(
 
     companion object {
         internal const val LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE = "Attempting to start a new " +
-            "session on the last known view (%s) failed because that view has been disposed. "
+                "session on the last known view (%s) failed because that view has been disposed. "
         internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
-            "sessions when starting a new session"
+                "sessions when starting a new session"
     }
 }

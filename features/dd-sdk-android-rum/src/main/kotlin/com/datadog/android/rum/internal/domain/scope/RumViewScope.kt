@@ -32,9 +32,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.hasUserData
 import com.datadog.android.rum.utils.newRumEventWriteOperation
-import com.datadog.android.rum.utils.resolveViewUrl
-import java.lang.ref.Reference
-import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -45,7 +42,7 @@ import kotlin.math.min
 internal open class RumViewScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
-    key: Any,
+    internal val key: RumScopeKey,
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
@@ -60,9 +57,8 @@ internal open class RumViewScope(
     internal val sampleRate: Float
 ) : RumScope {
 
-    internal val url = key.resolveViewUrl().replace('.', '/')
+    internal val url = key.url.replace('.', '/')
 
-    internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
     private var sessionId: String = parentScope.getRumContext().sessionId
@@ -253,9 +249,7 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
-        if (stopped) return
-        val startedKey = keyRef.get()
-        val shouldStop = (event.key == startedKey) || (startedKey == null)
+        val shouldStop = (event.key == key)
         if (shouldStop && !stopped) {
             val newRumContext = getRumContext().copy(
                 viewType = RumViewType.NONE,
@@ -1104,7 +1098,7 @@ internal open class RumViewScope(
     private fun sendViewChanged() {
         viewChangedListener?.onViewChanged(
             RumViewInfo(
-                keyRef = keyRef,
+                key = key,
                 name = name,
                 attributes = attributes,
                 isActive = isActive()

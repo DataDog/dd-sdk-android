@@ -41,7 +41,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -145,7 +144,9 @@ internal class RumViewScopeTest {
     lateinit var fakeActionId: String
 
     lateinit var fakeUrl: String
-    lateinit var fakeKey: ByteArray
+
+    @Forgery
+    lateinit var fakeKey: RumScopeKey
     lateinit var fakeAttributes: Map<String, Any?>
 
     @Forgery
@@ -241,9 +242,9 @@ internal class RumViewScopeTest {
         )
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
         fakeAttributes = forge.exhaustiveAttributes()
-        fakeKey = forge.anAsciiString().toByteArray()
+        fakeKey = forge.getForgery()
         fakeEvent = mockEvent()
-        fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
+        fakeUrl = fakeKey.url.replace('.', '/')
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
@@ -447,7 +448,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(forge.anAlphabeticalString() + fakeKey, attributes),
+            RumRawEvent.StopView(forge.getForgery(), attributes),
             mockWriter
         )
 
@@ -650,7 +651,7 @@ internal class RumViewScopeTest {
     )
     fun `𝕄 not update the viewType to NONE W handleEvent(StartView) { on active view }`(
         viewType: RumViewScope.RumViewType,
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         @StringForgery name: String
     ) {
         // Given
@@ -706,7 +707,7 @@ internal class RumViewScopeTest {
     )
     fun `𝕄 not update the viewType to NONE W handleEvent(StopView) {already stopped, active view}`(
         viewType: RumViewScope.RumViewType,
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         @StringForgery name: String
     ) {
         // Given
@@ -756,7 +757,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StartView) on stopped view`(
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         @StringForgery name: String
     ) {
         // Given
@@ -775,7 +776,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(StartView) on active view`(
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         @StringForgery name: String
     ) {
         // When
@@ -843,9 +844,9 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event once 𝕎 handleEvent(StartView) twice on active view`(
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         @StringForgery name: String,
-        @StringForgery key2: String,
+        @Forgery key2: RumScopeKey,
         @StringForgery name2: String
     ) {
         // When
@@ -1817,78 +1818,8 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view with missing key`() {
-        // Given
-        fakeKey = ByteArray(0)
-        System.gc()
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(false)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
-                    hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
-                    hasStartReason(fakeParentContext.sessionStartReason)
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StopView) on active view without matching key`(
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         forge: Forge
     ) {
         // Given
@@ -7890,7 +7821,7 @@ internal class RumViewScopeTest {
 
     // endregion
 
-    data class RumRawEventData(val event: RumRawEvent, val viewKey: String)
+    data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
@@ -7906,7 +7837,7 @@ internal class RumViewScopeTest {
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()
             Configurator().apply { configure(forge) }
-            val fakeKey = forge.anAlphabeticalString()
+            val fakeKey = forge.getForgery<RumScopeKey>()
             val fakeName = forge.anAlphabeticalString()
             val eventTime = Time(0, 0)
             return listOf(

@@ -27,7 +27,7 @@ internal fun Forge.interactiveRumRawEvent(): RumRawEvent {
 
 internal fun Forge.startViewEvent(): RumRawEvent.StartView {
     return RumRawEvent.StartView(
-        key = anHexadecimalString(),
+        key = getForgery(),
         name = anAlphabeticalString(),
         attributes = exhaustiveAttributes()
     )
@@ -35,7 +35,7 @@ internal fun Forge.startViewEvent(): RumRawEvent.StartView {
 
 internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
     return RumRawEvent.StopView(
-        key = anHexadecimalString(),
+        key = getForgery(),
         attributes = exhaustiveAttributes()
     )
 }
@@ -186,7 +186,7 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
             RumRawEvent.ApplicationStarted(Time(), aLong()),
             RumRawEvent.ResetSession(),
             RumRawEvent.KeepAlive(),
-            RumRawEvent.StopView(anAlphabeticalString(), emptyMap()),
+            RumRawEvent.StopView(getForgery(), emptyMap()),
             RumRawEvent.ActionSent(fakeId, aPositiveInt()),
             RumRawEvent.ErrorSent(fakeId),
             RumRawEvent.LongTaskSent(fakeId),
