@@ -99,16 +99,21 @@ internal class DatadogRumMonitor(
 
     // region RumMonitor
 
-    override val currentSessionId: String?
-        get() {
-            val applicationScope = rootScope as? RumApplicationScope
-            val sessionScope = applicationScope?.activeSession as? RumSessionScope
-            if (sessionScope != null && sessionScope.sessionState == RumSessionScope.State.NOT_TRACKED) {
-                // Aligns with iOS which assigns a NULL session id when the session is not tracked
-                return RumContext.NULL_UUID
+    override fun getCurrentSessionId(callback: (String?) -> Unit) {
+        executorService.submitSafe(
+            "Get current session ID",
+            sdkCore.internalLogger
+        ) {
+            val activeSession = rootScope
+                .getRumContext()
+                .sessionId
+            if (activeSession == RumContext.NULL_UUID) {
+                callback(null)
+            } else {
+                callback(activeSession)
             }
-            return sessionScope?.sessionId
         }
+    }
 
     override var debug: Boolean
         get() = isDebugEnabled.get()

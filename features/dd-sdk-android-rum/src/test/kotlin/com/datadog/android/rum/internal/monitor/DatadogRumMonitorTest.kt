@@ -79,6 +79,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -194,7 +195,8 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M returns null id for current session W no session started`() {
+    fun `M send null for current session W getCurrentSessionId { no session started }`() {
+        // Given
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
@@ -210,8 +212,15 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener
         )
+        val completableFuture = CompletableFuture<String>()
 
-        assertThat(testedMonitor.currentSessionId).isEqualTo(RumContext.NULL_UUID)
+        // When
+        testedMonitor.getCurrentSessionId { completableFuture.complete(it) }
+
+        // Then
+        completableFuture.thenAccept {
+            assertThat(it).isEqualTo(null)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS)
     }
 
     @Test
@@ -234,10 +243,11 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M currentSessionId returns correct sessionId W session started { sampled in }`(
+    fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`(
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
     ) {
+        // Given
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
@@ -253,19 +263,25 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener
         )
-
+        val completableFuture = CompletableFuture<String>()
         testedMonitor.startView(key, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
-        argumentCaptor<String> {
-            verify(mockSessionListener).onSessionStarted(capture(), any())
+        // When
+        testedMonitor.getCurrentSessionId { completableFuture.complete(it) }
 
-            assertThat(testedMonitor.currentSessionId).isEqualTo(firstValue)
-        }
+        // Then
+        completableFuture.thenAccept {
+            argumentCaptor<String> {
+                verify(mockSessionListener).onSessionStarted(capture(), any())
+
+                assertThat(it).isEqualTo(firstValue)
+            }
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS)
     }
 
     @Test
-    fun `M currentSessionId returns null session W session started { sampled out }`(
+    fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`(
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
     ) {
@@ -285,10 +301,17 @@ internal class DatadogRumMonitorTest {
             mockSessionListener
         )
 
+        val completableFuture = CompletableFuture<String>()
         testedMonitor.startView(key, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
-        assertThat(testedMonitor.currentSessionId).isEqualTo(RumContext.NULL_UUID)
+        // When
+        testedMonitor.getCurrentSessionId { completableFuture.complete(it) }
+
+        // Then
+        completableFuture.thenAccept {
+            assertThat(it).isEqualTo(null)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS)
     }
 
     @Test

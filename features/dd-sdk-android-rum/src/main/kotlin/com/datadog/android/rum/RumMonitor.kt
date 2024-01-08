@@ -21,10 +21,15 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 interface RumMonitor {
     /**
-     * The current active session id. May return null if a session has not been started yet.
-     * Will return a "null session id" (all zeros) if the current session is not tracked.
+     * Get the current active session ID. The session ID will be null if no session is active or
+     * if the session has been sampled out.
+     *
+     * This method uses an asynchronous callback to ensure all pending RUM events have been processed
+     * up to the moment of the call.
+     *
+     * @param callback the callback to be invoked with the current session id.
      */
-    val currentSessionId: String?
+    fun getCurrentSessionId(callback: (String?) -> Unit)
 
     /**
      * Notifies that a View is being shown to the user, linked with the [key] instance.
