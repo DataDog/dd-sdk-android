@@ -41,9 +41,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class SessionReplayRequestFactoryTest {
+internal class SegmentRequestFactoryTest {
 
-    lateinit var testedRequestFactory: SessionReplayRequestFactory
+    lateinit var testedRequestFactory: SegmentRequestFactory
 
     @Mock
     lateinit var mockBatchesToSegmentsMapper: BatchesToSegmentsMapper
@@ -89,7 +89,7 @@ internal class SessionReplayRequestFactoryTest {
             .thenReturn(mockRequestBody)
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
             .thenReturn(Pair(fakeSegment, fakeSerializedSegment))
-        testedRequestFactory = SessionReplayRequestFactory(
+        testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = null,
             mockBatchesToSegmentsMapper,
             mockRequestBodyFactory
@@ -128,7 +128,7 @@ internal class SessionReplayRequestFactoryTest {
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String
     ) {
         // When
-        testedRequestFactory = SessionReplayRequestFactory(
+        testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = fakeEndpoint,
             mockBatchesToSegmentsMapper,
             mockRequestBodyFactory

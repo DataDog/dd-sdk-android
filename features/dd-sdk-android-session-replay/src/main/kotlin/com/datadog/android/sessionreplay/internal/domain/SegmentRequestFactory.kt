@@ -17,7 +17,7 @@ import okio.Buffer
 import java.util.Locale
 import java.util.UUID
 
-internal class SessionReplayRequestFactory(
+internal class SegmentRequestFactory(
     internal val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper,
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
