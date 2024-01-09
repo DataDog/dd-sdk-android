@@ -23,6 +23,8 @@ internal class StubFeatureScope(
 
     private val eventBatchWriter: EventBatchWriter = mock()
 
+    private val eventsReceived = mutableListOf<Any>()
+
     // region Stub
 
     fun eventsWritten(): List<StubEvent> {
@@ -40,6 +42,10 @@ internal class StubFeatureScope(
             }
     }
 
+    fun eventsReceived(): List<Any> {
+        return eventsReceived
+    }
+
     // endregion
 
     // region FeatureScope
@@ -49,6 +55,10 @@ internal class StubFeatureScope(
         callback: (DatadogContext, EventBatchWriter) -> Unit
     ) {
         callback(datadogContextProvider(), eventBatchWriter)
+    }
+
+    override fun sendEvent(event: Any) {
+        eventsReceived.add(event)
     }
 
     override fun <T : Feature> unwrap(): T {

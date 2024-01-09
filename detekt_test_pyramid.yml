@@ -82,11 +82,9 @@ datadog-test-pyramid:
   active: true
   ApiUsage:
     active: true
-    apiPackageNamePrefix: "com.datadog"
     includes: ['**/reliability/**']
   ApiSurface:
     active: true
-    apiPackageNamePrefix: "com.datadog"
     includes: ['**/dd-sdk-android-*/**']
     excludes: ['**/build/**', '**/test/**', '**/testDebug/**','**/testRelease/**', '**/androidTest/**', '**/testFixtures/**', '**/buildSrc/**', '**/*.kts', '**/instrumented/**', '**/sample/**', '**/tools/**']
 
