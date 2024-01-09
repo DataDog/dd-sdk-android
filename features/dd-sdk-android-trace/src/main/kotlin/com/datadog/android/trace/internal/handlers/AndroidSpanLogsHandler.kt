@@ -79,7 +79,7 @@ internal class AndroidSpanLogsHandler(
                     "timestamp" to timestamp
                 )
             )
-        } else {
+        } else if (logsFeature == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
