@@ -27,6 +27,7 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -97,6 +98,22 @@ internal class DatadogRumMonitor(
     private val isDebugEnabled = AtomicBoolean(false)
 
     // region RumMonitor
+
+    override fun getCurrentSessionId(callback: (String?) -> Unit) {
+        executorService.submitSafe(
+            "Get current session ID",
+            sdkCore.internalLogger
+        ) {
+            val activeSession = rootScope
+                .getRumContext()
+                .sessionId
+            if (activeSession == RumContext.NULL_UUID) {
+                callback(null)
+            } else {
+                callback(activeSession)
+            }
+        }
+    }
 
     override var debug: Boolean
         get() = isDebugEnabled.get()
