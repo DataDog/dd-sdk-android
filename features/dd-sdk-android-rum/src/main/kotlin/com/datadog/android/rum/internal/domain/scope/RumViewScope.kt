@@ -70,10 +70,14 @@ internal open class RumViewScope(
         set(value) {
             oldViewIds += field
             field = value
-            if (getRumContext().syntheticsTestId != null) {
+            val rumContext = getRumContext()
+            if (rumContext.syntheticsTestId != null) {
+                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
+                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=${rumContext.sessionId}")
                 Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
             }
         }
+
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
 
@@ -147,7 +151,10 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
-        if (parentScope.getRumContext().syntheticsTestId != null) {
+        val rumContext = parentScope.getRumContext()
+        if (rumContext.syntheticsTestId != null) {
+            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
+            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=${rumContext.sessionId}")
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
         }
     }
