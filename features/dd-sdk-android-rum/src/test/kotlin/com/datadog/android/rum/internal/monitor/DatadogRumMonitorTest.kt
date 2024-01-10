@@ -220,7 +220,7 @@ internal class DatadogRumMonitorTest {
         // Then
         completableFuture.thenAccept {
             assertThat(it).isEqualTo(null)
-        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS).join()
     }
 
     @Test
@@ -276,8 +276,9 @@ internal class DatadogRumMonitorTest {
                 verify(mockSessionListener).onSessionStarted(capture(), any())
 
                 assertThat(it).isEqualTo(firstValue)
+                assertThat(it).isNotNull()
             }
-        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS).join()
     }
 
     @Test
@@ -311,7 +312,7 @@ internal class DatadogRumMonitorTest {
         // Then
         completableFuture.thenAccept {
             assertThat(it).isEqualTo(null)
-        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS).join()
     }
 
     @Test
@@ -1428,7 +1429,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn true
             }
@@ -1464,7 +1465,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn false
             }
@@ -1788,7 +1789,7 @@ internal class DatadogRumMonitorTest {
                 if (isMethodOccupied) {
                     throw IllegalStateException(
                         "Only one thread should" +
-                            " be allowed to enter rootScope at the time."
+                                " be allowed to enter rootScope at the time."
                     )
                 }
                 isMethodOccupied = true

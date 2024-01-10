@@ -104,14 +104,20 @@ internal class DatadogRumMonitor(
             "Get current session ID",
             sdkCore.internalLogger
         ) {
-            val activeSession = rootScope
-                .getRumContext()
-                .sessionId
-            if (activeSession == RumContext.NULL_UUID) {
-                callback(null)
-            } else {
-                callback(activeSession)
-            }
+            val activeSessionId = (rootScope as? RumApplicationScope)
+                ?.activeSession
+                ?.getRumContext()
+                ?.let {
+                    val sessionId = it.sessionId
+                    if (it.sessionState == RumSessionScope.State.NOT_TRACKED ||
+                        sessionId == RumContext.NULL_UUID
+                    ) {
+                        null
+                    } else {
+                        sessionId
+                    }
+                }
+            callback(activeSessionId)
         }
     }
 
@@ -181,7 +187,7 @@ internal class DatadogRumMonitor(
 
     @Deprecated(
         "This method is deprecated and will be removed in the future versions." +
-            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
+                " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
         key: String,
