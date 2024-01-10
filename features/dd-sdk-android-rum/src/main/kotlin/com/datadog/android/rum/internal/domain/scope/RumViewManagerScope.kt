@@ -113,7 +113,7 @@ internal class RumViewManagerScope(
         while (iterator.hasNext()) {
             val childScope = iterator.next()
             if (event is RumRawEvent.StopView) {
-                if (childScope.isActive() && (childScope as? RumViewScope)?.key == event.key) {
+                if (childScope.isActive() && (childScope as? RumViewScope)?.key?.id == event.key.id) {
                     lastStoppedViewTime = event.eventTime
                 }
             }

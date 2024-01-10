@@ -248,7 +248,7 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
-        val shouldStop = (event.key == key)
+        val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
             val newRumContext = getRumContext().copy(
                 viewType = RumViewType.NONE,
