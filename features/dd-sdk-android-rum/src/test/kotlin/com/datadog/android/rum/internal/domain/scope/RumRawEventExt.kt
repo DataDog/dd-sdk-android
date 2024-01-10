@@ -28,7 +28,6 @@ internal fun Forge.interactiveRumRawEvent(): RumRawEvent {
 internal fun Forge.startViewEvent(): RumRawEvent.StartView {
     return RumRawEvent.StartView(
         key = getForgery(),
-        name = anAlphabeticalString(),
         attributes = exhaustiveAttributes()
     )
 }

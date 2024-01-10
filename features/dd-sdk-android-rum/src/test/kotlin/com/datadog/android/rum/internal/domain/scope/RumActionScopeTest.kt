@@ -879,14 +879,13 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {resourceCount != 0}`(
-        @StringForgery fakeActionName: String,
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), fakeActionName, emptyMap())
+        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -939,14 +938,13 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {longTaskCount != 0}`(
-        @StringForgery fakeActionName: String,
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), fakeActionName, emptyMap())
+        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -999,14 +997,13 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {errorCount != 0}`(
-        @StringForgery fakeActionName: String,
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), fakeActionName, emptyMap())
+        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -1065,7 +1062,6 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {crashCount != 0}`(
-        @StringForgery fakeActionName: String,
         @LongForgery(1, 1024) nonFatalCount: Long,
         @LongForgery(1, 1024) fatalCount: Long
     ) {
@@ -1074,7 +1070,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), fakeActionName, emptyMap())
+        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -1919,14 +1915,12 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartView) {no side effect}`(
-        @StringForgery fakeActionName: String
-    ) {
+    fun `𝕄 send Action 𝕎 handleEvent(StartView) {no side effect}`() {
         // Given
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), fakeActionName, emptyMap())
+        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1979,15 +1973,13 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action event 𝕎 handleEvent(StartView) {no side effect}`(
-        @StringForgery fakeActionName: String
-    ) {
+    fun `𝕄 send Action event 𝕎 handleEvent(StartView) {no side effect}`() {
         // Given
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), fakeActionName, emptyMap())
+        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)

@@ -12,6 +12,6 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class RumScopeKeyForgeryFactory : ForgeryFactory<RumScopeKey> {
     override fun getForgery(forge: Forge): RumScopeKey {
-        return RumScopeKey.from(forge.aString())
+        return RumScopeKey.from(forge.aStringMatching("([a-z]+\\.)+[A-Z][a-z]+"))
     }
 }

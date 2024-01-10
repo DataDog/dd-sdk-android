@@ -74,9 +74,7 @@ internal class RumScopeKeyTest {
     }
 
     @Test
-    fun `M create a key W from() {Activity}`(
-        @StringForgery fakeTitle: String
-    ) {
+    fun `M create a key W from() {Activity}`() {
         // Given
         val input = mock<Activity>().apply {
             whenever(componentName) doReturn mockComponentName
@@ -95,13 +93,11 @@ internal class RumScopeKeyTest {
     }
 
     @Test
-    fun `M create a key W from() {Legacy Fragment}`(
-        @StringForgery fakeTitle: String
-    ) {
+    fun `M create a key W from() {Legacy Fragment}`() {
         // Given
         val input = StubLegacyFragment()
         val expectedId = "${StubLegacyFragment::class.java.name}@" + System.identityHashCode(input)
-        val expectedUrl = StubLegacyFragment::class.java.name
+        val expectedUrl = StubLegacyFragment::class.java.canonicalName
         val expectedName = StubLegacyFragment::class.java.name
 
         // When
@@ -114,13 +110,11 @@ internal class RumScopeKeyTest {
     }
 
     @Test
-    fun `M create a key W from() {AndroidX Fragment}`(
-        @StringForgery fakeTitle: String
-    ) {
+    fun `M create a key W from() {AndroidX Fragment}`() {
         // Given
         val input = StubFragment()
         val expectedId = "${StubFragment::class.java.name}@" + System.identityHashCode(input)
-        val expectedUrl = StubFragment::class.java.name
+        val expectedUrl = StubFragment::class.java.canonicalName
         val expectedName = StubFragment::class.java.name
 
         // When
@@ -202,7 +196,7 @@ internal class RumScopeKeyTest {
         // Given
         val input = StubObject()
         val expectedId = StubObject::class.java.name + "@" + System.identityHashCode(input)
-        val expectedUrl = StubObject::class.java.name
+        val expectedUrl = StubObject::class.java.canonicalName
         val expectedName = StubObject::class.java.name
 
         // When

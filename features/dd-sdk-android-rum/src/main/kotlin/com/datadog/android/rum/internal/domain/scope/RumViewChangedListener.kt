@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 internal data class RumViewInfo(
     val key: RumScopeKey,
-    val name: String,
     val attributes: Map<String, Any?>,
     val isActive: Boolean
 )

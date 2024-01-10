@@ -239,8 +239,7 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
         testedScope.handleEvent(
             RumRawEvent.StartView(
-                key = RumScopeKey.from(viewKey),
-                name = viewName,
+                key = RumScopeKey.from(viewKey, viewName),
                 attributes = mapOf()
             ),
             mockWriter
@@ -264,10 +263,10 @@ internal class RumApplicationScopeTest {
     ) {
         // Given
         val mockAttributes = forge.exhaustiveAttributes()
+        val fakeKey = RumScopeKey.from(viewKey, viewName)
         testedScope.handleEvent(
             RumRawEvent.StartView(
-                key = RumScopeKey.from(viewKey),
-                name = viewName,
+                key = fakeKey,
                 attributes = mockAttributes
             ),
             mockWriter
@@ -293,8 +292,7 @@ internal class RumApplicationScopeTest {
         assertThat(viewManager.childrenScopes).isNotEmpty
         val viewScope = viewManager.childrenScopes.first()
         check(viewScope is RumViewScope)
-        assertThat(viewScope.key).isEqualTo(RumScopeKey.from(viewKey))
-        assertThat(viewScope.name).isEqualTo(viewName)
+        assertThat(viewScope.key).isEqualTo(fakeKey)
         assertThat(viewScope.attributes).isEqualTo(mockAttributes)
     }
 
@@ -306,7 +304,6 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(forge.aString()),
-                name = forge.aString(),
                 attributes = mapOf()
             ),
             mockWriter
@@ -339,7 +336,6 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(forge.aString()),
-                name = forge.aString(),
                 attributes = mapOf()
             ),
             mockWriter
@@ -351,7 +347,6 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(forge.aString()),
-                name = forge.aString(),
                 attributes = mapOf()
             ),
             mockWriter

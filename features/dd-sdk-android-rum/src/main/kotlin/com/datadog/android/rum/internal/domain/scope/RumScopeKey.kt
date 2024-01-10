@@ -13,29 +13,29 @@ import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 
 /**
- * Uniquely identifier to link multiple events relating to the same entity.
+ * Unique identifier to link multiple events relating to the same entity.
  * This fixes an issue where we would keep (weak) references to activities/fragments
  *
  */
 internal data class RumScopeKey(
     val id: String,
     val url: String,
-    val name: String?
+    val name: String
 ) {
 
     companion object {
-        fun from(key: Any): RumScopeKey {
+        fun from(key: Any, name: String? = null): RumScopeKey {
             val componentName = resolveComponent(key)
             return if (componentName == null) {
                 val id = resolveId(key)
                 val url = resolveUrl(key)
-                val name = resolveName(key)
-                RumScopeKey(id, url, name)
+                val resolvedName = name ?: resolveName(key)
+                RumScopeKey(id, url, resolvedName)
             } else {
                 val id = "${componentName.className}@${System.identityHashCode(key)}"
                 val url = resolveComponentUrl(componentName)
-                val name = componentName.className
-                RumScopeKey(id, url, name)
+                val resolvedName = name ?: componentName.className
+                RumScopeKey(id, url, resolvedName)
             }
         }
 
@@ -57,7 +57,7 @@ internal data class RumScopeKey(
                 is DialogFragmentNavigator.Destination -> key.className
                 is FragmentNavigator.Destination -> key.className
 
-                else -> key.javaClass.name
+                else -> key.javaClass.canonicalName ?: key.javaClass.simpleName
             }
         }
 

@@ -43,7 +43,6 @@ internal open class RumViewScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     internal val key: RumScopeKey,
-    internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     private val viewChangedListener: RumViewChangedListener?,
@@ -212,7 +211,7 @@ internal open class RumViewScope(
         return parentContext
             .copy(
                 viewId = viewId,
-                viewName = name,
+                viewName = key.name,
                 viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId,
                 viewType = type
@@ -849,7 +848,7 @@ internal open class RumViewScope(
                     InternalLogger.Target.USER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name) }
+                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) }
             )
             1
         } else {
@@ -1099,7 +1098,6 @@ internal open class RumViewScope(
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 key = key,
-                name = name,
                 attributes = attributes,
                 isActive = isActive()
             )
@@ -1165,7 +1163,6 @@ internal open class RumViewScope(
                 parentScope,
                 sdkCore,
                 event.key,
-                event.name,
                 event.eventTime,
                 event.attributes,
                 viewChangedListener,

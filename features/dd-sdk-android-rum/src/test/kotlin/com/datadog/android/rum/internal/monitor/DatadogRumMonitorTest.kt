@@ -236,9 +236,8 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartView
-            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-            assertThat(event.name).isEqualTo(name)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -758,9 +757,8 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.StartView
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
-            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-            assertThat(event.name).isEqualTo(name)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1827,7 +1825,6 @@ internal class DatadogRumMonitorTest {
                     ),
                     RumRawEvent.StartView(
                         key = forge.getForgery(),
-                        name = forge.anAlphaNumericalString(),
                         attributes = emptyMap()
                     )
                 )

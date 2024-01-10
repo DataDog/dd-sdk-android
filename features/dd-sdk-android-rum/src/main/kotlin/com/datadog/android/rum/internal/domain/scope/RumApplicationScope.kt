@@ -150,7 +150,6 @@ internal class RumApplicationScope(
             lastActiveViewInfo?.let {
                 val startViewEvent = RumRawEvent.StartView(
                     key = it.key,
-                    name = it.name,
                     attributes = it.attributes
                 )
                 newSession.handleEvent(startViewEvent, writer)
