@@ -20,6 +20,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.datadog.tools.unit.forge.anException
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
@@ -52,7 +53,7 @@ import java.util.Locale
 @ForgeConfiguration(Configurator::class)
 internal class RumEventSerializerTest {
 
-    lateinit var testedSerializer: RumEventSerializer
+    private lateinit var testedSerializer: RumEventSerializer
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -1080,6 +1081,361 @@ internal class RumEventSerializerTest {
                 RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
                     "." + RumAttributes.INTERNAL_ERROR_IS_CRASH
             )
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ResourceEvent { bad usr#additionalProperties }`(
+        @Forgery event: ResourceEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ResourceEvent { bad context#additionalProperties }`(
+        @Forgery event: ResourceEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ActionEvent { bad usr#additionalProperties }`(
+        @Forgery event: ActionEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ActionEvent { bad context#additionalProperties }`(
+        @Forgery event: ActionEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ViewEvent { bad usr#additionalProperties }`(
+        @Forgery event: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ViewEvent { bad context#additionalProperties }`(
+        @Forgery event: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ErrorEvent { bad usr#additionalProperties }`(
+        @Forgery event: ErrorEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ErrorEvent { bad context#additionalProperties }`(
+        @Forgery event: ErrorEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with LongTaskEvent { bad usr#additionalProperties }`(
+        @Forgery event: LongTaskEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with LongTaskEvent { bad context#additionalProperties }`(
+        @Forgery event: LongTaskEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
     }
 
     // region Internal

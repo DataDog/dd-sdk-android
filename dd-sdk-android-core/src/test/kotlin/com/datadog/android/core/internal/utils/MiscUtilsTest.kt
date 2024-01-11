@@ -7,7 +7,11 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.utils.JsonSerializer.ITEM_SERIALIZATION_ERROR
+import com.datadog.android.core.internal.utils.JsonSerializer.safeMapValuesToJson
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
+import com.datadog.tools.unit.forge.anException
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -33,6 +37,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 
@@ -125,6 +130,37 @@ internal class MiscUtilsTest {
             val jsonElement = JsonSerializer.toJsonElement(it.value)
             assertJsonElement(it.value, jsonElement)
         }
+    }
+
+    @Test
+    fun `M map values to JSON without throwing W safeMapValuesToJson()`(forge: Forge) {
+        // GIVEN
+        val attributes = forge.exhaustiveAttributes().toMutableMap()
+        val fakeException = forge.anException()
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyItem = object {
+            override fun toString(): String {
+                throw fakeException
+            }
+        }
+        val mockInternalLogger = mock<InternalLogger>()
+
+        // WHEN
+        val mapped = attributes.apply { this += faultyKey to faultyItem }
+            .safeMapValuesToJson(mockInternalLogger)
+
+        // THEN
+        assertThat(mapped).hasSize(attributes.size - 1)
+        assertThat(mapped.values).doesNotContainNull()
+        assertThat(mapped).doesNotContainKey(faultyKey)
+
+        mockInternalLogger
+            .verifyLog(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                message = ITEM_SERIALIZATION_ERROR.format(Locale.US, faultyKey),
+                throwable = fakeException
+            )
     }
 
     // endregion

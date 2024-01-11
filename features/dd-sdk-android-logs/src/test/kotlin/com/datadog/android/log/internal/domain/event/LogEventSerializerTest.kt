@@ -12,6 +12,7 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.datadog.tools.unit.forge.anException
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -35,7 +36,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class LogEventSerializerTest {
 
-    lateinit var testedSerializer: LogEventSerializer
+    private lateinit var testedSerializer: LogEventSerializer
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -116,6 +117,60 @@ internal class LogEventSerializerTest {
                 )
                 doesNotHaveField(fakeBadKey)
             }
+    }
+
+    @Test
+    fun `M not throw W serialize() { usr#additionalProperties serialization throws }`(
+        @Forgery fakeLog: LogEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyLogEvent = fakeLog.copy(
+            usr = fakeLog.usr?.copy(
+                additionalProperties = fakeLog.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyLogEvent)
+
+        // Then
+        assertSerializedLogMatchesInputLog(serialized, fakeLog)
+    }
+
+    @Test
+    fun `M not throw W serialize() { additionalProperties serialization throws }`(
+        @Forgery fakeLog: LogEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyLogEvent = fakeLog.copy(
+            additionalProperties = fakeLog.additionalProperties
+                .toMutableMap()
+                .apply { put(faultyKey, faultyObject) }
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyLogEvent)
+
+        // Then
+        assertSerializedLogMatchesInputLog(serialized, fakeLog)
     }
 
     // region Internal

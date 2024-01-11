@@ -24,6 +24,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor#constructor(Int, com.datadog.android.api.InternalLogger)
+ * apiMethodSignature: com.datadog.android.core.internal.utils.JsonSerializer#fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
  * apiMethodSignature: com.datadog.android.core.internal.utils.JsonSerializer#fun toJsonElement(Any?): com.google.gson.JsonElement
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
