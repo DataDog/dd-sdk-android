@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.Activity
@@ -8,6 +10,7 @@ import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -74,6 +77,44 @@ internal class RumScopeKeyTest {
     }
 
     @Test
+    fun `M create a key W from() {Number}`(
+        forge: Forge
+    ) {
+        // Given
+        val input = forge.anElementFrom(forge.anInt(), forge.aDouble(), forge.aFloat(), forge.aLong())
+        val expectedId = input.toString()
+        val expectedUrl = input.toString()
+        val expectedName = input.toString()
+
+        // When
+        val key = RumScopeKey.from(input)
+
+        // Then
+        assertThat(key.id).isEqualTo(expectedId)
+        assertThat(key.url).isEqualTo(expectedUrl)
+        assertThat(key.name).isEqualTo(expectedName)
+    }
+
+    @Test
+    fun `M create a key W from() {Enum}`(
+        @Forgery value: StubEnum
+    ) {
+        // Given
+        val input = value
+        val expectedId = "${StubEnum::class.java.name}@" + input.name
+        val expectedUrl = "${StubEnum::class.java.name}." + input.name
+        val expectedName = input.name
+
+        // When
+        val key = RumScopeKey.from(input)
+
+        // Then
+        assertThat(key.id).isEqualTo(expectedId)
+        assertThat(key.url).isEqualTo(expectedUrl)
+        assertThat(key.name).isEqualTo(expectedName)
+    }
+
+    @Test
     fun `M create a key W from() {Activity}`() {
         // Given
         val input = mock<Activity>().apply {
@@ -96,7 +137,7 @@ internal class RumScopeKeyTest {
     fun `M create a key W from() {Legacy Fragment}`() {
         // Given
         val input = StubLegacyFragment()
-        val expectedId = "${StubLegacyFragment::class.java.name}@" + System.identityHashCode(input)
+        val expectedId = input.toString()
         val expectedUrl = StubLegacyFragment::class.java.canonicalName
         val expectedName = StubLegacyFragment::class.java.name
 
@@ -113,7 +154,7 @@ internal class RumScopeKeyTest {
     fun `M create a key W from() {AndroidX Fragment}`() {
         // Given
         val input = StubFragment()
-        val expectedId = "${StubFragment::class.java.name}@" + System.identityHashCode(input)
+        val expectedId = input.toString()
         val expectedUrl = StubFragment::class.java.canonicalName
         val expectedName = StubFragment::class.java.name
 
@@ -195,7 +236,7 @@ internal class RumScopeKeyTest {
     fun `M create a key W from() {unknown type}`() {
         // Given
         val input = StubObject()
-        val expectedId = StubObject::class.java.name + "@" + System.identityHashCode(input)
+        val expectedId = input.toString()
         val expectedUrl = StubObject::class.java.canonicalName
         val expectedName = StubObject::class.java.name
 
@@ -208,8 +249,27 @@ internal class RumScopeKeyTest {
         assertThat(key.name).isEqualTo(expectedName)
     }
 
-    class StubLegacyFragment : LegacyFragment()
+    class StubLegacyFragment : LegacyFragment() {
+        @Deprecated("Deprecated in Java")
+        override fun toString(): String {
+            return "StubLegacyFragment{${System.identityHashCode(this)}}"
+        }
+    }
+
     class StubFragment : Fragment()
 
     class StubObject
+
+    enum class StubEnum {
+        VALUE_0,
+        VALUE_1,
+        VALUE_2,
+        VALUE_3,
+        VALUE_4,
+        VALUE_5,
+        VALUE_6,
+        VALUE_7,
+        VALUE_8,
+        VALUE_9
+    }
 }

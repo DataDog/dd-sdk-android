@@ -43,16 +43,24 @@ internal data class RumScopeKey(
             return when (key) {
                 is String -> key
 
+                is Number -> key.toString()
+
+                is Enum<*> -> "${key.javaClass.name}@${key.name}"
+
                 is DialogFragmentNavigator.Destination -> "${key.className}#${key.id}"
                 is FragmentNavigator.Destination -> "${key.className}#${key.id}"
 
-                else -> "${key.javaClass.name}@${System.identityHashCode(key)}"
+                else -> key.toString()
             }
         }
 
         private fun resolveUrl(key: Any): String {
             return when (key) {
                 is String -> key
+
+                is Number -> key.toString()
+
+                is Enum<*> -> "${key.javaClass.name}.${key.name}"
 
                 is DialogFragmentNavigator.Destination -> key.className
                 is FragmentNavigator.Destination -> key.className
@@ -64,6 +72,10 @@ internal data class RumScopeKey(
         private fun resolveName(key: Any): String {
             return when (key) {
                 is String -> key
+
+                is Number -> key.toString()
+
+                is Enum<*> -> key.name
 
                 is DialogFragmentNavigator.Destination -> key.className
                 is FragmentNavigator.Destination -> key.className
