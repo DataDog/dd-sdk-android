@@ -150,28 +150,28 @@ internal class DatadogRumMonitor(
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartView(RumScopeKey.from(key, name), attributes, eventTime)
+            RumRawEvent.StartView(RumScopeKey.from(key, name), attributes.toMap(), eventTime)
         )
     }
 
     override fun stopView(key: Any, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopView(RumScopeKey.from(key), attributes, eventTime)
+            RumRawEvent.StopView(RumScopeKey.from(key), attributes.toMap(), eventTime)
         )
     }
 
     override fun addAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, false, attributes, eventTime)
+            RumRawEvent.StartAction(type, name, false, attributes.toMap(), eventTime)
         )
     }
 
     override fun startAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, true, attributes, eventTime)
+            RumRawEvent.StartAction(type, name, true, attributes.toMap(), eventTime)
         )
     }
 
@@ -182,7 +182,7 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopAction(type, name, attributes, eventTime)
+            RumRawEvent.StopAction(type, name, attributes.toMap(), eventTime)
         )
     }
 
@@ -229,7 +229,7 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartResource(key, url, method, attributes, eventTime)
+            RumRawEvent.StartResource(key, url, method, attributes.toMap(), eventTime)
         )
     }
 
@@ -242,7 +242,14 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopResource(key, statusCode?.toLong(), size, kind, attributes, eventTime)
+            RumRawEvent.StopResource(
+                key,
+                statusCode?.toLong(),
+                size,
+                kind,
+                attributes.toMap(),
+                eventTime
+            )
         )
     }
 
@@ -261,7 +268,7 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes
+                attributes.toMap()
             )
         )
     }
@@ -283,7 +290,7 @@ internal class DatadogRumMonitor(
                 source,
                 stackTrace,
                 errorType,
-                attributes
+                attributes.toMap()
             )
         )
     }
@@ -303,7 +310,7 @@ internal class DatadogRumMonitor(
                 throwable,
                 null,
                 false,
-                attributes,
+                attributes.toMap(),
                 eventTime,
                 errorType
             )
@@ -326,7 +333,7 @@ internal class DatadogRumMonitor(
                 null,
                 stacktrace,
                 false,
-                attributes,
+                attributes.toMap(),
                 eventTime,
                 errorType,
                 errorSourceType
