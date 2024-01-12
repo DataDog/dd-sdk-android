@@ -159,8 +159,11 @@ internal class DataOkHttpUploader(
             HTTP_CLIENT_TIMEOUT -> UploadStatus.HttpClientRateLimiting(code)
             HTTP_ENTITY_TOO_LARGE -> UploadStatus.HttpClientError(code)
             HTTP_TOO_MANY_REQUESTS -> UploadStatus.HttpClientRateLimiting(code)
-            HTTP_INTERNAL_ERROR -> UploadStatus.HttpServerError(code)
-            HTTP_UNAVAILABLE -> UploadStatus.HttpServerError(code)
+            HTTP_INTERNAL_ERROR,
+            HTTP_BAD_GATEWAY,
+            HTTP_UNAVAILABLE,
+            HTTP_GATEWAY_TIMEOUT,
+            HTTP_INSUFFICIENT_STORAGE -> UploadStatus.HttpServerError(code)
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -184,7 +187,10 @@ internal class DataOkHttpUploader(
         const val HTTP_TOO_MANY_REQUESTS = 429
 
         const val HTTP_INTERNAL_ERROR = 500
+        const val HTTP_BAD_GATEWAY = 502
         const val HTTP_UNAVAILABLE = 503
+        const val HTTP_GATEWAY_TIMEOUT = 504
+        const val HTTP_INSUFFICIENT_STORAGE = 507
 
         const val SYSTEM_UA = "http.agent"
 
