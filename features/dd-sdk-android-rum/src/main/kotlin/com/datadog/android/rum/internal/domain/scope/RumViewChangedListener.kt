@@ -6,11 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import java.lang.ref.Reference
-
 internal data class RumViewInfo(
-    val keyRef: Reference<Any>,
-    val name: String,
+    val key: RumScopeKey,
     val attributes: Map<String, Any?>,
     val isActive: Boolean
 )

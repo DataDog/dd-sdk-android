@@ -32,9 +32,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.hasUserData
 import com.datadog.android.rum.utils.newRumEventWriteOperation
-import com.datadog.android.rum.utils.resolveViewUrl
-import java.lang.ref.Reference
-import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -45,8 +42,7 @@ import kotlin.math.min
 internal open class RumViewScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
-    key: Any,
-    internal val name: String,
+    internal val key: RumScopeKey,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     private val viewChangedListener: RumViewChangedListener?,
@@ -60,9 +56,8 @@ internal open class RumViewScope(
     internal val sampleRate: Float
 ) : RumScope {
 
-    internal val url = key.resolveViewUrl().replace('.', '/')
+    internal val url = key.url.replace('.', '/')
 
-    internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
     private var sessionId: String = parentScope.getRumContext().sessionId
@@ -216,7 +211,7 @@ internal open class RumViewScope(
         return parentContext
             .copy(
                 viewId = viewId,
-                viewName = name,
+                viewName = key.name,
                 viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId,
                 viewType = type
@@ -253,9 +248,7 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
-        if (stopped) return
-        val startedKey = keyRef.get()
-        val shouldStop = (event.key == startedKey) || (startedKey == null)
+        val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
             val newRumContext = getRumContext().copy(
                 viewType = RumViewType.NONE,
@@ -855,7 +848,7 @@ internal open class RumViewScope(
                     InternalLogger.Target.USER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name) }
+                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) }
             )
             1
         } else {
@@ -1104,8 +1097,7 @@ internal open class RumViewScope(
     private fun sendViewChanged() {
         viewChangedListener?.onViewChanged(
             RumViewInfo(
-                keyRef = keyRef,
-                name = name,
+                key = key,
                 attributes = attributes,
                 isActive = isActive()
             )
@@ -1171,7 +1163,6 @@ internal open class RumViewScope(
                 parentScope,
                 sdkCore,
                 event.key,
-                event.name,
                 event.eventTime,
                 event.attributes,
                 viewChangedListener,

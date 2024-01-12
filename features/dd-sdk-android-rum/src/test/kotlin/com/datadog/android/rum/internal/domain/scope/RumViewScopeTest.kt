@@ -41,7 +41,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -138,14 +137,13 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
-    @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
-    lateinit var fakeName: String
-
     @StringForgery(regex = "[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
     lateinit var fakeActionId: String
 
     lateinit var fakeUrl: String
-    lateinit var fakeKey: ByteArray
+
+    @Forgery
+    lateinit var fakeKey: RumScopeKey
     lateinit var fakeAttributes: Map<String, Any?>
 
     @Forgery
@@ -241,9 +239,9 @@ internal class RumViewScopeTest {
         )
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
         fakeAttributes = forge.exhaustiveAttributes()
-        fakeKey = forge.anAsciiString().toByteArray()
+        fakeKey = forge.getForgery()
         fakeEvent = mockEvent()
-        fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
+        fakeUrl = fakeKey.url.replace('.', '/')
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
@@ -263,7 +261,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             fakeKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -288,7 +285,7 @@ internal class RumViewScopeTest {
         // Then
         assertThat(context.actionId).isNull()
         assertThat(context.viewId).isEqualTo(testedScope.viewId)
-        assertThat(context.viewName).isEqualTo(fakeName)
+        assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
@@ -305,7 +302,7 @@ internal class RumViewScopeTest {
         // Then
         assertThat(context.actionId).isEqualTo(fakeActionId)
         assertThat(context.viewId).isEqualTo(testedScope.viewId)
-        assertThat(context.viewName).isEqualTo(fakeName)
+        assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
@@ -341,14 +338,14 @@ internal class RumViewScopeTest {
         // Then
         assertThat(context.actionId).isNull()
         assertThat(context.viewId).isEqualTo(initialViewId)
-        assertThat(context.viewName).isEqualTo(fakeName)
+        assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
 
         assertThat(updatedContext.actionId).isNull()
         assertThat(updatedContext.viewId).isNotEqualTo(initialViewId)
-        assertThat(updatedContext.viewName).isEqualTo(fakeName)
+        assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(updatedContext.viewUrl).isEqualTo(fakeUrl)
         assertThat(updatedContext.sessionId).isEqualTo(newSessionId.toString())
         assertThat(updatedContext.applicationId).isEqualTo(fakeParentContext.applicationId)
@@ -364,7 +361,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             fakeKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -447,7 +443,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(forge.anAlphabeticalString() + fakeKey, attributes),
+            RumRawEvent.StopView(forge.getForgery(), attributes),
             mockWriter
         )
 
@@ -475,7 +471,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             fakeKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -650,8 +645,7 @@ internal class RumViewScopeTest {
     )
     fun `𝕄 not update the viewType to NONE W handleEvent(StartView) { on active view }`(
         viewType: RumViewScope.RumViewType,
-        @StringForgery key: String,
-        @StringForgery name: String
+        @Forgery key: RumScopeKey
     ) {
         // Given
         testedScope.handleEvent(
@@ -662,7 +656,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             key,
-            name,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -678,7 +671,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(key, name, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap()),
             mockWriter
         )
 
@@ -706,8 +699,7 @@ internal class RumViewScopeTest {
     )
     fun `𝕄 not update the viewType to NONE W handleEvent(StopView) {already stopped, active view}`(
         viewType: RumViewScope.RumViewType,
-        @StringForgery key: String,
-        @StringForgery name: String
+        @Forgery key: RumScopeKey
     ) {
         // Given
         testedScope.handleEvent(
@@ -718,7 +710,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             key,
-            name,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -756,15 +747,14 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StartView) on stopped view`(
-        @StringForgery key: String,
-        @StringForgery name: String
+        @Forgery key: RumScopeKey
     ) {
         // Given
         testedScope.stopped = true
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, name, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap()),
             mockWriter
         )
 
@@ -775,12 +765,11 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(StartView) on active view`(
-        @StringForgery key: String,
-        @StringForgery name: String
+        @Forgery key: RumScopeKey
     ) {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, name, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap()),
             mockWriter
         )
 
@@ -789,7 +778,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue).apply {
                 hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                hasName(fakeName)
+                hasName(fakeKey.name)
                 hasUrl(fakeUrl)
                 hasDurationGreaterThan(1)
                 hasVersion(2)
@@ -843,18 +832,16 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event once 𝕎 handleEvent(StartView) twice on active view`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        @StringForgery key2: String,
-        @StringForgery name2: String
+        @Forgery key: RumScopeKey,
+        @Forgery key2: RumScopeKey
     ) {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, name, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap()),
             mockWriter
         )
         val result2 = testedScope.handleEvent(
-            RumRawEvent.StartView(key2, name2, emptyMap()),
+            RumRawEvent.StartView(key2, emptyMap()),
             mockWriter
         )
 
@@ -864,7 +851,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -939,7 +926,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1020,7 +1007,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1098,7 +1085,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1176,7 +1163,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1242,7 +1229,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1310,7 +1297,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             fakeKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -1337,7 +1323,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1414,7 +1400,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1480,7 +1466,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             fakeKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -1510,7 +1495,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1578,7 +1563,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             fakeKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -1609,7 +1593,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1687,7 +1671,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1764,7 +1748,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -1817,78 +1801,8 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view with missing key`() {
-        // Given
-        fakeKey = ByteArray(0)
-        System.gc()
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(false)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
-                    hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
-                    hasStartReason(fakeParentContext.sessionStartReason)
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StopView) on active view without matching key`(
-        @StringForgery key: String,
+        @Forgery key: RumScopeKey,
         forge: Forge
     ) {
         // Given
@@ -1947,7 +1861,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2019,7 +1933,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2109,7 +2023,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2181,7 +2095,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2272,7 +2186,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2345,7 +2259,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2438,7 +2352,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2513,7 +2427,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2586,7 +2500,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2661,7 +2575,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2764,7 +2678,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2832,7 +2746,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasSyntheticsSession()
@@ -2880,7 +2794,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -2970,7 +2884,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3062,7 +2976,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3153,7 +3067,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3257,7 +3171,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -3316,7 +3230,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -3377,7 +3291,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3579,7 +3493,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -4447,7 +4361,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4523,7 +4437,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4591,7 +4505,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4661,7 +4575,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4733,7 +4647,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4798,7 +4712,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4853,7 +4767,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4926,7 +4840,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -4998,7 +4912,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5032,7 +4946,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue as ViewEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -5124,7 +5038,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5198,7 +5112,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5232,7 +5146,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue as ViewEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -5337,7 +5251,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5368,7 +5282,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue as ViewEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -5460,7 +5374,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5536,7 +5450,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5611,7 +5525,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -5645,7 +5559,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue as ViewEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -6508,7 +6422,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -6585,7 +6499,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -6635,7 +6549,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
@@ -6748,7 +6662,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -6825,7 +6739,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -6901,7 +6815,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -6987,7 +6901,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -7073,7 +6987,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
+                    hasName(fakeKey.name)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -7818,7 +7732,6 @@ internal class RumViewScopeTest {
             mockParentScope,
             rumMonitor.mockSdkCore,
             rawEventData.viewKey,
-            fakeName,
             fakeEventTime,
             fakeAttributes,
             mockViewChangedListener,
@@ -7845,7 +7758,7 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.name)
+            RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name)
         )
     }
 
@@ -7890,7 +7803,7 @@ internal class RumViewScopeTest {
 
     // endregion
 
-    data class RumRawEventData(val event: RumRawEvent, val viewKey: String)
+    data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
@@ -7906,7 +7819,7 @@ internal class RumViewScopeTest {
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()
             Configurator().apply { configure(forge) }
-            val fakeKey = forge.anAlphabeticalString()
+            val fakeKey = forge.getForgery<RumScopeKey>()
             val fakeName = forge.anAlphabeticalString()
             val eventTime = Time(0, 0)
             return listOf(
@@ -7927,7 +7840,6 @@ internal class RumViewScopeTest {
                 RumRawEventData(
                     RumRawEvent.StartView(
                         fakeKey,
-                        fakeName,
                         emptyMap(),
                         eventTime = eventTime
                     ),
