@@ -30,7 +30,6 @@ import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterce
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.recorder.webview.WebViewBrowserSnapshotHandler
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 
@@ -92,9 +91,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
             SnapshotProducer(
-                treeViewTraversal = TreeViewTraversal(customMappers + privacy.mappers()),
-                webViewBrowserSnapshotHandler = WebViewBrowserSnapshotHandler(rumContextProvider),
-                optionSelectorDetector = ComposedOptionSelectorDetector(
+                TreeViewTraversal(customMappers + privacy.mappers()),
+                ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                 )
             )

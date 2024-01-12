@@ -8,21 +8,16 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebView
-import androidx.annotation.MainThread
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.internal.recorder.webview.WebViewBrowserSnapshotHandler
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
 
 internal class SnapshotProducer(
     private val treeViewTraversal: TreeViewTraversal,
-    private val webViewBrowserSnapshotHandler: WebViewBrowserSnapshotHandler,
     private val optionSelectorDetector: OptionSelectorDetector =
         ComposedOptionSelectorDetector(listOf(DefaultOptionSelectorDetector()))
 ) {
 
-    @MainThread
     fun produce(
         rootView: View,
         systemInformation: SystemInformation,
@@ -37,7 +32,6 @@ internal class SnapshotProducer(
     }
 
     @Suppress("ComplexMethod", "ReturnCount")
-    @MainThread
     private fun convertViewToNode(
         view: View,
         mappingContext: MappingContext,
@@ -47,13 +41,6 @@ internal class SnapshotProducer(
         val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
         val nextTraversalStrategy = traversedTreeView.nextActionStrategy
         val resolvedWireframes = traversedTreeView.mappedWireframes
-        // in case the view is a WebView and the RUM native view was changed in the meantime,
-        // we need to trigger a full snapshot of the web page through the browser sdk for the
-        // player to have a starting point from which to apply the browser mutation when
-        // required to play the new native RUM view
-        if (view is WebView) {
-            webViewBrowserSnapshotHandler.triggerFullSnapshotIfNeeded(view)
-        }
         if (nextTraversalStrategy == TraversalStrategy.STOP_AND_DROP_NODE) {
             return null
         }
@@ -75,7 +62,6 @@ internal class SnapshotProducer(
                 }
             }
         }
-
         return Node(
             children = childNodes,
             wireframes = resolvedWireframes,
