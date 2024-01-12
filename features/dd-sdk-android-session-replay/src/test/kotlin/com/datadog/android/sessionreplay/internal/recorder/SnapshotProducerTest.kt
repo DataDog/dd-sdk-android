@@ -8,10 +8,8 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.internal.recorder.webview.WebViewBrowserSnapshotHandler
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -31,7 +29,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.LinkedList
@@ -61,16 +58,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockOptionSelectorDetector: DefaultOptionSelectorDetector
 
-    @Mock
-    lateinit var mockWebViewBrowserSnapshotHandler: WebViewBrowserSnapshotHandler
-
     @BeforeEach
     fun `set up`() {
-        testedSnapshotProducer = SnapshotProducer(
-            mockTreeViewTraversal,
-            mockWebViewBrowserSnapshotHandler,
-            mockOptionSelectorDetector
-        )
+        testedSnapshotProducer = SnapshotProducer(mockTreeViewTraversal, mockOptionSelectorDetector)
     }
 
     @Test
@@ -284,7 +274,7 @@ internal class SnapshotProducerTest {
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                        TraversalStrategy.STOP_AND_RETURN_NODE
+                    TraversalStrategy.STOP_AND_RETURN_NODE
                 )
             )
         var expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
@@ -320,7 +310,7 @@ internal class SnapshotProducerTest {
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                        TraversalStrategy.STOP_AND_DROP_NODE
+                    TraversalStrategy.STOP_AND_DROP_NODE
                 )
             )
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
@@ -334,108 +324,6 @@ internal class SnapshotProducerTest {
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)
-    }
-
-    @Test
-    fun `M trigger a full snapshot W produce(){ tree with WebView }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockRoot = forge.aMockView<ViewGroup>()
-        val numberOfChildren = forge.anInt(min = 2, max = 10)
-        whenever(mockRoot.childCount).thenReturn(numberOfChildren)
-        val randChild = forge.anInt(min = 0, max = numberOfChildren - 1)
-        val mockWebView = forge.aMockView<WebView>()
-        for (i in 0 until numberOfChildren) {
-            val mockChild = if (i == randChild) mockWebView else forge.aMockView<View>()
-            whenever(mockRoot.getChildAt(i)).thenReturn(mockChild)
-        }
-
-        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
-            fakeViewWireframes,
-            TraversalStrategy.TRAVERSE_ALL_CHILDREN
-        )
-        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
-            .thenReturn(fakeTraversedTreeView)
-            .thenReturn(
-                fakeTraversedTreeView.copy(
-                    nextActionStrategy =
-                        TraversalStrategy.TRAVERSE_ALL_CHILDREN
-                )
-            )
-
-        // When
-        testedSnapshotProducer.produce(
-            mockRoot,
-            fakeSystemInformation,
-            mockRecordedDataQueueRefs
-        )
-
-        // Then
-        verify(mockWebViewBrowserSnapshotHandler).triggerFullSnapshotIfNeeded(mockWebView)
-        verifyNoMoreInteractions(mockWebViewBrowserSnapshotHandler)
-    }
-
-    @Test
-    fun `M trigger a full snapshot W produce(){ tree with WebView, WebView is a leaf }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockWebView = forge.aMockView<WebView>()
-        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
-            fakeViewWireframes,
-            TraversalStrategy.STOP_AND_RETURN_NODE
-        )
-        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
-            .thenReturn(fakeTraversedTreeView)
-            .thenReturn(
-                fakeTraversedTreeView.copy(
-                    nextActionStrategy =
-                        TraversalStrategy.STOP_AND_RETURN_NODE
-                )
-            )
-
-        // When
-        testedSnapshotProducer.produce(
-            mockWebView,
-            fakeSystemInformation,
-            mockRecordedDataQueueRefs
-        )
-
-        // Then
-        verify(mockWebViewBrowserSnapshotHandler).triggerFullSnapshotIfNeeded(mockWebView)
-        verifyNoMoreInteractions(mockWebViewBrowserSnapshotHandler)
-    }
-
-    @Test
-    fun `M trigger a full snapshot W produce(){ tree with WebView, WebView is a dropped node }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockWebView = forge.aMockView<WebView>()
-        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
-            fakeViewWireframes,
-            TraversalStrategy.STOP_AND_DROP_NODE
-        )
-        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
-            .thenReturn(fakeTraversedTreeView)
-            .thenReturn(
-                fakeTraversedTreeView.copy(
-                    nextActionStrategy =
-                        TraversalStrategy.STOP_AND_DROP_NODE
-                )
-            )
-
-        // When
-        testedSnapshotProducer.produce(
-            mockWebView,
-            fakeSystemInformation,
-            mockRecordedDataQueueRefs
-        )
-
-        // Then
-        verify(mockWebViewBrowserSnapshotHandler).triggerFullSnapshotIfNeeded(mockWebView)
-        verifyNoMoreInteractions(mockWebViewBrowserSnapshotHandler)
     }
 
     // region Internals
