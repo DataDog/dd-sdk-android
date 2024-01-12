@@ -1,5 +1,6 @@
-class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
+class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer, io.opentelemetry.api.trace.Tracer
   override fun buildSpan(String): DDSpanBuilder
+  override fun spanBuilder(String): io.opentelemetry.api.trace.SpanBuilder
   class Builder
     constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): AndroidTracer

@@ -139,7 +139,13 @@ android {
     }
 }
 
+repositories{
+    mavenLocal()
+}
+
 dependencies {
+    implementation("io.opentelemetry:opentelemetry-api:1.4.0")
+
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))

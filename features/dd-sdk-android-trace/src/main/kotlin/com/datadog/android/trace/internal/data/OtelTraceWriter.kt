@@ -1,0 +1,94 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.trace.internal.data
+
+import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
+import com.datadog.android.trace.internal.storage.ContextAwareSerializer
+import com.datadog.android.trace.model.SpanEvent
+import datadog.trace.common.writer.Writer
+import datadog.trace.core.DDSpan
+import java.util.Locale
+
+internal class OtelTraceWriter(
+    private val sdkCore: FeatureSdkCore,
+    internal val legacyMapper: ContextAwareMapper<DDSpan, SpanEvent>,
+    internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),
+    private val serializer: ContextAwareSerializer<SpanEvent>,
+    private val internalLogger: InternalLogger
+): Writer  {
+
+    // region Writer
+    override fun start() {
+        // NO - OP
+    }
+
+
+    override fun write(trace: MutableList<DDSpan>?) {
+        if (trace == null) return
+        sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+                ?.withWriteContext { datadogContext, eventBatchWriter ->
+                    trace.forEach { span ->
+                        @Suppress("ThreadSafety") // called in the worker context
+                        writeSpan(datadogContext, eventBatchWriter, span)
+                    }
+                }
+    }
+
+    override fun flush(): Boolean {
+        // NO - OP
+        return true
+    }
+
+    override fun incrementDropCounts(p0: Int) {
+        // NO - OP
+    }
+
+
+    override fun close() {
+        // NO - OP
+    }
+
+    // endregion
+
+    @WorkerThread
+    private fun writeSpan(
+        datadogContext: DatadogContext,
+        writer: EventBatchWriter,
+        span: DDSpan
+    ) {
+        val spanEvent = legacyMapper.map(datadogContext, span)
+        val mapped = eventMapper.map(spanEvent) ?: return
+        try {
+            val serialized = serializer
+                .serialize(datadogContext, mapped)
+                ?.toByteArray(Charsets.UTF_8) ?: return
+            synchronized(this) {
+                writer.write(RawBatchEvent(data = serialized), batchMetadata = null)
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { ERROR_SERIALIZING.format(Locale.US, mapped.javaClass.simpleName) },
+                e
+            )
+        }
+    }
+
+    companion object {
+        internal const val ERROR_SERIALIZING = "Error serializing %s model"
+    }
+}

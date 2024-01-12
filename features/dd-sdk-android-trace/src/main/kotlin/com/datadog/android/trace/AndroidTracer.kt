@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
+import com.datadog.android.trace.internal.data.NoOpOtelWriter
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.opentracing.DDTracer
@@ -21,9 +22,24 @@ import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.context.ScopeListener
+import datadog.trace.api.IdGenerationStrategy
+import datadog.trace.api.experimental.DataStreamsContextCarrier
+import datadog.trace.bootstrap.instrumentation.api.AgentSpan
+import datadog.trace.bootstrap.instrumentation.api.AgentTracer
+import datadog.trace.bootstrap.instrumentation.api.PathwayContext
+import datadog.trace.bootstrap.instrumentation.api.StatsPoint
+import datadog.trace.core.CoreTracer
+import datadog.trace.core.datastreams.DataStreamContextInjector
+import datadog.trace.core.datastreams.DataStreamsMonitoring
+import datadog.trace.core.propagation.HttpCodec
+import datadog.trace.core.propagation.NoneCodec
+import datadog.trace.instrumentation.opentelemetry14.trace.OtelTracer
+import io.opentelemetry.api.trace.SpanBuilder
+import io.opentelemetry.api.trace.Tracer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
+import java.util.LinkedHashMap
 import java.util.Properties
 import java.util.Random
 
@@ -41,8 +57,11 @@ class AndroidTracer internal constructor(
     writer: Writer,
     random: Random,
     private val logsHandler: LogHandler,
-    private val bundleWithRum: Boolean
-) : DDTracer(config, writer, random) {
+    private val bundleWithRum: Boolean,
+    coreTracer: CoreTracer
+) : DDTracer(config, writer, random), Tracer {
+
+    private val otelTracer = OtelTracer("otel",coreTracer)
 
     init {
         addScopeListener(object : ScopeListener {
@@ -78,6 +97,10 @@ class AndroidTracer internal constructor(
         return DDSpanBuilder(operationName, scopeManager())
             .withLogHandler(logsHandler)
             .withRumContext()
+    }
+
+    override fun spanBuilder(spanName: String): SpanBuilder {
+        return otelTracer.spanBuilder(spanName)
     }
 
     // endregion
@@ -151,13 +174,68 @@ class AndroidTracer internal constructor(
                 )
                 bundleWithRumEnabled = false
             }
+            val coreTracer = CoreTracer.CoreTracerBuilder()
+                    .withProperties(properties())
+                    .serviceName(serviceName)
+                    .dataStreamsMonitoring(object : DataStreamsMonitoring {
+                        override fun setConsumeCheckpoint(p0: String?, p1: String?, p2: DataStreamsContextCarrier?) {
+
+                        }
+
+                        override fun setProduceCheckpoint(p0: String?, p1: String?, p2: DataStreamsContextCarrier?) {
+
+                        }
+
+                        override fun trackBacklog(p0: LinkedHashMap<String, String>?, p1: Long) {
+
+                        }
+
+                        override fun setCheckpoint(p0: AgentSpan?, p1: LinkedHashMap<String, String>?, p2: Long, p3: Long) {
+
+                        }
+
+                        override fun newPathwayContext(): PathwayContext {
+                            return AgentTracer.NoopPathwayContext.INSTANCE;
+                        }
+
+                        override fun add(p0: StatsPoint?) {
+                        }
+
+                        override fun shouldSampleSchema(p0: String?): Int {
+                            return 0;
+                        }
+
+                        override fun close() {
+                        }
+
+                        override fun start() {
+                        }
+
+                        override fun extractor(p0: HttpCodec.Extractor?): HttpCodec.Extractor {
+                          return  NoneCodec.EXTRACTOR;
+                        }
+
+                        override fun injector(): DataStreamContextInjector {
+                            return DataStreamContextInjector(this);
+                        }
+
+                        override fun mergePathwayContextIntoSpan(p0: AgentSpan?, p1: DataStreamsContextCarrier?) {
+                        }
+
+                        override fun clear() {
+                        }
+                    })
+                    .writer(tracingFeature?.otelDataWriter?: NoOpOtelWriter())
+                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM",false))
+                    .build()
             return AndroidTracer(
                 sdkCore,
                 config(),
                 tracingFeature?.dataWriter ?: NoOpWriter(),
                 random,
                 logsHandler,
-                bundleWithRumEnabled
+                bundleWithRumEnabled,
+                coreTracer
             )
         }
 

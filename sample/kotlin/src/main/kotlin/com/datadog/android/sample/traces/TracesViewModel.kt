@@ -13,13 +13,16 @@ import com.datadog.android.log.Logger
 import com.datadog.android.rum.coroutines.sendErrorToDatadog
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.data.Result
+import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.coroutines.CoroutineScopeSpan
 import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
+import com.datadog.android.trace.setError
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
+import io.opentelemetry.api.trace.StatusCode
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
@@ -302,6 +305,18 @@ internal class TracesViewModel(
 
                 logger.v("Finishing Async Operation...")
             }
+            withinOtelSpan("OtelAsyncOpetation"){
+                logger.v("Starting Async Otel Operation...")
+
+                for (i in 0..100) {
+                    if (isCancelled) {
+                        break
+                    }
+                    Thread.sleep(((i * i).toDouble() / 100.0).toLong())
+                }
+
+                logger.v("Finishing Async Otel Operation...")
+            }
         }
 
         @Deprecated("Deprecated in Java")
@@ -310,7 +325,26 @@ internal class TracesViewModel(
                 onDone()
             }
         }
+        private fun <T : Any?> withinOtelSpan(
+                operationName: String,
+                block: () -> T
+        ): T {
+            val tracer = AndroidTracer.Builder()
+                    .setService("sample-app-otel")
+                    .build()
+            val span = tracer.spanBuilder(operationName).startSpan()
+            return try {
+                block()
+            } catch (e: Throwable) {
+                span.setStatus(StatusCode.ERROR, e.message ?: "Unknown error")
+                throw e
+            } finally {
+                span.end()
+            }
+        }
+
     }
+
 
     // endregion
 

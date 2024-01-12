@@ -50,8 +50,14 @@ android {
     }
 }
 
+repositories{
+    mavenLocal()
+}
+
 dependencies {
     api(project(":dd-sdk-android-core"))
+    api("io.opentelemetry:opentelemetry-api:1.4.0")
+    implementation("com.datadoghq:dd-java-agent:1.28.0-SNAPSHOT")
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)

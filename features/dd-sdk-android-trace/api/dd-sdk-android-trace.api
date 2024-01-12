@@ -1,9 +1,10 @@
-public final class com/datadog/android/trace/AndroidTracer : com/datadog/opentracing/DDTracer {
+public final class com/datadog/android/trace/AndroidTracer : com/datadog/opentracing/DDTracer, io/opentelemetry/api/trace/Tracer {
 	public static final field Companion Lcom/datadog/android/trace/AndroidTracer$Companion;
 	public fun buildSpan (Ljava/lang/String;)Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;
 	public synthetic fun buildSpan (Ljava/lang/String;)Lio/opentracing/Tracer$SpanBuilder;
 	public static final fun logErrorMessage (Lio/opentracing/Span;Ljava/lang/String;)V
 	public static final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
+	public fun spanBuilder (Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun toString ()Ljava/lang/String;
 }
 
