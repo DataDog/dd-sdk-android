@@ -19,7 +19,7 @@ import com.google.gson.JsonPrimitive
 import java.util.Date
 
 internal class SpanEventSerializer(
-    internalLogger: InternalLogger,
+    private val internalLogger: InternalLogger,
     private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
 ) : ContextAwareSerializer<SpanEvent> {
 
@@ -51,7 +51,26 @@ internal class SpanEventSerializer(
         val transformedAttributes = dataConstraints.validateAttributes(
             usr.additionalProperties,
             META_USR_KEY_PREFIX
-        ).mapValues { toMetaString(it.value) }.filterValues { it != null }
+        )
+            .mapValues {
+                try {
+                    toMetaString(it.value)
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    internalLogger.log(
+                        level = InternalLogger.Level.ERROR,
+                        targets = listOf(
+                            InternalLogger.Target.USER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
+                        messageBuilder = {
+                            "Error converting value for key ${it.key} to meta string, it will be dropped."
+                        },
+                        throwable = e
+                    )
+                    null
+                }
+            }
+            .filterValues { it != null }
         return usr.copy(
             additionalProperties = transformedAttributes.toMutableMap()
         )

@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert
+import com.datadog.tools.unit.forge.anException
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -48,7 +49,7 @@ internal class SpanEventSerializerTest {
     @Mock
     lateinit var mockDatadogConstraints: DatadogDataConstraints
 
-    lateinit var testedSerializer: SpanEventSerializer
+    private lateinit var testedSerializer: SpanEventSerializer
 
     @BeforeEach
     fun `set up`() {
@@ -92,7 +93,7 @@ internal class SpanEventSerializerTest {
                 .validateAttributes(
                     fakeSpanEvent.meta.usr.additionalProperties,
                     SpanEventSerializer.META_USR_KEY_PREFIX,
-                    reservedKeys = emptySet<String>()
+                    reservedKeys = emptySet()
                 )
         ).thenReturn(fakeSanitizedAttributes)
 
@@ -136,6 +137,39 @@ internal class SpanEventSerializerTest {
         JsonObjectAssert.assertThat(spanObject).hasField(KEY_METRICS) {
             containsExtraAttributesAsMetrics(fakeSanitizedAttributes)
         }
+    }
+
+    @Test
+    fun `M not throw W serialize() { usr#additionalProperties serialization throws }`(
+        @Forgery fakeSpanEvent: SpanEvent,
+        forge: Forge
+    ) {
+        // GIVEN
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultySpanEvent = fakeSpanEvent.copy(
+            meta = fakeSpanEvent.meta.copy(
+                usr = fakeSpanEvent.meta.usr.copy(
+                    additionalProperties = fakeSpanEvent.meta.usr
+                        .additionalProperties
+                        .toMutableMap()
+                        .apply { put(faultyKey, faultyObject) }
+                )
+            )
+        )
+
+        // WHEN
+        val serialized = testedSerializer.serialize(fakeDatadogContext, faultySpanEvent)
+
+        // THEN
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
+        assertJsonMatchesInputSpan(spanObject, fakeSpanEvent)
+        Assertions.assertThat(jsonObject.get(KEY_ENV).asString).isEqualTo(fakeDatadogContext.env)
     }
 
     // endregion

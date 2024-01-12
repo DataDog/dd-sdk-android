@@ -590,6 +590,7 @@ public final class com/datadog/android/core/internal/utils/ConcurrencyExtKt {
 
 public final class com/datadog/android/core/internal/utils/JsonSerializer {
 	public static final field INSTANCE Lcom/datadog/android/core/internal/utils/JsonSerializer;
+	public final fun safeMapValuesToJson (Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
 	public final fun toJsonElement (Ljava/lang/Object;)Lcom/google/gson/JsonElement;
 }
 
