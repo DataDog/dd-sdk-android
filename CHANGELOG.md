@@ -1,3 +1,29 @@
+# 2.5.0 / 2024-01-15
+
+* [FEATURE] Add accessor for current session id. See [#1810](https://github.com/DataDog/dd-sdk-android/pull/1810)
+* [BUGFIX] Session Replay: Enable recording session if first RUM message happened before init. See [#1777](https://github.com/DataDog/dd-sdk-android/pull/1777)
+* [BUGFIX] RUM: Fix view url in case of `NavigationViewTrackingStrategy` usage. See [#1791](https://github.com/DataDog/dd-sdk-android/pull/1791)
+* [BUGFIX] Session Replay: Fix `ConcurrentModificationException` in `BitmapPool`. See [#1798](https://github.com/DataDog/dd-sdk-android/pull/1798)
+* [BUGFIX] RUM: Use internal key for View Scopes. See [#1812](https://github.com/DataDog/dd-sdk-android/pull/1812)
+* [BUGFIX] `getCurrentSessionId` returns correct value. See [#1817](https://github.com/DataDog/dd-sdk-android/pull/1817)
+* [IMPROVEMENT] RUM: Better handling of event write errors in RUM. See [#1766](https://github.com/DataDog/dd-sdk-android/pull/1766)
+* [IMPROVEMENT] Single Feature Integration Tests: Trace. See [#1786](https://github.com/DataDog/dd-sdk-android/pull/1786)
+* [IMPROVEMENT] Optimize response body length reporting in OkHttp instrumentation. See [#1790](https://github.com/DataDog/dd-sdk-android/pull/1790)
+* [IMPROVEMENT] RUM/Synthetics: Make synthetics logs more verbose. See [#1813](https://github.com/DataDog/dd-sdk-android/pull/1813)
+* [IMPROVEMENT] Prevent false positive warning. See [#1815](https://github.com/DataDog/dd-sdk-android/pull/1815)
+* [IMPROVEMENT] RUM: Safe serialization of user-provided attributes. See [#1818](https://github.com/DataDog/dd-sdk-android/pull/1818)
+* [IMPROVEMENT] RUM: Add additional status codes as retryable. See [#1819](https://github.com/DataDog/dd-sdk-android/pull/1819)
+* [MAINTENANCE] Merge `release/2.4.0` into `develop` branch. See [#1784](https://github.com/DataDog/dd-sdk-android/pull/1784)
+* [MAINTENANCE] Add delay before executors are flushed and stopped in nightly tests. See [#1783](https://github.com/DataDog/dd-sdk-android/pull/1783)
+* [MAINTENANCE] Upgrade shared CI pipeline. See [#1789](https://github.com/DataDog/dd-sdk-android/pull/1789)
+* [MAINTENANCE] Add telemetry point for null file content. See [#1792](https://github.com/DataDog/dd-sdk-android/pull/1792)
+* [MAINTENANCE] RUM: Migrate Realm from KAPT to KSP. See [#1794](https://github.com/DataDog/dd-sdk-android/pull/1794)
+* [MAINTENANCE] Fix OOM in CI jobs. See [#1796](https://github.com/DataDog/dd-sdk-android/pull/1796)
+* [MAINTENANCE] Increase wait time in NightlyTestRule. See [#1799](https://github.com/DataDog/dd-sdk-android/pull/1799)
+* [MAINTENANCE] Use Datadog Agent 1.26.1. See [#1800](https://github.com/DataDog/dd-sdk-android/pull/1800)
+* [MAINTENANCE] Move reading `BUILDENV_HOST_IP` variable to the job script definition. See [#1801](https://github.com/DataDog/dd-sdk-android/pull/1801)
+* [MAINTENANCE] Use automatic Gradle daemon instrumentation with CI Visibility instead of manual test tasks instrumentation. See [#1804](https://github.com/DataDog/dd-sdk-android/pull/1804)
+
 # 2.4.0 / 2023-12-21
 
 * [FEATURE] Global: Create `PersistenceStrategy` interface. See [#1745](https://github.com/DataDog/dd-sdk-android/pull/1745)
