@@ -354,6 +354,53 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request null response body}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        stubChain(mockChain) {
+            Response.Builder()
+                .request(fakeRequest)
+                .protocol(Protocol.HTTP_2)
+                .code(statusCode)
+                .message("HTTP $statusCode")
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+                .build()
+        }
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.RULE_PSR to fakeTracingSampleRate
+        ) + fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                emptyMap()
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                null,
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
     fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request empty response + !smp}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
@@ -400,8 +447,54 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request throwing response}`(
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request null response body + !smp}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        stubChain(mockChain) {
+            Response.Builder()
+                .request(fakeRequest)
+                .protocol(Protocol.HTTP_2)
+                .code(statusCode)
+                .message("HTTP $statusCode")
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+                .build()
+        }
+        // no span -> shouldn't have trace/spans IDs
+        val expectedStopAttrs = fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                emptyMap()
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                null,
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request throwing response}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
     ) {
         // Given
         stubChain(mockChain) {
@@ -414,7 +507,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = fakeResponseBody.length.toLong()
+                    override fun contentLength(): Long = forge.anElementFrom(0, -1)
 
                     override fun source(): BufferedSource {
                         val buffer = Buffer()
@@ -461,7 +554,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `𝕄 start and stop RUM Resource 𝕎 intercept() {success request throwing response + !smp}`(
-        @IntForgery(min = 200, max = 300) statusCode: Int
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
@@ -475,7 +569,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = fakeResponseBody.length.toLong()
+                    override fun contentLength(): Long = forge.anElementFrom(0, -1)
 
                     override fun source(): BufferedSource {
                         val buffer = Buffer()

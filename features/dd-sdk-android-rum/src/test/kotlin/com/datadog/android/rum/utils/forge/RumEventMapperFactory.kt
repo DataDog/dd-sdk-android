@@ -15,7 +15,6 @@ internal class RumEventMapperFactory : ForgeryFactory<RumEventMapper> {
 
     override fun getForgery(forge: Forge): RumEventMapper {
         return RumEventMapper(
-            sdkCore = mock(),
             viewEventMapper = mock(),
             actionEventMapper = mock(),
             resourceEventMapper = mock(),

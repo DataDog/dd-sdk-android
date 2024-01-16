@@ -9,12 +9,13 @@ package com.datadog.android.log.internal.domain.event
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.constraints.DataConstraints
 import com.datadog.android.core.constraints.DatadogDataConstraints
+import com.datadog.android.core.internal.utils.JsonSerializer.safeMapValuesToJson
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.model.LogEvent
 
 internal class LogEventSerializer(
-    internalLogger: InternalLogger,
+    private val internalLogger: InternalLogger,
     private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
 ) : Serializer<LogEvent> {
 
@@ -35,11 +36,17 @@ internal class LogEventSerializer(
                 keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
                 attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
             )
-            it.copy(additionalProperties = sanitizedUserAttributes)
+            it.copy(
+                additionalProperties = sanitizedUserAttributes
+                    .safeMapValuesToJson(internalLogger)
+                    .toMutableMap()
+            )
         }
         return log.copy(
             ddtags = sanitizedTags,
-            additionalProperties = sanitizedAttributes.toMutableMap(),
+            additionalProperties = sanitizedAttributes
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap(),
             usr = usr
         )
     }

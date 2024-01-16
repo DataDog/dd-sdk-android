@@ -31,6 +31,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumResourceScope
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
@@ -79,6 +80,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -194,6 +196,35 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M send null for current session W getCurrentSessionId { no session started }`() {
+        // Given
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            fakeSampleRate,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener
+        )
+        val completableFuture = CompletableFuture<String>()
+
+        // When
+        testedMonitor.getCurrentSessionId { completableFuture.complete(it) }
+
+        // Then
+        completableFuture.thenAccept {
+            assertThat(it).isEqualTo(null)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS).join()
+    }
+
+    @Test
     fun `M delegate event to rootScope W startView()`(
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
@@ -205,11 +236,83 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartView
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-            assertThat(event.name).isEqualTo(name)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`(
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
+    ) {
+        // Given
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            100.0f,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener
+        )
+        val completableFuture = CompletableFuture<String>()
+        testedMonitor.startView(key, name, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // When
+        testedMonitor.getCurrentSessionId { completableFuture.complete(it) }
+
+        // Then
+        completableFuture.thenAccept {
+            argumentCaptor<String> {
+                verify(mockSessionListener).onSessionStarted(capture(), any())
+
+                assertThat(it).isEqualTo(firstValue)
+                assertThat(it).isNotNull()
+            }
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS).join()
+    }
+
+    @Test
+    fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`(
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
+    ) {
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            0.0f,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener
+        )
+
+        val completableFuture = CompletableFuture<String>()
+        testedMonitor.startView(key, name, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // When
+        testedMonitor.getCurrentSessionId { completableFuture.complete(it) }
+
+        // Then
+        completableFuture.thenAccept {
+            assertThat(it).isEqualTo(null)
+        }.orTimeout(PROCESSING_DELAY, TimeUnit.MILLISECONDS).join()
     }
 
     @Test
@@ -223,7 +326,7 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StopView
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -654,9 +757,8 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.StartView
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-            assertThat(event.name).isEqualTo(name)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -675,7 +777,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.StopView
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
-            assertThat(event.key).isEqualTo(key)
+            assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1326,7 +1428,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn true
             }
@@ -1362,7 +1464,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn false
             }
@@ -1686,7 +1788,7 @@ internal class DatadogRumMonitorTest {
                 if (isMethodOccupied) {
                     throw IllegalStateException(
                         "Only one thread should" +
-                            " be allowed to enter rootScope at the time."
+                                " be allowed to enter rootScope at the time."
                     )
                 }
                 isMethodOccupied = true
@@ -1722,8 +1824,7 @@ internal class DatadogRumMonitorTest {
                         attributes = emptyMap()
                     ),
                     RumRawEvent.StartView(
-                        key = Any(),
-                        name = forge.anAlphaNumericalString(),
+                        key = forge.getForgery(),
                         attributes = emptyMap()
                     )
                 )

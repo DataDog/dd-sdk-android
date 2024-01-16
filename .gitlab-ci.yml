@@ -4,16 +4,18 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "5"
+  CURRENT_CI_IMAGE: "6"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
-  DD_AGENT_HOST: "$BUILDENV_HOST_IP"
   DD_SERVICE: "dd-sdk-android"
   DD_ENV_TESTS: "ci"
-  DD_INTEGRATION_JUNIT_5_ENABLED: "true"
   DD_CIVISIBILITY_ENABLED: "true"
   DD_INSIDE_CI: "true"
+  DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=false,dd.jmx.fetch.enabled=false"
+
+  KUBERNETES_MEMORY_REQUEST: "8Gi"
+  KUBERNETES_MEMORY_LIMIT: "16Gi"
 
 stages:
   - ci-image
@@ -30,18 +32,17 @@ ci-image:
   stage: ci-image
   when: manual
   except: [ tags, schedules ]
-  tags: [ "runner:docker" ]
+  tags: [ "arch:amd64" ]
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:20.10.13
   script:
-    - docker build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab .
-    - docker push $CI_IMAGE_DOCKER
+    - docker buildx build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab --push .
 
 # SECURITY
 
 create_key:
   stage: security
   when: manual
-  tags: [ "runner:docker" ]
+  tags: [ "arch:amd64" ]
   variables:
     PROJECT_NAME: "dd-sdk-android"
     EXPORT_TO_KEYSERVER: "true"
@@ -67,11 +68,11 @@ static-analysis:
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint :sample:kotlin:lintUs1Release :sample:wear:lintUs1Release"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v21503284-abb6cabb/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v25558398-8517309a/static-analysis.yml"
     strategy: depend
 
 analysis:licenses:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -79,7 +80,7 @@ analysis:licenses:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
 
 analysis:nightly-tests-coverage:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -90,7 +91,7 @@ analysis:nightly-tests-coverage:
 # TESTS
 
 test:debug:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -102,7 +103,8 @@ test:debug:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -110,7 +112,7 @@ test:debug:
       junit: "**/build/test-results/testDebugUnitTest/*.xml"
 
 test:release:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -122,7 +124,8 @@ test:release:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -130,7 +133,7 @@ test:release:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test:tools:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -142,10 +145,11 @@ test:tools:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:jvmRelease" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
 
 test:kover:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -157,10 +161,11 @@ test:kover:
   script:
     - pip3 install datadog
     - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
     - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - python3 ddcoverage.py --prefix dd-sdk-android
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
@@ -169,7 +174,7 @@ test:kover:
 # the steps in this section should reflect our test pyramid strategy
 
 test-pyramid:single-fit-logs:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
@@ -181,7 +186,8 @@ test-pyramid:single-fit-logs:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -189,7 +195,7 @@ test-pyramid:single-fit-logs:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-rum:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
@@ -201,7 +207,8 @@ test-pyramid:single-fit-rum:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -209,7 +216,7 @@ test-pyramid:single-fit-rum:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-trace:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
@@ -221,7 +228,8 @@ test-pyramid:single-fit-trace:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -229,7 +237,7 @@ test-pyramid:single-fit-trace:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:publish-e2e-synthetics:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
@@ -258,7 +266,7 @@ test-pyramid:publish-e2e-synthetics:
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release-core:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -274,7 +282,7 @@ publish:release-core:
     - ./gradlew :dd-sdk-android-core:publishToSonatype --stacktrace --no-daemon
 
 publish:release-coil:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -290,7 +298,7 @@ publish:release-coil:
     - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
 
 publish:release-compose:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -307,7 +315,7 @@ publish:release-compose:
     - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
 
 publish:release-fresco:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -323,7 +331,7 @@ publish:release-fresco:
     - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
 
 publish:release-glide:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -339,7 +347,7 @@ publish:release-glide:
     - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
 
 publish:release-trace-coroutines:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -355,7 +363,7 @@ publish:release-trace-coroutines:
     - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rum-coroutines:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -371,7 +379,7 @@ publish:release-rum-coroutines:
     - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ndk:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -387,7 +395,7 @@ publish:release-ndk:
     - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rx:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -403,7 +411,7 @@ publish:release-rx:
     - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-sqldelight:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -419,7 +427,7 @@ publish:release-sqldelight:
     - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
 
 publish:release-timber:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -435,7 +443,7 @@ publish:release-timber:
     - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
 
 publish:release-android-tv:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -451,7 +459,7 @@ publish:release-android-tv:
     - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
 
 publish:release-session-replay:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -467,7 +475,7 @@ publish:release-session-replay:
     - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
 
 publish:release-session-replay-material:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -483,7 +491,7 @@ publish:release-session-replay-material:
     - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
 
 publish:release-logs:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -499,7 +507,7 @@ publish:release-logs:
     - ./gradlew :features:dd-sdk-android-logs:publishToSonatype --stacktrace --no-daemon
 
 publish:release-okhttp:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -515,7 +523,7 @@ publish:release-okhttp:
     - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype --stacktrace --no-daemon
 
 publish:release-trace:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -531,7 +539,7 @@ publish:release-trace:
     - ./gradlew :features:dd-sdk-android-trace:publishToSonatype --stacktrace --no-daemon
 
 publish:release-webview:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -547,7 +555,7 @@ publish:release-webview:
     - ./gradlew :features:dd-sdk-android-webview:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rum:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -587,7 +595,7 @@ notify:failure:
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -599,7 +607,7 @@ notify:dogfood-app:
   - python3 dogfood.py -v $CI_COMMIT_TAG -t app
 
 notify:dogfood-demo:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -611,7 +619,7 @@ notify:dogfood-demo:
     - python3 dogfood.py -v $CI_COMMIT_TAG -t demo
 
 notify:dogfood-gradle-plugin:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER

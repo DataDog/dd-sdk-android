@@ -8,8 +8,7 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?):
-    MobileSegment.Wireframe {
+internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?): MobileSegment.Wireframe {
     return when (this) {
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.TextWireframe -> this.copy(clip = clip)

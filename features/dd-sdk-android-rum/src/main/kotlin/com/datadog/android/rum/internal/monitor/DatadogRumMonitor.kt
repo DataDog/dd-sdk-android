@@ -27,12 +27,14 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
@@ -98,6 +100,28 @@ internal class DatadogRumMonitor(
 
     // region RumMonitor
 
+    override fun getCurrentSessionId(callback: (String?) -> Unit) {
+        executorService.submitSafe(
+            "Get current session ID",
+            sdkCore.internalLogger
+        ) {
+            val activeSessionId = (rootScope as? RumApplicationScope)
+                ?.activeSession
+                ?.getRumContext()
+                ?.let {
+                    val sessionId = it.sessionId
+                    if (it.sessionState == RumSessionScope.State.NOT_TRACKED ||
+                        sessionId == RumContext.NULL_UUID
+                    ) {
+                        null
+                    } else {
+                        sessionId
+                    }
+                }
+            callback(activeSessionId)
+        }
+    }
+
     override var debug: Boolean
         get() = isDebugEnabled.get()
         set(value) {
@@ -126,28 +150,28 @@ internal class DatadogRumMonitor(
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartView(key, name, attributes, eventTime)
+            RumRawEvent.StartView(RumScopeKey.from(key, name), attributes.toMap(), eventTime)
         )
     }
 
     override fun stopView(key: Any, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopView(key, attributes, eventTime)
+            RumRawEvent.StopView(RumScopeKey.from(key), attributes.toMap(), eventTime)
         )
     }
 
     override fun addAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, false, attributes, eventTime)
+            RumRawEvent.StartAction(type, name, false, attributes.toMap(), eventTime)
         )
     }
 
     override fun startAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, true, attributes, eventTime)
+            RumRawEvent.StartAction(type, name, true, attributes.toMap(), eventTime)
         )
     }
 
@@ -158,13 +182,13 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopAction(type, name, attributes, eventTime)
+            RumRawEvent.StopAction(type, name, attributes.toMap(), eventTime)
         )
     }
 
     @Deprecated(
         "This method is deprecated and will be removed in the future versions." +
-            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
+                " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
         key: String,
@@ -205,7 +229,7 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartResource(key, url, method, attributes, eventTime)
+            RumRawEvent.StartResource(key, url, method, attributes.toMap(), eventTime)
         )
     }
 
@@ -218,7 +242,14 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopResource(key, statusCode?.toLong(), size, kind, attributes, eventTime)
+            RumRawEvent.StopResource(
+                key,
+                statusCode?.toLong(),
+                size,
+                kind,
+                attributes.toMap(),
+                eventTime
+            )
         )
     }
 
@@ -237,7 +268,7 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes
+                attributes.toMap()
             )
         )
     }
@@ -259,7 +290,7 @@ internal class DatadogRumMonitor(
                 source,
                 stackTrace,
                 errorType,
-                attributes
+                attributes.toMap()
             )
         )
     }
@@ -279,7 +310,7 @@ internal class DatadogRumMonitor(
                 throwable,
                 null,
                 false,
-                attributes,
+                attributes.toMap(),
                 eventTime,
                 errorType
             )
@@ -302,7 +333,7 @@ internal class DatadogRumMonitor(
                 null,
                 stacktrace,
                 false,
-                attributes,
+                attributes.toMap(),
                 eventTime,
                 errorType,
                 errorSourceType

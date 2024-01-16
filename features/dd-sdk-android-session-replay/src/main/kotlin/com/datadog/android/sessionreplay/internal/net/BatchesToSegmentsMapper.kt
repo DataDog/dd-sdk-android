@@ -30,8 +30,7 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
 
     // region Internal
 
-    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>):
-        Pair<MobileSegment, JsonObject>? {
+    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
         val reducedEnrichedRecord = batchData
             .asSequence()
             .mapNotNull {
@@ -76,8 +75,10 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
     }
 
     @Suppress("ReturnCount")
-    private fun mapToSegment(rumContext: SessionReplayRumContext, records: JsonArray):
-        Pair<MobileSegment, JsonObject>? {
+    private fun mapToSegment(
+        rumContext: SessionReplayRumContext,
+        records: JsonArray
+    ): Pair<MobileSegment, JsonObject>? {
         val orderedRecords = records
             .asSequence()
             .mapNotNull {

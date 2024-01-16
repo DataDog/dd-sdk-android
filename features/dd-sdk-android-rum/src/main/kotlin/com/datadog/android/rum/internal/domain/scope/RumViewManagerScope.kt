@@ -18,7 +18,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import java.lang.ref.WeakReference
 import java.util.Locale
 
 internal class RumViewManagerScope(
@@ -114,7 +113,7 @@ internal class RumViewManagerScope(
         while (iterator.hasNext()) {
             val childScope = iterator.next()
             if (event is RumRawEvent.StopView) {
-                if (childScope.isActive() && (childScope as? RumViewScope)?.keyRef?.get() == event.key) {
+                if (childScope.isActive() && (childScope as? RumViewScope)?.key?.id == event.key.id) {
                     lastStoppedViewTime = event.eventTime
                 }
             }
@@ -164,8 +163,7 @@ internal class RumViewManagerScope(
         viewScope.handleEvent(RumRawEvent.KeepAlive(), writer)
         viewChangedListener?.onViewChanged(
             RumViewInfo(
-                keyRef = WeakReference(event.key),
-                name = event.name,
+                key = event.key,
                 attributes = event.attributes,
                 isActive = true
             )
@@ -205,8 +203,11 @@ internal class RumViewManagerScope(
         return RumViewScope(
             this,
             sdkCore,
-            RUM_BACKGROUND_VIEW_URL,
-            RUM_BACKGROUND_VIEW_NAME,
+            RumScopeKey(
+                RUM_BACKGROUND_VIEW_ID,
+                RUM_BACKGROUND_VIEW_URL,
+                RUM_BACKGROUND_VIEW_NAME
+            ),
             event.eventTime,
             emptyMap(),
             viewChangedListener,
@@ -224,8 +225,11 @@ internal class RumViewManagerScope(
         return RumViewScope(
             this,
             sdkCore,
-            RUM_APP_LAUNCH_VIEW_URL,
-            RUM_APP_LAUNCH_VIEW_NAME,
+            RumScopeKey(
+                RUM_APP_LAUNCH_VIEW_ID,
+                RUM_APP_LAUNCH_VIEW_URL,
+                RUM_APP_LAUNCH_VIEW_NAME
+            ),
             time,
             emptyMap(),
             viewChangedListener,
@@ -264,18 +268,20 @@ internal class RumViewManagerScope(
             RumRawEvent.ResourceSent::class.java
         )
 
+        internal const val RUM_BACKGROUND_VIEW_ID = "com.datadog.background.view"
         internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
         internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
+        internal const val RUM_APP_LAUNCH_VIEW_ID = "com.datadog.application-launch.view"
         internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
         internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
 
         private const val MESSAGE_GAP_BETWEEN_VIEWS = "Gap between views was %d nanoseconds"
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
-                "To track views automatically, try calling the " +
-                "Configuration.Builder.useViewTrackingStrategy() method.\n" +
-                "You can also track views manually using the RumMonitor.startView() and " +
-                "RumMonitor.stopView() methods."
+                    "To track views automatically, try calling the " +
+                    "Configuration.Builder.useViewTrackingStrategy() method.\n" +
+                    "You can also track views manually using the RumMonitor.startView() and " +
+                    "RumMonitor.stopView() methods."
     }
 }

@@ -46,8 +46,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
      * the provided [pixelsDensity]. By Global we mean that the View position will not be relative
      * to its parent but to the Device screen.
      */
-    protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float):
-        GlobalBounds {
+    protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds {
         // RUMM-0000 return an array of primitives here instead of creating an object.
         // This method is being called too often every time we take a screen snapshot
         // and we might want to avoid creating too many instances.
@@ -58,8 +57,9 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
      * Resolves the [MobileSegment.ShapeStyle] and [MobileSegment.ShapeBorder] based on the [View]
      * drawables.
      */
-    protected fun Drawable.resolveShapeStyleAndBorder(viewAlpha: Float):
-        Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
+    protected fun Drawable.resolveShapeStyleAndBorder(
+        viewAlpha: Float
+    ): Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
         return if (this is ColorDrawable) {
             val color = colorAndAlphaAsStringHexa(color, alpha)
             MobileSegment.ShapeStyle(color, viewAlpha) to null

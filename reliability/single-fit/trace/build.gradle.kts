@@ -49,6 +49,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
@@ -57,6 +58,10 @@ dependencies {
 }
 
 unMock {
+    keep("android.util.Singleton")
+    keep("com.android.internal.util.FastPrintWriter")
+    keep("dalvik.system.BlockGuard")
+    keep("dalvik.system.CloseGuard")
     keepStartingWith("android.os")
     keepStartingWith("org.json")
 }

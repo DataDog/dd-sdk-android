@@ -8,21 +8,21 @@ package com.datadog.android.sample.data.db.realm
 
 import android.provider.BaseColumns
 import com.datadog.android.sample.data.db.DatadogDbContract
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import io.realm.annotations.RealmField
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PersistedName
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.UUID
 
 internal open class LogRealm(
-    @RealmField(name = BaseColumns._ID)
+    @PersistedName(name = BaseColumns._ID)
     @PrimaryKey
     var id: String = UUID.randomUUID().toString(),
-    @RealmField(name = DatadogDbContract.Logs.COLUMN_NAME_MESSAGE)
+    @PersistedName(name = DatadogDbContract.Logs.COLUMN_NAME_MESSAGE)
     var message: String,
-    @RealmField(name = DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP)
+    @PersistedName(name = DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP)
     var timestamp: String,
-    @RealmField(name = DatadogDbContract.Logs.COLUMN_NAME_TTL)
+    @PersistedName(name = DatadogDbContract.Logs.COLUMN_NAME_TTL)
     var ttl: Long
-) : RealmObject() {
+) : RealmObject {
     constructor() : this(message = "", timestamp = "", ttl = 0L)
 }

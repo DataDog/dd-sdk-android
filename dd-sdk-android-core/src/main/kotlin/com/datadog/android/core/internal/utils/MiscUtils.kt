@@ -16,6 +16,7 @@ import com.google.gson.JsonPrimitive
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
+import java.util.Locale
 
 internal fun retryWithDelay(
     times: Int,
@@ -65,6 +66,8 @@ object JsonSerializer {
     // polluting user-space, we are going to encapsulate it. Maybe later if we have an internal
     // package it can be converted back to the extension function.
 
+    internal const val ITEM_SERIALIZATION_ERROR = "Error serializing value for key %s, value was dropped."
+
     /**
      * Converts arbitrary object to the [JsonElement] with the best effort. [Any.toString] is
      * used as a fallback.
@@ -92,6 +95,28 @@ object JsonSerializer {
             is JSONArray -> item.toJsonArray()
             else -> JsonPrimitive(item.toString())
         }
+    }
+
+    /**
+     * This method will convert all values to JSON in a safe way, meaning if serialization fails
+     * for the particular value, the process will continue and faulty value will be dropped.
+     */
+    @InternalApi
+    fun Map<String, Any?>.safeMapValuesToJson(internalLogger: InternalLogger): Map<String, JsonElement> {
+        val result = mutableMapOf<String, JsonElement>()
+        forEach {
+            try {
+                result += it.key to toJsonElement(it.value)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    messageBuilder = { ITEM_SERIALIZATION_ERROR.format(Locale.US, it.key) },
+                    throwable = e
+                )
+            }
+        }
+        return result
     }
 }
 

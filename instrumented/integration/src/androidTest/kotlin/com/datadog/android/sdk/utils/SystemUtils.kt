@@ -16,7 +16,7 @@ fun execShell(vararg command: String): List<String> {
         }
     }
     process.inputStream.bufferedReader().use {
-        var line: String ?
+        var line: String?
         do {
             line = it.readLine()
             if (line != null) lines.add(line)

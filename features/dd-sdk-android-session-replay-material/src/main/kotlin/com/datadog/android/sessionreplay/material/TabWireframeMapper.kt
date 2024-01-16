@@ -90,8 +90,7 @@ internal open class TabWireframeMapper(
         view: TabView,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe> {
+    ): List<MobileSegment.Wireframe> {
         for (i in 0 until view.childCount) {
             val viewChild = view.getChildAt(i) ?: continue
 

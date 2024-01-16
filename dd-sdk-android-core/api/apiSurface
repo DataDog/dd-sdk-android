@@ -231,6 +231,7 @@ fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.
 val NULL_MAP_VALUE: Object
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
+  fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String

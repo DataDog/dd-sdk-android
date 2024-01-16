@@ -11,7 +11,8 @@ import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatImageView
 
 internal class AspectRatioImageView
-@JvmOverloads constructor(
+@JvmOverloads
+constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

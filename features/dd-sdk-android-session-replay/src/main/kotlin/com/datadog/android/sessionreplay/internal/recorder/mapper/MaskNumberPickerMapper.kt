@@ -28,8 +28,7 @@ internal open class MaskNumberPickerMapper(
         view: NumberPicker,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe> {
+    ): List<MobileSegment.Wireframe> {
         val selectedIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
             SELECTED_INDEX_KEY_NAME

@@ -167,6 +167,7 @@ internal class SessionReplayFeature(
         }
     }
 
+    @Suppress("ReturnCount")
     private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
         val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
         val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
@@ -185,6 +186,10 @@ internal class SessionReplayFeature(
             return
         }
 
+        if (!checkIfInitialized()) {
+            return
+        }
+
         if (keepSession && rateBasedSampler.sample()) {
             startRecording()
         } else {
@@ -199,19 +204,24 @@ internal class SessionReplayFeature(
         currentRumSessionId.set(sessionId)
     }
 
-    /**
-     * Resumes the replay recorder.
-     */
-    internal fun startRecording() {
+    private fun checkIfInitialized(): Boolean {
         if (!initialized.get()) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { CANNOT_START_RECORDING_NOT_INITIALIZED }
             )
-            return
+            return false
         }
-        if (!isRecording.getAndSet(true)) {
+        return true
+    }
+
+    /**
+     * Resumes the replay recorder.
+     */
+    internal fun startRecording() {
+        // Check initialization again so we don't forget to do it when this method is made public
+        if (checkIfInitialized() && !isRecording.getAndSet(true)) {
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.resumeRecorders()
         }

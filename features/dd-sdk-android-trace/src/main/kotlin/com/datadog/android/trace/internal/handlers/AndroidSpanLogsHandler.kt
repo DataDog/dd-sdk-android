@@ -65,7 +65,7 @@ internal class AndroidSpanLogsHandler(
         timestampMicroseconds: Long? = null
     ) {
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
-        if (logsFeature != null) {
+        if (logsFeature != null && fields.isNotEmpty()) {
             val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
             fields[LogAttributes.DD_TRACE_ID] = span.traceId.toString()
             fields[LogAttributes.DD_SPAN_ID] = span.spanId.toString()
@@ -79,7 +79,7 @@ internal class AndroidSpanLogsHandler(
                     "timestamp" to timestamp
                 )
             )
-        } else {
+        } else if (logsFeature == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,

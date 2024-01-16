@@ -16,8 +16,7 @@ internal class QueueableViewMapper(
     private val mapper: WireframeMapper<View, *>,
     private val recordedDataQueueRefs: RecordedDataQueueRefs
 ) : AsyncJobStatusCallback {
-    fun map(view: View, mappingContext: MappingContext):
-        List<MobileSegment.Wireframe> {
+    fun map(view: View, mappingContext: MappingContext): List<MobileSegment.Wireframe> {
         return mapper.map(view, mappingContext, this)
     }
 

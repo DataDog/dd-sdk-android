@@ -21,8 +21,7 @@ internal class ViewScreenshotWireframeMapper(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe.ShapeWireframe> {
+    ): List<MobileSegment.Wireframe.ShapeWireframe> {
         return viewWireframeMapper.map(view, mappingContext).map {
             it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
         }

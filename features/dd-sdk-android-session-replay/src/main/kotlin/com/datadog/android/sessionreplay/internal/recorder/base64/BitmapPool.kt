@@ -103,6 +103,21 @@ internal class BitmapPool(
         }?.apply { markBitmapAsUsed(this) }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {}
+
+    @Synchronized
+    override fun onLowMemory() {
+        bitmapPoolHelper.safeCall {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+            cache.evictAll()
+        }
+    }
+
+    @Synchronized
+    override fun onTrimMemory(level: Int) {
+        cacheUtils.handleTrimMemory(level, cache)
+    }
+
     internal fun getBitmapByProperties(width: Int, height: Int, config: Config): Bitmap? {
         val key = bitmapPoolHelper.generateKey(width, height, config)
         return get(key)
@@ -144,19 +159,6 @@ internal class BitmapPool(
             @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
             bitmapsBySize[key]?.add(bitmap)
         }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {}
-
-    override fun onLowMemory() {
-        bitmapPoolHelper.safeCall {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-            cache.evictAll()
-        }
-    }
-
-    override fun onTrimMemory(level: Int) {
-        cacheUtils.handleTrimMemory(level, cache)
     }
 
     internal companion object {

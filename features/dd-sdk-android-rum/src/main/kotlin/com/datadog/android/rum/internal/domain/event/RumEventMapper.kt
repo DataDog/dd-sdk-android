@@ -7,12 +7,8 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.SdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -24,7 +20,6 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import java.util.Locale
 
 internal data class RumEventMapper(
-    val sdkCore: SdkCore,
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
@@ -35,11 +30,7 @@ internal data class RumEventMapper(
 ) : EventMapper<Any> {
 
     override fun map(event: Any): Any? {
-        val mappedEvent = resolveEvent(event)
-        if (mappedEvent == null) {
-            notifyEventDropped(event)
-        }
-        return mappedEvent
+        return resolveEvent(event)
     }
 
     // region Internal
@@ -110,28 +101,6 @@ internal data class RumEventMapper(
             null
         } else {
             event
-        }
-    }
-
-    private fun notifyEventDropped(event: Any) {
-        val monitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
-        when (event) {
-            is ActionEvent -> monitor.eventDropped(
-                event.view.id,
-                StorageEvent.Action(frustrationCount = event.action.frustration?.type?.size ?: 0)
-            )
-            is ResourceEvent -> monitor.eventDropped(event.view.id, StorageEvent.Resource)
-            is ErrorEvent -> monitor.eventDropped(event.view.id, StorageEvent.Error)
-            is LongTaskEvent -> {
-                if (event.longTask.isFrozenFrame == true) {
-                    monitor.eventDropped(event.view.id, StorageEvent.FrozenFrame)
-                } else {
-                    monitor.eventDropped(event.view.id, StorageEvent.LongTask)
-                }
-            }
-            else -> {
-                // Nothing to do
-            }
         }
     }
 

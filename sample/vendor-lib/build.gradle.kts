@@ -17,7 +17,6 @@ import java.io.File
 plugins {
     id("com.android.library")
     kotlin("android")
-    kotlin("kapt")
     id("com.github.ben-manes.versions")
 }
 

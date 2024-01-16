@@ -38,18 +38,15 @@ internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
         view: T,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ):
-        List<MobileSegment.Wireframe>
+    ): List<MobileSegment.Wireframe>
 
     abstract fun resolveNotCheckedCheckable(
         view: T,
         mappingContext: MappingContext
-    ):
-        List<MobileSegment.Wireframe>?
+    ): List<MobileSegment.Wireframe>?
 
     abstract fun resolveCheckedCheckable(
         view: T,
         mappingContext: MappingContext
-    ):
-        List<MobileSegment.Wireframe>?
+    ): List<MobileSegment.Wireframe>?
 }

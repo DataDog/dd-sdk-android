@@ -22,7 +22,7 @@ class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
             service = forge.anAlphabeticalString(),
             version = forge.aStringMatching("[0-9](\\.[0-9]{1,3}){2,3}"),
             variant = forge.anAlphabeticalString(),
-            env = forge.anAlphabeticalString(),
+            env = forge.anAlphabeticalString().lowercase(Locale.US),
             source = forge.anAlphabeticalString(),
             sdkVersion = forge.aStringMatching("[0-9](\\.[0-9]{1,2}){1,3}"),
             time = forge.getForgery(),

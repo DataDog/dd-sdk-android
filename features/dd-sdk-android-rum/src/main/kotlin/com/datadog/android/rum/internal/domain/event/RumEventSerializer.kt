@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.event
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.constraints.DataConstraints
 import com.datadog.android.core.constraints.DatadogDataConstraints
+import com.datadog.android.core.internal.utils.JsonSerializer.safeMapValuesToJson
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
@@ -22,7 +23,7 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.google.gson.JsonObject
 
 internal class RumEventSerializer(
-    internalLogger: InternalLogger,
+    private val internalLogger: InternalLogger,
     private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
 ) : Serializer<Any> {
 
@@ -70,9 +71,13 @@ internal class RumEventSerializer(
     private fun serializeViewEvent(model: ViewEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedView = model.view.copy(
             customTimings = model.view.customTimings?.copy(
@@ -93,9 +98,13 @@ internal class RumEventSerializer(
     private fun serializeErrorEvent(model: ErrorEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
@@ -107,9 +116,13 @@ internal class RumEventSerializer(
     private fun serializeResourceEvent(model: ResourceEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
@@ -121,9 +134,13 @@ internal class RumEventSerializer(
     private fun serializeActionEvent(model: ActionEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
@@ -135,9 +152,13 @@ internal class RumEventSerializer(
     private fun serializeLongTaskEvent(model: LongTaskEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,

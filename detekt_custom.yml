@@ -77,7 +77,19 @@ style:
 
 datadog:
   active: true
-  excludes: [ '**/build/**', '**/test/**', '**/testDebug/**','**/testRelease/**', '**/androidTest/**', '**/testFixtures/**', '**/buildSrc/**', '**/*.kts', '**/instrumented/**', '**/sample/**', '**/tools/**' ]
+  excludes:
+    - '**/build/**'
+    - '**/test/**'
+    - '**/testDebug/**'
+    - '**/testRelease/**'
+    - '**/androidTest/**'
+    - '**/testFixtures/**'
+    - '**/buildSrc/**'
+    - '**/*.kts'
+    - '**/instrumented/**'
+    - '**/reliability/**'
+    - '**/sample/**'
+    - '**/tools/**'
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'
@@ -838,6 +850,7 @@ datadog:
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.Map.mapValues(kotlin.Function1)"
       - "kotlin.collections.Map.orEmpty()"
+      - "kotlin.collections.Map.safeMapValuesToJson(com.datadog.android.api.InternalLogger)"
       - "kotlin.collections.Map.toJsonObject()"
       - "kotlin.collections.Map.toMap()"
       - "kotlin.collections.Map.toMap()"
@@ -846,6 +859,7 @@ datadog:
       - "kotlin.collections.MutableCollection.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.toList()"
       - "kotlin.collections.MutableIterator.hasNext()"
+      - "kotlin.collections.MutableList.add(com.datadog.android.api.InternalLogger.Target)"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.Batch)"
       - "kotlin.collections.MutableList.add(com.datadog.android.plugin.DatadogPlugin)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"
@@ -910,6 +924,7 @@ datadog:
       - "kotlin.collections.MutableMap.remove(kotlin.Int)"
       - "kotlin.collections.MutableMap.remove(kotlin.Long)"
       - "kotlin.collections.MutableMap.remove(kotlin.String)"
+      - "kotlin.collections.MutableMap.safeMapValuesToJson(com.datadog.android.api.InternalLogger)"
       - "kotlin.collections.MutableMap?.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.core.internal.persistence.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventId)"
@@ -1172,6 +1187,7 @@ datadog:
       - "okhttp3.Response.code()"
       - "okhttp3.Response.header(kotlin.String, kotlin.String?)"
       - "okhttp3.ResponseBody.contentLength()"
+      - "okhttp3.ResponseBody.contentLengthOrNull()"
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json
