@@ -50,6 +50,8 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(SnapshotRecordedDataQueueItemForgeryFactory())
         forge.addFactory(TouchEventRecordedDataQueueItemForgeryFactory())
         forge.addFactory(WireframeBoundsForgeryFactory())
+        forge.addFactory(SessionReplayResourceFactory())
+        forge.addFactory(SessionReplayResourceContextFactory())
 
         forge.useJvmFactories()
     }
