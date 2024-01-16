@@ -20,7 +20,7 @@ import java.util.UUID
 internal class SegmentRequestFactory(
     internal val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper,
-    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
+    private val segmentRequestBodyFactory: SegmentRequestBodyFactory = SegmentRequestBodyFactory()
 ) : RequestFactory {
 
     override fun create(
@@ -36,7 +36,7 @@ internal class SegmentRequestFactory(
                     " request could not be created"
             )
         }
-        val body = requestBodyFactory.create(
+        val body = segmentRequestBodyFactory.create(
             serializedSegmentPair.first,
             serializedSegmentPair.second
         )

@@ -14,10 +14,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
-internal class RequestBodyFactory(
+internal class SegmentRequestBodyFactory(
     private val compressor: BytesCompressor = BytesCompressor()
 ) {
-
     fun create(
         segment: MobileSegment,
         serializedSegment: JsonObject
@@ -25,11 +24,11 @@ internal class RequestBodyFactory(
         // we need to add a new line at the end of each segment for being able to format it
         // as an Array when read by the player
         val segmentAsBinary = (serializedSegment.toString() + "\n").toByteArray()
-        return buildRequestBody(segment, segmentAsBinary)
+        return buildSegmentRequestBody(segment, segmentAsBinary)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-    private fun buildRequestBody(segment: MobileSegment, segmentAsBinary: ByteArray): RequestBody {
+    private fun buildSegmentRequestBody(segment: MobileSegment, segmentAsBinary: ByteArray): RequestBody {
         val compressedData = compressor.compressBytes(segmentAsBinary)
         return MultipartBody.Builder()
             .setType(MultipartBody.FORM)
@@ -79,7 +78,6 @@ internal class RequestBodyFactory(
     }
 
     companion object {
-
         internal const val APPLICATION_ID_FORM_KEY = "application.id"
         internal const val SESSION_ID_FORM_KEY = "session.id"
         internal const val VIEW_ID_FORM_KEY = "view.id"

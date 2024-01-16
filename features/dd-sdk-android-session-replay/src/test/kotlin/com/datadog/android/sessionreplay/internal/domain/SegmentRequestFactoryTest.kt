@@ -43,13 +43,13 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SegmentRequestFactoryTest {
 
-    lateinit var testedRequestFactory: SegmentRequestFactory
+    private lateinit var testedRequestFactory: SegmentRequestFactory
 
     @Mock
     lateinit var mockBatchesToSegmentsMapper: BatchesToSegmentsMapper
 
     @Mock
-    lateinit var mockRequestBodyFactory: RequestBodyFactory
+    lateinit var mockSegmentRequestBodyFactory: SegmentRequestBodyFactory
 
     @Forgery
     lateinit var fakeSegment: MobileSegment
@@ -57,7 +57,7 @@ internal class SegmentRequestFactoryTest {
     @Forgery
     lateinit var fakeSerializedSegment: JsonObject
 
-    lateinit var fakeCompressedSegment: ByteArray
+    private lateinit var fakeCompressedSegment: ByteArray
 
     @Forgery
     lateinit var fakeBatchData: List<RawBatchEvent>
@@ -68,9 +68,9 @@ internal class SegmentRequestFactoryTest {
     @Mock
     lateinit var mockRequestBody: RequestBody
 
-    lateinit var fakeMediaType: MediaType
+    private lateinit var fakeMediaType: MediaType
 
-    var fakeBatchMetadata: ByteArray? = null
+    private var fakeBatchMetadata: ByteArray? = null
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -85,14 +85,14 @@ internal class SegmentRequestFactoryTest {
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
         fakeCompressedSegment = forge.aString().toByteArray()
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
-        whenever(mockRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
+        whenever(mockSegmentRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
             .thenReturn(mockRequestBody)
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
             .thenReturn(Pair(fakeSegment, fakeSerializedSegment))
         testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = null,
             mockBatchesToSegmentsMapper,
-            mockRequestBodyFactory
+            mockSegmentRequestBodyFactory
         )
     }
 
@@ -131,7 +131,7 @@ internal class SegmentRequestFactoryTest {
         testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = fakeEndpoint,
             mockBatchesToSegmentsMapper,
-            mockRequestBodyFactory
+            mockSegmentRequestBodyFactory
         )
         val request = testedRequestFactory.create(
             fakeDatadogContext,

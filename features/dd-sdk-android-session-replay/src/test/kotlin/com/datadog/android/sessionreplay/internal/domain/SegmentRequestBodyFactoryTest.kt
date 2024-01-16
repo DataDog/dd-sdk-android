@@ -39,9 +39,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class RequestBodyFactoryTest {
+internal class SegmentRequestBodyFactoryTest {
 
-    lateinit var testedRequestBodyFactory: RequestBodyFactory
+    lateinit var testedRequestBodyFactory: SegmentRequestBodyFactory
 
     @Mock
     lateinit var mockCompressor: BytesCompressor
@@ -62,7 +62,7 @@ internal class RequestBodyFactoryTest {
         fakeCompressedData = forge.aString().toByteArray()
         whenever(mockCompressor.compressBytes(fakeSerializedSegmentWithNewLine.toByteArray()))
             .thenReturn(fakeCompressedData)
-        testedRequestBodyFactory = RequestBodyFactory(mockCompressor)
+        testedRequestBodyFactory = SegmentRequestBodyFactory(mockCompressor)
     }
 
     @Test
@@ -76,45 +76,45 @@ internal class RequestBodyFactoryTest {
         assertThat(multipartBody.type).isEqualTo(MultipartBody.FORM)
         val parts = multipartBody.parts
         val compressedSegmentPart = Part.createFormData(
-            RequestBodyFactory.SEGMENT_FORM_KEY,
+            SegmentRequestBodyFactory.SEGMENT_FORM_KEY,
             fakeSegment.session.id,
             fakeCompressedData
-                .toRequestBody(RequestBodyFactory.CONTENT_TYPE_BINARY.toMediaTypeOrNull())
+                .toRequestBody(SegmentRequestBodyFactory.CONTENT_TYPE_BINARY.toMediaTypeOrNull())
         )
         val applicationIdPart = Part.createFormData(
-            RequestBodyFactory.APPLICATION_ID_FORM_KEY,
+            SegmentRequestBodyFactory.APPLICATION_ID_FORM_KEY,
             fakeSegment.application.id
         )
         val sessionIdPart = Part.createFormData(
-            RequestBodyFactory.SESSION_ID_FORM_KEY,
+            SegmentRequestBodyFactory.SESSION_ID_FORM_KEY,
             fakeSegment.session.id
         )
         val viewIdPart = Part.createFormData(
-            RequestBodyFactory.VIEW_ID_FORM_KEY,
+            SegmentRequestBodyFactory.VIEW_ID_FORM_KEY,
             fakeSegment.view.id
         )
         val hasFullSnapshotPart = Part.createFormData(
-            RequestBodyFactory.HAS_FULL_SNAPSHOT_FORM_KEY,
+            SegmentRequestBodyFactory.HAS_FULL_SNAPSHOT_FORM_KEY,
             fakeSegment.hasFullSnapshot.toString()
         )
         val recordsCountPart = Part.createFormData(
-            RequestBodyFactory.RECORDS_COUNT_FORM_KEY,
+            SegmentRequestBodyFactory.RECORDS_COUNT_FORM_KEY,
             fakeSegment.recordsCount.toString()
         )
         val rawSegmentSizePart = Part.createFormData(
-            RequestBodyFactory.RAW_SEGMENT_SIZE_FORM_KEY,
+            SegmentRequestBodyFactory.RAW_SEGMENT_SIZE_FORM_KEY,
             fakeCompressedData.size.toString()
         )
         val segmentsStartPart = Part.createFormData(
-            RequestBodyFactory.START_TIMESTAMP_FORM_KEY,
+            SegmentRequestBodyFactory.START_TIMESTAMP_FORM_KEY,
             fakeSegment.start.toString()
         )
         val segmentsEndPart = Part.createFormData(
-            RequestBodyFactory.END_TIMESTAMP_FORM_KEY,
+            SegmentRequestBodyFactory.END_TIMESTAMP_FORM_KEY,
             fakeSegment.end.toString()
         )
         val segmentSourcePart = Part.createFormData(
-            RequestBodyFactory.SOURCE_FORM_KEY,
+            SegmentRequestBodyFactory.SOURCE_FORM_KEY,
             fakeSegment.source.toJson().asString
         )
 
