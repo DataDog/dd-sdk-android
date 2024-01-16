@@ -1523,11 +1523,21 @@ internal open class TracingInterceptorTest {
     ): Request {
         val builder = Request.Builder().url(url)
         if (forge.aBool()) {
-            fakeMethod = "POST"
+            fakeMethod = forge.anElementFrom("POST", "PUT", "PATCH")
             fakeBody = forge.anAlphabeticalString()
-            builder.post(fakeBody!!.toByteArray().toRequestBody(null))
+            with(builder) {
+                val body = fakeBody!!.toByteArray().toRequestBody(null)
+                when (fakeMethod) {
+                    "POST" -> post(body)
+                    "PUT" -> put(body)
+                    "PATCH" -> patch(body)
+                    else -> {
+                        throw IllegalArgumentException("Unknown method value: $fakeMethod")
+                    }
+                }
+            }
         } else {
-            fakeMethod = forge.anElementFrom("GET", "HEAD", "DELETE")
+            fakeMethod = forge.anElementFrom("GET", "HEAD", "DELETE", "CONNECT", "TRACE", "OPTIONS")
             fakeBody = null
             builder.method(fakeMethod, null)
         }

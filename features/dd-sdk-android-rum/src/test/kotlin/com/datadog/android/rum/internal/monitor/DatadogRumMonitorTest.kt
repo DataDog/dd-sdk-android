@@ -403,7 +403,10 @@ internal class DatadogRumMonitorTest {
             "pUt",
             "HeAd",
             "DeLeTe",
-            "pAtCh"
+            "pAtCh",
+            "cOnnEct",
+            "TrAcE",
+            "oPtIoNs"
         )
         @Suppress("DEPRECATION")
         testedMonitor.startResource(key, method, url, fakeAttributes)

@@ -204,6 +204,9 @@ internal class DatadogRumMonitor(
             "PUT" -> RumResourceMethod.PUT
             "DELETE" -> RumResourceMethod.DELETE
             "PATCH" -> RumResourceMethod.PATCH
+            "CONNECT" -> RumResourceMethod.CONNECT
+            "TRACE" -> RumResourceMethod.TRACE
+            "OPTIONS" -> RumResourceMethod.OPTIONS
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,

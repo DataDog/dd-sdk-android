@@ -39,5 +39,20 @@ enum class RumResourceMethod {
     /**
      * PATCH Method.
      */
-    PATCH
+    PATCH,
+
+    /**
+     * TRACE Method.
+     */
+    TRACE,
+
+    /**
+     * OPTIONS Method.
+     */
+    OPTIONS,
+
+    /**
+     * CONNECT Method.
+     */
+    CONNECT
 }
