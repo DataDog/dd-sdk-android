@@ -66,6 +66,22 @@ interface FeatureSdkCore : SdkCore {
     fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver)
 
     /**
+     * Sets context update receiver for the given feature.
+     *
+     * @param featureName Feature name.
+     * @param listener Listener to remove.
+     */
+    fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
+
+    /**
+     * Removes context update listener for the given feature.
+     *
+     * @param featureName Feature name.
+     * @param listener Listener to remove.
+     */
+    fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
+
+    /**
      * Removes events receive for the given feature.
      *
      * @param featureName Feature name.
