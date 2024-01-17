@@ -250,7 +250,7 @@ internal class RumActionScope(
                         null
                     }
                 ),
-                view = ActionEvent.View(
+                view = ActionEvent.ActionEventView(
                     id = rumContext.viewId.orEmpty(),
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()
