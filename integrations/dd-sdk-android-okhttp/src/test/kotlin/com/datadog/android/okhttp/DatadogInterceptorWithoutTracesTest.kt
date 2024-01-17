@@ -389,7 +389,10 @@ internal class DatadogInterceptorWithoutTracesTest {
             fakeMethod = forge.anElementFrom(
                 RumResourceMethod.GET,
                 RumResourceMethod.HEAD,
-                RumResourceMethod.DELETE
+                RumResourceMethod.DELETE,
+                RumResourceMethod.CONNECT,
+                RumResourceMethod.TRACE,
+                RumResourceMethod.OPTIONS
             )
             fakeBody = null
             builder.method(fakeMethod.name, null)

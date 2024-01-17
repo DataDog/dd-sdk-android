@@ -374,6 +374,9 @@ internal constructor(
             "HEAD" -> RumResourceMethod.HEAD
             "DELETE" -> RumResourceMethod.DELETE
             "POST" -> RumResourceMethod.POST
+            "TRACE" -> RumResourceMethod.TRACE
+            "OPTIONS" -> RumResourceMethod.OPTIONS
+            "CONNECT" -> RumResourceMethod.CONNECT
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,

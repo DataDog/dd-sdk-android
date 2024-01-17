@@ -139,6 +139,9 @@ enum com.datadog.android.rum.RumResourceMethod
   - PUT
   - DELETE
   - PATCH
+  - TRACE
+  - OPTIONS
+  - CONNECT
 interface com.datadog.android.rum.RumSessionListener
   fun onSessionStarted(String, Boolean)
 class com.datadog.android.rum._RumInternalProxy
@@ -775,6 +778,9 @@ data class com.datadog.android.rum.model.ErrorEvent
     - PUT
     - DELETE
     - PATCH
+    - TRACE
+    - OPTIONS
+    - CONNECT
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Method
@@ -1261,6 +1267,9 @@ data class com.datadog.android.rum.model.ResourceEvent
     - PUT
     - DELETE
     - PATCH
+    - TRACE
+    - OPTIONS
+    - CONNECT
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Method

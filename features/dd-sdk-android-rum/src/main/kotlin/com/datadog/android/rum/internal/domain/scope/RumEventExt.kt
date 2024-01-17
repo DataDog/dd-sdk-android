@@ -33,6 +33,9 @@ internal fun RumResourceMethod.toResourceMethod(): ResourceEvent.Method {
         RumResourceMethod.PUT -> ResourceEvent.Method.PUT
         RumResourceMethod.DELETE -> ResourceEvent.Method.DELETE
         RumResourceMethod.PATCH -> ResourceEvent.Method.PATCH
+        RumResourceMethod.TRACE -> ResourceEvent.Method.TRACE
+        RumResourceMethod.OPTIONS -> ResourceEvent.Method.OPTIONS
+        RumResourceMethod.CONNECT -> ResourceEvent.Method.CONNECT
     }
 }
 
@@ -44,6 +47,9 @@ internal fun RumResourceMethod.toErrorMethod(): ErrorEvent.Method {
         RumResourceMethod.PUT -> ErrorEvent.Method.PUT
         RumResourceMethod.DELETE -> ErrorEvent.Method.DELETE
         RumResourceMethod.PATCH -> ErrorEvent.Method.PATCH
+        RumResourceMethod.TRACE -> ErrorEvent.Method.TRACE
+        RumResourceMethod.OPTIONS -> ErrorEvent.Method.OPTIONS
+        RumResourceMethod.CONNECT -> ErrorEvent.Method.CONNECT
     }
 }
 

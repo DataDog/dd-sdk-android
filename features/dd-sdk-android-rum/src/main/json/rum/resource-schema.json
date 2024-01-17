@@ -43,7 +43,7 @@
             "method": {
               "type": "string",
               "description": "HTTP method of the resource",
-              "enum": ["POST", "GET", "HEAD", "PUT", "DELETE", "PATCH"],
+              "enum": ["POST", "GET", "HEAD", "PUT", "DELETE", "PATCH", "TRACE", "OPTIONS", "CONNECT"],
               "readOnly": true
             },
             "url": {

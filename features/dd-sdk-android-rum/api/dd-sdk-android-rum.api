@@ -201,12 +201,15 @@ public final class com/datadog/android/rum/RumResourceKind$Companion {
 }
 
 public final class com/datadog/android/rum/RumResourceMethod : java/lang/Enum {
+	public static final field CONNECT Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field DELETE Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field GET Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field HEAD Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field OPTIONS Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field PATCH Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field POST Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field PUT Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field TRACE Lcom/datadog/android/rum/RumResourceMethod;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumResourceMethod;
 	public static fun values ()[Lcom/datadog/android/rum/RumResourceMethod;
 }
@@ -1715,13 +1718,16 @@ public final class com/datadog/android/rum/model/ErrorEvent$Interface$Companion 
 }
 
 public final class com/datadog/android/rum/model/ErrorEvent$Method : java/lang/Enum {
+	public static final field CONNECT Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Method$Companion;
 	public static final field DELETE Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field GET Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field HEAD Lcom/datadog/android/rum/model/ErrorEvent$Method;
+	public static final field OPTIONS Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field PATCH Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field POST Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field PUT Lcom/datadog/android/rum/model/ErrorEvent$Method;
+	public static final field TRACE Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Method;
@@ -3221,13 +3227,16 @@ public final class com/datadog/android/rum/model/ResourceEvent$Interface$Compani
 }
 
 public final class com/datadog/android/rum/model/ResourceEvent$Method : java/lang/Enum {
+	public static final field CONNECT Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$Method$Companion;
 	public static final field DELETE Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field GET Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field HEAD Lcom/datadog/android/rum/model/ResourceEvent$Method;
+	public static final field OPTIONS Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field PATCH Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field POST Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field PUT Lcom/datadog/android/rum/model/ResourceEvent$Method;
+	public static final field TRACE Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Method;
