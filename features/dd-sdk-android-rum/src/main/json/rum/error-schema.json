@@ -12,7 +12,7 @@
       "$ref": "_action-child-schema.json"
     },
     {
-      "$ref": "_parent-view-schema.json"
+      "$ref": "_view-container-schema.json"
     },
     {
       "required": ["type", "error"],

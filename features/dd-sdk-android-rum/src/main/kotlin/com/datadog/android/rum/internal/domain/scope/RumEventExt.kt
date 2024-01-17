@@ -191,7 +191,7 @@ internal fun NetworkInfo.toResourceConnectivity(): ResourceEvent.Connectivity {
     return ResourceEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -227,7 +227,7 @@ internal fun NetworkInfo.toErrorConnectivity(): ErrorEvent.Connectivity {
     return ErrorEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -263,7 +263,7 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
     return LongTaskEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -299,7 +299,7 @@ internal fun NetworkInfo.toViewConnectivity(): ViewEvent.Connectivity {
     return ViewEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -335,7 +335,7 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
     return ActionEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
