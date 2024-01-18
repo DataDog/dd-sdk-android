@@ -725,6 +725,9 @@ internal open class RumViewScope(
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
+        // make a copy - by the time we iterate over it on another thread, it may already be changed
+        val eventFeatureFlags = featureFlags.toMutableMap()
+        val eventAdditionalAttributes = attributes.toMutableMap()
 
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
@@ -757,7 +760,7 @@ internal open class RumViewScope(
 
             ViewEvent(
                 date = eventTimestamp,
-                featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
+                featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
                 view = ViewEvent.ViewEventView(
                     id = currentViewId,
                     name = rumContext.viewName,
@@ -821,7 +824,7 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ViewEvent.Context(additionalProperties = attributes),
+                context = ViewEvent.Context(additionalProperties = eventAdditionalAttributes),
                 dd = ViewEvent.Dd(
                     documentVersion = eventVersion,
                     session = ViewEvent.DdSession(
