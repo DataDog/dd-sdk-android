@@ -23,9 +23,10 @@ internal class WebViewRumEventConsumer(
     private val sdkCore: FeatureSdkCore,
     internal val dataWriter: DataWriter<JsonObject>,
     internal val offsetProvider: TimestampOffsetProvider,
-    private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
+    private val webViewRumEventMapper: WebViewRumEventMapper,
     private val contextProvider: WebViewRumEventContextProvider =
         WebViewRumEventContextProvider(sdkCore.internalLogger)
+
 ) : WebViewEventConsumer<JsonObject> {
 
     @WorkerThread

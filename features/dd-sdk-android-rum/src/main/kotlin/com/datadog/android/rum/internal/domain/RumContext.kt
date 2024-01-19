@@ -22,7 +22,10 @@ internal data class RumContext(
     val sessionStartReason: RumSessionScope.StartReason = RumSessionScope.StartReason.USER_APP_LAUNCH,
     val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE,
     val syntheticsTestId: String? = null,
-    val syntheticsResultId: String? = null
+    val syntheticsResultId: String? = null,
+    val viewTimestamp: Long = 0L,
+    val viewTimestampOffset: Long = 0L,
+    val hasReplay: Boolean = false
 ) {
 
     fun toMap(): Map<String, Any?> {
@@ -38,7 +41,10 @@ internal data class RumContext(
             VIEW_TYPE to viewType.asString,
             ACTION_ID to actionId,
             SYNTHETICS_TEST_ID to syntheticsTestId,
-            SYNTHETICS_RESULT_ID to syntheticsResultId
+            SYNTHETICS_RESULT_ID to syntheticsResultId,
+            VIEW_TIMESTAMP to viewTimestamp,
+            HAS_REPLAY to hasReplay,
+            VIEW_TIMESTAMP_OFFSET to viewTimestampOffset
         )
     }
 
@@ -59,6 +65,9 @@ internal data class RumContext(
         const val ACTION_ID = "action_id"
         const val SYNTHETICS_TEST_ID = "synthetics_test_id"
         const val SYNTHETICS_RESULT_ID = "synthetics_result_id"
+        const val HAS_REPLAY = "view_has_replay"
+        const val VIEW_TIMESTAMP = "view_timestamp"
+        const val VIEW_TIMESTAMP_OFFSET = "view_timestamp_offset"
 
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
@@ -77,6 +86,9 @@ internal data class RumContext(
             val actionId = featureContext[ACTION_ID] as? String
             val syntheticsTestId = featureContext[SYNTHETICS_TEST_ID] as? String
             val syntheticsResultId = featureContext[SYNTHETICS_RESULT_ID] as? String
+            val hasReplay = featureContext[HAS_REPLAY] as? Boolean ?: false
+            val viewTimestamp = featureContext[VIEW_TIMESTAMP] as? Long ?: 0L
+            val viewTimestampOffset = featureContext[VIEW_TIMESTAMP_OFFSET] as? Long ?: 0L
 
             return RumContext(
                 applicationId = applicationId ?: NULL_UUID,
@@ -90,7 +102,10 @@ internal data class RumContext(
                 viewType = viewType ?: RumViewScope.RumViewType.NONE,
                 actionId = actionId,
                 syntheticsTestId = syntheticsTestId,
-                syntheticsResultId = syntheticsResultId
+                syntheticsResultId = syntheticsResultId,
+                viewTimestamp = viewTimestamp,
+                viewTimestampOffset = viewTimestampOffset,
+                hasReplay = hasReplay
             )
         }
     }

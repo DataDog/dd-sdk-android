@@ -520,6 +520,7 @@ internal class WebViewTrackingTest {
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
+            add("container", JsonObject().apply { addProperty("source", "android") })
             add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
             add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
         }

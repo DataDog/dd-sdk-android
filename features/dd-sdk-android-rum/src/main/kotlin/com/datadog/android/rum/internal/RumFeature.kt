@@ -261,6 +261,7 @@ internal class RumFeature constructor(
             JVM_CRASH_BUS_MESSAGE_TYPE -> addJvmCrash(event)
             NDK_CRASH_BUS_MESSAGE_TYPE ->
                 ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
+
             LOGGER_ERROR_BUS_MESSAGE_TYPE -> addLoggerError(event)
             LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE -> addLoggerErrorWithStacktrace(event)
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
@@ -608,28 +609,27 @@ internal class RumFeature constructor(
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
 
-        internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "RUM feature received an event with unknown value of \"type\" property=%s."
         internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a JVM crash event" +
-                " where one or more mandatory (throwable, message) fields" +
-                " are either missing or have a wrong type."
+                    " where one or more mandatory (throwable, message) fields" +
+                    " are either missing or have a wrong type."
         internal const val LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event" +
-                " where mandatory message field is either missing or has a wrong type."
+                    " where mandatory message field is either missing or has a wrong type."
         internal const val LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event with stacktrace" +
-                " where mandatory message field is either missing or has a wrong type."
+                    " where mandatory message field is either missing or has a wrong type."
         internal const val TELEMETRY_MISSING_MESSAGE_FIELD = "RUM feature received a telemetry" +
-            " event, but mandatory message field is either missing or has a wrong type."
+                " event, but mandatory message field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
-                " SDK instance by calling SdkCore#registerFeature method."
+                    " SDK instance by calling SdkCore#registerFeature method."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
