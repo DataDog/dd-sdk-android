@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.BytesCompressor
-import com.datadog.android.sessionreplay.internal.recorder.SessionReplayResource
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -52,18 +51,12 @@ internal class ResourceRequestBodyFactoryTest {
     lateinit var fakeSegment: MobileSegment
 
     @Forgery
-    lateinit var fakeSessionReplayResource: SessionReplayResource
-
-    private lateinit var fakeListResources: List<SessionReplayResource>
-
-    @Forgery
     lateinit var fakeSegmentAsJson: JsonObject
 
     private lateinit var fakeSerializedSegmentWithNewLine: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeListResources = listOf(fakeSessionReplayResource)
         fakeSerializedSegmentWithNewLine = fakeSegmentAsJson.toString() + "\n"
         fakeCompressedData = forge.aString().toByteArray()
         whenever(mockCompressor.compressBytes(fakeSerializedSegmentWithNewLine.toByteArray()))

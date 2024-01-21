@@ -6,46 +6,41 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.api.InternalLogger
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
-import com.datadog.android.sessionreplay.internal.net.RawEventsToResourcesMapper
-import com.datadog.android.sessionreplay.internal.recorder.SessionReplayResource
 import okhttp3.RequestBody
 import okio.Buffer
-import java.io.IOException
-import java.io.ObjectInputStream
-import java.io.StreamCorruptedException
-import java.lang.NullPointerException
 import java.util.Locale
 import java.util.UUID
 
 internal class ResourceRequestFactory(
     internal val customEndpointUrl: String?,
-    private val rawEventsToResourcesMapper: RawEventsToResourcesMapper,
-    private val internalLogger: InternalLogger,
     private val resourceRequestBodyFactory: ResourceRequestBodyFactory = ResourceRequestBodyFactory()
 ) : RequestFactory {
 
+    @Suppress("ThrowingInternalException")
     override fun create(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
-        val resources = batchData.mapNotNull { rawBatchEvent ->
-            extractSessionReplayResource(rawBatchEvent)
-        }
+        val applicationId = getApplicationId(context)
+        ?: throw InvalidPayloadFormatException(COULD_NOT_GET_APPLICATION_ID_ERROR)
 
-        if (resources.isEmpty()) {
-            @Suppress("ThrowingInternalException")
-            throw InvalidPayloadFormatException(INVALID_PAYLOAD_FORMAT_ERROR)
-        }
+        val requestBody = resourceRequestBodyFactory
+            .create(applicationId, batchData)
 
-        val requestBody = resourceRequestBodyFactory.create(resources, internalLogger)
         return resolveRequest(context, requestBody)
+    }
+
+    private fun getApplicationId(datadogContext: DatadogContext): String? {
+        val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]
+        return rumContext?.get(APPLICATION_ID) as? String?
     }
 
     private fun resolveRequest(context: DatadogContext, body: RequestBody): Request {
@@ -81,28 +76,6 @@ internal class ResourceRequestFactory(
         )
     }
 
-    @SuppressWarnings("TooGenericExceptionCaught", "ThrowingInternalException")
-    private fun extractSessionReplayResource(rawBatchEvent: RawBatchEvent): SessionReplayResource? {
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        return runCatching {
-            val ois = ObjectInputStream(rawBatchEvent.data.inputStream())
-            rawEventsToResourcesMapper
-                .map(ois)
-        }.getOrElse {
-            when (it) {
-                is StreamCorruptedException,
-                is NullPointerException,
-                is SecurityException,
-                is IOException -> {
-                    throw InvalidPayloadFormatException(
-                        INVALID_PAYLOAD_FORMAT_ERROR
-                    )
-                }
-                else -> throw it
-            }
-        }
-    }
-
     private fun buildUrl(datadogContext: DatadogContext): String {
         return String.format(
             Locale.US,
@@ -114,8 +87,11 @@ internal class ResourceRequestFactory(
 
     companion object {
         private const val UPLOAD_URL = "%s/api/v2/%s"
+        private const val APPLICATION_ID = "application_id"
         private const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
-        private const val INVALID_PAYLOAD_FORMAT_ERROR =
-            "The payload format was broken and an upload request could not be created"
+
+        @VisibleForTesting
+        internal const val COULD_NOT_GET_APPLICATION_ID_ERROR =
+            "A payload could not be generated because we could not get the applicationId"
     }
 }
