@@ -124,6 +124,15 @@ internal fun Forge.applicationStartedEvent(): RumRawEvent.ApplicationStarted {
     )
 }
 
+internal fun Forge.sdkInitEvent(): RumRawEvent.SdkInit {
+    val time = Time()
+    return RumRawEvent.SdkInit(
+        isAppInForeground = aBool(),
+        appStartTimeNs = aLong(min = 0L, max = time.nanoTime),
+        eventTime = time
+    )
+}
+
 internal fun Forge.validBackgroundEvent(): RumRawEvent {
     return this.anElementFrom(
         listOf(

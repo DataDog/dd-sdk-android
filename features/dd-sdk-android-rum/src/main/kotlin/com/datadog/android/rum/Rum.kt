@@ -11,6 +11,7 @@ import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -30,6 +31,7 @@ object Rum {
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
      * will be used.
      */
+    @Suppress("ReturnCount")
     @JvmOverloads
     @JvmStatic
     fun enable(rumConfiguration: RumConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
@@ -52,18 +54,35 @@ object Rum {
             return
         }
 
+        if (sdkCore.getFeature(Feature.RUM_FEATURE_NAME) != null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { RUM_FEATURE_ALREADY_ENABLED }
+            )
+            return
+        }
+
         val rumFeature = RumFeature(
-            sdkCore = sdkCore as FeatureSdkCore,
+            sdkCore = sdkCore,
             applicationId = rumConfiguration.applicationId,
             configuration = rumConfiguration.featureConfiguration
         )
 
         sdkCore.registerFeature(rumFeature)
 
+        val rumMonitor = createMonitor(sdkCore, rumFeature)
         GlobalRumMonitor.registerIfAbsent(
-            monitor = createMonitor(sdkCore, rumFeature),
+            monitor = rumMonitor,
             sdkCore
         )
+
+        // TODO RUM-0000 there is a small chance of application crashing between RUM monitor
+        //  registration and the moment SDK init is processed, in this case we will miss this crash
+        //  (it won't activate new session). Ideally we should start session when monitor is created
+        //  and before it is registered, but with current code (internal RUM scopes using the
+        //  `GlobalRumMonitor`) it is impossible to break cycle dependency.
+        rumMonitor.start()
     }
 
     // region private
@@ -103,6 +122,9 @@ object Rum {
     internal const val INVALID_APPLICATION_ID_ERROR_MESSAGE =
         "You're trying to create a RumMonitor instance, " +
             "but the RUM application id was empty. No RUM data will be sent."
+
+    internal const val RUM_FEATURE_ALREADY_ENABLED =
+        "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
 
     // endregion
 }

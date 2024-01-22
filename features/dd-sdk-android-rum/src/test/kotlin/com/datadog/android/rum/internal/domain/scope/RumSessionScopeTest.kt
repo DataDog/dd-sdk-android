@@ -195,6 +195,53 @@ internal class RumSessionScopeTest {
         verify(mockChildScope).handleEvent(same(mockEvent), isA<NoOpDataWriter<Any>>())
     }
 
+    @Test
+    fun `M send ApplicationStarted event once W handleEvent(SdkInit) { app is in foreground }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.sdkInitEvent().copy(isAppInForeground = true)
+
+        val expectedEventTimestamp =
+            TimeUnit.NANOSECONDS.toMillis(
+                TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
+                        fakeEvent.eventTime.nanoTime + fakeEvent.appStartTimeNs
+            )
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockChildScope).handleEvent(capture(), eq(mockWriter))
+            assertThat(firstValue).isInstanceOf(RumRawEvent.ApplicationStarted::class.java)
+            val appStartEventTime = (firstValue as RumRawEvent.ApplicationStarted).eventTime
+            assertThat(appStartEventTime.timestamp).isEqualTo(expectedEventTimestamp)
+            assertThat(appStartEventTime.nanoTime).isEqualTo(fakeEvent.appStartTimeNs)
+
+            val processStartTimeNs = (firstValue as RumRawEvent.ApplicationStarted)
+                .applicationStartupNanos
+            assertThat(processStartTimeNs)
+                .isEqualTo(fakeEvent.eventTime.nanoTime - fakeEvent.appStartTimeNs)
+
+            assertThat(allValues.filterIsInstance<RumRawEvent.ApplicationStarted>()).hasSize(1)
+        }
+    }
+
+    @Test
+    fun `M not send ApplicationStarted event W handleEvent(SdkInit) { app is not in foreground }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.sdkInitEvent().copy(isAppInForeground = false)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockChildScope)
+    }
+
     // endregion
 
     // region Stopping Sessions
@@ -347,20 +394,63 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new session context 𝕎 handleEvent(appStarted)+getRumContext() {sampling = 100}`(
+    fun `𝕄 create new session context 𝕎 handleEvent(SdkInit)+getRumContext() {sampling = 100, foreground}`(
         forge: Forge
     ) {
         // Given
         initializeTestedScope(100f)
 
         // When
-        val result = testedScope.handleEvent(forge.applicationStartedEvent(), mockWriter)
+        val result = testedScope
+            .handleEvent(forge.sdkInitEvent().copy(isAppInForeground = true), mockWriter)
         val context = testedScope.getRumContext()
 
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `𝕄 create new session context 𝕎 handleEvent(SdkInit)+getRumContext(){sampling=100,background+enabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(100f, backgroundTrackingEnabled = true)
+
+        // When
+        val result = testedScope
+            .handleEvent(forge.sdkInitEvent().copy(isAppInForeground = false), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `𝕄 not create new session context 𝕎 handleEvent(SdkInit)+getRumContext(){sampling=100,background+disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(100f, backgroundTrackingEnabled = false)
+
+        // When
+        val result = testedScope
+            .handleEvent(forge.sdkInitEvent().copy(isAppInForeground = false), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
