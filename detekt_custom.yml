@@ -1006,6 +1006,7 @@ datadog:
       - "kotlin.Char.isLowerCase()"
       - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"
+      - "kotlin.Double.coerceAtMost(kotlin.Double)"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.rangeTo(kotlin.Double)"

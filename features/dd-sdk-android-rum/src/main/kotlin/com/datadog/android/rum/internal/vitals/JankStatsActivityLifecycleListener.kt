@@ -22,6 +22,8 @@ import androidx.annotation.RequiresApi
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
@@ -33,14 +35,16 @@ internal class JankStatsActivityLifecycleListener(
     private val vitalObserver: VitalObserver,
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
-    private var screenRefreshRate: Double = 60.0
+    private var screenRefreshRate: Double = 60.0,
+    private var buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
     internal val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
     internal var display: Display? = null
-    @RequiresApi(Build.VERSION_CODES.N)
-    internal val frameMetricsListener = DDFrameMetricsListener()
+    private var frameMetricsListener: DDFrameMetricsListener? = null
+    internal var frameDeadline = SIXTEEN_MS_NS
 
     // region ActivityLifecycleCallbacks
     @MainThread
@@ -78,7 +82,15 @@ internal class JankStatsActivityLifecycleListener(
             }
         }
 
-        registerMetricListener(window, activity)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            registerMetricListener(window)
+        } else if (display == null && buildSdkVersionProvider.version() == Build.VERSION_CODES.R) {
+            // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
+            // Frame Metrics callbacks available
+            val displayManager =
+                activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+        }
     }
 
     @MainThread
@@ -147,7 +159,9 @@ internal class JankStatsActivityLifecycleListener(
         if (activeActivities[activity.window].isNullOrEmpty()) {
             activeWindowsListener.remove(activity.window)
             activeActivities.remove(activity.window)
-            unregisterMetricListener(activity.window)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                unregisterMetricListener(activity.window)
+            }
         }
     }
 
@@ -160,10 +174,9 @@ internal class JankStatsActivityLifecycleListener(
         if (durationNs > 0.0) {
             var frameRate = (ONE_SECOND_NS / durationNs)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                screenRefreshRate =
-                    ONE_SECOND_NS / frameMetricsListener.frameDeadline
-            } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.S) {
+                screenRefreshRate = ONE_SECOND_NS / frameDeadline
+            } else if (buildSdkVersionProvider.version() == Build.VERSION_CODES.R) {
                 screenRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
             }
 
@@ -187,29 +200,25 @@ internal class JankStatsActivityLifecycleListener(
         activeActivities[window] = list
     }
 
-    private fun registerMetricListener(window: Window, activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun registerMetricListener(window: Window) {
+        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.S) {
+            if (frameMetricsListener == null) {
+                frameMetricsListener = DDFrameMetricsListener()
+            }
             val handler = Handler(Looper.getMainLooper())
-            window.addOnFrameMetricsAvailableListener(frameMetricsListener, handler)
-        } else {
-        // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
-        // Frame Metrics callbacks available
-        if (display == null && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-            val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-            display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
-        }
-    }
-}
-
-    private fun unregisterMetricListener(window: Window) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                window.removeOnFrameMetricsAvailableListener(frameMetricsListener)
+            frameMetricsListener?.let { window.addOnFrameMetricsAvailableListener(it, handler) }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    internal class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
-        var frameDeadline: Long = 0
+    private fun unregisterMetricListener(window: Window) {
+        window.removeOnFrameMetricsAvailableListener(frameMetricsListener)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    inner class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
+
         @RequiresApi(Build.VERSION_CODES.S)
         override fun onFrameMetricsAvailable(
             window: Window,
@@ -220,14 +229,13 @@ internal class JankStatsActivityLifecycleListener(
         }
     }
 
-
     // endregion
 
     companion object {
 
         internal const val JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR =
             "Trying to disable JankStats instance which was already disabled before, this" +
-                " shouldn't happen."
+                    " shouldn't happen."
         internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
             "Failed to disable JankStats tracking"
 
@@ -236,5 +244,6 @@ internal class JankStatsActivityLifecycleListener(
         private const val MIN_FPS: Double = 1.0
         private const val MAX_FPS: Double = 60.0
         private const val SIXTY_FPS: Double = 60.0
+        private const val SIXTEEN_MS_NS: Long = 16666666
     }
 }

@@ -7,12 +7,14 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.app.Activity
+import android.os.Build
 import android.os.Bundle
 import android.view.Display
 import android.view.Window
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -327,40 +329,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 cap sample at 60fps 𝕎 doFrame() {small duration}`(
-        @LongForgery timestampNs: Long,
-        @LongForgery(1, ONE_MILLISECOND_NS) frameDurationNs: Long,
-        @BoolForgery isJank: Boolean
-    ) {
-        // Given
-        val expectedFrameRate: Double = 60.0
-        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
-
-        // When
-        testedJankListener.onFrame(frameData)
-
-        // Then
-        verify(mockObserver).onNewSample(eq(expectedFrameRate, 0.0001))
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 doFrame() {too large duration}`(
-        @LongForgery timestampNs: Long,
-        @LongForgery(TEN_SECOND_NS, ONE_MINUTE_NS) frameDurationNs: Long,
-        @BoolForgery isJank: Boolean
-    ) {
-        // Given
-        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
-
-        // When
-        testedJankListener.onFrame(frameData)
-
-        // Then
-        verify(mockObserver, never()).onNewSample(any())
-    }
-
-    @Test
-    fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {refresh rate over 60hz}`(
+    fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {S, refresh rate over 60hz}`(
         @LongForgery timestampNs: Long,
         @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean,
@@ -369,14 +338,61 @@ internal class JankStatsActivityLifecycleListenerTest {
         // Given
         val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
         val refreshRateMultiplier = 60.0 / displayRefreshRate
+
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
+
+        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.S
 
         val variableRefreshRateListener = JankStatsActivityLifecycleListener(
             mockObserver,
             mockInternalLogger,
             mockJankStatsProvider,
-            displayRefreshRate
+            displayRefreshRate,
+            mockBuildSdkVersionProvider
         )
+        variableRefreshRateListener.frameDeadline = (ONE_SECOND_NS / displayRefreshRate).toLong()
+
+        // When
+        variableRefreshRateListener.onFrame(frameData)
+
+        // Then
+        if (expectedFrameRate * refreshRateMultiplier > MIN_FPS) {
+            verify(mockObserver).onNewSample(eq(min(expectedFrameRate * refreshRateMultiplier, MAX_FPS), 0.0001))
+        } else {
+            verify(mockObserver, never()).onNewSample(any())
+        }
+    }
+
+    @Test
+    fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {R, refresh rate over 60hz}`(
+        @LongForgery timestampNs: Long,
+        @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
+        @BoolForgery isJank: Boolean,
+        @DoubleForgery(60.0, 120.0) displayRefreshRate: Double
+    ) {
+        // Given
+        val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
+        val refreshRateMultiplier = 60.0 / displayRefreshRate
+
+        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
+
+        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
+
+        val mockDisplay: Display = mock()
+        whenever(mockDisplay.refreshRate) doReturn displayRefreshRate.toFloat()
+
+        val variableRefreshRateListener = JankStatsActivityLifecycleListener(
+            mockObserver,
+            mockInternalLogger,
+            mockJankStatsProvider,
+            displayRefreshRate,
+            mockBuildSdkVersionProvider
+        )
+
+        variableRefreshRateListener.display = mockDisplay
+
         // When
         variableRefreshRateListener.onFrame(frameData)
 
