@@ -190,7 +190,7 @@ internal class DatadogCore(
         featureName: String,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
-        val feature = features[featureName] ?: return
+        val feature = getFeature(featureName) ?: return
         contextProvider?.let {
             synchronized(feature) {
                 val featureContext = it.getFeatureContext(featureName)
