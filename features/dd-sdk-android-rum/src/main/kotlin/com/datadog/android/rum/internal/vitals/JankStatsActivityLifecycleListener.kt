@@ -39,36 +39,12 @@ internal class JankStatsActivityLifecycleListener(
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
     internal val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
     internal var display: Display? = null
+    @RequiresApi(Build.VERSION_CODES.N)
+    internal val frameMetricsListener = DDFrameMetricsListener()
 
     // region ActivityLifecycleCallbacks
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-    }
-
-    @RequiresApi(Build.VERSION_CODES.N)
-    interface DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
-        override fun onFrameMetricsAvailable(
-            window: Window,
-            frameMetrics: FrameMetrics,
-            dropCountSinceLastInvocation: Int
-        )
-
-        var frameDeadline: Long
-
-        companion object {
-            val DEFAULT = object : DDFrameMetricsListener {
-                @RequiresApi(Build.VERSION_CODES.S)
-                override fun onFrameMetricsAvailable(
-                    window: Window,
-                    frameMetrics: FrameMetrics,
-                    dropCountSinceLastInvocation: Int
-                ) {
-                    frameDeadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)
-                }
-
-                override var frameDeadline: Long = 0
-            }
-        }
     }
 
     @MainThread
@@ -186,18 +162,14 @@ internal class JankStatsActivityLifecycleListener(
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 screenRefreshRate =
-                    ONE_SECOND_NS / DDFrameMetricsListener.DEFAULT.frameDeadline
+                    ONE_SECOND_NS / frameMetricsListener.frameDeadline
             } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
                 screenRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
             }
 
-            frameRate *= (SIXTY_FPS / screenRefreshRate)
-
             // If normalized frame rate is still at over 60fps it means the frame rendered
             // quickly enough for the devices refresh rate.
-            if (frameRate > MAX_FPS) {
-                frameRate = MAX_FPS
-            }
+            frameRate = (frameRate * (SIXTY_FPS / screenRefreshRate)).coerceAtMost(MAX_FPS)
 
             if (frameRate > MIN_FPS) {
                 vitalObserver.onNewSample(frameRate)
@@ -218,11 +190,11 @@ internal class JankStatsActivityLifecycleListener(
     private fun registerMetricListener(window: Window, activity: Activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val handler = Handler(Looper.getMainLooper())
-            window.addOnFrameMetricsAvailableListener(DDFrameMetricsListener.DEFAULT, handler)
+            window.addOnFrameMetricsAvailableListener(frameMetricsListener, handler)
         } else {
         // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
         // Frame Metrics callbacks available
-        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+        if (display == null && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
             val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
             display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
         }
@@ -231,9 +203,23 @@ internal class JankStatsActivityLifecycleListener(
 
     private fun unregisterMetricListener(window: Window) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                window.removeOnFrameMetricsAvailableListener(DDFrameMetricsListener.DEFAULT)
+                window.removeOnFrameMetricsAvailableListener(frameMetricsListener)
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    internal class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
+        var frameDeadline: Long = 0
+        @RequiresApi(Build.VERSION_CODES.S)
+        override fun onFrameMetricsAvailable(
+            window: Window,
+            frameMetrics: FrameMetrics,
+            dropCountSinceLastInvocation: Int
+        ) {
+            frameDeadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)
+        }
+    }
+
 
     // endregion
 
