@@ -87,8 +87,8 @@ internal class ResourceRequestFactory(
 
     companion object {
         private const val UPLOAD_URL = "%s/api/v2/%s"
-        private const val APPLICATION_ID = "application_id"
-        private const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
+        internal const val APPLICATION_ID = "application_id"
+        internal const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
 
         @VisibleForTesting
         internal const val COULD_NOT_GET_APPLICATION_ID_ERROR =

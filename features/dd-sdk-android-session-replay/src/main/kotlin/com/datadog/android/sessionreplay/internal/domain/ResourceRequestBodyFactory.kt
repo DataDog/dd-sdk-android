@@ -28,7 +28,7 @@ internal class ResourceRequestBodyFactory {
     @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
     private fun addResourcesSection(builder: MultipartBody.Builder, resources: List<RawBatchEvent>) {
         resources.forEach {
-            val filename = it.metadata.toString()
+            val filename = String(it.metadata)
             val data = it.data
 
             builder.addFormDataPart(
@@ -59,11 +59,12 @@ internal class ResourceRequestBodyFactory {
 
         @Suppress("UnsafeThirdPartyFunctionCall") // if malformed returns null
         internal val CONTENT_TYPE_APPLICATION = "application/json".toMediaTypeOrNull()
-        private const val APPLICATION_ID_KEY: String = "application_id"
-        private const val TYPE_KEY: String = "type"
-        private const val TYPE_RESOURCE: String = "resource"
-        private const val NAME_IMAGE: String = "image"
-        private const val NAME_RESOURCE: String = "resource"
-        private const val FILENAME_BLOB: String = "blob"
+
+        internal const val APPLICATION_ID_KEY = "application_id"
+        internal const val TYPE_KEY = "type"
+        internal const val TYPE_RESOURCE = "resource"
+        internal const val NAME_IMAGE = "image"
+        internal const val NAME_RESOURCE = "resource"
+        internal const val FILENAME_BLOB = "blob"
     }
 }
