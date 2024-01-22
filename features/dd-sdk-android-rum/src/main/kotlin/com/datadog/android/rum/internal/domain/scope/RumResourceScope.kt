@@ -204,6 +204,7 @@ internal class RumResourceScope(
             attributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String?,
             attributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String?
         )
+        val eventAttributes = attributes.toMutableMap()
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -269,7 +270,7 @@ internal class RumResourceScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ResourceEvent.Context(additionalProperties = attributes),
+                context = ResourceEvent.Context(additionalProperties = eventAttributes),
                 dd = ResourceEvent.Dd(
                     traceId = traceId,
                     spanId = spanId,
@@ -333,6 +334,7 @@ internal class RumResourceScope(
 
         val rumContext = getRumContext()
 
+        val eventAttributes = attributes.toMutableMap()
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
@@ -411,7 +413,7 @@ internal class RumResourceScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ErrorEvent.Context(additionalProperties = attributes),
+                context = ErrorEvent.Context(additionalProperties = eventAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
                         plan = ErrorEvent.Plan.PLAN_1,

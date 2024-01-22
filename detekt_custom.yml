@@ -925,6 +925,7 @@ datadog:
       - "kotlin.collections.MutableMap.remove(kotlin.Long)"
       - "kotlin.collections.MutableMap.remove(kotlin.String)"
       - "kotlin.collections.MutableMap.safeMapValuesToJson(com.datadog.android.api.InternalLogger)"
+      - "kotlin.collections.MutableMap.toMutableMap()"
       - "kotlin.collections.MutableMap?.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.core.internal.persistence.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventId)"
