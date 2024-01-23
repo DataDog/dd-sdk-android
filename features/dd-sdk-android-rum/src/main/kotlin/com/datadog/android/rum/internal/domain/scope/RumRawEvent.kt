@@ -215,4 +215,10 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time(),
         val isMetric: Boolean = false
     ) : RumRawEvent()
+
+    internal data class SdkInit(
+        val isAppInForeground: Boolean,
+        val appStartTimeNs: Long,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
 }
