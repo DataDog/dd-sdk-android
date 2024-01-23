@@ -17,9 +17,7 @@ import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN_VE
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestFactory.Companion.APPLICATION_ID
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestFactory.Companion.COULD_NOT_GET_APPLICATION_ID_ERROR
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestFactory.Companion.UPLOAD_DESCRIPTION
-import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,7 +28,6 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -93,33 +90,13 @@ internal class ResourceRequestFactoryTest {
         )
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
 
-        whenever(mockResourceRequestBodyFactory.create(fakeApplicationId, listOf(fakeRawBatchEvent)))
+        whenever(mockResourceRequestBodyFactory.create(listOf(fakeRawBatchEvent)))
             .thenReturn(mockRequestBody)
 
         testedRequestFactory = ResourceRequestFactory(
             customEndpointUrl = null,
             resourceRequestBodyFactory = mockResourceRequestBodyFactory
         )
-    }
-
-    @Test
-    fun `M throw invalid payload W create() { could not get applicationId }`() {
-        // Given
-        val fakeRumFeature = HashMap<String, String>()
-        val fakeFeaturesContext = HashMap<String, Map<String, String>>()
-        fakeFeaturesContext[Feature.RUM_FEATURE_NAME] = fakeRumFeature
-        whenever(fakeDatadogContext.featuresContext).thenReturn(fakeFeaturesContext)
-
-        // When
-        assertThatThrownBy {
-            testedRequestFactory.create(
-                fakeDatadogContext,
-                fakeRawBatchEvents,
-                null
-            )
-        }
-            .isInstanceOf(InvalidPayloadFormatException::class.java)
-            .hasMessage(COULD_NOT_GET_APPLICATION_ID_ERROR)
     }
 
     @Test

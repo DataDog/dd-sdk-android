@@ -25,7 +25,9 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -296,6 +298,48 @@ internal class MiscUtilsTest {
         }
 
         return fakeColor
+    }
+
+    // endregion
+
+    // region json
+
+    @Test
+    fun `M return jsonObject W safeDeserializeToJsonObject()`() {
+        // Given
+        val expectedJson = JsonObject()
+        expectedJson.addProperty("foo", "bar")
+        val jsonBytes = expectedJson.toString().toByteArray(Charsets.UTF_8)
+
+        // When
+        val result = MiscUtils.safeDeserializeToJsonObject(jsonBytes)
+
+        // Then
+        assertThat(result).isEqualTo(expectedJson)
+    }
+
+    @Test
+    fun `M return null W safeDeserializeToJsonObject() { invalid json }`(
+        @StringForgery notAJsonObject: String
+    ) {
+        // When
+        val result = MiscUtils.safeDeserializeToJsonObject(
+            notAJsonObject.toByteArray(Charsets.UTF_8)
+        )
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W safeDeserializeToJsonObject() { empty bytearray }`() {
+        // When
+        val result = MiscUtils.safeDeserializeToJsonObject(
+            ByteArray(0)
+        )
+
+        // Then
+        assertThat(result).isNull()
     }
 
     // endregion

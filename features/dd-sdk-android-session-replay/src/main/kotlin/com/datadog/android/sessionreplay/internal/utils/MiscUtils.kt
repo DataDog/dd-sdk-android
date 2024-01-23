@@ -16,10 +16,24 @@ import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.StringUtils
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.google.gson.JsonSyntaxException
 
 internal object MiscUtils {
 
     internal const val OPAQUE_ALPHA_VALUE = 255
+
+    @Suppress("SwallowedException")
+    internal fun safeDeserializeToJsonObject(data: ByteArray): JsonObject? {
+        val jsonString = String(data)
+        return try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            JsonParser.parseString(jsonString) as? JsonObject
+        } catch (e: JsonSyntaxException) {
+            null
+        }
+    }
 
     fun resolveThemeColor(theme: Theme): Int? {
         val a = TypedValue()

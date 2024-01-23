@@ -6,13 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import okhttp3.RequestBody
 import okio.Buffer
 import java.util.Locale
@@ -20,7 +17,8 @@ import java.util.UUID
 
 internal class ResourceRequestFactory(
     internal val customEndpointUrl: String?,
-    private val resourceRequestBodyFactory: ResourceRequestBodyFactory = ResourceRequestBodyFactory()
+    private val resourceRequestBodyFactory: ResourceRequestBodyFactory =
+        ResourceRequestBodyFactory()
 ) : RequestFactory {
 
     @Suppress("ThrowingInternalException")
@@ -29,18 +27,10 @@ internal class ResourceRequestFactory(
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
-        val applicationId = getApplicationId(context)
-        ?: throw InvalidPayloadFormatException(COULD_NOT_GET_APPLICATION_ID_ERROR)
-
         val requestBody = resourceRequestBodyFactory
-            .create(applicationId, batchData)
+            .create(batchData)
 
         return resolveRequest(context, requestBody)
-    }
-
-    private fun getApplicationId(datadogContext: DatadogContext): String? {
-        val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]
-        return rumContext?.get(APPLICATION_ID) as? String?
     }
 
     private fun resolveRequest(context: DatadogContext, body: RequestBody): Request {
@@ -89,9 +79,5 @@ internal class ResourceRequestFactory(
         private const val UPLOAD_URL = "%s/api/v2/%s"
         internal const val APPLICATION_ID = "application_id"
         internal const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
-
-        @VisibleForTesting
-        internal const val COULD_NOT_GET_APPLICATION_ID_ERROR =
-            "A payload could not be generated because we could not get the applicationId"
     }
 }
