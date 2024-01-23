@@ -65,9 +65,12 @@ internal class WindowsOnDrawListener(
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
-            if (item.isReady()) {
-                recordedDataQueueHandler.tryToConsumeItems()
-            }
+        }
+
+        item.isFinishedTraversal = true
+
+        if (item.isReady()) {
+            recordedDataQueueHandler.tryToConsumeItems()
         }
     }
 
