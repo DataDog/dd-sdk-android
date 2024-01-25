@@ -194,6 +194,7 @@ internal class RumActionScope(
 
         val actualType = type
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
+        val eventAttributes = attributes.toMutableMap()
         val rumContext = getRumContext()
 
         // make a copy so that closure captures at the state as of now
@@ -288,7 +289,7 @@ internal class RumActionScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ActionEvent.Context(additionalProperties = attributes),
+                context = ActionEvent.Context(additionalProperties = eventAttributes),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
                         plan = ActionEvent.Plan.PLAN_1,
