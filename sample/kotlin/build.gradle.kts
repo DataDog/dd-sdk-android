@@ -19,7 +19,6 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     id("com.github.ben-manes.versions")
-    id("thirdPartyLicences")
     id("org.jetbrains.dokka")
     id("io.realm.kotlin")
     id("com.squareup.sqldelight")
