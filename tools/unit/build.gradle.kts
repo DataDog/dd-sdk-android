@@ -15,6 +15,7 @@ plugins {
     id("com.android.library")
     kotlin("android")
     id("com.github.ben-manes.versions")
+    id("com.datadoghq.dependency-license")
     id("de.mobilej.unmock")
 }
 
