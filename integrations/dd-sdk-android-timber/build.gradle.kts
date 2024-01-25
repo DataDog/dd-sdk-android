@@ -29,7 +29,6 @@ plugins {
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
-    id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")

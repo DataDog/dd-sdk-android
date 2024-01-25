@@ -59,10 +59,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("thirdPartyLicences") {
-            id = "thirdPartyLicences" // the alias
-            implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
-        }
         register("apiSurface") {
             id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"

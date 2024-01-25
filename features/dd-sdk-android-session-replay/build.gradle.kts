@@ -31,7 +31,6 @@ plugins {
     id("de.mobilej.unmock")
 
     // Internal Generation
-    id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
