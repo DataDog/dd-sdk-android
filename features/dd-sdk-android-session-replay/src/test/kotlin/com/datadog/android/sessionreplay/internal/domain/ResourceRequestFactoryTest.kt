@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.net.Request
@@ -55,6 +56,9 @@ internal class ResourceRequestFactoryTest {
     @Mock
     lateinit var mockRequestBody: RequestBody
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeRawBatchEvent: RawBatchEvent
 
@@ -95,6 +99,7 @@ internal class ResourceRequestFactoryTest {
 
         testedRequestFactory = ResourceRequestFactory(
             customEndpointUrl = null,
+            internalLogger = mockInternalLogger,
             resourceRequestBodyFactory = mockResourceRequestBodyFactory
         )
     }
@@ -131,6 +136,7 @@ internal class ResourceRequestFactoryTest {
         // Given
         testedRequestFactory = ResourceRequestFactory(
             customEndpointUrl = fakeEndpoint,
+            internalLogger = mockInternalLogger,
             resourceRequestBodyFactory = mockResourceRequestBodyFactory
         )
 

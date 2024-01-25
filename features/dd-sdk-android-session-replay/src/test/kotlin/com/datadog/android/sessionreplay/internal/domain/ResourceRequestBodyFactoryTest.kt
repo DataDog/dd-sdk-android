@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.APPLICATION_ID_KEY
@@ -20,6 +21,7 @@ import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFact
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.UNABLE_GET_APPLICATION_ID_ERROR
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
+import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -56,6 +59,9 @@ internal class ResourceRequestBodyFactoryTest {
     @StringForgery
     private lateinit var fakeImageRepresentation: String
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var fakeMetaData: JsonObject
 
     @BeforeEach
@@ -64,7 +70,7 @@ internal class ResourceRequestBodyFactoryTest {
         fakeMetaData.addProperty(APPLICATION_ID_KEY, fakeApplicationId)
         fakeMetaData.addProperty(FILENAME_KEY, fakeFilename)
 
-        testedRequestBodyFactory = ResourceRequestBodyFactory()
+        testedRequestBodyFactory = ResourceRequestBodyFactory(mockInternalLogger)
     }
 
     @Test
@@ -137,17 +143,23 @@ internal class ResourceRequestBodyFactoryTest {
     }
 
     @Test
-    fun `M throw exception W create() { multiple applicationIds }`() {
+    fun `M throw exception and return largest group W create() { multiple applicationIds }`() {
         // Given
+        val fakeSecondApplicationId = "foobar"
         val fakeRawBatchEvent1 = RawBatchEvent(
             data = fakeImageRepresentation.toByteArray(),
             metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
         )
 
         fakeMetaData.remove(APPLICATION_ID_KEY)
-        fakeMetaData.addProperty(APPLICATION_ID_KEY, "foobar")
+        fakeMetaData.addProperty(APPLICATION_ID_KEY, fakeSecondApplicationId)
 
         val fakeRawBatchEvent2 = RawBatchEvent(
+            data = fakeImageRepresentation.toByteArray(),
+            metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
+        )
+
+        val fakeRawBatchEvent3 = RawBatchEvent(
             data = fakeImageRepresentation.toByteArray(),
             metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
         )
@@ -155,12 +167,43 @@ internal class ResourceRequestBodyFactoryTest {
         val fakeListResources = mutableListOf<RawBatchEvent>()
         fakeListResources.add(fakeRawBatchEvent1)
         fakeListResources.add(fakeRawBatchEvent2)
+        fakeListResources.add(fakeRawBatchEvent3)
 
         // When
-        assertThatThrownBy {
-            testedRequestBodyFactory.create(fakeListResources)
-        }.isInstanceOf(InvalidPayloadFormatException::class.java)
-            .hasMessage(MULTIPLE_APPLICATION_ID_ERROR)
+        val requestBody = testedRequestBodyFactory.create(fakeListResources)
+        val body = requestBody as MultipartBody
+        val parts = body.parts
+
+        // Then
+         mockInternalLogger.verifyLog(
+             InternalLogger.Level.ERROR,
+             InternalLogger.Target.USER,
+             message = MULTIPLE_APPLICATION_ID_ERROR
+         )
+
+        val resourceData = JsonObject()
+        resourceData.addProperty(APPLICATION_ID_KEY, fakeSecondApplicationId)
+        resourceData.addProperty(TYPE_KEY, TYPE_RESOURCE)
+
+        val applicationIdPart = MultipartBody.Part.createFormData(
+            NAME_RESOURCE,
+            FILENAME_BLOB,
+            resourceData.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
+        )
+
+        assertThat(parts)
+            .usingElementComparator { first, second ->
+                val headersEval = first.headers == second.headers
+                val bodyEval = first.body.toByteArray().contentEquals(second.body.toByteArray())
+                if (headersEval && bodyEval) {
+                    0
+                } else {
+                    -1
+                }
+            }
+            .contains(
+                applicationIdPart
+            )
     }
 
     @Test

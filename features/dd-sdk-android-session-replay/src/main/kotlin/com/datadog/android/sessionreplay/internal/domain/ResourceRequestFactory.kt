@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
@@ -17,8 +18,9 @@ import java.util.UUID
 
 internal class ResourceRequestFactory(
     internal val customEndpointUrl: String?,
+    private val internalLogger: InternalLogger,
     private val resourceRequestBodyFactory: ResourceRequestBodyFactory =
-        ResourceRequestBodyFactory()
+        ResourceRequestBodyFactory(internalLogger)
 ) : RequestFactory {
 
     @Suppress("ThrowingInternalException")
