@@ -254,7 +254,7 @@ internal class RecordedDataQueueHandler {
 
     internal companion object {
         @VisibleForTesting
-        internal const val MAX_DELAY_MS = 200L
+        internal const val MAX_DELAY_MS = 1000L
 
         private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
         private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
