@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.processor
 import android.content.res.Configuration
 import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.RecordWriter
+import com.datadog.android.sessionreplay.internal.ResourcesFeature
+import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
@@ -20,6 +22,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
+    private val resourcesFeature: ResourcesFeature,
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
     private val nodeFlattener: NodeFlattener = NodeFlattener()
@@ -28,6 +31,19 @@ internal class RecordedDataProcessor(
     private var lastSnapshotTimestamp = 0L
     private var previousOrientation = Configuration.ORIENTATION_UNDEFINED
     private var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
+
+    @WorkerThread
+    override fun processResources(
+        item: ResourceRecordedDataQueueItem
+    ) {
+        val enrichedResource = EnrichedResource(
+            resource = item.resourceData,
+            applicationId = item.applicationId,
+            filename = item.identifier
+        )
+
+        resourcesFeature.dataWriter.write(enrichedResource)
+    }
 
     @WorkerThread
     override fun processScreenSnapshots(

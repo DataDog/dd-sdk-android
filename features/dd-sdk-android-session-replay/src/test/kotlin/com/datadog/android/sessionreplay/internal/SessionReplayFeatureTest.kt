@@ -93,7 +93,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             rateBasedSampler = mockSampler
-        ) { _, _ -> mockRecorder }
+        ) { _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -166,7 +166,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             rateBasedSampler = mockSampler
-        ) { _, _ -> mockRecorder }
+        ) { _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)

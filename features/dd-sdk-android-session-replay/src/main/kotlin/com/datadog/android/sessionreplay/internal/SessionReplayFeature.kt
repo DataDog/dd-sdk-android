@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -40,7 +41,7 @@ internal class SessionReplayFeature(
     customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
     private val rateBasedSampler: Sampler,
-    private val sessionReplayRecorderProvider: (RecordWriter, Application) -> Recorder
+    private val sessionReplayRecorderProvider: (ResourcesFeature, RecordWriter, Application) -> Recorder
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
@@ -57,9 +58,10 @@ internal class SessionReplayFeature(
         customEndpointUrl,
         privacy,
         RateBasedSampler(sampleRate),
-        { recordWriter, application ->
+        { resourcesFeature, recordWriter, application ->
             SessionReplayRecorder(
                 application,
+                resourcesFeature = resourcesFeature,
                 rumContextProvider = SessionReplayRumContextProvider(sdkCore),
                 privacy = privacy,
                 recordWriter = recordWriter,
@@ -72,6 +74,7 @@ internal class SessionReplayFeature(
     )
 
     internal lateinit var appContext: Context
+    internal lateinit var resourcesFeature: ResourcesFeature
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
@@ -92,10 +95,10 @@ internal class SessionReplayFeature(
         }
 
         this.appContext = appContext
-
+        this.resourcesFeature = registerResourceFeature(sdkCore)
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
         dataWriter = createDataWriter()
-        sessionReplayRecorder = sessionReplayRecorderProvider(dataWriter, appContext)
+        sessionReplayRecorder = sessionReplayRecorderProvider(resourcesFeature, dataWriter, appContext)
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
@@ -240,6 +243,19 @@ internal class SessionReplayFeature(
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.stopRecorders()
         }
+    }
+
+    // endregion
+
+    // region resourcesFeature
+
+    private fun registerResourceFeature(sdkCore: SdkCore): ResourcesFeature {
+        val resourcesFeature = ResourcesFeature(
+            sdkCore = sdkCore as FeatureSdkCore
+        )
+        sdkCore.registerFeature(resourcesFeature)
+
+        return resourcesFeature
     }
 
     // endregion

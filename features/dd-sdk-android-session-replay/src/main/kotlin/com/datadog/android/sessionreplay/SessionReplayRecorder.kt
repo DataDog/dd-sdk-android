@@ -15,6 +15,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
+import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
@@ -54,6 +55,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     constructor(
         appContext: Application,
+        resourcesFeature: ResourcesFeature,
         rumContextProvider: RumContextProvider,
         privacy: SessionReplayPrivacy,
         recordWriter: RecordWriter,
@@ -70,6 +72,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         )
 
         val processor = RecordedDataProcessor(
+            resourcesFeature,
             recordWriter,
             MutationResolver(internalLogger)
         )

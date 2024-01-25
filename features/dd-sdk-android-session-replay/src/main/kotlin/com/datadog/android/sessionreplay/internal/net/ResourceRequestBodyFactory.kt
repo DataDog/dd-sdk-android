@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.net
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -191,8 +193,6 @@ internal class ResourceRequestBodyFactory(
         internal val CONTENT_TYPE_IMAGE = "image/png".toMediaTypeOrNull()
         internal val CONTENT_TYPE_APPLICATION = "application/json".toMediaTypeOrNull()
 
-        internal const val APPLICATION_ID_KEY = "application_id"
-        internal const val FILENAME_KEY = "filename"
         internal const val TYPE_KEY = "type"
         internal const val TYPE_RESOURCE = "resource"
         internal const val NAME_IMAGE = "image"
