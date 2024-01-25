@@ -36,6 +36,7 @@ dependencies {
     implementation(libs.dokkaGradlePlugin)
     implementation(libs.mavenModel)
     implementation(libs.nexusPublishGradlePlugin)
+    implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)
 
     // check api surface
