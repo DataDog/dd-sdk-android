@@ -77,7 +77,7 @@ analysis:licenses:
   stage: analysis
   timeout: 30m
   script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkDependencyLicences --stacktrace --no-daemon
 
 analysis:nightly-tests-coverage:
   tags: [ "arch:amd64" ]
