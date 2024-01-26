@@ -3,9 +3,9 @@ Dependencies List
 androidx.annotation:annotation:1.3.0                            :   30 Kb
 io.opentelemetry:opentelemetry-api:1.4.0                        :   78 Kb
 io.opentelemetry:opentelemetry-context:1.4.0                    :   42 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
-org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.9.10                       : 1667 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              : 2017 Kb
+Total transitive dependencies size                              :    2 Mb
 

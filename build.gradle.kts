@@ -129,7 +129,7 @@ registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTra
  * Task necessary to be compliant with the shared Android static analysis pipeline
  */
 tasks.register("checkGeneratedFiles") {
-    dependsOn("checkThirdPartyLicensesAll")
+    dependsOn("checkDependencyLicencesAll")
     dependsOn("checkApiSurfaceChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")
 }
