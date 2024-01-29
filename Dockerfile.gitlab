@@ -1,28 +1,39 @@
 FROM registry.ddbuild.io/images/mirror/ubuntu:20.04
 
+####################################################################################################
+# DEBIAN SETUP
+####################################################################################################
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set timezone to UTC by default
 RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
-RUN apt-get update \
-    && apt-get -y install openjdk-17-jdk \
-    && rm -rf /var/lib/apt/lists/*
+# Make sure APT is up to date
+RUN set -x && apt-get update && apt-get -y upgrade
+RUN set -x && apt-get -y install --no-install-recommends apt-utils
 
-RUN set -x \
- && apt-get update \
- && apt-get -y upgrade \
- && apt-get -y install --no-install-recommends \
+# Install CLI tools
+RUN set -x && apt-get update && apt-get -y install --no-install-recommends \
     curl \
+    ca-certificates \
+    expect \
     git \
+    gpg \
+    jq \
+    make \
+    openssh-client \
+    sudo \
     unzip \
     wget \
-    openssh-client \
-    expect \
-    python3-distutils \
-    python3-apt \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/*
+    zip \
+    && apt-get -y clean\
+    && rm -rf /var/lib/apt/lists/*
+
+
+####################################################################################################
+# ARGUMENTS
+####################################################################################################
 
 ENV GRADLE_VERSION 8.1.1
 ENV ANDROID_COMPILE_SDK 34
@@ -34,32 +45,64 @@ ENV DD_TRACER_VERSION 1.26.1
 
 RUN apt update && apt install -y python3
 
+####################################################################################################
+# PYTHON
+####################################################################################################
+
+# Install Python 3
+RUN set -x && apt-get update && apt-get -y install --no-install-recommends \
+    python3 \
+    python3-distutils \
+    python3-apt \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/*
+
 #  Install pip for aws
 RUN set -x \
- && curl -OL https://bootstrap.pypa.io/get-pip.py \
- && python3 get-pip.py \
- && rm get-pip.py
+    && curl -OL https://bootstrap.pypa.io/get-pip.py \
+    && python3 get-pip.py \
+    && rm get-pip.py
 
 RUN python3 --version
 
+#  Install aws CLI
 RUN set -x \
- && pip install awscli
+    && pip install awscli
 
-# Gradle
-RUN \
+####################################################################################################
+# JAVA
+####################################################################################################
+
+RUN set -x && apt-get update && apt-get -y install --no-install-recommends \
+    openjdk-17-jdk \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/*
+
+####################################################################################################
+# GRADLE
+####################################################################################################
+
+RUN set -x && \
     cd /usr/local && \
     curl -L https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o gradle-${GRADLE_VERSION}-bin.zip && \
     unzip gradle-${GRADLE_VERSION}-bin.zip && \
     rm gradle-${GRADLE_VERSION}-bin.zip
 
+ENV GRADLE_HOME /usr/local/gradle-${GRADLE_VERSION}
+ENV PATH $PATH:$GRADLE_HOME/bin
+
+####################################################################################################
+# ANDROID
+####################################################################################################
+
 # Workaround for
 # Warning: File /root/.android/repositories.cfg could not be loaded.
-RUN mkdir /root/.android \
-  && touch /root/.android/repositories.cfg
-
+RUN set -x && \
+    mkdir /root/.android && \
+    touch /root/.android/repositories.cfg
 
 # Android SDK
-RUN \
+RUN set -x && \
     wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_SDK_TOOLS}_latest.zip && \
     mkdir -p android-sdk-linux/cmdline-tools && \
     unzip -d android-sdk-linux/cmdline-tools android-sdk.zip && \
@@ -71,21 +114,60 @@ RUN \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
     yes | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --licenses
 
-RUN set -x \
- && curl -OL https://s3.amazonaws.com/dd-package-public/dd-package.deb && dpkg -i dd-package.deb && rm dd-package.deb \
- && apt-get update \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/*
-
 ENV ANDROID_SDK_ROOT $PWD/android-sdk-linux
 ENV ANDROID_HOME $PWD/android-sdk-linux
-ENV GRADLE_HOME /usr/local/gradle-${GRADLE_VERSION}
 ENV ANDROID_NDK $ANDROID_SDK_ROOT/ndk/${NDK_VERSION}
-ENV PATH $PATH:$GRADLE_HOME/bin
 ENV PATH $PATH:$ANDROID_HOME/platform-tools
 ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
-# Install Node
+####################################################################################################
+# ANDROID EMULATOR
+####################################################################################################
+
+ENV EMULATOR_NAME "android_emulator"
+ENV ANDROID_ARCH "x86_64"
+ENV EMULATOR_IMAGE "system-images;android-34;google_apis;${ANDROID_ARCH}"
+
+
+RUN set -x && apt-get update && apt-get -y install --no-install-recommends \
+    bridge-utils \
+    bzip2 \
+    fluxbox \
+    libasound-dev \
+    libdbus-glib-1-2 \
+    libdrm-dev \
+    libgbm-dev \
+    libnss3-dev \
+    libpulse-dev \
+    libvirt-daemon-system \
+    libvirt-clients \
+    libxcursor1 \
+    libxkbcommon-dev \
+    libxshmfence-dev \
+    qemu-kvm \
+    virtinst \
+    wmctrl \
+    xauth \
+    xvfb \
+    x11vnc \
+    && apt-get -y clean\
+    && rm -rf /var/lib/apt/lists/*
+
+RUN \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "emulator" >/dev/null && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "${EMULATOR_IMAGE}" >/dev/null && \
+    yes | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --licenses
+
+ENV PATH $PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+ENV PATH $PATH:$ANDROID_HOME/emulator
+
+RUN echo "no" | avdmanager --verbose create avd --force --name $EMULATOR_NAME --package "${EMULATOR_IMAGE}"
+
+
+####################################################################################################
+# NODE
+####################################################################################################
+
 ENV NODENV_VERSION 16.13.0
 ENV NODENV_ROOT /root/.nodenv
 ENV PATH "$NODENV_ROOT/shims:$NODENV_ROOT/bin:$PATH"
@@ -93,6 +175,17 @@ RUN set -x \
     && curl -fsSL https://github.com/nodenv/nodenv-installer/raw/master/bin/nodenv-installer | bash \
     && nodenv install $NODENV_VERSION \
     && nodenv rehash
+
+####################################################################################################
+# DATADOG
+####################################################################################################
+
+#Install datadog packages
+RUN set -x \
+ && curl -OL https://s3.amazonaws.com/dd-package-public/dd-package.deb && dpkg -i dd-package.deb && rm dd-package.deb \
+ && apt-get update \
+ && apt-get -y clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install Datadog CI
 RUN npm install -g npm@9.6.5
