@@ -13,6 +13,7 @@ variables:
   DD_CIVISIBILITY_ENABLED: "true"
   DD_INSIDE_CI: "true"
   DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=false,dd.jmx.fetch.enabled=false"
+  DD_AGENT_DISABLE_ITR: "dd.civisibility.itr.enabled=false"
 
   KUBERNETES_MEMORY_REQUEST: "8Gi"
   KUBERNETES_MEMORY_LIMIT: "16Gi"
@@ -90,6 +91,28 @@ analysis:nightly-tests-coverage:
 # TODO RUM-1622 cleanup this section
 # TESTS
 
+test:debug:itr:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  timeout: 1h
+  allow_failure: true
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testDebugUnitTest/*.xml"
+
 test:debug:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -104,7 +127,7 @@ test:debug:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
   artifacts:
     when: always
     expire_in: 1 week
@@ -125,7 +148,7 @@ test:release:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
   artifacts:
     when: always
     expire_in: 1 week
@@ -146,7 +169,7 @@ test:tools:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:jvmRelease" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:jvmRelease" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
 
 test:kover:
   tags: [ "arch:amd64" ]
@@ -165,7 +188,7 @@ test:kover:
     - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
     - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
     - python3 ddcoverage.py --prefix dd-sdk-android
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
@@ -187,7 +210,7 @@ test-pyramid:single-fit-logs:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
   artifacts:
     when: always
     expire_in: 1 week
@@ -208,7 +231,7 @@ test-pyramid:single-fit-rum:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
   artifacts:
     when: always
     expire_in: 1 week
@@ -229,7 +252,7 @@ test-pyramid:single-fit-trace:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG,$DD_AGENT_DISABLE_ITR
   artifacts:
     when: always
     expire_in: 1 week
