@@ -19,6 +19,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -197,6 +198,11 @@ internal class DatadogCore(
                 val mutableContext = featureContext.toMutableMap()
                 updateCallback(mutableContext)
                 it.setFeatureContext(featureName, mutableContext)
+                // notify all the other features
+                features.filter { it.key != featureName }
+                    .forEach { (_, feature) ->
+                        feature.notifyContextUpdated(featureName, mutableContext.toMap())
+                    }
             }
         }
     }
@@ -225,6 +231,23 @@ internal class DatadogCore(
             }
             feature.eventReceiver.set(receiver)
         }
+    }
+
+    override fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
+        val feature = features[featureName]
+        if (feature == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, featureName) }
+            )
+        } else {
+            feature.setContextUpdateListener(listener)
+        }
+    }
+
+    override fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
+        features[featureName]?.removeContextUpdateListener(listener)
     }
 
     /** @inheritDoc */
@@ -479,16 +502,18 @@ internal class DatadogCore(
         internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"
         internal const val MESSAGE_ENV_NAME_NOT_VALID =
             "The environment name should contain maximum 196 of the following allowed characters " +
-                "[a-zA-Z0-9_:./-] and should never finish with a semicolon." +
-                "In this case the Datadog SDK will not be initialised."
+                    "[a-zA-Z0-9_:./-] and should never finish with a semicolon." +
+                    "In this case the Datadog SDK will not be initialised."
 
         internal const val MISSING_FEATURE_FOR_EVENT_RECEIVER =
             "Cannot add event receiver for feature \"%s\", it is not registered."
+        internal const val MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER =
+            "Cannot add event listener for feature \"%s\", it is not registered."
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
 
         const val LAST_VIEW_EVENT_DIR_MISSING_MESSAGE = "Directory structure %s for writing" +
-            " last view event doesn't exist."
+                " last view event doesn't exist."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
     }

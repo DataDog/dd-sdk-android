@@ -12,6 +12,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.ContextProvider
@@ -61,10 +62,12 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -265,11 +268,17 @@ internal class DatadogCoreTest {
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) context: Map<String, String>
+        ) context: Map<String, String>,
+        forge: Forge
     ) {
         // Given
         val mockContextProvider = mock<ContextProvider>()
-        testedCore.features[feature] = mock()
+        val mockFeature = mock<SdkFeature>()
+        val otherFeatures = mapOf(
+            forge.anAlphaNumericalString() to mock<SdkFeature>()
+        )
+        testedCore.features[feature] = mockFeature
+        testedCore.features.putAll(otherFeatures)
         testedCore.coreFeature.contextProvider = mockContextProvider
 
         // When
@@ -279,6 +288,11 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockContextProvider).setFeatureContext(feature, context)
+        otherFeatures.forEach { (_, otherFeature) ->
+            verify(otherFeature).notifyContextUpdated(feature, context)
+            verifyNoMoreInteractions(otherFeature)
+        }
+        verify(mockFeature, never()).notifyContextUpdated(feature, context)
     }
 
     @Test
@@ -380,6 +394,56 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockEventReceiverRef).set(null)
+    }
+
+    @Test
+    fun `𝕄 set context update listener 𝕎 setContextUpdateListener()`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock()
+        testedCore.features[feature] = mockFeature
+
+        // When
+        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+
+        // Then
+        verify(mockFeature).setContextUpdateListener(mockContextUpdateListener)
+    }
+
+    @Test
+    fun `𝕄 notify no feature registered 𝕎 setContextUpdateListener() { feature is not registered }`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock()
+
+        // When
+        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogCore.MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, feature)
+        )
+    }
+
+    @Test
+    fun `𝕄 remove context update listener 𝕎 removeContextUpdateListener()`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock()
+        testedCore.features[feature] = mockFeature
+
+        // When
+        testedCore.removeContextUpdateReceiver(feature, mockContextUpdateListener)
+
+        // Then
+        verify(mockFeature).removeContextUpdateListener(mockContextUpdateListener)
     }
 
     @Test

@@ -309,6 +309,10 @@ public final class com/datadog/android/api/feature/Feature$Companion {
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/api/feature/FeatureContextUpdateReceiver {
+	public abstract fun onContextUpdate (Ljava/lang/String;Ljava/util/Map;)V
+}
+
 public abstract interface class com/datadog/android/api/feature/FeatureEventReceiver {
 	public abstract fun onReceive (Ljava/lang/Object;)V
 }
@@ -328,7 +332,9 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
+	public abstract fun removeContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun removeEventReceiver (Ljava/lang/String;)V
+	public abstract fun setContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureEventReceiver;)V
 	public abstract fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 }
