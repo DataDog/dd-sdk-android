@@ -212,6 +212,7 @@ datadog:
       - "java.util.Collections.newSetFromMap(kotlin.collections.MutableMap?):java.lang.IllegalArgumentException"
       - "java.util.LinkedList.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.LinkedList.removeFirst():java.util.NoSuchElementException"
+      - "java.util.LinkedList.removeLast():java.util.NoSuchElementException"
       - "java.util.Queue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem?):java.lang.IllegalArgumentException,java.lang.ClassCastException,java.lang.NullPointerException"
       # endregion
       # region Java Zip
@@ -726,6 +727,10 @@ datadog:
       - "java.security.SecureRandom.nextInt()"
       - "java.security.SecureRandom.nextLong()"
       - "java.util.HashSet.find(kotlin.Function1)"
+      - "java.util.LinkedList.addFirst(com.datadog.android.webview.internal.rum.domain.WebViewNativeRumViewsCache.ViewEntry?)"
+      - "java.util.LinkedList.peekLast()"
+      - "java.util.LinkedList.remove(com.datadog.android.webview.internal.rum.domain.WebViewNativeRumViewsCache.ViewEntry)"
+      - "java.util.LinkedList.iterator()"
       - "java.util.Properties.constructor()"
       - "java.util.Properties.setProperty(kotlin.String?, kotlin.String?)"
       - "java.util.UUID.constructor(kotlin.Long, kotlin.Long)"

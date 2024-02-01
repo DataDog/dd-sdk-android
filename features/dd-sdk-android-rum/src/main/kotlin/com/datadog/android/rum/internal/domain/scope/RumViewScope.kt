@@ -19,7 +19,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -140,7 +139,6 @@ internal open class RumViewScope(
     init {
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
-            it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         cpuVitalMonitor.register(cpuVitalListener)
@@ -214,7 +212,10 @@ internal open class RumViewScope(
                 viewName = key.name,
                 viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId,
-                viewType = type
+                viewType = type,
+                viewTimestamp = eventTimestamp,
+                viewTimestampOffset = serverTimeOffsetInMs,
+                hasReplay = false
             )
     }
 
@@ -250,6 +251,9 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
+            // we should not reset the timestamp offset here as due to async nature of feature context update
+            // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
+            // correction
             val newRumContext = getRumContext().copy(
                 viewType = RumViewType.NONE,
                 viewId = null,
@@ -733,6 +737,9 @@ internal open class RumViewScope(
                 datadogContext,
                 currentViewId
             )
+            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
+                currentRumContext[RumContext.HAS_REPLAY] = hasReplay
+            }
             val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
                 datadogContext,
                 currentViewId
@@ -835,8 +842,7 @@ internal open class RumViewScope(
                 service = datadogContext.service,
                 version = datadogContext.version
             )
-        }
-            .submit()
+        }.submit()
     }
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
@@ -1106,9 +1112,9 @@ internal open class RumViewScope(
 
     private fun isViewComplete(): Boolean {
         val pending = pendingActionCount +
-            pendingResourceCount +
-            pendingErrorCount +
-            pendingLongTaskCount
+                pendingResourceCount +
+                pendingErrorCount +
+                pendingLongTaskCount
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
@@ -1133,19 +1139,19 @@ internal open class RumViewScope(
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
-            " another action is still active for the same view"
+                " another action is still active for the same view"
 
         internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE =
             "Trying to update global RUM context when StopView event arrived, but the context" +
-                " doesn't reference this view."
+                    " doesn't reference this view."
         internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE =
             "Trying to update active action in the global RUM context, but the context" +
-                " doesn't reference this view."
+                    " doesn't reference this view."
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
-            "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
+                "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
 
         internal fun fromEvent(
             parentScope: RumScope,

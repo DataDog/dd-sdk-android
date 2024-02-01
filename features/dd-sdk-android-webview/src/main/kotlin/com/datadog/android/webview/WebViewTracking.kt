@@ -28,7 +28,9 @@ import com.datadog.android.webview.internal.replay.WebViewReplayFeature
 import com.datadog.android.webview.internal.rum.TimestampOffsetProvider
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
+import com.datadog.android.webview.internal.rum.WebViewRumEventMapper
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.datadog.android.webview.internal.rum.domain.NoOpNativeRumViewsCache
 import com.datadog.android.webview.internal.storage.NoOpDataWriter
 
 /**
@@ -107,11 +109,13 @@ object WebViewTracking {
             // and rum browser events for the same view id.
             val timestampOffsetProvider = TimestampOffsetProvider(sdkCore.internalLogger)
             val contextProvider = WebViewRumEventContextProvider(sdkCore.internalLogger)
+            val nativeRumActivityHandler = webViewRumFeature?.nativeRumViewsCache ?: NoOpNativeRumViewsCache()
             return MixedWebViewEventConsumer(
                 WebViewRumEventConsumer(
                     sdkCore = sdkCore,
                     offsetProvider = timestampOffsetProvider,
                     dataWriter = webViewRumFeature?.dataWriter ?: NoOpDataWriter(),
+                    webViewRumEventMapper = WebViewRumEventMapper(nativeRumActivityHandler),
                     contextProvider = contextProvider
                 ),
                 webViewId?.let {
@@ -137,6 +141,12 @@ object WebViewTracking {
     }
 
     private fun resolveRumFeature(sdkCore: FeatureSdkCore): WebViewRumFeature? {
+        (
+        sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+                ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
+        )?.let {
+            return it
+        }
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>()
         return if (rumFeature != null) {
@@ -152,6 +162,12 @@ object WebViewTracking {
         }
     }
     private fun resolveReplayFeature(sdkCore: FeatureSdkCore): WebViewReplayFeature? {
+        (
+        sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
+                ?.unwrap<StorageBackedFeature>() as? WebViewReplayFeature
+        )?.let {
+            return it
+        }
         val sessionReplayFeature = sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>()
         return if (sessionReplayFeature != null) {
@@ -167,6 +183,12 @@ object WebViewTracking {
         }
     }
     private fun resolveLogsFeature(sdkCore: FeatureSdkCore): WebViewLogsFeature? {
+        (
+        sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+            ?.unwrap<StorageBackedFeature>() as? WebViewLogsFeature
+        )?.let {
+            return it
+        }
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>()
         return if (logsFeature != null) {
