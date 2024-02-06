@@ -11,18 +11,18 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.APPLICATION_ID_KEY
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.CONTENT_TYPE_IMAGE
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.DESERIALIZE_METADATA_ERROR
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.FILENAME_BLOB
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.FILENAME_KEY
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.MULTIPLE_APPLICATION_ID_ERROR
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.NAME_IMAGE
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.NAME_RESOURCE
+import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.NO_RESOURCES_TO_SEND_ERROR
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.TYPE_KEY
 import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.UNABLE_GET_APPLICATION_ID_ERROR
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -126,26 +126,45 @@ internal class ResourceRequestBodyFactoryTest {
     }
 
     @Test
-    fun `M throw exception W create() { could not get applicationId }`() {
+    fun `M throw exception W create() { empty resource list }`() {
         // Given
-        fakeMetaData.remove(APPLICATION_ID_KEY)
-        val fakeRawBatchEvent = RawBatchEvent(
+        val missingApplicationIdData = fakeMetaData.deepCopy()
+        val missingFilenameData = fakeMetaData.deepCopy()
+
+        missingApplicationIdData.remove(APPLICATION_ID_KEY)
+        val missingApplicationIdBatchEvent = RawBatchEvent(
             data = fakeImageRepresentation.toByteArray(),
-            metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
+            metadata = missingApplicationIdData.toString().toByteArray(Charsets.UTF_8)
         )
-        val fakeListResources = listOf(fakeRawBatchEvent)
+
+        missingFilenameData.remove(FILENAME_KEY)
+        val missingFilenameBatchEvent = RawBatchEvent(
+            data = fakeImageRepresentation.toByteArray(),
+            metadata = missingFilenameData.toString().toByteArray(Charsets.UTF_8)
+        )
+
+        val emptyMetaDataBatchEvent = RawBatchEvent(
+            data = fakeImageRepresentation.toByteArray(),
+            metadata = ByteArray(0)
+        )
+
+        val fakeListResources = listOf(
+            missingApplicationIdBatchEvent,
+            missingFilenameBatchEvent,
+            emptyMetaDataBatchEvent
+        )
 
         // When
-        assertThatThrownBy {
-            testedRequestBodyFactory.create(fakeListResources)
-        }.isInstanceOf(InvalidPayloadFormatException::class.java)
-            .hasMessage(UNABLE_GET_APPLICATION_ID_ERROR)
+        assertThatThrownBy { testedRequestBodyFactory.create(fakeListResources) }
+            .isInstanceOf(InvalidPayloadFormatException::class.java)
+            .hasMessage(NO_RESOURCES_TO_SEND_ERROR)
     }
 
     @Test
-    fun `M throw exception and return largest group W create() { multiple applicationIds }`() {
+    fun `M throw exception and return largest group W create() { multiple applicationIds }`(forge: Forge) {
         // Given
-        val fakeSecondApplicationId = "foobar"
+        val fakeSecondApplicationId = forge.anAsciiString()
+        val fakeSecondFilename = forge.anAsciiString()
         val fakeRawBatchEvent1 = RawBatchEvent(
             data = fakeImageRepresentation.toByteArray(),
             metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
@@ -153,6 +172,8 @@ internal class ResourceRequestBodyFactoryTest {
 
         fakeMetaData.remove(APPLICATION_ID_KEY)
         fakeMetaData.addProperty(APPLICATION_ID_KEY, fakeSecondApplicationId)
+        fakeMetaData.remove(FILENAME_KEY)
+        fakeMetaData.addProperty(FILENAME_KEY, fakeSecondFilename)
 
         val fakeRawBatchEvent2 = RawBatchEvent(
             data = fakeImageRepresentation.toByteArray(),
@@ -175,11 +196,11 @@ internal class ResourceRequestBodyFactoryTest {
         val parts = body.parts
 
         // Then
-         mockInternalLogger.verifyLog(
-             InternalLogger.Level.ERROR,
-             InternalLogger.Target.USER,
-             message = MULTIPLE_APPLICATION_ID_ERROR
-         )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            message = MULTIPLE_APPLICATION_ID_ERROR
+        )
 
         val resourceData = JsonObject()
         resourceData.addProperty(APPLICATION_ID_KEY, fakeSecondApplicationId)
@@ -204,23 +225,6 @@ internal class ResourceRequestBodyFactoryTest {
             .contains(
                 applicationIdPart
             )
-    }
-
-    @Test
-    fun `M throw exception W create() { could not get filename }`() {
-        // Given
-        fakeMetaData.remove(FILENAME_KEY)
-        val fakeRawBatchEvent = RawBatchEvent(
-            data = fakeImageRepresentation.toByteArray(),
-            metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
-        )
-        val fakeListResources = listOf(fakeRawBatchEvent)
-
-        // When
-        assertThatThrownBy {
-            testedRequestBodyFactory.create(fakeListResources)
-        }.isInstanceOf(InvalidPayloadFormatException::class.java)
-            .hasMessage(DESERIALIZE_METADATA_ERROR)
     }
 
     private fun RequestBody.toByteArray(): ByteArray {

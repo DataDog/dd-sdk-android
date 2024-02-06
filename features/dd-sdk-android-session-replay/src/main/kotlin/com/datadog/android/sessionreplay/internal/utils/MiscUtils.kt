@@ -12,6 +12,7 @@ import android.graphics.Point
 import android.os.Build
 import android.util.TypedValue
 import android.view.WindowManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -23,14 +24,47 @@ import com.google.gson.JsonSyntaxException
 internal object MiscUtils {
 
     internal const val OPAQUE_ALPHA_VALUE = 255
+    private const val GET_STRING_FROM_JSON_ERROR = "Error getting string property from json"
+    internal const val DESERIALIZE_JSON_ERROR = "Error deserializing json object"
 
-    @Suppress("SwallowedException")
-    internal fun safeDeserializeToJsonObject(data: ByteArray): JsonObject? {
-        val jsonString = String(data)
+    internal fun safeDeserializeToJsonObject(internalLogger: InternalLogger, jsonByteArray: ByteArray): JsonObject? {
+        if (jsonByteArray.isEmpty()) return null
+
+        val jsonString = String(jsonByteArray)
         return try {
             @Suppress("UnsafeThirdPartyFunctionCall")
             JsonParser.parseString(jsonString) as? JsonObject
         } catch (e: JsonSyntaxException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { DESERIALIZE_JSON_ERROR },
+                throwable = e
+            )
+            null
+        }
+    }
+
+    internal fun safeGetStringFromJsonObject(internalLogger: InternalLogger, json: JsonObject, key: String): String? {
+        return try {
+            json.get(key)?.asString
+        } catch (e: ClassCastException) {
+            // this should never happen - element is a valid json already
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { GET_STRING_FROM_JSON_ERROR },
+                throwable = e
+            )
+            null
+        } catch (e: IllegalStateException) {
+            // this should never happen - element is not jsonArray
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { GET_STRING_FROM_JSON_ERROR },
+                throwable = e
+            )
             null
         }
     }

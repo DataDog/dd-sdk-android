@@ -18,16 +18,19 @@ import android.util.TypedValue
 import android.view.Display
 import android.view.WindowManager
 import android.view.WindowMetrics
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils.DESERIALIZE_JSON_ERROR
 import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -68,6 +71,9 @@ internal class MiscUtilsTest {
     lateinit var fakeDisplayMetrics: DisplayMetrics
 
     lateinit var mockResources: Resources
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -312,22 +318,31 @@ internal class MiscUtilsTest {
         val jsonBytes = expectedJson.toString().toByteArray(Charsets.UTF_8)
 
         // When
-        val result = MiscUtils.safeDeserializeToJsonObject(jsonBytes)
+        val result = MiscUtils.safeDeserializeToJsonObject(mockInternalLogger, jsonBytes)
 
         // Then
         assertThat(result).isEqualTo(expectedJson)
     }
 
     @Test
-    fun `M return null W safeDeserializeToJsonObject() { invalid json }`(
-        @StringForgery notAJsonObject: String
-    ) {
+    fun `M return null W safeDeserializeToJsonObject() { invalid json }`() {
+        // Given
+        val notAJsonObject = "10}}"
+
         // When
+        val byteArray = notAJsonObject.toByteArray(Charsets.UTF_8)
         val result = MiscUtils.safeDeserializeToJsonObject(
-            notAJsonObject.toByteArray(Charsets.UTF_8)
+            internalLogger = mockInternalLogger,
+            jsonByteArray = byteArray
         )
 
         // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            DESERIALIZE_JSON_ERROR,
+            JsonSyntaxException::class.java
+        )
         assertThat(result).isNull()
     }
 
@@ -335,11 +350,44 @@ internal class MiscUtilsTest {
     fun `M return null W safeDeserializeToJsonObject() { empty bytearray }`() {
         // When
         val result = MiscUtils.safeDeserializeToJsonObject(
+            mockInternalLogger,
             ByteArray(0)
         )
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W safeGetStringFromJsonObject() { key not found }`(forge: Forge) {
+        // When
+        val result = MiscUtils.safeGetStringFromJsonObject(
+            mockInternalLogger,
+            JsonObject(),
+            forge.anAsciiString()
+        )
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return property value W safeGetStringFromJsonObject() { valid key }`(forge: Forge) {
+        // Given
+        val key = forge.anAsciiString()
+        val value = forge.anAsciiString()
+        val json = JsonObject()
+        json.addProperty(key, value)
+
+        // When
+        val result = MiscUtils.safeGetStringFromJsonObject(
+            mockInternalLogger,
+            json,
+            key
+        )
+
+        // Then
+        assertThat(result).isEqualTo(value)
     }
 
     // endregion

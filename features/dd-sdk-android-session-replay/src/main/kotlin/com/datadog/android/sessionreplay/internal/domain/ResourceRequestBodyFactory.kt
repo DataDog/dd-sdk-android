@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.domain
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
+import com.datadog.android.sessionreplay.internal.recorder.base64.ResourceEvent
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -25,39 +26,60 @@ internal class ResourceRequestBodyFactory(
     internal fun create(
         resources: List<RawBatchEvent>
     ): RequestBody {
-        @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
-        val applicationId = getApplicationId(resources)
+        val deserializedResources: List<ResourceEvent> = resources.mapNotNull {
+            val deserializedObject = MiscUtils.safeDeserializeToJsonObject(internalLogger, it.metadata)
 
-        resources.filter {
-            val metadata: JsonObject? = MiscUtils.safeDeserializeToJsonObject(it.metadata)
-            val elementApplicationId: String = metadata?.get(APPLICATION_ID_KEY)?.asString ?: ""
-            elementApplicationId == applicationId
+            if (deserializedObject != null) {
+                val applicationId = MiscUtils.safeGetStringFromJsonObject(
+                    internalLogger,
+                    deserializedObject,
+                    APPLICATION_ID_KEY
+                )
+                val filename = MiscUtils.safeGetStringFromJsonObject(
+                    internalLogger,
+                    deserializedObject,
+                    FILENAME_KEY
+                )
+
+                if (applicationId != null && filename != null) {
+                    ResourceEvent(
+                        applicationId = applicationId,
+                        identifier = filename,
+                        it.data
+                    )
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
         }
 
-        addResourcesSection(builder, resources)
+        if (deserializedResources.isEmpty()) {
+            @Suppress("ThrowingInternalException")
+            throw InvalidPayloadFormatException(NO_RESOURCES_TO_SEND_ERROR)
+        }
+
+        val applicationId = getApplicationId(deserializedResources)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
+        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
+
+        addResourcesSection(builder, deserializedResources)
         addApplicationIdSection(builder, applicationId)
         @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
         return builder.build()
     }
 
-    private fun getApplicationId(resources: List<RawBatchEvent>): String {
-        val resourcesMetaData: List<JsonObject> = resources.mapNotNull {
-            MiscUtils.safeDeserializeToJsonObject(it.metadata)
+    private fun getApplicationId(resources: List<ResourceEvent>): String {
+        val applicationIds = resources.map {
+            it.applicationId
         }
 
-        val applicationIds = resourcesMetaData.mapNotNull {
-            it.get(APPLICATION_ID_KEY)
-        }
-
-        if (applicationIds.isEmpty()) {
-            @Suppress("ThrowingInternalException")
-            throw InvalidPayloadFormatException(UNABLE_GET_APPLICATION_ID_ERROR)
-        }
-
-        var selectedApplicationId = applicationIds[0].asString
+        var selectedApplicationId = applicationIds[0]
 
         if (applicationIds.size > 1) {
+            // more than one applicationId, so take the one from the largest group
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.USER,
@@ -65,14 +87,14 @@ internal class ResourceRequestBodyFactory(
             )
 
             var maxSize = 0
-            val groupedByApplicationId = resourcesMetaData.groupBy {
-                it.get(APPLICATION_ID_KEY)
+            val groupedByApplicationId = resources.groupBy {
+                it.applicationId
             }
 
             groupedByApplicationId.forEach {
                 if (it.value.size > maxSize) {
                     maxSize = it.value.size
-                    selectedApplicationId = it.key.asString
+                    selectedApplicationId = it.key
                 }
             }
         }
@@ -80,37 +102,18 @@ internal class ResourceRequestBodyFactory(
         return selectedApplicationId
     }
 
-    private fun addResourcesSection(builder: MultipartBody.Builder, resources: List<RawBatchEvent>) {
+    private fun addResourcesSection(builder: MultipartBody.Builder, resources: List<ResourceEvent>) {
         resources.forEach {
-            val filename = getFilename(it)
-
-            val data = it.data
+            val filename = it.identifier
+            val resourceData = it.resourceData
 
             @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
             builder.addFormDataPart(
                 name = NAME_IMAGE,
                 filename,
-                data.toRequestBody(CONTENT_TYPE_IMAGE)
+                resourceData.toRequestBody(CONTENT_TYPE_IMAGE)
             )
         }
-    }
-
-    private fun getFilename(rawBatchEvent: RawBatchEvent): String {
-        val metadataObject = MiscUtils.safeDeserializeToJsonObject(rawBatchEvent.metadata)
-
-        if (metadataObject == null) {
-            @Suppress("ThrowingInternalException")
-            throw InvalidPayloadFormatException(DESERIALIZE_METADATA_ERROR)
-        }
-
-        val filename = safeGetFilenameFromMetadata(metadataObject)
-
-        if (filename == null) {
-            @Suppress("ThrowingInternalException")
-            throw InvalidPayloadFormatException(DESERIALIZE_METADATA_ERROR)
-        }
-
-        return filename
     }
 
     private fun addApplicationIdSection(builder: MultipartBody.Builder, applicationId: String) {
@@ -126,17 +129,6 @@ internal class ResourceRequestBodyFactory(
             filename = FILENAME_BLOB,
             applicationIdSection
         )
-    }
-
-    @Suppress("SwallowedException")
-    private fun safeGetFilenameFromMetadata(metadataObject: JsonObject): String? {
-        return try {
-            metadataObject.get(FILENAME_KEY)?.asString
-        } catch (e: ClassCastException) {
-            null
-        } catch (e: IllegalStateException) {
-            null
-        }
     }
 
     companion object {
@@ -156,9 +148,7 @@ internal class ResourceRequestBodyFactory(
 
         internal const val MULTIPLE_APPLICATION_ID_ERROR =
             "There were multiple applicationIds associated with the resources"
-        internal const val UNABLE_GET_APPLICATION_ID_ERROR =
-            "Unable to get the applicationId for the resources"
-        internal const val DESERIALIZE_METADATA_ERROR =
-            "Error deserializing resource metadata"
+        internal const val NO_RESOURCES_TO_SEND_ERROR =
+                "No resources to send"
     }
 }
