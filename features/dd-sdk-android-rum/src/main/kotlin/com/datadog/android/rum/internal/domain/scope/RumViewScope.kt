@@ -415,7 +415,15 @@ internal open class RumViewScope(
                     stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
                     isCrash = isFatal,
                     type = errorType,
-                    sourceType = event.sourceType.toSchemaSourceType()
+                    sourceType = event.sourceType.toSchemaSourceType(),
+                    threads = event.threads.map {
+                        ErrorEvent.Thread(
+                            name = it.name,
+                            crashed = it.crashed,
+                            stack = it.stack,
+                            state = it.state
+                        )
+                    }.ifEmpty { null }
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
                 view = ErrorEvent.ErrorEventView(

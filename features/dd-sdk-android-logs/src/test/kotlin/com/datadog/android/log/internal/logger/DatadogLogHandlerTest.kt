@@ -266,7 +266,8 @@ internal class DatadogLogHandlerTest {
                     LogEvent.Error(
                         kind = fakeThrowable.javaClass.canonicalName,
                         message = fakeThrowable.message,
-                        stack = fakeThrowable.stackTraceToString()
+                        stack = fakeThrowable.stackTraceToString(),
+                        threads = null
                     )
                 )
         }

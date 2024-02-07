@@ -532,6 +532,65 @@ public final class com/datadog/android/core/constraints/DatadogDataConstraints :
 	public fun validateTimings (Ljava/util/Map;)Ljava/util/Map;
 }
 
+public abstract class com/datadog/android/core/feature/event/JvmCrash {
+	public abstract fun getMessage ()Ljava/lang/String;
+	public abstract fun getThreads ()Ljava/util/List;
+	public abstract fun getThrowable ()Ljava/lang/Throwable;
+}
+
+public final class com/datadog/android/core/feature/event/JvmCrash$Logs : com/datadog/android/core/feature/event/JvmCrash {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun component3 ()J
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;)Lcom/datadog/android/core/feature/event/JvmCrash$Logs;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/feature/event/JvmCrash$Logs;Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/core/feature/event/JvmCrash$Logs;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLoggerName ()Ljava/lang/String;
+	public fun getMessage ()Ljava/lang/String;
+	public final fun getThreadName ()Ljava/lang/String;
+	public fun getThreads ()Ljava/util/List;
+	public fun getThrowable ()Ljava/lang/Throwable;
+	public final fun getTimestamp ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/feature/event/JvmCrash$Rum : com/datadog/android/core/feature/event/JvmCrash {
+	public fun <init> (Ljava/lang/Throwable;Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/Throwable;Ljava/lang/String;Ljava/util/List;)Lcom/datadog/android/core/feature/event/JvmCrash$Rum;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/feature/event/JvmCrash$Rum;Ljava/lang/Throwable;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/core/feature/event/JvmCrash$Rum;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMessage ()Ljava/lang/String;
+	public fun getThreads ()Ljava/util/List;
+	public fun getThrowable ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/feature/event/ThreadDump {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)Lcom/datadog/android/core/feature/event/ThreadDump;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/feature/event/ThreadDump;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/core/feature/event/ThreadDump;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCrashed ()Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getStack ()Ljava/lang/String;
+	public final fun getState ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/core/internal/net/DefaultFirstPartyHostHeaderTypeResolver : com/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver {
 	public fun <init> (Ljava/util/Map;)V
 	public fun getAllHeaderTypes ()Ljava/util/Set;

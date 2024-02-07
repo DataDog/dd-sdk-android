@@ -15,11 +15,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -155,23 +157,22 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockLogsFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val logEvent =
-                (lastValue as Map<String, Any?>).toMutableMap()
-            val timestamp = logEvent.remove("timestamp") as? Long
+            val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
-            assertThat(logEvent).isEqualTo(
-                mapOf(
-                    "threadName" to currentThread.name,
-                    "throwable" to fakeThrowable,
-                    "message" to fakeThrowable.message,
-                    "type" to "jvm_crash",
-                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
-                )
-            )
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
+            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
+            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
+            with(logEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+            }
         }
         verifyNoInteractions(mockPreviousHandler)
     }
@@ -189,23 +190,22 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockLogsFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val logEvent =
-                (lastValue as Map<String, Any?>).toMutableMap()
-            val timestamp = logEvent.remove("timestamp") as? Long
+            val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
-            assertThat(logEvent).isEqualTo(
-                mapOf(
-                    "threadName" to currentThread.name,
-                    "throwable" to fakeThrowable,
-                    "message" to fakeThrowable.message,
-                    "type" to "jvm_crash",
-                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
-                )
-            )
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
+            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
+            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
+            with(logEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -224,23 +224,23 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockLogsFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val logEvent =
-                (lastValue as Map<String, Any?>).toMutableMap()
-            val timestamp = logEvent.remove("timestamp") as? Long
+            val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
-            assertThat(logEvent).isEqualTo(
-                mapOf(
-                    "threadName" to currentThread.name,
-                    "throwable" to throwable,
-                    "message" to "Application crash detected: ${throwable.javaClass.canonicalName}",
-                    "type" to "jvm_crash",
-                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
-                )
-            )
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
+            assertThat(logEvent.throwable).isSameAs(throwable)
+            assertThat(logEvent.message)
+                .isEqualTo("Application crash detected: ${throwable.javaClass.canonicalName}")
+            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
+            with(logEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
@@ -259,23 +259,23 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockLogsFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val logEvent =
-                (lastValue as Map<String, Any?>).toMutableMap()
-            val timestamp = logEvent.remove("timestamp") as? Long
+            val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
-            assertThat(logEvent).isEqualTo(
-                mapOf(
-                    "threadName" to currentThread.name,
-                    "throwable" to throwable,
-                    "message" to "Application crash detected: ${throwable.javaClass.simpleName}",
-                    "type" to "jvm_crash",
-                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
-                )
-            )
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
+            assertThat(logEvent.throwable).isSameAs(throwable)
+            assertThat(logEvent.message)
+                .isEqualTo("Application crash detected: ${throwable.javaClass.simpleName}")
+            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
+            with(logEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
@@ -303,25 +303,64 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockLogsFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val logEvent =
-                (lastValue as Map<String, Any?>).toMutableMap()
-            val timestamp = logEvent.remove("timestamp") as? Long
+            val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
-            assertThat(logEvent).isEqualTo(
-                mapOf(
-                    "threadName" to thread.name,
-                    "throwable" to fakeThrowable,
-                    "message" to fakeThrowable.message,
-                    "type" to "jvm_crash",
-                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
-                )
-            )
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.threadName).isEqualTo(thread.name)
+            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
+            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
+            with(logEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(thread.name)
+                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
+    }
+
+    @Test
+    fun `M log exception with a crashed thread provided W caught`() {
+        // Given
+        val externalLock = CountDownLatch(1)
+        val internalLock = CountDownLatch(1)
+        val crashedThread = Thread {
+            externalLock.countDown()
+            internalLock.await()
+        }.apply { start() }
+        // need to wait here because thread is not necessarily running yet after `start()` call
+        externalLock.await()
+        val now = System.currentTimeMillis()
+
+        // When
+        testedHandler.uncaughtException(crashedThread, fakeThrowable)
+        internalLock.countDown()
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
+
+            val logEvent = lastValue as JvmCrash.Logs
+
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.threadName).isEqualTo(crashedThread.name)
+            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
+            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
+            with(logEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                assertThat(first { it.crashed }.name).isEqualTo(crashedThread.name)
+                assertThat(first { it.crashed }.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+            }
+        }
+        verify(mockPreviousHandler).uncaughtException(crashedThread, fakeThrowable)
     }
 
     // endregion
@@ -437,18 +476,19 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockRumFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Rum::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val crashEvent = lastValue as Map<String, Any?>
+            val crashEvent = lastValue as JvmCrash.Rum
 
-            assertThat(crashEvent).isEqualTo(
-                mapOf(
-                    "type" to "jvm_crash",
-                    "throwable" to fakeThrowable,
-                    "message" to fakeThrowable.message
-                )
-            )
+            assertThat(crashEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(crashEvent.message).isEqualTo(fakeThrowable.message)
+            with(crashEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -468,18 +508,20 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockRumFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Rum::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val crashEvent = lastValue as Map<String, Any?>
+            val crashEvent = lastValue as JvmCrash.Rum
 
-            assertThat(crashEvent).isEqualTo(
-                mapOf(
-                    "type" to "jvm_crash",
-                    "throwable" to throwable,
-                    "message" to "Application crash detected: ${throwable.javaClass.canonicalName}"
-                )
-            )
+            assertThat(crashEvent.throwable).isSameAs(throwable)
+            assertThat(crashEvent.message)
+                .isEqualTo("Application crash detected: ${throwable.javaClass.canonicalName}")
+            with(crashEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
@@ -497,18 +539,20 @@ internal class DatadogExceptionHandlerTest {
         argumentCaptor<Any> {
             verify(mockRumFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue).isInstanceOf(Map::class.java)
+            assertThat(lastValue).isInstanceOf(JvmCrash.Rum::class.java)
 
-            @Suppress("UNCHECKED_CAST")
-            val crashEvent = lastValue as Map<String, Any?>
+            val crashEvent = lastValue as JvmCrash.Rum
 
-            assertThat(crashEvent).isEqualTo(
-                mapOf(
-                    "type" to "jvm_crash",
-                    "throwable" to throwable,
-                    "message" to "Application crash detected: ${throwable.javaClass.simpleName}"
-                )
-            )
+            assertThat(crashEvent.throwable).isSameAs(throwable)
+            assertThat(crashEvent.message)
+                .isEqualTo("Application crash detected: ${throwable.javaClass.simpleName}")
+            with(crashEvent.threads) {
+                assertThat(this).isNotEmpty
+                assertThat(filter { it.crashed }).hasSize(1)
+                val crashedThread = first { it.crashed }
+                assertThat(crashedThread.name).isEqualTo(currentThread.name)
+                assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+            }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }

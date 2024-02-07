@@ -166,6 +166,7 @@ datadog:
       # region Java Concurrency
       - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
       - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
+      - "java.lang.Thread.getAllStackTraces():java.lang.SecurityException"
       - "java.lang.Thread.sleep(kotlin.Long):java.lang.IllegalArgumentException,java.lang.InterruptedException"
       - "java.lang.Thread.interrupt():java.lang.SecurityException"
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
@@ -578,6 +579,7 @@ datadog:
       # endregion
       # region Java Concurrency
       - "java.lang.Runnable(kotlin.Function0)"
+      - "java.lang.Thread.State.asString()"
       - "java.lang.Thread.UncaughtExceptionHandler.uncaughtException(java.lang.Thread?, kotlin.Throwable?)"
       - "java.lang.Thread.currentThread()"
       - "java.lang.Thread.getDefaultUncaughtExceptionHandler()"
@@ -763,7 +765,9 @@ datadog:
       - "kotlin.Array.firstOrNull(kotlin.Function1)"
       - "kotlin.Array.forEach(kotlin.Function1)"
       - "kotlin.Array.forEachIndexed(kotlin.Function2)"
+      - "kotlin.Array.isNotEmpty()"
       - "kotlin.Array.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
+      - "kotlin.Array.loggableStackTrace()"
       - "kotlin.Array.none(kotlin.Function1)"
       - "kotlin.Array.orEmpty()"
       - "kotlin.Array.sorted()"
@@ -817,6 +821,7 @@ datadog:
       - "kotlin.collections.List.getOrNull(kotlin.Int)"
       - "kotlin.collections.List.groupBy(kotlin.Function1)"
       - "kotlin.collections.List.hashCode()"
+      - "kotlin.collections.List.ifEmpty(kotlin.Function0)"
       - "kotlin.collections.List.isEmpty()"
       - "kotlin.collections.List.isNotEmpty()"
       - "kotlin.collections.List.join(kotlin.ByteArray, kotlin.ByteArray, kotlin.ByteArray, com.datadog.android.api.InternalLogger)"
@@ -912,6 +917,7 @@ datadog:
       - "kotlin.collections.MutableMap.containsKey(kotlin.Long)"
       - "kotlin.collections.MutableMap.containsKey(kotlin.String)"
       - "kotlin.collections.MutableMap.filterKeys(kotlin.Function1)"
+      - "kotlin.collections.MutableMap.filterValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableMap.get(kotlin.String)"
       - "kotlin.collections.MutableMap.isEmpty()"

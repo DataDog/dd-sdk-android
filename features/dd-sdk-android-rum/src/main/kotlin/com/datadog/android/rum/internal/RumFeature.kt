@@ -21,6 +21,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -248,7 +249,10 @@ internal class RumFeature constructor(
     // region FeatureEventReceiver
 
     override fun onReceive(event: Any) {
-        if (event !is Map<*, *>) {
+        if (event is JvmCrash.Rum) {
+            addJvmCrash(event)
+            return
+        } else if (event !is Map<*, *>) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -258,7 +262,6 @@ internal class RumFeature constructor(
         }
 
         when (event["type"]) {
-            JVM_CRASH_BUS_MESSAGE_TYPE -> addJvmCrash(event)
             NDK_CRASH_BUS_MESSAGE_TYPE ->
                 ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
             LOGGER_ERROR_BUS_MESSAGE_TYPE -> addLoggerError(event)
@@ -402,23 +405,12 @@ internal class RumFeature constructor(
         )
     }
 
-    private fun addJvmCrash(crashEvent: Map<*, *>) {
-        val throwable = crashEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
-        val message = crashEvent[EVENT_MESSAGE_PROPERTY] as? String
-
-        if (throwable == null || message == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS }
-            )
-            return
-        }
-
+    private fun addJvmCrash(crashEvent: JvmCrash.Rum) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addCrash(
-            message,
+            crashEvent.message,
             RumErrorSource.SOURCE,
-            throwable
+            crashEvent.throwable,
+            crashEvent.threads
         )
     }
 

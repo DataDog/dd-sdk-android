@@ -10,6 +10,8 @@ import android.app.Application
 import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRumMonitor
@@ -777,44 +779,18 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
-    fun `𝕄 log dev warning 𝕎 onReceive() { JVM crash event + missing mandatory fields }`(
-        forge: Forge
-    ) {
-        // Given
-        val event = mutableMapOf(
-            "type" to "jvm_crash",
-            "message" to forge.anAlphabeticalString(),
-            "throwable" to forge.aThrowable()
-        )
-        event.remove(
-            forge.anElementFrom(event.keys.filterNot { it == "type" })
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
-        )
-
-        verifyNoInteractions(mockRumMonitor)
-    }
-
-    @Test
     fun `𝕄 add crash 𝕎 onReceive() { JVM crash event }`(
+        @Forgery fakeThreads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val fakeThrowable = forge.aThrowable()
         val fakeMessage = forge.anAlphabeticalString()
-        val event = mutableMapOf(
-            "type" to "jvm_crash",
-            "message" to fakeMessage,
-            "throwable" to fakeThrowable
+        val event = JvmCrash.Rum(
+            message = fakeMessage,
+            throwable = fakeThrowable,
+            threads = fakeThreads
         )
 
         // When
@@ -824,7 +800,8 @@ internal class RumFeatureTest {
         verify(mockRumMonitor).addCrash(
             fakeMessage,
             RumErrorSource.SOURCE,
-            fakeThrowable
+            fakeThrowable,
+            fakeThreads
         )
         verifyNoInteractions(mockInternalLogger)
     }

@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.submitSafe
@@ -320,7 +321,8 @@ internal class DatadogRumMonitor(
                 false,
                 attributes.toMap(),
                 eventTime,
-                errorType
+                errorType,
+                threads = emptyList()
             )
         )
     }
@@ -344,7 +346,8 @@ internal class DatadogRumMonitor(
                 attributes.toMap(),
                 eventTime,
                 errorType,
-                errorSourceType
+                errorSourceType,
+                threads = emptyList()
             )
         )
     }
@@ -424,9 +427,22 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable) {
+    override fun addCrash(
+        message: String,
+        source: RumErrorSource,
+        throwable: Throwable,
+        threads: List<ThreadDump>
+    ) {
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, null, true, emptyMap())
+            RumRawEvent.AddError(
+                message,
+                source,
+                throwable,
+                stacktrace = null,
+                isFatal = true,
+                threads = threads,
+                attributes = emptyMap()
+            )
         )
     }
 

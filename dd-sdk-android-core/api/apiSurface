@@ -196,6 +196,16 @@ class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstrai
   override fun validateTags(List<String>): List<String>
   override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+sealed class com.datadog.android.core.feature.event.JvmCrash
+  abstract val throwable: Throwable
+  abstract val message: String
+  abstract val threads: List<ThreadDump>
+  data class Logs : JvmCrash
+    constructor(String, Throwable, Long, String, String, List<ThreadDump>)
+  data class Rum : JvmCrash
+    constructor(Throwable, String, List<ThreadDump>)
+data class com.datadog.android.core.feature.event.ThreadDump
+  constructor(String, String, String, Boolean)
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
   constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
   override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
