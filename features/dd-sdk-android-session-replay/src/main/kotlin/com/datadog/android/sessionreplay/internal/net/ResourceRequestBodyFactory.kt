@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.domain
+package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
-import com.datadog.android.sessionreplay.internal.recorder.base64.ResourceEvent
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -27,17 +26,17 @@ internal class ResourceRequestBodyFactory(
         resources: List<RawBatchEvent>
     ): RequestBody {
         val deserializedResources: List<ResourceEvent> = resources.mapNotNull {
-            val deserializedObject = MiscUtils.safeDeserializeToJsonObject(internalLogger, it.metadata)
+            val resourceMetadata = MiscUtils.safeDeserializeToJsonObject(internalLogger, it.metadata)
 
-            if (deserializedObject != null) {
+            if (resourceMetadata != null) {
                 val applicationId = MiscUtils.safeGetStringFromJsonObject(
                     internalLogger,
-                    deserializedObject,
+                    resourceMetadata,
                     APPLICATION_ID_KEY
                 )
                 val filename = MiscUtils.safeGetStringFromJsonObject(
                     internalLogger,
-                    deserializedObject,
+                    resourceMetadata,
                     FILENAME_KEY
                 )
 
@@ -86,17 +85,11 @@ internal class ResourceRequestBodyFactory(
                 { MULTIPLE_APPLICATION_ID_ERROR }
             )
 
-            var maxSize = 0
-            val groupedByApplicationId = resources.groupBy {
-                it.applicationId
-            }
-
-            groupedByApplicationId.forEach {
-                if (it.value.size > maxSize) {
-                    maxSize = it.value.size
-                    selectedApplicationId = it.key
-                }
-            }
+            @Suppress("UnsafeThirdPartyFunctionCall") // list is not empty
+            selectedApplicationId = resources
+                .groupBy { it.applicationId }
+                .maxBy { it.value.size }
+                .key
         }
 
         return selectedApplicationId

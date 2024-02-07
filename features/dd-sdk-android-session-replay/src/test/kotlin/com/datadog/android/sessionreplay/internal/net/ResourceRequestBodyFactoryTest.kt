@@ -4,22 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.domain
+package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.APPLICATION_ID_KEY
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.CONTENT_TYPE_IMAGE
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.FILENAME_BLOB
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.FILENAME_KEY
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.MULTIPLE_APPLICATION_ID_ERROR
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.NAME_IMAGE
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.NAME_RESOURCE
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.NO_RESOURCES_TO_SEND_ERROR
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.TYPE_KEY
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.APPLICATION_ID_KEY
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.CONTENT_TYPE_IMAGE
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.FILENAME_BLOB
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.FILENAME_KEY
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.MULTIPLE_APPLICATION_ID_ERROR
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_IMAGE
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_RESOURCE
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NO_RESOURCES_TO_SEND_ERROR
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_KEY
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge

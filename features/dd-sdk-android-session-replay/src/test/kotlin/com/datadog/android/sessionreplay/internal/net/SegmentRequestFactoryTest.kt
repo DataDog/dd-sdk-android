@@ -4,14 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.domain
+package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
-import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge

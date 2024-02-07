@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.domain
+package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
@@ -17,10 +17,9 @@ import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN
 import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN_VERSION
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestFactory.Companion.APPLICATION_ID
-import com.datadog.android.sessionreplay.internal.domain.ResourceRequestFactory.Companion.UPLOAD_DESCRIPTION
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory.Companion.APPLICATION_ID
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory.Companion.UPLOAD_DESCRIPTION
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -59,9 +58,6 @@ internal class ResourceRequestFactoryTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Forgery
-    lateinit var fakeRawBatchEvent: RawBatchEvent
-
     private lateinit var fakeMediaType: MediaType
 
     @Mock
@@ -81,7 +77,10 @@ internal class ResourceRequestFactoryTest {
         val fakeFeaturesContext = mapOf(Feature.RUM_FEATURE_NAME to fakeRumFeature)
         whenever(fakeDatadogContext.featuresContext).thenReturn(fakeFeaturesContext)
 
-        fakeRawBatchEvents = listOf(fakeRawBatchEvent)
+        fakeRawBatchEvents = forge.aList { forge.getForgery() }
+        whenever(mockResourceRequestBodyFactory.create(fakeRawBatchEvents))
+            .thenReturn(mockRequestBody)
+
         fakeMediaType = forge.anElementFrom(
             listOf(
                 MultipartBody.FORM,
@@ -91,9 +90,6 @@ internal class ResourceRequestFactoryTest {
             )
         )
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
-
-        whenever(mockResourceRequestBodyFactory.create(listOf(fakeRawBatchEvent)))
-            .thenReturn(mockRequestBody)
 
         testedRequestFactory = ResourceRequestFactory(
             customEndpointUrl = null,

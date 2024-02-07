@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.internal.recorder.base64.ResourceEvent
+import com.datadog.android.sessionreplay.internal.net.ResourceEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID
@@ -16,7 +16,7 @@ internal class ResourceEventForgeryFactory : ForgeryFactory<ResourceEvent> {
         return ResourceEvent(
             applicationId = forge.getForgery<UUID>().toString(),
             identifier = forge.getForgery<UUID>().toString(),
-            resourceData = forge.getForgery<UUID>().toString().toByteArray()
+            resourceData = forge.aString().toByteArray()
         )
     }
 }
