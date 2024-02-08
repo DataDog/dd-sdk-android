@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.RumContext
@@ -539,6 +540,34 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                     " but instead was: ${actual.dd.configuration?.sessionSampleRate}"
             )
             .isEqualTo(sampleRate)
+        return this
+    }
+
+    fun hasThreads(threads: List<ThreadDump>): ErrorEventAssert {
+        val expected = threads.map {
+            ErrorEvent.Thread(
+                name = it.name,
+                crashed = it.crashed,
+                state = it.state,
+                stack = it.stack
+            )
+        }
+        assertThat(actual.error.threads)
+            .overridingErrorMessage(
+                "Expected RUM event to have error.threads: $expected" +
+                        " but instead was: ${actual.error.threads}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNoThreads(): ErrorEventAssert {
+        assertThat(actual.error.threads)
+            .overridingErrorMessage(
+                "Expected RUM event to not have error.threads," +
+                        " but instead was: ${actual.error.threads}"
+            )
+            .isNull()
         return this
     }
 

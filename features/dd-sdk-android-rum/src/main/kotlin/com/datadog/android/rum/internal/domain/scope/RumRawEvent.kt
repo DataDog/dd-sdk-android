@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
@@ -106,7 +107,8 @@ internal sealed class RumRawEvent {
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time(),
         val type: String? = null,
-        val sourceType: RumErrorSourceType = RumErrorSourceType.ANDROID
+        val sourceType: RumErrorSourceType = RumErrorSourceType.ANDROID,
+        val threads: List<ThreadDump>
     ) : RumRawEvent()
 
     internal data class ResourceSent(

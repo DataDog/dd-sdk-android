@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -4340,8 +4341,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4359,6 +4361,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4411,8 +4414,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -4435,6 +4439,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4485,8 +4490,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4503,6 +4509,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4555,8 +4562,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4573,6 +4581,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4627,8 +4636,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4645,6 +4655,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4692,10 +4703,11 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
-            null,
+            throwable = null,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -4710,6 +4722,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4744,9 +4757,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributes,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -4765,6 +4779,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4817,10 +4832,11 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
-            null,
-            null,
-            false,
-            attributes,
+            throwable = null,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -4838,6 +4854,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4882,6 +4899,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery sourceType: RumErrorSourceType,
+        @Forgery threads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -4890,10 +4908,11 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
-            null,
-            null,
-            true,
-            attributes,
+            throwable = null,
+            stacktrace = null,
+            isFatal = true,
+            threads = threads,
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -4910,6 +4929,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(true)
+                    hasThreads(threads)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5013,9 +5033,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            emptyMap(),
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap(),
             sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
@@ -5036,6 +5057,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5081,6 +5103,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
+        @Forgery threads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -5090,9 +5113,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            attributes,
+            stacktrace = null,
+            isFatal = true,
+            threads = threads,
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -5110,6 +5134,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
+                    hasThreads(threads)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5216,9 +5241,11 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributesWithCrash,
+            stacktrace = null,
+            isFatal = false,
+            // empty list, because _dd.error.is_crash is coming from Cross Platform, this not a native crash
+            threads = emptyList(),
+            attributes = attributesWithCrash,
             sourceType = sourceType
         )
 
@@ -5227,9 +5254,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            attributes,
+            stacktrace = null,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -5249,6 +5277,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5352,9 +5381,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributesWithCrash,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributesWithCrash,
             sourceType = sourceType
         )
 
@@ -5372,6 +5402,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5426,9 +5457,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributes,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
             type = errorType,
             sourceType = sourceType
         )
@@ -5448,6 +5480,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5493,6 +5526,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
+        @Forgery threads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -5501,9 +5535,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            emptyMap(),
+            stacktrace = null,
+            isFatal = true,
+            threads = threads,
+            attributes = emptyMap(),
             sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
@@ -5523,6 +5558,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
+                    hasThreads(threads)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5623,7 +5659,15 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, null, fatal, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace = null,
+            isFatal = fatal,
+            threads = emptyList(),
+            attributes = attributes
+        )
         testedScope.stopped = true
 
         // When
@@ -5645,7 +5689,15 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, fatal, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = null,
+            stacktrace,
+            fatal,
+            threads = emptyList(),
+            attributes = attributes
+        )
         testedScope.stopped = true
 
         // When
@@ -5664,7 +5716,15 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingErrorCount = 0
-        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = null,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
+        )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -5680,7 +5740,15 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingErrorCount = 0
-        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = null,
+            stacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = emptyMap()
+        )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -7324,10 +7392,11 @@ internal class RumViewScopeTest {
             RumRawEvent.AddError(
                 forge.anAlphabeticalString(),
                 forge.aValueFrom(RumErrorSource::class.java),
-                null,
-                null,
-                false,
-                mapOf()
+                throwable = null,
+                stacktrace = null,
+                isFatal = false,
+                threads = emptyList(),
+                attributes = emptyMap()
             ),
             mockWriter
         )
@@ -7387,8 +7456,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -7415,8 +7485,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
 
@@ -7444,8 +7515,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
@@ -7475,8 +7547,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            true,
-            attributes
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -7503,8 +7576,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            true,
-            attributes
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
 
@@ -7532,8 +7606,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            true,
-            attributes
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())

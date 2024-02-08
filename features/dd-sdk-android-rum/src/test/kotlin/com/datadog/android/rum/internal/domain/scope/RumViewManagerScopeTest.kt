@@ -454,6 +454,7 @@ internal class RumViewManagerScopeTest {
             stacktrace = null,
             throwable = ANRException(Thread.currentThread()),
             isFatal = false,
+            threads = emptyList(),
             attributes = emptyMap()
         )
 

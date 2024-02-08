@@ -19,6 +19,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Logs feature class, which needs to be registered with Datadog SDK instance.
  */
-internal class LogsFeature constructor(
+internal class LogsFeature(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val eventMapper: EventMapper<LogEvent>
@@ -83,7 +84,10 @@ internal class LogsFeature constructor(
 
     @AnyThread
     override fun onReceive(event: Any) {
-        if (event !is Map<*, *>) {
+        if (event is JvmCrash.Logs) {
+            sendJvmCrashLog(event)
+            return
+        } else if (event !is Map<*, *>) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -92,9 +96,7 @@ internal class LogsFeature constructor(
             return
         }
 
-        if (event[TYPE_EVENT_KEY] == "jvm_crash") {
-            sendJvmCrashLog(event)
-        } else if (event[TYPE_EVENT_KEY] == "ndk_crash") {
+        if (event[TYPE_EVENT_KEY] == "ndk_crash") {
             sendNdkCrashLog(event)
         } else if (event[TYPE_EVENT_KEY] == "span_log") {
             sendSpanLog(event)
@@ -123,26 +125,7 @@ internal class LogsFeature constructor(
         )
     }
 
-    @Suppress("ComplexMethod")
-    private fun sendJvmCrashLog(data: Map<*, *>) {
-        val threadName = data[THREAD_NAME_EVENT_KEY] as? String
-        val throwable = data[THROWABLE_EVENT_KEY] as? Throwable
-        val timestamp = data[TIMESTAMP_EVENT_KEY] as? Long
-        val message = data[MESSAGE_EVENT_KEY] as? String
-        val loggerName = data[LOGGER_NAME_EVENT_KEY] as? String
-
-        @Suppress("ComplexCondition")
-        if (threadName == null || throwable == null ||
-            timestamp == null || message == null || loggerName == null
-        ) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING }
-            )
-            return
-        }
-
+    private fun sendJvmCrashLog(jvmCrash: JvmCrash.Logs) {
         @Suppress("UnsafeThirdPartyFunctionCall") // argument is good
         val lock = CountDownLatch(1)
 
@@ -152,16 +135,17 @@ internal class LogsFeature constructor(
                     DatadogLogGenerator.CRASH,
                     datadogContext = datadogContext,
                     attachNetworkInfo = true,
-                    loggerName = loggerName,
-                    message = message,
-                    throwable = throwable,
+                    loggerName = jvmCrash.loggerName,
+                    message = jvmCrash.message,
+                    throwable = jvmCrash.throwable,
                     attributes = emptyMap(),
-                    timestamp = timestamp,
+                    timestamp = jvmCrash.timestamp,
                     bundleWithTraces = true,
                     bundleWithRum = true,
                     networkInfo = null,
                     userInfo = null,
-                    threadName = threadName,
+                    threadName = jvmCrash.threadName,
+                    threads = jvmCrash.threads,
                     tags = emptySet()
                 )
 
@@ -277,19 +261,13 @@ internal class LogsFeature constructor(
         private const val LOGGER_NAME_EVENT_KEY = "loggerName"
         private const val ATTRIBUTES_EVENT_KEY = "attributes"
         private const val MESSAGE_EVENT_KEY = "message"
-        private const val THROWABLE_EVENT_KEY = "throwable"
         private const val USER_INFO_EVENT_KEY = "userInfo"
         private const val NETWORK_INFO_EVENT_KEY = "networkInfo"
-        private const val THREAD_NAME_EVENT_KEY = "threadName"
 
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Logs feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Logs feature received an event with unknown value of \"type\" property=%s."
-        internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
-            "Logs feature received a JVM crash event where" +
-                " one or more mandatory (loggerName, throwable, message, timestamp," +
-                " threadName) fields are either missing or have wrong type."
         internal const val NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
             "Logs feature received a NDK crash event where" +
                 " one or more mandatory (loggerName, message, timestamp, attributes)" +
