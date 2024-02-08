@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -14,6 +15,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -23,7 +25,9 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
+import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -66,6 +70,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
+    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -204,6 +209,9 @@ internal class DatadogRumMonitor(
             "PUT" -> RumResourceMethod.PUT
             "DELETE" -> RumResourceMethod.DELETE
             "PATCH" -> RumResourceMethod.PATCH
+            "CONNECT" -> RumResourceMethod.CONNECT
+            "TRACE" -> RumResourceMethod.TRACE
+            "OPTIONS" -> RumResourceMethod.OPTIONS
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -391,6 +399,16 @@ internal class DatadogRumMonitor(
     override fun resetSession() {
         handleEvent(
             RumRawEvent.ResetSession()
+        )
+    }
+
+    override fun start() {
+        val processImportance = DdRumContentProvider.processImportance
+        val isAppInForeground = processImportance ==
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        val processStartTimeNs = appStartTimeProvider.appStartTimeNs
+        handleEvent(
+            RumRawEvent.SdkInit(isAppInForeground, processStartTimeNs)
         )
     }
 

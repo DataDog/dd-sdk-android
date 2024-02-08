@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -30,7 +33,13 @@ internal class SnapshotRecordedDataQueueItemTest {
     @Forgery
     lateinit var fakeSnapshotRecordedDataQueueItem: SnapshotRecordedDataQueueItem
 
-    lateinit var testedItem: SnapshotRecordedDataQueueItem
+    @Forgery
+    lateinit var fakeRecordedQueuedItemContext: RecordedQueuedItemContext
+
+    @Mock
+    lateinit var mockSystemInformation: SystemInformation
+
+    private lateinit var testedItem: SnapshotRecordedDataQueueItem
 
     @BeforeEach
     fun `set up`() {
@@ -38,9 +47,10 @@ internal class SnapshotRecordedDataQueueItemTest {
     }
 
     @Test
-    fun `M return false W isValid() { Snapshot with empty nodes }`() {
+    fun `M return false W isValid() { finished traversal with empty nodes }`() {
         // Given
         testedItem.nodes = emptyList()
+        testedItem.isFinishedTraversal = true
 
         // Then
         assertThat(testedItem.isValid()).isFalse()
@@ -53,12 +63,35 @@ internal class SnapshotRecordedDataQueueItemTest {
     }
 
     @Test
+    fun `M return true W isValid() { fresh node that has not finished traversal }`() {
+        // Given
+        testedItem = SnapshotRecordedDataQueueItem(
+            fakeRecordedQueuedItemContext,
+            mockSystemInformation
+        )
+
+        // Then
+        assertThat(testedItem.isValid()).isTrue()
+    }
+
+    @Test
     fun `M return true W isReady() { Snapshot with no pending images }`() {
         // Given
         testedItem.pendingJobs.set(0)
+        testedItem.isFinishedTraversal = true
 
         // Then
         assertThat(testedItem.isReady()).isTrue()
+    }
+
+    @Test
+    fun `M return false W isReady() { not finished traveral }`() {
+        // Given
+        testedItem.pendingJobs.set(0)
+        testedItem.isFinishedTraversal = false
+
+        // Then
+        assertThat(testedItem.isReady()).isFalse()
     }
 
     @Test

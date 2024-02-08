@@ -418,7 +418,7 @@ internal open class RumViewScope(
                     sourceType = event.sourceType.toSchemaSourceType()
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
-                view = ErrorEvent.View(
+                view = ErrorEvent.ErrorEventView(
                     id = rumContext.viewId.orEmpty(),
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()
@@ -725,6 +725,9 @@ internal open class RumViewScope(
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
+        // make a copy - by the time we iterate over it on another thread, it may already be changed
+        val eventFeatureFlags = featureFlags.toMutableMap()
+        val eventAdditionalAttributes = attributes.toMutableMap()
 
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
@@ -757,8 +760,8 @@ internal open class RumViewScope(
 
             ViewEvent(
                 date = eventTimestamp,
-                featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
-                view = ViewEvent.View(
+                featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
+                view = ViewEvent.ViewEventView(
                     id = currentViewId,
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty(),
@@ -821,7 +824,7 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ViewEvent.Context(additionalProperties = attributes),
+                context = ViewEvent.Context(additionalProperties = eventAdditionalAttributes),
                 dd = ViewEvent.Dd(
                     documentVersion = eventVersion,
                     session = ViewEvent.DdSession(
@@ -917,7 +920,7 @@ internal open class RumViewScope(
                     resource = ActionEvent.Resource(0),
                     loadingTime = event.applicationStartupNanos
                 ),
-                view = ActionEvent.View(
+                view = ActionEvent.ActionEventView(
                     id = rumContext.viewId.orEmpty(),
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()
@@ -1020,7 +1023,7 @@ internal open class RumViewScope(
                     isFrozenFrame = isFrozenFrame
                 ),
                 action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
-                view = LongTaskEvent.View(
+                view = LongTaskEvent.LongTaskEventView(
                     id = rumContext.viewId.orEmpty(),
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()

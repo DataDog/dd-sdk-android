@@ -69,7 +69,7 @@
     "source": {
       "type": "string",
       "description": "The source of this event",
-      "enum": ["android", "ios", "browser", "flutter", "react-native", "roku"],
+      "enum": ["android", "ios", "browser", "flutter", "react-native", "roku", "unity"],
       "readOnly": true
     },
     "view": {
@@ -127,7 +127,7 @@
     "connectivity": {
       "type": "object",
       "description": "Device connectivity properties",
-      "required": ["status", "interfaces"],
+      "required": ["status"],
       "properties": {
         "status": {
           "type": "string",
@@ -142,6 +142,12 @@
             "type": "string",
             "enum": ["bluetooth", "cellular", "ethernet", "wifi", "wimax", "mixed", "other", "unknown", "none"]
           },
+          "readOnly": true
+        },
+        "effective_type": {
+          "type": "string",
+          "description": "Cellular connection type reflecting the measured network performance",
+          "enum": ["slow_2g", "2g", "3g", "4g"],
           "readOnly": true
         },
         "cellular": {

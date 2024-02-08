@@ -420,6 +420,7 @@ internal class RecordedDataQueueHandlerTest {
         // Given
         val item = testedHandler.addSnapshotItem(mockSystemInformation) ?: fail("item is null")
         item.nodes = fakeNodeData
+        item.isFinishedTraversal = true
 
         whenever(mockTimeProvider.getDeviceTimestamp())
             .thenReturn(item.recordedQueuedItemContext.timestamp)
@@ -463,6 +464,10 @@ internal class RecordedDataQueueHandlerTest {
         val item1 = createFakeSnapshotItemWithDelayMs(1)
         val item2 = createFakeSnapshotItemWithDelayMs(2)
         val item3 = createFakeSnapshotItemWithDelayMs(3)
+
+        item1.isFinishedTraversal = true
+        item2.isFinishedTraversal = true
+        item3.isFinishedTraversal = true
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(3)
         val itemTimestamp = item1.recordedQueuedItemContext.timestamp

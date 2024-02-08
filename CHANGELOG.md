@@ -1,3 +1,7 @@
+# 2.5.1 / 2024-01-24
+
+* [BUGFIX] RUM: Prevent crash due to concurrent modification of custom attributes. See [#1838](https://github.com/DataDog/dd-sdk-android/pull/1838)
+
 # 2.5.0 / 2024-01-15
 
 * [FEATURE] Add accessor for current session id. See [#1810](https://github.com/DataDog/dd-sdk-android/pull/1810)

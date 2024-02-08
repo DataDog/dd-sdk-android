@@ -280,7 +280,7 @@ internal class RumViewManagerScope(
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
                     "To track views automatically, try calling the " +
-                    "Configuration.Builder.useViewTrackingStrategy() method.\n" +
+                    "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
                     "You can also track views manually using the RumMonitor.startView() and " +
                     "RumMonitor.stopView() methods."
     }

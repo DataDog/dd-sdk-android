@@ -24,7 +24,7 @@ internal class LongTaskEventForgeryFactory :
                 duration = forge.aPositiveLong(),
                 isFrozenFrame = forge.aNullable { aBool() }
             ),
-            view = LongTaskEvent.View(
+            view = LongTaskEvent.LongTaskEventView(
                 id = forge.getForgery<UUID>().toString(),
                 referrer = forge.aNullable { getForgery<URL>().toString() },
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),

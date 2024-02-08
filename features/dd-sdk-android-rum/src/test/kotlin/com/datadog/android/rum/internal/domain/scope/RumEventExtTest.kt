@@ -269,7 +269,7 @@ internal class RumEventExtTest {
             ResourceEvent.Connectivity(
                 ResourceEvent.Status.CONNECTED,
                 listOf(ResourceEvent.Interface.CELLULAR),
-                ResourceEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+                cellular = ResourceEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
@@ -454,7 +454,7 @@ internal class RumEventExtTest {
             ErrorEvent.Connectivity(
                 ErrorEvent.Status.CONNECTED,
                 listOf(ErrorEvent.Interface.CELLULAR),
-                ErrorEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+                cellular = ErrorEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
@@ -639,7 +639,7 @@ internal class RumEventExtTest {
             LongTaskEvent.Connectivity(
                 LongTaskEvent.Status.CONNECTED,
                 listOf(LongTaskEvent.Interface.CELLULAR),
-                LongTaskEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+                cellular = LongTaskEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
@@ -824,7 +824,7 @@ internal class RumEventExtTest {
             ActionEvent.Connectivity(
                 ActionEvent.Status.CONNECTED,
                 listOf(ActionEvent.Interface.CELLULAR),
-                ActionEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+                cellular = ActionEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
@@ -1009,7 +1009,7 @@ internal class RumEventExtTest {
             ViewEvent.Connectivity(
                 ViewEvent.Status.CONNECTED,
                 listOf(ViewEvent.Interface.CELLULAR),
-                ViewEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+                cellular = ViewEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
