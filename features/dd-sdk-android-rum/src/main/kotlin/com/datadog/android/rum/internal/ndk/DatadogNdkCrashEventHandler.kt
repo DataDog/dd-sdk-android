@@ -94,12 +94,12 @@ internal class DatadogNdkCrashEventHandler(
         val connectivity = viewEvent.connectivity?.let {
             val connectivityStatus =
                 ErrorEvent.Status.valueOf(it.status.name)
-            val connectivityInterfaces = it.interfaces.map { ErrorEvent.Interface.valueOf(it.name) }
+            val connectivityInterfaces = it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(
                 it.cellular?.technology,
                 it.cellular?.carrierName
             )
-            ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular)
+            ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular = cellular)
         }
         val additionalProperties = viewEvent.context?.additionalProperties ?: mutableMapOf()
         val additionalUserProperties = viewEvent.usr?.additionalProperties ?: mutableMapOf()
@@ -122,7 +122,7 @@ internal class DatadogNdkCrashEventHandler(
                     internalLogger
                 )
             },
-            view = ErrorEvent.View(
+            view = ErrorEvent.ErrorEventView(
                 id = viewEvent.view.id,
                 name = viewEvent.view.name,
                 referrer = viewEvent.view.referrer,

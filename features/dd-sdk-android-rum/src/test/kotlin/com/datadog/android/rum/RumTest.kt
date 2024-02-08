@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import android.os.Looper
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -195,6 +196,27 @@ internal class RumTest {
         )
         verify(mockSdkCore, never()).registerFeature(any())
         check(GlobalRumMonitor.get(mockSdkCore) is NoOpRumMonitor)
+    }
+
+    @Test
+    fun `𝕄 register nothing 𝕎 build() { RUM feature already registered }`(
+        @Forgery fakeRumConfiguration: RumConfiguration
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+
+        // When
+        Rum.enable(fakeRumConfiguration, mockSdkCore)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            Rum.RUM_FEATURE_ALREADY_ENABLED
+        )
+        verify(mockSdkCore, never()).registerFeature(any())
     }
 
     companion object {

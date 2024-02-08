@@ -46,7 +46,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 handling = forge.aNullable { getForgery() },
                 handlingStack = forge.aNullable { aThrowable().loggableStackTrace() }
             ),
-            view = ErrorEvent.View(
+            view = ErrorEvent.ErrorEventView(
                 id = forge.getForgery<UUID>().toString(),
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                 referrer = forge.aNullable { getForgery<URL>().toString() },

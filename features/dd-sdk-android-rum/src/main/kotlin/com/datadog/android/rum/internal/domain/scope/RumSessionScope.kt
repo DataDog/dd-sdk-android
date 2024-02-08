@@ -13,6 +13,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.percent
@@ -33,7 +34,7 @@ internal class RumSessionScope(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    internal val sessionListener: RumSessionListener?,
+    private val sessionListener: RumSessionListener?,
     applicationDisplayed: Boolean,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
@@ -118,7 +119,20 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        childScope = childScope?.handleEvent(event, actualWriter)
+        val downStreamEvent = if (event is RumRawEvent.SdkInit) {
+            if (event.isAppInForeground) {
+                createApplicationStartEvent(event)
+            } else {
+                // stop here, we initialized the session, no need to go down
+                null
+            }
+        } else {
+            event
+        }
+
+        if (downStreamEvent != null) {
+            childScope = childScope?.handleEvent(downStreamEvent, actualWriter)
+        }
 
         return if (isSessionComplete()) {
             null
@@ -165,9 +179,10 @@ internal class RumSessionScope(
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
-        val isApplicationStartEvent = event is RumRawEvent.ApplicationStarted
+        val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
+        val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
 
-        if (isInteraction || isApplicationStartEvent) {
+        if (isInteraction || isSdkInitInForeground) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
                     StartReason.USER_APP_LAUNCH
@@ -180,7 +195,7 @@ internal class RumSessionScope(
             }
             lastUserInteractionNs.set(nanoTime)
         } else if (isExpired) {
-            if (backgroundTrackingEnabled && isBackgroundEvent) {
+            if (backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)) {
                 renewSession(nanoTime, StartReason.INACTIVITY_TIMEOUT)
                 lastUserInteractionNs.set(nanoTime)
             } else {
@@ -211,6 +226,26 @@ internal class RumSessionScope(
                 RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId
             )
         )
+    }
+
+    private fun createApplicationStartEvent(
+        sdkInitEvent: RumRawEvent.SdkInit
+    ): RumRawEvent.ApplicationStarted {
+        val processStartTimeNs = sdkInitEvent.appStartTimeNs
+        val eventTime = sdkInitEvent.eventTime
+        // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
+        // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
+        // To do so, we take the offset of those times in the event time, which should be consistent,
+        // then add that to our processStartTime to get the correct value.
+        val timestampNs = (
+                TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
+                ) + processStartTimeNs
+        val applicationLaunchViewTime = Time(
+            timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
+            nanoTime = processStartTimeNs
+        )
+        val startupTime = sdkInitEvent.eventTime.nanoTime - processStartTimeNs
+        return RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
     }
 
     // endregion

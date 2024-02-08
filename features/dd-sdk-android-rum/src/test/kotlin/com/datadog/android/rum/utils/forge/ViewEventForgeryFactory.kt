@@ -19,7 +19,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
     override fun getForgery(forge: Forge): ViewEvent {
         return ViewEvent(
             date = forge.aTimestamp(),
-            view = ViewEvent.View(
+            view = ViewEvent.ViewEventView(
                 id = forge.getForgery<UUID>().toString(),
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                 referrer = forge.aNullable { getForgery<URL>().toString() },
