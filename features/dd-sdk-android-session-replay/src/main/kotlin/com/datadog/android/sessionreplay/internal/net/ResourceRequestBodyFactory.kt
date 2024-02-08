@@ -8,24 +8,78 @@ package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import kotlin.jvm.Throws
+import java.io.IOException
 
 internal class ResourceRequestBodyFactory(
     private val internalLogger: InternalLogger
 ) {
-
-    @Throws(InvalidPayloadFormatException::class)
     internal fun create(
         resources: List<RawBatchEvent>
-    ): RequestBody {
-        val deserializedResources: List<ResourceEvent> = resources.mapNotNull {
+    ): RequestBody? {
+        val deserializedResources: List<ResourceEvent> = deserializeToResourceEvents(resources)
+
+        val applicationId = getApplicationId(deserializedResources) ?: return null
+
+        // type is valid, so cannot throw IllegalArgumentException
+        @SuppressWarnings("UnsafeThirdPartyFunctionCall")
+        val builder = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+
+        addResourcesSection(builder, deserializedResources)
+        addApplicationIdSection(builder, applicationId)
+
+        val result = try {
+            builder.build()
+        } catch (e: IllegalStateException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { EMPTY_REQUEST_BODY_ERROR },
+                throwable = e
+            )
+            null
+        }
+
+        return result
+    }
+
+    private fun getApplicationId(resources: List<ResourceEvent>): String? {
+        if (resources.isEmpty()) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { NO_RESOURCES_TO_SEND_ERROR }
+            )
+            return null
+        }
+
+        val uniqueApplicationIds = resources.groupBy {
+            it.applicationId
+        }
+
+        if (uniqueApplicationIds.size > 1) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
+                { MULTIPLE_APPLICATION_ID_ERROR }
+            )
+        }
+
+        // list is not empty, so cannot throw NoSuchElementException
+        @SuppressWarnings("UnsafeThirdPartyFunctionCall")
+        val selectedApplicationId = resources.last().applicationId
+
+        return selectedApplicationId
+    }
+
+    private fun deserializeToResourceEvents(resources: List<RawBatchEvent>): List<ResourceEvent> {
+        return resources.mapNotNull {
             val resourceMetadata = MiscUtils.safeDeserializeToJsonObject(internalLogger, it.metadata)
 
             if (resourceMetadata != null) {
@@ -53,59 +107,13 @@ internal class ResourceRequestBodyFactory(
                 null
             }
         }
-
-        if (deserializedResources.isEmpty()) {
-            @Suppress("ThrowingInternalException")
-            throw InvalidPayloadFormatException(NO_RESOURCES_TO_SEND_ERROR)
-        }
-
-        val applicationId = getApplicationId(deserializedResources)
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
-
-        addResourcesSection(builder, deserializedResources)
-        addApplicationIdSection(builder, applicationId)
-        @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-        return builder.build()
-    }
-
-    private fun getApplicationId(resources: List<ResourceEvent>): String {
-        val applicationIds = resources.map {
-            it.applicationId
-        }
-
-        var selectedApplicationId = applicationIds[0]
-
-        if (applicationIds.size > 1) {
-            // more than one applicationId, so take the one from the largest group
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.USER,
-                { MULTIPLE_APPLICATION_ID_ERROR }
-            )
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // list is not empty
-            selectedApplicationId = resources
-                .groupBy { it.applicationId }
-                .maxBy { it.value.size }
-                .key
-        }
-
-        return selectedApplicationId
     }
 
     private fun addResourcesSection(builder: MultipartBody.Builder, resources: List<ResourceEvent>) {
         resources.forEach {
             val filename = it.identifier
             val resourceData = it.resourceData
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-            builder.addFormDataPart(
-                name = NAME_IMAGE,
-                filename,
-                resourceData.toRequestBody(CONTENT_TYPE_IMAGE)
-            )
+            addResourceRequestBody(builder, filename, resourceData)
         }
     }
 
@@ -113,22 +121,72 @@ internal class ResourceRequestBodyFactory(
         val data = JsonObject()
         data.addProperty(APPLICATION_ID_KEY, applicationId)
         data.addProperty(TYPE_KEY, TYPE_RESOURCE)
-        @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-        val applicationIdSection = data.toString().toRequestBody(CONTENT_TYPE_APPLICATION)
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-        builder.addFormDataPart(
-            name = NAME_RESOURCE,
-            filename = FILENAME_BLOB,
-            applicationIdSection
-        )
+        @Suppress("TooGenericExceptionCaught")
+        val body = try {
+            data.toString().toRequestBody(CONTENT_TYPE_APPLICATION)
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            // we have data, so should not be able to throw this
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
+                throwable = e
+            )
+            null
+        } catch (e: IOException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
+                throwable = e
+            )
+            null
+        }
+
+        if (body != null) {
+            builder.addFormDataPart(
+                name = NAME_RESOURCE,
+                filename = FILENAME_BLOB,
+                body = body
+            )
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun addResourceRequestBody(builder: MultipartBody.Builder, filename: String, resourceData: ByteArray) {
+        val body = try {
+            resourceData.toRequestBody(CONTENT_TYPE_IMAGE)
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            // this should never happen because we aren't specifying an offset
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
+                throwable = e
+            )
+            null
+        } catch (e: IOException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
+                throwable = e
+            )
+            null
+        }
+
+        if (body != null) {
+            builder.addFormDataPart(
+                name = NAME_IMAGE,
+                filename = filename,
+                body = body
+            )
+        }
     }
 
     companion object {
-        @Suppress("UnsafeThirdPartyFunctionCall") // if malformed returns null
         internal val CONTENT_TYPE_IMAGE = "image/png".toMediaTypeOrNull()
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // if malformed returns null
         internal val CONTENT_TYPE_APPLICATION = "application/json".toMediaTypeOrNull()
 
         internal const val APPLICATION_ID_KEY = "application_id"
@@ -143,5 +201,9 @@ internal class ResourceRequestBodyFactory(
             "There were multiple applicationIds associated with the resources"
         internal const val NO_RESOURCES_TO_SEND_ERROR =
                 "No resources to send"
+        private const val ERROR_CREATING_REQUEST_BODY =
+            "Error creating request body"
+        private const val EMPTY_REQUEST_BODY_ERROR =
+            "Unable to add any sections to request body"
     }
 }

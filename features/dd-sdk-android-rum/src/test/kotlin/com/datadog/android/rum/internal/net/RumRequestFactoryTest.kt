@@ -75,19 +75,19 @@ internal class RumRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
-        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
-        assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
-        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        assertThat(request?.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request?.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
+        assertThat(request?.headers?.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
-        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
-        assertThat(request.description).isEqualTo("RUM Request")
-        assertThat(request.body).isEqualTo(
+        assertThat(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID)).isNotEmpty()
+        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
+        assertThat(request?.description).isEqualTo("RUM Request")
+        assertThat(request?.body).isEqualTo(
             batchData.map { it.data }.join(
                 separator = "\n".toByteArray(),
                 internalLogger = InternalLogger.UNBOUND
@@ -115,19 +115,19 @@ internal class RumRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
-        assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
-        assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
-        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        assertThat(request?.url).isEqualTo(expectedUrl(fakeEndpoint))
+        assertThat(request?.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
+        assertThat(request?.headers?.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
-        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
-        assertThat(request.description).isEqualTo("RUM Request")
-        assertThat(request.body).isEqualTo(
+        assertThat(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID)).isNotEmpty()
+        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
+        assertThat(request?.description).isEqualTo("RUM Request")
+        assertThat(request?.body).isEqualTo(
             batchData.map { it.data }.join(
                 separator = "\n".toByteArray(),
                 internalLogger = InternalLogger.UNBOUND

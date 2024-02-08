@@ -13,6 +13,8 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import okhttp3.RequestBody
 import okio.Buffer
+import java.io.EOFException
+import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 
@@ -28,15 +30,15 @@ internal class ResourceRequestFactory(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request {
+    ): Request? {
         val requestBody = resourceRequestBodyFactory
-            .create(batchData)
+            .create(batchData) ?: return null
 
         return resolveRequest(context, requestBody)
     }
 
-    private fun resolveRequest(context: DatadogContext, body: RequestBody): Request {
-        val bodyAsByteArray = extractByteArrayFromBody(body)
+    private fun resolveRequest(context: DatadogContext, body: RequestBody): Request? {
+        val bodyAsByteArray = convertBodyToByteArray(body) ?: return null
         val requestId = UUID.randomUUID().toString()
         val description = UPLOAD_DESCRIPTION
         val headers = resolveHeaders(context, requestId)
@@ -51,12 +53,33 @@ internal class ResourceRequestFactory(
         )
     }
 
-    private fun extractByteArrayFromBody(body: RequestBody): ByteArray {
+    private fun convertBodyToByteArray(body: RequestBody): ByteArray? {
+        var result: ByteArray? = null
         val buffer = Buffer()
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        body.writeTo(buffer)
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        return buffer.readByteArray()
+
+        try {
+            body.writeTo(buffer)
+        } catch (e: IOException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CONVERTING_BODY_TO_BYTEARRAY },
+                throwable = e
+            )
+        }
+
+        try {
+            result = buffer.readByteArray()
+        } catch (e: EOFException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CONVERTING_BODY_TO_BYTEARRAY },
+                throwable = e
+            )
+        }
+
+        return result
     }
 
     private fun resolveHeaders(datadogContext: DatadogContext, requestId: String): Map<String, String> {
@@ -81,5 +104,6 @@ internal class ResourceRequestFactory(
         private const val UPLOAD_URL = "%s/api/v2/%s"
         internal const val APPLICATION_ID = "application_id"
         internal const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
+        internal const val ERROR_CONVERTING_BODY_TO_BYTEARRAY = "Error converting request body to bytearray"
     }
 }

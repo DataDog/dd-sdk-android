@@ -18,8 +18,8 @@ import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
-import com.google.gson.JsonSyntaxException
 
 internal object MiscUtils {
 
@@ -32,9 +32,8 @@ internal object MiscUtils {
 
         val jsonString = String(jsonByteArray)
         return try {
-            @Suppress("UnsafeThirdPartyFunctionCall")
             JsonParser.parseString(jsonString) as? JsonObject
-        } catch (e: JsonSyntaxException) {
+        } catch (e: JsonParseException) {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,

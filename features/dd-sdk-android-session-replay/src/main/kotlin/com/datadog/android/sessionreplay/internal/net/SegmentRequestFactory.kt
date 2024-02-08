@@ -26,7 +26,7 @@ internal class SegmentRequestFactory(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request {
+    ): Request? {
         val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
         if (serializedSegmentPair == null) {
             @Suppress("ThrowingInternalException")

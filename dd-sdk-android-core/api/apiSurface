@@ -116,7 +116,7 @@ interface com.datadog.android.api.feature.StorageBackedFeature : Feature
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 interface com.datadog.android.api.net.RequestFactory
-  fun create(com.datadog.android.api.context.DatadogContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request
+  fun create(com.datadog.android.api.context.DatadogContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request?
   companion object 
     const val CONTENT_TYPE_JSON: String
     const val CONTENT_TYPE_TEXT_UTF8: String

@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.APPLICATION_ID_KEY
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.CONTENT_TYPE_IMAGE
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.FILENAME_BLOB
@@ -31,7 +30,6 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -87,8 +85,8 @@ internal class ResourceRequestBodyFactoryTest {
 
         // Then
         assertThat(requestBody).isInstanceOf(MultipartBody::class.java)
-        assertThat(requestBody.contentType()?.type).isEqualTo(MultipartBody.FORM.type)
-        assertThat(requestBody.contentType()?.subtype).isEqualTo(MultipartBody.FORM.subtype)
+        assertThat(requestBody?.contentType()?.type).isEqualTo(MultipartBody.FORM.type)
+        assertThat(requestBody?.contentType()?.subtype).isEqualTo(MultipartBody.FORM.subtype)
 
         val body = requestBody as MultipartBody
         val parts = body.parts
@@ -155,9 +153,13 @@ internal class ResourceRequestBodyFactoryTest {
         )
 
         // When
-        assertThatThrownBy { testedRequestBodyFactory.create(fakeListResources) }
-            .isInstanceOf(InvalidPayloadFormatException::class.java)
-            .hasMessage(NO_RESOURCES_TO_SEND_ERROR)
+        val result = testedRequestBodyFactory.create(fakeListResources)
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            message = NO_RESOURCES_TO_SEND_ERROR
+        )
     }
 
     @Test

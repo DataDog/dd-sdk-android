@@ -230,6 +230,8 @@ datadog:
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.first(kotlin.Function1):java.util.NoSuchElementException"
+      - "kotlin.ByteArray.toRequestBody(okhttp3.MediaType?, kotlin.Int, kotlin.Int):java.lang.ArrayIndexOutOfBoundsException,java.io.IOException"
+      - "kotlin.String.toRequestBody(okhttp3.MediaType?):java.lang.ArrayIndexOutOfBoundsException,java.io.IOException"
       - "kotlin.collections.List.last():java.util.NoSuchElementException"
       - "kotlin.collections.List.first():java.util.NoSuchElementException"
       - "kotlin.collections.List.get(kotlin.Int):java.util.NoSuchElementException"
@@ -247,6 +249,8 @@ datadog:
       - "okhttp3.Call.execute():java.io.IOException"
       - "okhttp3.Dns.lookup(kotlin.String):java.net.UnknownHostException"
       - "okhttp3.HttpUrl.toUrl():java.lang.RuntimeException"
+      - "okhttp3.MultipartBody.Builder.build():java.lang.IllegalStateException"
+      - "okhttp3.MultipartBody.Builder.setType(okhttp3.MediaType):java.lang.IllegalArgumentException"
       - "okhttp3.Response.peekBody(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException,java.lang.IllegalStateException"
       - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
       - "okhttp3.Response.close():java.lang.IllegalStateException"
@@ -265,6 +269,7 @@ datadog:
       - "okio.BufferedSink.close():java.io.IOException"
       - "okio.Okio.buffer(okio.Sink):java.lang.NullPointerException"
       - "okio.Buffer.readString(java.nio.charset.Charset):java.lang.IllegalArgumentException,java.io.IOException"
+      - "okio.Buffer.readByteArray():java.io.EOFException"
       # endregion
       # region org.json
       - "org.json.JSONArray.get(kotlin.Int):org.json.JSONException"
@@ -1095,6 +1100,7 @@ datadog:
       - "kotlin.String.toHttpUrlOrNull()"
       - "kotlin.String.toIntOrNull()"
       - "kotlin.String.toLongOrNull()"
+      - "kotlin.String.toMediaTypeOrNull()"
       - "kotlin.String.toMethod()"
       - "kotlin.String.toOperationType(com.datadog.android.api.InternalLogger)"
       - "kotlin.String.uppercase(java.util.Locale)"
@@ -1156,6 +1162,8 @@ datadog:
       - "okhttp3.HttpUrl.parse(kotlin.String)"
       - "okhttp3.HttpUrl.url()"
       - "okhttp3.Interceptor.Chain.request()"
+      - "okhttp3.MultipartBody.Builder.constructor(kotlin.String)"
+      - "okhttp3.MultipartBody.Builder.addFormDataPart(kotlin.String, kotlin.String?, okhttp3.RequestBody)"
       - "okhttp3.MultipartBody.Part.body()"
       - "okhttp3.MultipartBody.Part.headers()"
       - "okhttp3.MultipartBody.parts()"

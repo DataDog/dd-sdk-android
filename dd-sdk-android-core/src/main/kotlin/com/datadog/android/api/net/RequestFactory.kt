@@ -25,7 +25,7 @@ fun interface RequestFactory {
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request
+    ): Request?
 
     companion object {
         /**
