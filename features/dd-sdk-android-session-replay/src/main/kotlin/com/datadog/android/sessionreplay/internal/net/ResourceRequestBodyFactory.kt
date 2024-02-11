@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.net
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -78,7 +79,8 @@ internal class ResourceRequestBodyFactory(
         return selectedApplicationId
     }
 
-    private fun deserializeToResourceEvents(resources: List<RawBatchEvent>): List<ResourceEvent> {
+    @VisibleForTesting
+    internal fun deserializeToResourceEvents(resources: List<RawBatchEvent>): List<ResourceEvent> {
         return resources.mapNotNull {
             val resourceMetadata = MiscUtils.safeDeserializeToJsonObject(internalLogger, it.metadata)
 

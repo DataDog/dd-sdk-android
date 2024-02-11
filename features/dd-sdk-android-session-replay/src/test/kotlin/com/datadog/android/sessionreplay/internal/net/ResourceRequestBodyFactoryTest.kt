@@ -38,6 +38,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -72,13 +73,11 @@ internal class ResourceRequestBodyFactoryTest {
     }
 
     @Test
-    fun `M return valid requestBody W create()`() {
+    fun `M return valid requestBody W create()`(forge: Forge) {
         // Given
-        val fakeRawBatchEvent = RawBatchEvent(
-            data = fakeImageRepresentation.toByteArray(),
-            metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
-        )
-        val fakeListResources = listOf(fakeRawBatchEvent)
+        val fakeListResources = forge.aList { generateValidRawBatchEvent(forge) }
+        val deserializedListResources = testedRequestBodyFactory.deserializeToResourceEvents(fakeListResources)
+        val expectedApplicationId = deserializedListResources.last().applicationId
 
         // When
         val requestBody = testedRequestBodyFactory.create(fakeListResources)
@@ -92,7 +91,7 @@ internal class ResourceRequestBodyFactoryTest {
         val parts = body.parts
 
         val applicationIdJson = JsonObject()
-        applicationIdJson.addProperty(APPLICATION_ID_KEY, fakeApplicationId)
+        applicationIdJson.addProperty(APPLICATION_ID_KEY, expectedApplicationId)
         applicationIdJson.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         val applicationIdPart = MultipartBody.Part.createFormData(
@@ -101,11 +100,15 @@ internal class ResourceRequestBodyFactoryTest {
             applicationIdJson.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
         )
 
-        val resourcesPart = MultipartBody.Part.createFormData(
-            NAME_IMAGE,
-            fakeFilename,
-            fakeImageRepresentation.toByteArray().toRequestBody(CONTENT_TYPE_IMAGE)
-        )
+        val listResources = deserializedListResources.map {
+            MultipartBody.Part.createFormData(
+                NAME_IMAGE,
+                it.identifier,
+                it.resourceData.toRequestBody(CONTENT_TYPE_IMAGE)
+            )
+        }
+
+        val expectedList = listResources + applicationIdPart
 
         assertThat(parts)
             .usingElementComparator { first, second ->
@@ -117,9 +120,8 @@ internal class ResourceRequestBodyFactoryTest {
                     -1
                 }
             }
-            .containsExactlyInAnyOrder(
-                resourcesPart,
-                applicationIdPart
+            .containsExactlyElementsOf(
+                expectedList
             )
     }
 
@@ -233,5 +235,15 @@ internal class ResourceRequestBodyFactoryTest {
         val buffer = Buffer()
         writeTo(buffer)
         return buffer.readByteArray()
+    }
+
+    private fun generateValidRawBatchEvent(forge: Forge): RawBatchEvent {
+        val fakeEvent = forge.getForgery<RawBatchEvent>()
+        val fakeMetadata = JsonObject()
+        fakeMetadata.addProperty(APPLICATION_ID_KEY, forge.getForgery<UUID>().toString())
+        fakeMetadata.addProperty(FILENAME_KEY, forge.getForgery<UUID>().toString())
+        return fakeEvent.copy(
+            metadata = fakeMetadata.toString().toByteArray(Charsets.UTF_8)
+        )
     }
 }
