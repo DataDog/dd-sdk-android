@@ -8,13 +8,13 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import android.content.res.Configuration
 import androidx.annotation.WorkerThread
-import com.datadog.android.sessionreplay.internal.RecordWriter
-import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
-    private val resourcesFeature: ResourcesFeature,
+    private val resourcesWriter: ResourcesWriter,
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
     private val nodeFlattener: NodeFlattener = NodeFlattener()
@@ -42,7 +42,7 @@ internal class RecordedDataProcessor(
             filename = item.identifier
         )
 
-        resourcesFeature.dataWriter.write(enrichedResource)
+        resourcesWriter.write(enrichedResource)
     }
 
     @WorkerThread

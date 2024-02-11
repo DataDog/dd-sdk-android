@@ -8,17 +8,17 @@ package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.sessionreplay.internal.ResourceWriter
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
+import com.datadog.android.sessionreplay.internal.processor.asJsonByteArray
 
-internal class SessionReplayResourceWriter(
+internal class SessionReplayResourcesWriter(
     private val sdkCore: FeatureSdkCore
-) : ResourceWriter {
+) : ResourcesWriter {
     override fun write(enrichedResource: EnrichedResource) {
         sdkCore.getFeature(SESSION_REPLAY_RESOURCES_FEATURE_NAME)?.withWriteContext() { _, eventBatchWriter ->
             synchronized(this) {
-                val serializedMetadata = enrichedResource.metadata.toString().toByteArray(Charsets.UTF_8)
+                val serializedMetadata = enrichedResource.asJsonByteArray()
                 @Suppress("ThreadSafety") // called from the worker thread
                 eventBatchWriter.write(
                     event = RawBatchEvent(

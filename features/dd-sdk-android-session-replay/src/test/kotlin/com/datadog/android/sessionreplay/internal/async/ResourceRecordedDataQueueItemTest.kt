@@ -11,7 +11,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -26,20 +25,12 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ResourceRecordedDataQueueItemTest {
-    @Forgery
-    private lateinit var fakeResourceRecordedDataQueueItem: ResourceRecordedDataQueueItem
-
-    private lateinit var testedRecordedDataQueueItem: ResourceRecordedDataQueueItem
-
-    @BeforeEach
-    fun setup() {
-        testedRecordedDataQueueItem = fakeResourceRecordedDataQueueItem
-    }
-
     @Test
-    fun `M return false W isValid() { no resource data }`() {
+    fun `M return false W isValid() { no resource data }`(
+        @Forgery fakeResourceRecordedDataQueueItem: ResourceRecordedDataQueueItem
+    ) {
         // Given
-        testedRecordedDataQueueItem = ResourceRecordedDataQueueItem(
+        val testedRecordedDataQueueItem = ResourceRecordedDataQueueItem(
             recordedQueuedItemContext = fakeResourceRecordedDataQueueItem.recordedQueuedItemContext,
             applicationId = fakeResourceRecordedDataQueueItem.applicationId,
             identifier = fakeResourceRecordedDataQueueItem.identifier,
@@ -51,13 +42,17 @@ internal class ResourceRecordedDataQueueItemTest {
     }
 
     @Test
-    fun `M return true W isValid() { has resource data }`() {
+    fun `M return true W isValid() { has resource data }`(
+        @Forgery testedRecordedDataQueueItem: ResourceRecordedDataQueueItem
+    ) {
         // Then
         assertThat(testedRecordedDataQueueItem.isValid()).isTrue()
     }
 
     @Test
-    fun `M return true W isReady()`() {
+    fun `M return true W isReady()`(
+        @Forgery testedRecordedDataQueueItem: ResourceRecordedDataQueueItem
+    ) {
         // Then
         assertThat(testedRecordedDataQueueItem.isReady()).isTrue()
     }

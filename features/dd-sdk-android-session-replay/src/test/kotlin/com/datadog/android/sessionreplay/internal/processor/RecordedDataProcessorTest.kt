@@ -8,18 +8,19 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import android.content.res.Configuration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.RecordWriter
-import com.datadog.android.sessionreplay.internal.ResourceWriter
 import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -65,7 +66,7 @@ internal class RecordedDataProcessorTest {
     lateinit var mockNodeFlattener: NodeFlattener
 
     @Mock
-    lateinit var mockResourceWriter: ResourceWriter
+    lateinit var mockResourcesWriter: ResourcesWriter
 
     @LongForgery
     var fakeTimestamp: Long = 0L
@@ -106,7 +107,7 @@ internal class RecordedDataProcessorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockResourcesFeature.dataWriter).thenReturn(mockResourceWriter)
+        whenever(mockResourcesFeature.dataWriter).thenReturn(mockResourcesWriter)
 
         initialRecordedQueuedItemContext = RecordedQueuedItemContext(
             fakeTimestamp,
@@ -148,7 +149,7 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.getForgery())
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedProcessor = RecordedDataProcessor(
-            resourcesFeature = mockResourcesFeature,
+            resourcesWriter = mockResourcesWriter,
             writer = mockWriter,
             mutationResolver = mockMutationResolver,
             nodeFlattener = mockNodeFlattener
@@ -1223,12 +1224,14 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedResource>()
-        verify(mockResourceWriter, times(1)).write(captor.capture())
+        verify(mockResourcesWriter, times(1)).write(captor.capture())
         val capturedResource = captor.allValues[0]
 
         assertThat(capturedResource.resource).isEqualTo(fakeByteArray)
-        val itemApplicationId = capturedResource.metadata.get(EnrichedResource.APPLICATION_ID_KEY).asString
-        val itemFilename = capturedResource.metadata.get(EnrichedResource.FILENAME_KEY).asString
+        val jsonString = capturedResource.asJsonByteArray().toString(Charsets.UTF_8)
+        val metadataJson = JsonParser.parseString(jsonString).asJsonObject
+        val itemApplicationId = metadataJson.get(EnrichedResource.APPLICATION_ID_KEY).asString
+        val itemFilename = metadataJson.get(EnrichedResource.FILENAME_KEY).asString
         assertThat(itemApplicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(itemFilename).isEqualTo(fakeIdentifier)
     }

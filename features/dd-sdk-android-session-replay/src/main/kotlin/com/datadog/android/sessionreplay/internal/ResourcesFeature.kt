@@ -12,18 +12,20 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory
-import com.datadog.android.sessionreplay.internal.storage.NoOpResourceWriter
-import com.datadog.android.sessionreplay.internal.storage.SessionReplayResourceWriter
+import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
+import com.datadog.android.sessionreplay.internal.storage.SessionReplayResourcesWriter
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Session Replay feature class, which needs to be registered with Datadog SDK instance.
+ * Session Replay Resources feature class, which needs to be registered with Session Replay Feature.
  */
 internal class ResourcesFeature(
-    private val sdkCore: FeatureSdkCore
+    private val sdkCore: FeatureSdkCore,
+    customEndpointUrl: String?
 ) : StorageBackedFeature {
 
-    internal var dataWriter: ResourceWriter = NoOpResourceWriter()
+    internal var dataWriter: ResourcesWriter = NoOpResourcesWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region Feature
@@ -31,12 +33,12 @@ internal class ResourcesFeature(
     override val name: String = SESSION_REPLAY_RESOURCES_FEATURE_NAME
 
     override val requestFactory: RequestFactory = ResourceRequestFactory(
-        customEndpointUrl = null,
+        customEndpointUrl = customEndpointUrl,
         internalLogger = sdkCore.internalLogger
     )
 
     override fun onInitialize(appContext: Context) {
-        dataWriter = createResourceWriter()
+        dataWriter = SessionReplayResourcesWriter(sdkCore)
         initialized.set(true)
     }
 
@@ -44,12 +46,8 @@ internal class ResourcesFeature(
         STORAGE_CONFIGURATION
 
     override fun onStop() {
-        dataWriter = NoOpResourceWriter()
+        dataWriter = NoOpResourcesWriter()
         initialized.set(false)
-    }
-
-    private fun createResourceWriter(): ResourceWriter {
-        return SessionReplayResourceWriter(sdkCore)
     }
 
     // endregion
@@ -57,7 +55,7 @@ internal class ResourcesFeature(
     internal companion object {
 
         /**
-         * Session Replay storage configuration with the following parameters:
+         * Session Replay Resources storage configuration with the following parameters:
          * max item size = 10 MB,
          * max items per batch = 500,
          * max batch size = 10 MB, SR intake batch limit is 10MB
@@ -70,5 +68,6 @@ internal class ResourcesFeature(
             )
 
         internal const val SESSION_REPLAY_RESOURCES_FEATURE_NAME = "session-replay-resources"
+        internal const val RESOURCES_ENDPOINT_ENABLED = false
     }
 }

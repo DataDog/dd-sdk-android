@@ -14,8 +14,6 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
-import com.datadog.android.sessionreplay.internal.RecordWriter
-import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
@@ -31,6 +29,8 @@ import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterce
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 
@@ -55,7 +55,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     constructor(
         appContext: Application,
-        resourcesFeature: ResourcesFeature,
+        resourcesWriter: ResourcesWriter,
         rumContextProvider: RumContextProvider,
         privacy: SessionReplayPrivacy,
         recordWriter: RecordWriter,
@@ -72,7 +72,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         )
 
         val processor = RecordedDataProcessor(
-            resourcesFeature,
+            resourcesWriter,
             recordWriter,
             MutationResolver(internalLogger)
         )

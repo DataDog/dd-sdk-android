@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
+import com.datadog.android.sessionreplay.internal.processor.asJsonByteArray
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -36,8 +37,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class SessionReplayResourceWriterTest {
-    private lateinit var testedWriter: SessionReplayResourceWriter
+internal class SessionReplayResourcesWriterTest {
+    private lateinit var testedWriter: SessionReplayResourcesWriter
 
     @Mock
     lateinit var mockFeatureSdkCore: FeatureSdkCore
@@ -62,7 +63,7 @@ internal class SessionReplayResourceWriterTest {
         whenever(mockFeatureSdkCore.getFeature(ResourcesFeature.SESSION_REPLAY_RESOURCES_FEATURE_NAME))
             .thenReturn(mockResourcesFeature)
 
-        testedWriter = SessionReplayResourceWriter(
+        testedWriter = SessionReplayResourcesWriter(
             sdkCore = mockFeatureSdkCore
         )
     }
@@ -79,11 +80,9 @@ internal class SessionReplayResourceWriterTest {
         testedWriter.write(fakeEnrichedResource)
 
         // Then
+        val metadataBytearray = fakeEnrichedResource.asJsonByteArray()
         verify(mockEventBatchWriter).write(
-        RawBatchEvent(
-            data = fakeEnrichedResource.resource,
-            metadata = fakeEnrichedResource.metadata.toString().toByteArray(Charsets.UTF_8)
-            ),
+            RawBatchEvent(data = fakeEnrichedResource.resource, metadata = metadataBytearray),
             batchMetadata = null
         )
     }

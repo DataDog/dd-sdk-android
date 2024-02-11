@@ -10,7 +10,8 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.storage.NoOpResourceWriter
+import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -50,7 +51,8 @@ internal class ResourcesFeatureTest {
             .thenReturn(mockInternalLogger)
 
         testedFeature = ResourcesFeature(
-            sdkCore = mockSdkCore
+            sdkCore = mockSdkCore,
+            customEndpointUrl = null
         )
     }
 
@@ -60,7 +62,7 @@ internal class ResourcesFeatureTest {
         testedFeature.onStop()
 
         // Then
-        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpResourceWriter::class.java)
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpResourcesWriter::class.java)
         assertThat(testedFeature.initialized).isFalse
     }
 
@@ -70,7 +72,7 @@ internal class ResourcesFeatureTest {
         testedFeature.onInitialize(mockContext)
 
         // Then
-        assertThat(testedFeature.dataWriter).isInstanceOf(ResourceWriter::class.java)
+        assertThat(testedFeature.dataWriter).isInstanceOf(ResourcesWriter::class.java)
         assertThat(testedFeature.initialized).isTrue
     }
 }

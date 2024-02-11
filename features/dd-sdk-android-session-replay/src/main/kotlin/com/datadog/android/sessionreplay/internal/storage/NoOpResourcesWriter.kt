@@ -4,14 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal
+package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 
-internal interface ResourceWriter {
-    /**
-     * Writes the resource to disk.
-     * @param enrichedResource to write
-     */
-    fun write(enrichedResource: EnrichedResource)
+internal class NoOpResourcesWriter : ResourcesWriter {
+    override fun write(enrichedResource: EnrichedResource) {
+        // no-op
+    }
 }

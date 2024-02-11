@@ -17,6 +17,8 @@ import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
+import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.sessionreplay.utils.verifyLog
@@ -104,6 +106,8 @@ internal class SessionReplayFeatureTest {
         // Then
         assertThat(testedFeature.dataWriter)
             .isInstanceOf(SessionReplayRecordWriter::class.java)
+        assertThat(testedFeature.resourcesWriter)
+            .isInstanceOf(ResourcesWriter::class.java)
     }
 
     @Test
@@ -220,6 +224,7 @@ internal class SessionReplayFeatureTest {
         testedFeature.onStop()
 
         // Then
+        assertThat(testedFeature.resourcesWriter).isInstanceOf(NoOpResourcesWriter::class.java)
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpRecordWriter::class.java)
         assertThat(testedFeature.sessionReplayRecorder).isInstanceOf(NoOpRecorder::class.java)
         assertThat(testedFeature.initialized.get()).isFalse

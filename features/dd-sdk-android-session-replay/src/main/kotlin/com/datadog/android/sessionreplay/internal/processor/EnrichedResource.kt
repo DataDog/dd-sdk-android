@@ -11,13 +11,8 @@ import com.google.gson.JsonObject
 internal data class EnrichedResource(
     internal val resource: ByteArray,
     internal val applicationId: String,
-    internal val filename: String,
-    internal val metadata: JsonObject = JsonObject().apply {
-        this.addProperty(APPLICATION_ID_KEY, applicationId)
-        this.addProperty(FILENAME_KEY, filename)
-    }
+    internal val filename: String
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -40,4 +35,13 @@ internal data class EnrichedResource(
         internal const val APPLICATION_ID_KEY = "application_id"
         internal const val FILENAME_KEY = "filename"
     }
+}
+
+internal fun EnrichedResource.asJsonByteArray(): ByteArray {
+    val applicationId = this.applicationId
+    val filename = this.filename
+    val jsonObject = JsonObject()
+    jsonObject.addProperty(EnrichedResource.APPLICATION_ID_KEY, applicationId)
+    jsonObject.addProperty(EnrichedResource.FILENAME_KEY, filename)
+    return jsonObject.toString().toByteArray(Charsets.UTF_8)
 }
