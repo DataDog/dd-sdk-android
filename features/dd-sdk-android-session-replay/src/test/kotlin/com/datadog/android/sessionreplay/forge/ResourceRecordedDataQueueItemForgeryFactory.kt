@@ -17,7 +17,7 @@ internal class ResourceRecordedDataQueueItemForgeryFactory : ForgeryFactory<Reso
             recordedQueuedItemContext = forge.getForgery(),
             applicationId = forge.getForgery<UUID>().toString(),
             identifier = forge.getForgery<UUID>().toString(),
-            resourceData = forge.getForgery<UUID>().toString().toByteArray()
+            resourceData = forge.aString().toByteArray()
         )
     }
 }

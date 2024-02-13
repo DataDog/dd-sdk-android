@@ -10,9 +10,11 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.net.URL
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -54,6 +57,21 @@ internal class ResourcesFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = null
         )
+    }
+
+    @Test
+    fun `M use customEndpointUrl W provided`(
+        @Forgery fakeCustomUrl: URL
+    ) {
+        // When
+        testedFeature = ResourcesFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeCustomUrl.host
+        )
+
+        // Then
+        val requestFactory = testedFeature.requestFactory as ResourceRequestFactory
+        assertThat(requestFactory.customEndpointUrl).isEqualTo(fakeCustomUrl.host)
     }
 
     @Test

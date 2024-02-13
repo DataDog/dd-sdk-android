@@ -37,7 +37,7 @@ internal data class EnrichedResource(
     }
 }
 
-internal fun EnrichedResource.asJsonByteArray(): ByteArray {
+internal fun EnrichedResource.asBinaryMetadata(): ByteArray {
     val applicationId = this.applicationId
     val filename = this.filename
     val jsonObject = JsonObject()

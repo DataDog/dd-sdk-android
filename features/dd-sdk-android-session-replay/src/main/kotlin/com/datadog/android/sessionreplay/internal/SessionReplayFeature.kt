@@ -80,7 +80,6 @@ internal class SessionReplayFeature(
     private lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
-    internal var resourcesWriter: ResourcesWriter = NoOpResourcesWriter()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
@@ -100,9 +99,14 @@ internal class SessionReplayFeature(
 
         this.appContext = appContext
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
-        if (RESOURCES_ENDPOINT_ENABLED) {
-            registerResourceFeature(sdkCore)
+
+        val resourcesWriter = if (RESOURCES_ENDPOINT_ENABLED) {
+            val resourcesFeature = registerResourceFeature(sdkCore)
+            resourcesFeature.dataWriter
+        } else {
+            NoOpResourcesWriter()
         }
+
         dataWriter = createDataWriter()
         sessionReplayRecorder = sessionReplayRecorderProvider(resourcesWriter, dataWriter, appContext)
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
@@ -131,7 +135,6 @@ internal class SessionReplayFeature(
         stopRecording()
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
-        resourcesWriter = NoOpResourcesWriter()
         dataWriter = NoOpRecordWriter()
         sessionReplayRecorder = NoOpRecorder()
         initialized.set(false)

@@ -14,7 +14,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
-import com.datadog.android.sessionreplay.internal.processor.asJsonByteArray
+import com.datadog.android.sessionreplay.internal.processor.asBinaryMetadata
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -80,7 +80,7 @@ internal class SessionReplayResourcesWriterTest {
         testedWriter.write(fakeEnrichedResource)
 
         // Then
-        val metadataBytearray = fakeEnrichedResource.asJsonByteArray()
+        val metadataBytearray = fakeEnrichedResource.asBinaryMetadata()
         verify(mockEventBatchWriter).write(
             RawBatchEvent(data = fakeEnrichedResource.resource, metadata = metadataBytearray),
             batchMetadata = null
