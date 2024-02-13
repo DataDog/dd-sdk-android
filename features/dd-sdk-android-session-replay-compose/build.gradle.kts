@@ -10,7 +10,6 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -27,31 +26,47 @@ plugins {
     id("com.github.ben-manes.versions")
 
     // Tests
-    id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
     id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
+    id("binary-compatibility-validator")
 }
 
 android {
-    namespace = "com.datadog.android.compose"
+    namespace = "com.datadog.android.sessionreplay.compose"
+
     buildFeatures {
         compose = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
+
+    sourceSets.named("test") {
+        // Required because AGP doesn't support kotlin test fixtures :/
+        java.srcDirs("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
+    }
 }
 
 dependencies {
-    implementation(project(":features:dd-sdk-android-rum"))
+    api(project(":features:dd-sdk-android-session-replay"))
     implementation(libs.kotlin)
-    implementation(libs.androidXComposeRuntime)
+    implementation(libs.gson)
+    implementation(libs.googleMaterial)
+
+    implementation(platform(libs.androidXComposeBom))
+    implementation(libs.bundles.androidXCompose)
+//    implementation("androidx.compose.ui:ui")
+//    implementation("androidx.compose.foundation:foundation")
+//    implementation("androidx.compose.foundation:foundation-android")
+//    implementation("androidx.compose.runtime:runtime")
+//    implementation("androidx.compose.runtime:runtime-android")
+//    implementation("androidx.compose.ui:ui-tooling")
+
     implementation(libs.androidXComposeMaterial)
-    implementation(libs.androidXComposeNavigation)
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -61,29 +76,16 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    unmock(libs.robolectric)
-}
-
-unMock {
-    keep("android.os.BaseBundle")
-    keep("android.os.Bundle")
-    keepStartingWith("android.util")
-    keepStartingWith("com.android.internal.util")
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
-    }
-}
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "A Jetpack Compose integration to use with the Datadog monitoring library" +
-        " for Android applications."
+    "Session Replay Extension Support for Material UI components."
 )
