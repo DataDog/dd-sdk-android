@@ -109,18 +109,19 @@ internal class ResourceRequestFactoryTest {
 
         // Then
         assertThat(request).isInstanceOf(Request::class.java)
-        val requestHeaders = request?.headers
-        val requestBody = request?.body
-        assertThat(requestHeaders?.get(HEADER_API_KEY))
+        requireNotNull(request)
+        val requestHeaders = request.headers
+        val requestBody = request.body
+        assertThat(requestHeaders[HEADER_API_KEY])
             .isEqualTo(fakeDatadogContext.clientToken)
-        assertThat(requestHeaders?.get(HEADER_EVP_ORIGIN))
+        assertThat(requestHeaders[HEADER_EVP_ORIGIN])
             .isEqualTo(fakeDatadogContext.source)
-        assertThat(requestHeaders?.get(HEADER_EVP_ORIGIN_VERSION))
+        assertThat(requestHeaders[HEADER_EVP_ORIGIN_VERSION])
             .isEqualTo(fakeDatadogContext.sdkVersion)
         assertThat(requestBody).isEqualTo(mockRequestBody.toByteArray())
 
-        assertThat(request?.description).isEqualTo(UPLOAD_DESCRIPTION)
-        assertThat(request?.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request.description).isEqualTo(UPLOAD_DESCRIPTION)
+        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
     }
 
     @Test
@@ -142,10 +143,11 @@ internal class ResourceRequestFactoryTest {
         )
 
         // Then
-        assertThat(request?.url).isEqualTo(expectedUrl(fakeEndpoint))
-        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
-        assertThat(request?.description).isEqualTo(UPLOAD_DESCRIPTION)
-        assertThat(request?.body).isEqualTo(mockRequestBody.toByteArray())
+        requireNotNull(request)
+        assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo(UPLOAD_DESCRIPTION)
+        assertThat(request.body).isEqualTo(mockRequestBody.toByteArray())
     }
 
     private fun expectedUrl(endpointUrl: String): String {

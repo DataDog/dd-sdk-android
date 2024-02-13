@@ -40,12 +40,12 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SegmentRequestBodyFactoryTest {
 
-    lateinit var testedRequestBodyFactory: SegmentRequestBodyFactory
+    private lateinit var testedRequestBodyFactory: SegmentRequestBodyFactory
 
     @Mock
     lateinit var mockCompressor: BytesCompressor
 
-    lateinit var fakeCompressedData: ByteArray
+    private lateinit var fakeCompressedData: ByteArray
 
     @Forgery
     lateinit var fakeSegment: MobileSegment
@@ -53,7 +53,7 @@ internal class SegmentRequestBodyFactoryTest {
     @Forgery
     lateinit var fakeSegmentAsJson: JsonObject
 
-    lateinit var fakeSerializedSegmentWithNewLine: String
+    private lateinit var fakeSerializedSegmentWithNewLine: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {

@@ -107,19 +107,20 @@ internal class SegmentRequestFactoryTest {
         )
 
         // Then
-        assertThat(request?.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
-        assertThat(request?.contentType).isEqualTo(fakeMediaType.toString())
-        assertThat(request?.headers?.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        requireNotNull(request)
+        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID)).isNotEmpty
-        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
-        assertThat(request?.description).isEqualTo("Session Replay Segment Upload Request")
-        assertThat(request?.body).isEqualTo(mockRequestBody.toByteArray())
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("Session Replay Segment Upload Request")
+        assertThat(request.body).isEqualTo(mockRequestBody.toByteArray())
     }
 
     @Test
@@ -139,19 +140,20 @@ internal class SegmentRequestFactoryTest {
         )
 
         // Then
-        assertThat(request?.url).isEqualTo(expectedUrl(fakeEndpoint))
-        assertThat(request?.contentType).isEqualTo(fakeMediaType.toString())
-        assertThat(request?.headers?.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        requireNotNull(request)
+        assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
+        assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID)).isNotEmpty
-        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
-        assertThat(request?.description).isEqualTo("Session Replay Segment Upload Request")
-        assertThat(request?.body).isEqualTo(mockRequestBody.toByteArray())
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("Session Replay Segment Upload Request")
+        assertThat(request.body).isEqualTo(mockRequestBody.toByteArray())
     }
 
     @Test

@@ -61,19 +61,20 @@ internal class TracesRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
-        assertThat(request?.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/spans")
-        assertThat(request?.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
-        assertThat(request?.headers?.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        requireNotNull(request)
+        assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/spans")
+        assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID)).isNotEmpty()
-        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
-        assertThat(request?.description).isEqualTo("Traces Request")
-        assertThat(request?.body).isEqualTo(
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("Traces Request")
+        assertThat(request.body).isEqualTo(
             batchData.map { it.data }.join(
                 separator = "\n".toByteArray(),
                 internalLogger = InternalLogger.UNBOUND
@@ -97,19 +98,20 @@ internal class TracesRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
-        assertThat(request?.url).isEqualTo("$fakeEndpoint/api/v2/spans")
-        assertThat(request?.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
-        assertThat(request?.headers?.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        requireNotNull(request)
+        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/spans")
+        assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID)).isNotEmpty()
-        assertThat(request?.id).isEqualTo(request?.headers?.get(RequestFactory.HEADER_REQUEST_ID))
-        assertThat(request?.description).isEqualTo("Traces Request")
-        assertThat(request?.body).isEqualTo(
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("Traces Request")
+        assertThat(request.body).isEqualTo(
             batchData.map { it.data }.join(
                 separator = "\n".toByteArray(),
                 internalLogger = InternalLogger.UNBOUND

@@ -83,9 +83,14 @@ internal class ResourceRequestBodyFactoryTest {
         val requestBody = testedRequestBodyFactory.create(fakeListResources)
 
         // Then
+        requireNotNull(requestBody)
         assertThat(requestBody).isInstanceOf(MultipartBody::class.java)
-        assertThat(requestBody?.contentType()?.type).isEqualTo(MultipartBody.FORM.type)
-        assertThat(requestBody?.contentType()?.subtype).isEqualTo(MultipartBody.FORM.subtype)
+
+        val contentType = requestBody.contentType()
+        requireNotNull(contentType)
+
+        assertThat(contentType.type).isEqualTo(MultipartBody.FORM.type)
+        assertThat(contentType.subtype).isEqualTo(MultipartBody.FORM.subtype)
 
         val body = requestBody as MultipartBody
         val parts = body.parts
