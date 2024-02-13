@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "rum/vital-schema.json",
+  "title": "RumVitalEvent",
+  "type": "object",
+  "description": "Schema of all properties of a Vital event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "$ref": "_view-container-schema.json"
+    },
+    {
+      "required": ["type", "vital"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "RUM event type",
+          "const": "vital",
+          "readOnly": true
+        },
+        "vital": {
+          "type": "object",
+          "description": "Vital properties",
+          "required": ["id", "type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Type of the vital",
+              "enum": ["duration"],
+              "readOnly": true
+            },
+            "id": {
+              "type": "string",
+              "description": "UUID of the vital",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
+            "custom": {
+              "type": "object",
+              "description": "User custom vital. As vital name is used as facet path, it must contain only letters, digits, or the characters - _ . @ $",
+              "additionalProperties": {
+                "type": "number",
+                "minimum": 0,
+                "readOnly": true
+              },
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}
