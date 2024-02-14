@@ -184,7 +184,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(lambda).invoke(captor.capture(), any(), any())
-        if (ResourcesFeature.RESOURCES_ENDPOINT_ENABLED) {
+        if (ResourcesFeature.RESOURCE_ENDPOINT_FEATURE_FLAG) {
             assertThat(captor.firstValue)
                 .isInstanceOf(SessionReplayResourcesWriter::class.java)
         } else {

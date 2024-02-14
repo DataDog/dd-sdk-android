@@ -32,6 +32,7 @@ import org.junit.jupiter.api.fail
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
+import org.mockito.Spy
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -48,6 +49,8 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.Queue
+import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -70,7 +73,7 @@ internal class RecordedDataQueueHandlerTest {
     @Mock
     lateinit var mockRumContextDataHandler: RumContextDataHandler
 
-    lateinit var spyExecutorService: ExecutorService
+    private lateinit var spyExecutorService: ExecutorService
 
     @Mock
     lateinit var mockSystemInformation: SystemInformation
@@ -85,10 +88,19 @@ internal class RecordedDataQueueHandlerTest {
     lateinit var fakeRecordedQueuedItemContext: RecordedQueuedItemContext
 
     @Forgery
+    lateinit var fakeApplicationId: UUID
+
+    @Forgery
+    lateinit var fakeIdentifier: UUID
+
+    @Forgery
     lateinit var fakeSnapshotQueueItem: SnapshotRecordedDataQueueItem
 
     @Forgery
     lateinit var fakeTouchEventItem: TouchEventRecordedDataQueueItem
+
+    @Spy
+    private lateinit var fakeRecordedDataQueue: ConcurrentLinkedQueue<RecordedDataQueueItem>
 
     private lateinit var fakeTouchData: List<MobileSegment.MobileRecord>
 
@@ -99,6 +111,8 @@ internal class RecordedDataQueueHandlerTest {
 
     @BeforeEach
     fun setup(forge: Forge) {
+        fakeRecordedDataQueue = ConcurrentLinkedQueue<RecordedDataQueueItem>()
+
         whenever(mockRumContextDataHandler.createRumContextData())
             .thenReturn(fakeRecordedQueuedItemContext)
 
@@ -121,7 +135,8 @@ internal class RecordedDataQueueHandlerTest {
             rumContextDataHandler = mockRumContextDataHandler,
             timeProvider = mockTimeProvider,
             executorService = spyExecutorService,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            recordedQueue = fakeRecordedDataQueue
         )
     }
 
@@ -613,6 +628,52 @@ internal class RecordedDataQueueHandlerTest {
         verifyNoInteractions(mockProcessor)
         assertThat(testedHandler.recordedDataQueue).isEmpty()
     }
+
+    // region resourceItem
+
+    @Test
+    fun `M do nothing W addResourceItem { cannot get RUM context }`() {
+        // Given
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(null)
+
+        // When
+        val result = testedHandler.addResourceItem(
+            fakeIdentifier.toString(),
+            fakeApplicationId.toString(),
+            ByteArray(0)
+        )
+
+        // Then
+        assertThat(fakeRecordedDataQueue).isEmpty()
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M insert resource item W addResourceItem`() {
+        // Given
+        val fakeResourceData = ByteArray(0)
+
+        // When
+        val result = testedHandler.addResourceItem(
+            fakeIdentifier.toString(),
+            fakeApplicationId.toString(),
+            fakeResourceData
+        ) as ResourceRecordedDataQueueItem
+
+        // Then
+        assertThat(fakeRecordedDataQueue.size).isEqualTo(1)
+        assertThat(result.recordedQueuedItemContext)
+            .isEqualTo(fakeRecordedQueuedItemContext)
+        assertThat(result.applicationId)
+            .isEqualTo(fakeApplicationId.toString())
+        assertThat(result.identifier)
+            .isEqualTo(fakeIdentifier.toString())
+        assertThat(result.resourceData)
+            .isEqualTo(fakeResourceData)
+    }
+
+    // endregion
 
     private fun createFakeSnapshotItemWithDelayMs(delay: Int): SnapshotRecordedDataQueueItem {
         val newRumContext = RecordedQueuedItemContext(

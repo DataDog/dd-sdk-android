@@ -20,6 +20,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
@@ -46,16 +47,18 @@ internal class DrawableUtils(
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
-        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES,
+        requestedSizeInBytes: Int? = null,
         config: Config = Config.ARGB_8888,
         bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
     ) {
+        val bitmapSizeLimit = getBitmapSizeLimit(requestedSizeInBytes)
+
         Runnable {
             @Suppress("ThreadSafety") // this runs inside an executor
             createScaledBitmap(
                 drawableWidth,
                 drawableHeight,
-                requestedSizeInBytes,
+                bitmapSizeLimit,
                 displayMetrics,
                 config,
                 resizeBitmapCallback = object :
@@ -88,12 +91,14 @@ internal class DrawableUtils(
     @WorkerThread
     internal fun createScaledBitmap(
         bitmap: Bitmap,
-        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES
+        requestedSizeInBytes: Int? = null
     ): Bitmap? {
+        val bitmapSizeLimit = getBitmapSizeLimit(requestedSizeInBytes)
+
         val (width, height) = getScaledWidthAndHeight(
             bitmap.width,
             bitmap.height,
-            requestedSizeInBytes
+            bitmapSizeLimit
         )
         return bitmapWrapper.createScaledBitmap(bitmap, width, height, false)
     }
@@ -101,6 +106,18 @@ internal class DrawableUtils(
     internal interface ResizeBitmapCallback {
         fun onSuccess(bitmap: Bitmap)
         fun onFailure()
+    }
+
+    private fun getBitmapSizeLimit(requestedSizeInBytes: Int?): Int {
+        if (requestedSizeInBytes != null) {
+            return requestedSizeInBytes
+        }
+
+        return if (ResourcesFeature.RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT
+        } else {
+            MAX_BITMAP_SIZE_IN_BYTES_WITH_BASE64
+        }
     }
 
     @MainThread
@@ -185,7 +202,10 @@ internal class DrawableUtils(
             ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
 
     internal companion object {
-        @VisibleForTesting internal const val MAX_BITMAP_SIZE_IN_BYTES = 15000 // 15kb
+        internal const val MAX_BITMAP_SIZE_IN_BYTES_WITH_BASE64 = 15000 // 15kb
+
+        @VisibleForTesting
+        internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
     }
 }

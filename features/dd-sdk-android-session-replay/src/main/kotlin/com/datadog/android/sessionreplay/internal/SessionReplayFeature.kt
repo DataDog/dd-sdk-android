@@ -22,7 +22,7 @@ import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SessionReplayRecorder
-import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCES_ENDPOINT_ENABLED
+import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
@@ -100,7 +100,7 @@ internal class SessionReplayFeature(
         this.appContext = appContext
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
 
-        val resourcesWriter = if (RESOURCES_ENDPOINT_ENABLED) {
+        val resourcesWriter = if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
             val resourcesFeature = registerResourceFeature(sdkCore)
             resourcesFeature.dataWriter
         } else {

@@ -17,10 +17,14 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
+import com.datadog.android.sessionreplay.internal.async.NoopDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.util.Collections
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
@@ -35,10 +39,17 @@ internal class Base64Serializer private constructor(
     private val base64LRUCache: Cache<Drawable, CacheData>,
     private val bitmapPool: BitmapPool?,
     private val logger: InternalLogger,
-    private val md5HashGenerator: MD5HashGenerator
+    private val md5HashGenerator: MD5HashGenerator,
+    private val recordedDataQueueHandler: DataQueueHandler,
+    private val applicationId: String
 ) {
     private var isBase64CacheRegisteredForCallbacks: Boolean = false
     private var isBitmapPoolRegisteredForCallbacks: Boolean = false
+
+    // resources previously sent in this session -
+    // optimization to avoid sending the same resource multiple times
+    private val previouslySentResources: MutableSet<String> =
+        Collections.synchronizedSet(HashSet<String>())
 
     // region internal
 
@@ -90,6 +101,7 @@ internal class Base64Serializer private constructor(
 
     // region private
 
+    @Suppress("ReturnCount")
     @WorkerThread
     private fun serializeBitmap(
         drawable: Drawable,
@@ -127,13 +139,33 @@ internal class Base64Serializer private constructor(
             return
         }
 
-        val base64String = convertBitmapToBase64(
-            byteArray = byteArray,
-            bitmap = bitmap,
-            shouldCacheBitmap = shouldCacheBitmap
-        ).toByteArray(Charsets.UTF_8)
-        val resourceId = md5HashGenerator.generate(byteArray)?.toByteArray(Charsets.UTF_8)
-        val cacheData = CacheData(base64String, resourceId)
+        val resourceId = md5HashGenerator.generate(byteArray)
+        var base64String = "".toByteArray(Charsets.UTF_8)
+        var cacheData = CacheData(base64String, resourceId?.toByteArray(Charsets.UTF_8))
+
+        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            if (resourceId == null) {
+                // resourceId is mandatory for resource endpoint
+                base64SerializerCallback.onReady()
+                return
+            }
+
+            if (!previouslySentResources.contains(resourceId)) {
+                previouslySentResources.add(resourceId)
+                recordedDataQueueHandler.addResourceItem(
+                    identifier = resourceId,
+                    resourceData = byteArray,
+                    applicationId = applicationId
+                )
+            }
+        } else {
+            base64String = convertBitmapToBase64(
+                byteArray = byteArray,
+                bitmap = bitmap,
+                shouldCacheBitmap = shouldCacheBitmap
+            ).toByteArray(Charsets.UTF_8)
+            cacheData = CacheData(base64String, resourceId?.toByteArray(Charsets.UTF_8))
+        }
 
         if (base64String.isNotEmpty() || resourceId != null) {
             base64LRUCache.put(drawable, cacheData)
@@ -289,12 +321,14 @@ internal class Base64Serializer private constructor(
         wireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
         val base64 = String(cacheData.base64Encoding, Charsets.UTF_8)
+
         val resourceId = cacheData.resourceId?.let {
             String(it, Charsets.UTF_8)
         }
 
         if (resourceId != null) {
             wireframe.resourceId = resourceId
+            wireframe.isEmpty = false
         }
 
         if (base64.isNotEmpty()) {
@@ -320,6 +354,8 @@ internal class Base64Serializer private constructor(
 
     // region builder
     internal class Builder(
+        private var applicationId: String,
+        private var recordedDataQueueHandler: DataQueueHandler = NoopDataQueueHandler(),
         private var logger: InternalLogger = InternalLogger.UNBOUND,
         private var threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
         private var bitmapPool: BitmapPool,
@@ -342,7 +378,9 @@ internal class Base64Serializer private constructor(
                 drawableUtils = drawableUtils,
                 base64Utils = base64Utils,
                 webPImageCompression = webPImageCompression,
-                md5HashGenerator = md5HashGenerator
+                md5HashGenerator = md5HashGenerator,
+                recordedDataQueueHandler = recordedDataQueueHandler,
+                applicationId = applicationId
             )
 
         private companion object {

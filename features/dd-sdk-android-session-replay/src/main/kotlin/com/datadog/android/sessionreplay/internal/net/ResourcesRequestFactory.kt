@@ -18,7 +18,7 @@ import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 
-internal class ResourceRequestFactory(
+internal class ResourcesRequestFactory(
     internal val customEndpointUrl: String?,
     private val internalLogger: InternalLogger,
     private val resourceRequestBodyFactory: ResourceRequestBodyFactory =

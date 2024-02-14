@@ -17,8 +17,8 @@ import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN
 import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN_VERSION
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory.Companion.APPLICATION_ID
-import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory.Companion.UPLOAD_DESCRIPTION
+import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory.Companion.APPLICATION_ID
+import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory.Companion.UPLOAD_DESCRIPTION
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -44,8 +44,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ResourceRequestFactoryTest {
-    private lateinit var testedRequestFactory: ResourceRequestFactory
+internal class ResourcesRequestFactoryTest {
+    private lateinit var testedRequestFactory: ResourcesRequestFactory
 
     @Mock
     lateinit var mockResourceRequestBodyFactory: ResourceRequestBodyFactory
@@ -91,7 +91,7 @@ internal class ResourceRequestFactoryTest {
         )
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
 
-        testedRequestFactory = ResourceRequestFactory(
+        testedRequestFactory = ResourcesRequestFactory(
             customEndpointUrl = null,
             internalLogger = mockInternalLogger,
             resourceRequestBodyFactory = mockResourceRequestBodyFactory
@@ -129,7 +129,7 @@ internal class ResourceRequestFactoryTest {
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String
     ) {
         // Given
-        testedRequestFactory = ResourceRequestFactory(
+        testedRequestFactory = ResourcesRequestFactory(
             customEndpointUrl = fakeEndpoint,
             internalLogger = mockInternalLogger,
             resourceRequestBodyFactory = mockResourceRequestBodyFactory

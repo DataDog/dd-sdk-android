@@ -10,7 +10,7 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory
+import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -70,7 +70,7 @@ internal class ResourcesFeatureTest {
         )
 
         // Then
-        val requestFactory = testedFeature.requestFactory as ResourceRequestFactory
+        val requestFactory = testedFeature.requestFactory as ResourcesRequestFactory
         assertThat(requestFactory.customEndpointUrl).isEqualTo(fakeCustomUrl.host)
     }
 

@@ -19,6 +19,7 @@ import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
@@ -77,8 +78,12 @@ enum class SessionReplayPrivacy {
     MASK_USER_INPUT;
 
     @Suppress("LongMethod")
-    internal fun mappers(internalLogger: InternalLogger): List<MapperTypeWrapper> {
-        val base64Serializer = buildBase64Serializer()
+    internal fun mappers(
+        internalLogger: InternalLogger,
+        applicationId: String,
+        recordedDataQueueHandler: RecordedDataQueueHandler
+    ): List<MapperTypeWrapper> {
+        val base64Serializer = buildBase64Serializer(applicationId, recordedDataQueueHandler)
         val imageWireframeHelper = ImageWireframeHelper(logger = internalLogger, base64Serializer = base64Serializer)
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
@@ -167,11 +172,17 @@ enum class SessionReplayPrivacy {
         return mappersList
     }
 
-    private fun buildBase64Serializer(): Base64Serializer {
+    private fun buildBase64Serializer(
+        applicationId: String,
+        recordedDataQueueHandler:
+        RecordedDataQueueHandler
+    ): Base64Serializer {
         val bitmapPool = BitmapPool()
         val base64LRUCache = Base64LRUCache()
 
         val builder = Base64Serializer.Builder(
+            applicationId = applicationId,
+            recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapPool = bitmapPool,
             base64LRUCache = base64LRUCache
         )
