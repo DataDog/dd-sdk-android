@@ -57,7 +57,8 @@ repositories{
 dependencies {
     api(project(":dd-sdk-android-core"))
     api("io.opentelemetry:opentelemetry-api:1.4.0")
-    implementation("com.datadoghq:dd-java-agent:1.28.0-SNAPSHOT")
+    implementation(project(":opentelemetry-1.4"))
+    implementation(project(":dd-trace-core"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)

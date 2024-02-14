@@ -1315,6 +1315,36 @@ data class com.datadog.android.rum.model.RumPerfMetric
   companion object 
     fun fromJson(kotlin.String): RumPerfMetric
     fun fromJsonObject(com.google.gson.JsonObject): RumPerfMetric
+data class com.datadog.android.rum.model.ViewContainerSchema
+  constructor(Container? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ViewContainerSchema
+    fun fromJsonObject(com.google.gson.JsonObject): ViewContainerSchema
+  data class Container
+    constructor(View, Source)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Container
+      fun fromJsonObject(com.google.gson.JsonObject): Container
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
+  enum Source
+    constructor(kotlin.String)
+    - ANDROID
+    - IOS
+    - BROWSER
+    - FLUTTER
+    - REACT_NATIVE
+    - ROKU
+    - UNITY
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
 data class com.datadog.android.rum.model.ViewEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ViewEventSession, ViewEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, ParentView? = null, Context? = null, Privacy? = null)
   val type: kotlin.String

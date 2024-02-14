@@ -23,23 +23,13 @@ import com.datadog.trace.api.Config
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.context.ScopeListener
 import datadog.trace.api.IdGenerationStrategy
-import datadog.trace.api.experimental.DataStreamsContextCarrier
-import datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import datadog.trace.bootstrap.instrumentation.api.PathwayContext
-import datadog.trace.bootstrap.instrumentation.api.StatsPoint
 import datadog.trace.core.CoreTracer
-import datadog.trace.core.datastreams.DataStreamContextInjector
-import datadog.trace.core.datastreams.DataStreamsMonitoring
-import datadog.trace.core.propagation.HttpCodec
-import datadog.trace.core.propagation.NoneCodec
 import datadog.trace.instrumentation.opentelemetry14.trace.OtelTracer
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
-import java.util.LinkedHashMap
 import java.util.Properties
 import java.util.Random
 
@@ -177,54 +167,6 @@ class AndroidTracer internal constructor(
             val coreTracer = CoreTracer.CoreTracerBuilder()
                     .withProperties(properties())
                     .serviceName(serviceName)
-                    .dataStreamsMonitoring(object : DataStreamsMonitoring {
-                        override fun setConsumeCheckpoint(p0: String?, p1: String?, p2: DataStreamsContextCarrier?) {
-
-                        }
-
-                        override fun setProduceCheckpoint(p0: String?, p1: String?, p2: DataStreamsContextCarrier?) {
-
-                        }
-
-                        override fun trackBacklog(p0: LinkedHashMap<String, String>?, p1: Long) {
-
-                        }
-
-                        override fun setCheckpoint(p0: AgentSpan?, p1: LinkedHashMap<String, String>?, p2: Long, p3: Long) {
-
-                        }
-
-                        override fun newPathwayContext(): PathwayContext {
-                            return AgentTracer.NoopPathwayContext.INSTANCE;
-                        }
-
-                        override fun add(p0: StatsPoint?) {
-                        }
-
-                        override fun shouldSampleSchema(p0: String?): Int {
-                            return 0;
-                        }
-
-                        override fun close() {
-                        }
-
-                        override fun start() {
-                        }
-
-                        override fun extractor(p0: HttpCodec.Extractor?): HttpCodec.Extractor {
-                          return  NoneCodec.EXTRACTOR;
-                        }
-
-                        override fun injector(): DataStreamContextInjector {
-                            return DataStreamContextInjector(this);
-                        }
-
-                        override fun mergePathwayContextIntoSpan(p0: AgentSpan?, p1: DataStreamsContextCarrier?) {
-                        }
-
-                        override fun clear() {
-                        }
-                    })
                     .writer(tracingFeature?.otelDataWriter?: NoOpOtelWriter())
                     .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM",false))
                     .build()

@@ -10,7 +10,6 @@ io.opentracing:opentracing-util:0.32.0                          :   10 Kb
 org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10                :  212 Kb
 org.jetbrains.kotlin:kotlin-stdlib:1.8.10                       : 1598 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
-com:datadoghq:dd-java-agent                                     :   26 Mb
 
-Total transitive dependencies size                              :   29 Mb
+Total transitive dependencies size                              :    2 Mb
 
