@@ -584,6 +584,7 @@ datadog:
       - "java.lang.Thread.getDefaultUncaughtExceptionHandler()"
       - "java.lang.Thread.interrupted()"
       - "java.lang.Thread.setDefaultUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler?)"
+      - "java.util.Collections.synchronizedSet(kotlin.collections.MutableSet?)"
       - "java.util.Queue.isEmpty()"
       - "java.util.Queue.isNotEmpty()"
       - "java.util.Queue.poll()"

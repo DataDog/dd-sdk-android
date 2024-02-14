@@ -1230,7 +1230,7 @@ internal class RecordedDataProcessorTest {
         assertThat(capturedResource.resource).isEqualTo(fakeByteArray)
         val jsonString = capturedResource.asBinaryMetadata().toString(Charsets.UTF_8)
         val metadataJson = JsonParser.parseString(jsonString).asJsonObject
-        val itemApplicationId = metadataJson.get(EnrichedResource.APPLICATION_ID_KEY).asString
+        val itemApplicationId = metadataJson.get(EnrichedResource.APPLICATION_ID_OUTER_KEY).asString
         val itemFilename = metadataJson.get(EnrichedResource.FILENAME_KEY).asString
         assertThat(itemApplicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(itemFilename).isEqualTo(fakeIdentifier)

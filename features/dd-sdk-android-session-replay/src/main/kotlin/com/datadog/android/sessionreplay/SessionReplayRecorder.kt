@@ -77,6 +77,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             MutationResolver(internalLogger)
         )
 
+        val applicationId = rumContextProvider.getRumContext().applicationId
+
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
         this.privacy = privacy
@@ -91,10 +93,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             timeProvider = timeProvider,
             internalLogger = internalLogger
         )
+
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
             SnapshotProducer(
-                TreeViewTraversal(customMappers + privacy.mappers()),
+                TreeViewTraversal(customMappers + privacy.mappers(applicationId, recordedDataQueueHandler)),
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                 )

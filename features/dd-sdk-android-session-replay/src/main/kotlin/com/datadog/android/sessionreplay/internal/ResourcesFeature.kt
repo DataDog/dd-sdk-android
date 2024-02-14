@@ -11,7 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.sessionreplay.internal.net.ResourceRequestFactory
+import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayResourcesWriter
@@ -32,7 +32,7 @@ internal class ResourcesFeature(
 
     override val name: String = SESSION_REPLAY_RESOURCES_FEATURE_NAME
 
-    override val requestFactory: RequestFactory = ResourceRequestFactory(
+    override val requestFactory: RequestFactory = ResourcesRequestFactory(
         customEndpointUrl = customEndpointUrl,
         internalLogger = sdkCore.internalLogger
     )
@@ -68,6 +68,6 @@ internal class ResourcesFeature(
             )
 
         internal const val SESSION_REPLAY_RESOURCES_FEATURE_NAME = "session-replay-resources"
-        internal const val RESOURCES_ENDPOINT_ENABLED = false
+        internal const val RESOURCE_ENDPOINT_FEATURE_FLAG = false
     }
 }
