@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 // TODO: RUM-0000 this should be removed once we switch to a synchronous implementation of
 //  the ImageWireframeHelper

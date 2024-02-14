@@ -11,7 +11,7 @@ import android.view.View
 import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
 
 internal class ViewUtilsInternal {
 

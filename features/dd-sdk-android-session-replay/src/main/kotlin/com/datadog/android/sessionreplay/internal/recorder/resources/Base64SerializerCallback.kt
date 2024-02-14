@@ -4,8 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
-internal interface HashGenerator {
-    fun generate(input: ByteArray): String?
+internal interface Base64SerializerCallback {
+    fun onReady()
 }
