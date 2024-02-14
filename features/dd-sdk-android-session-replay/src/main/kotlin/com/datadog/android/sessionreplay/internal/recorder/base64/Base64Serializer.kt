@@ -143,6 +143,10 @@ internal class Base64Serializer private constructor(
         var base64String = "".toByteArray(Charsets.UTF_8)
         var cacheData = CacheData(base64String, resourceId?.toByteArray(Charsets.UTF_8))
 
+        if (shouldCacheBitmap) {
+            bitmapPool?.put(bitmap)
+        }
+
         if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
             if (resourceId == null) {
                 // resourceId is mandatory for resource endpoint
@@ -160,9 +164,7 @@ internal class Base64Serializer private constructor(
             }
         } else {
             base64String = convertBitmapToBase64(
-                byteArray = byteArray,
-                bitmap = bitmap,
-                shouldCacheBitmap = shouldCacheBitmap
+                byteArray = byteArray
             ).toByteArray(Charsets.UTF_8)
             cacheData = CacheData(base64String, resourceId?.toByteArray(Charsets.UTF_8))
         }
@@ -201,17 +203,9 @@ internal class Base64Serializer private constructor(
 
     @WorkerThread
     private fun convertBitmapToBase64(
-        byteArray: ByteArray,
-        bitmap: Bitmap,
-        shouldCacheBitmap: Boolean
+        byteArray: ByteArray
     ): String {
-        val base64Result = base64Utils.serializeToBase64String(byteArray)
-
-        if (shouldCacheBitmap) {
-            bitmapPool?.put(bitmap)
-        }
-
-        return base64Result
+        return base64Utils.serializeToBase64String(byteArray)
     }
 
     private fun tryToDrawNewBitmap(

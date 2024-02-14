@@ -6,13 +6,22 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_RESOURCE_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils.safeDeserializeToJsonObject
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils.safeGetStringFromJsonObject
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -24,6 +33,10 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     override fun createInstance(forge: Forge): EnrichedResource {
         return forge.getForgery()
     }
@@ -38,5 +51,40 @@ internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
 
     override fun createUnequalInstance(source: EnrichedResource, forge: Forge): EnrichedResource {
         return forge.getForgery()
+    }
+
+    @Test
+    fun `M return valid binary metadata W asBinaryMetadat`(
+        @Forgery enrichedResource: EnrichedResource
+    ) {
+        // Given
+        val expectedIdentifier = enrichedResource.filename
+        val expectedApplicationId = enrichedResource.applicationId
+
+        // When
+        val metadata = enrichedResource.asBinaryMetadata()
+
+        // Then
+        val deserializedData = safeDeserializeToJsonObject(
+            mockInternalLogger,
+            metadata
+        )
+
+        requireNotNull(deserializedData)
+
+        val actualIdentifier = safeGetStringFromJsonObject(
+            mockInternalLogger,
+            deserializedData,
+            FILENAME_KEY
+        )
+
+        val actualApplicationId = safeGetStringFromJsonObject(
+            mockInternalLogger,
+            deserializedData,
+            APPLICATION_ID_RESOURCE_KEY
+        )
+
+        assertThat(actualIdentifier).isEqualTo(expectedIdentifier)
+        assertThat(actualApplicationId).isEqualTo(expectedApplicationId)
     }
 }

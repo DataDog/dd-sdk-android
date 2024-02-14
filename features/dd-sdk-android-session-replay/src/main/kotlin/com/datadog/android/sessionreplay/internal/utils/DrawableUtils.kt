@@ -108,7 +108,8 @@ internal class DrawableUtils(
         fun onFailure()
     }
 
-    private fun getBitmapSizeLimit(requestedSizeInBytes: Int?): Int {
+    @VisibleForTesting
+    internal fun getBitmapSizeLimit(requestedSizeInBytes: Int?): Int {
         if (requestedSizeInBytes != null) {
             return requestedSizeInBytes
         }

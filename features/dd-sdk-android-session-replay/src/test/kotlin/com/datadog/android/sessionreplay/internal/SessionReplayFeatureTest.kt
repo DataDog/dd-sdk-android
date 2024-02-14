@@ -21,7 +21,6 @@ import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
-import com.datadog.android.sessionreplay.internal.storage.SessionReplayResourcesWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.sessionreplay.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -184,13 +183,10 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(lambda).invoke(captor.capture(), any(), any())
-        if (ResourcesFeature.RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            assertThat(captor.firstValue)
-                .isInstanceOf(SessionReplayResourcesWriter::class.java)
-        } else {
-            assertThat(captor.firstValue)
-                .isInstanceOf(NoOpResourcesWriter::class.java)
-        }
+        // always a noop, since even when the resource feature flag is enabled
+        // it only changes to the implementation datawriter after onInitialise
+        assertThat(captor.firstValue)
+            .isInstanceOf(NoOpResourcesWriter::class.java)
     }
 
     @Test
