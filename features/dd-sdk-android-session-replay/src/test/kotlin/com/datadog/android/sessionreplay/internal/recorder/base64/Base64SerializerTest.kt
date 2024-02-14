@@ -15,7 +15,7 @@ import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.ResourcesFeature
+import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -37,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -192,16 +194,12 @@ internal class Base64SerializerTest {
         // Then
         verifyNoInteractions(mockDrawableUtils)
         assertThat(fakeImageWireframe.isEmpty).isFalse()
-        if (ResourcesFeature.RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            assertThat(fakeImageWireframe.base64).isEmpty()
-        } else {
-            assertThat(fakeImageWireframe.base64).isEqualTo(
-                String(
-                    fakeBase64Encoding,
-                    Charsets.UTF_8
-                )
+        assertThat(fakeImageWireframe.base64).isEqualTo(
+            String(
+                fakeBase64Encoding,
+                Charsets.UTF_8
             )
-        }
+        )
         assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId!!, Charsets.UTF_8))
         verify(mockSerializerCallback).onReady()
     }
@@ -283,7 +281,11 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        verify(mockBase64Utils, times(1)).serializeToBase64String(any())
+        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            verifyNoInteractions(mockBase64Utils)
+        } else {
+            verify(mockBase64Utils, times(1)).serializeToBase64String(any())
+        }
     }
 
     @Test
@@ -445,7 +447,9 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        verify(mockBase64LRUCache, times(1)).put(mockStateListDrawable, expectedHash)
+        if (!RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            verify(mockBase64LRUCache, times(1)).put(mockStateListDrawable, expectedHash)
+        }
     }
 
     @Test
@@ -650,7 +654,9 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        verify(mockBitmapPool).put(any())
+        if (!RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            verify(mockBitmapPool).put(any())
+        }
     }
 
     @Test
@@ -797,6 +803,69 @@ internal class Base64SerializerTest {
         assertThat(intCaptor.secondValue).isEqualTo(fakeBitmapHeight)
         assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
         assertThat(configCaptor.firstValue).isEqualTo(Bitmap.Config.ARGB_8888)
+    }
+
+    @Test
+    fun `M only send resource once W handleBitmap { call twice on the same image }`(
+        @Mock mockCreatedBitmap: Bitmap,
+        @StringForgery fakeResourceId: String,
+        @StringForgery fakeResource: String
+    ) {
+        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            // Given
+            whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+            whenever(mockBitmap.width).thenReturn(fakeBitmapWidth)
+            whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
+            whenever(mockMD5HashGenerator.generate(any())).thenReturn(fakeResourceId)
+
+            whenever(mockBitmap.isRecycled)
+                .thenReturn(true)
+                .thenReturn(false)
+
+            val fakeByteArray = fakeResource.toByteArray()
+            whenever(mockWebPImageCompression.compressBitmap(mockBitmap))
+                .thenReturn(fakeByteArray)
+
+            whenever(mockWebPImageCompression.compressBitmap(mockCreatedBitmap))
+                .thenReturn(fakeImageCompressionByteArray)
+
+            whenever(mockDrawableUtils.createScaledBitmap(mockBitmap))
+                .thenReturn(mockBitmap)
+                .thenReturn(mockCreatedBitmap)
+
+            whenever(mockBase64Utils.serializeToBase64String(fakeImageCompressionByteArray))
+                .thenReturn(String(fakeBase64Encoding, Charsets.UTF_8))
+
+            // When
+            testedBase64Serializer.handleBitmap(
+                applicationContext = mockApplicationContext,
+                displayMetrics = mockDisplayMetrics,
+                drawable = mockBitmapDrawable,
+                drawableWidth = fakeBitmapWidth,
+                drawableHeight = fakeBitmapHeight,
+                imageWireframe = fakeImageWireframe,
+                base64SerializerCallback = mockSerializerCallback
+            )
+
+            // Then
+
+            // second time
+            testedBase64Serializer.handleBitmap(
+                applicationContext = mockApplicationContext,
+                displayMetrics = mockDisplayMetrics,
+                drawable = mockBitmapDrawable,
+                drawableWidth = fakeBitmapWidth,
+                drawableHeight = fakeBitmapHeight,
+                imageWireframe = fakeImageWireframe,
+                base64SerializerCallback = mockSerializerCallback
+            )
+
+            verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
+                identifier = eq(fakeResourceId),
+                applicationId = eq(fakeApplicationid.toString()),
+                resourceData = eq(fakeByteArray)
+            )
+        }
     }
 
     private fun createBase64Serializer(): Base64Serializer {

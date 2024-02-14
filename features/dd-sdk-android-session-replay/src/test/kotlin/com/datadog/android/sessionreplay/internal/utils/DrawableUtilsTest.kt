@@ -13,6 +13,7 @@ import android.os.Handler
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
@@ -317,5 +318,29 @@ internal class DrawableUtilsTest {
 
         // Then
         assertThat(actualBitmap).isEqualTo(mockScaledBitmap)
+    }
+
+    @Test
+    fun `M return input size W getBitmapSizeLimit() { got input size }`(
+        @IntForgery fakeSize: Int
+    ) {
+        // When
+        val result = testedDrawableUtils.getBitmapSizeLimit(fakeSize)
+
+        // Then
+        assertThat(result).isEqualTo(fakeSize)
+    }
+
+    @Test
+    fun `M return relevant size W getBitmapSizeLimit() { null size }`() {
+        // When
+        val result = testedDrawableUtils.getBitmapSizeLimit(null)
+
+        // Then
+        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
+            assertThat(result).isEqualTo(DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT)
+        } else {
+            assertThat(result).isEqualTo(DrawableUtils.MAX_BITMAP_SIZE_IN_BYTES_WITH_BASE64)
+        }
     }
 }

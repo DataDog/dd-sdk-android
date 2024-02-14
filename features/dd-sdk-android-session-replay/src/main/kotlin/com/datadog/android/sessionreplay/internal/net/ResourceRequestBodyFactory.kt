@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_INTERNAL_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_OUTER_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_RESOURCE_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
@@ -91,7 +92,7 @@ internal class ResourceRequestBodyFactory(
                 val applicationId = MiscUtils.safeGetStringFromJsonObject(
                     internalLogger,
                     resourceMetadata,
-                    APPLICATION_ID_OUTER_KEY
+                    APPLICATION_ID_RESOURCE_KEY
                 )
                 val filename = MiscUtils.safeGetStringFromJsonObject(
                     internalLogger,

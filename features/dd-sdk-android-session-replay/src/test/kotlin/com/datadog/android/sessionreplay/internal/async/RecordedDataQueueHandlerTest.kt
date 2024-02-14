@@ -20,6 +20,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -99,6 +100,9 @@ internal class RecordedDataQueueHandlerTest {
     @Forgery
     lateinit var fakeTouchEventItem: TouchEventRecordedDataQueueItem
 
+    @Forgery
+    lateinit var fakeResourceItem: ResourceRecordedDataQueueItem
+
     @Spy
     private lateinit var fakeRecordedDataQueue: ConcurrentLinkedQueue<RecordedDataQueueItem>
 
@@ -108,6 +112,7 @@ internal class RecordedDataQueueHandlerTest {
 
     private val snapshotItemCaptor = argumentCaptor<SnapshotRecordedDataQueueItem>()
     private val touchEventItemCaptor = argumentCaptor<TouchEventRecordedDataQueueItem>()
+    private val resourceEventItemCaptor = argumentCaptor<ResourceRecordedDataQueueItem>()
 
     @BeforeEach
     fun setup(forge: Forge) {
@@ -409,6 +414,38 @@ internal class RecordedDataQueueHandlerTest {
     }
 
     @Test
+    fun `M remove item from queue W tryToConsumeItems() { invalid resource item }`() {
+        // Given
+        val spy = spy(fakeResourceItem)
+
+        doReturn(false).whenever(spy).isValid()
+        testedHandler.recordedDataQueue.offer(spy)
+
+        val spyTimestamp = spy.recordedQueuedItemContext.timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp())
+            .thenReturn(spyTimestamp)
+
+        // When
+        testedHandler.tryToConsumeItems()
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+
+        // Then
+        assertThat(testedHandler.recordedDataQueue).isEmpty()
+        val expectedLogMessage = ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
+            .format(Locale.US, false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(
+                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.TELEMETRY
+            ),
+            expectedLogMessage
+        )
+        verifyNoMoreInteractions(mockProcessor)
+    }
+
+    @Test
     fun `M do nothing W tryToConsumeItems() { snapshot item not ready }`() {
         // Given
         val spy = spy(fakeSnapshotQueueItem)
@@ -471,6 +508,37 @@ internal class RecordedDataQueueHandlerTest {
 
         assertThat(touchEventItemCaptor.firstValue.recordedQueuedItemContext).isEqualTo(item.recordedQueuedItemContext)
         assertThat(touchEventItemCaptor.firstValue.touchData).isEqualTo(fakeTouchData)
+    }
+
+    @Test
+    fun `M call processor W tryToConsumeItems() { valid Resource Event item }`(
+        @StringForgery fakeIdentifier: String,
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakePayload: String
+    ) {
+        // Given
+        val item = testedHandler.addResourceItem(
+            fakeIdentifier,
+            fakeApplicationId,
+            fakePayload.toByteArray()
+        ) ?: fail("item is null")
+
+        whenever(mockTimeProvider.getDeviceTimestamp())
+            .thenReturn(item.recordedQueuedItemContext.timestamp)
+
+        // When
+        testedHandler.tryToConsumeItems()
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+
+        // Then
+        verify(mockProcessor).processResources(resourceEventItemCaptor.capture())
+
+        assertThat(resourceEventItemCaptor.firstValue.recordedQueuedItemContext)
+            .isEqualTo(item.recordedQueuedItemContext)
+        assertThat(resourceEventItemCaptor.firstValue.identifier).isEqualTo(fakeIdentifier)
+        assertThat(resourceEventItemCaptor.firstValue.applicationId).isEqualTo(fakeApplicationId)
+        assertThat(resourceEventItemCaptor.firstValue.resourceData).isEqualTo(fakePayload.toByteArray())
     }
 
     @Test

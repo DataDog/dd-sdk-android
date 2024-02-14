@@ -19,6 +19,7 @@ import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_INTERNAL_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_OUTER_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_RESOURCE_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
@@ -67,7 +68,7 @@ internal class ResourceRequestBodyFactoryTest {
     @BeforeEach
     fun `set up`() {
         fakeMetaData = JsonObject()
-        fakeMetaData.addProperty(APPLICATION_ID_OUTER_KEY, fakeApplicationId)
+        fakeMetaData.addProperty(APPLICATION_ID_RESOURCE_KEY, fakeApplicationId)
         fakeMetaData.addProperty(FILENAME_KEY, fakeFilename)
 
         testedRequestBodyFactory = ResourceRequestBodyFactory(mockInternalLogger)
@@ -139,7 +140,7 @@ internal class ResourceRequestBodyFactoryTest {
         val missingApplicationIdData = fakeMetaData.deepCopy()
         val missingFilenameData = fakeMetaData.deepCopy()
 
-        missingApplicationIdData.remove(APPLICATION_ID_OUTER_KEY)
+        missingApplicationIdData.remove(APPLICATION_ID_RESOURCE_KEY)
         val missingApplicationIdBatchEvent = RawBatchEvent(
             data = fakeImageRepresentation.toByteArray(),
             metadata = missingApplicationIdData.toString().toByteArray(Charsets.UTF_8)
@@ -173,7 +174,7 @@ internal class ResourceRequestBodyFactoryTest {
     }
 
     @Test
-    fun `M throw exception and return largest group W create() { multiple applicationIds }`(forge: Forge) {
+    fun `M throw exception and return last group W create() { multiple applicationIds }`(forge: Forge) {
         // Given
         val fakeSecondApplicationId = forge.anAsciiString()
         val fakeSecondFilename = forge.anAsciiString()
@@ -182,8 +183,8 @@ internal class ResourceRequestBodyFactoryTest {
             metadata = fakeMetaData.toString().toByteArray(Charsets.UTF_8)
         )
 
-        fakeMetaData.remove(APPLICATION_ID_OUTER_KEY)
-        fakeMetaData.addProperty(APPLICATION_ID_OUTER_KEY, fakeSecondApplicationId)
+        fakeMetaData.remove(APPLICATION_ID_RESOURCE_KEY)
+        fakeMetaData.addProperty(APPLICATION_ID_RESOURCE_KEY, fakeSecondApplicationId)
         fakeMetaData.remove(FILENAME_KEY)
         fakeMetaData.addProperty(FILENAME_KEY, fakeSecondFilename)
 
@@ -250,7 +251,7 @@ internal class ResourceRequestBodyFactoryTest {
     private fun generateValidRawBatchEvent(forge: Forge): RawBatchEvent {
         val fakeEvent = forge.getForgery<RawBatchEvent>()
         val fakeMetadata = JsonObject()
-        fakeMetadata.addProperty(APPLICATION_ID_OUTER_KEY, forge.getForgery<UUID>().toString())
+        fakeMetadata.addProperty(APPLICATION_ID_RESOURCE_KEY, forge.getForgery<UUID>().toString())
         fakeMetadata.addProperty(FILENAME_KEY, forge.getForgery<UUID>().toString())
         return fakeEvent.copy(
             metadata = fakeMetadata.toString().toByteArray(Charsets.UTF_8)
