@@ -9,10 +9,10 @@ package com.datadog.android.sessionreplay.internal.net
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_INTERNAL_KEY
-import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_OUTER_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_RESOURCE_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.ID_KEY
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -126,8 +126,8 @@ internal class ResourceRequestBodyFactory(
     private fun addApplicationIdSection(builder: MultipartBody.Builder, applicationId: String) {
         val applicationIdOuter = JsonObject()
         val applicationIdInner = JsonObject()
-        applicationIdInner.addProperty(APPLICATION_ID_INTERNAL_KEY, applicationId)
-        applicationIdOuter.add(APPLICATION_ID_OUTER_KEY, applicationIdInner)
+        applicationIdInner.addProperty(ID_KEY, applicationId)
+        applicationIdOuter.add(APPLICATION_KEY, applicationIdInner)
         applicationIdOuter.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         @Suppress("TooGenericExceptionCaught")
@@ -154,7 +154,7 @@ internal class ResourceRequestBodyFactory(
 
         if (body != null) {
             builder.addFormDataPart(
-                name = NAME_RESOURCE,
+                name = NAME_EVENT,
                 filename = FILENAME_BLOB,
                 body = body
             )
@@ -200,7 +200,7 @@ internal class ResourceRequestBodyFactory(
         internal const val TYPE_KEY = "type"
         internal const val TYPE_RESOURCE = "resource"
         internal const val NAME_IMAGE = "image"
-        internal const val NAME_RESOURCE = "event"
+        internal const val NAME_EVENT = "event"
         internal const val FILENAME_BLOB = "blob"
 
         internal const val MULTIPLE_APPLICATION_ID_ERROR =

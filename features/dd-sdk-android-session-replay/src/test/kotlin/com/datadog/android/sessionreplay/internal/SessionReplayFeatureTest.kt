@@ -17,9 +17,6 @@ import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
-import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
-import com.datadog.android.sessionreplay.internal.storage.RecordWriter
-import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.sessionreplay.utils.verifyLog
@@ -37,10 +34,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -161,32 +156,6 @@ internal class SessionReplayFeatureTest {
             assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_MANUAL_RECORDING_KEY])
                 .isEqualTo(false)
         }
-    }
-
-    @Test
-    fun `𝕄 use NoopResourcesWriter 𝕎 initialize() { feature flag disabled }`() {
-        // Given
-        val captor = argumentCaptor<ResourcesWriter>()
-        val lambda: (ResourcesWriter, RecordWriter, Application) -> Recorder = mock()
-        `when`(lambda.invoke(any(), any(), any())).thenReturn(mockRecorder)
-
-        testedFeature = SessionReplayFeature(
-            sdkCore = mockSdkCore,
-            customEndpointUrl = fakeConfiguration.customEndpointUrl,
-            privacy = fakeConfiguration.privacy,
-            rateBasedSampler = mockSampler,
-            sessionReplayRecorderProvider = lambda
-        )
-
-        // When
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // Then
-        verify(lambda).invoke(captor.capture(), any(), any())
-        // always a noop, since even when the resource feature flag is enabled
-        // it only changes to the implementation datawriter after onInitialise
-        assertThat(captor.firstValue)
-            .isInstanceOf(NoOpResourcesWriter::class.java)
     }
 
     @Test

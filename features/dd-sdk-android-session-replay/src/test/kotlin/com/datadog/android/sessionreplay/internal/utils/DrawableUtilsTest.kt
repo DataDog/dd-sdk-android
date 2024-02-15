@@ -321,20 +321,9 @@ internal class DrawableUtilsTest {
     }
 
     @Test
-    fun `M return input size W getBitmapSizeLimit() { got input size }`(
-        @IntForgery fakeSize: Int
-    ) {
+    fun `M return relevant size W getBitmapSizeLimit()`() {
         // When
-        val result = testedDrawableUtils.getBitmapSizeLimit(fakeSize)
-
-        // Then
-        assertThat(result).isEqualTo(fakeSize)
-    }
-
-    @Test
-    fun `M return relevant size W getBitmapSizeLimit() { null size }`() {
-        // When
-        val result = testedDrawableUtils.getBitmapSizeLimit(null)
+        val result = testedDrawableUtils.getBitmapSizeLimit()
 
         // Then
         if (RESOURCE_ENDPOINT_FEATURE_FLAG) {

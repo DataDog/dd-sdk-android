@@ -12,15 +12,15 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.CONTENT_TYPE_IMAGE
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.FILENAME_BLOB
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.MULTIPLE_APPLICATION_ID_ERROR
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_EVENT
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_IMAGE
-import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_RESOURCE
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NO_RESOURCES_TO_SEND_ERROR
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_KEY
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
-import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_INTERNAL_KEY
-import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_OUTER_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_RESOURCE_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.ID_KEY
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -99,12 +99,12 @@ internal class ResourceRequestBodyFactoryTest {
 
         val applicationIdOuter = JsonObject()
         val applicationIdInner = JsonObject()
-        applicationIdInner.addProperty(APPLICATION_ID_INTERNAL_KEY, expectedApplicationId)
-        applicationIdOuter.add(APPLICATION_ID_OUTER_KEY, applicationIdInner)
+        applicationIdInner.addProperty(ID_KEY, expectedApplicationId)
+        applicationIdOuter.add(APPLICATION_KEY, applicationIdInner)
         applicationIdOuter.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         val applicationIdPart = MultipartBody.Part.createFormData(
-            NAME_RESOURCE,
+            NAME_EVENT,
             FILENAME_BLOB,
             applicationIdOuter.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
         )
@@ -217,12 +217,12 @@ internal class ResourceRequestBodyFactoryTest {
 
         val applicationIdOuter = JsonObject()
         val applicationIdInner = JsonObject()
-        applicationIdInner.addProperty(APPLICATION_ID_INTERNAL_KEY, fakeSecondApplicationId)
-        applicationIdOuter.add(APPLICATION_ID_OUTER_KEY, applicationIdInner)
+        applicationIdInner.addProperty(ID_KEY, fakeSecondApplicationId)
+        applicationIdOuter.add(APPLICATION_KEY, applicationIdInner)
         applicationIdOuter.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         val applicationIdPart = MultipartBody.Part.createFormData(
-            NAME_RESOURCE,
+            NAME_EVENT,
             FILENAME_BLOB,
             applicationIdOuter.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
         )
