@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
@@ -12,7 +12,7 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
+import com.datadog.android.sessionreplay.internal.recorder.resources.Base64LRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
 import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 import fr.xgouchet.elmyr.Forge

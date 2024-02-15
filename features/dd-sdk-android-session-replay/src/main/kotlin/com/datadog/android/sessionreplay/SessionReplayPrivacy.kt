@@ -19,10 +19,10 @@ import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.Base64LRUCache
+import com.datadog.android.sessionreplay.internal.recorder.resources.Base64Serializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper

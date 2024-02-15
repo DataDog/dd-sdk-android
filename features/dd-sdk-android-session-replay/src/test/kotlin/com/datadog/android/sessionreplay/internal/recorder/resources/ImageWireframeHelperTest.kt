@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
 import android.content.res.Resources
@@ -20,7 +20,7 @@ import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.utils.isCloseTo

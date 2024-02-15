@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import com.datadog.android.api.InternalLogger
 import java.security.MessageDigest
