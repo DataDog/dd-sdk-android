@@ -45,6 +45,30 @@ body:
       description: If you know, what was the last SDK version where the crash did manifest itself?
     validations:
       required: true
+  - type: dropdown
+    id: checked_lastest_sdk
+    attributes:
+      label: Does the crash manifest in the latest SDK version?
+      options:
+        - 'Yes'
+        - 'No'
+    validations:
+      required: true
+  - type: input
+    id: kotlin_java_version
+    attributes:
+      label: Kotlin / Java version 
+  - type: input
+    id: gradle_version
+    attributes:
+      label: Gradle / AGP version 
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Other dependencies versions                
+      description: |
+        Relevant third party dependency versions. 
+        e.g. okhttp 4.11.0
   - type: textarea
     id: device_info
     attributes:
@@ -59,24 +83,3 @@ body:
     attributes:
       label: Other relevant information
       description: Anything that might be relevant to pinpoint the source of the crash. 
-  - type: dropdown
-    id: integration_method
-    attributes:
-      label: Integration Method
-      options:
-        - Gradle
-        - Source
-    validations:
-      required: true
-  - type: input
-    id: ide
-    attributes:
-      label: IDE Version 
-      description: e.g. Android Studio 2022.3.1 Patch 4
-  - type: textarea
-    id: dependencies
-    attributes:
-      label: Other dependencies versions                
-      description: |
-        Relevant third party dependency versions. 
-        e.g. okhttp 4.11.0

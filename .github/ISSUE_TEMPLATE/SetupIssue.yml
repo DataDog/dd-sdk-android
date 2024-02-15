@@ -39,27 +39,14 @@ body:
       description: Which SDK version are you trying to use?
     validations:
       required: true
-  - type: textarea
-    id: other_info
-    attributes:
-      label: Other relevant information
-      description: |
-        Other relevant information such as additional tooling in place, proxies, etc.
-        Anything that might be relevant for troubleshooting your setup. 
-  - type: dropdown
-    id: integration_method
-    attributes:
-      label: Integration Method
-      options:
-        - Gradle
-        - Source
-    validations:
-      required: true
   - type: input
-    id: ide
+    id: kotlin_java_version
     attributes:
-      label: IDE Version 
-      description: e.g. Android Studio 2022.3.1 Patch 4
+      label: Kotlin / Java version 
+  - type: input
+    id: gradle_version
+    attributes:
+      label: Gradle / AGP version 
   - type: textarea
     id: dependencies
     attributes:
@@ -67,3 +54,10 @@ body:
       description: |
         Relevant third party dependency versions. 
         e.g. okhttp 4.11.0
+  - type: textarea
+    id: other_info
+    attributes:
+      label: Other relevant information
+      description: |
+        Other relevant information such as additional tooling in place, proxies, etc.
+        Anything that might be relevant for troubleshooting your setup. 
