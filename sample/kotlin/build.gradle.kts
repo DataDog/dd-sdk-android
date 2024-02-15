@@ -139,7 +139,7 @@ android {
     }
 }
 
-repositories{
+repositories {
     mavenLocal()
 }
 

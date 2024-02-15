@@ -11,10 +11,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.opentracing.StringCachingBigInteger
 import datadog.trace.core.DDSpan
-import java.math.BigInteger
-import java.security.SecureRandom
 
 internal class OtelDdSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean
@@ -52,7 +49,7 @@ internal class OtelDdSpanToSpanEventMapper(
         topLevel = if (event.parentId.toLong() == 0L) 1 else null,
         additionalProperties = mutableMapOf(
                 "_dd.agent_psr" to 1.0f,
-                "_sampling_priority_v1" to 1,
+                "_sampling_priority_v1" to 1
         )
     )
 

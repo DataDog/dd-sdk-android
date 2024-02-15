@@ -28,13 +28,12 @@ internal class OtelTraceWriter(
     internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),
     private val serializer: ContextAwareSerializer<SpanEvent>,
     private val internalLogger: InternalLogger
-): Writer  {
+) : Writer {
 
     // region Writer
     override fun start() {
         // NO - OP
     }
-
 
     override fun write(trace: MutableList<DDSpan>?) {
         if (trace == null) return
@@ -55,7 +54,6 @@ internal class OtelTraceWriter(
     override fun incrementDropCounts(p0: Int) {
         // NO - OP
     }
-
 
     override fun close() {
         // NO - OP

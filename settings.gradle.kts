@@ -53,11 +53,10 @@ include(":tools:noopfactory")
 include(":tools:javabackport")
 include(":tools:lint")
 
-
 // Otel
 include(":dd-trace-api")
 include(":internal-api")
 include(":dd-trace-core")
-include(":opentelemetry-1.4")
+// include(":opentelemetry-1.4")
 include(":utils:time-utils")
 include(":utils:container-utils")

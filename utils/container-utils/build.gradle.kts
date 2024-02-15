@@ -1,17 +1,16 @@
-//import com.datadog.gradle.config.androidLibraryConfig
-//import com.datadog.gradle.config.dependencyUpdateConfig
-//import com.datadog.gradle.config.javadocConfig
-//import com.datadog.gradle.config.junitConfig
-//import com.datadog.gradle.config.kotlinConfig
+// import com.datadog.gradle.config.androidLibraryConfig
+// import com.datadog.gradle.config.dependencyUpdateConfig
+// import com.datadog.gradle.config.javadocConfig
+// import com.datadog.gradle.config.junitConfig
+// import com.datadog.gradle.config.kotlinConfig
 //
-//apply from: "$rootDir/gradle/java.gradle"
+// apply from: "$rootDir/gradle/java.gradle"
 //
-//dependencies {
+// dependencies {
 //  implementation deps.slf4j
 //
 //  testImplementation project(':utils:test-utils')
-//}
-
+// }
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig

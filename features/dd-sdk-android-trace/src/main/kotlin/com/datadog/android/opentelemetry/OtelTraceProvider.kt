@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace
+package com.datadog.android.opentelemetry
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
@@ -12,86 +12,55 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
+import com.datadog.android.opentelemetry.trace.OtelSpanBuilder
+import com.datadog.android.opentelemetry.trace.OtelTracerBuilder
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.data.NoOpOtelWriter
-import com.datadog.android.trace.internal.data.NoOpWriter
-import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
-import com.datadog.opentracing.DDTracer
-import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
-import com.datadog.trace.common.writer.Writer
-import com.datadog.trace.context.ScopeListener
 import datadog.trace.api.IdGenerationStrategy
+import datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import datadog.trace.core.CoreTracer
-import io.opentracing.Span
-import io.opentracing.log.Fields
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.api.trace.TracerBuilder
+import io.opentelemetry.api.trace.TracerProvider
 import java.security.SecureRandom
 import java.util.Properties
 import java.util.Random
 
-/**
- *  A class enabling Datadog tracing features.
- *
- * It allows you to create [DDSpan] and send them to Datadog servers.
- *
- * You can have multiple tracers configured in your application, each with their own settings.
- *
- */
-class AndroidTracer internal constructor(
-    private val sdkCore: FeatureSdkCore,
-    config: Config,
-    writer: Writer,
-    random: Random,
-    private val logsHandler: LogHandler,
-    private val bundleWithRum: Boolean
-) : DDTracer(config, writer, random) {
+class OtelTraceProvider(private val coreTracer: AgentTracer.TracerAPI) : TracerProvider {
 
-    init {
-        addScopeListener(object : ScopeListener {
-            override fun afterScopeActivated() {
-                // scope is thread-local and at the given time for the particular thread it can
-                // be only one active scope.
-                val threadName = Thread.currentThread().name
-                val activeContext = activeSpan()?.context()
-                if (activeContext != null) {
-                    val activeSpanId = activeContext.toSpanId()
-                    val activeTraceId = activeContext.toTraceId()
-                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                        it["context@$threadName"] = mapOf(
-                            "span_id" to activeSpanId,
-                            "trace_id" to activeTraceId
-                        )
-                    }
-                }
-            }
+    //  internal const val TRACE_ID_BIT_SIZE = 63
+    private val tracers: MutableMap<String, Tracer> = mutableMapOf()
 
-            override fun afterScopeClosed() {
-                val threadName = Thread.currentThread().name
-                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                    it.remove("context@$threadName")
-                }
-            }
-        })
+    override fun get(instrumentationName: String): Tracer {
+        this.tracers.putIfAbsent(instrumentationName, tracerBuilder(instrumentationName).build())
+        return tracers[instrumentationName]!!
     }
 
-    // region Tracer
-
-    override fun buildSpan(operationName: String): DDSpanBuilder {
-        return DDSpanBuilder(operationName, scopeManager())
-            .withLogHandler(logsHandler)
-            .withRumContext()
+    override fun get(instrumentationName: String, instrumentationVersion: String): Tracer {
+        this.tracers.putIfAbsent(
+        instrumentationName,
+            tracerBuilder(instrumentationName)
+            .setInstrumentationVersion(instrumentationVersion)
+            .build()
+        )
+        return tracers[instrumentationName]!!
     }
 
-    // endregion
+    override fun tracerBuilder(instrumentationScopeName: String): TracerBuilder {
+        var instrumentationScopeName = instrumentationScopeName
+        if (instrumentationScopeName.trim { it <= ' ' }.isEmpty()) {
+            // TODO: RUMM-0000 add a proper log here
+            instrumentationScopeName = DEFAULT_TRACER_NAME
+        }
+        return OtelTracerBuilder(instrumentationScopeName, coreTracer)
+    }
 
-    /**
-     * Builds a [AndroidTracer] instance.
-     */
     class Builder
     internal constructor(
-        private val sdkCore: FeatureSdkCore,
-        private val logsHandler: LogHandler
+        private val sdkCore: FeatureSdkCore
     ) {
 
         private var tracingHeaderTypes: Set<TracingHeaderType> =
@@ -123,17 +92,14 @@ class AndroidTracer internal constructor(
          * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
          */
         @JvmOverloads
-        constructor(sdkCore: SdkCore = Datadog.getInstance()) : this(
-            sdkCore as FeatureSdkCore,
-            AndroidSpanLogsHandler(sdkCore)
-        )
+        constructor(sdkCore: SdkCore = Datadog.getInstance()) : this(sdkCore as FeatureSdkCore)
 
         // region Public API
 
         /**
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
-        fun build(): AndroidTracer {
+        fun build(): OtelTraceProvider {
             val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
                 ?.unwrap<TracingFeature>()
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
@@ -154,20 +120,14 @@ class AndroidTracer internal constructor(
                 )
                 bundleWithRumEnabled = false
             }
+            // TODO: RUM-0000 Add a logs handler here maybe
             val coreTracer = CoreTracer.CoreTracerBuilder()
-                    .withProperties(properties())
-                    .serviceName(serviceName)
-                    .writer(tracingFeature?.otelDataWriter ?: NoOpOtelWriter())
-                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
-                    .build()
-            return AndroidTracer(
-                sdkCore,
-                config(),
-                tracingFeature?.dataWriter ?: NoOpWriter(),
-                random,
-                logsHandler,
-                bundleWithRumEnabled
-            )
+                .withProperties(properties())
+                .serviceName(serviceName)
+                .writer(tracingFeature?.otelDataWriter ?: NoOpOtelWriter())
+                .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
+                .build()
+            return OtelTraceProvider(coreTracer)
         }
 
         /**
@@ -287,16 +247,17 @@ class AndroidTracer internal constructor(
 
     // region Internal
 
-    private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
-        return if (bundleWithRum) {
-            val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
-                .withTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
-                .withTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
-                .withTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
-        } else {
-            this
-        }
+    private fun OtelSpanBuilder.withRumContext(): OtelSpanBuilder {
+//        return if (bundleWithRum) {
+//            val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
+//            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
+//                .withTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
+//                .withTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
+//                .withTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
+//        } else {
+//            this
+//        }
+        return this
     }
 
     // endregion
@@ -306,49 +267,50 @@ class AndroidTracer internal constructor(
     }
 
     companion object {
+        internal const val DEFAULT_TRACER_NAME = "android"
         internal const val DEFAULT_SAMPLE_RATE = 100.0
 
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +
-                "but either the SDK was not initialized or the Tracing feature was " +
-                "disabled in your Configuration. No tracing data will be sent."
+                    "but either the SDK was not initialized or the Tracing feature was " +
+                    "disabled in your Configuration. No tracing data will be sent."
         internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to bundle the traces with a RUM context, " +
-                "but the RUM feature was disabled in your Configuration. " +
-                "No RUM context will be attached to your traces in this case."
+                    "but the RUM feature was disabled in your Configuration. " +
+                    "No RUM context will be attached to your traces in this case."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
-                " AndroidTracer.Builder creation, did you initialize SDK?"
+                    " Builder creation, did you initialize SDK?"
 
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
 
-        internal const val TRACE_ID_BIT_SIZE = 63
+        // TODO: RUM-0000 provide these methods equivalents also for OtelSpan
+//
+//        /**
+//         * Helper method to attach a Throwable to a specific Span.
+//         * The Throwable information (class name, message and stacktrace) will be added to the
+//         * provided Span as standard Error Tags.
+//         * @param span the active Span
+//         * @param throwable the Throwable you wan to log
+//         */
+//        @JvmStatic
+//        fun logThrowable(span: Span, throwable: Throwable) {
+//            val fieldsMap = mapOf(Fields.ERROR_OBJECT to throwable)
+//            span.log(fieldsMap)
+//        }
 
-        /**
-         * Helper method to attach a Throwable to a specific Span.
-         * The Throwable information (class name, message and stacktrace) will be added to the
-         * provided Span as standard Error Tags.
-         * @param span the active Span
-         * @param throwable the Throwable you wan to log
-         */
-        @JvmStatic
-        fun logThrowable(span: Span, throwable: Throwable) {
-            val fieldsMap = mapOf(Fields.ERROR_OBJECT to throwable)
-            span.log(fieldsMap)
-        }
-
-        /**
-         * Helper method to attach an error message to a specific Span.
-         * The error message will be added to the provided Span as a standard Error Tag.
-         * @param span the active Span
-         * @param message the error message you want to attach
-         */
-        @JvmStatic
-        fun logErrorMessage(span: Span, message: String) {
-            val fieldsMap = mapOf(Fields.MESSAGE to message)
-            span.log(fieldsMap)
-        }
+//        /**
+//         * Helper method to attach an error message to a specific Span.
+//         * The error message will be added to the provided Span as a standard Error Tag.
+//         * @param span the active Span
+//         * @param message the error message you want to attach
+//         */
+//        @JvmStatic
+//        fun logErrorMessage(span: Span, message: String) {
+//            val fieldsMap = mapOf(Fields.MESSAGE to message)
+//            span.log(fieldsMap)
+//        }
     }
 }

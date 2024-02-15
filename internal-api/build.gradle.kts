@@ -1,32 +1,32 @@
-//plugins {
+// plugins {
 //  id 'me.champeau.jmh'
-//}
+// }
 //
-//apply from: "$rootDir/gradle/publish.gradle"
-//description = 'dd-trace-internal-api'
+// apply from: "$rootDir/gradle/publish.gradle"
+// description = 'dd-trace-internal-api'
 //
-//ext {
+// ext {
 //  // need access to sun.misc.SharedSecrets
 //  skipSettingCompilerRelease = true
-//}
+// }
 //
-//// sun.misc.SharedSecrets is gone in later versions
-//compileJava {
+// // sun.misc.SharedSecrets is gone in later versions
+// compileJava {
 //  javaCompiler = javaToolchains.compilerFor {
 //    languageVersion = JavaLanguageVersion.of(8)
 //  }
-//}
+// }
 //
-//apply from: "$rootDir/gradle/java.gradle"
-//apply from: "$rootDir/gradle/tries.gradle"
+// apply from: "$rootDir/gradle/java.gradle"
+// apply from: "$rootDir/gradle/tries.gradle"
 //
-//tasks.compileTestJava.configure {
+// tasks.compileTestJava.configure {
 //  setJavaVersion(it, 8)
-//}
+// }
 //
-//minimumBranchCoverage = 0.7
-//minimumInstructionCoverage = 0.8
-//excludedClassesCoverage += [
+// minimumBranchCoverage = 0.7
+// minimumInstructionCoverage = 0.8
+// excludedClassesCoverage += [
 //  "datadog.trace.api.EndpointTracker",
 //  "datadog.trace.api.Platform",
 //  "datadog.trace.api.Platform.GC",
@@ -149,19 +149,19 @@
 //  // tested in agent-logging
 //  'datadog.trace.logging.LogLevel',
 //  'datadog.trace.logging.GlobalLogLevelSwitcher'
-//]
+// ]
 //
-//excludedClassesBranchCoverage = [
+// excludedClassesBranchCoverage = [
 //  'datadog.trace.api.ProductActivationConfig',
 //  'datadog.trace.api.Config',
 //  'datadog.trace.util.stacktrace.HotSpotStackWalker',
 //  'datadog.trace.util.stacktrace.StackWalkerFactory'
-//]
-//excludedClassesInstructionCoverage = ['datadog.trace.util.stacktrace.StackWalkerFactory']
+// ]
+// excludedClassesInstructionCoverage = ['datadog.trace.util.stacktrace.StackWalkerFactory']
 //
-//compileTestJava.dependsOn 'generateTestClassNameTries'
+// compileTestJava.dependsOn 'generateTestClassNameTries'
 //
-//dependencies {
+// dependencies {
 //  // references TraceScope and Continuation from public api
 //  api project(':dd-trace-api')
 //  api deps.slf4j
@@ -178,14 +178,13 @@
 //  testImplementation deps.commonsMath
 //  testImplementation deps.mockito
 //  testImplementation deps.truth
-//}
+// }
 //
-//jmh {
+// jmh {
 //  jmhVersion = '1.32'
 //  duplicateClassesStrategy = DuplicatesStrategy.EXCLUDE
-//}
+// }
 //
-
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
@@ -228,7 +227,6 @@ dependencies {
     implementation(libs.androidXAnnotation)
     // it contains annotations that are also present in the instrumented application classes
     api("com.datadoghq:dd-javac-plugin-client:0.1.7")
-
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

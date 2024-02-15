@@ -1,6 +1,29 @@
-class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer, io.opentelemetry.api.trace.Tracer
+class com.datadog.android.opentelemetry.OpenTelemetrySdk : io.opentelemetry.api.OpenTelemetry
+  constructor(io.opentelemetry.api.trace.TracerProvider)
+  override fun getTracerProvider(): io.opentelemetry.api.trace.TracerProvider
+  override fun getPropagators(): io.opentelemetry.context.propagation.ContextPropagators
+  class Builder
+    fun setTracerProvider(io.opentelemetry.api.trace.TracerProvider): Builder
+    fun build(): OpenTelemetrySdk
+class com.datadog.android.opentelemetry.OtelTraceProvider : io.opentelemetry.api.trace.TracerProvider
+  constructor(datadog.trace.bootstrap.instrumentation.api.AgentTracer.TracerAPI)
+  override fun get(String): io.opentelemetry.api.trace.Tracer
+  override fun get(String, String): io.opentelemetry.api.trace.Tracer
+  override fun tracerBuilder(String): io.opentelemetry.api.trace.TracerBuilder
+  class Builder
+    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun build(): OtelTraceProvider
+    fun setTracingHeaderTypes(Set<com.datadog.android.trace.TracingHeaderType>): Builder
+    fun setService(String): Builder
+    fun setPartialFlushThreshold(Int): Builder
+    DEPRECATED fun addGlobalTag(String, String): Builder
+    fun addTag(String, String): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
+    fun setSampleRate(Double): Builder
+  override fun toString(): String
+  companion object 
+class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
-  override fun spanBuilder(String): io.opentelemetry.api.trace.SpanBuilder
   class Builder
     constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): AndroidTracer
