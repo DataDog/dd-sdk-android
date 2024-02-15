@@ -46,10 +46,10 @@ internal class Base64Serializer private constructor(
     private var isBase64CacheRegisteredForCallbacks: Boolean = false
     private var isBitmapPoolRegisteredForCallbacks: Boolean = false
 
-    // resources previously sent in this session -
+    // resource IDs previously sent in this session -
     // optimization to avoid sending the same resource multiple times
     // atm this set is unbounded but expected to use relatively little space (~80kb per 1k items)
-    private val resourcesSeen: MutableSet<String> =
+    private val resourceIdsSeen: MutableSet<String> =
         Collections.synchronizedSet(HashSet<String>())
 
     // region internal
@@ -154,8 +154,8 @@ internal class Base64Serializer private constructor(
                 return
             }
 
-            if (!resourcesSeen.contains(resourceId)) {
-                resourcesSeen.add(resourceId)
+            if (!resourceIdsSeen.contains(resourceId)) {
+                resourceIdsSeen.add(resourceId)
 
                 // We probably don't want this here. In the next pr we'll
                 // refactor this class and extract logic

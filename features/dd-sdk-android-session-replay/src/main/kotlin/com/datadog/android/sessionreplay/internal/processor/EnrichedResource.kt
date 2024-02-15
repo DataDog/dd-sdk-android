@@ -32,7 +32,7 @@ internal data class EnrichedResource(
     }
 
     internal companion object {
-        internal const val APPLICATION_ID_RESOURCE_KEY = "applicationId"
+        internal const val APPLICATION_ID_KEY = "applicationId"
         internal const val APPLICATION_KEY = "application"
         internal const val ID_KEY = "id"
         internal const val FILENAME_KEY = "filename"
@@ -43,7 +43,7 @@ internal fun EnrichedResource.asBinaryMetadata(): ByteArray {
     val applicationId = this.applicationId
     val filename = this.filename
     val jsonObject = JsonObject()
-    jsonObject.addProperty(EnrichedResource.APPLICATION_ID_RESOURCE_KEY, applicationId)
+    jsonObject.addProperty(EnrichedResource.APPLICATION_ID_KEY, applicationId)
     jsonObject.addProperty(EnrichedResource.FILENAME_KEY, filename)
     return jsonObject.toString().toByteArray(Charsets.UTF_8)
 }
