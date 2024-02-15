@@ -798,6 +798,9 @@ data class com.datadog.android.rum.model.ErrorEvent
     - REACT_NATIVE
     - FLUTTER
     - ROKU
+    - NDK
+    - IOS_IL2CPP
+    - NDK_IL2CPP
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SourceType

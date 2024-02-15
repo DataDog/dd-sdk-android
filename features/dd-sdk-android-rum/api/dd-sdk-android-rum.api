@@ -2089,6 +2089,9 @@ public final class com/datadog/android/rum/model/ErrorEvent$SourceType : java/la
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$SourceType$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static final field IOS Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
+	public static final field IOS_IL2CPP Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
+	public static final field NDK Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
+	public static final field NDK_IL2CPP Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static final field ROKU Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
