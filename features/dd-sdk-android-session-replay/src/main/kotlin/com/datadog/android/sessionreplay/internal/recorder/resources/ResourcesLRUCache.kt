@@ -18,7 +18,7 @@ import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 
-internal class Base64LRUCache(
+internal class ResourcesLRUCache(
     private val cacheUtils: CacheUtils<String, CacheData> = CacheUtils(),
     private val invocationUtils: InvocationUtils = InvocationUtils(),
     private var cache: LruCache<String, CacheData> =

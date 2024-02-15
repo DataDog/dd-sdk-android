@@ -6,6 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
-internal interface Base64SerializerCallback {
+internal interface ResourcesSerializerCallback {
     fun onReady()
 }

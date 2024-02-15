@@ -27,7 +27,7 @@ import java.util.Locale
 // TODO: RUM-0000 Remove the base64Serializer dependency from here
 internal class ImageWireframeHelper(
     private val logger: InternalLogger,
-    private val base64Serializer: Base64Serializer,
+    private val resourcesSerializer: ResourcesSerializer,
     private val imageCompression: ImageCompression = WebPImageCompression(),
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
@@ -100,14 +100,14 @@ internal class ImageWireframeHelper(
 
         imageWireframeHelperCallback.onStart()
 
-        base64Serializer.handleBitmap(
+        resourcesSerializer.handleBitmap(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
             imageWireframe = imageWireframe,
-            base64SerializerCallback = object : Base64SerializerCallback {
+            resourcesSerializerCallback = object : ResourcesSerializerCallback {
                 override fun onReady() {
                     imageWireframeHelperCallback.onFinished()
                 }
