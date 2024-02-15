@@ -383,6 +383,40 @@ internal class DatadogNdkCrashHandlerTest {
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
     }
 
+    @Test
+    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with RUM last view, override native source type}`(
+        @Forgery ndkCrashLog: NdkCrashLog,
+        forge: Forge
+    ) {
+        // Given
+        val handler = DatadogNdkCrashHandler(
+            tempDir,
+            mockExecutorService,
+            mockNdkCrashLogDeserializer,
+            mockRumEventDeserializer,
+            mockNetworkInfoDeserializer,
+            mockUserInfoDeserializer,
+            mockInternalLogger,
+            mockRumFileReader,
+            mockEnvFileReader,
+            "ndk+il2cpp"
+        )
+
+        val fakeViewEvent = forge.aFakeViewEvent()
+        handler.lastNdkCrashLog = ndkCrashLog
+        handler.lastRumViewEvent = fakeViewEvent.toJson()
+        val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, fakeViewEvent, "ndk+il2cpp")
+
+        // When
+        handler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
+
+        // Then
+        verify(mockExecutorService).submit(captureRunnable.capture())
+        verifyNoInteractions(mockSdkCore)
+        captureRunnable.firstValue.run()
+        verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
+    }
+
     @ParameterizedTest
     @ValueSource(
         strings = [
@@ -510,6 +544,51 @@ internal class DatadogNdkCrashHandlerTest {
         verify(mockRumFeatureScope).sendEvent(
             mapOf(
                 "type" to "ndk_crash",
+                "sourceType" to "ndk",
+                "timestamp" to ndkCrashLog.timestamp,
+                "signalName" to ndkCrashLog.signalName,
+                "stacktrace" to ndkCrashLog.stacktrace,
+                "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
+                    .format(Locale.US, ndkCrashLog.signalName),
+                "lastViewEvent" to fakeViewEvent.toJson()
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 send RUM event 𝕎 handleNdkCrash() { override native source type } `(
+        @Forgery ndkCrashLog: NdkCrashLog,
+        forge: Forge
+    ) {
+        // Given
+        val handler = DatadogNdkCrashHandler(
+            tempDir,
+            mockExecutorService,
+            mockNdkCrashLogDeserializer,
+            mockRumEventDeserializer,
+            mockNetworkInfoDeserializer,
+            mockUserInfoDeserializer,
+            mockInternalLogger,
+            mockRumFileReader,
+            mockEnvFileReader,
+            "ndk+il2cpp"
+        )
+
+        val fakeViewEvent = forge.aFakeViewEvent()
+        handler.lastNdkCrashLog = ndkCrashLog
+        handler.lastRumViewEvent = fakeViewEvent.toJson()
+
+        // When
+        handler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
+
+        // Then
+        verify(mockExecutorService).submit(captureRunnable.capture())
+        verifyNoInteractions(mockSdkCore)
+        captureRunnable.firstValue.run()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "ndk_crash",
+                "sourceType" to "ndk+il2cpp",
                 "timestamp" to ndkCrashLog.timestamp,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
@@ -566,18 +645,21 @@ internal class DatadogNdkCrashHandlerTest {
         ndkCrashLog: NdkCrashLog,
         networkInfo: NetworkInfo?,
         userInfo: UserInfo?,
-        rumViewEvent: ViewEvent? = null
+        rumViewEvent: ViewEvent? = null,
+        errorSourceType: String = "ndk"
     ): Map<String, Any?> {
         val attributes = if (rumViewEvent == null) {
             mapOf(
-                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
+                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
+                LogAttributes.ERROR_SOURCE_TYPE to errorSourceType
             )
         } else {
             mapOf(
                 LogAttributes.RUM_VIEW_ID to rumViewEvent.viewId,
                 LogAttributes.RUM_SESSION_ID to rumViewEvent.sessionId,
                 LogAttributes.RUM_APPLICATION_ID to rumViewEvent.applicationId,
-                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
+                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
+                LogAttributes.ERROR_SOURCE_TYPE to errorSourceType
             )
         }
         return mapOf(

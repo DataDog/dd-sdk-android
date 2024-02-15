@@ -756,6 +756,7 @@ public final class com/datadog/android/log/LogAttributes {
 	public static final field ENV Ljava/lang/String;
 	public static final field ERROR_KIND Ljava/lang/String;
 	public static final field ERROR_MESSAGE Ljava/lang/String;
+	public static final field ERROR_SOURCE_TYPE Ljava/lang/String;
 	public static final field ERROR_STACK Ljava/lang/String;
 	public static final field HOST Ljava/lang/String;
 	public static final field HTTP_METHOD Ljava/lang/String;

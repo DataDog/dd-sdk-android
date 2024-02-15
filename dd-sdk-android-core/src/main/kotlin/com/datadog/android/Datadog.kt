@@ -340,6 +340,7 @@ object Datadog {
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
     internal const val DD_APP_VERSION_TAG = "_dd.version"
+    internal const val DD_NATIVE_SOURCE_TYPE = "_dd.native_source_type"
 
     // endregion
 }

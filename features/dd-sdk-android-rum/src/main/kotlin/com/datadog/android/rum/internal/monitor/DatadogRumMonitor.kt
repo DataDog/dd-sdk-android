@@ -704,6 +704,8 @@ internal class DatadogRumMonitor(
             "react-native" -> RumErrorSourceType.REACT_NATIVE
             "browser" -> RumErrorSourceType.BROWSER
             "flutter" -> RumErrorSourceType.FLUTTER
+            "ndk" -> RumErrorSourceType.NDK
+            "ndk+il2cpp" -> RumErrorSourceType.NDK_IL2CPP
             else -> RumErrorSourceType.ANDROID
         }
     }

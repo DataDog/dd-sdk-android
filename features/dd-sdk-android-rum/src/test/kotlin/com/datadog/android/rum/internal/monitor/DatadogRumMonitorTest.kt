@@ -1102,6 +1102,8 @@ internal class DatadogRumMonitorTest {
             "browser" to RumErrorSourceType.BROWSER,
             "react-native" to RumErrorSourceType.REACT_NATIVE,
             "flutter" to RumErrorSourceType.FLUTTER,
+            "ndk" to RumErrorSourceType.NDK,
+            "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
