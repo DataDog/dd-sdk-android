@@ -112,7 +112,17 @@
             "source_type": {
               "type": "string",
               "description": "Source type of the error (the language or platform impacting the error stacktrace format)",
-              "enum": ["android", "browser", "ios", "react-native", "flutter", "roku"],
+              "enum": [
+                "android",
+                "browser",
+                "ios",
+                "react-native",
+                "flutter",
+                "roku",
+                "ndk",
+                "ios+il2cpp",
+                "ndk+il2cpp"
+              ],
               "readOnly": true
             },
             "resource": {
