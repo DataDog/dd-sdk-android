@@ -11,7 +11,7 @@ body:
     id: description
     attributes:
       label: Describe the bug
-      description: Provide a clear and concise description of what the bug is. Include SDK debug logs if possible.
+      description: Provide a clear and concise description of what the bug is.
     validations:
       required: true
   - type: textarea
@@ -24,6 +24,14 @@ body:
         **Note** - Avoid sharing any business logic, credentials or tokens.
     validations:
       required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logcat logs
+      description: |
+        Please provide Logcat logs before, during and after the bug occurs. 
+    validations:
+      required: false
   - type: textarea
     id: expected_behavior
     attributes:
@@ -45,6 +53,30 @@ body:
       description: What was the last SDK version that was working as expected?
     validations:
       required: true
+  - type: dropdown
+    id: checked_lastest_sdk
+    attributes:
+      label: Did you confirm if the latest SDK version fixes the bug?
+      options:
+        - 'Yes'
+        - 'No'
+    validations:
+      required: true
+  - type: input
+    id: kotlin_java_version
+    attributes:
+      label: Kotlin / Java version 
+  - type: input
+    id: gradle_version
+    attributes:
+      label: Gradle / AGP version 
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Other dependencies versions                
+      description: |
+        Relevant third party dependency versions. 
+        e.g. okhttp 4.11.0
   - type: textarea
     id: device_info
     attributes:
@@ -61,24 +93,3 @@ body:
       description: |
         Other relevant information such as additional tooling in place, proxies, etc. 
         Anything that might be relevant for troubleshooting this bug. 
-  - type: dropdown
-    id: integration_method
-    attributes:
-      label: Integration Method
-      options:
-        - Gradle
-        - Source
-    validations:
-      required: true
-  - type: input
-    id: ide
-    attributes:
-      label: IDE Version 
-      description: e.g. Android Studio 2022.3.1 Patch 4
-  - type: textarea
-    id: dependencies
-    attributes:
-      label: Other dependencies versions                
-      description: |
-        Relevant third party dependency versions. 
-        e.g. okhttp 4.11.0
