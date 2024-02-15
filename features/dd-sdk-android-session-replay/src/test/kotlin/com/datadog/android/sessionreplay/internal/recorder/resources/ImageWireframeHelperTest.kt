@@ -60,7 +60,7 @@ internal class ImageWireframeHelperTest {
     private lateinit var testedHelper: ImageWireframeHelper
 
     @Mock
-    lateinit var mockBase64Serializer: Base64Serializer
+    lateinit var mockResourcesSerializer: ResourcesSerializer
 
     @Mock
     lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
@@ -164,7 +164,7 @@ internal class ImageWireframeHelperTest {
         testedHelper = ImageWireframeHelper(
             imageCompression = mockImageCompression,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
-            base64Serializer = mockBase64Serializer,
+            resourcesSerializer = mockResourcesSerializer,
             viewUtilsInternal = mockViewUtilsInternal,
             imageTypeResolver = mockImageTypeResolver
         )
@@ -306,8 +306,8 @@ internal class ImageWireframeHelperTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
-        verify(mockBase64Serializer).handleBitmap(
+        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        verify(mockResourcesSerializer).handleBitmap(
             any(),
             any(),
             any(),
@@ -373,8 +373,8 @@ internal class ImageWireframeHelperTest {
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
-        verify(mockBase64Serializer).handleBitmap(
+        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        verify(mockResourcesSerializer).handleBitmap(
             any(),
             any(),
             any(),
@@ -417,8 +417,8 @@ internal class ImageWireframeHelperTest {
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
-        verify(mockBase64Serializer, times(2)).handleBitmap(
+        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        verify(mockResourcesSerializer, times(2)).handleBitmap(
             any(),
             any(),
             any(),
@@ -486,14 +486,14 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockBase64Serializer).handleBitmap(
+        verify(mockResourcesSerializer).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -517,14 +517,14 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockBase64Serializer).handleBitmap(
+        verify(mockResourcesSerializer).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
 
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth, fakeDrawableHeight)
@@ -573,14 +573,14 @@ internal class ImageWireframeHelperTest {
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
-        verify(mockBase64Serializer, never()).handleBitmap(
+        verify(mockResourcesSerializer, never()).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
         )
 
         assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
@@ -608,14 +608,14 @@ internal class ImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockBase64Serializer, atLeastOnce()).handleBitmap(
+        verify(mockResourcesSerializer, atLeastOnce()).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
         )
     }
 

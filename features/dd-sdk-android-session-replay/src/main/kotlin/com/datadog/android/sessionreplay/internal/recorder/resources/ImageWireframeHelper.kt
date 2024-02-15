@@ -26,7 +26,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 internal class ImageWireframeHelper(
     private val imageCompression: ImageCompression = WebPImageCompression(),
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    private val base64Serializer: Base64Serializer,
+    private val resourcesSerializer: ResourcesSerializer,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
     private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
 ) {
@@ -86,14 +86,14 @@ internal class ImageWireframeHelper(
 
         imageWireframeHelperCallback.onStart()
 
-        base64Serializer.handleBitmap(
+        resourcesSerializer.handleBitmap(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
             imageWireframe = imageWireframe,
-            base64SerializerCallback = object : Base64SerializerCallback {
+            resourcesSerializerCallback = object : ResourcesSerializerCallback {
                 override fun onReady() {
                     imageWireframeHelperCallback.onFinished()
                 }

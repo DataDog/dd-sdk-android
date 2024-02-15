@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-internal class Base64Serializer private constructor(
+internal class ResourcesSerializer private constructor(
     private val threadPoolExecutor: ExecutorService,
     private val drawableUtils: DrawableUtils,
     private val base64Utils: Base64Utils,
@@ -62,20 +62,20 @@ internal class Base64Serializer private constructor(
         drawableWidth: Int,
         drawableHeight: Int,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback
+        resourcesSerializerCallback: ResourcesSerializerCallback
     ) {
         registerCallbacks(applicationContext)
 
         tryToGetBase64FromCache(
             drawable = drawable,
             imageWireframe = imageWireframe,
-            base64SerializerCallback = base64SerializerCallback
+            resourcesSerializerCallback = resourcesSerializerCallback
         )
             ?: tryToGetBitmapFromBitmapDrawable(
                 drawable = drawable,
                 displayMetrics = displayMetrics,
                 imageWireframe = imageWireframe,
-                base64SerializerCallback = base64SerializerCallback
+                resourcesSerializerCallback = resourcesSerializerCallback
             )
             ?: tryToDrawNewBitmap(
                 drawable = drawable,
@@ -83,7 +83,7 @@ internal class Base64Serializer private constructor(
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
                 imageWireframe = imageWireframe,
-                base64SerializerCallback = base64SerializerCallback,
+                resourcesSerializerCallback = resourcesSerializerCallback,
 
                 // this parameter is used to avoid infinite recursion
                 // basically we only allow one attempt to recreate the bitmap
@@ -110,7 +110,7 @@ internal class Base64Serializer private constructor(
         bitmap: Bitmap,
         shouldCacheBitmap: Boolean,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback,
+        resourcesSerializerCallback: ResourcesSerializerCallback,
 
         // this parameter is used to avoid infinite recursion
         // basically we only allow one attempt to recreate the bitmap
@@ -127,7 +127,7 @@ internal class Base64Serializer private constructor(
                 drawableHeight = bitmap.height,
                 displayMetrics = displayMetrics,
                 imageWireframe = imageWireframe,
-                base64SerializerCallback = base64SerializerCallback,
+                resourcesSerializerCallback = resourcesSerializerCallback,
                 didCallOriginateFromFailover = true
             )
 
@@ -136,7 +136,7 @@ internal class Base64Serializer private constructor(
 
         if (byteArray.isEmpty()) {
             // failed to get image data
-            base64SerializerCallback.onReady()
+            resourcesSerializerCallback.onReady()
             return
         }
 
@@ -150,7 +150,7 @@ internal class Base64Serializer private constructor(
         if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
             if (resourceId == null) {
                 // resourceId is mandatory for resource endpoint
-                base64SerializerCallback.onReady()
+                resourcesSerializerCallback.onReady()
                 return
             }
 
@@ -177,7 +177,7 @@ internal class Base64Serializer private constructor(
         }
 
         finalizeRecordedDataItem(cacheData, imageWireframe)
-        base64SerializerCallback.onReady()
+        resourcesSerializerCallback.onReady()
     }
 
     @MainThread
@@ -217,7 +217,7 @@ internal class Base64Serializer private constructor(
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback,
+        resourcesSerializerCallback: ResourcesSerializerCallback,
         didCallOriginateFromFailover: Boolean
     ) {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
@@ -235,7 +235,7 @@ internal class Base64Serializer private constructor(
                             bitmap = bitmap,
                             shouldCacheBitmap = true,
                             imageWireframe = imageWireframe,
-                            base64SerializerCallback = base64SerializerCallback,
+                            resourcesSerializerCallback = resourcesSerializerCallback,
                             didCallOriginateFromFailover = didCallOriginateFromFailover
                         )
                     }.let {
@@ -244,7 +244,7 @@ internal class Base64Serializer private constructor(
                 }
 
                 override fun onFailure() {
-                    base64SerializerCallback.onReady()
+                    resourcesSerializerCallback.onReady()
                 }
             }
         )
@@ -255,7 +255,7 @@ internal class Base64Serializer private constructor(
         drawable: Drawable,
         displayMetrics: DisplayMetrics,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback
+        resourcesSerializerCallback: ResourcesSerializerCallback
     ): Bitmap? {
         if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) {
             val bitmap = drawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
@@ -278,7 +278,7 @@ internal class Base64Serializer private constructor(
                         bitmap = scaledBitmap,
                         shouldCacheBitmap = shouldCacheBitmap,
                         imageWireframe = imageWireframe,
-                        base64SerializerCallback = base64SerializerCallback,
+                        resourcesSerializerCallback = resourcesSerializerCallback,
                         didCallOriginateFromFailover = false
                     )
                 }
@@ -296,7 +296,7 @@ internal class Base64Serializer private constructor(
     private fun tryToGetBase64FromCache(
         drawable: Drawable,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        base64SerializerCallback: Base64SerializerCallback
+        resourcesSerializerCallback: ResourcesSerializerCallback
     ): String? {
         val cacheData = base64LRUCache.get(drawable)
 
@@ -308,7 +308,7 @@ internal class Base64Serializer private constructor(
             finalizeRecordedDataItem(cacheData, imageWireframe)
         }
 
-        base64SerializerCallback.onReady()
+        resourcesSerializerCallback.onReady()
 
         return String(cacheData.base64Encoding, Charsets.UTF_8)
     }
@@ -367,7 +367,7 @@ internal class Base64Serializer private constructor(
         private var md5HashGenerator: MD5HashGenerator = MD5HashGenerator(logger)
     ) {
         internal fun build() =
-            Base64Serializer(
+            ResourcesSerializer(
                 logger = logger,
                 threadPoolExecutor = threadPoolExecutor,
                 bitmapPool = bitmapPool,

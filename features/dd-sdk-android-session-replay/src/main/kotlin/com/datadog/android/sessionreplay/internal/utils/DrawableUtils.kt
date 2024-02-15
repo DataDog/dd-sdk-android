@@ -21,7 +21,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.ResourcesFeature
-import com.datadog.android.sessionreplay.internal.recorder.resources.Base64Serializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
@@ -49,7 +49,7 @@ internal class DrawableUtils(
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int? = null,
         config: Config = Config.ARGB_8888,
-        bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
     ) {
         val bitmapSizeLimit = requestedSizeInBytes ?: getBitmapSizeLimit()
 
@@ -120,7 +120,7 @@ internal class DrawableUtils(
     private fun drawOnCanvas(
         bitmap: Bitmap,
         drawable: Drawable,
-        bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
     ) {
         val canvas = canvasWrapper.createCanvas(bitmap)
 

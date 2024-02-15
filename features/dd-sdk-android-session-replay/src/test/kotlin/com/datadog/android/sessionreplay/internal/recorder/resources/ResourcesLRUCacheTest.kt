@@ -12,7 +12,7 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.resources.Base64LRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
 import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 import fr.xgouchet.elmyr.Forge
@@ -38,8 +38,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class Base64LRUCacheTest {
-    private lateinit var testedCache: Base64LRUCache
+internal class ResourcesLRUCacheTest {
+    private lateinit var testedCache: ResourcesLRUCache
 
     private lateinit var internalCache: LruCache<String, CacheData>
 
@@ -63,7 +63,7 @@ internal class Base64LRUCacheTest {
         val fakeResourceIdByteArray = fakeResourceId?.toByteArray(Charsets.UTF_8)
         fakeCacheData = CacheData(fakeBase64ByteArray, fakeResourceIdByteArray)
         internalCache = LruCache<String, CacheData>(MAX_CACHE_MEMORY_SIZE_BYTES)
-        testedCache = Base64LRUCache(
+        testedCache = ResourcesLRUCache(
             invocationUtils = mockInvocationUtils,
             cache = internalCache
         )

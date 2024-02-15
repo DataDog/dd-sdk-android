@@ -14,7 +14,7 @@ import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
-import com.datadog.android.sessionreplay.internal.recorder.resources.Base64Serializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
@@ -76,7 +76,7 @@ internal class DrawableUtilsTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockBitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+    private lateinit var mockBitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
 
     @Mock
     private lateinit var mockMainThreadHandler: Handler
