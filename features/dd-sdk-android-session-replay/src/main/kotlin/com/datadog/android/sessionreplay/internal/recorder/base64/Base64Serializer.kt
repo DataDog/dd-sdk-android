@@ -48,7 +48,8 @@ internal class Base64Serializer private constructor(
 
     // resources previously sent in this session -
     // optimization to avoid sending the same resource multiple times
-    private val previouslySentResources: MutableSet<String> =
+    // atm this set is unbounded but expected to use relatively little space (~80kb per 1k items)
+    private val resourcesSeen: MutableSet<String> =
         Collections.synchronizedSet(HashSet<String>())
 
     // region internal
@@ -140,8 +141,7 @@ internal class Base64Serializer private constructor(
         }
 
         val resourceId = md5HashGenerator.generate(byteArray)
-        var base64String = "".toByteArray(Charsets.UTF_8)
-        var cacheData = CacheData(base64String, resourceId?.toByteArray(Charsets.UTF_8))
+        var base64String = ""
 
         if (shouldCacheBitmap) {
             bitmapPool?.put(bitmap)
@@ -154,8 +154,11 @@ internal class Base64Serializer private constructor(
                 return
             }
 
-            if (!previouslySentResources.contains(resourceId)) {
-                previouslySentResources.add(resourceId)
+            if (!resourcesSeen.contains(resourceId)) {
+                resourcesSeen.add(resourceId)
+
+                // We probably don't want this here. In the next pr we'll
+                // refactor this class and extract logic
                 recordedDataQueueHandler.addResourceItem(
                     identifier = resourceId,
                     resourceData = byteArray,
@@ -165,10 +168,10 @@ internal class Base64Serializer private constructor(
         } else {
             base64String = convertBitmapToBase64(
                 byteArray = byteArray
-            ).toByteArray(Charsets.UTF_8)
-            cacheData = CacheData(base64String, resourceId?.toByteArray(Charsets.UTF_8))
+            )
         }
 
+        val cacheData = CacheData(base64String.toByteArray(Charsets.UTF_8), resourceId?.toByteArray(Charsets.UTF_8))
         if (base64String.isNotEmpty() || resourceId != null) {
             base64LRUCache.put(drawable, cacheData)
         }

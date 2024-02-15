@@ -51,7 +51,7 @@ internal class DrawableUtils(
         config: Config = Config.ARGB_8888,
         bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
     ) {
-        val bitmapSizeLimit = getBitmapSizeLimit(requestedSizeInBytes)
+        val bitmapSizeLimit = requestedSizeInBytes ?: getBitmapSizeLimit()
 
         Runnable {
             @Suppress("ThreadSafety") // this runs inside an executor
@@ -93,7 +93,7 @@ internal class DrawableUtils(
         bitmap: Bitmap,
         requestedSizeInBytes: Int? = null
     ): Bitmap? {
-        val bitmapSizeLimit = getBitmapSizeLimit(requestedSizeInBytes)
+        val bitmapSizeLimit = requestedSizeInBytes ?: getBitmapSizeLimit()
 
         val (width, height) = getScaledWidthAndHeight(
             bitmap.width,
@@ -109,17 +109,12 @@ internal class DrawableUtils(
     }
 
     @VisibleForTesting
-    internal fun getBitmapSizeLimit(requestedSizeInBytes: Int?): Int {
-        if (requestedSizeInBytes != null) {
-            return requestedSizeInBytes
-        }
-
-        return if (ResourcesFeature.RESOURCE_ENDPOINT_FEATURE_FLAG) {
+    internal fun getBitmapSizeLimit(): Int =
+        if (ResourcesFeature.RESOURCE_ENDPOINT_FEATURE_FLAG) {
             MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT
         } else {
             MAX_BITMAP_SIZE_IN_BYTES_WITH_BASE64
         }
-    }
 
     @MainThread
     private fun drawOnCanvas(
