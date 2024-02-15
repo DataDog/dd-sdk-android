@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_RESOURCE_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils.safeDeserializeToJsonObject
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils.safeGetStringFromJsonObject
@@ -54,7 +54,7 @@ internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
     }
 
     @Test
-    fun `M return valid binary metadata W asBinaryMetadat`(
+    fun `M return valid binary metadata W asBinaryMetadata`(
         @Forgery enrichedResource: EnrichedResource
     ) {
         // Given
@@ -81,7 +81,7 @@ internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
         val actualApplicationId = safeGetStringFromJsonObject(
             mockInternalLogger,
             deserializedData,
-            APPLICATION_ID_RESOURCE_KEY
+            APPLICATION_ID_KEY
         )
 
         assertThat(actualIdentifier).isEqualTo(expectedIdentifier)
