@@ -296,6 +296,7 @@ object com.datadog.android.log.LogAttributes
   const val ERROR_KIND: String
   const val ERROR_MESSAGE: String
   const val ERROR_STACK: String
+  const val ERROR_SOURCE_TYPE: String
   const val HOST: String
   const val HTTP_METHOD: String
   const val HTTP_REFERRER: String
