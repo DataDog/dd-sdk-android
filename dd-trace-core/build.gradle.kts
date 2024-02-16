@@ -29,19 +29,24 @@ plugins {
 }
 
 android {
-    namespace = "datadog.trace"
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
+    namespace = "datadog"
 }
 
 dependencies {
-    api(project(":utils:time-utils"))
-    api(project(":utils:container-utils"))
-    implementation(project(":dd-trace-api"))
-    implementation(project(":internal-api"))
-    implementation(libs.slf4j)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    api(libs.slf4j)
     implementation(libs.moshi)
     implementation(libs.jctools)
     implementation(libs.kotlin)
     implementation(libs.okHttp)
+    implementation(libs.kotlin)
+    implementation(libs.androidXAnnotation)
+    // it contains annotations that are also present in the instrumented application classes
+    api("com.datadoghq:dd-javac-plugin-client:0.1.7")
+
     implementation(group = "com.datadoghq", name = "sketches-java", version = "0.8.2")
     implementation(group = "com.google.re2j", name = "re2j", version = "1.7")
     compileOnly(group = "com.github.spotbugs", name = "spotbugs-annotations", version = "4.2.0")

@@ -14,7 +14,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
-import com.datadog.android.trace.internal.data.NoOpOtelWriter
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.opentracing.DDTracer
@@ -22,8 +21,6 @@ import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.context.ScopeListener
-import datadog.trace.api.IdGenerationStrategy
-import datadog.trace.core.CoreTracer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
@@ -154,12 +151,6 @@ class AndroidTracer internal constructor(
                 )
                 bundleWithRumEnabled = false
             }
-            val coreTracer = CoreTracer.CoreTracerBuilder()
-                    .withProperties(properties())
-                    .serviceName(serviceName)
-                    .writer(tracingFeature?.otelDataWriter ?: NoOpOtelWriter())
-                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
-                    .build()
             return AndroidTracer(
                 sdkCore,
                 config(),

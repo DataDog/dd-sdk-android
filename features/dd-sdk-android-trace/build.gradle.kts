@@ -56,10 +56,7 @@ android {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     api(project(":dd-sdk-android-core"))
-
-    implementation(project(":dd-trace-api"))
     implementation(project(":dd-trace-core"))
-    implementation(project(":internal-api"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)

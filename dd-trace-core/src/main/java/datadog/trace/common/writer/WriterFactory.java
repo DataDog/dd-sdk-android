@@ -10,7 +10,7 @@
 //import static datadog.trace.common.writer.ddagent.Prioritization.ENSURE_TRACE;
 //import static datadog.trace.common.writer.ddagent.Prioritization.FAST_LANE;
 //
-//import datadog.common.container.ServerlessInfo;
+//import datadog.common.datadog.container.ServerlessInfo;
 //import datadog.trace.ddagent.DDAgentFeaturesDiscovery;
 //import datadog.trace.ddagent.SharedCommunicationObjects;
 //import datadog.trace.api.Config;
