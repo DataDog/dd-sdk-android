@@ -15,7 +15,6 @@ import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.resources.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
@@ -158,7 +157,7 @@ internal class ResourcesSerializerTest {
         whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
         whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
 
-        testedResourcesSerializer = createBase64Serializer()
+        testedResourcesSerializer = createResourcesSerializer()
     }
 
     @Test
@@ -272,7 +271,7 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M log error W handleBitmap() { base64Lru does not subclass ComponentCallbacks2 }`() {
+    fun `M log error W handleBitmap() { cache does not subclass ComponentCallbacks2 }`() {
         // Given
         val fakeBase64CacheInstance = FakeNonComponentsCallbackCache()
         testedResourcesSerializer = ResourcesSerializer.Builder(
@@ -582,9 +581,7 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        if (!RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            verify(mockBitmapPool).put(any())
-        }
+        verify(mockBitmapPool).put(any())
     }
 
     @Test
@@ -736,61 +733,59 @@ internal class ResourcesSerializerTest {
         @StringForgery fakeResourceId: String,
         @StringForgery fakeResource: String
     ) {
-        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            // Given
-            whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
-            whenever(mockBitmap.width).thenReturn(fakeBitmapWidth)
-            whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
-            whenever(mockMD5HashGenerator.generate(any())).thenReturn(fakeResourceId)
+        // Given
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+        whenever(mockBitmap.width).thenReturn(fakeBitmapWidth)
+        whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
+        whenever(mockMD5HashGenerator.generate(any())).thenReturn(fakeResourceId)
 
-            whenever(mockBitmap.isRecycled)
-                .thenReturn(true)
-                .thenReturn(false)
+        whenever(mockBitmap.isRecycled)
+            .thenReturn(true)
+            .thenReturn(false)
 
-            val fakeByteArray = fakeResource.toByteArray()
-            whenever(mockWebPImageCompression.compressBitmap(mockBitmap))
-                .thenReturn(fakeByteArray)
+        val fakeByteArray = fakeResource.toByteArray()
+        whenever(mockWebPImageCompression.compressBitmap(mockBitmap))
+            .thenReturn(fakeByteArray)
 
-            whenever(mockWebPImageCompression.compressBitmap(mockCreatedBitmap))
-                .thenReturn(fakeImageCompressionByteArray)
+        whenever(mockWebPImageCompression.compressBitmap(mockCreatedBitmap))
+            .thenReturn(fakeImageCompressionByteArray)
 
-            whenever(mockDrawableUtils.createScaledBitmap(mockBitmap))
-                .thenReturn(mockBitmap)
-                .thenReturn(mockCreatedBitmap)
+        whenever(mockDrawableUtils.createScaledBitmap(mockBitmap))
+            .thenReturn(mockBitmap)
+            .thenReturn(mockCreatedBitmap)
 
-            // When
-            testedResourcesSerializer.handleBitmap(
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockBitmapDrawable,
-                drawableWidth = fakeBitmapWidth,
-                drawableHeight = fakeBitmapHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSerializerCallback
-            )
+        // When
+        testedResourcesSerializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
+            imageWireframe = fakeImageWireframe,
+            resourcesSerializerCallback = mockSerializerCallback
+        )
 
-            // Then
+        // Then
 
-            // second time
-            testedResourcesSerializer.handleBitmap(
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockBitmapDrawable,
-                drawableWidth = fakeBitmapWidth,
-                drawableHeight = fakeBitmapHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSerializerCallback
-            )
+        // second time
+        testedResourcesSerializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
+            imageWireframe = fakeImageWireframe,
+            resourcesSerializerCallback = mockSerializerCallback
+        )
 
-            verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
-                identifier = eq(fakeResourceId),
-                applicationId = eq(fakeApplicationid.toString()),
-                resourceData = eq(fakeByteArray)
-            )
-        }
+        verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
+            identifier = eq(fakeResourceId),
+            applicationId = eq(fakeApplicationid.toString()),
+            resourceData = eq(fakeByteArray)
+        )
     }
 
-    private fun createBase64Serializer(): ResourcesSerializer {
+    private fun createResourcesSerializer(): ResourcesSerializer {
         val builder = ResourcesSerializer.Builder(
             logger = mockLogger,
             threadPoolExecutor = mockExecutorService,

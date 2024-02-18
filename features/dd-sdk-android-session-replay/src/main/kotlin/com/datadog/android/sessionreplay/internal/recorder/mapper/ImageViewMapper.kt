@@ -9,9 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.ImageView
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelperCallback
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator

@@ -20,10 +20,6 @@ import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
-import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
@@ -45,6 +41,10 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 

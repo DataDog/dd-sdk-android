@@ -22,9 +22,9 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import java.util.Locale
 
-// This should not have a callback but it should just create a placeholder for base64Serializer
-// The base64Serializer dependency should be removed from here
-// TODO: RUM-0000 Remove the base64Serializer dependency from here
+// This should not have a callback but it should just create a placeholder for resourcesSerializer
+// The resourcesSerializer dependency should be removed from here
+// TODO: RUM-0000 Remove the resourcesSerializer dependency from here
 internal class ImageWireframeHelper(
     private val logger: InternalLogger,
     private val resourcesSerializer: ResourcesSerializer,
