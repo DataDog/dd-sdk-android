@@ -81,8 +81,8 @@ enum class SessionReplayPrivacy {
         applicationId: String,
         recordedDataQueueHandler: RecordedDataQueueHandler
     ): List<MapperTypeWrapper> {
-        val base64Serializer = buildBase64Serializer(applicationId, recordedDataQueueHandler)
-        val imageWireframeHelper = ImageWireframeHelper(resourcesSerializer = base64Serializer)
+        val resourcesSerializer = buildResourcesSerializer(applicationId, recordedDataQueueHandler)
+        val imageWireframeHelper = ImageWireframeHelper(resourcesSerializer = resourcesSerializer)
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
         val unsupportedViewMapper = UnsupportedViewMapper()
@@ -170,7 +170,7 @@ enum class SessionReplayPrivacy {
         return mappersList
     }
 
-    private fun buildBase64Serializer(
+    private fun buildResourcesSerializer(
         applicationId: String,
         recordedDataQueueHandler:
         RecordedDataQueueHandler
@@ -182,7 +182,7 @@ enum class SessionReplayPrivacy {
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapPool = bitmapPool,
-            base64LRUCache = resourcesLRUCache
+            resourcesLRUCache = resourcesLRUCache
         )
         return builder.build()
     }

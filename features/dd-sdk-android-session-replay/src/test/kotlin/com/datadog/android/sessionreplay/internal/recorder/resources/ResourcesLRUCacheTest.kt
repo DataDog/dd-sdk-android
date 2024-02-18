@@ -16,7 +16,6 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLR
 import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -49,19 +48,15 @@ internal class ResourcesLRUCacheTest {
     @Mock
     lateinit var mockInvocationUtils: InvocationUtils
 
-    @StringForgery
-    lateinit var fakeBase64Encoding: String
-
     private lateinit var fakeCacheData: CacheData
 
     val argumentCaptor = argumentCaptor<String>()
 
     @BeforeEach
     fun setup(forge: Forge) {
-        val fakeResourceId = forge.aNullable { aString() }
-        val fakeBase64ByteArray = fakeBase64Encoding.toByteArray(Charsets.UTF_8)
-        val fakeResourceIdByteArray = fakeResourceId?.toByteArray(Charsets.UTF_8)
-        fakeCacheData = CacheData(fakeBase64ByteArray, fakeResourceIdByteArray)
+        val fakeResourceId = forge.aString()
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
+        fakeCacheData = CacheData(fakeResourceIdByteArray)
         internalCache = LruCache<String, CacheData>(MAX_CACHE_MEMORY_SIZE_BYTES)
         testedCache = ResourcesLRUCache(
             invocationUtils = mockInvocationUtils,

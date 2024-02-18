@@ -25,9 +25,7 @@ internal class ResourcesLRUCache(
         object :
             LruCache<String, CacheData>(MAX_CACHE_MEMORY_SIZE_BYTES) {
             override fun sizeOf(key: String, value: CacheData): Int {
-                val base64Size = value.base64Encoding.size
-                val hashSize = value.resourceId?.size ?: 0
-                return base64Size + hashSize
+                return value.resourceId.size
             }
         }
 ) : Cache<Drawable, CacheData>, ComponentCallbacks2 {
@@ -49,12 +47,11 @@ internal class ResourcesLRUCache(
     @Synchronized
     override fun put(element: Drawable, value: CacheData) {
         val key = generateKey(element)
-        val base64Encoding = value.base64Encoding
         val resourceId = value.resourceId
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
         invocationUtils.safeCallWithErrorLogging(
-            call = { cache.put(key, CacheData(base64Encoding, resourceId)) },
+            call = { cache.put(key, CacheData(resourceId)) },
             failureMessage = FAILURE_MSG_PUT_CACHE
         )
     }
@@ -65,9 +62,8 @@ internal class ResourcesLRUCache(
         invocationUtils.safeCallWithErrorLogging(
             call = {
                 cache.get(generateKey(element))?.let {
-                    val base64Encoding = it.base64Encoding
                     val resourceId = it.resourceId
-                    CacheData(base64Encoding, resourceId)
+                    CacheData(resourceId)
                 }
             },
             failureMessage = FAILURE_MSG_GET_CACHE
@@ -125,7 +121,7 @@ internal class ResourcesLRUCache(
     }
 }
 
-internal data class CacheData(val base64Encoding: ByteArray, var resourceId: ByteArray?) {
+internal data class CacheData(val resourceId: ByteArray) {
     // we must override these methods because we are using arrays as properties
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -133,18 +129,10 @@ internal data class CacheData(val base64Encoding: ByteArray, var resourceId: Byt
 
         other as CacheData
 
-        if (!base64Encoding.contentEquals(other.base64Encoding)) return false
-        if (resourceId != null) {
-            if (other.resourceId == null) return false
-            if (!resourceId.contentEquals(other.resourceId)) return false
-        } else if (other.resourceId != null) return false
-
-        return true
+        return resourceId.contentEquals(other.resourceId)
     }
 
     override fun hashCode(): Int {
-        var result = base64Encoding.contentHashCode()
-        result = 31 * result + (resourceId?.contentHashCode() ?: 0)
-        return result
+        return resourceId.contentHashCode()
     }
 }
