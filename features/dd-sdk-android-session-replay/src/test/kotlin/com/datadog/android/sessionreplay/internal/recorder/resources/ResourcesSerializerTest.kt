@@ -18,7 +18,6 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.resources.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
-import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
@@ -65,9 +64,6 @@ internal class ResourcesSerializerTest {
 
     @Mock
     lateinit var mockWebPImageCompression: ImageCompression
-
-    @Mock
-    lateinit var mockBase64Utils: Base64Utils
 
     @Mock
     lateinit var mockLogger: InternalLogger
@@ -120,29 +116,23 @@ internal class ResourcesSerializerTest {
     @Forgery
     lateinit var fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe
 
-    private lateinit var fakeBase64Encoding: ByteArray
-
     private lateinit var fakeCacheData: CacheData
 
     private lateinit var fakeImageCompressionByteArray: ByteArray
 
     @BeforeEach
     fun setup(forge: Forge) {
-        val fakeResourceId = forge.aNullable { aString() }
-        val fakeResourceIdByteArray = fakeResourceId?.toByteArray(Charsets.UTF_8)
-        fakeBase64Encoding = forge.aString().toByteArray(Charsets.UTF_8)
+        val fakeResourceId = forge.aString()
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         fakeImageCompressionByteArray = forge.aString().toByteArray()
 
-        fakeCacheData = CacheData(fakeBase64Encoding, fakeResourceIdByteArray)
+        fakeCacheData = CacheData(fakeResourceIdByteArray)
 
         fakeImageWireframe.base64 = ""
         fakeImageWireframe.isEmpty = true
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(fakeImageCompressionByteArray)
-        whenever(mockBase64Utils.serializeToBase64String(any())).thenReturn(
-            String(fakeBase64Encoding, Charsets.UTF_8)
-        )
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
@@ -174,7 +164,7 @@ internal class ResourcesSerializerTest {
     @Test
     fun `M get data from cache and update wireframe W handleBitmap() { cache hit with resourceId }`(forge: Forge) {
         // Given
-        fakeCacheData.resourceId = forge.aString().toByteArray(Charsets.UTF_8)
+        fakeCacheData = CacheData(forge.aString().toByteArray(Charsets.UTF_8))
         whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(fakeCacheData)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
@@ -194,46 +184,8 @@ internal class ResourcesSerializerTest {
         // Then
         verifyNoInteractions(mockDrawableUtils)
         assertThat(fakeImageWireframe.isEmpty).isFalse()
-        assertThat(fakeImageWireframe.base64).isEqualTo(
-            String(
-                fakeBase64Encoding,
-                Charsets.UTF_8
-            )
-        )
-        assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId!!, Charsets.UTF_8))
-        verify(mockSerializerCallback).onReady()
-    }
-
-    @Test
-    fun `M get data from cache but failover to creation W handleBitmap() { cache hit without resourceId }`() {
-        // Given
-        fakeCacheData.resourceId = null
-        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(fakeCacheData)
-
-        whenever(mockWebPImageCompression.compressBitmap(any()))
-            .thenReturn(fakeImageCompressionByteArray)
-
-        // When
-        testedResourcesSerializer.handleBitmap(
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
-            drawable = any(),
-            drawableWidth = any(),
-            drawableHeight = any(),
-            displayMetrics = any(),
-            requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull(),
-            bitmapCreationCallback = any()
-        )
+        assertThat(fakeImageWireframe.base64).isEqualTo("")
+        assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId, Charsets.UTF_8))
         verify(mockSerializerCallback).onReady()
     }
 
@@ -281,11 +233,15 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            verifyNoInteractions(mockBase64Utils)
-        } else {
-            verify(mockBase64Utils, times(1)).serializeToBase64String(any())
-        }
+        verify(mockDrawableUtils, times(2)).createBitmapOfApproxSizeFromDrawable(
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
+        )
     }
 
     @Test
@@ -312,7 +268,6 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        verifyNoInteractions(mockBase64Utils)
         verify(mockSerializerCallback).onReady()
     }
 
@@ -324,9 +279,8 @@ internal class ResourcesSerializerTest {
             logger = mockLogger,
             threadPoolExecutor = mockExecutorService,
             bitmapPool = mockBitmapPool,
-            base64LRUCache = fakeBase64CacheInstance,
+            resourcesLRUCache = fakeBase64CacheInstance,
             drawableUtils = mockDrawableUtils,
-            base64Utils = mockBase64Utils,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             applicationId = fakeApplicationid.toString(),
             webPImageCompression = mockWebPImageCompression
@@ -410,13 +364,13 @@ internal class ResourcesSerializerTest {
         // When
         val instance1 = ResourcesSerializer.Builder(
             bitmapPool = mockBitmapPool,
-            base64LRUCache = mockResourcesLRUCache,
+            resourcesLRUCache = mockResourcesLRUCache,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             applicationId = fakeApplicationid.toString()
         ).build()
         val instance2 = ResourcesSerializer.Builder(
             bitmapPool = mockBitmapPool,
-            base64LRUCache = mockResourcesLRUCache,
+            resourcesLRUCache = mockResourcesLRUCache,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             applicationId = fakeApplicationid.toString()
         ).build()
@@ -428,34 +382,8 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M cache base64 string W handleBitmap() { and got only base64 string }`() {
+    fun `M not try to cache resourceId W handleBitmap() { and did not get resourceId }`() {
         // Given
-        whenever(mockBase64Utils.serializeToBase64String(any()))
-            .thenReturn(String(fakeBase64Encoding, Charsets.UTF_8))
-        whenever(mockMD5HashGenerator.generate(any())).thenReturn(null)
-        val expectedHash = CacheData(fakeBase64Encoding, null)
-
-        // When
-        testedResourcesSerializer.handleBitmap(
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockStateListDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        if (!RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            verify(mockResourcesLRUCache, times(1)).put(mockStateListDrawable, expectedHash)
-        }
-    }
-
-    @Test
-    fun `M not try to cache base64 W handleBitmap() { and did not get base64 }`() {
-        // Given
-        whenever(mockBase64Utils.serializeToBase64String(any())).thenReturn("")
         whenever(mockMD5HashGenerator.generate(any())).thenReturn(null)
 
         // When
@@ -767,9 +695,6 @@ internal class ResourcesSerializerTest {
             .thenReturn(mockBitmap)
             .thenReturn(mockCreatedBitmap)
 
-        whenever(mockBase64Utils.serializeToBase64String(fakeImageCompressionByteArray))
-            .thenReturn(String(fakeBase64Encoding, Charsets.UTF_8))
-
         // When
         testedResourcesSerializer.handleBitmap(
             applicationContext = mockApplicationContext,
@@ -833,9 +758,6 @@ internal class ResourcesSerializerTest {
                 .thenReturn(mockBitmap)
                 .thenReturn(mockCreatedBitmap)
 
-            whenever(mockBase64Utils.serializeToBase64String(fakeImageCompressionByteArray))
-                .thenReturn(String(fakeBase64Encoding, Charsets.UTF_8))
-
             // When
             testedResourcesSerializer.handleBitmap(
                 applicationContext = mockApplicationContext,
@@ -873,9 +795,8 @@ internal class ResourcesSerializerTest {
             logger = mockLogger,
             threadPoolExecutor = mockExecutorService,
             bitmapPool = mockBitmapPool,
-            base64LRUCache = mockResourcesLRUCache,
+            resourcesLRUCache = mockResourcesLRUCache,
             drawableUtils = mockDrawableUtils,
-            base64Utils = mockBase64Utils,
             webPImageCompression = mockWebPImageCompression,
             md5HashGenerator = mockMD5HashGenerator,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,

@@ -184,7 +184,7 @@ enum class SessionReplayPrivacy {
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapPool = bitmapPool,
-            base64LRUCache = resourcesLRUCache
+            resourcesLRUCache = resourcesLRUCache
         )
         return builder.build()
     }
