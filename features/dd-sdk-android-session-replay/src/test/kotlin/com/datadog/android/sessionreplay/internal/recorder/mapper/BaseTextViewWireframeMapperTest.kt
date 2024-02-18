@@ -15,10 +15,10 @@ import android.util.DisplayMetrics
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.aMockTextView
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.utils.shapeStyle
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils

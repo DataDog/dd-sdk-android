@@ -22,13 +22,11 @@ import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SessionReplayRecorder
-import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
-import com.datadog.android.sessionreplay.internal.storage.NoOpResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -100,15 +98,10 @@ internal class SessionReplayFeature(
         this.appContext = appContext
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
 
-        val resourcesWriter = if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            val resourcesFeature = registerResourceFeature(sdkCore)
-            resourcesFeature.dataWriter
-        } else {
-            NoOpResourcesWriter()
-        }
+        val resourcesFeature = registerResourceFeature(sdkCore)
 
         dataWriter = createDataWriter()
-        sessionReplayRecorder = sessionReplayRecorderProvider(resourcesWriter, dataWriter, appContext)
+        sessionReplayRecorder = sessionReplayRecorderProvider(resourcesFeature.dataWriter, dataWriter, appContext)
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
