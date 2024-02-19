@@ -165,7 +165,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -204,7 +203,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -289,7 +287,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -375,7 +372,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )

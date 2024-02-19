@@ -78,7 +78,6 @@ internal class ImageWireframeHelper(
                 height = drawableHeightDp,
                 shapeStyle = shapeStyle,
                 border = border,
-                base64 = "",
                 clip = clipping,
                 mimeType = mimeType,
                 isEmpty = true

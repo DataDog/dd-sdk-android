@@ -127,7 +127,6 @@ internal class ResourcesSerializerTest {
 
         fakeCacheData = CacheData(fakeResourceIdByteArray)
 
-        fakeImageWireframe.base64 = ""
         fakeImageWireframe.isEmpty = true
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
@@ -183,7 +182,7 @@ internal class ResourcesSerializerTest {
         // Then
         verifyNoInteractions(mockDrawableUtils)
         assertThat(fakeImageWireframe.isEmpty).isFalse()
-        assertThat(fakeImageWireframe.base64).isEqualTo("")
+        assertThat(fakeImageWireframe.base64).isEqualTo(null)
         assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId, Charsets.UTF_8))
         verify(mockSerializerCallback).onReady()
     }
@@ -331,7 +330,7 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M calculate base64 W handleBitmap() { cache miss }`() {
+    fun `M calculate resourceId W handleBitmap() { cache miss }`() {
         // Given
         whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(null)
 
