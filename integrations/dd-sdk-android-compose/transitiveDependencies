@@ -4,26 +4,25 @@ androidx.activity:activity-compose:1.7.0                        : 1082 Kb
 androidx.activity:activity-ktx:1.7.0                            :   25 Kb
 androidx.activity:activity:1.7.0                                :  139 Kb
 androidx.annotation:annotation-experimental:1.3.0               :   35 Kb
-androidx.annotation:annotation-jvm:1.7.0                        :   53 Kb
+androidx.annotation:annotation-jvm:1.6.0                        :   53 Kb
 androidx.arch.core:core-common:2.2.0                            :   11 Kb
-androidx.collection:collection-jvm:1.4.0                        :  749 Kb
-androidx.compose.animation:animation-android:1.6.0              : 1377 Kb
-androidx.compose.animation:animation-core-android:1.6.0         : 1428 Kb
-androidx.compose.foundation:foundation-android:1.6.0            :    4 Mb
-androidx.compose.foundation:foundation-layout-android:1.6.0     :  513 Kb
-androidx.compose.material:material-android:1.6.0                :    2 Mb
-androidx.compose.material:material-icons-core-android:1.6.0     :  804 Kb
-androidx.compose.material:material-ripple-android:1.6.0         :   71 Kb
-androidx.compose.runtime:runtime-android:1.6.0                  :    2 Mb
-androidx.compose.runtime:runtime-saveable-android:1.6.0         : 1157 Kb
-androidx.compose.ui:ui-android:1.6.0                            :    4 Mb
-androidx.compose.ui:ui-geometry-android:1.6.0                   :   35 Kb
-androidx.compose.ui:ui-graphics-android:1.6.0                   : 1494 Kb
-androidx.compose.ui:ui-text-android:1.6.0                       :  748 Kb
-androidx.compose.ui:ui-unit-android:1.6.0                       :   82 Kb
-androidx.compose.ui:ui-util-android:1.6.0                       :   13 Kb
-androidx.core:core-ktx:1.12.0                                   :  169 Kb
-androidx.core:core:1.12.0                                       : 1291 Kb
+androidx.collection:collection:1.1.0                            :   41 Kb
+androidx.compose.animation:animation-android:1.5.4              : 1309 Kb
+androidx.compose.animation:animation-core-android:1.5.4         : 1338 Kb
+androidx.compose.foundation:foundation-android:1.5.4            :    3 Mb
+androidx.compose.foundation:foundation-layout-android:1.5.4     :  525 Kb
+androidx.compose.material:material-android:1.5.4                :    2 Mb
+androidx.compose.material:material-icons-core-android:1.5.4     :  700 Kb
+androidx.compose.material:material-ripple-android:1.5.4         :   73 Kb
+androidx.compose.runtime:runtime-android:1.5.4                  :    2 Mb
+androidx.compose.runtime:runtime-saveable-android:1.5.4         : 1087 Kb
+androidx.compose.ui:ui-android:1.5.4                            :    4 Mb
+androidx.compose.ui:ui-geometry-android:1.5.4                   :   36 Kb
+androidx.compose.ui:ui-graphics-android:1.5.4                   : 1422 Kb
+androidx.compose.ui:ui-text-android:1.5.4                       :  770 Kb
+androidx.compose.ui:ui-unit-android:1.5.4                       :   64 Kb
+androidx.core:core-ktx:1.10.0                                   :  178 Kb
+androidx.core:core:1.10.0                                       : 1219 Kb
 androidx.lifecycle:lifecycle-common-java8:2.6.1                 :  261 b 
 androidx.lifecycle:lifecycle-common:2.6.1                       :   51 Kb
 androidx.lifecycle:lifecycle-livedata-core:2.6.1                :   11 Kb
@@ -41,13 +40,13 @@ androidx.navigation:navigation-runtime:2.6.0                    :  125 Kb
 androidx.savedstate:savedstate-ktx:1.2.1                        :    3 Kb
 androidx.savedstate:savedstate:1.2.1                            :   19 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.8.21                :  216 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10                  :  963 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10                  :  969 b 
-org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1          :   20 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.1         : 1512 Kb
-org.jetbrains:annotations:23.0.0                                :   28 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.8.21                       : 1631 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :   30 Mb
+Total transitive dependencies size                              :   27 Mb
 
