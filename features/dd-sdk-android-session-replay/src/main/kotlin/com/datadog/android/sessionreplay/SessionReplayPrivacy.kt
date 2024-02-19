@@ -84,7 +84,10 @@ enum class SessionReplayPrivacy {
         recordedDataQueueHandler: RecordedDataQueueHandler
     ): List<MapperTypeWrapper> {
         val resourcesSerializer = buildResourcesSerializer(applicationId, recordedDataQueueHandler)
-        val imageWireframeHelper = ImageWireframeHelper(logger = internalLogger, resourcesSerializer = resourcesSerializer)
+        val imageWireframeHelper = ImageWireframeHelper(
+            logger = internalLogger,
+            resourcesSerializer = resourcesSerializer
+        )
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
         val unsupportedViewMapper = UnsupportedViewMapper()

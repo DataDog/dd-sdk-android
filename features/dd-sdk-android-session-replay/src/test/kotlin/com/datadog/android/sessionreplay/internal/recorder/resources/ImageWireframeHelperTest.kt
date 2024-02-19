@@ -343,7 +343,6 @@ internal class ImageWireframeHelperTest {
             height = fakeDrawableHeight.toLong(),
             shapeStyle = mockShapeStyle,
             border = mockBorder,
-            base64 = "",
             clip = stubWireframeClip,
             mimeType = fakeMimeType,
             isEmpty = true
