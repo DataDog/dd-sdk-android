@@ -83,6 +83,17 @@ coroutines = "1.4.2"
 # Local Server
 ktor = "1.6.0"
 
+# Otel
+slf4j = "1.7.30"
+moshi = "1.11.0"
+jctools = "3.3.0"
+openTelemetry = "1.4.0"
+desugarJdk = "2.0.4"
+datatadogSketchesJava = "0.8.2"
+re2j = "1.7"
+spotbugs = "4.2.0"
+
+
 [libraries]
 
 # Classpaths
@@ -217,6 +228,16 @@ ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
 ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
 
+# Otel
+slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
+jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
+openTelemetry = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
+desugarJdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdk" }
+datadogSketchesJava = { module = "com.datadoghq:sketches-java", version.ref = "datatadogSketchesJava" }
+re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
+spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "spotbugs" }
+
 [bundles]
 
 jUnit5 = [
@@ -286,3 +307,4 @@ ktor = [
 
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
+

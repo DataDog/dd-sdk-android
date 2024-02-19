@@ -41,7 +41,6 @@ android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
-
     namespace = "com.datadog.android.trace"
 
     sourceSets.named("test") {
@@ -52,6 +51,7 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    implementation(project(":features:dd-trace-core"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
