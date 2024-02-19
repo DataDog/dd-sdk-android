@@ -16,7 +16,6 @@ import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.resources.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
@@ -98,6 +97,9 @@ internal class ResourcesSerializerTest {
     lateinit var mockStateListDrawable: StateListDrawable
 
     @Mock
+    lateinit var mockBitmapCachesManager: BitmapCachesManager
+
+    @Mock
     lateinit var mockBitmapPool: BitmapPool
 
     @Mock
@@ -162,8 +164,8 @@ internal class ResourcesSerializerTest {
     @Test
     fun `M get data from cache and update wireframe W handleBitmap() { cache hit with resourceId }`(forge: Forge) {
         // Given
-        fakeCacheData = CacheData(forge.aString().toByteArray(Charsets.UTF_8))
-        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(fakeCacheData)
+        val fakeCacheString = forge.aString()
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockDrawable)).thenReturn(fakeCacheString)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(fakeImageCompressionByteArray)
@@ -183,27 +185,8 @@ internal class ResourcesSerializerTest {
         verifyNoInteractions(mockDrawableUtils)
         assertThat(fakeImageWireframe.isEmpty).isFalse()
         assertThat(fakeImageWireframe.base64).isEqualTo(null)
-        assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId, Charsets.UTF_8))
+        assertThat(fakeImageWireframe.resourceId).isEqualTo(fakeCacheString)
         verify(mockSerializerCallback).onReady()
-    }
-
-    @Test
-    fun `M register cache only once for callbacks W handleBitmap() { multiple calls }`() {
-        // When
-        repeat(5) {
-            testedResourcesSerializer.handleBitmap(
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
-                drawableWidth = mockDrawable.intrinsicWidth,
-                drawableHeight = mockDrawable.intrinsicHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSerializerCallback
-            )
-        }
-
-        // Then
-        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockResourcesLRUCache)
     }
 
     @Test
@@ -267,66 +250,6 @@ internal class ResourcesSerializerTest {
 
         // Then
         verify(mockSerializerCallback).onReady()
-    }
-
-    @Test
-    fun `M log error W handleBitmap() { cache does not subclass ComponentCallbacks2 }`() {
-        // Given
-        val fakeBase64CacheInstance = FakeNonComponentsCallbackCache()
-        testedResourcesSerializer = ResourcesSerializer.Builder(
-            logger = mockLogger,
-            threadPoolExecutor = mockExecutorService,
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = fakeBase64CacheInstance,
-            drawableUtils = mockDrawableUtils,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString(),
-            webPImageCompression = mockWebPImageCompression
-        ).build()
-
-        // When
-        testedResourcesSerializer.handleBitmap(
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        val captor = argumentCaptor<() -> String>()
-        verify(mockLogger).log(
-            level = any(),
-            target = any(),
-            captor.capture(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull()
-        )
-        assertThat(captor.firstValue.invoke()).isEqualTo(
-            DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
-        )
-    }
-
-    @Test
-    fun `M register BitmapPool only once for callbacks W handleBitmap() { multiple calls }`() {
-        // When
-        repeat(5) {
-            testedResourcesSerializer.handleBitmap(
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
-                drawableWidth = mockDrawable.intrinsicWidth,
-                drawableHeight = mockDrawable.intrinsicHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSerializerCallback
-            )
-        }
-
-        // Then
-        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockBitmapPool)
     }
 
     @Test
@@ -580,7 +503,7 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        verify(mockBitmapPool).put(any())
+        verify(mockBitmapCachesManager).putInBitmapPool(any())
     }
 
     @Test
@@ -600,7 +523,7 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        verify(mockBitmapPool, times(1)).put(any())
+        verify(mockBitmapCachesManager, times(1)).putInBitmapPool(any())
     }
 
     @Test
@@ -620,11 +543,11 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        verify(mockBitmapPool, times(1)).put(any())
+        verify(mockBitmapCachesManager, times(1)).putInBitmapPool(any())
     }
 
     @Test
-    fun `M return correct callback W handleBitmap() { multiple threads, first takes longer }`(
+    fun `M return all callbacks W handleBitmap() { multiple threads, first takes longer }`(
         @Mock mockFirstCallback: ResourcesSerializerCallback,
         @Mock mockSecondCallback: ResourcesSerializerCallback
     ) {
@@ -784,8 +707,7 @@ internal class ResourcesSerializerTest {
         )
     }
 
-    private fun createResourcesSerializer(): ResourcesSerializer {
-        val builder = ResourcesSerializer.Builder(
+    private fun createResourcesSerializer(): ResourcesSerializer = ResourcesSerializer.Builder(
             logger = mockLogger,
             threadPoolExecutor = mockExecutorService,
             bitmapPool = mockBitmapPool,
@@ -794,17 +716,7 @@ internal class ResourcesSerializerTest {
             webPImageCompression = mockWebPImageCompression,
             md5HashGenerator = mockMD5HashGenerator,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString()
-        )
-        return builder.build()
-    }
-
-    // this is in order to test having a class that implements
-    // Cache, but does NOT implement ComponentCallbacks2
-    private class FakeNonComponentsCallbackCache : Cache<Drawable, CacheData> {
-
-        override fun size(): Int = 0
-
-        override fun clear() {}
-    }
+            applicationId = fakeApplicationid.toString(),
+            bitmapCachesManager = mockBitmapCachesManager
+        ).build()
 }

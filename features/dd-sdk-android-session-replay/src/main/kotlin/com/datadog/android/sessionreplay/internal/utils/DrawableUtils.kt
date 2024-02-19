@@ -20,7 +20,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
@@ -30,7 +30,7 @@ import kotlin.math.sqrt
 internal class DrawableUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
-    private val bitmapPool: BitmapPool? = null,
+    private val bitmapCachesManager: BitmapCachesManager,
     private val threadPoolExecutor: ExecutorService,
     private val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
     private val logger: InternalLogger
@@ -181,7 +181,7 @@ internal class DrawableUtils(
         height: Int,
         config: Config
     ): Bitmap? =
-        bitmapPool?.getBitmapByProperties(width, height, config)
+        bitmapCachesManager.getBitmapByProperties(width, height, config)
             ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
 
     internal companion object {

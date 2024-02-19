@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
-import android.content.ComponentCallbacks2
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -19,7 +18,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.NoopDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.resources.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.Collections
@@ -30,19 +28,15 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class ResourcesSerializer private constructor(
+    private val bitmapCachesManager: BitmapCachesManager,
     private val threadPoolExecutor: ExecutorService,
     private val drawableUtils: DrawableUtils,
     private val webPImageCompression: ImageCompression,
-    private val resourcesLRUCache: Cache<Drawable, CacheData>,
-    private val bitmapPool: BitmapPool?,
     private val logger: InternalLogger,
     private val md5HashGenerator: MD5HashGenerator,
     private val recordedDataQueueHandler: DataQueueHandler,
     private val applicationId: String
 ) {
-    private var isResourcesCacheRegisteredForCallbacks: Boolean = false
-    private var isBitmapPoolRegisteredForCallbacks: Boolean = false
-
     // resource IDs previously sent in this session -
     // optimization to avoid sending the same resource multiple times
     // atm this set is unbounded but expected to use relatively little space (~80kb per 1k items)
@@ -61,7 +55,7 @@ internal class ResourcesSerializer private constructor(
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
         resourcesSerializerCallback: ResourcesSerializerCallback
     ) {
-        registerCallbacks(applicationContext)
+        bitmapCachesManager.registerCallbacks(applicationContext)
 
         tryToGetResourceFromCache(
             drawable = drawable,
@@ -140,7 +134,7 @@ internal class ResourcesSerializer private constructor(
         val resourceId = md5HashGenerator.generate(byteArray)
 
         if (shouldCacheBitmap) {
-            bitmapPool?.put(bitmap)
+            bitmapCachesManager.putInBitmapPool(bitmap)
         }
 
         if (resourceId == null) {
@@ -161,35 +155,10 @@ internal class ResourcesSerializer private constructor(
             )
         }
 
-        val cacheData = CacheData(resourceId.toByteArray(Charsets.UTF_8))
-        resourcesLRUCache.put(drawable, cacheData)
+        bitmapCachesManager.putInResourceCache(drawable, resourceId)
 
-        finalizeRecordedDataItem(cacheData, imageWireframe)
+        finalizeRecordedDataItem(resourceId, imageWireframe)
         resourcesSerializerCallback.onReady()
-    }
-
-    @MainThread
-    private fun registerResourceLruCacheForCallbacks(applicationContext: Context) {
-        if (isResourcesCacheRegisteredForCallbacks) return
-
-        if (resourcesLRUCache is ComponentCallbacks2) {
-            applicationContext.registerComponentCallbacks(resourcesLRUCache)
-            isResourcesCacheRegisteredForCallbacks = true
-        } else {
-            logger.log(
-                level = InternalLogger.Level.WARN,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS }
-            )
-        }
-    }
-
-    @MainThread
-    private fun registerBitmapPoolForCallbacks(applicationContext: Context) {
-        if (isBitmapPoolRegisteredForCallbacks) return
-
-        applicationContext.registerComponentCallbacks(bitmapPool)
-        isBitmapPoolRegisteredForCallbacks = true
     }
 
     private fun tryToDrawNewBitmap(
@@ -279,27 +248,24 @@ internal class ResourcesSerializer private constructor(
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
         resourcesSerializerCallback: ResourcesSerializerCallback
     ): String? {
-        val cacheData = resourcesLRUCache.get(drawable)
+        val resourceId = bitmapCachesManager.getFromResourceCache(drawable)
+            ?: return null
 
-        if (cacheData?.resourceId == null) {
-            return null
-        }
-
-        finalizeRecordedDataItem(cacheData, imageWireframe)
+        finalizeRecordedDataItem(resourceId, imageWireframe)
 
         resourcesSerializerCallback.onReady()
 
-        return String(cacheData.resourceId, Charsets.UTF_8)
+        return resourceId
     }
 
     private fun finalizeRecordedDataItem(
-        cacheData: CacheData,
+        resourceId: String?,
         wireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
-        val resourceId = String(cacheData.resourceId, Charsets.UTF_8)
-
-        wireframe.resourceId = resourceId
-        wireframe.isEmpty = false
+        if (resourceId != null) {
+            wireframe.resourceId = resourceId
+            wireframe.isEmpty = false
+        }
     }
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
@@ -307,12 +273,6 @@ internal class ResourcesSerializer private constructor(
             !drawable.bitmap.isRecycled &&
             drawable.bitmap.width > 0 &&
             drawable.bitmap.height > 0
-    }
-
-    @MainThread
-    private fun registerCallbacks(applicationContext: Context) {
-        registerResourceLruCacheForCallbacks(applicationContext)
-        registerBitmapPoolForCallbacks(applicationContext)
     }
 
     // endregion
@@ -325,8 +285,14 @@ internal class ResourcesSerializer private constructor(
         private var threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
         private var bitmapPool: BitmapPool,
         private var resourcesLRUCache: Cache<Drawable, CacheData>,
+        private var bitmapCachesManager: BitmapCachesManager =
+            BitmapCachesManager.Builder(
+            resourcesLRUCache,
+            bitmapPool,
+            logger
+        ).build(),
         private var drawableUtils: DrawableUtils = DrawableUtils(
-            bitmapPool = bitmapPool,
+            bitmapCachesManager = bitmapCachesManager,
             threadPoolExecutor = threadPoolExecutor,
             logger = logger
         ),
@@ -337,13 +303,12 @@ internal class ResourcesSerializer private constructor(
             ResourcesSerializer(
                 logger = logger,
                 threadPoolExecutor = threadPoolExecutor,
-                bitmapPool = bitmapPool,
-                resourcesLRUCache = resourcesLRUCache,
                 drawableUtils = drawableUtils,
                 webPImageCompression = webPImageCompression,
                 md5HashGenerator = md5HashGenerator,
                 recordedDataQueueHandler = recordedDataQueueHandler,
-                applicationId = applicationId
+                applicationId = applicationId,
+                bitmapCachesManager = bitmapCachesManager
             )
 
         private companion object {
