@@ -1807,6 +1807,7 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     - BROWSER
     - FLUTTER
     - REACT_NATIVE
+    - UNITY
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
@@ -1877,6 +1878,7 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
     - BROWSER
     - FLUTTER
     - REACT_NATIVE
+    - UNITY
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
@@ -1935,6 +1937,7 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     - BROWSER
     - FLUTTER
     - REACT_NATIVE
+    - UNITY
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source

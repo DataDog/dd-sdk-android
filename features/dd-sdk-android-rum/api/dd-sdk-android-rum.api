@@ -5582,6 +5582,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
+	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
@@ -5764,6 +5765,7 @@ public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Sourc
 	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
+	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
@@ -5958,6 +5960,7 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Sourc
 	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
+	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
