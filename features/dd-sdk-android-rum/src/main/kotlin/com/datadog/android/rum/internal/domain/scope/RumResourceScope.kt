@@ -231,7 +231,7 @@ internal class RumResourceScope(
                     graphql = graphql
                 ),
                 action = rumContext.actionId?.let { ResourceEvent.Action(listOf(it)) },
-                view = ResourceEvent.View(
+                view = ResourceEvent.ResourceEventView(
                     id = rumContext.viewId.orEmpty(),
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()
@@ -374,7 +374,7 @@ internal class RumResourceScope(
                     sourceType = ErrorEvent.SourceType.ANDROID
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
-                view = ErrorEvent.View(
+                view = ErrorEvent.ErrorEventView(
                     id = rumContext.viewId.orEmpty(),
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()

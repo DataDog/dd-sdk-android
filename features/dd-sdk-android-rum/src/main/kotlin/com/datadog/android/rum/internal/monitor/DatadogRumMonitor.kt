@@ -6,14 +6,17 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -23,7 +26,9 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
+import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -66,6 +71,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
+    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -204,6 +210,9 @@ internal class DatadogRumMonitor(
             "PUT" -> RumResourceMethod.PUT
             "DELETE" -> RumResourceMethod.DELETE
             "PATCH" -> RumResourceMethod.PATCH
+            "CONNECT" -> RumResourceMethod.CONNECT
+            "TRACE" -> RumResourceMethod.TRACE
+            "OPTIONS" -> RumResourceMethod.OPTIONS
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -312,7 +321,8 @@ internal class DatadogRumMonitor(
                 false,
                 attributes.toMap(),
                 eventTime,
-                errorType
+                errorType,
+                threads = emptyList()
             )
         )
     }
@@ -336,7 +346,8 @@ internal class DatadogRumMonitor(
                 attributes.toMap(),
                 eventTime,
                 errorType,
-                errorSourceType
+                errorSourceType,
+                threads = emptyList()
             )
         )
     }
@@ -394,6 +405,16 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun start() {
+        val processImportance = DdRumContentProvider.processImportance
+        val isAppInForeground = processImportance ==
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        val processStartTimeNs = appStartTimeProvider.appStartTimeNs
+        handleEvent(
+            RumRawEvent.SdkInit(isAppInForeground, processStartTimeNs)
+        )
+    }
+
     override fun waitForResourceTiming(key: String) {
         handleEvent(
             RumRawEvent.WaitForResourceTiming(key)
@@ -406,9 +427,22 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable) {
+    override fun addCrash(
+        message: String,
+        source: RumErrorSource,
+        throwable: Throwable,
+        threads: List<ThreadDump>
+    ) {
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, null, true, emptyMap())
+            RumRawEvent.AddError(
+                message,
+                source,
+                throwable,
+                stacktrace = null,
+                isFatal = true,
+                threads = threads,
+                attributes = emptyMap()
+            )
         )
     }
 
@@ -670,6 +704,8 @@ internal class DatadogRumMonitor(
             "react-native" -> RumErrorSourceType.REACT_NATIVE
             "browser" -> RumErrorSourceType.BROWSER
             "flutter" -> RumErrorSourceType.FLUTTER
+            "ndk" -> RumErrorSourceType.NDK
+            "ndk+il2cpp" -> RumErrorSourceType.NDK_IL2CPP
             else -> RumErrorSourceType.ANDROID
         }
     }

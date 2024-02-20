@@ -38,6 +38,7 @@ internal class DatadogNdkCrashEventHandler(
             return
         }
 
+        val sourceType = event["sourceType"] as? String
         val timestamp = event["timestamp"] as? Long
         val signalName = event["signalName"] as? String
         val stacktrace = event["stacktrace"] as? String
@@ -63,6 +64,7 @@ internal class DatadogNdkCrashEventHandler(
         rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
             val toSendErrorEvent = resolveErrorEventFromViewEvent(
                 datadogContext,
+                sourceType,
                 errorLogMessage,
                 timestamp,
                 stacktrace,
@@ -84,6 +86,7 @@ internal class DatadogNdkCrashEventHandler(
     @Suppress("LongMethod", "LongParameterList")
     private fun resolveErrorEventFromViewEvent(
         datadogContext: DatadogContext,
+        sourceTypeStr: String?,
         errorLogMessage: String,
         timestamp: Long,
         stacktrace: String,
@@ -94,12 +97,12 @@ internal class DatadogNdkCrashEventHandler(
         val connectivity = viewEvent.connectivity?.let {
             val connectivityStatus =
                 ErrorEvent.Status.valueOf(it.status.name)
-            val connectivityInterfaces = it.interfaces.map { ErrorEvent.Interface.valueOf(it.name) }
+            val connectivityInterfaces = it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(
                 it.cellular?.technology,
                 it.cellular?.carrierName
             )
-            ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular)
+            ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular = cellular)
         }
         val additionalProperties = viewEvent.context?.additionalProperties ?: mutableMapOf()
         val additionalUserProperties = viewEvent.usr?.additionalProperties ?: mutableMapOf()
@@ -107,6 +110,21 @@ internal class DatadogNdkCrashEventHandler(
         val hasUserInfo = user?.id != null || user?.name != null ||
             user?.email != null || additionalUserProperties.isNotEmpty()
         val deviceInfo = datadogContext.deviceInfo
+
+        val sourceType = sourceTypeStr?.let {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                ErrorEvent.SourceType.fromJson(sourceTypeStr)
+            } catch (e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Error parsing source type from NDK crash event: $sourceTypeStr" },
+                    e
+                )
+                ErrorEvent.SourceType.NDK
+            }
+        } ?: ErrorEvent.SourceType.NDK
 
         return ErrorEvent(
             date = timestamp + datadogContext.time.serverTimeOffsetMs,
@@ -122,7 +140,7 @@ internal class DatadogNdkCrashEventHandler(
                     internalLogger
                 )
             },
-            view = ErrorEvent.View(
+            view = ErrorEvent.ErrorEventView(
                 id = viewEvent.view.id,
                 name = viewEvent.view.name,
                 referrer = viewEvent.view.referrer,
@@ -162,7 +180,7 @@ internal class DatadogNdkCrashEventHandler(
                 stack = stacktrace,
                 isCrash = true,
                 type = signalName,
-                sourceType = ErrorEvent.SourceType.ANDROID
+                sourceType = sourceType
             ),
             version = viewEvent.version
         )

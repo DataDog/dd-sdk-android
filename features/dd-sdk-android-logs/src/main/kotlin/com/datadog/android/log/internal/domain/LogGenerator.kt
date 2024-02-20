@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.log.model.LogEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -30,7 +31,8 @@ internal interface LogGenerator {
         bundleWithTraces: Boolean = true,
         bundleWithRum: Boolean = true,
         userInfo: UserInfo? = null,
-        networkInfo: NetworkInfo? = null
+        networkInfo: NetworkInfo? = null,
+        threads: List<ThreadDump> = emptyList()
     ): LogEvent?
 
     @Suppress("LongParameterList")

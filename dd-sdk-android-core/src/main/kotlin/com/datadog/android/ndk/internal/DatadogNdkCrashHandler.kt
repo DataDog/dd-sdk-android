@@ -36,7 +36,8 @@ internal class DatadogNdkCrashHandler(
     private val userInfoDeserializer: Deserializer<String, UserInfo>,
     private val internalLogger: InternalLogger,
     private val rumFileReader: BatchFileReader,
-    private val envFileReader: FileReader<ByteArray>
+    private val envFileReader: FileReader<ByteArray>,
+    internal val nativeCrashSourceType: String = "ndk"
 ) : NdkCrashHandler {
 
     internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
@@ -255,16 +256,19 @@ internal class DatadogNdkCrashHandler(
                     LogAttributes.RUM_SESSION_ID to sessionId,
                     LogAttributes.RUM_APPLICATION_ID to applicationId,
                     LogAttributes.RUM_VIEW_ID to viewId,
-                    LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
+                    LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
+                    LogAttributes.ERROR_SOURCE_TYPE to nativeCrashSourceType
                 )
             } else {
                 mapOf(
-                    LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
+                    LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
+                    LogAttributes.ERROR_SOURCE_TYPE to nativeCrashSourceType
                 )
             }
         } else {
             mapOf(
-                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
+                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
+                LogAttributes.ERROR_SOURCE_TYPE to nativeCrashSourceType
             )
         }
         return logAttributes
@@ -283,6 +287,7 @@ internal class DatadogNdkCrashHandler(
             rumFeature.sendEvent(
                 mapOf(
                     "type" to "ndk_crash",
+                    "sourceType" to nativeCrashSourceType,
                     "timestamp" to ndkCrashLog.timestamp,
                     "signalName" to ndkCrashLog.signalName,
                     "stacktrace" to ndkCrashLog.stacktrace,

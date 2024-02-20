@@ -158,7 +158,7 @@ internal class DatadogNdkCrashEventHandlerTest {
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
                 .hasErrorSource(RumErrorSource.SOURCE)
-                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                .hasErrorSourceType(ErrorEvent.SourceType.NDK)
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
@@ -187,6 +187,159 @@ internal class DatadogNdkCrashEventHandlerTest {
                 .hasVersion(fakeViewEvent.dd.documentVersion + 1)
                 .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
                 .isActive(false)
+        }
+    }
+
+    @Test
+    fun `𝕄 send RUM view+error 𝕎 handleEvent() {source_type set}`(
+        @StringForgery crashMessage: String,
+        @LongForgery(min = 1) fakeTimestamp: Long,
+        @StringForgery fakeSignalName: String,
+        @StringForgery fakeStacktrace: String,
+        @Forgery viewEvent: ViewEvent,
+        @Forgery fakeUserInfo: UserInfo,
+        forge: Forge
+    ) {
+        // Given
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEvent = viewEvent.copy(
+            date = System.currentTimeMillis() - forge.aLong(
+                min = 0L,
+                max = DatadogNdkCrashEventHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            ),
+            usr = ViewEvent.Usr(
+                id = fakeUserInfo.id,
+                name = fakeUserInfo.name,
+                email = fakeUserInfo.email,
+                additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
+            )
+        )
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson))
+            .doReturn(fakeViewEvent)
+
+        val fakeEvent = mapOf(
+            "sourceType" to "ndk+il2cpp",
+            "timestamp" to fakeTimestamp,
+            "signalName" to fakeSignalName,
+            "stacktrace" to fakeStacktrace,
+            "message" to crashMessage,
+            "lastViewEvent" to fakeViewEventJson
+        )
+
+        // When
+        testedHandler.handleEvent(fakeEvent, mockSdkCore, mockRumWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+
+            ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasApplicationId(fakeViewEvent.application.id)
+                .hasSessionId(fakeViewEvent.session.id)
+                .hasView(
+                    fakeViewEvent.view.id,
+                    fakeViewEvent.view.name,
+                    fakeViewEvent.view.url
+                )
+                .hasMessage(crashMessage)
+                .hasStackTrace(fakeStacktrace)
+                .isCrash(true)
+                .hasErrorSource(RumErrorSource.SOURCE)
+                .hasErrorSourceType(ErrorEvent.SourceType.NDK_IL2CPP)
+                .hasTimestamp(fakeTimestamp + fakeServerOffset)
+                .hasUserInfo(
+                    UserInfo(
+                        fakeViewEvent.usr?.id,
+                        fakeViewEvent.usr?.name,
+                        fakeViewEvent.usr?.email,
+                        fakeViewEvent.usr?.additionalProperties.orEmpty()
+                    )
+                )
+                .hasErrorType(fakeSignalName)
+                .hasLiteSessionPlan()
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+
+            ViewEventAssert.assertThat(secondValue as ViewEvent)
+                .hasVersion(fakeViewEvent.dd.documentVersion + 1)
+                .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
+                .isActive(false)
+        }
+    }
+
+    @Test
+    fun `𝕄 send RUM view+error 𝕎 handleEvent() {invalid source_type set}`(
+        @StringForgery crashMessage: String,
+        @LongForgery(min = 1) fakeTimestamp: Long,
+        @StringForgery fakeSignalName: String,
+        @StringForgery fakeStacktrace: String,
+        @Forgery viewEvent: ViewEvent,
+        @Forgery fakeUserInfo: UserInfo,
+        forge: Forge
+    ) {
+        // Given
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEvent = viewEvent.copy(
+            date = System.currentTimeMillis() - forge.aLong(
+                min = 0L,
+                max = DatadogNdkCrashEventHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            ),
+            usr = ViewEvent.Usr(
+                id = fakeUserInfo.id,
+                name = fakeUserInfo.name,
+                email = fakeUserInfo.email,
+                additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
+            )
+        )
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson))
+            .doReturn(fakeViewEvent)
+
+        val fakeEvent = mapOf(
+            "sourceType" to "invalid",
+            "timestamp" to fakeTimestamp,
+            "signalName" to fakeSignalName,
+            "stacktrace" to fakeStacktrace,
+            "message" to crashMessage,
+            "lastViewEvent" to fakeViewEventJson
+        )
+
+        // When
+        testedHandler.handleEvent(fakeEvent, mockSdkCore, mockRumWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+
+            ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorSourceType(ErrorEvent.SourceType.NDK)
         }
     }
 
@@ -246,7 +399,7 @@ internal class DatadogNdkCrashEventHandlerTest {
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
                 .hasErrorSource(RumErrorSource.SOURCE)
-                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                .hasErrorSourceType(ErrorEvent.SourceType.NDK)
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasNoUserInfo()
                 .hasErrorType(fakeSignalName)
@@ -337,7 +490,7 @@ internal class DatadogNdkCrashEventHandlerTest {
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
                 .hasErrorSource(RumErrorSource.SOURCE)
-                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                .hasErrorSourceType(ErrorEvent.SourceType.NDK)
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(

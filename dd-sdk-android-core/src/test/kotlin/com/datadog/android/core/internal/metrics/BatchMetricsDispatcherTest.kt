@@ -38,6 +38,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
+import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -110,6 +111,21 @@ internal class BatchMetricsDispatcherTest {
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
+    }
+
+    @Test
+    fun `M drop the metric W sendBatchDeletedMetric { time difference is negative }`(forge: Forge) {
+        // Given
+        val fakeReason = forge.forgeIncludeInMetricReason()
+        val fakeFile: File = forge.forgeValidFile()
+        val newFileName = (currentTimeInMillis + forge.aLong(min = 100, max = 1000)).toString()
+        whenever(fakeFile.name).thenReturn(newFileName)
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -253,8 +269,8 @@ internal class BatchMetricsDispatcherTest {
             eq(InternalLogger.Target.MAINTAINER),
             argThat {
                 this.invoke() ==
-                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
-                        .format(Locale.ENGLISH, fakeFile.name)
+                        BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                            .format(Locale.ENGLISH, fakeFile.name)
             },
             eq(null),
             eq(false),
@@ -338,6 +354,23 @@ internal class BatchMetricsDispatcherTest {
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
+    }
+
+    @Test
+    fun `M drop the metric W sendBatchClosedMetric { time difference is negative }`(
+        @Forgery fakeMetadata: BatchClosedMetadata,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile()
+        val fakeFileName = fakeMetadata.lastTimeWasUsedInMs + forge.aLong(min = 100, max = 1000)
+        whenever(fakeFile.name).thenReturn(fakeFileName.toString())
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -477,8 +510,8 @@ internal class BatchMetricsDispatcherTest {
             eq(InternalLogger.Target.MAINTAINER),
             argThat {
                 this.invoke() ==
-                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
-                        .format(Locale.ENGLISH, fakeFile.name)
+                        BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                            .format(Locale.ENGLISH, fakeFile.name)
             },
             eq(null),
             eq(false),
@@ -549,15 +582,14 @@ internal class BatchMetricsDispatcherTest {
         return mutableMapOf(
             BatchMetricsDispatcher.TYPE_KEY to BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
             BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_AGE_KEY to
-                (currentTimeInMillis - file.name.toLong()),
+            BatchMetricsDispatcher.BATCH_AGE_KEY to max(0, (currentTimeInMillis - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
+                    fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
                 BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
-                    fakeUploadConfiguration.minDelayMs,
+                        fakeUploadConfiguration.minDelayMs,
                 BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
-                    fakeUploadConfiguration.maxDelayMs
+                        fakeUploadConfiguration.maxDelayMs
             ),
             BatchMetricsDispatcher.FILE_NAME to file.name,
             BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,
@@ -574,9 +606,9 @@ internal class BatchMetricsDispatcherTest {
             BatchMetricsDispatcher.TYPE_KEY to BatchMetricsDispatcher.BATCH_CLOSED_TYPE_VALUE,
             BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
             BatchMetricsDispatcher.BATCH_DURATION_KEY to
-                (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong()),
+                    max(0, (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
+                    fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.FORCE_NEW_KEY to batchClosedMetadata.forcedNew,
             BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to batchClosedMetadata.eventsCount,
             BatchMetricsDispatcher.FILE_NAME to file.name,

@@ -622,9 +622,10 @@ internal class RumActionScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            emptyMap()
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
@@ -754,9 +755,10 @@ internal class RumActionScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            emptyMap()
+            stacktrace = null,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -819,9 +821,25 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, null, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
+        )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, null, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace = null,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = emptyMap()
+        )
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -2499,9 +2517,10 @@ internal class RumActionScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            emptyMap()
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)

@@ -10,6 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
@@ -307,13 +308,51 @@ internal class DatadogLogGeneratorTest {
             LogEvent.Error(
                 kind = fakeThrowable.javaClass.canonicalName,
                 stack = fakeThrowable.stackTraceToString(),
-                message = fakeThrowable.message
+                message = fakeThrowable.message,
+                threads = null
             )
         )
     }
 
     @Test
-    fun `M add use the Throwable class simple name W creating the Log { Throwable anonymous }`() {
+    fun `M add the thread dump W creating the Log`(
+        @Forgery fakeThreads: List<ThreadDump>
+    ) {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
+            threads = fakeThreads
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message,
+                threads = fakeThreads.map {
+                    LogEvent.Thread(
+                        name = it.name,
+                        crashed = it.crashed,
+                        state = it.state,
+                        stack = it.stack
+                    )
+                }.ifEmpty { null }
+            )
+        )
+    }
+
+    @Test
+    fun `M use the Throwable class simple name W creating the Log { Throwable anonymous }`() {
         // WHEN
         val fakeAnonymousThrowable = object : Throwable(cause = fakeThrowable) {}
         val log = testedLogGenerator.generateLog(
@@ -334,7 +373,8 @@ internal class DatadogLogGeneratorTest {
             LogEvent.Error(
                 kind = fakeAnonymousThrowable.javaClass.simpleName,
                 stack = fakeAnonymousThrowable.stackTraceToString(),
-                message = fakeAnonymousThrowable.message
+                message = fakeAnonymousThrowable.message,
+                threads = null
             )
         )
     }

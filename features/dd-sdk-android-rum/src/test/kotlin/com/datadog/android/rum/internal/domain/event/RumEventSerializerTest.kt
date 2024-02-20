@@ -110,7 +110,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
                 hasNullableField(
                     "interfaces",
-                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
                 )
                 connectivity.cellular?.let { cellular ->
                     hasField("cellular") {
@@ -195,7 +195,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
                 hasNullableField(
                     "interfaces",
-                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
                 )
                 connectivity.cellular?.let { cellular ->
                     hasField("cellular") {
@@ -263,7 +263,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
                 hasNullableField(
                     "interfaces",
-                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
                 )
                 connectivity.cellular?.let { cellular ->
                     hasField("cellular") {
@@ -327,7 +327,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
                 hasNullableField(
                     "interfaces",
-                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
                 )
                 connectivity.cellular?.let { cellular ->
                     hasField("cellular") {
@@ -385,7 +385,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
                 hasNullableField(
                     "interfaces",
-                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
                 )
                 connectivity.cellular?.let { cellular ->
                     hasField("cellular") {
