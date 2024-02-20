@@ -14,19 +14,22 @@ import android.view.View
 import android.widget.TextView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import java.util.Locale
 
 // This should not have a callback but it should just create a placeholder for base64Serializer
 // The base64Serializer dependency should be removed from here
 // TODO: RUM-0000 Remove the base64Serializer dependency from here
 internal class ImageWireframeHelper(
+    private val logger: InternalLogger,
+    private val base64Serializer: Base64Serializer,
     private val imageCompression: ImageCompression = WebPImageCompression(),
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    private val base64Serializer: Base64Serializer,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
     private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
 ) {
@@ -58,6 +61,17 @@ internal class ImageWireframeHelper(
 
         val displayMetrics = view.resources.displayMetrics
         val applicationContext = view.context.applicationContext
+
+        if (applicationContext == null) {
+            logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.TELEMETRY,
+                { APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, view.javaClass.canonicalName) }
+            )
+
+            return null
+        }
+
         val mimeType = imageCompression.getMimeType()
         val density = displayMetrics.density
 
@@ -234,5 +248,8 @@ internal class ImageWireframeHelper(
         internal const val DRAWABLE_CHILD_NAME = "drawable"
 
         @VisibleForTesting internal const val PLACEHOLDER_CONTENT_LABEL = "Content Image"
+
+        @VisibleForTesting internal const val APPLICATION_CONTEXT_NULL_ERROR =
+            "Application context is null for view %s"
     }
 }

@@ -91,7 +91,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
             SnapshotProducer(
-                TreeViewTraversal(customMappers + privacy.mappers()),
+                TreeViewTraversal(customMappers + privacy.mappers(internalLogger)),
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                 )
