@@ -1066,29 +1066,6 @@ data class com.datadog.android.rum.model.LongTaskEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SessionPrecondition
-data class com.datadog.android.rum.model.ParentViewSchema
-  constructor(ParentView? = null)
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): ParentViewSchema
-    fun fromJsonObject(com.google.gson.JsonObject): ParentViewSchema
-  data class ParentView
-    constructor(kotlin.String, Source)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): ParentView
-      fun fromJsonObject(com.google.gson.JsonObject): ParentView
-  enum Source
-    constructor(kotlin.String)
-    - ANDROID
-    - IOS
-    - BROWSER
-    - FLUTTER
-    - REACT_NATIVE
-    - ROKU
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Source
 data class com.datadog.android.rum.model.ResourceEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ResourceEventSession, ResourceEventSource? = null, ResourceEventView, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Container? = null, Resource)
   val type: kotlin.String
