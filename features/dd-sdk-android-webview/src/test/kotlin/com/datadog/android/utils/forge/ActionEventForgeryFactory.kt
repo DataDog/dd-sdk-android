@@ -39,7 +39,7 @@ internal class ActionEventForgeryFactory :
                     )
                 }
             ),
-            view = ActionEvent.View(
+            view = ActionEvent.ActionEventView(
                 id = forge.getForgery<UUID>().toString(),
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                 referrer = forge.aNullable { getForgery<URL>().toString() },

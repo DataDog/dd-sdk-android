@@ -10,6 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
@@ -40,11 +41,24 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
-        networkInfo: NetworkInfo?
+        networkInfo: NetworkInfo?,
+        threads: List<ThreadDump>
     ): LogEvent {
         val error = throwable?.let {
             val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
-            LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
+            LogEvent.Error(
+                kind = kind,
+                stack = it.stackTraceToString(),
+                message = it.message,
+                threads = threads.map { thread ->
+                    LogEvent.Thread(
+                        name = thread.name,
+                        crashed = thread.crashed,
+                        stack = thread.stack,
+                        state = thread.state
+                    )
+                }.ifEmpty { null }
+            )
         }
         return internalGenerateLog(
             level,

@@ -33,6 +33,9 @@ internal fun RumResourceMethod.toResourceMethod(): ResourceEvent.Method {
         RumResourceMethod.PUT -> ResourceEvent.Method.PUT
         RumResourceMethod.DELETE -> ResourceEvent.Method.DELETE
         RumResourceMethod.PATCH -> ResourceEvent.Method.PATCH
+        RumResourceMethod.TRACE -> ResourceEvent.Method.TRACE
+        RumResourceMethod.OPTIONS -> ResourceEvent.Method.OPTIONS
+        RumResourceMethod.CONNECT -> ResourceEvent.Method.CONNECT
     }
 }
 
@@ -44,6 +47,9 @@ internal fun RumResourceMethod.toErrorMethod(): ErrorEvent.Method {
         RumResourceMethod.PUT -> ErrorEvent.Method.PUT
         RumResourceMethod.DELETE -> ErrorEvent.Method.DELETE
         RumResourceMethod.PATCH -> ErrorEvent.Method.PATCH
+        RumResourceMethod.TRACE -> ErrorEvent.Method.TRACE
+        RumResourceMethod.OPTIONS -> ErrorEvent.Method.OPTIONS
+        RumResourceMethod.CONNECT -> ErrorEvent.Method.CONNECT
     }
 }
 
@@ -97,6 +103,8 @@ internal fun RumErrorSourceType.toSchemaSourceType(): ErrorEvent.SourceType {
         RumErrorSourceType.BROWSER -> ErrorEvent.SourceType.BROWSER
         RumErrorSourceType.REACT_NATIVE -> ErrorEvent.SourceType.REACT_NATIVE
         RumErrorSourceType.FLUTTER -> ErrorEvent.SourceType.FLUTTER
+        RumErrorSourceType.NDK -> ErrorEvent.SourceType.NDK
+        RumErrorSourceType.NDK_IL2CPP -> ErrorEvent.SourceType.NDK_IL2CPP
     }
 }
 
@@ -185,7 +193,7 @@ internal fun NetworkInfo.toResourceConnectivity(): ResourceEvent.Connectivity {
     return ResourceEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -221,7 +229,7 @@ internal fun NetworkInfo.toErrorConnectivity(): ErrorEvent.Connectivity {
     return ErrorEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -257,7 +265,7 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
     return LongTaskEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -293,7 +301,7 @@ internal fun NetworkInfo.toViewConnectivity(): ViewEvent.Connectivity {
     return ViewEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 
@@ -329,7 +337,7 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
     return ActionEvent.Connectivity(
         status,
         interfaces,
-        cellular
+        cellular = cellular
     )
 }
 

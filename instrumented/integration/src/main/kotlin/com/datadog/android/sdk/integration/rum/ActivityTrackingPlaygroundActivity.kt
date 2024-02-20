@@ -33,19 +33,19 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
         val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
 
-        val rumConfig = RuntimeConfig.rumConfigBuilder()
-            .trackUserInteractions()
-            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-            .build()
-        Rum.enable(rumConfig, sdkCore)
-
         DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
             it.name == "overrideProcessImportance"
         }?.apply {
             isAccessible = true
             invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
         }
+
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .trackUserInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
         setContentView(R.layout.fragment_tracking_layout)
     }
 }

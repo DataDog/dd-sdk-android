@@ -34,7 +34,17 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                 LogEvent.Error(
                     message = throwable?.message,
                     stack = throwable?.stackTraceToString(),
-                    kind = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
+                    kind = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName,
+                    threads = aNullable {
+                        aList {
+                            LogEvent.Thread(
+                                name = anAlphaNumericalString(),
+                                crashed = aBool(),
+                                stack = aThrowable().stackTraceToString(),
+                                state = aNullable { getForgery<Thread.State>().name.lowercase() }
+                            )
+                        }
+                    }
                 )
             },
             additionalProperties = forge.exhaustiveAttributes(

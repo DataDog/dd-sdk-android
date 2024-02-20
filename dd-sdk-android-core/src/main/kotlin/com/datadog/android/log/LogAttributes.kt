@@ -105,6 +105,12 @@ object LogAttributes {
     const val ERROR_STACK: String = "error.stack"
 
     /**
+     * The source type of the error. This value is used to indicate the language or platform
+     * that the error originates from, such as Flutter, React Native, or the NDK. (String)
+     */
+    const val ERROR_SOURCE_TYPE: String = "error.source_type"
+
+    /**
      * The name of the originating host as defined in metrics. (String)
      * This value is automatically filled by the Datadog framework.
      */
