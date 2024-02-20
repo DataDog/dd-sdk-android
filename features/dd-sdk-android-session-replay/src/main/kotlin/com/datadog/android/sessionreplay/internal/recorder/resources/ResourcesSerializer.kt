@@ -57,29 +57,40 @@ internal class ResourcesSerializer private constructor(
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
 
-        tryToGetResourceFromCache(
+        val resourceId = tryToGetResourceFromCache(
             drawable = drawable,
             imageWireframe = imageWireframe,
             resourcesSerializerCallback = resourcesSerializerCallback
         )
-            ?: tryToGetBitmapFromBitmapDrawable(
-                drawable = drawable,
-                displayMetrics = displayMetrics,
-                imageWireframe = imageWireframe,
-                resourcesSerializerCallback = resourcesSerializerCallback
-            )
-            ?: tryToDrawNewBitmap(
+
+        // managed to get resource from cache
+        if (resourceId != null) {
+            return
+        }
+
+        val bitmapFromDrawable = if (
+            drawable is BitmapDrawable &&
+            shouldUseDrawableBitmap(drawable)
+        ) {
+            drawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
+        } else {
+        null
+        }
+
+        // do in the background
+        Runnable {
+            createBitmapAsync(
                 drawable = drawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
+                bitmapFromDrawable = bitmapFromDrawable,
                 imageWireframe = imageWireframe,
-                resourcesSerializerCallback = resourcesSerializerCallback,
-
-                // this parameter is used to avoid infinite recursion
-                // basically we only allow one attempt to recreate the bitmap
-                didCallOriginateFromFailover = false
+                resourcesSerializerCallback = resourcesSerializerCallback
             )
+        }.let {
+            threadPoolExecutor.executeSafe("handleBitmap", logger, it)
+        }
     }
 
     // endregion
@@ -93,38 +104,48 @@ internal class ResourcesSerializer private constructor(
 
     // region private
 
+    @WorkerThread
+    private fun createBitmapAsync(
+        drawable: Drawable,
+        drawableWidth: Int,
+        drawableHeight: Int,
+        displayMetrics: DisplayMetrics,
+        bitmapFromDrawable: Bitmap?,
+        imageWireframe: MobileSegment.Wireframe.ImageWireframe,
+        resourcesSerializerCallback: ResourcesSerializerCallback
+    ) {
+        var handledBitmap: Bitmap? = null
+        if (bitmapFromDrawable != null) {
+            handledBitmap = tryToGetBitmapFromBitmapDrawable(
+                drawable = drawable as BitmapDrawable,
+                bitmapFromDrawable = bitmapFromDrawable,
+                imageWireframe = imageWireframe,
+                resourcesSerializerCallback = resourcesSerializerCallback
+            )
+        }
+
+        if (handledBitmap == null) {
+            tryToDrawNewBitmap(
+                drawable = drawable,
+                drawableWidth = drawableWidth,
+                drawableHeight = drawableHeight,
+                displayMetrics = displayMetrics,
+                imageWireframe = imageWireframe,
+                resourcesSerializerCallback = resourcesSerializerCallback
+            )
+        }
+    }
+
     @Suppress("ReturnCount")
     @WorkerThread
     private fun serializeBitmap(
         drawable: Drawable,
-        displayMetrics: DisplayMetrics,
         bitmap: Bitmap,
+        byteArray: ByteArray,
         shouldCacheBitmap: Boolean,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        resourcesSerializerCallback: ResourcesSerializerCallback,
-
-        // this parameter is used to avoid infinite recursion
-        // basically we only allow one attempt to recreate the bitmap
-        didCallOriginateFromFailover: Boolean
+        resourcesSerializerCallback: ResourcesSerializerCallback
     ) {
-        val byteArray = webPImageCompression.compressBitmap(bitmap)
-
-        // failed to get byteArray potentially because the bitmap was recycled before imageCompression
-        // Try once to recreate bitmap from the drawable
-        if (byteArray.isEmpty() && bitmap.isRecycled && !didCallOriginateFromFailover) {
-            tryToDrawNewBitmap(
-                drawable = drawable,
-                drawableWidth = bitmap.width,
-                drawableHeight = bitmap.height,
-                displayMetrics = displayMetrics,
-                imageWireframe = imageWireframe,
-                resourcesSerializerCallback = resourcesSerializerCallback,
-                didCallOriginateFromFailover = true
-            )
-
-            return
-        }
-
         if (byteArray.isEmpty()) {
             // failed to get image data
             resourcesSerializerCallback.onReady()
@@ -161,14 +182,14 @@ internal class ResourcesSerializer private constructor(
         resourcesSerializerCallback.onReady()
     }
 
+    @WorkerThread
     private fun tryToDrawNewBitmap(
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        resourcesSerializerCallback: ResourcesSerializerCallback,
-        didCallOriginateFromFailover: Boolean
+        resourcesSerializerCallback: ResourcesSerializerCallback
     ) {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
             drawable = drawable,
@@ -177,20 +198,17 @@ internal class ResourcesSerializer private constructor(
             displayMetrics = displayMetrics,
             bitmapCreationCallback = object : BitmapCreationCallback {
                 override fun onReady(bitmap: Bitmap) {
-                    Runnable {
-                        @Suppress("ThreadSafety") // this runs inside an executor
-                        serializeBitmap(
-                            drawable = drawable,
-                            displayMetrics = displayMetrics,
-                            bitmap = bitmap,
-                            shouldCacheBitmap = true,
-                            imageWireframe = imageWireframe,
-                            resourcesSerializerCallback = resourcesSerializerCallback,
-                            didCallOriginateFromFailover = didCallOriginateFromFailover
-                        )
-                    }.let {
-                        threadPoolExecutor.executeSafe("tryToDrawNewBitmap", logger, it)
-                    }
+                    val byteArray = webPImageCompression.compressBitmap(bitmap)
+
+                    @Suppress("ThreadSafety") // this runs inside an executor
+                    serializeBitmap(
+                        drawable = drawable,
+                        bitmap = bitmap,
+                        byteArray = byteArray,
+                        shouldCacheBitmap = true,
+                        imageWireframe = imageWireframe,
+                        resourcesSerializerCallback = resourcesSerializerCallback
+                    )
                 }
 
                 override fun onFailure() {
@@ -200,44 +218,41 @@ internal class ResourcesSerializer private constructor(
         )
     }
 
-    @MainThread
+    @WorkerThread
+    @Suppress("ReturnCount")
     private fun tryToGetBitmapFromBitmapDrawable(
-        drawable: Drawable,
-        displayMetrics: DisplayMetrics,
+        drawable: BitmapDrawable,
+        bitmapFromDrawable: Bitmap,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
         resourcesSerializerCallback: ResourcesSerializerCallback
     ): Bitmap? {
-        if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) {
-            val bitmap = drawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
-            Runnable {
-                @Suppress("ThreadSafety") // this runs inside an executor
-                drawableUtils.createScaledBitmap(
-                    bitmap
-                )?.let { scaledBitmap ->
+        @Suppress("ThreadSafety") // this runs inside an executor
+        drawableUtils.createScaledBitmap(bitmapFromDrawable)?.let { scaledBitmap ->
 
-                    /**
-                     * Check whether the scaled bitmap is the same as the original.
-                     * Since Bitmap.createScaledBitmap will return the original bitmap if the
-                     * requested dimensions match the dimensions of the original
-                     */
-                    val shouldCacheBitmap = scaledBitmap != drawable.bitmap
+            /**
+             * Check whether the scaled bitmap is the same as the original.
+             * Since Bitmap.createScaledBitmap will return the original bitmap if the
+             * requested dimensions match the dimensions of the original
+             */
+            val shouldCacheBitmap = scaledBitmap != drawable.bitmap
 
-                    serializeBitmap(
-                        drawable = drawable,
-                        displayMetrics = displayMetrics,
-                        bitmap = scaledBitmap,
-                        shouldCacheBitmap = shouldCacheBitmap,
-                        imageWireframe = imageWireframe,
-                        resourcesSerializerCallback = resourcesSerializerCallback,
-                        didCallOriginateFromFailover = false
-                    )
-                }
-            }.let {
-                threadPoolExecutor.executeSafe("tryToGetBitmapFromBitmapDrawable", logger, it)
+            val byteArray = webPImageCompression.compressBitmap(scaledBitmap)
+
+            // failed to get byteArray potentially because the bitmap was recycled before imageCompression
+            if (byteArray.isEmpty() && scaledBitmap.isRecycled) {
+                return null
             }
 
-            // return a value to indicate that we are handling the bitmap
-            return bitmap
+            serializeBitmap(
+                drawable = drawable,
+                bitmap = scaledBitmap,
+                byteArray = byteArray,
+                shouldCacheBitmap = shouldCacheBitmap,
+                imageWireframe = imageWireframe,
+                resourcesSerializerCallback = resourcesSerializerCallback
+            )
+
+            return scaledBitmap
         }
 
         return null
@@ -270,9 +285,9 @@ internal class ResourcesSerializer private constructor(
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&
-            !drawable.bitmap.isRecycled &&
-            drawable.bitmap.width > 0 &&
-            drawable.bitmap.height > 0
+                !drawable.bitmap.isRecycled &&
+                drawable.bitmap.width > 0 &&
+                drawable.bitmap.height > 0
     }
 
     // endregion
@@ -287,15 +302,11 @@ internal class ResourcesSerializer private constructor(
         private var resourcesLRUCache: Cache<Drawable, CacheData>,
         private var bitmapCachesManager: BitmapCachesManager =
             BitmapCachesManager.Builder(
-            resourcesLRUCache,
-            bitmapPool,
-            logger
-        ).build(),
-        private var drawableUtils: DrawableUtils = DrawableUtils(
-            bitmapCachesManager = bitmapCachesManager,
-            threadPoolExecutor = threadPoolExecutor,
-            logger = logger
-        ),
+                resourcesLRUCache,
+                bitmapPool,
+                logger
+            ).build(),
+        private var drawableUtils: DrawableUtils = DrawableUtils(bitmapCachesManager = bitmapCachesManager),
         private var webPImageCompression: ImageCompression = WebPImageCompression(),
         private var md5HashGenerator: MD5HashGenerator = MD5HashGenerator(logger)
     ) {

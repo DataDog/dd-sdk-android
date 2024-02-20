@@ -18,22 +18,17 @@ import android.util.DisplayMetrics
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
-import java.util.concurrent.ExecutorService
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
     private val bitmapCachesManager: BitmapCachesManager,
-    private val threadPoolExecutor: ExecutorService,
-    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
-    private val logger: InternalLogger
+    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
 ) {
 
     /**
@@ -41,6 +36,7 @@ internal class DrawableUtils(
      * be equal or less than a given size. It does so by modifying the dimensions of the
      * bitmap, since the file size of a bitmap can be known by the formula width*height*color depth
      */
+    @WorkerThread
     internal fun createBitmapOfApproxSizeFromDrawable(
         drawable: Drawable,
         drawableWidth: Int,
@@ -50,39 +46,31 @@ internal class DrawableUtils(
         config: Config = Config.ARGB_8888,
         bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
     ) {
-        Runnable {
-            @Suppress("ThreadSafety") // this runs inside an executor
-            createScaledBitmap(
-                drawableWidth,
-                drawableHeight,
-                requestedSizeInBytes,
-                displayMetrics,
-                config,
-                resizeBitmapCallback = object :
-                    ResizeBitmapCallback {
-                    override fun onSuccess(bitmap: Bitmap) {
-                        mainThreadHandler.post {
-                            @Suppress("ThreadSafety") // this runs on the main thread
-                            drawOnCanvas(
-                                bitmap,
-                                drawable,
-                                bitmapCreationCallback
-                            )
-                        }
-                    }
-
-                    override fun onFailure() {
-                        bitmapCreationCallback.onFailure()
+        @Suppress("ThreadSafety") // this runs inside an executor
+        createScaledBitmap(
+            drawableWidth,
+            drawableHeight,
+            requestedSizeInBytes,
+            displayMetrics,
+            config,
+            resizeBitmapCallback = object :
+                ResizeBitmapCallback {
+                override fun onSuccess(bitmap: Bitmap) {
+                    mainThreadHandler.post {
+                        @Suppress("ThreadSafety") // this runs on the main thread
+                        drawOnCanvas(
+                            bitmap,
+                            drawable,
+                            bitmapCreationCallback
+                        )
                     }
                 }
-            )
-        }.let {
-            threadPoolExecutor.executeSafe(
-                "createBitmapOfApproxSizeFromDrawable",
-                logger,
-                it
-            )
-        }
+
+                override fun onFailure() {
+                    bitmapCreationCallback.onFailure()
+                }
+            }
+        )
     }
 
     @WorkerThread
