@@ -15,15 +15,18 @@ import android.graphics.drawable.RippleDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.utils.isCloseTo
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -49,6 +52,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -61,6 +65,9 @@ internal class ImageWireframeHelperTest {
 
     @Mock
     lateinit var mockBase64Serializer: Base64Serializer
+
+    @Mock
+    lateinit var mockLogger: InternalLogger
 
     @Mock
     lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
@@ -162,15 +169,68 @@ internal class ImageWireframeHelperTest {
         whenever(mockBounds.y).thenReturn(0L)
 
         testedHelper = ImageWireframeHelper(
+            logger = mockLogger,
+            base64Serializer = mockBase64Serializer,
             imageCompression = mockImageCompression,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
-            base64Serializer = mockBase64Serializer,
             viewUtilsInternal = mockViewUtilsInternal,
             imageTypeResolver = mockImageTypeResolver
         )
     }
 
     // region createImageWireframe
+
+    @Test
+    fun `M return null W createImageWireframe() { application context is null }`() {
+        // Given
+        whenever(mockView.context.applicationContext).thenReturn(null)
+
+        // When
+        val wireframe = testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+        )
+
+        // Then
+        assertThat(wireframe).isNull()
+    }
+
+    @Test
+    fun `M send telemetry W createImageWireframe() { application context is null }`() {
+        // Given
+        whenever(mockView.context.applicationContext).thenReturn(null)
+
+        // When
+        testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, "android.view.View")
+        )
+    }
 
     @Test
     fun `M return null W createImageWireframe() { drawable is null }`() {

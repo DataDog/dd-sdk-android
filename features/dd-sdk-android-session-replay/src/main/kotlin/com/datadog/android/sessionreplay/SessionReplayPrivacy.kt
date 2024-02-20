@@ -18,6 +18,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
@@ -76,9 +77,9 @@ enum class SessionReplayPrivacy {
     MASK_USER_INPUT;
 
     @Suppress("LongMethod")
-    internal fun mappers(): List<MapperTypeWrapper> {
+    internal fun mappers(internalLogger: InternalLogger): List<MapperTypeWrapper> {
         val base64Serializer = buildBase64Serializer()
-        val imageWireframeHelper = ImageWireframeHelper(base64Serializer = base64Serializer)
+        val imageWireframeHelper = ImageWireframeHelper(logger = internalLogger, base64Serializer = base64Serializer)
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
         val unsupportedViewMapper = UnsupportedViewMapper()
