@@ -78,7 +78,7 @@ public final class Strings {
   }
 
   public static String toEnvVar(String string) {
-    return string.replace('.', '_').replace('-', '_').toUpperCase();
+    return string.replace('.', '_').replace('-', '_').toUpperCase(Locale.US);
   }
 
   /** com.foo.Bar -> com/foo/Bar.class */
@@ -190,7 +190,7 @@ public final class Strings {
    */
   @NonNull
   public static String systemPropertyNameToEnvironmentVariableName(final String setting) {
-    return setting.replace('.', '_').replace('-', '_').toUpperCase();
+    return setting.replace('.', '_').replace('-', '_').toUpperCase(Locale.US);
   }
 
   /**
@@ -241,7 +241,7 @@ public final class Strings {
   }
 
   private static String hex(char ch) {
-    return Integer.toHexString(ch).toUpperCase(Locale.ENGLISH);
+    return Integer.toHexString(ch).toUpperCase(Locale.US);
   }
 
   public static String sha256(String input) throws NoSuchAlgorithmException {

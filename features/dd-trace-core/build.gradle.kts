@@ -2,20 +2,23 @@ import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
+import com.datadog.gradle.config.kotlinConfig
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
     id("com.android.library")
+    kotlin("android")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
 
     // Tests
     id("de.mobilej.unmock")
+    id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
     id("thirdPartyLicences")
-    id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
 }
@@ -37,15 +40,17 @@ dependencies {
     implementation(libs.jctools)
     implementation(libs.kotlin)
     implementation(libs.okHttp)
-    implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
     implementation(libs.datadogSketchesJava)
     implementation(libs.re2j)
     compileOnly(libs.spotbugs)
 
     // TODO: RUM-3268 Port and enable the groovy unit tests
-}
 
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+}
+kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()
 javadocConfig()

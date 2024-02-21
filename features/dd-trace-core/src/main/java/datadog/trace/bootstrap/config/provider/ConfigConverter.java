@@ -353,28 +353,6 @@ final class ConfigConverter {
     }
   }
 
-  private static class ValueOfLookup extends ClassValue<MethodHandle> {
-    private static final MethodHandles.Lookup PUBLIC_LOOKUP = MethodHandles.publicLookup();
-
-    @Override
-    protected MethodHandle computeValue(Class<?> type) {
-      try {
-        if (Boolean.class.equals(type)) {
-          return MethodHandles.lookup()
-              .findStatic(
-                  ConfigConverter.class,
-                  "booleanValueOf",
-                  MethodType.methodType(Boolean.class, String.class));
-        }
-
-        return PUBLIC_LOOKUP.findStatic(type, "valueOf", MethodType.methodType(type, String.class));
-      } catch (final NoSuchMethodException | IllegalAccessException e) {
-        log.debug("Can't invoke or access 'valueOf': ", e);
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
   public static String renderIntegerRange(BitSet bitset) {
     StringBuilder sb = new StringBuilder();
     int start = 0;

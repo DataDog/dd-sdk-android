@@ -329,7 +329,7 @@ public final class Platform {
   }
 
   public static boolean isGraalVM() {
-    return RUNTIME.vendorVersion.toLowerCase().contains("graalvm");
+    return RUNTIME.vendorVersion.toLowerCase(Locale.US).contains("graalvm");
   }
 
   public static String getLangVersion() {
