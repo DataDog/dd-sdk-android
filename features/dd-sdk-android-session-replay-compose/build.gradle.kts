@@ -38,6 +38,9 @@ plugins {
 android {
     namespace = "com.datadog.android.sessionreplay.compose"
 
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
     buildFeatures {
         compose = true
     }
