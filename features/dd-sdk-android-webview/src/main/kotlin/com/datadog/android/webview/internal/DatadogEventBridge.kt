@@ -61,9 +61,22 @@ internal class DatadogEventBridge(
         return privacyLevel
     }
 
+    /**
+     *  Called from the browser-sdk to know the capabilities supported by this version of the bridge.
+     *  @return the capabilities as an array of Strings.
+     */
+    @JavascriptInterface
+    fun getCapabilities(): String {
+        return capabilities.toString()
+    }
+
     // endregion
 
     companion object {
         internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
+
+        internal val capabilities = JsonArray().apply {
+            add("records")
+        }
     }
 }
