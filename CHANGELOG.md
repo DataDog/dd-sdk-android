@@ -1,3 +1,8 @@
+# 2.6.1 / 2024-02-21
+
+* [BUGFIX] RUM: Fix missing source in telemetry json schema. See [#1865](https://github.com/DataDog/dd-sdk-android/pull/1865)
+* [MAINTENANCE] RUM: Remove stale json schema file. See [#1866](https://github.com/DataDog/dd-sdk-android/pull/1866)
+
 # 2.6.0 / 2024-02-19
 
 * [FEATURE] RUM\Logs: Report all threads in case of crash. See [#1848](https://github.com/DataDog/dd-sdk-android/pull/1848)
