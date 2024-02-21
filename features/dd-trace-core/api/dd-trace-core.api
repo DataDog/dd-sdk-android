@@ -1,93 +1,3 @@
-public class datadog/appsec/api/blocking/Blocking {
-	public static fun forUser (Ljava/lang/String;)Ldatadog/appsec/api/blocking/Blocking$UserBlockingSpec;
-	public static fun setBlockingService (Ldatadog/appsec/api/blocking/BlockingService;)V
-	public static fun tryCommitBlockingResponse (ILdatadog/appsec/api/blocking/BlockingContentType;)Z
-	public static fun tryCommitBlockingResponse (ILdatadog/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
-}
-
-public class datadog/appsec/api/blocking/Blocking$UserBlockingSpec {
-	public fun blockIfMatch ()V
-	public fun shouldBlock ()Ldatadog/appsec/api/blocking/BlockingDetails;
-}
-
-public final class datadog/appsec/api/blocking/BlockingContentType : java/lang/Enum {
-	public static final field AUTO Ldatadog/appsec/api/blocking/BlockingContentType;
-	public static final field HTML Ldatadog/appsec/api/blocking/BlockingContentType;
-	public static final field JSON Ldatadog/appsec/api/blocking/BlockingContentType;
-	public static final field NONE Ldatadog/appsec/api/blocking/BlockingContentType;
-	public static fun valueOf (Ljava/lang/String;)Ldatadog/appsec/api/blocking/BlockingContentType;
-	public static fun values ()[Ldatadog/appsec/api/blocking/BlockingContentType;
-}
-
-public class datadog/appsec/api/blocking/BlockingDetails {
-	public final field blockingContentType Ldatadog/appsec/api/blocking/BlockingContentType;
-	public final field extraHeaders Ljava/util/Map;
-	public final field statusCode I
-	public fun <init> (ILdatadog/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)V
-}
-
-public class datadog/appsec/api/blocking/BlockingException : java/lang/RuntimeException {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
-	public fun <init> (Ljava/lang/Throwable;)V
-}
-
-public abstract interface class datadog/appsec/api/blocking/BlockingService {
-	public static final field NOOP Ldatadog/appsec/api/blocking/BlockingService;
-	public abstract fun shouldBlockUser (Ljava/lang/String;)Ldatadog/appsec/api/blocking/BlockingDetails;
-	public abstract fun tryCommitBlockingResponse (ILdatadog/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
-}
-
-public class datadog/appsec/api/blocking/BlockingService$BlockingServiceNoop : datadog/appsec/api/blocking/BlockingService {
-	public fun shouldBlockUser (Ljava/lang/String;)Ldatadog/appsec/api/blocking/BlockingDetails;
-	public fun tryCommitBlockingResponse (ILdatadog/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
-}
-
-public class datadog/container/ContainerInfo {
-	public field cGroups Ljava/util/List;
-	public field containerId Ljava/lang/String;
-	public field podId Ljava/lang/String;
-	public fun <init> ()V
-	public static fun fromDefaultProcFile ()Ldatadog/container/ContainerInfo;
-	public static fun get ()Ldatadog/container/ContainerInfo;
-	public fun getCGroups ()Ljava/util/List;
-	public fun getContainerId ()Ljava/lang/String;
-	public fun getPodId ()Ljava/lang/String;
-	public static fun isRunningInContainer ()Z
-	public static fun parse (Ljava/lang/String;)Ldatadog/container/ContainerInfo;
-	public fun setContainerId (Ljava/lang/String;)V
-	public fun setPodId (Ljava/lang/String;)V
-	public fun setcGroups (Ljava/util/List;)V
-}
-
-public class datadog/container/ContainerInfo$CGroupInfo {
-	public field containerId Ljava/lang/String;
-	public field controllers Ljava/util/List;
-	public field id I
-	public field path Ljava/lang/String;
-	public field podId Ljava/lang/String;
-	public fun <init> ()V
-	public fun getContainerId ()Ljava/lang/String;
-	public fun getControllers ()Ljava/util/List;
-	public fun getId ()I
-	public fun getPath ()Ljava/lang/String;
-	public fun getPodId ()Ljava/lang/String;
-	public fun setContainerId (Ljava/lang/String;)V
-	public fun setControllers (Ljava/util/List;)V
-	public fun setId (I)V
-	public fun setPath (Ljava/lang/String;)V
-	public fun setPodId (Ljava/lang/String;)V
-}
-
-public class datadog/container/ServerlessInfo {
-	public fun <init> ()V
-	public static fun get ()Ldatadog/container/ServerlessInfo;
-	public fun getFunctionName ()Ljava/lang/String;
-	public fun hasExtension ()Z
-	public fun isRunningInServerlessEnvironment ()Z
-}
-
 public abstract interface annotation class datadog/trace/advice/ActiveRequestContext : java/lang/annotation/Annotation {
 }
 
@@ -1033,13 +943,6 @@ public abstract interface class datadog/trace/api/cache/DDPartialKeyCache$Produc
 	public abstract fun apply (Ljava/lang/Object;III)Ljava/lang/Object;
 }
 
-public final class datadog/trace/api/cache/QualifiedClassNameCache : java/lang/ClassValue {
-	public fun <init> (Ljava/util/function/Function;Ldatadog/trace/api/Functions$Join;)V
-	public fun <init> (Ljava/util/function/Function;Ldatadog/trace/api/Functions$Join;I)V
-	public fun getClassName (Ljava/lang/Class;)Ljava/lang/CharSequence;
-	public fun getQualifiedName (Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/CharSequence;
-}
-
 public final class datadog/trace/api/cache/RadixTreeCache {
 	public static final field HTTP_STATUSES Ldatadog/trace/api/cache/RadixTreeCache;
 	public static final field PORTS Ldatadog/trace/api/cache/RadixTreeCache;
@@ -1053,17 +956,6 @@ public abstract interface class datadog/trace/api/civisibility/CIConstants {
 	public static final field TEST_FAIL Ljava/lang/String;
 	public static final field TEST_PASS Ljava/lang/String;
 	public static final field TEST_SKIP Ljava/lang/String;
-}
-
-public class datadog/trace/api/civisibility/CIVisibility {
-	public fun <init> ()V
-	public static fun registerSessionFactory (Ldatadog/trace/api/civisibility/CIVisibility$SessionFactory;)V
-	public static fun startSession (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;)Ldatadog/trace/api/civisibility/DDTestSession;
-	public static fun startSession (Ljava/lang/String;Ljava/nio/file/Path;Ljava/lang/String;Ljava/lang/Long;)Ldatadog/trace/api/civisibility/DDTestSession;
-}
-
-public abstract interface class datadog/trace/api/civisibility/CIVisibility$SessionFactory {
-	public abstract fun startSession (Ljava/lang/String;Ljava/nio/file/Path;Ljava/lang/String;Ljava/lang/Long;)Ldatadog/trace/api/civisibility/DDTestSession;
 }
 
 public abstract interface class datadog/trace/api/civisibility/DDTest {
@@ -1815,7 +1707,7 @@ public abstract interface class datadog/trace/api/function/TriFunction {
 }
 
 public abstract interface class datadog/trace/api/gateway/BlockResponseFunction {
-	public abstract fun tryCommitBlockingResponse (Ldatadog/trace/api/internal/TraceSegment;ILdatadog/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
+	public abstract fun tryCommitBlockingResponse (Ldatadog/trace/api/internal/TraceSegment;ILdatadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
 }
 
 public abstract interface class datadog/trace/api/gateway/CallbackProvider {
@@ -1868,10 +1760,10 @@ public class datadog/trace/api/gateway/Flow$Action$Noop : datadog/trace/api/gate
 }
 
 public class datadog/trace/api/gateway/Flow$Action$RequestBlockingAction : datadog/trace/api/gateway/Flow$Action {
-	public fun <init> (ILdatadog/appsec/api/blocking/BlockingContentType;)V
-	public fun <init> (ILdatadog/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)V
+	public fun <init> (ILdatadog/trace/appsec/api/blocking/BlockingContentType;)V
+	public fun <init> (ILdatadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)V
 	public static fun forRedirect (ILjava/lang/String;)Ldatadog/trace/api/gateway/Flow$Action$RequestBlockingAction;
-	public fun getBlockingContentType ()Ldatadog/appsec/api/blocking/BlockingContentType;
+	public fun getBlockingContentType ()Ldatadog/trace/appsec/api/blocking/BlockingContentType;
 	public fun getExtraHeaders ()Ljava/util/Map;
 	public fun getStatusCode ()I
 	public fun isBlocking ()Z
@@ -1944,115 +1836,6 @@ public class datadog/trace/api/gateway/SubscriptionService$SubscriptionServiceNo
 	public static final field INSTANCE Ldatadog/trace/api/gateway/SubscriptionService;
 	public fun registerCallback (Ldatadog/trace/api/gateway/EventType;Ljava/lang/Object;)Ldatadog/trace/api/gateway/Subscription;
 	public fun reset ()V
-}
-
-public class datadog/trace/api/git/CommitInfo {
-	public static final field NOOP Ldatadog/trace/api/git/CommitInfo;
-	public fun <init> (Ljava/lang/String;)V
-	public fun <init> (Ljava/lang/String;Ldatadog/trace/api/git/PersonInfo;Ldatadog/trace/api/git/PersonInfo;Ljava/lang/String;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getAuthor ()Ldatadog/trace/api/git/PersonInfo;
-	public fun getCommitter ()Ldatadog/trace/api/git/PersonInfo;
-	public fun getFullMessage ()Ljava/lang/String;
-	public fun getSha ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun isEmpty ()Z
-	public fun toString ()Ljava/lang/String;
-}
-
-public class datadog/trace/api/git/EmbeddedGitInfoBuilder : datadog/trace/api/git/GitInfoBuilder {
-	public fun <init> ()V
-	public fun build (Ljava/lang/String;)Ldatadog/trace/api/git/GitInfo;
-	public fun order ()I
-}
-
-public class datadog/trace/api/git/GitInfo {
-	public static final field DD_GIT_BRANCH Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_AUTHOR_DATE Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_AUTHOR_EMAIL Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_AUTHOR_NAME Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_COMMITTER_DATE Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_COMMITTER_EMAIL Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_COMMITTER_NAME Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_MESSAGE Ljava/lang/String;
-	public static final field DD_GIT_COMMIT_SHA Ljava/lang/String;
-	public static final field DD_GIT_REPOSITORY_URL Ljava/lang/String;
-	public static final field DD_GIT_TAG Ljava/lang/String;
-	public static final field NOOP Ldatadog/trace/api/git/GitInfo;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ldatadog/trace/api/git/CommitInfo;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getBranch ()Ljava/lang/String;
-	public fun getCommit ()Ldatadog/trace/api/git/CommitInfo;
-	public fun getRepositoryURL ()Ljava/lang/String;
-	public fun getTag ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun isEmpty ()Z
-}
-
-public abstract interface class datadog/trace/api/git/GitInfoBuilder {
-	public abstract fun build (Ljava/lang/String;)Ldatadog/trace/api/git/GitInfo;
-	public abstract fun order ()I
-}
-
-public class datadog/trace/api/git/GitInfoProvider {
-	public static final field INSTANCE Ldatadog/trace/api/git/GitInfoProvider;
-	public fun <init> ()V
-	public fun getGitInfo ()Ldatadog/trace/api/git/GitInfo;
-	public fun getGitInfo (Ljava/lang/String;)Ldatadog/trace/api/git/GitInfo;
-	public fun invalidateCache ()V
-	public fun registerGitInfoBuilder (Ldatadog/trace/api/git/GitInfoBuilder;)V
-}
-
-public class datadog/trace/api/git/GitUtils {
-	public fun <init> ()V
-	public static fun filterSensitiveInfo (Ljava/lang/String;)Ljava/lang/String;
-	public static fun inflate ([B)[B
-	public static fun isTagReference (Ljava/lang/String;)Z
-	public static fun isValidCommitSha (Ljava/lang/String;)Z
-	public static fun normalizeBranch (Ljava/lang/String;)Ljava/lang/String;
-	public static fun normalizeTag (Ljava/lang/String;)Ljava/lang/String;
-	public static fun splitAuthorAndEmail (Ljava/lang/String;)Ldatadog/trace/api/git/PersonInfo;
-}
-
-public class datadog/trace/api/git/PersonInfo {
-	public static final field NOOP Ldatadog/trace/api/git/PersonInfo;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;JI)V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getEmail ()Ljava/lang/String;
-	public fun getIso8601Date ()Ljava/lang/String;
-	public fun getName ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun isEmpty ()Z
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class datadog/trace/api/git/RawParseUtils {
-	public static final field AUTHOR [B
-	public static final field COMMITTER [B
-	public static final fun author ([BI)I
-	public static fun commitMessage ([BI)I
-	public static fun committer ([BI)I
-	public static fun decode ([BII)Ljava/lang/String;
-	public static fun extractBinaryString ([BII)Ljava/lang/String;
-	public static fun findByte ([BB)I
-	public static fun lastIndexOfTrim ([BCI)I
-	public static fun match ([BI[B)I
-	public static fun next ([BIC)I
-	public static fun nextLF ([BI)I
-	public static fun nextLF ([BIC)I
-	public static fun parseBase10 ([BI)I
-	public static fun parseLongBase10 ([BI)J
-	public static fun parseTimeZoneOffset ([BI)I
-	public static fun tagMessage ([BI)I
-}
-
-public class datadog/trace/api/git/UserSuppliedGitInfoBuilder : datadog/trace/api/git/GitInfoBuilder {
-	public fun <init> ()V
-	public fun build (Ljava/lang/String;)Ldatadog/trace/api/git/GitInfo;
-	public fun order ()I
 }
 
 public class datadog/trace/api/http/StoredBodyFactories {
@@ -2918,20 +2701,6 @@ public final class datadog/trace/api/profiling/ProfilingContextAttribute$NoOp : 
 	public fun <init> ()V
 }
 
-public abstract interface class datadog/trace/api/profiling/ProfilingListener {
-	public abstract fun onData (Ljava/lang/Object;)V
-}
-
-public final class datadog/trace/api/profiling/ProfilingListeners {
-	public fun addListener (Ldatadog/trace/api/profiling/ProfilingListener;)V
-	public fun fireOnData (Ldatadog/trace/api/profiling/ObservableType;)V
-	public fun removeListener (Ldatadog/trace/api/profiling/ProfilingListener;)V
-}
-
-public final class datadog/trace/api/profiling/ProfilingListenersRegistry {
-	public static fun getHost (Ljava/lang/Class;)Ldatadog/trace/api/profiling/ProfilingListeners;
-}
-
 public abstract interface class datadog/trace/api/profiling/ProfilingScope : datadog/trace/api/profiling/ProfilingContext, java/lang/AutoCloseable {
 	public static final field NO_OP Ldatadog/trace/api/profiling/ProfilingScope;
 	public abstract fun close ()V
@@ -3011,27 +2780,6 @@ public class datadog/trace/api/profiling/Timing$NoOp : datadog/trace/api/profili
 }
 
 public abstract interface class datadog/trace/api/profiling/TransientProfilingContextHolder {
-}
-
-public class datadog/trace/api/sampling/AdaptiveSampler : datadog/trace/api/sampling/Sampler {
-	public fun <init> (Ljava/time/Duration;IIILdatadog/trace/api/sampling/AdaptiveSampler$ConfigListener;)V
-	protected fun <init> (Ljava/time/Duration;IIILdatadog/trace/api/sampling/AdaptiveSampler$ConfigListener;Ldatadog/trace/util/AgentTaskScheduler;Z)V
-	public fun <init> (Ljava/time/Duration;IIIZ)V
-	public fun drop ()Z
-	public fun keep ()Z
-	public fun sample ()Z
-	public fun start ()V
-}
-
-public abstract interface class datadog/trace/api/sampling/AdaptiveSampler$ConfigListener {
-	public abstract fun onWindowRoll (JJJDD)V
-}
-
-public class datadog/trace/api/sampling/ConstantSampler : datadog/trace/api/sampling/Sampler {
-	public fun <init> (Z)V
-	public fun drop ()Z
-	public fun keep ()Z
-	public fun sample ()Z
 }
 
 public class datadog/trace/api/sampling/PrioritySampling {
@@ -3206,6 +2954,52 @@ public abstract interface class datadog/trace/api/time/TimeSource {
 	public abstract fun getCurrentTimeMillis ()J
 	public abstract fun getCurrentTimeNanos ()J
 	public abstract fun getNanoTicks ()J
+}
+
+public class datadog/trace/appsec/api/blocking/Blocking {
+	public static fun forUser (Ljava/lang/String;)Ldatadog/trace/appsec/api/blocking/Blocking$UserBlockingSpec;
+	public static fun setBlockingService (Ldatadog/trace/appsec/api/blocking/BlockingService;)V
+	public static fun tryCommitBlockingResponse (ILdatadog/trace/appsec/api/blocking/BlockingContentType;)Z
+	public static fun tryCommitBlockingResponse (ILdatadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
+}
+
+public class datadog/trace/appsec/api/blocking/Blocking$UserBlockingSpec {
+	public fun blockIfMatch ()V
+	public fun shouldBlock ()Ldatadog/trace/appsec/api/blocking/BlockingDetails;
+}
+
+public final class datadog/trace/appsec/api/blocking/BlockingContentType : java/lang/Enum {
+	public static final field AUTO Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+	public static final field HTML Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+	public static final field JSON Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+	public static final field NONE Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+	public static fun valueOf (Ljava/lang/String;)Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+	public static fun values ()[Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+}
+
+public class datadog/trace/appsec/api/blocking/BlockingDetails {
+	public final field blockingContentType Ldatadog/trace/appsec/api/blocking/BlockingContentType;
+	public final field extraHeaders Ljava/util/Map;
+	public final field statusCode I
+	public fun <init> (ILdatadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)V
+}
+
+public class datadog/trace/appsec/api/blocking/BlockingException : java/lang/RuntimeException {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun <init> (Ljava/lang/Throwable;)V
+}
+
+public abstract interface class datadog/trace/appsec/api/blocking/BlockingService {
+	public static final field NOOP Ldatadog/trace/appsec/api/blocking/BlockingService;
+	public abstract fun shouldBlockUser (Ljava/lang/String;)Ldatadog/trace/appsec/api/blocking/BlockingDetails;
+	public abstract fun tryCommitBlockingResponse (ILdatadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
+}
+
+public class datadog/trace/appsec/api/blocking/BlockingService$BlockingServiceNoop : datadog/trace/appsec/api/blocking/BlockingService {
+	public fun shouldBlockUser (Ljava/lang/String;)Ldatadog/trace/appsec/api/blocking/BlockingDetails;
+	public fun tryCommitBlockingResponse (ILdatadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
 }
 
 public class datadog/trace/bootstrap/ActiveSubsystems {
@@ -3722,8 +3516,6 @@ public abstract interface class datadog/trace/bootstrap/instrumentation/api/Agen
 	public abstract fun getUniversalCallbackProvider ()Ldatadog/trace/api/gateway/CallbackProvider;
 	public abstract fun newHistogram (DI)Ldatadog/trace/bootstrap/instrumentation/api/AgentHistogram;
 	public abstract fun noopSpan ()Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;
-	public abstract fun notifyExtensionEnd (Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Z)V
-	public abstract fun notifyExtensionStart (Ljava/lang/Object;)Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
 	public abstract fun propagate ()Ldatadog/trace/bootstrap/instrumentation/api/AgentPropagation;
 	public abstract fun registerCheckpointer (Ldatadog/trace/api/EndpointCheckpointer;)V
 	public abstract fun registerTimer (Ldatadog/trace/api/profiling/Timer;)V
@@ -4304,12 +4096,6 @@ public class datadog/trace/civisibility/interceptor/CiVisibilityTraceInterceptor
 	public fun onTraceComplete (Ljava/util/Collection;)Ljava/util/Collection;
 }
 
-public class datadog/trace/common/GitMetadataTraceInterceptor : datadog/trace/api/interceptor/AbstractTraceInterceptor {
-	public static final field INSTANCE Ldatadog/trace/api/interceptor/TraceInterceptor;
-	protected fun <init> (Ldatadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;)V
-	public fun onTraceComplete (Ljava/util/Collection;)Ljava/util/Collection;
-}
-
 public final class datadog/trace/common/metrics/AggregateMetric {
 	public fun <init> ()V
 	public fun clear ()V
@@ -4378,15 +4164,6 @@ public final class datadog/trace/common/metrics/NoOpMetricsAggregator : datadog/
 	public fun publish (Ljava/util/List;)Z
 	public fun report ()Z
 	public fun start ()V
-}
-
-public final class datadog/trace/common/metrics/SerializingMetricWriter : datadog/trace/common/metrics/MetricWriter {
-	public fun <init> (Ldatadog/trace/api/WellKnownTags;Ldatadog/trace/common/metrics/Sink;)V
-	public fun <init> (Ldatadog/trace/api/WellKnownTags;Ldatadog/trace/common/metrics/Sink;I)V
-	public fun add (Ldatadog/trace/common/metrics/MetricKey;Ldatadog/trace/common/metrics/AggregateMetric;)V
-	public fun finishBucket ()V
-	public fun reset ()V
-	public fun startBucket (IJJ)V
 }
 
 public abstract interface class datadog/trace/common/metrics/Sink : datadog/trace/serialization/ByteBufferConsumer {
@@ -4596,28 +4373,6 @@ public class datadog/trace/common/writer/LoggingWriter : datadog/trace/common/wr
 public abstract class datadog/trace/common/writer/Payload {
 	protected field body Ljava/nio/ByteBuffer;
 	public fun <init> ()V
-	public fun droppedSpans ()J
-	public fun droppedTraces ()J
-	protected fun msgpackArrayHeader (I)Ljava/nio/ByteBuffer;
-	protected fun msgpackArrayHeaderSize (I)I
-	protected fun msgpackMapHeader (I)Ljava/nio/ByteBuffer;
-	protected fun msgpackMapHeaderSize (I)I
-	public abstract fun sizeInBytes ()I
-	public abstract fun toRequest ()Lokhttp3/RequestBody;
-	public fun traceCount ()I
-	public fun withBody (ILjava/nio/ByteBuffer;)Ldatadog/trace/common/writer/Payload;
-	public fun withDroppedSpans (J)Ldatadog/trace/common/writer/Payload;
-	public fun withDroppedTraces (J)Ldatadog/trace/common/writer/Payload;
-	public abstract fun writeTo (Ljava/nio/channels/WritableByteChannel;)V
-}
-
-public class datadog/trace/common/writer/PayloadDispatcherImpl : datadog/trace/common/writer/PayloadDispatcher, datadog/trace/serialization/ByteBufferConsumer {
-	public fun <init> (Ldatadog/trace/common/writer/RemoteMapperDiscovery;Ldatadog/trace/common/writer/RemoteApi;Ldatadog/trace/core/monitor/HealthMetrics;Ldatadog/trace/monitor/Monitoring;)V
-	public fun accept (ILjava/nio/ByteBuffer;)V
-	public fun addTrace (Ljava/util/List;)V
-	public fun flush ()V
-	public fun getApis ()Ljava/util/Collection;
-	public fun onDroppedTrace (I)V
 }
 
 public class datadog/trace/common/writer/PrintingWriter : datadog/trace/common/writer/Writer {
@@ -4893,8 +4648,6 @@ public class datadog/trace/core/CoreTracer : datadog/trace/bootstrap/instrumenta
 	public fun newHistogram (DI)Ldatadog/trace/bootstrap/instrumentation/api/AgentHistogram;
 	public fun newScopeState ()Ldatadog/trace/bootstrap/instrumentation/api/ScopeState;
 	public fun noopSpan ()Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;
-	public fun notifyExtensionEnd (Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Z)V
-	public fun notifyExtensionStart (Ljava/lang/Object;)Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
 	public fun onRootSpanFinished (Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;Ldatadog/trace/api/EndpointTracker;)V
 	public fun onRootSpanStarted (Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ldatadog/trace/api/EndpointTracker;
 	public fun propagate ()Ldatadog/trace/bootstrap/instrumentation/api/AgentPropagation;
@@ -5342,12 +5095,6 @@ public class datadog/trace/core/datastreams/DefaultPathwayContext : datadog/trac
 	public fun setCheckpoint (Ljava/util/LinkedHashMap;Ljava/util/function/Consumer;JJ)V
 	public fun strEncode ()Ljava/lang/String;
 	public fun toString ()Ljava/lang/String;
-}
-
-public class datadog/trace/core/datastreams/MsgPackDatastreamsPayloadWriter : datadog/trace/core/datastreams/DatastreamsPayloadWriter {
-	public fun <init> (Ldatadog/trace/common/metrics/Sink;Ldatadog/trace/api/WellKnownTags;Ljava/lang/String;Ljava/lang/String;)V
-	public fun reset ()V
-	public fun writePayload (Ljava/util/Collection;)V
 }
 
 public class datadog/trace/core/datastreams/NoOpDataStreamMonitoring : datadog/trace/core/datastreams/DataStreamsMonitoring {
@@ -5812,27 +5559,12 @@ public class datadog/trace/ddagent/DroppingPolicy$DisabledDroppingPolicy : datad
 	public fun active ()Z
 }
 
-public class datadog/trace/lambda/LambdaHandler {
-	public fun <init> ()V
-	public static fun notifyEndInvocation (Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Z)Z
-	public static fun notifyStartInvocation (Ljava/lang/Object;Ldatadog/trace/core/propagation/PropagationTags$Factory;)Ldatadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
-	public static fun setExtensionBaseUrl (Ljava/lang/String;)V
-	public static fun writeValueAsString (Ljava/lang/Object;)Ljava/lang/String;
-}
-
 public final class datadog/trace/lambda/ReadFromInputStreamJsonAdapter : com/squareup/moshi/JsonAdapter {
 	public fun <init> ()V
 	public fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/io/ByteArrayInputStream;
 	public synthetic fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/lang/Object;
 	public fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/io/ByteArrayInputStream;)V
 	public synthetic fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/lang/Object;)V
-}
-
-public final class datadog/trace/lambda/SkipUnsupportedTypeJsonAdapter : com/squareup/moshi/JsonAdapter {
-	public fun <init> ()V
-	public fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/lang/Object;
-	public static fun newFactory ()Lcom/squareup/moshi/JsonAdapter$Factory;
-	public fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/lang/Object;)V
 }
 
 public class datadog/trace/logging/GlobalLogLevelSwitcher : datadog/trace/logging/LogLevelSwitcher {
@@ -5934,12 +5666,6 @@ public class datadog/trace/relocate/api/RatelimitedLogger {
 
 public abstract interface class datadog/trace/serialization/ByteBufferConsumer {
 	public abstract fun accept (ILjava/nio/ByteBuffer;)V
-}
-
-public final class datadog/trace/serialization/Codec : java/lang/ClassValue {
-	public static final field INSTANCE Ldatadog/trace/serialization/Codec;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;)V
 }
 
 public abstract interface class datadog/trace/serialization/EncodingCache {
@@ -6045,63 +5771,6 @@ public abstract interface class datadog/trace/serialization/Writable {
 public abstract interface class datadog/trace/serialization/WritableFormatter : datadog/trace/serialization/MessageFormatter, datadog/trace/serialization/Writable {
 }
 
-public class datadog/trace/serialization/msgpack/MsgPackWriter : datadog/trace/serialization/WritableFormatter {
-	public static final field ARRAY16 B
-	public static final field ARRAY32 B
-	public static final field BIN16 B
-	public static final field BIN32 B
-	public static final field BIN8 B
-	public static final field FALSE B
-	public static final field FIXARRAY I
-	public static final field FIXMAP I
-	public static final field FIXSTR I
-	public static final field FLOAT32 B
-	public static final field FLOAT64 B
-	public static final field INT16 B
-	public static final field INT32 B
-	public static final field INT64 B
-	public static final field INT8 B
-	public static final field MAP16 B
-	public static final field MAP32 B
-	public static final field NEGFIXNUM I
-	public static final field NULL B
-	public static final field STR16 B
-	public static final field STR32 B
-	public static final field STR8 B
-	public static final field TRUE B
-	public static final field UINT16 B
-	public static final field UINT32 B
-	public static final field UINT64 B
-	public static final field UINT8 B
-	public fun <init> (Ldatadog/trace/serialization/Codec;Ldatadog/trace/serialization/StreamingBuffer;)V
-	public fun <init> (Ldatadog/trace/serialization/StreamingBuffer;)V
-	public fun flush ()V
-	public fun format (Ljava/lang/Object;Ldatadog/trace/serialization/Mapper;)Z
-	public fun startArray (I)V
-	public fun startMap (I)V
-	public fun startStruct (I)V
-	public fun writeBinary (Ljava/nio/ByteBuffer;)V
-	public fun writeBinary ([B)V
-	public fun writeBinary ([BII)V
-	public fun writeBoolean (Z)V
-	public fun writeDouble (D)V
-	public fun writeFloat (F)V
-	public fun writeInt (I)V
-	public fun writeLong (J)V
-	public fun writeLongInternal (JZ)V
-	public fun writeMap (Ljava/util/Map;Ldatadog/trace/serialization/EncodingCache;)V
-	public fun writeNull ()V
-	public fun writeObject (Ljava/lang/Object;Ldatadog/trace/serialization/EncodingCache;)V
-	public fun writeObjectString (Ljava/lang/Object;Ldatadog/trace/serialization/EncodingCache;)V
-	public fun writeSignedInt (I)V
-	public fun writeSignedLong (J)V
-	public fun writeString (Ljava/lang/CharSequence;Ldatadog/trace/serialization/EncodingCache;)V
-	public fun writeUTF8 (Ldatadog/trace/bootstrap/instrumentation/api/UTF8BytesString;)V
-	public fun writeUTF8 ([B)V
-	public fun writeUTF8 ([BII)V
-	public fun writeUnsignedLong (J)V
-}
-
 public final class datadog/trace/util/AgentProxySelector : java/net/ProxySelector {
 	public static final field INSTANCE Ljava/net/ProxySelector;
 	public fun <init> ()V
@@ -6190,30 +5859,6 @@ public final class datadog/trace/util/AgentThreadFactory$AgentThread : java/lang
 	public static fun values ()[Ldatadog/trace/util/AgentThreadFactory$AgentThread;
 }
 
-public final class datadog/trace/util/ClassNameTrie {
-	public fun apply (Ljava/lang/String;)I
-	public static fun apply ([C[ILjava/lang/String;)I
-	public static fun readFrom (Ljava/io/DataInput;)Ldatadog/trace/util/ClassNameTrie;
-}
-
-public class datadog/trace/util/ClassNameTrie$Builder {
-	public static final field EMPTY_TRIE Ldatadog/trace/util/ClassNameTrie;
-	public fun <init> ()V
-	public fun <init> (Ldatadog/trace/util/ClassNameTrie;)V
-	public fun apply (Ljava/lang/String;)I
-	public fun buildTrie ()Ldatadog/trace/util/ClassNameTrie;
-	public fun isEmpty ()Z
-	public fun put (Ljava/lang/String;I)V
-	public fun readClassNameMapping (Ljava/nio/file/Path;)V
-	public fun writeTo (Ljava/io/DataOutput;)V
-}
-
-public class datadog/trace/util/ClassNameTrie$JavaGenerator {
-	public fun <init> ()V
-	public static fun generateJavaTrie (Ljava/util/List;Ljava/lang/String;Ldatadog/trace/util/ClassNameTrie$Builder;)Z
-	public static fun main ([Ljava/lang/String;)V
-}
-
 public final class datadog/trace/util/CollectionUtils {
 	public fun <init> ()V
 	public static fun tryMakeImmutableList (Ljava/util/Collection;)Ljava/util/List;
@@ -6235,44 +5880,15 @@ public final class datadog/trace/util/FNV64Hash$Version : java/lang/Enum {
 	public static fun values ()[Ldatadog/trace/util/FNV64Hash$Version;
 }
 
-public class datadog/trace/util/MethodHandles {
-	public fun <init> (Ljava/lang/ClassLoader;)V
-	public fun constructor (Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;
-	public fun constructor (Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;
-	public fun invoke (Ljava/lang/invoke/MethodHandle;[Ljava/lang/Object;)Ljava/lang/Object;
-	public fun method (Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;
-	public fun method (Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;
-	public fun privateFieldGetter (Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/invoke/MethodHandle;
-	public fun privateFieldGetter (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/invoke/MethodHandle;
-	public fun privateFieldSetter (Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/invoke/MethodHandle;
-	public fun privateFieldSetter (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/invoke/MethodHandle;
+public class datadog/trace/util/FileUtils {
+	public fun <init> ()V
+	public static fun readAllBytes (Ljava/lang/String;)[B
 }
 
 public final class datadog/trace/util/PidHelper {
 	public fun <init> ()V
 	public static fun getPid ()Ljava/lang/String;
 	public static fun getPidAsLong ()J
-}
-
-public class datadog/trace/util/ProcessSupervisor : java/io/Closeable {
-	public static final field ALWAYS_READY Ldatadog/trace/util/ProcessSupervisor$HealthCheck;
-	public fun <init> (Ljava/lang/String;Ljava/lang/ProcessBuilder;)V
-	public fun <init> (Ljava/lang/String;Ljava/lang/ProcessBuilder;Ldatadog/trace/util/ProcessSupervisor$HealthCheck;)V
-	public fun close ()V
-}
-
-public final class datadog/trace/util/ProcessSupervisor$Health : java/lang/Enum {
-	public static final field FAULTED Ldatadog/trace/util/ProcessSupervisor$Health;
-	public static final field HEALTHY Ldatadog/trace/util/ProcessSupervisor$Health;
-	public static final field INTERRUPTED Ldatadog/trace/util/ProcessSupervisor$Health;
-	public static final field NEVER_CHECKED Ldatadog/trace/util/ProcessSupervisor$Health;
-	public static final field READY_TO_START Ldatadog/trace/util/ProcessSupervisor$Health;
-	public static fun valueOf (Ljava/lang/String;)Ldatadog/trace/util/ProcessSupervisor$Health;
-	public static fun values ()[Ldatadog/trace/util/ProcessSupervisor$Health;
-}
-
-public abstract interface class datadog/trace/util/ProcessSupervisor$HealthCheck {
-	public abstract fun run (Ldatadog/trace/util/ProcessSupervisor$Health;)Ldatadog/trace/util/ProcessSupervisor$Health;
 }
 
 public abstract class datadog/trace/util/ProcessUtils {

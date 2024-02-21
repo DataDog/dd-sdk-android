@@ -54,7 +54,6 @@ import datadog.trace.bootstrap.instrumentation.api.ScopeSource;
 import datadog.trace.bootstrap.instrumentation.api.ScopeState;
 import datadog.trace.bootstrap.instrumentation.api.TagContext;
 import datadog.trace.civisibility.interceptor.CiVisibilityTraceInterceptor;
-import datadog.trace.common.GitMetadataTraceInterceptor;
 import datadog.trace.common.metrics.MetricsAggregator;
 import datadog.trace.common.metrics.NoOpMetricsAggregator;
 import datadog.trace.common.sampling.Sampler;
@@ -69,9 +68,7 @@ import datadog.trace.core.propagation.*;
 import datadog.trace.core.scopemanager.ContinuableScopeManager;
 import datadog.trace.core.taginterceptor.RuleFlags;
 import datadog.trace.core.taginterceptor.TagInterceptor;
-import datadog.trace.lambda.LambdaHandler;
 import datadog.trace.relocate.api.RatelimitedLogger;
-import datadog.trace.util.AgentTaskScheduler;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -537,8 +534,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         // Schedule the metrics aggregator to begin reporting after a random delay of 1 to 10 seconds
         // (using milliseconds granularity.) This avoids a fleet of traced applications starting at the
         // same time from sending metrics in sync.
-        AgentTaskScheduler.INSTANCE.scheduleWithJitter(
-                MetricsAggregator::start, metricsAggregator, 1, SECONDS);
 
         this.dataStreamsMonitoring = new NoOpDataStreamMonitoring();
         // Create default extractor from config if not provided and decorate it with DSM extractor
@@ -556,10 +551,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                 addTraceInterceptor(CiVisibilityTraceInterceptor.INSTANCE);
             }
         }
-        if (config.isTraceGitMetadataEnabled()) {
-            addTraceInterceptor(GitMetadataTraceInterceptor.INSTANCE);
-        }
-
         this.instrumentationGateway = instrumentationGateway;
         callbackProviderAppSec = instrumentationGateway.getCallbackProvider(RequestContextSlot.APPSEC);
         callbackProviderIast = instrumentationGateway.getCallbackProvider(RequestContextSlot.IAST);
@@ -763,16 +754,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     @Override
     public AgentSpan noopSpan() {
         return AgentTracer.NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public AgentSpan.Context notifyExtensionStart(Object event) {
-        return LambdaHandler.notifyStartInvocation(event, propagationTagsFactory);
-    }
-
-    @Override
-    public void notifyExtensionEnd(AgentSpan span, Object result, boolean isError) {
-        LambdaHandler.notifyEndInvocation(span, result, isError);
     }
 
     @Override

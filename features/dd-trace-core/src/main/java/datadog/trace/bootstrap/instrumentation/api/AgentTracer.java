@@ -273,10 +273,6 @@ public class AgentTracer {
 
     CallbackProvider getUniversalCallbackProvider();
 
-    Context notifyExtensionStart(Object event);
-
-    void notifyExtensionEnd(AgentSpan span, Object result, boolean isError);
-
     AgentDataStreamsMonitoring getDataStreamsMonitoring();
 
     Timer getTimer();
@@ -485,14 +481,6 @@ public class AgentTracer {
     public EndpointTracker onRootSpanStarted(AgentSpan root) {
       return EndpointTracker.NO_OP;
     }
-
-    @Override
-    public Context notifyExtensionStart(Object event) {
-      return null;
-    }
-
-    @Override
-    public void notifyExtensionEnd(AgentSpan span, Object result, boolean isError) {}
 
     @Override
     public ScopeState newScopeState() {

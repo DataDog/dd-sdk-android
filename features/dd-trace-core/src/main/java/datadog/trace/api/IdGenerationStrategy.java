@@ -2,7 +2,10 @@ package datadog.trace.api;
 
 import static java.lang.Long.MAX_VALUE;
 
+import android.os.Build;
+
 import java.security.SecureRandom;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,7 +27,7 @@ public abstract class IdGenerationStrategy {
   }
 
   public static IdGenerationStrategy fromName(String name, boolean traceId128BitGenerationEnabled) {
-    switch (name.toUpperCase()) {
+    switch (name.toUpperCase(Locale.US)) {
       case "RANDOM":
         return new Random(traceId128BitGenerationEnabled);
       case "SEQUENTIAL":
@@ -92,8 +95,16 @@ public abstract class IdGenerationStrategy {
   static final class SRandom extends IdGenerationStrategy {
     private final SecureRandom secureRandom;
 
+    private static ThrowingSupplier<SecureRandom> getSecureRandomSupplier() {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        return SecureRandom::getInstanceStrong;
+      }else{
+        return SecureRandom::new;
+      }
+    }
+
     SRandom(boolean traceId128BitGenerationEnabled) {
-      this(traceId128BitGenerationEnabled, SecureRandom::getInstanceStrong);
+      this(traceId128BitGenerationEnabled, getSecureRandomSupplier());
     }
 
     SRandom(boolean traceId128BitGenerationEnabled, ThrowingSupplier<SecureRandom> supplier) {

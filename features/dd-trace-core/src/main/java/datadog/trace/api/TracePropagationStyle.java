@@ -25,7 +25,7 @@ public enum TracePropagationStyle {
   NONE;
 
   public static TracePropagationStyle valueOfDisplayName(String displayName) {
-    String convertedName = displayName.toUpperCase().replace(' ', '_');
+    String convertedName = displayName.toUpperCase(Locale.US).replace(' ', '_');
     // Another name for B3 for cross tracer compatibility
     switch (convertedName) {
       case "B3_SINGLE_HEADER":
