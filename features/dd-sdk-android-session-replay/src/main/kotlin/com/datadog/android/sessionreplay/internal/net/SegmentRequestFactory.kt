@@ -4,30 +4,29 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.domain
+package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
-import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import okhttp3.RequestBody
 import okio.Buffer
 import java.util.Locale
 import java.util.UUID
 
-internal class SessionReplayRequestFactory(
+internal class SegmentRequestFactory(
     internal val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper,
-    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
+    private val segmentRequestBodyFactory: SegmentRequestBodyFactory = SegmentRequestBodyFactory()
 ) : RequestFactory {
 
     override fun create(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request {
+    ): Request? {
         val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
         if (serializedSegmentPair == null) {
             @Suppress("ThrowingInternalException")
@@ -36,7 +35,7 @@ internal class SessionReplayRequestFactory(
                     " request could not be created"
             )
         }
-        val body = requestBodyFactory.create(
+        val body = segmentRequestBodyFactory.create(
             serializedSegmentPair.first,
             serializedSegmentPair.second
         )

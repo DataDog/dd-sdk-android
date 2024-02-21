@@ -35,6 +35,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(MetaRecordForgeryFactory())
         forge.addFactory(ViewEndRecordForgeryFactory())
         forge.addFactory(EnrichedRecordForgeryFactory())
+        forge.addFactory(ResourceEventForgeryFactory())
         forge.addFactory(WireframeClipForgeryFactory())
         forge.addFactory(PointerInteractionDataForgeryFactory())
         forge.addFactory(ShapeStyleForgeryFactory())

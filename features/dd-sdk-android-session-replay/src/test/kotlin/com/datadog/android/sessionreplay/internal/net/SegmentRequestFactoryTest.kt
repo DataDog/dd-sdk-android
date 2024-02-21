@@ -4,14 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.domain
+package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
-import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -41,15 +40,15 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class SessionReplayRequestFactoryTest {
+internal class SegmentRequestFactoryTest {
 
-    lateinit var testedRequestFactory: SessionReplayRequestFactory
+    private lateinit var testedRequestFactory: SegmentRequestFactory
 
     @Mock
     lateinit var mockBatchesToSegmentsMapper: BatchesToSegmentsMapper
 
     @Mock
-    lateinit var mockRequestBodyFactory: RequestBodyFactory
+    lateinit var mockSegmentRequestBodyFactory: SegmentRequestBodyFactory
 
     @Forgery
     lateinit var fakeSegment: MobileSegment
@@ -57,7 +56,7 @@ internal class SessionReplayRequestFactoryTest {
     @Forgery
     lateinit var fakeSerializedSegment: JsonObject
 
-    lateinit var fakeCompressedSegment: ByteArray
+    private lateinit var fakeCompressedSegment: ByteArray
 
     @Forgery
     lateinit var fakeBatchData: List<RawBatchEvent>
@@ -68,9 +67,9 @@ internal class SessionReplayRequestFactoryTest {
     @Mock
     lateinit var mockRequestBody: RequestBody
 
-    lateinit var fakeMediaType: MediaType
+    private lateinit var fakeMediaType: MediaType
 
-    var fakeBatchMetadata: ByteArray? = null
+    private var fakeBatchMetadata: ByteArray? = null
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -85,14 +84,14 @@ internal class SessionReplayRequestFactoryTest {
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
         fakeCompressedSegment = forge.aString().toByteArray()
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
-        whenever(mockRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
+        whenever(mockSegmentRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
             .thenReturn(mockRequestBody)
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
             .thenReturn(Pair(fakeSegment, fakeSerializedSegment))
-        testedRequestFactory = SessionReplayRequestFactory(
+        testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = null,
             mockBatchesToSegmentsMapper,
-            mockRequestBodyFactory
+            mockSegmentRequestBodyFactory
         )
     }
 
@@ -108,6 +107,7 @@ internal class SessionReplayRequestFactoryTest {
         )
 
         // Then
+        requireNotNull(request)
         assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
         assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
@@ -128,10 +128,10 @@ internal class SessionReplayRequestFactoryTest {
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String
     ) {
         // When
-        testedRequestFactory = SessionReplayRequestFactory(
+        testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = fakeEndpoint,
             mockBatchesToSegmentsMapper,
-            mockRequestBodyFactory
+            mockSegmentRequestBodyFactory
         )
         val request = testedRequestFactory.create(
             fakeDatadogContext,
@@ -140,6 +140,7 @@ internal class SessionReplayRequestFactoryTest {
         )
 
         // Then
+        requireNotNull(request)
         assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
         assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(

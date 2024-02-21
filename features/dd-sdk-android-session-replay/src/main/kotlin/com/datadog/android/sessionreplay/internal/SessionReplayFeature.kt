@@ -21,8 +21,8 @@ import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SessionReplayRecorder
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
+import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
@@ -110,7 +110,7 @@ internal class SessionReplayFeature(
     }
 
     override val requestFactory: RequestFactory =
-        SessionReplayRequestFactory(
+        SegmentRequestFactory(
             customEndpointUrl,
             BatchesToSegmentsMapper(sdkCore.internalLogger)
         )
