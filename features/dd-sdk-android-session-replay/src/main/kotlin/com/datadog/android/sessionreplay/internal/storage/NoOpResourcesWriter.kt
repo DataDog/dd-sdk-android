@@ -6,10 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
-import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 
-internal class NoOpRecordWriter : RecordWriter {
-    override fun write(record: EnrichedRecord) {
+internal class NoOpResourcesWriter : ResourcesWriter {
+    override fun write(enrichedResource: EnrichedResource) {
         // no-op
     }
 }

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal
+package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
