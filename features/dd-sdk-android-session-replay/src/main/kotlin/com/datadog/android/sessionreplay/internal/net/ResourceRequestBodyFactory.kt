@@ -10,7 +10,9 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.ID_KEY
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -122,13 +124,15 @@ internal class ResourceRequestBodyFactory(
     }
 
     private fun addApplicationIdSection(builder: MultipartBody.Builder, applicationId: String) {
-        val data = JsonObject()
-        data.addProperty(APPLICATION_ID_KEY, applicationId)
-        data.addProperty(TYPE_KEY, TYPE_RESOURCE)
+        val applicationIdOuter = JsonObject()
+        val applicationIdInner = JsonObject()
+        applicationIdInner.addProperty(ID_KEY, applicationId)
+        applicationIdOuter.add(APPLICATION_KEY, applicationIdInner)
+        applicationIdOuter.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         @Suppress("TooGenericExceptionCaught")
         val body = try {
-            data.toString().toRequestBody(CONTENT_TYPE_APPLICATION)
+            applicationIdOuter.toString().toRequestBody(CONTENT_TYPE_APPLICATION)
         } catch (e: ArrayIndexOutOfBoundsException) {
             // we have data, so should not be able to throw this
             internalLogger.log(
@@ -150,7 +154,7 @@ internal class ResourceRequestBodyFactory(
 
         if (body != null) {
             builder.addFormDataPart(
-                name = NAME_RESOURCE,
+                name = NAME_EVENT,
                 filename = FILENAME_BLOB,
                 body = body
             )
@@ -196,7 +200,7 @@ internal class ResourceRequestBodyFactory(
         internal const val TYPE_KEY = "type"
         internal const val TYPE_RESOURCE = "resource"
         internal const val NAME_IMAGE = "image"
-        internal const val NAME_RESOURCE = "resource"
+        internal const val NAME_EVENT = "event"
         internal const val FILENAME_BLOB = "blob"
 
         internal const val MULTIPLE_APPLICATION_ID_ERROR =

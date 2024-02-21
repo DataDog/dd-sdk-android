@@ -12,13 +12,15 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.CONTENT_TYPE_IMAGE
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.FILENAME_BLOB
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.MULTIPLE_APPLICATION_ID_ERROR
+import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_EVENT
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_IMAGE
-import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NAME_RESOURCE
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.NO_RESOURCES_TO_SEND_ERROR
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_KEY
 import com.datadog.android.sessionreplay.internal.net.ResourceRequestBodyFactory.Companion.TYPE_RESOURCE
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.ID_KEY
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -95,14 +97,16 @@ internal class ResourceRequestBodyFactoryTest {
         val body = requestBody as MultipartBody
         val parts = body.parts
 
-        val applicationIdJson = JsonObject()
-        applicationIdJson.addProperty(APPLICATION_ID_KEY, expectedApplicationId)
-        applicationIdJson.addProperty(TYPE_KEY, TYPE_RESOURCE)
+        val applicationIdOuter = JsonObject()
+        val applicationIdInner = JsonObject()
+        applicationIdInner.addProperty(ID_KEY, expectedApplicationId)
+        applicationIdOuter.add(APPLICATION_KEY, applicationIdInner)
+        applicationIdOuter.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         val applicationIdPart = MultipartBody.Part.createFormData(
-            NAME_RESOURCE,
+            NAME_EVENT,
             FILENAME_BLOB,
-            applicationIdJson.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
+            applicationIdOuter.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
         )
 
         val listResources = deserializedListResources.map {
@@ -170,7 +174,7 @@ internal class ResourceRequestBodyFactoryTest {
     }
 
     @Test
-    fun `M throw exception and return largest group W create() { multiple applicationIds }`(forge: Forge) {
+    fun `M throw exception and return last group W create() { multiple applicationIds }`(forge: Forge) {
         // Given
         val fakeSecondApplicationId = forge.anAsciiString()
         val fakeSecondFilename = forge.anAsciiString()
@@ -211,14 +215,16 @@ internal class ResourceRequestBodyFactoryTest {
             message = MULTIPLE_APPLICATION_ID_ERROR
         )
 
-        val resourceData = JsonObject()
-        resourceData.addProperty(APPLICATION_ID_KEY, fakeSecondApplicationId)
-        resourceData.addProperty(TYPE_KEY, TYPE_RESOURCE)
+        val applicationIdOuter = JsonObject()
+        val applicationIdInner = JsonObject()
+        applicationIdInner.addProperty(ID_KEY, fakeSecondApplicationId)
+        applicationIdOuter.add(APPLICATION_KEY, applicationIdInner)
+        applicationIdOuter.addProperty(TYPE_KEY, TYPE_RESOURCE)
 
         val applicationIdPart = MultipartBody.Part.createFormData(
-            NAME_RESOURCE,
+            NAME_EVENT,
             FILENAME_BLOB,
-            resourceData.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
+            applicationIdOuter.toString().toRequestBody(ResourceRequestBodyFactory.CONTENT_TYPE_APPLICATION)
         )
 
         assertThat(parts)

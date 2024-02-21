@@ -20,6 +20,7 @@ import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
@@ -41,6 +42,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.tools.unit.setStaticValue
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -56,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.stream.Stream
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
@@ -77,6 +80,12 @@ internal class SessionReplayPrivacyTest {
     @Mock
     lateinit var mockLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeApplicationId: UUID
+
+    @Mock
+    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
+
     @AfterEach
     fun teardown() {
         setApiLevel(origApiLevel)
@@ -94,9 +103,21 @@ internal class SessionReplayPrivacyTest {
 
         // When
         val actualMappers = when (maskLevel) {
-            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers(mockLogger)
-            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers(mockLogger)
-            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers(mockLogger)
+            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers(
+                mockLogger,
+                fakeApplicationId.toString(),
+                mockRecordedDataQueueHandler
+            )
+            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers(
+                mockLogger,
+                fakeApplicationId.toString(),
+                mockRecordedDataQueueHandler
+            )
+            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers(
+                mockLogger,
+                fakeApplicationId.toString(),
+                mockRecordedDataQueueHandler
+            )
             else -> throw IllegalArgumentException("Unknown masking level")
         }
 

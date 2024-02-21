@@ -32,7 +32,9 @@ internal data class EnrichedResource(
     }
 
     internal companion object {
-        internal const val APPLICATION_ID_KEY = "application_id"
+        internal const val APPLICATION_ID_KEY = "applicationId"
+        internal const val APPLICATION_KEY = "application"
+        internal const val ID_KEY = "id"
         internal const val FILENAME_KEY = "filename"
     }
 }
