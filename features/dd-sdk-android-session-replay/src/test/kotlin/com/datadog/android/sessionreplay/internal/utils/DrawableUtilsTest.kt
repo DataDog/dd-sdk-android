@@ -11,9 +11,10 @@ import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.util.DisplayMetrics
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -74,10 +75,13 @@ internal class DrawableUtilsTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockBitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
+    private lateinit var mockBitmapCreationCallback: ResourceResolver.BitmapCreationCallback
 
     @Mock
     private lateinit var mockMainThreadHandler: Handler
+
+    @Mock
+    private lateinit var mockLogger: InternalLogger
 
     @BeforeEach
     fun setup() {
@@ -105,7 +109,8 @@ internal class DrawableUtilsTest {
             bitmapWrapper = mockBitmapWrapper,
             canvasWrapper = mockCanvasWrapper,
             bitmapCachesManager = mockBitmapCachesManager,
-            mainThreadHandler = mockMainThreadHandler
+            mainThreadHandler = mockMainThreadHandler,
+            logger = mockLogger
         )
     }
 

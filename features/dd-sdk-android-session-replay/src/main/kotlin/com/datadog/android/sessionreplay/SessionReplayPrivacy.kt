@@ -18,6 +18,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
@@ -42,8 +43,9 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedVie
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
@@ -79,11 +81,20 @@ enum class SessionReplayPrivacy {
     @Suppress("LongMethod")
     internal fun mappers(
         applicationId: String,
-        recordedDataQueueHandler: RecordedDataQueueHandler
+        recordedDataQueueHandler: RecordedDataQueueHandler,
+        logger: InternalLogger
     ): List<MapperTypeWrapper> {
-        val resourcesSerializer = buildResourcesSerializer(applicationId, recordedDataQueueHandler)
-        val imageWireframeHelper = ImageWireframeHelper(resourcesSerializer = resourcesSerializer)
+        val webPImageCompression = WebPImageCompression(logger)
+        val resourcesSerializer = buildResourcesSerializer(
+            applicationId,
+            recordedDataQueueHandler,
+            webPImageCompression
+        )
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
+        val imageWireframeHelper = ImageWireframeHelper(
+            resourceResolver = resourcesSerializer,
+            imageCompression = webPImageCompression
+        )
 
         val unsupportedViewMapper = UnsupportedViewMapper()
         val imageViewMapper = ImageViewMapper(
@@ -172,16 +183,17 @@ enum class SessionReplayPrivacy {
 
     private fun buildResourcesSerializer(
         applicationId: String,
-        recordedDataQueueHandler:
-        RecordedDataQueueHandler
-    ): ResourcesSerializer {
+        recordedDataQueueHandler: RecordedDataQueueHandler,
+        webPImageCompression: WebPImageCompression
+    ): ResourceResolver {
         val bitmapPool = BitmapPool()
         val resourcesLRUCache = ResourcesLRUCache()
 
-        val builder = ResourcesSerializer.Builder(
+        val builder = ResourceResolver.Builder(
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapPool = bitmapPool,
+            webPImageCompression = webPImageCompression,
             resourcesLRUCache = resourcesLRUCache
         )
         return builder.build()

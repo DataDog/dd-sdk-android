@@ -24,9 +24,9 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 // The resourcesSerializer dependency should be removed from here
 // TODO: RUM-0000 Remove the resourcesSerializer dependency from here
 internal class ImageWireframeHelper(
-    private val imageCompression: ImageCompression = WebPImageCompression(),
+    private val imageCompression: ImageCompression,
+    private val resourceResolver: ResourceResolver,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    private val resourcesSerializer: ResourcesSerializer,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
     private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
 ) {
@@ -85,15 +85,17 @@ internal class ImageWireframeHelper(
 
         imageWireframeHelperCallback.onStart()
 
-        resourcesSerializer.handleBitmap(
+        resourceResolver.resolveResourceId(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
-            imageWireframe = imageWireframe,
             resourcesSerializerCallback = object : ResourcesSerializerCallback {
-                override fun onReady() {
+                override fun onReady(resourceId: String?) {
+                    if (resourceId != null) {
+                        populateResourceIdInWireframe(resourceId, imageWireframe)
+                    }
                     imageWireframeHelperCallback.onFinished()
                 }
             }
@@ -227,6 +229,14 @@ internal class ImageWireframeHelper(
         fun isValid(): Boolean {
             return drawableWidth > 0 && drawableHeight > 0
         }
+    }
+
+    private fun populateResourceIdInWireframe(
+        resourceId: String,
+        wireframe: MobileSegment.Wireframe.ImageWireframe
+    ) {
+        wireframe.resourceId = resourceId
+        wireframe.isEmpty = false
     }
 
     internal companion object {

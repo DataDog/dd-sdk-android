@@ -18,6 +18,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
@@ -80,6 +81,9 @@ internal class SessionReplayPrivacyTest {
     lateinit var fakeApplicationId: UUID
 
     @Mock
+    lateinit var logger: InternalLogger
+
+    @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @AfterEach
@@ -102,17 +106,20 @@ internal class SessionReplayPrivacyTest {
             SessionReplayPrivacy.ALLOW.toString() ->
                 SessionReplayPrivacy.ALLOW.mappers(
                     fakeApplicationId.toString(),
-                    mockRecordedDataQueueHandler
+                    mockRecordedDataQueueHandler,
+                    logger
                 )
             SessionReplayPrivacy.MASK.toString() ->
                 SessionReplayPrivacy.MASK.mappers(
                     fakeApplicationId.toString(),
-                    mockRecordedDataQueueHandler
+                    mockRecordedDataQueueHandler,
+                    logger
                 )
             SessionReplayPrivacy.MASK_USER_INPUT.toString() ->
                 SessionReplayPrivacy.MASK_USER_INPUT.mappers(
                     fakeApplicationId.toString(),
-                    mockRecordedDataQueueHandler
+                    mockRecordedDataQueueHandler,
+                    logger
                 )
             else -> throw IllegalArgumentException("Unknown masking level")
         }

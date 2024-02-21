@@ -40,9 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -60,7 +58,7 @@ internal class ImageWireframeHelperTest {
     private lateinit var testedHelper: ImageWireframeHelper
 
     @Mock
-    lateinit var mockResourcesSerializer: ResourcesSerializer
+    lateinit var mockResourceResolver: ResourceResolver
 
     @Mock
     lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
@@ -121,6 +119,9 @@ internal class ImageWireframeHelperTest {
     @IntForgery(min = 1)
     var fakePadding: Int = 0
 
+    @StringForgery
+    lateinit var fakeResourceId: String
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         val fakeScreenWidth = 1000
@@ -133,8 +134,8 @@ internal class ImageWireframeHelperTest {
         whenever(mockSystemInformation.screenDensity).thenReturn(0f)
         whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(mockView, "drawable"))
             .thenReturn(fakeGeneratedIdentifier)
-        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeDrawableWidth.toInt())
-        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight.toInt())
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeDrawableWidth)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockView.resources).thenReturn(mockResources)
         whenever(mockView.context).thenReturn(mockContext)
@@ -144,8 +145,8 @@ internal class ImageWireframeHelperTest {
         whenever(mockTextView.context).thenReturn(mockContext)
         whenever(mockViewUtilsInternal.resolveDrawableBounds(any(), any(), any()))
             .thenReturn(mockBounds)
-        whenever(mockTextView.width).thenReturn(fakeDrawableWidth.toInt())
-        whenever(mockTextView.height).thenReturn(fakeDrawableHeight.toInt())
+        whenever(mockTextView.width).thenReturn(fakeDrawableWidth)
+        whenever(mockTextView.height).thenReturn(fakeDrawableHeight)
         whenever(mockTextView.paddingStart).thenReturn(fakePadding)
         whenever(mockTextView.paddingEnd).thenReturn(fakePadding)
         whenever(mockTextView.paddingTop).thenReturn(fakePadding)
@@ -164,7 +165,7 @@ internal class ImageWireframeHelperTest {
         testedHelper = ImageWireframeHelper(
             imageCompression = mockImageCompression,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
-            resourcesSerializer = mockResourcesSerializer,
+            resourceResolver = mockResourceResolver,
             viewUtilsInternal = mockViewUtilsInternal,
             imageTypeResolver = mockImageTypeResolver
         )
@@ -274,6 +275,19 @@ internal class ImageWireframeHelperTest {
         // Given
         whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeGeneratedIdentifier)
+        whenever(
+        mockResourceResolver.resolveResourceId(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()
+        )
+        ).thenAnswer {
+            val callback = it.arguments[5] as ResourcesSerializerCallback
+            callback.onReady(fakeResourceId)
+        }
 
         val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
             id = fakeGeneratedIdentifier,
@@ -283,9 +297,10 @@ internal class ImageWireframeHelperTest {
             height = fakeDrawableHeight.toLong(),
             shapeStyle = mockShapeStyle,
             border = mockBorder,
+            resourceId = fakeResourceId,
             clip = stubWireframeClip,
             mimeType = fakeMimeType,
-            isEmpty = true
+            isEmpty = false
         )
 
         // When
@@ -305,19 +320,6 @@ internal class ImageWireframeHelperTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
-        verify(mockResourcesSerializer).handleBitmap(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            argumentCaptor.capture()
-        )
-        argumentCaptor.allValues.forEach {
-            it.onReady()
-        }
         verify(mockImageWireframeHelperCallback).onStart()
         verify(mockImageWireframeHelperCallback).onFinished()
         verifyNoMoreInteractions(mockImageWireframeHelperCallback)
@@ -373,8 +375,7 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
-        verify(mockResourcesSerializer).handleBitmap(
-            any(),
+        verify(mockResourceResolver).resolveResourceId(
             any(),
             any(),
             any(),
@@ -383,7 +384,7 @@ internal class ImageWireframeHelperTest {
             argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
-            it.onReady()
+            it.onReady(fakeResourceId)
         }
         verify(mockImageWireframeHelperCallback).onStart()
         verify(mockImageWireframeHelperCallback).onFinished()
@@ -417,8 +418,7 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
-        verify(mockResourcesSerializer, times(2)).handleBitmap(
-            any(),
+        verify(mockResourceResolver, times(2)).resolveResourceId(
             any(),
             any(),
             any(),
@@ -427,7 +427,7 @@ internal class ImageWireframeHelperTest {
             argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
-            it.onReady()
+            it.onReady(fakeResourceId)
         }
         verify(mockImageWireframeHelperCallback, times(2)).onStart()
         verify(mockImageWireframeHelperCallback, times(2)).onFinished()
@@ -485,13 +485,12 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockResourcesSerializer).handleBitmap(
+        verify(mockResourceResolver).resolveResourceId(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            imageWireframe = any(),
             resourcesSerializerCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
@@ -516,13 +515,12 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockResourcesSerializer).handleBitmap(
+        verify(mockResourceResolver).resolveResourceId(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            imageWireframe = any(),
             resourcesSerializerCallback = any()
 
         )
@@ -545,8 +543,8 @@ internal class ImageWireframeHelperTest {
         mockDisplayMetrics.density = 1f
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { location ->
+                val coords = location.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -572,16 +570,7 @@ internal class ImageWireframeHelperTest {
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
-        verify(mockResourcesSerializer, never()).handleBitmap(
-            applicationContext = any(),
-            displayMetrics = any(),
-            drawable = any(),
-            drawableWidth = any(),
-            drawableHeight = any(),
-            imageWireframe = any(),
-            resourcesSerializerCallback = any()
-        )
-
+        verifyNoInteractions(mockResourceResolver)
         assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
         assertThat(isCloseTo(result.y.toInt(), fakeGlobalY)).isTrue
     }
@@ -607,13 +596,12 @@ internal class ImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockResourcesSerializer, atLeastOnce()).handleBitmap(
+        verify(mockResourceResolver).resolveResourceId(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            imageWireframe = any(),
             resourcesSerializerCallback = any()
         )
     }
