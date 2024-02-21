@@ -778,6 +778,7 @@ datadog:
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
+      - "kotlin.Array.associateWith(kotlin.Function1)"
       - "kotlin.Array.constructor(kotlin.Int, kotlin.Function1)"
       - "kotlin.Array.contentEquals(kotlin.Array?)"
       - "kotlin.Array.contentHashCode()"
