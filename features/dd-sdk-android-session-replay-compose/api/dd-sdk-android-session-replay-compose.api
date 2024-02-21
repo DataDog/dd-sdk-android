@@ -1,0 +1,8 @@
+public final class com/datadog/android/sessionreplay/compose/mappers/ComposeWireframeMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper {
+	public static final field $stable I
+	public fun <init> (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)V
+	public final fun getPrivacy ()Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+	public synthetic fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
+	public fun map (Landroidx/compose/ui/platform/ComposeView;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
+}
+

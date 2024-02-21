@@ -1,0 +1,3 @@
+class com.datadog.android.sessionreplay.compose.mappers.ComposeWireframeMapper : com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<androidx.compose.ui.platform.ComposeView, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  constructor(com.datadog.android.sessionreplay.SessionReplayPrivacy)
+  override fun map(androidx.compose.ui.platform.ComposeView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
