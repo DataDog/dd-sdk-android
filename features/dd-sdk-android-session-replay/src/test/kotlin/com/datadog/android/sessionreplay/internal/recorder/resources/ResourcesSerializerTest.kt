@@ -21,7 +21,6 @@ import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -109,11 +108,9 @@ internal class ResourcesSerializerTest {
     @Mock
     lateinit var mockResources: Resources
 
-    @IntForgery(min = 1)
-    var fakeBitmapWidth: Int = 0
+    var fakeBitmapWidth: Int = 1
 
-    @IntForgery(min = 1)
-    var fakeBitmapHeight: Int = 0
+    var fakeBitmapHeight: Int = 1
 
     @Forgery
     lateinit var fakeApplicationid: UUID
@@ -126,6 +123,9 @@ internal class ResourcesSerializerTest {
     @BeforeEach
     fun setup(forge: Forge) {
         fakeImageCompressionByteArray = forge.aString().toByteArray()
+
+        fakeBitmapWidth = forge.anInt(min = 1)
+        fakeBitmapHeight = forge.anInt(min = 1)
 
         fakeImageWireframe.isEmpty = true
 
@@ -147,7 +147,12 @@ internal class ResourcesSerializerTest {
             (it.arguments[7] as ResourcesSerializer.BitmapCreationCallback).onReady(mockBitmap)
         }
 
-        whenever(mockExecutorService.execute(any())).then {
+        // executeSafe is an extension so we have to mock the internal execute function
+        whenever(
+            mockExecutorService.execute(
+                any()
+            )
+        ).then {
             (it.arguments[0] as Runnable).run()
             mock<Future<Boolean>>()
         }
@@ -193,11 +198,18 @@ internal class ResourcesSerializerTest {
     @Test
     fun `M retry image creation only once W handleBitmap() { image was recycled while working on it }`() {
         // Given
+        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
+            .thenReturn(mockBitmap)
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+
         whenever(mockBitmap.isRecycled)
-            .thenReturn(true)
             .thenReturn(false)
+            .thenReturn(true)
 
         val emptyByteArray = ByteArray(0)
+
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockBitmapDrawable))
+            .thenReturn(null)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(emptyByteArray)
@@ -208,7 +220,7 @@ internal class ResourcesSerializerTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
+            drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             imageWireframe = fakeImageWireframe,
@@ -216,7 +228,7 @@ internal class ResourcesSerializerTest {
         )
 
         // Then
-        verify(mockDrawableUtils, times(2)).createBitmapOfApproxSizeFromDrawable(
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
             resources = any(),
             drawable = any(),
             drawableWidth = any(),

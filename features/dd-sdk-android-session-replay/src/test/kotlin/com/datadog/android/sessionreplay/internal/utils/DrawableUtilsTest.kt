@@ -13,7 +13,6 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
 import android.os.Handler
 import android.util.DisplayMetrics
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
@@ -84,9 +83,6 @@ internal class DrawableUtilsTest {
     private lateinit var mockMainThreadHandler: Handler
 
     @Mock
-    private lateinit var mockLogger: InternalLogger
-
-    @Mock
     lateinit var mockConstantState: ConstantState
 
     @Mock
@@ -123,9 +119,7 @@ internal class DrawableUtilsTest {
             bitmapWrapper = mockBitmapWrapper,
             canvasWrapper = mockCanvasWrapper,
             bitmapCachesManager = mockBitmapCachesManager,
-            threadPoolExecutor = mockExecutorService,
-            mainThreadHandler = mockMainThreadHandler,
-            logger = mockLogger
+            mainThreadHandler = mockMainThreadHandler
         )
     }
 
