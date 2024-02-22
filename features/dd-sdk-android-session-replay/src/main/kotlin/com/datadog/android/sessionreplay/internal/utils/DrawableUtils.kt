@@ -19,8 +19,9 @@ import android.util.DisplayMetrics
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import kotlin.math.sqrt
@@ -29,7 +30,8 @@ internal class DrawableUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
     private val bitmapCachesManager: BitmapCachesManager,
-    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
+    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
+    private val logger: InternalLogger
 ) {
 
     /**
@@ -46,9 +48,8 @@ internal class DrawableUtils(
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT,
         config: Config = Config.ARGB_8888,
-        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        @Suppress("ThreadSafety") // this runs inside an executor
         createScaledBitmap(
             drawableWidth,
             drawableHeight,
@@ -70,6 +71,11 @@ internal class DrawableUtils(
                 }
 
                 override fun onFailure() {
+                    logger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { FAILED_TO_CREATE_SCALED_BITMAP_ERROR }
+                    )
                     bitmapCreationCallback.onFailure()
                 }
             }
@@ -99,7 +105,7 @@ internal class DrawableUtils(
         resources: Resources,
         bitmap: Bitmap,
         drawable: Drawable,
-        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
         // don't use the original drawable - it will affect the view hierarchy
         val newDrawable = drawable.constantState?.newDrawable(resources)
@@ -182,5 +188,7 @@ internal class DrawableUtils(
         @VisibleForTesting
         internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
+        internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
+            "Failed to create a scaled bitmap from the drawable"
     }
 }

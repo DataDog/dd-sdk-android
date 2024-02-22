@@ -29,11 +29,10 @@ import java.util.Locale
 // TODO: RUM-0000 Remove the resourcesSerializer dependency from here
 internal class DefaultImageWireframeHelper(
     private val logger: InternalLogger,
-    private val resourcesSerializer: ResourcesSerializer,
-    private val imageCompression: ImageCompression,
+    private val resourceResolver: ResourceResolver,
     private val viewIdentifierResolver: ViewIdentifierResolver,
-    private val viewUtilsInternal: ViewUtilsInternal,
-    private val imageTypeResolver: ImageTypeResolver
+    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
+    private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
 ) : ImageWireframeHelper {
 
     @Suppress("ReturnCount")
@@ -83,7 +82,6 @@ internal class DefaultImageWireframeHelper(
             return null
         }
 
-        val mimeType = imageCompression.getMimeType()
         val density = displayMetrics.density
 
         // in case we suspect the image is PII, return a placeholder
@@ -94,31 +92,35 @@ internal class DefaultImageWireframeHelper(
         val drawableWidthDp = width.densityNormalized(density).toLong()
         val drawableHeightDp = height.densityNormalized(density).toLong()
 
-        val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
-            id = id,
-            x,
-            y,
-            width = drawableWidthDp,
-            height = drawableHeightDp,
-            shapeStyle = shapeStyle,
-            border = border,
-            clip = clipping,
-            mimeType = mimeType,
-            isEmpty = true
-        )
+        val imageWireframe =
+            MobileSegment.Wireframe.ImageWireframe(
+                id = id,
+                x,
+                y,
+                width = drawableWidthDp,
+                height = drawableHeightDp,
+                shapeStyle = shapeStyle,
+                border = border,
+                clip = clipping,
+                isEmpty = true
+            )
 
         asyncJobStatusCallback.jobStarted()
 
-        resourcesSerializer.handleBitmap(
+        resourceResolver.resolveResourceId(
             resources = resources,
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
-            imageWireframe = imageWireframe,
             resourcesSerializerCallback = object : ResourcesSerializerCallback {
-                override fun onReady() {
+                override fun onSuccess(resourceId: String) {
+                    populateResourceIdInWireframe(resourceId, imageWireframe)
+                    asyncJobStatusCallback.jobFinished()
+                }
+
+                override fun onFailure() {
                     asyncJobStatusCallback.jobFinished()
                 }
             }
@@ -253,6 +255,14 @@ internal class DefaultImageWireframeHelper(
         fun isValid(): Boolean {
             return drawableWidth > 0 && drawableHeight > 0
         }
+    }
+
+    private fun populateResourceIdInWireframe(
+        resourceId: String,
+        wireframe: MobileSegment.Wireframe.ImageWireframe
+    ) {
+        wireframe.resourceId = resourceId
+        wireframe.isEmpty = false
     }
 
     internal companion object {

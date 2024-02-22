@@ -35,8 +35,8 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeM
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
@@ -122,11 +122,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             drawableToColorMapper
         )
 
-        val resourcesSerializer = ResourcesSerializer.Builder(
+        val resourcesSerializer = ResourceResolver.Builder(
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapPool = BitmapPool(),
-            resourcesLRUCache = ResourcesLRUCache()
+            resourcesLRUCache = ResourcesLRUCache(),
+            webPImageCompression = WebPImageCompression(internalLogger)
         ).build()
 
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
@@ -134,8 +135,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             SnapshotProducer(
                 DefaultImageWireframeHelper(
                     logger = internalLogger,
-                    resourcesSerializer = resourcesSerializer,
-                    imageCompression = WebPImageCompression(),
+                    resourceResolver = resourcesSerializer,
                     viewIdentifierResolver = viewIdentifierResolver,
                     viewUtilsInternal = ViewUtilsInternal(),
                     imageTypeResolver = ImageTypeResolver()

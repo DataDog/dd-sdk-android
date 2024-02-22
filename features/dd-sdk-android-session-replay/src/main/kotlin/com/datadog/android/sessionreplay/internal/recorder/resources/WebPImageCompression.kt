@@ -10,12 +10,15 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.webkit.MimeTypeMap
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import java.io.ByteArrayOutputStream
 
 /**
  * Handle webp image compression.
  */
-internal class WebPImageCompression : ImageCompression {
+internal class WebPImageCompression(
+    private val logger: InternalLogger
+) : ImageCompression {
 
     override fun getMimeType(): String? =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(WEBP_EXTENSION)
@@ -32,7 +35,14 @@ internal class WebPImageCompression : ImageCompression {
             @Suppress("UnsafeThirdPartyFunctionCall")
             bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
         } catch (e: IllegalStateException) {
-            // if the bitmap was recycled while we were working on it
+            // probably if the bitmap was recycled while we were working on it
+            logger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { IMAGE_COMPRESSION_ERROR },
+                e
+            )
+
             return EMPTY_BYTEARRAY
         }
 
@@ -54,5 +64,7 @@ internal class WebPImageCompression : ImageCompression {
         // This is the default compression for webp when writing to the output stream -
         // a lower quality leads to a lower filesize and worse fidelity image
         private const val IMAGE_QUALITY = 75
+
+        private const val IMAGE_COMPRESSION_ERROR = "Error while compressing the image."
     }
 }

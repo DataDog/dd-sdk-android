@@ -25,7 +25,7 @@ internal class MD5HashGenerator(
         } catch (e: NoSuchAlgorithmException) {
             logger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { MD5_HASH_GENERATION_ERROR },
                 e
             )
