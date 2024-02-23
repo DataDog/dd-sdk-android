@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.findComposer
 import com.datadog.android.sessionreplay.compose.internal.getSubComposers
 import com.datadog.android.sessionreplay.compose.internal.mappers.CompositionGroupMapper
+import com.datadog.android.sessionreplay.compose.internal.mappers.TextCompositionGroupMapper
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper
@@ -31,8 +32,8 @@ class ComposeWireframeMapper(
 ) : BaseWireframeMapper<ComposeView, MobileSegment.Wireframe>() {
 
     private val mappers = mapOf<String, CompositionGroupMapper>(
+        "Text" to TextCompositionGroupMapper()
         // TODO: RUM-0000 Implement mappers for different Composable groups
-        // "Text"
         // "Button"
         // "TabRow" : holds the tab row bg color
         //  "Tab": holds selected tab info
