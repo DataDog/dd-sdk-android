@@ -8,17 +8,24 @@ package com.datadog.android.sample.compose
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,7 +36,6 @@ import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.compose.trackClick
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
-import java.lang.IllegalArgumentException
 import kotlin.random.Random
 
 @OptIn(ExperimentalTrackingApi::class)
@@ -62,17 +68,30 @@ internal fun SimpleView(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxSize()
     ) {
-        Text("View $viewId")
+        Text(
+            "View $viewId",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
         val onClick = trackClick(
             targetName = "Open View",
             onClick = { onNavigate.invoke() }
         )
-        Button(
-            onClick = onClick,
-            modifier = Modifier
-                .padding(top = 32.dp)
-        ) {
-            Text("Open Next Random View")
+        Row(modifier = Modifier.padding(32.dp)) {
+            Button(
+                onClick = onClick,
+                modifier = Modifier.weight(1.0f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    "Open Next Random View",
+                    fontStyle = FontStyle.Italic,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Justify,
+                    modifier = Modifier.weight(1.0f)
+                )
+            }
         }
     }
 }
