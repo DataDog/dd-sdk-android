@@ -20,6 +20,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.findComposer
 import com.datadog.android.sessionreplay.compose.internal.getSubComposers
+import com.datadog.android.sessionreplay.compose.internal.mappers.ButtonCompositionGroupMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.CompositionGroupMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.TextCompositionGroupMapper
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
@@ -32,7 +33,8 @@ class ComposeWireframeMapper(
 ) : BaseWireframeMapper<ComposeView, MobileSegment.Wireframe>() {
 
     private val mappers = mapOf<String, CompositionGroupMapper>(
-        "Text" to TextCompositionGroupMapper()
+        "Text" to TextCompositionGroupMapper(),
+        "Button" to ButtonCompositionGroupMapper()
         // TODO: RUM-0000 Implement mappers for different Composable groups
         // "Button"
         // "TabRow" : holds the tab row bg color
