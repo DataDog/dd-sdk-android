@@ -115,17 +115,11 @@ internal class ResourcesSerializerTest {
     @Forgery
     lateinit var fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe
 
-    private lateinit var fakeCacheData: CacheData
-
     private lateinit var fakeImageCompressionByteArray: ByteArray
 
     @BeforeEach
     fun setup(forge: Forge) {
-        val fakeResourceId = forge.aString()
-        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         fakeImageCompressionByteArray = forge.aString().toByteArray()
-
-        fakeCacheData = CacheData(fakeResourceIdByteArray)
 
         fakeImageWireframe.isEmpty = true
 
@@ -160,10 +154,12 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M get data from cache and update wireframe W handleBitmap() { cache hit with resourceId }`(forge: Forge) {
+    fun `M get data from cache and update wireframe W handleBitmap() { cache hit with resourceId }`(
+        @StringForgery fakeResourceId: String
+    ) {
         // Given
-        fakeCacheData = CacheData(forge.aString().toByteArray(Charsets.UTF_8))
-        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(fakeCacheData)
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
+        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(fakeResourceIdByteArray)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(fakeImageCompressionByteArray)
@@ -183,7 +179,7 @@ internal class ResourcesSerializerTest {
         verifyNoInteractions(mockDrawableUtils)
         assertThat(fakeImageWireframe.isEmpty).isFalse()
         assertThat(fakeImageWireframe.base64).isEqualTo(null)
-        assertThat(fakeImageWireframe.resourceId).isEqualTo(String(fakeCacheData.resourceId, Charsets.UTF_8))
+        assertThat(fakeImageWireframe.resourceId).isEqualTo(fakeResourceId)
         verify(mockSerializerCallback).onReady()
     }
 
@@ -801,7 +797,7 @@ internal class ResourcesSerializerTest {
 
     // this is in order to test having a class that implements
     // Cache, but does NOT implement ComponentCallbacks2
-    private class FakeNonComponentsCallbackCache : Cache<Drawable, CacheData> {
+    private class FakeNonComponentsCallbackCache : Cache<Drawable, ByteArray> {
 
         override fun size(): Int = 0
 

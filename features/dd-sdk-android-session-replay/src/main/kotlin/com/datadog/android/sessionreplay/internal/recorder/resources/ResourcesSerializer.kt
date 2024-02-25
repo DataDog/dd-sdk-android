@@ -33,7 +33,7 @@ internal class ResourcesSerializer private constructor(
     private val threadPoolExecutor: ExecutorService,
     private val drawableUtils: DrawableUtils,
     private val webPImageCompression: ImageCompression,
-    private val resourcesLRUCache: Cache<Drawable, CacheData>,
+    private val resourcesLRUCache: Cache<Drawable, ByteArray>,
     private val bitmapPool: BitmapPool?,
     private val logger: InternalLogger,
     private val md5HashGenerator: MD5HashGenerator,
@@ -161,10 +161,10 @@ internal class ResourcesSerializer private constructor(
             )
         }
 
-        val cacheData = CacheData(resourceId.toByteArray(Charsets.UTF_8))
-        resourcesLRUCache.put(drawable, cacheData)
+        val resourceIdByteArray = resourceId.toByteArray(Charsets.UTF_8)
+        resourcesLRUCache.put(drawable, resourceIdByteArray)
 
-        finalizeRecordedDataItem(cacheData, imageWireframe)
+        finalizeRecordedDataItem(resourceIdByteArray, imageWireframe)
         resourcesSerializerCallback.onReady()
     }
 
@@ -279,24 +279,20 @@ internal class ResourcesSerializer private constructor(
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
         resourcesSerializerCallback: ResourcesSerializerCallback
     ): String? {
-        val cacheData = resourcesLRUCache.get(drawable)
+        val resourceIdByteArray = resourcesLRUCache.get(drawable) ?: return null
 
-        if (cacheData?.resourceId == null) {
-            return null
-        }
-
-        finalizeRecordedDataItem(cacheData, imageWireframe)
+        finalizeRecordedDataItem(resourceIdByteArray, imageWireframe)
 
         resourcesSerializerCallback.onReady()
 
-        return String(cacheData.resourceId, Charsets.UTF_8)
+        return String(resourceIdByteArray, Charsets.UTF_8)
     }
 
     private fun finalizeRecordedDataItem(
-        cacheData: CacheData,
+        resourceIdByteArray: ByteArray,
         wireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
-        val resourceId = String(cacheData.resourceId, Charsets.UTF_8)
+        val resourceId = String(resourceIdByteArray, Charsets.UTF_8)
 
         wireframe.resourceId = resourceId
         wireframe.isEmpty = false
@@ -324,7 +320,7 @@ internal class ResourcesSerializer private constructor(
         private var logger: InternalLogger = InternalLogger.UNBOUND,
         private var threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
         private var bitmapPool: BitmapPool,
-        private var resourcesLRUCache: Cache<Drawable, CacheData>,
+        private var resourcesLRUCache: Cache<Drawable, ByteArray>,
         private var drawableUtils: DrawableUtils = DrawableUtils(
             bitmapPool = bitmapPool,
             threadPoolExecutor = threadPoolExecutor,
