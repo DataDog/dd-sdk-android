@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
 import android.os.Build
-import android.webkit.MimeTypeMap
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import java.io.ByteArrayOutputStream
@@ -19,9 +18,6 @@ import java.io.ByteArrayOutputStream
 internal class WebPImageCompression(
     private val logger: InternalLogger
 ) : ImageCompression {
-
-    override fun getMimeType(): String? =
-        MimeTypeMap.getSingleton().getMimeTypeFromExtension(WEBP_EXTENSION)
 
     @WorkerThread
     override fun compressBitmap(bitmap: Bitmap): ByteArray {
@@ -59,7 +55,6 @@ internal class WebPImageCompression(
 
     companion object {
         private val EMPTY_BYTEARRAY = ByteArray(0)
-        private const val WEBP_EXTENSION = "webp"
 
         // This is the default compression for webp when writing to the output stream -
         // a lower quality leads to a lower filesize and worse fidelity image

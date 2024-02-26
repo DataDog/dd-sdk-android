@@ -15,11 +15,6 @@ import java.io.ByteArrayOutputStream
 internal interface ImageCompression {
 
     /**
-     * Get the mimetype for the image format.
-     */
-    fun getMimeType(): String?
-
-    /**
      * Compress the bitmap to a [ByteArrayOutputStream].
      */
     fun compressBitmap(bitmap: Bitmap): ByteArray

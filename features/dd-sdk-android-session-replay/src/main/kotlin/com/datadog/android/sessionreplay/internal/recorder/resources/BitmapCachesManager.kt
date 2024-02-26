@@ -71,19 +71,4 @@ internal class BitmapCachesManager(
     ): Bitmap? {
         return bitmapPool.getBitmapByProperties(width, height, config)
     }
-
-    internal class Builder(
-        private var resourcesLRUCache: Cache<Drawable, ByteArray>,
-        private var bitmapPool: BitmapPool,
-        private var logger: InternalLogger
-    ) {
-
-        fun build(): BitmapCachesManager {
-            return BitmapCachesManager(
-                resourcesLRUCache,
-                bitmapPool,
-                logger
-            )
-        }
-    }
 }

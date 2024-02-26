@@ -27,11 +27,11 @@ import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrappe
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
-    private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
-    private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
+    private val logger: InternalLogger,
     private val bitmapCachesManager: BitmapCachesManager,
-    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
-    private val logger: InternalLogger
+    private val bitmapWrapper: BitmapWrapper = BitmapWrapper(logger),
+    private val canvasWrapper: CanvasWrapper = CanvasWrapper(logger),
+    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
 ) {
 
     /**

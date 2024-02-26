@@ -150,7 +150,6 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockView.resources).thenReturn(mockResources)
         whenever(mockView.context).thenReturn(mockContext)
         whenever(mockContext.applicationContext).thenReturn(mockContext)
-        whenever(mockImageCompression.getMimeType()).thenReturn(fakeMimeType)
         whenever(mockTextView.resources).thenReturn(mockResources)
         whenever(mockTextView.context).thenReturn(mockContext)
         whenever(mockViewUtilsInternal.resolveDrawableBounds(any(), any(), any()))

@@ -324,24 +324,28 @@ internal class ResourceResolverTest {
     @Test
     fun `M use the same ThreadPoolExecutor W build()`() {
         // When
-        val instance1 = ResourceResolver.Builder(
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = mockResourcesLRUCache,
+        val instance1 = ResourceResolver(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             applicationId = fakeApplicationid.toString(),
-            webPImageCompression = mockWebPImageCompression
-        ).build()
-        val instance2 = ResourceResolver.Builder(
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = mockResourcesLRUCache,
+            webPImageCompression = mockWebPImageCompression,
+            drawableUtils = mockDrawableUtils,
+            logger = mockLogger,
+            md5HashGenerator = mockMD5HashGenerator,
+            bitmapCachesManager = mockBitmapCachesManager
+        )
+        val instance2 = ResourceResolver(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             applicationId = fakeApplicationid.toString(),
-            webPImageCompression = mockWebPImageCompression
-        ).build()
+            webPImageCompression = mockWebPImageCompression,
+            drawableUtils = mockDrawableUtils,
+            logger = mockLogger,
+            md5HashGenerator = mockMD5HashGenerator,
+            bitmapCachesManager = mockBitmapCachesManager
+        )
 
         // Then
-        assertThat(instance1.getThreadPoolExecutor()).isEqualTo(
-            instance2.getThreadPoolExecutor()
+        assertThat(instance1.threadPoolExecutor).isEqualTo(
+            instance2.threadPoolExecutor
         )
     }
 
@@ -771,16 +775,14 @@ internal class ResourceResolverTest {
         )
     }
 
-    private fun createResourcesSerializer(): ResourceResolver = ResourceResolver.Builder(
+    private fun createResourcesSerializer(): ResourceResolver = ResourceResolver(
         logger = mockLogger,
         threadPoolExecutor = mockExecutorService,
-        bitmapPool = mockBitmapPool,
-        resourcesLRUCache = mockResourcesLRUCache,
         drawableUtils = mockDrawableUtils,
         webPImageCompression = mockWebPImageCompression,
         md5HashGenerator = mockMD5HashGenerator,
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
         applicationId = fakeApplicationid.toString(),
         bitmapCachesManager = mockBitmapCachesManager
-    ).build()
+    )
 }

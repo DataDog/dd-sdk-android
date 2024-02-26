@@ -95,7 +95,6 @@ internal class DrawableUtilsTest {
     @Mock
     private lateinit var mockLogger: InternalLogger
 
-
     @BeforeEach
     fun setup() {
         whenever(mockConstantState.newDrawable(mockResources)).thenReturn(mockSecondDrawable)

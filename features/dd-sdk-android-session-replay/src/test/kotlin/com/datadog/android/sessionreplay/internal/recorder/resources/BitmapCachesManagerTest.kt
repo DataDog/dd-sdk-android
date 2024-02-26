@@ -190,11 +190,11 @@ internal class BitmapCachesManagerTest {
         resourcesLRUCache: Cache<Drawable, ByteArray>,
         logger: InternalLogger
     ): BitmapCachesManager =
-        BitmapCachesManager.Builder(
+        BitmapCachesManager(
             bitmapPool = bitmapPool,
             resourcesLRUCache = resourcesLRUCache,
             logger = logger
-        ).build()
+        )
 
     // this is in order to test having a class that implements
     // Cache, but does NOT implement ComponentCallbacks2

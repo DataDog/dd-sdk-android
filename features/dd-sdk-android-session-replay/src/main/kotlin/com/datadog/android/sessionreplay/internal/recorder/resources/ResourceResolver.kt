@@ -13,12 +13,10 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import androidx.annotation.MainThread
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
-import com.datadog.android.sessionreplay.internal.async.NoopDataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -26,9 +24,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-internal class ResourceResolver private constructor(
+internal class ResourceResolver(
     private val bitmapCachesManager: BitmapCachesManager,
-    private val threadPoolExecutor: ExecutorService,
+    internal val threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
     private val drawableUtils: DrawableUtils,
     private val webPImageCompression: ImageCompression,
     private val logger: InternalLogger,
@@ -70,7 +68,7 @@ internal class ResourceResolver private constructor(
         }
 
         // do in the background
-        Runnable {
+        threadPoolExecutor.executeSafe("resolveResourceId", logger) {
             @Suppress("ThreadSafety") // this runs inside an executor
             createBitmapAsync(
                 resources = resources,
@@ -90,17 +88,8 @@ internal class ResourceResolver private constructor(
                     }
                 }
             )
-        }.let {
-            threadPoolExecutor.executeSafe("resolveResourceId", logger, it)
         }
     }
-
-    // endregion
-
-    // region testing
-
-    @VisibleForTesting
-    internal fun getThreadPoolExecutor(): ExecutorService = threadPoolExecutor
 
     // endregion
 
@@ -271,55 +260,6 @@ internal class ResourceResolver private constructor(
 
     // endregion
 
-    // region builder
-    internal class Builder(
-        private var applicationId: String,
-        private var recordedDataQueueHandler: DataQueueHandler = NoopDataQueueHandler(),
-        private var logger: InternalLogger = InternalLogger.UNBOUND,
-        private var threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
-        private var bitmapPool: BitmapPool,
-        private var resourcesLRUCache: Cache<Drawable, ByteArray>,
-        private var webPImageCompression: ImageCompression,
-        private var bitmapCachesManager: BitmapCachesManager =
-            BitmapCachesManager.Builder(
-                resourcesLRUCache,
-                bitmapPool,
-                logger
-            ).build(),
-        private var drawableUtils: DrawableUtils = DrawableUtils(
-            logger = logger,
-            bitmapCachesManager = bitmapCachesManager
-        ),
-        private var md5HashGenerator: MD5HashGenerator = MD5HashGenerator(logger)
-    ) {
-        internal fun build() =
-            ResourceResolver(
-                logger = logger,
-                threadPoolExecutor = threadPoolExecutor,
-                drawableUtils = drawableUtils,
-                webPImageCompression = webPImageCompression,
-                md5HashGenerator = md5HashGenerator,
-                recordedDataQueueHandler = recordedDataQueueHandler,
-                applicationId = applicationId,
-                bitmapCachesManager = bitmapCachesManager
-            )
-
-        private companion object {
-            private const val THREAD_POOL_MAX_KEEP_ALIVE_MS = 5000L
-            private const val CORE_DEFAULT_POOL_SIZE = 1
-            private const val MAX_THREAD_COUNT = 10
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are non-negative and queue is not null
-            private val THREADPOOL_EXECUTOR = ThreadPoolExecutor(
-                CORE_DEFAULT_POOL_SIZE,
-                MAX_THREAD_COUNT,
-                THREAD_POOL_MAX_KEEP_ALIVE_MS,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingDeque()
-            )
-        }
-    }
-
     internal interface BitmapCreationCallback {
         fun onReady(bitmap: Bitmap)
         fun onFailure()
@@ -327,8 +267,18 @@ internal class ResourceResolver private constructor(
 
     // endregion
 
-    internal companion object {
-        internal const val FAILED_TO_COMPRESS_RESOURCE_ERROR = "Failed to compress resource to bytearray"
-        internal const val FAILED_TO_CALCULATE_RESOURCE_ID = "Failed to calculate resourceId"
+    private companion object {
+        private const val THREAD_POOL_MAX_KEEP_ALIVE_MS = 5000L
+        private const val CORE_DEFAULT_POOL_SIZE = 1
+        private const val MAX_THREAD_COUNT = 10
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are non-negative and queue is not null
+        private val THREADPOOL_EXECUTOR = ThreadPoolExecutor(
+            CORE_DEFAULT_POOL_SIZE,
+            MAX_THREAD_COUNT,
+            THREAD_POOL_MAX_KEEP_ALIVE_MS,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingDeque()
+        )
     }
 }

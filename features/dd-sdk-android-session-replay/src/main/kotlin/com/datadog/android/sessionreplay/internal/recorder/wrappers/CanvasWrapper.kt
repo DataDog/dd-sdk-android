@@ -19,7 +19,6 @@ internal class CanvasWrapper(
             Canvas(bitmap)
         } catch (e: IllegalStateException) {
             // should never happen since we are passing an immutable bitmap
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
             logger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
@@ -28,7 +27,6 @@ internal class CanvasWrapper(
             )
             null
         } catch (e: RuntimeException) {
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
             logger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
