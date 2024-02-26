@@ -729,6 +729,48 @@ internal class RumFeatureTest {
             .unregisterActivityLifecycleCallbacks(listener)
     }
 
+    @Test
+    fun `𝕄 start ANR tracking 𝕎 onInitialise() {ANR enabled}`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            anrTrackingEnabled = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.anrDetectorExecutorService).isNotNull()
+        assertThat(testedFeature.anrDetectorRunnable).isNotNull()
+    }
+
+    @Test
+    fun `𝕄 not start ANR tracking 𝕎 onInitialise() {ANR disabled}`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            anrTrackingEnabled = false
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.anrDetectorExecutorService).isNull()
+        assertThat(testedFeature.anrDetectorRunnable).isNull()
+    }
+
     // region FeatureEventReceiver#onReceive
 
     @Test

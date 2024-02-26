@@ -243,6 +243,17 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Enable or disable ANR tracking.
+         * This tracking uses a custom heuristic to estimate ANRs, but might give different result than the
+         * Google Play Store.
+         * @param enabled whether ANR tracking should be enabled (default: true)
+         */
+        fun trackApplicationNotResponding(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(anrTrackingEnabled = enabled)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {

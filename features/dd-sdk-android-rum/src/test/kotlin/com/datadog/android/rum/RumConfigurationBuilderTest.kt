@@ -94,6 +94,7 @@ internal class RumConfigurationBuilderTest {
                 trackFrustrations = true,
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
                 sessionListener = NoOpRumSessionListener(),
+                anrTrackingEnabled = true,
                 additionalConfig = emptyMap()
             )
         )
@@ -501,5 +502,39 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.sessionListener)
             .isSameAs(mockSessionListener)
+    }
+
+    @Test
+    fun `𝕄 build config with ANR enabled 𝕎 setANRTrackingEnabled(true) and build()`() {
+        // Given
+
+        // When
+        val rumConfiguration = testedBuilder
+            .trackApplicationNotResponding(true)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                anrTrackingEnabled = true
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 build config with ANR disabled 𝕎 setANRTrackingEnabled(false) and build()`() {
+        // Given
+
+        // When
+        val rumConfiguration = testedBuilder
+            .trackApplicationNotResponding(false)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                anrTrackingEnabled = false
+            )
+        )
     }
 }

@@ -79,6 +79,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useCustomEndpoint(String): Builder
     fun setSessionListener(RumSessionListener): Builder
+    fun trackApplicationNotResponding(Boolean): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK

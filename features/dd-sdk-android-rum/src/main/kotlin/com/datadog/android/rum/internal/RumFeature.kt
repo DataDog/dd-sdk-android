@@ -124,9 +124,8 @@ internal class RumFeature constructor(
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
-    internal lateinit var anrDetectorExecutorService: ExecutorService
-    internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
-    internal lateinit var anrDetectorHandler: Handler
+    internal var anrDetectorExecutorService: ExecutorService? = null
+    internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
     internal lateinit var telemetry: Telemetry
 
@@ -174,7 +173,7 @@ internal class RumFeature constructor(
 
         initializeVitalMonitors(configuration.vitalsMonitorUpdateFrequency)
 
-        initializeANRDetector()
+        initializeANRDetector(configuration)
 
         registerTrackingStrategies(appContext)
 
@@ -214,8 +213,8 @@ internal class RumFeature constructor(
         frameRateVitalMonitor = NoOpVitalMonitor()
 
         vitalExecutorService.shutdownNow()
-        anrDetectorExecutorService.shutdownNow()
-        anrDetectorRunnable.stop()
+        anrDetectorExecutorService?.shutdownNow()
+        anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
@@ -264,6 +263,7 @@ internal class RumFeature constructor(
         when (event["type"]) {
             NDK_CRASH_BUS_MESSAGE_TYPE ->
                 ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
+
             LOGGER_ERROR_BUS_MESSAGE_TYPE -> addLoggerError(event)
             LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE -> addLoggerErrorWithStacktrace(event)
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
@@ -394,15 +394,18 @@ internal class RumFeature constructor(
         )
     }
 
-    private fun initializeANRDetector() {
-        anrDetectorHandler = Handler(Looper.getMainLooper())
-        anrDetectorRunnable = ANRDetectorRunnable(sdkCore, anrDetectorHandler)
-        anrDetectorExecutorService = Executors.newSingleThreadExecutor()
-        anrDetectorExecutorService.executeSafe(
-            "ANR detection",
-            sdkCore.internalLogger,
-            anrDetectorRunnable
-        )
+    private fun initializeANRDetector(configuration: Configuration) {
+        if (configuration.anrTrackingEnabled) {
+            val runnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
+            anrDetectorExecutorService = Executors.newSingleThreadExecutor().apply {
+                executeSafe(
+                    "ANR detection",
+                    sdkCore.internalLogger,
+                    runnable
+                )
+            }
+            anrDetectorRunnable = runnable
+        }
     }
 
     private fun addJvmCrash(crashEvent: JvmCrash.Rum) {
@@ -543,6 +546,7 @@ internal class RumFeature constructor(
         val trackFrustrations: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
+        val anrTrackingEnabled: Boolean,
         val additionalConfig: Map<String, Any>
     )
 
@@ -589,6 +593,7 @@ internal class RumFeature constructor(
             trackFrustrations = true,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
             sessionListener = NoOpRumSessionListener(),
+            anrTrackingEnabled = true,
             additionalConfig = emptyMap()
         )
 
@@ -607,21 +612,21 @@ internal class RumFeature constructor(
             "RUM feature received an event with unknown value of \"type\" property=%s."
         internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a JVM crash event" +
-                " where one or more mandatory (throwable, message) fields" +
-                " are either missing or have a wrong type."
+                    " where one or more mandatory (throwable, message) fields" +
+                    " are either missing or have a wrong type."
         internal const val LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event" +
-                " where mandatory message field is either missing or has a wrong type."
+                    " where mandatory message field is either missing or has a wrong type."
         internal const val LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event with stacktrace" +
-                " where mandatory message field is either missing or has a wrong type."
+                    " where mandatory message field is either missing or has a wrong type."
         internal const val TELEMETRY_MISSING_MESSAGE_FIELD = "RUM feature received a telemetry" +
-            " event, but mandatory message field is either missing or has a wrong type."
+                " event, but mandatory message field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
-                " SDK instance by calling SdkCore#registerFeature method."
+                    " SDK instance by calling SdkCore#registerFeature method."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
