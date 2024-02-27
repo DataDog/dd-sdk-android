@@ -55,17 +55,9 @@ dependencies {
     api(project(":features:dd-sdk-android-session-replay"))
     implementation(libs.kotlin)
     implementation(libs.gson)
-    implementation(libs.googleMaterial)
 
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.bundles.androidXCompose)
-//    implementation("androidx.compose.ui:ui")
-//    implementation("androidx.compose.foundation:foundation")
-//    implementation("androidx.compose.foundation:foundation-android")
-//    implementation("androidx.compose.runtime:runtime")
-//    implementation("androidx.compose.runtime:runtime-android")
-//    implementation("androidx.compose.ui:ui-tooling")
-
     implementation(libs.androidXComposeMaterial)
 
     testImplementation(project(":tools:unit")) {

@@ -1,5 +1,4 @@
 
-
 ## ComposeView & AndroidComposeView
 
 The `ComposeView` or one of its children (typically an `AndroidComposeView`) will contain a `Composition` object 
