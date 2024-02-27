@@ -165,6 +165,7 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
+    implementation(platform(libs.androidXComposeBom))
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
