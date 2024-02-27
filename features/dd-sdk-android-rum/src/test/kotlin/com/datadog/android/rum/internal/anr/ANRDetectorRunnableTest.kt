@@ -30,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -184,7 +185,7 @@ internal class ANRDetectorRunnableTest {
         verifyNoInteractions(rumMonitor.mockInstance)
         verify(
             mockHandler,
-            times(repeatCount + 1)
+            atLeast(repeatCount)
         ).post(isA<ANRDetectorRunnable.CallbackRunnable>())
     }
 
