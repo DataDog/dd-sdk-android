@@ -79,5 +79,5 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "Session Replay Extension Support for Material UI components."
+    "Session Replay Extension Support for Jetpack Compose."
 )

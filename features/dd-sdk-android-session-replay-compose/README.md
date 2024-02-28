@@ -1,4 +1,4 @@
-# Datadog Session Replay Extension Support for Compose
+# Datadog Session Replay Extension Support for Jetpack Compose
 
 See the dedicated [Datadog Android Session Replay documentation][1] to learn how to add this extension when configuring Session Replay feature for your application.
 
