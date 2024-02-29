@@ -30,7 +30,7 @@ android {
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }
-    namespace = "datadog.trace"
+    namespace = "com.com.datadog.trace"
 }
 
 dependencies {
