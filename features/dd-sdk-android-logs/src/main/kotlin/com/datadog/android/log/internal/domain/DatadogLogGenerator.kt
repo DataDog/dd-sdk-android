@@ -96,8 +96,13 @@ internal class DatadogLogGenerator(
         userInfo: UserInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
+        val mutableAttributes = attributes.toMutableMap()
         val error = if (errorKind != null || errorMessage != null || errorStack != null) {
-            LogEvent.Error(kind = errorKind, message = errorMessage, stack = errorStack)
+            val sourceType = mutableAttributes.remove(LogAttributes.SOURCE_TYPE) as? String
+            LogEvent.Error(
+            kind = errorKind, message = errorMessage, stack = errorStack,
+                sourceType = sourceType
+            )
         } else {
             null
         }
@@ -105,7 +110,7 @@ internal class DatadogLogGenerator(
             level,
             message,
             error,
-            attributes,
+            mutableAttributes,
             tags,
             timestamp,
             threadName,

@@ -177,6 +177,11 @@
           "description": "The error stack trace",
           "readOnly": false
         },
+        "source_type": {
+          "type": "string",
+          "description": "The source_type of the error (e.g. 'android', 'flutter', 'react-native')",
+          "readOnly": false
+        },
         "threads": {
           "type": "array",
           "description": "Description of each thread in the process when error happened.",
