@@ -7,7 +7,7 @@
 package com.datadog.opentracing
 
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.trace.api.sampling.PrioritySampling
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

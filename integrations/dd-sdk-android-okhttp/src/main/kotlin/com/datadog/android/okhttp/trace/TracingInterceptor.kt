@@ -20,10 +20,10 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.legacy.trace.api.DDTags
+import com.datadog.legacy.trace.api.interceptor.MutableSpan
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDTracer
-import com.datadog.trace.api.DDTags
-import com.datadog.trace.api.interceptor.MutableSpan
-import com.datadog.trace.api.sampling.PrioritySampling
 import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer

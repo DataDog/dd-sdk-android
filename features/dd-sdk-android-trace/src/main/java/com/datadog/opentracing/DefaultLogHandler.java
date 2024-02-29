@@ -9,7 +9,7 @@ package com.datadog.opentracing;
 import static io.opentracing.log.Fields.ERROR_OBJECT;
 import static io.opentracing.log.Fields.MESSAGE;
 
-import com.datadog.trace.api.DDTags;
+import com.datadog.legacy.trace.api.DDTags;
 import java.util.Map;
 
 /** The default implementation of the LogHandler. */

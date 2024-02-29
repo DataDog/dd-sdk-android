@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.assertj
 
-import com.datadog.trace.api.Config
+import com.datadog.legacy.trace.api.Config
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
