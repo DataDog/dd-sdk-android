@@ -1,3 +1,7 @@
+# 2.6.2 / 2024-02-23
+
+* [BUGFIX] RUM: Fix crash in frame rate vital detection. See [#1872](https://github.com/DataDog/dd-sdk-android/pull/1872)
+
 # 2.6.1 / 2024-02-21
 
 * [BUGFIX] RUM: Fix missing source in telemetry json schema. See [#1865](https://github.com/DataDog/dd-sdk-android/pull/1865)
