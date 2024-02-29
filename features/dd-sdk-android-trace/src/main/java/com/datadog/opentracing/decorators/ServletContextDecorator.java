@@ -7,7 +7,7 @@
 package com.datadog.opentracing.decorators;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.Config;
+import com.datadog.legacy.trace.api.Config;
 
 public class ServletContextDecorator extends AbstractDecorator {
 

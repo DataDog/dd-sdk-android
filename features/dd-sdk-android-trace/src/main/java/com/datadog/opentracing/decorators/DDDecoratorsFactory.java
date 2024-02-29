@@ -6,7 +6,7 @@
 
 package com.datadog.opentracing.decorators;
 
-import com.datadog.trace.api.Config;
+import com.datadog.legacy.trace.api.Config;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

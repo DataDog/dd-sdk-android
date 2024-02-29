@@ -7,10 +7,10 @@
 package com.datadog.opentracing
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.legacy.trace.api.DDTags
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.assertj.DDSpanContextAssert.Companion.assertThat
 import com.datadog.opentracing.decorators.AbstractDecorator
-import com.datadog.trace.api.DDTags
-import com.datadog.trace.api.sampling.PrioritySampling
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
