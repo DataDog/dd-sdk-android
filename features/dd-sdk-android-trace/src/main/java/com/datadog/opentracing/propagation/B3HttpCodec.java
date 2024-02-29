@@ -9,7 +9,7 @@ package com.datadog.opentracing.propagation;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 
 import java.math.BigInteger;
 import java.util.Collections;

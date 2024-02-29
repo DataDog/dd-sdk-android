@@ -7,7 +7,7 @@
 package com.datadog.opentracing.decorators;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.DDTags;
+import com.datadog.legacy.trace.api.DDTags;
 
 public class ServiceNameDecorator extends AbstractDecorator {
 

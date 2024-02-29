@@ -7,8 +7,8 @@
 package com.datadog.opentracing.decorators;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.DDTags;
-import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.api.DDTags;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 
 /**
  * Tag decorator to replace tag 'manual.keep: true' with the appropriate priority sampling value.

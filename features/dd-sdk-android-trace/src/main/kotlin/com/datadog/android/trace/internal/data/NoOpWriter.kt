@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace.internal.data
 
+import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.opentracing.DDSpan
-import com.datadog.trace.common.writer.Writer
 
 internal class NoOpWriter : Writer {
     override fun close() {

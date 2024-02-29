@@ -9,7 +9,7 @@ package com.datadog.opentracing.propagation;
 import com.datadog.opentracing.DDSpanContext;
 import com.datadog.opentracing.DDTracer;
 import com.datadog.opentracing.StringCachingBigInteger;
-import com.datadog.trace.api.Config;
+import com.datadog.legacy.trace.api.Config;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;

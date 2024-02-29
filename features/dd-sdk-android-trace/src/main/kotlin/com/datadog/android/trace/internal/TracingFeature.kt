@@ -19,7 +19,7 @@ import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
-import com.datadog.trace.common.writer.Writer
+import com.datadog.legacy.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**

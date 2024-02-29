@@ -17,8 +17,8 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.opentracing.DDSpan
-import com.datadog.trace.common.writer.Writer
 import java.util.Locale
 
 internal class TraceWriter(

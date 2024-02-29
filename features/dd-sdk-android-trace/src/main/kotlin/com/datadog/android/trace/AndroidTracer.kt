@@ -16,11 +16,11 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.legacy.trace.api.Config
+import com.datadog.legacy.trace.common.writer.Writer
+import com.datadog.legacy.trace.context.ScopeListener
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
-import com.datadog.trace.api.Config
-import com.datadog.trace.common.writer.Writer
-import com.datadog.trace.context.ScopeListener
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
