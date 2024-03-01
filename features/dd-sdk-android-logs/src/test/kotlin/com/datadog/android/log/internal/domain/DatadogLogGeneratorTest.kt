@@ -25,6 +25,7 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -312,6 +313,68 @@ internal class DatadogLogGeneratorTest {
                 threads = null
             )
         )
+    }
+
+    @Test
+    fun `M note add sourceType W creating the Log { source_type attribute not set }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message,
+                sourceType = null,
+                threads = null
+            )
+        )
+    }
+
+    @Test
+    fun `M add sourceType W creating the Log { source_type attribute set }`() {
+        // WHEN
+        val modifiedAttributes = fakeAttributes.toMutableMap().apply {
+            put(LogAttributes.SOURCE_TYPE, "fake_source_type")
+        }
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable.javaClass.canonicalName,
+            fakeThrowable.message,
+            fakeThrowable.stackTraceToString(),
+            modifiedAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message,
+                sourceType = "fake_source_type",
+                threads = null
+            )
+        )
+        assertThat(log.additionalProperties).doesNotContainKey(LogAttributes.SOURCE_TYPE)
     }
 
     @Test
