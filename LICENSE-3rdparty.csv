@@ -57,6 +57,7 @@ import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
 import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
+import,io.opentelemetry,Apache-2.0,Copyright 2019 The OpenTelemetry Authors
 import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.opentracing.contrib,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.reactivex.rxjava3,Apache-2.0,"Copyright (c) 2016-present, RxJava Contributors"

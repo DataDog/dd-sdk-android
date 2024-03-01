@@ -1317,7 +1317,7 @@ public class Config {
                                 new String(
                                         Files.readAllBytes(Paths.get(oldProfilingApiKeyFile)), StandardCharsets.UTF_8)
                                         .trim();
-                    }else{
+                    } else {
                         tmpApiKey = new String(FileUtils.readAllBytes(oldProfilingApiKeyFile), StandardCharsets.UTF_8)
                                 .trim();
                     }
@@ -3467,6 +3467,7 @@ public class Config {
      * @deprecated This method should only be used internally. Use the instance getter instead {@link
      * #isJmxFetchIntegrationEnabled(Iterable, boolean)}.
      */
+    @Deprecated
     public static boolean jmxFetchIntegrationEnabled(
             final SortedSet<String> integrationNames, final boolean defaultEnabled) {
         return Config.get().isJmxFetchIntegrationEnabled(integrationNames, defaultEnabled);
@@ -3571,6 +3572,7 @@ public class Config {
      * @deprecated This method should only be used internally. Use the instance getter instead {@link
      * #isTraceAnalyticsIntegrationEnabled(SortedSet, boolean)}.
      */
+    @Deprecated
     public static boolean traceAnalyticsIntegrationEnabled(
             final SortedSet<String> integrationNames, final boolean defaultEnabled) {
         return Config.get().isTraceAnalyticsIntegrationEnabled(integrationNames, defaultEnabled);
