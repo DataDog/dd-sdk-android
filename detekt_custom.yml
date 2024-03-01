@@ -1059,6 +1059,7 @@ datadog:
       - "kotlin.math.max(kotlin.Long, kotlin.Long)"
       - "kotlin.math.min(kotlin.Double, kotlin.Double)"
       - "kotlin.math.sqrt(kotlin.Double)"
+      - "kotlin.String.trim(kotlin.Function1)"
       # endregion
       # region Kotlin Tuples
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
@@ -1240,6 +1241,10 @@ datadog:
       - "io.opentracing.propagation.TextMapInject(kotlin.Function2)"
       - "io.opentracing.util.GlobalTracer.get()"
       - "io.opentracing.util.GlobalTracer.isRegistered()"
+      # endregion
+      # region Opentelemetry
+      - "io.opentelemetry.api.trace.TracerBuilder.build()"
+      - "io.opentelemetry.api.trace.TracerBuilder.setInstrumentationVersion(kotlin.String?)"
       # endregion
       # region RxJava
       - "io.reactivex.rxjava3.core.Completable.doOnError(io.reactivex.rxjava3.functions.Consumer?)"

@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
+    implementation(libs.openTelemetry)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
