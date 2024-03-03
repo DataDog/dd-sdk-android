@@ -7,6 +7,7 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Color
@@ -42,6 +43,7 @@ internal class DrawableUtils(
      * bitmap, since the file size of a bitmap can be known by the formula width*height*color depth
      */
     internal fun createBitmapOfApproxSizeFromDrawable(
+        resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
@@ -64,6 +66,7 @@ internal class DrawableUtils(
                         mainThreadHandler.post {
                             @Suppress("ThreadSafety") // this runs on the main thread
                             drawOnCanvas(
+                                resources,
                                 bitmap,
                                 drawable,
                                 bitmapCreationCallback
@@ -105,21 +108,24 @@ internal class DrawableUtils(
 
     @MainThread
     private fun drawOnCanvas(
+        resources: Resources,
         bitmap: Bitmap,
         drawable: Drawable,
         bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
     ) {
+        // don't use the original drawable - it will affect the view hierarchy
+        val newDrawable = drawable.constantState?.newDrawable(resources)
         val canvas = canvasWrapper.createCanvas(bitmap)
 
-        if (canvas == null) {
+        if (canvas == null || newDrawable == null) {
             bitmapCreationCallback.onFailure()
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
 
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
+            newDrawable.setBounds(0, 0, canvas.width, canvas.height)
+            newDrawable.draw(canvas)
             bitmapCreationCallback.onReady(bitmap)
         }
     }
