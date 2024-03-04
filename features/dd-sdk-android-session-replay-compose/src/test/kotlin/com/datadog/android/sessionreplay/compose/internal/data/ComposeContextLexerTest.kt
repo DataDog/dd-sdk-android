@@ -53,7 +53,7 @@ internal class ComposeContextLexerTest {
     }
 
     // suppress max line length to keep our fixtures as-is
-    @Suppress("ktlint:standard:max-line-length")
+    @Suppress("ktlint:standard:max-line-length", "MaxLineLength", "MagicNumber")
     companion object {
         @JvmStatic
         @Parameterized.Parameters

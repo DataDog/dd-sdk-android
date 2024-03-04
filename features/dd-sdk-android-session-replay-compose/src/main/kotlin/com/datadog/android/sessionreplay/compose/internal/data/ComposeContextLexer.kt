@@ -16,6 +16,9 @@ package com.datadog.android.sessionreplay.compose.internal.data
  */
 internal object ComposeContextLexer {
 
+    private const val RADIX_BASE_10 = 10
+    private const val RADIX_BASE_36 = 36
+
     private sealed class TokenReader {
 
         abstract fun process(c: Char)
@@ -125,19 +128,22 @@ internal object ComposeContextLexer {
          * number of UTF-16 code units that make up the call expression.
          */
         class LocationTR(initialDigit: Char) : TokenReader() {
-            var line: Int = initialDigit.digitToInt()
+
+            var line: Int = initialDigit.digitToIntOrNull() ?: 0
             var offset: Int = -1
             var length: Int = -1
 
             override fun process(c: Char) {
                 when (c) {
                     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' -> {
+                        @Suppress("UnsafeThirdPartyFunctionCall") // char is a valid digit
+                        val digit = c.digitToInt()
                         if (length >= 0) {
-                            length = (length * 10) + c.digitToInt()
+                            length = (length * RADIX_BASE_10) + digit
                         } else if (offset >= 0) {
-                            offset = (offset * 10) + c.digitToInt()
+                            offset = (offset * RADIX_BASE_10) + digit
                         } else {
-                            line = (line * 10) + c.digitToInt()
+                            line = (line * RADIX_BASE_10) + digit
                         }
                     }
 
@@ -173,6 +179,7 @@ internal object ComposeContextLexer {
             var isReadingInline = false
             var inlineClass: String? = null
 
+            @Suppress("MagicNumber")
             val expectedSortedIndex = mutableListOf(0, 1, 2, 3)
             var lastAdded = expectedSortedIndex.size - 1
 
@@ -183,7 +190,9 @@ internal object ComposeContextLexer {
                     }
 
                     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' -> {
-                        currentNumber = ((currentNumber ?: 0) * 10) + c.digitToInt()
+                        @Suppress("UnsafeThirdPartyFunctionCall") // char is a valid digit
+                        val digit = c.digitToInt()
+                        currentNumber = ((currentNumber ?: 0) * RADIX_BASE_10) + digit
                     }
 
                     '!' -> {
@@ -227,6 +236,7 @@ internal object ComposeContextLexer {
                     val index = currentNumber ?: 0
                     val rawClass = inlineClass
                     val composeClass = if (rawClass != null && rawClass.startsWith("c#")) {
+                        @Suppress("UnsafeThirdPartyFunctionCall") // substring can't throw IndexOutOfBoundsException
                         "androidx.compose." + rawClass.substring(2)
                     } else {
                         rawClass
@@ -251,6 +261,7 @@ internal object ComposeContextLexer {
             private fun ensureIndexes(index: Int) {
                 val missing = index - lastAdded
                 if (missing > 0) {
+                    @Suppress("MagicNumber")
                     val minAddAmount = 4
                     val amountToAdd = if (missing < minAddAmount) minAddAmount else missing
                     repeat(amountToAdd) {
@@ -290,7 +301,7 @@ internal object ComposeContextLexer {
             override fun updateComposeContext(composeContext: ComposeContext?): ComposeContext? {
                 return composeContext?.copy(
                     sourceFile = sourceFile,
-                    packageHash = packageHash.toInt(36)
+                    packageHash = packageHash.toIntOrNull(RADIX_BASE_36) ?: -1
                 )
             }
         }

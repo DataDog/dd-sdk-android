@@ -22,8 +22,10 @@ internal data class ComposeContext(
 
     companion object {
 
-        // TODO : find which would be better here (LFU, LRU, …)
-        internal val contextCache = object : LruCache<String, ComposeContext>(256) {
+        private const val CACHE_SIZE = 256
+
+        // Discuss : find which would be better here (LFU, LRU, …)
+        internal val contextCache = object : LruCache<String, ComposeContext>(CACHE_SIZE) {
             override fun create(key: String): ComposeContext? {
                 return ComposeContextLexer.parse(key)
             }
@@ -31,6 +33,7 @@ internal data class ComposeContext(
 
         internal fun from(compositionGroup: CompositionGroup): ComposeContext? {
             val sourceInfo = compositionGroup.sourceInfo ?: return null
+            @Suppress("UnsafeThirdPartyFunctionCall") // sourceInfo is not null here
             return contextCache.get(sourceInfo)
         }
     }
