@@ -16,10 +16,9 @@ androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
 androidXWorkManager = "2.8.1"
 androidXConstraintLayout = "2.0.4"
-androidXComposeRuntime = "1.4.2"
+androidXComposeBom = "2023.10.01"
+androidXComposeCompilerExtension = "1.4.4"
 androidXComposeNavigation = "2.6.0"
-androidXComposeUi = "1.4.2"
-androidXComposeMaterial = "1.4.2"
 androidXMetrics = "1.0.0-alpha04"
 androidXCollection = "1.1.0"
 googleAccompanist = "0.20.2"
@@ -121,11 +120,6 @@ androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime",
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
 androidXConstraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidXConstraintLayout" }
-androidXComposeRuntime = { module = "androidx.compose.runtime:runtime", version.ref = "androidXComposeRuntime" }
-androidXComposeNavigation = { module = "androidx.navigation:navigation-compose", version.ref = "androidXComposeNavigation" }
-androidXComposeUi = { module = "androidx.compose.ui:ui", version.ref = "androidXComposeUi" }
-androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "androidXComposeUi" }
-androidXComposeMaterial = { module = "androidx.compose.material:material", version.ref = "androidXComposeMaterial" }
 androidXMetrics = { module = "androidx.metrics:metrics-performance", version.ref = "androidXMetrics" }
 androidXCollection = { module = "androidx.collection:collection", version.ref = "androidXCollection" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
@@ -133,6 +127,13 @@ googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", 
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
 googleMaterial = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
 androidXLeanback = { module = "androidx.leanback:leanback", version.ref = "androidXLeanback" }
+
+androidXComposeBom = { module = "androidx.compose:compose-bom", version.ref = "androidXComposeBom" }
+androidXComposeNavigation = { module = "androidx.navigation:navigation-compose", version.ref = "androidXComposeNavigation" }
+androidXComposeRuntime = { module = "androidx.compose.runtime:runtime" }
+androidXComposeUi = { module = "androidx.compose.ui:ui" }
+androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
+androidXComposeMaterial = { module = "androidx.compose.material:material" }
 
 # DD-TRACE-OT
 openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
@@ -245,6 +246,14 @@ androidXSupportBase = [
     "androidXAppCompat",
     "androidXConstraintLayout",
     "googleMaterial"
+]
+
+androidXCompose = [
+    "androidXComposeNavigation",
+    "androidXComposeRuntime",
+    "androidXComposeUi",
+    "androidXComposeUiTooling",
+    "androidXComposeMaterial"
 ]
 
 openTracing = [

@@ -7,6 +7,7 @@ import,androidx.asynclayoutinflater,Apache-2.0,Copyright 2018 The Android Open S
 import,androidx.cardview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.collection,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.constraintlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.compose,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.animation,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.foundation,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.material,Apache-2.0,Copyright 2019 The Android Open Source Project

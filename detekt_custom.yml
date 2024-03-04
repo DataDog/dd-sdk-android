@@ -1142,6 +1142,7 @@ datadog:
       - "kotlinx.coroutines.CoroutineScope.launch(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.CoroutineScope.withinCoroutineSpan(kotlin.String, io.opentracing.Span?, kotlin.coroutines.CoroutineContext, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
+      - "kotlinx.coroutines.flow.FlowCollector(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.flow(kotlin.coroutines.SuspendFunction1)"
       # endregion
       # region Kronos

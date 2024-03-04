@@ -69,7 +69,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
 
     testOptions {
@@ -165,6 +165,7 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
+    implementation(platform(libs.androidXComposeBom))
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
