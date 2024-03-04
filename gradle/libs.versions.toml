@@ -91,7 +91,6 @@ openTelemetry = "1.4.0"
 desugarJdk = "2.0.4"
 datatadogSketchesJava = "0.8.2"
 re2j = "1.7"
-spotbugs = "4.2.0"
 
 
 [libraries]
@@ -236,7 +235,6 @@ openTelemetry = { module = "io.opentelemetry:opentelemetry-api", version.ref = "
 desugarJdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdk" }
 datadogSketchesJava = { module = "com.datadoghq:sketches-java", version.ref = "datatadogSketchesJava" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
-spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "spotbugs" }
 
 [bundles]
 

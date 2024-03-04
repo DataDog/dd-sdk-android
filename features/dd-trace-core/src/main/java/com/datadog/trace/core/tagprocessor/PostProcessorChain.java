@@ -3,12 +3,12 @@ package com.datadog.trace.core.tagprocessor;
 import com.datadog.trace.core.DDSpanContext;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
+import androidx.annotation.NonNull;
 
 public class PostProcessorChain implements TagsPostProcessor {
   private final TagsPostProcessor[] chain;
 
-  public PostProcessorChain(@Nonnull final TagsPostProcessor... processors) {
+  public PostProcessorChain(@NonNull final TagsPostProcessor... processors) {
     chain = Objects.requireNonNull(processors);
   }
 
