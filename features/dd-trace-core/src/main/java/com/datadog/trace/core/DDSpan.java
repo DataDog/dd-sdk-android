@@ -35,8 +35,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class DDSpan
   static DDSpan create(
       final String instrumentationName,
       final long timestampMicro,
-      @Nonnull DDSpanContext context,
+      @NonNull DDSpanContext context,
       final List<AgentSpanLink> links) {
     final DDSpan span = new DDSpan(instrumentationName, timestampMicro, context, links);
     log.debug("Started span: {}", span);
@@ -121,9 +121,9 @@ public class DDSpan
    * @param context the context used for the span
    */
   private DDSpan(
-      @Nonnull String instrumentationName,
+      @NonNull String instrumentationName,
       final long timestampMicro,
-      @Nonnull DDSpanContext context,
+      @NonNull DDSpanContext context,
       final List<AgentSpanLink> links) {
     this.context = context;
     this.metrics = SpanMetricRegistry.getInstance().get(instrumentationName);
@@ -484,7 +484,7 @@ public class DDSpan
   }
 
   @Override
-  @Nonnull
+  @NonNull
   public final DDSpanContext context() {
     return context;
   }
@@ -760,7 +760,7 @@ public class DDSpan
    *
    * @param endpointTracker the end-point tracker instance
    */
-  public void setEndpointTracker(@Nonnull EndpointTracker endpointTracker) {
+  public void setEndpointTracker(@NonNull EndpointTracker endpointTracker) {
     DDSpan localRootSpan = getLocalRootSpan();
     if (localRootSpan == null) {
       log.warn("Span {} has no associated local root span", this);

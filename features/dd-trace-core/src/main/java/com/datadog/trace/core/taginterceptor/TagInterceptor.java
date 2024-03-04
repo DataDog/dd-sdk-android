@@ -33,8 +33,8 @@ import com.datadog.trace.bootstrap.instrumentation.api.UTF8BytesString;
 import com.datadog.trace.core.DDSpanContext;
 import java.net.URI;
 import java.util.Set;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class TagInterceptor {
 
@@ -136,7 +136,7 @@ public class TagInterceptor {
   }
 
   private static void setResourceFromUrl(
-      @Nonnull final DDSpanContext span, @Nullable final String method, @Nonnull final Object url) {
+      @NonNull final DDSpanContext span, @Nullable final String method, @NonNull final Object url) {
     final String path;
     if (url instanceof URIUtils.LazyUrl) {
       path = ((URIUtils.LazyUrl) url).path();

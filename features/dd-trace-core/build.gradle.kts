@@ -43,7 +43,6 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.datadogSketchesJava)
     implementation(libs.re2j)
-    compileOnly(libs.spotbugs)
 
     // TODO: RUM-3268 Port and enable the groovy unit tests
 

@@ -10,13 +10,12 @@ import com.datadog.trace.api.sampling.PrioritySampling;
 import com.datadog.trace.api.sampling.SamplingMechanism;
 import com.datadog.trace.core.propagation.PropagationTags;
 import com.datadog.trace.core.propagation.PropagationTags.HeaderType;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
+import androidx.annotation.NonNull;
 
 public class PTagsFactory implements PropagationTags.Factory {
   static final String PROPAGATION_ERROR_TAG_KEY = "_dd.propagation_error";
@@ -39,7 +38,7 @@ public class PTagsFactory implements PropagationTags.Factory {
     return xDatadogTagsLimit;
   }
 
-  PTagsCodec getDecoderEncoder(@Nonnull HeaderType headerType) {
+  PTagsCodec getDecoderEncoder(@NonNull HeaderType headerType) {
     return DEC_ENC_MAP.get(headerType);
   }
 
@@ -49,7 +48,7 @@ public class PTagsFactory implements PropagationTags.Factory {
   }
 
   @Override
-  public final PropagationTags fromHeaderValue(@Nonnull HeaderType headerType, String value) {
+  public final PropagationTags fromHeaderValue(@NonNull HeaderType headerType, String value) {
     return DEC_ENC_MAP.get(headerType).fromHeaderValue(this, value);
   }
 
@@ -215,7 +214,6 @@ public class PTagsFactory implements PropagationTags.Factory {
 
     @Override
     @SuppressWarnings("StringEquality")
-    @SuppressFBWarnings("ES_COMPARING_STRINGS_WITH_EQ")
     public String headerValue(HeaderType headerType) {
       String header = getCachedHeader(headerType);
       if (header == null) {

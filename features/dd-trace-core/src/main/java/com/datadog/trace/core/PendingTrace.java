@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nonnull;
+import androidx.annotation.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,11 +68,11 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
     }
 
     /** Used by tests and benchmarks. */
-    PendingTrace create(@Nonnull DDTraceId traceId) {
+    PendingTrace create(@NonNull DDTraceId traceId) {
       return create(traceId, null);
     }
 
-    PendingTrace create(@Nonnull DDTraceId traceId, ConfigSnapshot traceConfig) {
+    PendingTrace create(@NonNull DDTraceId traceId, ConfigSnapshot traceConfig) {
       return new PendingTrace(
           tracer,
           traceId,
@@ -145,10 +145,10 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
       AtomicLongFieldUpdater.newUpdater(PendingTrace.class, "endToEndStartTime");
 
   private PendingTrace(
-      @Nonnull CoreTracer tracer,
-      @Nonnull DDTraceId traceId,
-      @Nonnull PendingTraceBuffer pendingTraceBuffer,
-      @Nonnull TimeSource timeSource,
+      @NonNull CoreTracer tracer,
+      @NonNull DDTraceId traceId,
+      @NonNull PendingTraceBuffer pendingTraceBuffer,
+      @NonNull TimeSource timeSource,
       ConfigSnapshot traceConfig,
       boolean strictTraceWrites,
       HealthMetrics healthMetrics) {
