@@ -15,8 +15,8 @@ import com.datadog.trace.core.propagation.ExtractedContext;
 import com.datadog.trace.core.propagation.PropagationTags;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 /** This class holds helper methods to encode span links into span context. */
 public class DDSpanLink extends SpanLink {

@@ -1,6 +1,6 @@
 package com.datadog.trace.util;
 
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.concurrent.ThreadFactory;
 

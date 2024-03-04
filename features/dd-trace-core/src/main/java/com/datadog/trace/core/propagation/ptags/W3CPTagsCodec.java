@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.LoggerFactory;
 
 public class W3CPTagsCodec extends PTagsCodec {
   private static final RatelimitedLogger log =

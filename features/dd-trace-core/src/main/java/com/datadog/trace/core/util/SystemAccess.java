@@ -1,8 +1,8 @@
 package com.datadog.trace.core.util;
 
 import com.datadog.trace.api.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public final class SystemAccess {
   private static final Logger log = LoggerFactory.getLogger(SystemAccess.class);

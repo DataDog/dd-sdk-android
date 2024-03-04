@@ -19,8 +19,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public final class StatusLogger extends JsonAdapter<Config>
     implements AgentTaskScheduler.Task<Config>, JsonAdapter.Factory {

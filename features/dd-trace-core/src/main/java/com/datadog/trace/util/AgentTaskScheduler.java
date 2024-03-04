@@ -7,8 +7,8 @@ import static com.datadog.trace.util.AgentThreadFactory.AGENT_THREAD_GROUP;
 import static com.datadog.trace.util.AgentThreadFactory.AgentThread.TASK_SCHEDULER;
 import static com.datadog.trace.util.AgentThreadFactory.newAgentThread;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.DelayQueue;

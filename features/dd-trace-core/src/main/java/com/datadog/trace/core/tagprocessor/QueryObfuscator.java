@@ -7,8 +7,8 @@ import com.datadog.trace.api.DDTags;
 import com.datadog.trace.bootstrap.instrumentation.api.Tags;
 import com.datadog.trace.util.Strings;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public class QueryObfuscator implements TagsPostProcessor {
 

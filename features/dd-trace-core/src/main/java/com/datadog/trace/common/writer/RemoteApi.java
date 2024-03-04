@@ -2,7 +2,7 @@ package com.datadog.trace.common.writer;
 
 import com.datadog.trace.relocate.api.IOLogger;
 import java.io.IOException;
-import org.slf4j.Logger;
+import com.datadog.trace.logger.Logger;
 
 public abstract class RemoteApi {
 

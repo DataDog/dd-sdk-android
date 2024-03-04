@@ -51,11 +51,11 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    api(libs.openTelemetryApi)
     implementation(project(":features:dd-trace-core"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
-    implementation(libs.openTelemetry)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

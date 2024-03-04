@@ -2,8 +2,8 @@ package com.datadog.trace.api.http;
 
 import androidx.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.ByteBuffer;

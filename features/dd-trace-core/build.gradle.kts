@@ -24,9 +24,6 @@ plugins {
 }
 
 android {
-    defaultConfig {
-        consumerProguardFiles("consumer-rules.pro")
-    }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }
@@ -35,7 +32,6 @@ android {
 
 dependencies {
     coreLibraryDesugaring(libs.desugarJdk)
-    implementation(libs.slf4j)
     implementation(libs.moshi)
     implementation(libs.jctools)
     implementation(libs.kotlin)
