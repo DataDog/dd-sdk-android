@@ -17,8 +17,8 @@ import static com.datadog.trace.api.gateway.Events.RESPONSE_HEADER_DONE_ID;
 import static com.datadog.trace.api.gateway.Events.RESPONSE_HEADER_ID;
 import static com.datadog.trace.api.gateway.Events.RESPONSE_STARTED_ID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceArray;

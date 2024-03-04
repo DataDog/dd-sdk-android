@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.LoggerFactory;
 
 /** Captures configuration required for PropagationTags logic */
 final class DatadogPTagsCodec extends PTagsCodec {

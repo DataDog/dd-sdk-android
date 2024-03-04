@@ -11,8 +11,8 @@ import com.datadog.trace.api.sampling.SamplingMechanism;
 import com.datadog.trace.core.CoreSpan;
 import java.util.Map;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 /** Main interface to sample a collection of traces. */
 public interface Sampler {

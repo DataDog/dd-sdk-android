@@ -8,8 +8,8 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import com.datadog.trace.bootstrap.instrumentation.api.PathwayContext;
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public class DataStreamContextInjector {
   private static final Logger LOGGER = LoggerFactory.getLogger(DataStreamContextInjector.class);

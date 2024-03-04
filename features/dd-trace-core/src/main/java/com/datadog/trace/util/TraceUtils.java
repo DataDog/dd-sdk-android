@@ -2,8 +2,8 @@ package com.datadog.trace.util;
 
 import static com.datadog.trace.util.Strings.truncate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 /**
  * Utility methods to normalize trace data. This normalization is recommended if the trace is sent

@@ -8,8 +8,8 @@ import com.datadog.trace.core.CoreSpan;
 import com.datadog.trace.core.util.SimpleRateLimiter;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public interface SingleSpanSampler {
 

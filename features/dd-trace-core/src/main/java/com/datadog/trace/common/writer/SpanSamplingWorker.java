@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Queue;
 import org.jctools.queues.MessagePassingQueue;
 import org.jctools.queues.MpscBlockingConsumerArrayQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public interface SpanSamplingWorker extends AutoCloseable {
   static SpanSamplingWorker build(

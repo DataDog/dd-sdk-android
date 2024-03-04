@@ -1,7 +1,7 @@
 package com.datadog.trace.bootstrap.instrumentation.api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URI;

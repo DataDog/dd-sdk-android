@@ -1,6 +1,6 @@
 package com.datadog.trace.relocate.api;
 
-import org.slf4j.Logger;
+import com.datadog.trace.logger.Logger;
 
 import java.util.concurrent.TimeUnit;
 
