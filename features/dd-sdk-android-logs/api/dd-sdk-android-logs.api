@@ -55,12 +55,18 @@ public final class com/datadog/android/log/Logger$Builder {
 
 public final class com/datadog/android/log/Logs {
 	public static final field INSTANCE Lcom/datadog/android/log/Logs;
+	public static final fun addAttribute (Ljava/lang/String;Ljava/lang/Object;)V
+	public static final fun addAttribute (Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun addAttribute$default (Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun enable$default (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun isEnabled ()Z
 	public static final fun isEnabled (Lcom/datadog/android/api/SdkCore;)Z
 	public static synthetic fun isEnabled$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
+	public static final fun removeAttribute (Ljava/lang/String;)V
+	public static final fun removeAttribute (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun removeAttribute$default (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/log/LogsConfiguration {

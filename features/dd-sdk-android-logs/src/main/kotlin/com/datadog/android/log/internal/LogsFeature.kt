@@ -20,6 +20,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
@@ -30,6 +31,7 @@ import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.internal.storage.NoOpDataWriter
 import com.datadog.android.log.model.LogEvent
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -47,6 +49,42 @@ internal class LogsFeature(
     internal val initialized = AtomicBoolean(false)
     internal var packageName = ""
     private val logGenerator = DatadogLogGenerator()
+    private val attributes = ConcurrentHashMap<String, Any?>()
+
+    // region Context Information (attributes)
+    /**
+     * Add a custom attribute to all logs sent by any logger created from this feature.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
+     * @param key the key for this attribute
+     * @param value the attribute value
+     */
+    fun addAttribute(key: String, value: Any?) {
+        if (value == null) {
+            attributes[key] = NULL_MAP_VALUE
+        } else {
+            attributes[key] = value
+        }
+    }
+
+    public
+
+    /**
+     * Remove a custom attribute from all future logs sent by any logger created from this feature.
+     * Previous logs won't lose the attribute value associated with this key if they were created
+     * prior to this call.
+     * @param key the key of the attribute to remove
+     */
+    fun removeAttribute(key: String) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        attributes.remove(key)
+    }
+
+    internal fun getAttributes(): Map<String, Any?> {
+        return attributes.toMap()
+    }
 
     // region Feature
 
@@ -129,6 +167,7 @@ internal class LogsFeature(
         @Suppress("UnsafeThirdPartyFunctionCall") // argument is good
         val lock = CountDownLatch(1)
 
+        val attributes = getAttributes()
         sdkCore.getFeature(name)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val log = logGenerator.generateLog(
@@ -138,7 +177,7 @@ internal class LogsFeature(
                     loggerName = jvmCrash.loggerName,
                     message = jvmCrash.message,
                     throwable = jvmCrash.throwable,
-                    attributes = emptyMap(),
+                    attributes = attributes,
                     timestamp = jvmCrash.timestamp,
                     bundleWithTraces = true,
                     bundleWithRum = true,
