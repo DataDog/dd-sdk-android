@@ -17,11 +17,11 @@ internal class NoopDataQueueHandler : DataQueueHandler {
     ): ResourceRecordedDataQueueItem? = null
 
     override fun addTouchEventItem(
-    pointerInteractions: List<MobileSegment.MobileRecord>
+        pointerInteractions: List<MobileSegment.MobileRecord>
     ): TouchEventRecordedDataQueueItem? = null
 
     override fun addSnapshotItem(
-    systemInformation: SystemInformation
+        systemInformation: SystemInformation
     ): SnapshotRecordedDataQueueItem? = null
 
     override fun tryToConsumeItems() {

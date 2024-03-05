@@ -41,8 +41,6 @@ import org.mockito.quality.Strictness
 internal class ResourcesLRUCacheTest {
     private lateinit var testedCache: ResourcesLRUCache
 
-    private lateinit var internalCache: LruCache<String, ByteArray>
-
     @Mock
     lateinit var mockDrawable: Drawable
 
@@ -53,7 +51,7 @@ internal class ResourcesLRUCacheTest {
 
     @BeforeEach
     fun setup() {
-        internalCache = LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES)
+        val internalCache = LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES)
         testedCache = ResourcesLRUCache(
             invocationUtils = mockInvocationUtils,
             cache = internalCache
