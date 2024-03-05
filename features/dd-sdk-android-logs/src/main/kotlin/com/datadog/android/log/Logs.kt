@@ -54,7 +54,7 @@ object Logs {
     }
 
     /**
-     * Add a custom attribute to all future logs sent by loggers created from the given Core
+     * Add a custom attribute to all future logs sent by loggers created from the given SDK core.
      *
      * Values can be nested up to 10 levels deep. Keys
      * using more than 10 levels will be sanitized by SDK.
@@ -82,13 +82,13 @@ object Logs {
     }
 
     /**
-     * Remove a custom attribute from all future logs sent by loggers created from the given Core
+     * Remove a custom attribute from all future logs sent by loggers created from the given SDK core.
      *
      * Previous logs won't lose the attribute value associated with this key if they were created
      * prior to this call.
      *
      * @param key the key of the attribute to remove
-     * @param sdkCore the [SdkCore] instance to add the attribute to. If not provided, the default
+     * @param sdkCore the [SdkCore] instance to remove the attribute from. If not provided, the default
      * instance is used.
      */
     @JvmOverloads

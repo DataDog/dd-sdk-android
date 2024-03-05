@@ -333,7 +333,7 @@ internal class DatadogLogHandlerTest {
         }
     }
 
-    // region Fowarding to RUM
+    // region Forwarding to RUM
 
     @Test
     fun `doesn't forward low level log to RumMonitor`(forge: Forge) {

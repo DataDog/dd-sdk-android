@@ -96,7 +96,7 @@ internal class LogsTest {
     }
 
     @Test
-    fun `M warn W addAttribute { logs not enabled }`(
+    fun `M log user error W addAttribute { logs not enabled }`(
         @StringForgery key: String,
         @StringForgery value: String
     ) {
@@ -121,7 +121,7 @@ internal class LogsTest {
     }
 
     @Test
-    fun `M warn W removeAttribute { logs not enabled }`(
+    fun `M log user error W removeAttribute { logs not enabled }`(
         @StringForgery key: String
     ) {
         // Given

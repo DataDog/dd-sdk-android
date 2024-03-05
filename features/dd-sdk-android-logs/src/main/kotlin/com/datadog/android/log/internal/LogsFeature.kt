@@ -61,7 +61,7 @@ internal class LogsFeature(
      * @param key the key for this attribute
      * @param value the attribute value
      */
-    fun addAttribute(key: String, value: Any?) {
+    internal fun addAttribute(key: String, value: Any?) {
         if (value == null) {
             attributes[key] = NULL_MAP_VALUE
         } else {
@@ -69,15 +69,13 @@ internal class LogsFeature(
         }
     }
 
-    public
-
     /**
      * Remove a custom attribute from all future logs sent by any logger created from this feature.
      * Previous logs won't lose the attribute value associated with this key if they were created
      * prior to this call.
      * @param key the key of the attribute to remove
      */
-    fun removeAttribute(key: String) {
+    internal fun removeAttribute(key: String) {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         attributes.remove(key)
     }
@@ -86,6 +84,8 @@ internal class LogsFeature(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         return attributes.toMap()
     }
+    
+    // endregion
 
     // region Feature
 

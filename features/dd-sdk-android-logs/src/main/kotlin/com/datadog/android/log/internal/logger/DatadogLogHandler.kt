@@ -45,7 +45,7 @@ internal class DatadogLogHandler(
         }
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
-        var combinedAttributes = attributes
+        val combinedAttributes = attributes.toMutableMap()
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
             combinedAttributes = logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap()
