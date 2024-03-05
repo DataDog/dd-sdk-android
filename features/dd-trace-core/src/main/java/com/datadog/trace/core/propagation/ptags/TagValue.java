@@ -2,8 +2,8 @@ package com.datadog.trace.core.propagation.ptags;
 
 import com.datadog.trace.api.cache.DDCaches;
 import com.datadog.trace.api.cache.DDPartialKeyCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 final class TagValue extends TagElement {
   private static final Logger log = LoggerFactory.getLogger(TagValue.class);

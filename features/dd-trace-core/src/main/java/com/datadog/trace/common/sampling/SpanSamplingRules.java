@@ -15,8 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import okio.Okio;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 /** Represents list of Span Sampling Rules read from JSON. See SPAN_SAMPLING_RULES */
 public class SpanSamplingRules {

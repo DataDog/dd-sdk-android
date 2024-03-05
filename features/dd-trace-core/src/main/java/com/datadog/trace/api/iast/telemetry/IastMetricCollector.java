@@ -5,8 +5,8 @@ import static com.datadog.trace.api.iast.telemetry.IastMetric.Scope.REQUEST;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;

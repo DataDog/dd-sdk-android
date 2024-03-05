@@ -38,8 +38,8 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 /**
  * SpanContext represents Span state that must propagate to descendant Spans and across process

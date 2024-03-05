@@ -8,7 +8,7 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import com.datadog.trace.bootstrap.instrumentation.api.AttachableWrapper;
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nonnull;
+import androidx.annotation.NonNull;
 
 class ContinuableScope implements AgentScope, AttachableWrapper {
   private final ContinuableScopeManager scopeManager;
@@ -196,7 +196,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
   }
 
   @Override
-  public void attachWrapper(@Nonnull Object wrapper) {
+  public void attachWrapper(@NonNull Object wrapper) {
     WRAPPER_FIELD_UPDATER.set(this, wrapper);
   }
 

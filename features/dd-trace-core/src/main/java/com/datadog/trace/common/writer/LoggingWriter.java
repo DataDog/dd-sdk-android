@@ -5,8 +5,8 @@ import com.squareup.moshi.Moshi;
 import com.squareup.moshi.Types;
 import com.datadog.trace.core.DDSpan;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public class LoggingWriter implements Writer {
 

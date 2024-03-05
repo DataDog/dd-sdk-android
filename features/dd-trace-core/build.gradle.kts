@@ -24,9 +24,6 @@ plugins {
 }
 
 android {
-    defaultConfig {
-        consumerProguardFiles("consumer-rules.pro")
-    }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }
@@ -35,7 +32,6 @@ android {
 
 dependencies {
     coreLibraryDesugaring(libs.desugarJdk)
-    implementation(libs.slf4j)
     implementation(libs.moshi)
     implementation(libs.jctools)
     implementation(libs.kotlin)
@@ -43,7 +39,6 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.datadogSketchesJava)
     implementation(libs.re2j)
-    compileOnly(libs.spotbugs)
 
     // TODO: RUM-3268 Port and enable the groovy unit tests
 

@@ -6,7 +6,7 @@ import com.datadog.trace.api.naming.NamingSchema;
 import com.datadog.trace.api.naming.SpanNaming;
 import com.datadog.trace.bootstrap.instrumentation.api.Tags;
 import java.util.Map;
-import javax.annotation.Nonnull;
+import androidx.annotation.NonNull;
 
 public class PeerServiceCalculator implements TagsPostProcessor {
   private final NamingSchema.ForPeerService peerServiceNaming;
@@ -21,8 +21,8 @@ public class PeerServiceCalculator implements TagsPostProcessor {
 
   // Visible for testing
   PeerServiceCalculator(
-      @Nonnull final NamingSchema.ForPeerService peerServiceNaming,
-      @Nonnull final Map<String, String> peerServiceMapping) {
+      @NonNull final NamingSchema.ForPeerService peerServiceNaming,
+      @NonNull final Map<String, String> peerServiceMapping) {
     this.peerServiceNaming = peerServiceNaming;
     this.peerServiceMapping = peerServiceMapping;
     this.canRemap = !peerServiceMapping.isEmpty();

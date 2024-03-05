@@ -9,8 +9,8 @@ import com.datadog.trace.core.CoreSpan;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 /**
  * A rate sampler which maintains different sample rates per service+env name.

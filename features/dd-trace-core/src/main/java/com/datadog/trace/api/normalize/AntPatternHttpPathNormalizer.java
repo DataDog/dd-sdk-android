@@ -1,7 +1,7 @@
 package com.datadog.trace.api.normalize;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -2,8 +2,8 @@ package com.datadog.trace.bootstrap.config.provider;
 
 import static com.datadog.trace.api.config.GeneralConfig.CONFIGURATION_FILE;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;

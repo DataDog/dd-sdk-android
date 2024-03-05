@@ -1,7 +1,7 @@
 package com.datadog.trace.api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 

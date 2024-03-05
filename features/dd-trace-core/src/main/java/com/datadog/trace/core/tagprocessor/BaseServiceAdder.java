@@ -4,7 +4,7 @@ import com.datadog.trace.api.DDTags;
 import com.datadog.trace.bootstrap.instrumentation.api.UTF8BytesString;
 import com.datadog.trace.core.DDSpanContext;
 import java.util.Map;
-import javax.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 public class BaseServiceAdder implements TagsPostProcessor {
   private final UTF8BytesString ddService;

@@ -1,8 +1,8 @@
 package com.datadog.trace.logging;
 
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.ILoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 public class GlobalLogLevelSwitcher implements LogLevelSwitcher {
   private static volatile LogLevelSwitcher INSTANCE = null;

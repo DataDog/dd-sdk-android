@@ -2,8 +2,8 @@ package com.datadog.trace.api.normalize;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.BitSet;

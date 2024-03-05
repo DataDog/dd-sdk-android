@@ -11,8 +11,8 @@ import static com.datadog.trace.api.config.TracerConfig.SERVICE_MAPPING;
 import static com.datadog.trace.api.config.TracerConfig.TRACE_SAMPLE_RATE;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
