@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.ComponentCallbacks2
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -53,6 +54,7 @@ internal class ResourcesSerializer private constructor(
 
     @MainThread
     internal fun handleBitmap(
+        resources: Resources,
         applicationContext: Context,
         displayMetrics: DisplayMetrics,
         drawable: Drawable,
@@ -69,12 +71,14 @@ internal class ResourcesSerializer private constructor(
             resourcesSerializerCallback = resourcesSerializerCallback
         )
             ?: tryToGetBitmapFromBitmapDrawable(
+                resources = resources,
                 drawable = drawable,
                 displayMetrics = displayMetrics,
                 imageWireframe = imageWireframe,
                 resourcesSerializerCallback = resourcesSerializerCallback
             )
             ?: tryToDrawNewBitmap(
+                resources = resources,
                 drawable = drawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
@@ -102,6 +106,7 @@ internal class ResourcesSerializer private constructor(
     @Suppress("ReturnCount")
     @WorkerThread
     private fun serializeBitmap(
+        resources: Resources,
         drawable: Drawable,
         displayMetrics: DisplayMetrics,
         bitmap: Bitmap,
@@ -119,6 +124,7 @@ internal class ResourcesSerializer private constructor(
         // Try once to recreate bitmap from the drawable
         if (byteArray.isEmpty() && bitmap.isRecycled && !didCallOriginateFromFailover) {
             tryToDrawNewBitmap(
+                resources = resources,
                 drawable = drawable,
                 drawableWidth = bitmap.width,
                 drawableHeight = bitmap.height,
@@ -193,6 +199,7 @@ internal class ResourcesSerializer private constructor(
     }
 
     private fun tryToDrawNewBitmap(
+        resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
@@ -202,6 +209,7 @@ internal class ResourcesSerializer private constructor(
         didCallOriginateFromFailover: Boolean
     ) {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = resources,
             drawable = drawable,
             drawableWidth = drawableWidth,
             drawableHeight = drawableHeight,
@@ -211,6 +219,7 @@ internal class ResourcesSerializer private constructor(
                     Runnable {
                         @Suppress("ThreadSafety") // this runs inside an executor
                         serializeBitmap(
+                            resources = resources,
                             drawable = drawable,
                             displayMetrics = displayMetrics,
                             bitmap = bitmap,
@@ -233,6 +242,7 @@ internal class ResourcesSerializer private constructor(
 
     @MainThread
     private fun tryToGetBitmapFromBitmapDrawable(
+        resources: Resources,
         drawable: Drawable,
         displayMetrics: DisplayMetrics,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
@@ -254,6 +264,7 @@ internal class ResourcesSerializer private constructor(
                     val shouldCacheBitmap = scaledBitmap != drawable.bitmap
 
                     serializeBitmap(
+                        resources = resources,
                         drawable = drawable,
                         displayMetrics = displayMetrics,
                         bitmap = scaledBitmap,

@@ -23,6 +23,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.RESOURCES_NULL_ERROR
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.utils.isCloseTo
@@ -233,6 +234,34 @@ internal class ImageWireframeHelperTest {
     }
 
     @Test
+    fun `M log error W createImageWireframe() { resources is null }`() {
+        // Given
+        whenever(mockView.resources).thenReturn(null)
+
+        // When
+        testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RESOURCES_NULL_ERROR.format(Locale.US, "android.view.View")
+        )
+    }
+
+    @Test
     fun `M return null W createImageWireframe() { drawable is null }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
@@ -367,13 +396,14 @@ internal class ImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
         verify(mockResourcesSerializer).handleBitmap(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            argumentCaptor.capture()
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            imageWireframe = any(),
+            resourcesSerializerCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
             it.onReady()
@@ -434,13 +464,14 @@ internal class ImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
         verify(mockResourcesSerializer).handleBitmap(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            argumentCaptor.capture()
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            imageWireframe = any(),
+            resourcesSerializerCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
             it.onReady()
@@ -478,6 +509,7 @@ internal class ImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
         verify(mockResourcesSerializer, times(2)).handleBitmap(
+            any(),
             any(),
             any(),
             any(),
@@ -546,6 +578,7 @@ internal class ImageWireframeHelperTest {
         // Then
         val captor = argumentCaptor<Int>()
         verify(mockResourcesSerializer).handleBitmap(
+            resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
@@ -577,6 +610,7 @@ internal class ImageWireframeHelperTest {
         // Then
         val captor = argumentCaptor<Int>()
         verify(mockResourcesSerializer).handleBitmap(
+            resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
@@ -633,6 +667,7 @@ internal class ImageWireframeHelperTest {
 
         // Then
         verify(mockResourcesSerializer, never()).handleBitmap(
+            resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
@@ -668,6 +703,7 @@ internal class ImageWireframeHelperTest {
 
         // Then
         verify(mockResourcesSerializer, atLeastOnce()).handleBitmap(
+            resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),

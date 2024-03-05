@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -103,6 +104,9 @@ internal class ResourcesSerializerTest {
     @Mock
     lateinit var mockBitmapDrawable: BitmapDrawable
 
+    @Mock
+    lateinit var mockResources: Resources
+
     @IntForgery(min = 1)
     var fakeBitmapWidth: Int = 0
 
@@ -128,6 +132,7 @@ internal class ResourcesSerializerTest {
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+                resources = any(),
                 drawable = any(),
                 drawableWidth = any(),
                 drawableHeight = any(),
@@ -137,7 +142,7 @@ internal class ResourcesSerializerTest {
                 bitmapCreationCallback = any()
             )
         ).then {
-            (it.arguments[6] as ResourcesSerializer.BitmapCreationCallback).onReady(mockBitmap)
+            (it.arguments[7] as ResourcesSerializer.BitmapCreationCallback).onReady(mockBitmap)
         }
 
         whenever(mockExecutorService.execute(any())).then {
@@ -166,6 +171,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockDrawable,
@@ -188,6 +194,7 @@ internal class ResourcesSerializerTest {
         // When
         repeat(5) {
             testedResourcesSerializer.handleBitmap(
+                resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
                 drawable = mockDrawable,
@@ -217,6 +224,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockDrawable,
@@ -228,6 +236,7 @@ internal class ResourcesSerializerTest {
 
         // Then
         verify(mockDrawableUtils, times(2)).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -252,6 +261,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockDrawable,
@@ -282,6 +292,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockDrawable,
@@ -311,6 +322,7 @@ internal class ResourcesSerializerTest {
         // When
         repeat(5) {
             testedResourcesSerializer.handleBitmap(
+                resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
                 drawable = mockDrawable,
@@ -332,6 +344,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockDrawable,
@@ -343,6 +356,7 @@ internal class ResourcesSerializerTest {
 
         // Then
         verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -382,6 +396,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockStateListDrawable,
@@ -402,6 +417,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -413,6 +429,7 @@ internal class ResourcesSerializerTest {
 
         // Then
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -430,6 +447,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -441,6 +459,7 @@ internal class ResourcesSerializerTest {
 
         // Then
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -455,6 +474,7 @@ internal class ResourcesSerializerTest {
     fun `M use scaled bitmap from bitmapDrawable W handleBitmap() { has bitmap }`() {
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -478,6 +498,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -493,6 +514,7 @@ internal class ResourcesSerializerTest {
             anyOrNull()
         )
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -510,6 +532,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -525,6 +548,7 @@ internal class ResourcesSerializerTest {
             anyOrNull()
         )
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -543,6 +567,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -566,6 +591,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -586,6 +612,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -606,6 +633,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockLayerDrawable,
@@ -628,6 +656,7 @@ internal class ResourcesSerializerTest {
         val countDownLatch = CountDownLatch(2)
         val thread1 = Thread {
             testedResourcesSerializer.handleBitmap(
+                resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
                 drawable = mockDrawable,
@@ -641,6 +670,7 @@ internal class ResourcesSerializerTest {
         }
         val thread2 = Thread {
             testedResourcesSerializer.handleBitmap(
+                resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
                 drawable = mockDrawable,
@@ -689,6 +719,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -703,9 +734,11 @@ internal class ResourcesSerializerTest {
         val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
         val configCaptor = argumentCaptor<Bitmap.Config>()
         val bitmapCreationCallbackCaptor = argumentCaptor<ResourcesSerializer.BitmapCreationCallback>()
+        val resourcesCaptor = argumentCaptor<Resources>()
 
         // Then
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            resources = resourcesCaptor.capture(),
             drawable = drawableCaptor.capture(),
             drawableWidth = intCaptor.capture(),
             drawableHeight = intCaptor.capture(),
@@ -720,6 +753,7 @@ internal class ResourcesSerializerTest {
         assertThat(intCaptor.secondValue).isEqualTo(fakeBitmapHeight)
         assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
         assertThat(configCaptor.firstValue).isEqualTo(Bitmap.Config.ARGB_8888)
+        assertThat(resourcesCaptor.firstValue).isEqualTo(mockResources)
     }
 
     @Test
@@ -751,19 +785,7 @@ internal class ResourcesSerializerTest {
 
         // When
         testedResourcesSerializer.handleBitmap(
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
-            drawableWidth = fakeBitmapWidth,
-            drawableHeight = fakeBitmapHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-
-        // second time
-        testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
@@ -778,7 +800,25 @@ internal class ResourcesSerializerTest {
             applicationId = eq(fakeApplicationid.toString()),
             resourceData = eq(fakeByteArray)
         )
-    }
+
+        // second time
+        testedResourcesSerializer.handleBitmap(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
+            imageWireframe = fakeImageWireframe,
+            resourcesSerializerCallback = mockSerializerCallback
+        )
+
+            verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
+                identifier = eq(fakeResourceId),
+                applicationId = eq(fakeApplicationid.toString()),
+                resourceData = eq(fakeByteArray)
+            )
+        }
 
     private fun createResourcesSerializer(): ResourcesSerializer {
         val builder = ResourcesSerializer.Builder(

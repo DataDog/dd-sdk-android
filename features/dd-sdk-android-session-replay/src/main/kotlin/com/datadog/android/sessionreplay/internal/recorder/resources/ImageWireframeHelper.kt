@@ -59,7 +59,19 @@ internal class ImageWireframeHelper(
 
         if (id == null || !drawableProperties.isValid()) return null
 
-        val displayMetrics = view.resources.displayMetrics
+        val resources = view.resources
+
+        if (resources == null) {
+            logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { RESOURCES_NULL_ERROR.format(Locale.US, view.javaClass.canonicalName) }
+            )
+
+            return null
+        }
+
+        val displayMetrics = resources.displayMetrics
         val applicationContext = view.context.applicationContext
 
         if (applicationContext == null) {
@@ -100,6 +112,7 @@ internal class ImageWireframeHelper(
         imageWireframeHelperCallback.onStart()
 
         resourcesSerializer.handleBitmap(
+            resources = resources,
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
@@ -250,5 +263,8 @@ internal class ImageWireframeHelper(
 
         @VisibleForTesting internal const val APPLICATION_CONTEXT_NULL_ERROR =
             "Application context is null for view %s"
+
+        @VisibleForTesting internal const val RESOURCES_NULL_ERROR =
+            "Resources is null for view %s"
     }
 }
