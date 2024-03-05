@@ -78,9 +78,9 @@ internal class ResourceRequestBodyFactory(
 
         // list is not empty, so cannot throw NoSuchElementException
         @SuppressWarnings("UnsafeThirdPartyFunctionCall")
-        val selectedApplicationId = resources.last().applicationId
+        val applicationId = resources.last().applicationId
 
-        return selectedApplicationId
+        return applicationId
     }
 
     @VisibleForTesting

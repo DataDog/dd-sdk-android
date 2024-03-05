@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
 import android.content.res.Resources
@@ -21,8 +21,8 @@ import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.utils.isCloseTo
@@ -64,7 +64,7 @@ internal class ImageWireframeHelperTest {
     private lateinit var testedHelper: ImageWireframeHelper
 
     @Mock
-    lateinit var mockBase64Serializer: Base64Serializer
+    lateinit var mockResourcesSerializer: ResourcesSerializer
 
     @Mock
     lateinit var mockLogger: InternalLogger
@@ -170,7 +170,7 @@ internal class ImageWireframeHelperTest {
 
         testedHelper = ImageWireframeHelper(
             logger = mockLogger,
-            base64Serializer = mockBase64Serializer,
+            resourcesSerializer = mockResourcesSerializer,
             imageCompression = mockImageCompression,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
             viewUtilsInternal = mockViewUtilsInternal,
@@ -343,7 +343,6 @@ internal class ImageWireframeHelperTest {
             height = fakeDrawableHeight.toLong(),
             shapeStyle = mockShapeStyle,
             border = mockBorder,
-            base64 = "",
             clip = stubWireframeClip,
             mimeType = fakeMimeType,
             isEmpty = true
@@ -366,8 +365,8 @@ internal class ImageWireframeHelperTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
-        verify(mockBase64Serializer).handleBitmap(
+        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        verify(mockResourcesSerializer).handleBitmap(
             any(),
             any(),
             any(),
@@ -433,8 +432,8 @@ internal class ImageWireframeHelperTest {
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
-        verify(mockBase64Serializer).handleBitmap(
+        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        verify(mockResourcesSerializer).handleBitmap(
             any(),
             any(),
             any(),
@@ -477,8 +476,8 @@ internal class ImageWireframeHelperTest {
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
-        verify(mockBase64Serializer, times(2)).handleBitmap(
+        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        verify(mockResourcesSerializer, times(2)).handleBitmap(
             any(),
             any(),
             any(),
@@ -546,14 +545,14 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockBase64Serializer).handleBitmap(
+        verify(mockResourcesSerializer).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -577,14 +576,14 @@ internal class ImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockBase64Serializer).handleBitmap(
+        verify(mockResourcesSerializer).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
 
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth, fakeDrawableHeight)
@@ -633,14 +632,14 @@ internal class ImageWireframeHelperTest {
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
-        verify(mockBase64Serializer, never()).handleBitmap(
+        verify(mockResourcesSerializer, never()).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
         )
 
         assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
@@ -668,14 +667,14 @@ internal class ImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockBase64Serializer, atLeastOnce()).handleBitmap(
+        verify(mockResourcesSerializer, atLeastOnce()).handleBitmap(
             applicationContext = any(),
             displayMetrics = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            base64SerializerCallback = any()
+            resourcesSerializerCallback = any()
         )
     }
 

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.ComponentCallbacks2
 import android.content.res.Configuration
@@ -18,19 +18,17 @@ import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 
-internal class Base64LRUCache(
-    private val cacheUtils: CacheUtils<String, CacheData> = CacheUtils(),
+internal class ResourcesLRUCache(
+    private val cacheUtils: CacheUtils<String, ByteArray> = CacheUtils(),
     private val invocationUtils: InvocationUtils = InvocationUtils(),
-    private var cache: LruCache<String, CacheData> =
+    private var cache: LruCache<String, ByteArray> =
         object :
-            LruCache<String, CacheData>(MAX_CACHE_MEMORY_SIZE_BYTES) {
-            override fun sizeOf(key: String, value: CacheData): Int {
-                val base64Size = value.base64Encoding.size
-                val hashSize = value.resourceId?.size ?: 0
-                return base64Size + hashSize
+            LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
+            override fun sizeOf(key: String, value: ByteArray): Int {
+                return value.size
             }
         }
-) : Cache<Drawable, CacheData>, ComponentCallbacks2 {
+) : Cache<Drawable, ByteArray>, ComponentCallbacks2 {
 
     override fun onTrimMemory(level: Int) {
         cacheUtils.handleTrimMemory(level, cache)
@@ -47,28 +45,22 @@ internal class Base64LRUCache(
     }
 
     @Synchronized
-    override fun put(element: Drawable, value: CacheData) {
+    override fun put(element: Drawable, value: ByteArray) {
         val key = generateKey(element)
-        val base64Encoding = value.base64Encoding
-        val resourceId = value.resourceId
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
         invocationUtils.safeCallWithErrorLogging(
-            call = { cache.put(key, CacheData(base64Encoding, resourceId)) },
+            call = { cache.put(key, value) },
             failureMessage = FAILURE_MSG_PUT_CACHE
         )
     }
 
     @Synchronized
-    override fun get(element: Drawable): CacheData? =
+    override fun get(element: Drawable): ByteArray? =
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
         invocationUtils.safeCallWithErrorLogging(
             call = {
-                cache.get(generateKey(element))?.let {
-                    val base64Encoding = it.base64Encoding
-                    val resourceId = it.resourceId
-                    CacheData(base64Encoding, resourceId)
-                }
+                cache.get(generateKey(element))
             },
             failureMessage = FAILURE_MSG_GET_CACHE
         )
@@ -122,29 +114,5 @@ internal class Base64LRUCache(
         private const val FAILURE_MSG_EVICT_CACHE_CONTENTS = "Failed to evict cache entries"
         private const val FAILURE_MSG_PUT_CACHE = "Failed to put item in cache"
         private const val FAILURE_MSG_GET_CACHE = "Failed to get item from cache"
-    }
-}
-
-internal data class CacheData(val base64Encoding: ByteArray, var resourceId: ByteArray?) {
-    // we must override these methods because we are using arrays as properties
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as CacheData
-
-        if (!base64Encoding.contentEquals(other.base64Encoding)) return false
-        if (resourceId != null) {
-            if (other.resourceId == null) return false
-            if (!resourceId.contentEquals(other.resourceId)) return false
-        } else if (other.resourceId != null) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = base64Encoding.contentHashCode()
-        result = 31 * result + (resourceId?.contentHashCode() ?: 0)
-        return result
     }
 }

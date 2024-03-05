@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -22,12 +22,12 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import java.util.Locale
 
-// This should not have a callback but it should just create a placeholder for base64Serializer
-// The base64Serializer dependency should be removed from here
-// TODO: RUM-0000 Remove the base64Serializer dependency from here
+// This should not have a callback but it should just create a placeholder for resourcesSerializer
+// The resourcesSerializer dependency should be removed from here
+// TODO: RUM-0000 Remove the resourcesSerializer dependency from here
 internal class ImageWireframeHelper(
     private val logger: InternalLogger,
-    private val base64Serializer: Base64Serializer,
+    private val resourcesSerializer: ResourcesSerializer,
     private val imageCompression: ImageCompression = WebPImageCompression(),
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
@@ -92,7 +92,6 @@ internal class ImageWireframeHelper(
                 height = drawableHeightDp,
                 shapeStyle = shapeStyle,
                 border = border,
-                base64 = "",
                 clip = clipping,
                 mimeType = mimeType,
                 isEmpty = true
@@ -100,14 +99,14 @@ internal class ImageWireframeHelper(
 
         imageWireframeHelperCallback.onStart()
 
-        base64Serializer.handleBitmap(
+        resourcesSerializer.handleBitmap(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
             imageWireframe = imageWireframe,
-            base64SerializerCallback = object : Base64SerializerCallback {
+            resourcesSerializerCallback = object : ResourcesSerializerCallback {
                 override fun onReady() {
                     imageWireframeHelperCallback.onFinished()
                 }

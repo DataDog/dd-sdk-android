@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
@@ -12,7 +12,7 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
 import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 import fr.xgouchet.elmyr.Forge
@@ -38,10 +38,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class Base64LRUCacheTest {
-    private lateinit var testedCache: Base64LRUCache
-
-    private lateinit var internalCache: LruCache<String, CacheData>
+internal class ResourcesLRUCacheTest {
+    private lateinit var testedCache: ResourcesLRUCache
 
     @Mock
     lateinit var mockDrawable: Drawable
@@ -49,21 +47,12 @@ internal class Base64LRUCacheTest {
     @Mock
     lateinit var mockInvocationUtils: InvocationUtils
 
-    @StringForgery
-    lateinit var fakeBase64Encoding: String
-
-    private lateinit var fakeCacheData: CacheData
-
     val argumentCaptor = argumentCaptor<String>()
 
     @BeforeEach
-    fun setup(forge: Forge) {
-        val fakeResourceId = forge.aNullable { aString() }
-        val fakeBase64ByteArray = fakeBase64Encoding.toByteArray(Charsets.UTF_8)
-        val fakeResourceIdByteArray = fakeResourceId?.toByteArray(Charsets.UTF_8)
-        fakeCacheData = CacheData(fakeBase64ByteArray, fakeResourceIdByteArray)
-        internalCache = LruCache<String, CacheData>(MAX_CACHE_MEMORY_SIZE_BYTES)
-        testedCache = Base64LRUCache(
+    fun setup() {
+        val internalCache = LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES)
+        testedCache = ResourcesLRUCache(
             invocationUtils = mockInvocationUtils,
             cache = internalCache
         )
@@ -79,23 +68,30 @@ internal class Base64LRUCacheTest {
     }
 
     @Test
-    fun `M return item W get() { item in cache }`() {
-        testedCache.put(mockDrawable, fakeCacheData)
+    fun `M return item W get() { item in cache }`(
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
+        testedCache.put(mockDrawable, fakeResourceIdByteArray)
 
         // When
         val cacheItem = testedCache.get(mockDrawable)
 
         // Then
-        assertThat(cacheItem).isEqualTo(fakeCacheData)
+        assertThat(cacheItem).isEqualTo(fakeResourceIdByteArray)
     }
 
     @Test
-    fun `M not generate prefix W put() { animationDrawable }`() {
+    fun `M not generate prefix W put() { animationDrawable }`(
+        @StringForgery fakeResourceId: String
+    ) {
         // Given
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         val mockAnimationDrawable: AnimationDrawable = mock()
 
         // When
-        testedCache.put(mockAnimationDrawable, fakeCacheData)
+        testedCache.put(mockAnimationDrawable, fakeResourceIdByteArray)
 
         // Then
         val key = testedCache.generateKey(mockAnimationDrawable)
@@ -103,15 +99,19 @@ internal class Base64LRUCacheTest {
     }
 
     @Test
-    fun `M generate key prefix with state W put() { drawableContainer }`(forge: Forge) {
+    fun `M generate key prefix with state W put() { drawableContainer }`(
+        @StringForgery fakeResourceId: String,
+        forge: Forge
+    ) {
         // Given
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         val mockStatelistDrawable: StateListDrawable = mock()
         val fakeStateArray = intArrayOf(forge.aPositiveInt())
         val expectedPrefix = fakeStateArray[0].toString() + "-"
         whenever(mockStatelistDrawable.state).thenReturn(fakeStateArray)
 
         // When
-        testedCache.put(mockStatelistDrawable, fakeCacheData)
+        testedCache.put(mockStatelistDrawable, fakeResourceIdByteArray)
 
         // Then
         val key = testedCache.generateKey(mockStatelistDrawable)
@@ -119,8 +119,11 @@ internal class Base64LRUCacheTest {
     }
 
     @Test
-    fun `M generate key prefix with layer hash W put() { layerDrawable }`() {
+    fun `M generate key prefix with layer hash W put() { layerDrawable }`(
+        @StringForgery fakeResourceId: String
+    ) {
         // Given
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         val mockRippleDrawable: RippleDrawable = mock()
         val mockBackgroundLayer: Drawable = mock()
         val mockForegroundLayer: Drawable = mock()
@@ -131,7 +134,7 @@ internal class Base64LRUCacheTest {
             .thenReturn(mockForegroundLayer)
         whenever(mockRippleDrawable.numberOfLayers).thenReturn(2)
 
-        testedCache.put(mockRippleDrawable, fakeCacheData)
+        testedCache.put(mockRippleDrawable, fakeResourceIdByteArray)
 
         val expectedPrefix = System.identityHashCode(mockBackgroundLayer).toString() + "-" +
             System.identityHashCode(mockForegroundLayer).toString() + "-"
@@ -146,13 +149,15 @@ internal class Base64LRUCacheTest {
 
     @Test
     fun `M not generate key prefix W put() { layerDrawable with only one layer }`(
+        @StringForgery fakeResourceId: String,
         @Mock mockRippleDrawable: RippleDrawable,
         @Mock mockBackgroundLayer: Drawable
     ) {
         // Given
+        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         whenever(mockRippleDrawable.numberOfLayers).thenReturn(1)
         whenever(mockRippleDrawable.safeGetDrawable(0)).thenReturn(mockBackgroundLayer)
-        testedCache.put(mockRippleDrawable, fakeCacheData)
+        testedCache.put(mockRippleDrawable, fakeResourceIdByteArray)
 
         val expectedPrefix = System.identityHashCode(mockBackgroundLayer).toString() + "-"
         val drawableHash = System.identityHashCode(mockRippleDrawable).toString()

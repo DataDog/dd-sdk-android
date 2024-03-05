@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.base64
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageTypeResolver.Companion.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver.Companion.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

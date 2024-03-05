@@ -491,7 +491,7 @@ internal class WireframeUtilsTest {
         }
         val topWireframes = forge.aList {
             forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
-                .copy(shapeStyle = null, base64 = null)
+                .copy(shapeStyle = null, resourceId = null)
         }
         topWireframes.forEach {
             val topWireframeBounds: WireframeBounds = forge.getForgery()
@@ -509,7 +509,7 @@ internal class WireframeUtilsTest {
     }
 
     @Test
-    fun `M return false W checkWireframeIsCovered { top base64 ImageWireframe, no ShapeStyle}`(
+    fun `M return false W checkWireframeIsCovered { top resourceId ImageWireframe, no ShapeStyle}`(
         @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe,
         forge: Forge
     ) {
@@ -519,7 +519,7 @@ internal class WireframeUtilsTest {
         }
         val topWireframes = forge.aList {
             forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
-                .copy(shapeStyle = null, base64 = forge.anAlphabeticalString())
+                .copy(shapeStyle = null, resourceId = forge.aString())
         }
         topWireframes.forEach {
             val topWireframeBounds: WireframeBounds = forge.getForgery()
@@ -724,7 +724,7 @@ internal class WireframeUtilsTest {
                 .copy(
                     shapeStyle = forgeNonTransparentShapeStyle()
                         .copy(opacity = aFloat(min = 0f, max = 1f)),
-                    base64 = null
+                    resourceId = null
                 )
         )
     }
@@ -745,7 +745,7 @@ internal class WireframeUtilsTest {
                 .copy(
                     shapeStyle = forgeNonTransparentShapeStyle()
                         .copy(backgroundColor = null),
-                    base64 = null
+                    resourceId = null
                 )
         )
     }
@@ -766,7 +766,7 @@ internal class WireframeUtilsTest {
                 .copy(
                     shapeStyle = forgeNonTransparentShapeStyle()
                         .copy(backgroundColor = null),
-                    base64 = null
+                    resourceId = null
                 )
         )
     }

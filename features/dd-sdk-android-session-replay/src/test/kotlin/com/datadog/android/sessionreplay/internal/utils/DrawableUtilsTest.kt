@@ -13,9 +13,8 @@ import android.os.Handler
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.RESOURCE_ENDPOINT_FEATURE_FLAG
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -76,7 +75,7 @@ internal class DrawableUtilsTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockBitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+    private lateinit var mockBitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
 
     @Mock
     private lateinit var mockMainThreadHandler: Handler
@@ -300,6 +299,45 @@ internal class DrawableUtilsTest {
     }
 
     @Test
+    fun `M resize image that is greater than limit W createBitmapOfApproxSizeFromDrawable { when resizing }`(
+        @IntForgery(min = 501, max = 1000) fakeViewWidth: Int,
+        @IntForgery(min = 501, max = 1000) fakeViewHeight: Int
+    ) {
+        // Given
+        val requestedSize = 1000
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeViewWidth)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeViewHeight)
+
+        val argumentCaptor = argumentCaptor<Int>()
+        val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
+
+        // When
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            displayMetrics = mockDisplayMetrics,
+            requestedSizeInBytes = requestedSize,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
+
+        // Then
+        verify(mockBitmapWrapper).createBitmap(
+            displayMetrics = displayMetricsCaptor.capture(),
+            bitmapWidth = argumentCaptor.capture(),
+            bitmapHeight = argumentCaptor.capture(),
+            config = any()
+        )
+
+        val width = argumentCaptor.firstValue
+        val height = argumentCaptor.secondValue
+        assertThat(width).isLessThanOrEqualTo(fakeViewWidth)
+        assertThat(height).isLessThanOrEqualTo(fakeViewHeight)
+        assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
+    }
+
+    @Test
     fun `M return scaled bitmap W createScaledBitmap()`(
         @Mock mockScaledBitmap: Bitmap
     ) {
@@ -318,18 +356,5 @@ internal class DrawableUtilsTest {
 
         // Then
         assertThat(actualBitmap).isEqualTo(mockScaledBitmap)
-    }
-
-    @Test
-    fun `M return relevant size W getBitmapSizeLimit()`() {
-        // When
-        val result = testedDrawableUtils.getBitmapSizeLimit()
-
-        // Then
-        if (RESOURCE_ENDPOINT_FEATURE_FLAG) {
-            assertThat(result).isEqualTo(DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT)
-        } else {
-            assertThat(result).isEqualTo(DrawableUtils.MAX_BITMAP_SIZE_IN_BYTES_WITH_BASE64)
-        }
     }
 }
