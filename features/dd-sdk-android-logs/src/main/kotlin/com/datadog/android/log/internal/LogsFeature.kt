@@ -83,6 +83,7 @@ internal class LogsFeature(
     }
 
     internal fun getAttributes(): Map<String, Any?> {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         return attributes.toMap()
     }
 

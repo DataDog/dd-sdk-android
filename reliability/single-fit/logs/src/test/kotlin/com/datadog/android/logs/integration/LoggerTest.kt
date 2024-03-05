@@ -760,6 +760,119 @@ class LoggerTest {
     }
 
     @RepeatedTest(16)
+    fun `M send log with custom attribute W Logs#addAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        Logs.addAttribute(fakeAttributeKey, fakeAttributeValue, sdkCore = stubSdkCore)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isEqualTo(fakeAttributeValue)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with updated custom attribute W Logs#addAttribute() + Logs#addAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeAttributeValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        Logs.addAttribute(fakeAttributeKey, fakeAttributeValue, stubSdkCore)
+        Logs.addAttribute(fakeAttributeKey, fakeAttributeValue2, stubSdkCore)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isEqualTo(fakeAttributeValue2)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with overridden custom attribute W Logs#addAttribute() + Logger#addAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeAttributeValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        Logs.addAttribute(fakeAttributeKey, fakeAttributeValue, stubSdkCore)
+        testedLogger.addAttribute(fakeAttributeKey, fakeAttributeValue2)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isEqualTo(fakeAttributeValue2)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with overridden custom attribute W Logs#addAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeAttributeValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        Logs.addAttribute(fakeAttributeKey, fakeAttributeValue, stubSdkCore)
+        testedLogger.log(fakeLevel, fakeMessage, attributes = mapOf(fakeAttributeKey to fakeAttributeValue2))
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isEqualTo(fakeAttributeValue2)
+    }
+
+    @RepeatedTest(16)
     fun `M send log with updated custom attribute W Logger#addAttribute() + Logger#removeAttribute() + Logger#log()`(
         @StringForgery fakeAttributeKey: String,
         @StringForgery fakeAttributeValue: String,
