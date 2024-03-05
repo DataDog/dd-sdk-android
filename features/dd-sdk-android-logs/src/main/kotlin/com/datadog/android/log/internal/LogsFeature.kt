@@ -115,6 +115,8 @@ internal class LogsFeature(
         dataWriter = NoOpDataWriter()
         packageName = ""
         initialized.set(false)
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        attributes.clear()
     }
 
     // endregion

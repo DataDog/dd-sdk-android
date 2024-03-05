@@ -467,6 +467,7 @@ internal class DatadogLogHandlerTest {
             verify(mockRumFeature).sendEvent(
                 capture()
             )
+            @Suppress("UNCHECKED_CAST")
             assertThat(lastValue["attributes"] as Map<String, *>)
                 .containsEntry(key, value)
                 .containsAllEntriesOf(fakeAttributes)
@@ -502,6 +503,7 @@ internal class DatadogLogHandlerTest {
             verify(mockRumFeature).sendEvent(
                 capture()
             )
+            @Suppress("UNCHECKED_CAST")
             assertThat(lastValue["attributes"] as Map<String, *>)
                 .containsEntry(key, value)
                 .containsAllEntriesOf(fakeAttributes)
