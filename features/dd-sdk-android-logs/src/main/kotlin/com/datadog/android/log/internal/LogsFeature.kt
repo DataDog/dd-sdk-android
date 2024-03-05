@@ -84,7 +84,7 @@ internal class LogsFeature(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         return attributes.toMap()
     }
-    
+
     // endregion
 
     // region Feature

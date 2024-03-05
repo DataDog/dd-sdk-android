@@ -45,12 +45,12 @@ internal class DatadogLogHandler(
         }
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
-        val combinedAttributes = attributes.toMutableMap()
+        val combinedAttributes = mutableMapOf<String, Any?>()
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
-            combinedAttributes = logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap()
-            combinedAttributes.putAll(attributes)
+            combinedAttributes.putAll(logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap())
         }
+        combinedAttributes.putAll(attributes)
         if (sampler.sample()) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
@@ -116,12 +116,13 @@ internal class DatadogLogHandler(
         }
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
-        var combinedAttributes = attributes
+        val combinedAttributes = mutableMapOf<String, Any?>()
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
-            combinedAttributes = logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap()
-            combinedAttributes.putAll(attributes)
+            combinedAttributes.putAll(logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap())
         }
+        combinedAttributes.putAll(attributes)
+
         if (sampler.sample()) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
