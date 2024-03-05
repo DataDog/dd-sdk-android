@@ -19,8 +19,8 @@ import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.trace.core.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -50,9 +50,9 @@ import java.util.Locale
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TraceWriterTest {
+internal class OtelTraceWriterTest {
 
-    private lateinit var testedWriter: TraceWriter
+    private lateinit var testedWriter: OtelTraceWriter
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -93,7 +93,7 @@ internal class TraceWriterTest {
 
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
 
-        testedWriter = TraceWriter(
+        testedWriter = OtelTraceWriter(
             sdkCore = mockSdkCore,
             ddSpanToSpanEventMapper = mockLegacyMapper,
             eventMapper = mockEventMapper,
@@ -127,10 +127,6 @@ internal class TraceWriterTest {
             verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
@@ -164,10 +160,6 @@ internal class TraceWriterTest {
             verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
@@ -196,10 +188,6 @@ internal class TraceWriterTest {
             verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
@@ -263,10 +251,6 @@ internal class TraceWriterTest {
             TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
             fakeThrowable
         )
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
@@ -282,10 +266,6 @@ internal class TraceWriterTest {
         verify(mockTracingFeatureScope, times(1)).withWriteContext(any(), any())
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     // endregion

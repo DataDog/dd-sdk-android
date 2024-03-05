@@ -22,6 +22,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(SpanForgeryFactory())
         forge.addFactory(SpanEventForgeryFactory())
         forge.addFactory(TraceConfigurationForgeryFactory())
+        forge.addFactory(CoreDDSpanForgeryFactory())
 
         // MISC
         forge.addFactory(BigIntegerFactory())
