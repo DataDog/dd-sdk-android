@@ -12,7 +12,7 @@
     <string name="title_logs">Logs</string>
     <string name="title_crash">Crash</string>
     <string name="title_webview">WebView</string>
-    <string name="title_traces">"Traces"</string>
+    <string name="title_traces">"OpenTracing Traces"</string>
     <string name="title_unknown">"?"</string>
     <string name="title_data_list">Data List</string>
     <string name="title_view_pager">View Pager</string>
@@ -156,4 +156,5 @@
     <string name="number_password_label">Number Password</string>
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
+    <string name="title_otel_traces">OpenTelemetry Traces</string>
 </resources>

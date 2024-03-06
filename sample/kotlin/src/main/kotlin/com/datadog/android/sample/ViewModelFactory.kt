@@ -12,6 +12,7 @@ import com.datadog.android.sample.data.DataRepository
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.datalist.DataListViewModel
+import com.datadog.android.sample.traces.OtelTracesViewModel
 import com.datadog.android.sample.traces.TracesViewModel
 import com.datadog.android.sample.webview.WebViewModel
 import com.datadog.android.vendor.sample.LocalServer
@@ -38,6 +39,9 @@ internal class ViewModelFactory(
             }
             WebViewModel::class.java -> {
                 WebViewModel(localServer) as T
+            }
+            OtelTracesViewModel::class.java -> {
+                OtelTracesViewModel() as T
             }
             else -> {
                 modelClass.newInstance()

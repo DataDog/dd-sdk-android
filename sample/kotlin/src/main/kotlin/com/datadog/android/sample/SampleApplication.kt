@@ -46,6 +46,7 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.OtelTracerProvider
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.vendor.sample.LocalServer
@@ -53,6 +54,9 @@ import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentracing.rxjava3.TracingRxJava3Utils
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
@@ -181,6 +185,17 @@ class SampleApplication : Application() {
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
+        GlobalOpenTelemetry.set(object : OpenTelemetry {
+            override fun getTracerProvider(): OtelTracerProvider {
+                return OtelTracerProvider.Builder()
+                    .setService(BuildConfig.APPLICATION_ID)
+                    .build()
+            }
+
+            override fun getPropagators(): ContextPropagators {
+                return ContextPropagators.noop()
+            }
+        })
         GlobalRumMonitor.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
@@ -285,6 +300,7 @@ class SampleApplication : Application() {
 
     companion object {
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
+
         init {
             System.loadLibrary("datadog-native-sample-lib")
         }
