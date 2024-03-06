@@ -117,4 +117,8 @@
         android:name="com.datadog.android.sample.sessionreplay.ImageScalingFragment"
         android:label="@string/title_image_scaling"/>
 
+    <fragment android:id="@+id/fragment_otel_traces"
+        android:name="com.datadog.android.sample.traces.OtelTracesFragment"
+        android:label="@string/title_otel_traces"/>
+
 </navigation>
