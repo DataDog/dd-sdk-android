@@ -14,17 +14,18 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.legacy.trace.common.writer.Writer
-import com.datadog.opentracing.DDSpan
+import com.datadog.trace.common.writer.Writer
+import com.datadog.trace.core.DDSpan
 import java.util.Locale
 
-internal class TraceWriter(
+internal class OtelTraceWriter(
     private val sdkCore: FeatureSdkCore,
     internal val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
-    internal val eventMapper: EventMapper<SpanEvent>,
+    internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),
     private val serializer: ContextAwareSerializer<SpanEvent>,
     private val internalLogger: InternalLogger
 ) : Writer {
@@ -37,19 +38,24 @@ internal class TraceWriter(
     override fun write(trace: MutableList<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                trace.forEach { span ->
-                    @Suppress("ThreadSafety") // called in the worker context
-                    writeSpan(datadogContext, eventBatchWriter, span)
+                ?.withWriteContext { datadogContext, eventBatchWriter ->
+                    trace.forEach { span ->
+                        @Suppress("ThreadSafety") // called in the worker context
+                        writeSpan(datadogContext, eventBatchWriter, span)
+                    }
                 }
-            }
     }
 
-    override fun close() {
+    override fun flush(): Boolean {
+        // NO - OP
+        return true
+    }
+
+    override fun incrementDropCounts(p0: Int) {
         // NO - OP
     }
 
-    override fun incrementTraceCount() {
+    override fun close() {
         // NO - OP
     }
 

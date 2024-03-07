@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.internal.TracingFeature
+import com.datadog.android.trace.internal.data.NoOpOtelWriter
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentelemetry.trace.OtelSpan
@@ -18,6 +19,7 @@ import com.datadog.opentelemetry.trace.OtelSpanContext
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.api.Config
 import com.datadog.trace.api.config.TracerConfig
+import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
@@ -70,6 +72,9 @@ internal class OtelTracerBuilderProviderTest {
     @StringForgery
     lateinit var fakeInstrumentationName: String
 
+    @Mock
+    lateinit var mockTraceWriter: Writer
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
@@ -80,6 +85,7 @@ internal class OtelTracerBuilderProviderTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(mockSdkCore.service) doReturn fakeServiceName
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockTracingFeature.otelDataWriter) doReturn mockTraceWriter
         testedOtelTracerProviderBuilder = OtelTracerProvider.Builder(mockSdkCore)
     }
 
@@ -91,14 +97,42 @@ internal class OtelTracerBuilderProviderTest {
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
 
         // WHEN
-        testedOtelTracerProviderBuilder.build()
+        val tracer = testedOtelTracerProviderBuilder.build()
 
         // THEN
+        assertThat(tracer).isNotNull
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             OtelTracerProvider.TRACING_NOT_ENABLED_ERROR_MESSAGE
         )
+    }
+
+    @Test
+    fun `M use a NoOpOtelWriter W build { TracingFeature not enabled }`() {
+        // GIVEN
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+
+        // WHEN
+        val tracer = testedOtelTracerProviderBuilder.build()
+
+        // THEN
+        assertThat(tracer).isNotNull
+        val coreTracer: CoreTracer = tracer.getFieldValue("coreTracer")
+        val writer: Writer = coreTracer.getFieldValue("writer")
+        assertThat(writer).isInstanceOf(NoOpOtelWriter::class.java)
+    }
+
+    @Test
+    fun `M use the feature writer W build { TracingFeature enabled }`() {
+        // WHEN
+        val tracer = testedOtelTracerProviderBuilder.build()
+
+        // THEN
+        assertThat(tracer).isNotNull
+        val coreTracer: CoreTracer = tracer.getFieldValue("coreTracer")
+        val writer: Writer = coreTracer.getFieldValue("writer")
+        assertThat(writer).isSameAs(mockTraceWriter)
     }
 
     @Test

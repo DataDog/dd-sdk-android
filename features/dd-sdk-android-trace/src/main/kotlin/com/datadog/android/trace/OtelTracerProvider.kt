@@ -138,7 +138,7 @@ class OtelTracerProvider(
             val coreTracer = CoreTracer.CoreTracerBuilder()
                 .withProperties(properties())
                 .serviceName(serviceName)
-                .writer(NoOpOtelWriter())
+                .writer(tracingFeature?.otelDataWriter ?: NoOpOtelWriter())
                 .partialFlushMinSpans(partialFlushThreshold)
                 .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
                 .build()
