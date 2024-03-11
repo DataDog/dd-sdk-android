@@ -41,8 +41,10 @@ android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
     namespace = "com.datadog.android.trace"
-
     sourceSets.named("test") {
         // Required because AGP doesn't support kotlin test fixtures :/
         java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
@@ -50,12 +52,13 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugarJdk)
     api(project(":dd-sdk-android-core"))
     api(libs.openTelemetryApi)
-    implementation(project(":features:dd-trace-core"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
+    implementation(libs.bundles.traceCore)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
