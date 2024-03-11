@@ -515,6 +515,7 @@ datadog:
       - "com.google.gson.JsonArray.add(com.google.gson.JsonElement?)"
       - "com.google.gson.JsonArray.add(kotlin.String?)"
       - "com.google.gson.JsonArray.addAll(com.google.gson.JsonArray?)"
+      - "com.google.gson.JsonArray.any(kotlin.Function1)"
       - "com.google.gson.JsonArray.asSequence()"
       - "com.google.gson.JsonArray.constructor()"
       - "com.google.gson.JsonArray.constructor(kotlin.Int)"
