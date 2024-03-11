@@ -158,9 +158,8 @@ internal class BatchesToSegmentsMapperTest {
     ) {
         // Given
         val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords = forge.aList<MobileSegment.MobileRecord>(fakeRecordsSize) {
-            forge.getForgery()
-        }.sortedBy { it.timestamp() }
+        val fakeRecords = forge.aList<MobileSegment.MobileRecord>(fakeRecordsSize) { forge.getForgery() }
+            .sortedBy { it.timestamp() }
         val fakeEnrichedRecords = fakeRecords
                 .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
                 .map {
@@ -666,16 +665,16 @@ internal class BatchesToSegmentsMapperTest {
 
     private fun EnrichedRecord.toSegment(): MobileSegment {
         return MobileSegment(
-            MobileSegment.Application(applicationId),
-            MobileSegment.Session(sessionId),
-            MobileSegment.View(viewId),
-            startTimestamp(),
-            endTimestamp(),
-            records.size.toLong(),
-            null,
-            hasFullSnapshot(),
-            MobileSegment.Source.ANDROID,
-            records
+            application = MobileSegment.Application(applicationId),
+            session = MobileSegment.Session(sessionId),
+            view = MobileSegment.View(viewId),
+            start = startTimestamp(),
+            end = endTimestamp(),
+            recordsCount = records.size.toLong(),
+            indexInView = null,
+            hasFullSnapshot = hasFullSnapshot(),
+            source = MobileSegment.Source.ANDROID,
+            records = records
         )
     }
 
@@ -692,7 +691,7 @@ internal class BatchesToSegmentsMapperTest {
     }
 
     private fun List<MobileSegment.MobileRecord>.hasFullSnapshot(): Boolean {
-        return firstOrNull { it is MobileSegment.MobileRecord.MobileFullSnapshotRecord } != null
+        return any { it is MobileSegment.MobileRecord.MobileFullSnapshotRecord }
     }
 
     private fun MobileSegment.MobileRecord.timestamp(): Long {
