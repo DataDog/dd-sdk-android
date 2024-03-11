@@ -27,6 +27,8 @@ class com.datadog.android.log.Logger
 object com.datadog.android.log.Logs
   fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+  fun addAttribute(String, Any?, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun removeAttribute(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.log.LogsConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
