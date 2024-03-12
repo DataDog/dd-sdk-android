@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -24,11 +25,10 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -54,7 +54,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(ForgeExtension::class),
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -85,6 +84,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Mock
     lateinit var mockBadContext: Context
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     // region Strategy tests
 
     @BeforeEach
@@ -100,8 +102,14 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
             rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.LOLLIPOP
 
-        testedStrategy = FragmentViewTrackingStrategy(true)
+        testedStrategy = FragmentViewTrackingStrategy(
+            trackArguments = true,
+            supportFragmentComponentPredicate = AcceptAllSupportFragments(),
+            defaultFragmentComponentPredicate = AcceptAllDefaultFragment(),
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
     }
 
     @Test
@@ -301,9 +309,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `when base activity started will register the right callback`() {
+    fun `when base activity started will register the right callback { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int
+    ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
@@ -316,9 +326,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `when base activity started will register the same callback`() {
+    fun `when base activity started will register the same callback { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int
+    ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
@@ -336,11 +348,12 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `will start and stop a RumViewEvent when fragment resumes and pauses in a base activity`(
+    fun `will start and stop a RumViewEvent when fragment resumes and pauses in a base activity { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int,
         forge: Forge
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val expectedAttrs = mockFragment.arguments.toRumAttributes()
@@ -377,11 +390,12 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `it will do nothing when fragment is not accepted`(
+    fun `it will do nothing when fragment is not accepted { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int,
         forge: Forge
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         testedStrategy = FragmentViewTrackingStrategy(
             trackArguments = true,
@@ -393,7 +407,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 override fun getViewName(component: android.app.Fragment): String? {
                     return null
                 }
-            }
+            },
+            supportFragmentComponentPredicate = AcceptAllSupportFragments(),
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val argumentCaptor =
@@ -420,12 +436,18 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `will not attach fragment arguments as attributes if required so in a base activity`(
+    fun `will not attach fragment arguments as attributes if required so in a base activity { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int,
         forge: Forge
     ) {
         // Given
-        testedStrategy = FragmentViewTrackingStrategy(false)
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
+        testedStrategy = FragmentViewTrackingStrategy(
+            trackArguments = false,
+            supportFragmentComponentPredicate = AcceptAllSupportFragments(),
+            defaultFragmentComponentPredicate = AcceptAllDefaultFragment(),
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val expectedAttrs = emptyMap<String, Any?>()
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
@@ -462,9 +484,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `when base activity stopped will unregister the right callback`() {
+    fun `when base activity stopped will unregister the right callback { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int
+    ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         testedStrategy.onActivityStarted(mockActivity)
         val argumentCaptor =
@@ -485,9 +509,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
-    fun `when base activity started API below O will do nothing`() {
+    fun `when base activity started API below O will do nothing`(
+        @IntForgery(min = 1, max = Build.VERSION_CODES.O) fakeApiVersion: Int
+    ) {
         // When
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
@@ -496,9 +522,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
-    fun `when base activity stopped API below O will do nothing`() {
+    fun `when base activity stopped API below O will do nothing`(
+        @IntForgery(min = 1, max = Build.VERSION_CODES.O) fakeApiVersion: Int
+    ) {
         // When
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.onActivityStopped(mockActivity)
 
         // Then
@@ -507,9 +535,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `it will handle well a FragmentActivity and a base Activity resumed in the same time`() {
+    fun `it will handle well a FragmentActivity and a base Activity resumed in the same time { O+ }`(
+        @IntForgery(min = Build.VERSION_CODES.O) fakeApiVersion: Int
+    ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val androidXArgumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
         val baseArgumentCaptor =

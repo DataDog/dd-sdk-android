@@ -26,7 +26,7 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
     TrackingConsentProviderCallback {
     private var nativeLibraryLoaded = false
 
-    override val name: String = "ndk-crash-reporting"
+    override val name: String = Feature.NDK_CRASH_REPORTS_FEATURE_NAME
 
     // region Feature
     @Suppress("ReturnCount")

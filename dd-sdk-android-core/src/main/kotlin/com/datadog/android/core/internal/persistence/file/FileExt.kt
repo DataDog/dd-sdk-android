@@ -182,3 +182,15 @@ fun File.readLinesSafe(
         null
     }
 }
+
+internal fun File.writeTextSafe(
+    text: String, charset: Charset = Charsets.UTF_8,
+    internalLogger: InternalLogger
+) {
+    if (existsSafe(internalLogger) && canWriteSafe(internalLogger)) {
+        safeCall(default = null, internalLogger) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            writeText(text, charset)
+        }
+    }
+}

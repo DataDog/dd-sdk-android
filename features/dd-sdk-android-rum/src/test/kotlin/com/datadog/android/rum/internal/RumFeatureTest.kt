@@ -6,7 +6,10 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.ActivityManager
 import android.app.Application
+import android.app.ApplicationExitInfo
+import android.content.Context
 import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
@@ -22,7 +25,6 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -48,6 +50,7 @@ import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.anException
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonObject
@@ -70,7 +73,10 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -79,6 +85,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 @Extensions(
@@ -109,7 +116,7 @@ internal class RumFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockNdkCrashEventHandler: NdkCrashEventHandler
+    lateinit var mockLateCrashReporter: LateCrashReporter
 
     @BeforeEach
     fun `set up`() {
@@ -119,7 +126,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
         GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
     }
@@ -197,7 +204,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -217,7 +224,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -244,7 +251,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -266,7 +273,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -290,7 +297,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -313,7 +320,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -342,7 +349,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -373,7 +380,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration.copy(viewTrackingStrategy = null),
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -392,7 +399,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -411,7 +418,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -429,7 +436,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -468,7 +475,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -498,7 +505,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -602,7 +609,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -623,7 +630,7 @@ internal class RumFeatureTest {
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+            lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
         // When
@@ -831,16 +838,132 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockNdkCrashEventHandler)
-            .handleEvent(
+        verify(mockLateCrashReporter)
+            .handleNdkCrashEvent(
                 event,
-                mockSdkCore,
                 testedFeature.dataWriter
             )
 
         verifyNoInteractions(
             mockRumMonitor,
             mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 consume last fatal ANR crash 𝕎 consumeLastFatalAnr()`(
+        @Forgery fakeViewEventJson: JsonObject,
+        forge: Forge
+    ) {
+        // Given
+        val appExitInfo = forge.anApplicationExitInfoList(mustInclude = ApplicationExitInfo.REASON_ANR)
+
+        val mockActivityManager = mock<ActivityManager>()
+        whenever(
+            mockActivityManager.getHistoricalProcessExitReasons(null, 0, 0)
+        ) doReturn appExitInfo
+        whenever(
+            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
+        ) doReturn mockActivityManager
+        val mockExecutor = mockSameThreadExecutorService()
+        whenever(mockSdkCore.lastViewEvent) doReturn fakeViewEventJson
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.consumeLastFatalAnr(mockExecutor)
+
+        // Then
+        verify(mockLateCrashReporter)
+            .handleAnrCrash(
+                appExitInfo.first { it.reason == ApplicationExitInfo.REASON_ANR },
+                fakeViewEventJson,
+                testedFeature.dataWriter
+            )
+    }
+
+    @Test
+    fun `𝕄 not consume last fatal ANR crash 𝕎 consumeLastFatalAnr() { no last view event }`(
+        forge: Forge
+    ) {
+        // Given
+        val appExitInfo = forge.anApplicationExitInfoList(mustInclude = ApplicationExitInfo.REASON_ANR)
+
+        val mockActivityManager = mock<ActivityManager>()
+        whenever(
+            mockActivityManager.getHistoricalProcessExitReasons(null, 0, 0)
+        ) doReturn appExitInfo
+        whenever(
+            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
+        ) doReturn mockActivityManager
+        val mockExecutor = mockSameThreadExecutorService()
+        whenever(mockSdkCore.lastViewEvent) doReturn null
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.consumeLastFatalAnr(mockExecutor)
+
+        // Then
+        verifyNoInteractions(mockLateCrashReporter)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            RumFeature.NO_LAST_RUM_VIEW_EVENT_AVAILABLE
+        )
+    }
+
+    @Test
+    fun `𝕄 not consume last fatal ANR crash 𝕎 consumeLastFatalAnr() { no known ANR exit }`(
+        @Forgery fakeViewEventJson: JsonObject,
+        forge: Forge
+    ) {
+        // Given
+        val appExitInfo = forge.anApplicationExitInfoList()
+            .filter { it.reason != ApplicationExitInfo.REASON_ANR }
+
+        val mockActivityManager = mock<ActivityManager>()
+        whenever(
+            mockActivityManager.getHistoricalProcessExitReasons(null, 0, 0)
+        ) doReturn appExitInfo
+        whenever(
+            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
+        ) doReturn mockActivityManager
+        val mockExecutor = mockSameThreadExecutorService()
+        whenever(mockSdkCore.lastViewEvent) doReturn fakeViewEventJson
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.consumeLastFatalAnr(mockExecutor)
+
+        // Then
+        verifyNoInteractions(mockLateCrashReporter, mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 log error 𝕎 consumeLastFatalAnr() { error getting historical exit reasons }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockActivityManager = mock<ActivityManager>()
+        val exceptionThrown = forge.anException()
+        whenever(
+            mockActivityManager.getHistoricalProcessExitReasons(null, 0, 0)
+        ) doThrow exceptionThrown
+        whenever(
+            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
+        ) doReturn mockActivityManager
+        val mockExecutor = mockSameThreadExecutorService()
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.consumeLastFatalAnr(mockExecutor)
+
+        // Then
+        verifyNoInteractions(mockLateCrashReporter)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RumFeature.FAILED_TO_GET_HISTORICAL_EXIT_REASONS,
+            exceptionThrown
         )
     }
 
@@ -1240,6 +1363,54 @@ internal class RumFeatureTest {
     }
 
     // endregion
+
+    private fun Forge.anApplicationExitInfoList(
+        mustInclude: Int? = null
+    ): List<ApplicationExitInfo> {
+        val appExitInfos = aList {
+            mock<ApplicationExitInfo>().apply {
+                whenever(reason) doReturn anApplicationExitInfoReason()
+            }
+        }.toMutableList()
+        if (mustInclude != null && !appExitInfos.any { it.reason == mustInclude }) {
+            appExitInfos[anElementFrom(appExitInfos.indices.toList())] =
+                mock<ApplicationExitInfo>().apply {
+                    whenever(reason) doReturn mustInclude
+                }
+        }
+        return appExitInfos
+    }
+
+    private fun Forge.anApplicationExitInfoReason(): Int {
+        return anElementFrom(
+            ApplicationExitInfo.REASON_UNKNOWN,
+            ApplicationExitInfo.REASON_EXIT_SELF,
+            ApplicationExitInfo.REASON_SIGNALED,
+            ApplicationExitInfo.REASON_LOW_MEMORY,
+            ApplicationExitInfo.REASON_CRASH,
+            ApplicationExitInfo.REASON_CRASH_NATIVE,
+            ApplicationExitInfo.REASON_ANR,
+            ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
+            ApplicationExitInfo.REASON_PERMISSION_CHANGE,
+            ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+            ApplicationExitInfo.REASON_USER_REQUESTED,
+            ApplicationExitInfo.REASON_USER_STOPPED,
+            ApplicationExitInfo.REASON_DEPENDENCY_DIED,
+            ApplicationExitInfo.REASON_OTHER,
+            ApplicationExitInfo.REASON_FREEZER,
+            ApplicationExitInfo.REASON_PACKAGE_STATE_CHANGE,
+            ApplicationExitInfo.REASON_PACKAGE_UPDATED
+        )
+    }
+
+    private fun mockSameThreadExecutorService(): ExecutorService {
+        return mock<ExecutorService>().apply {
+            whenever(submit(any())) doAnswer {
+                it.getArgument<Runnable>(0).run()
+                mock()
+            }
+        }
+    }
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
