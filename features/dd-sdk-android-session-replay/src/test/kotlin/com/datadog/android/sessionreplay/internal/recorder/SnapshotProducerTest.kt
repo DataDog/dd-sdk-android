@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -58,9 +59,16 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockOptionSelectorDetector: DefaultOptionSelectorDetector
 
+    @Mock
+    lateinit var mockImageWireframeHelper: ImageWireframeHelper
+
     @BeforeEach
     fun `set up`() {
-        testedSnapshotProducer = SnapshotProducer(mockTreeViewTraversal, mockOptionSelectorDetector)
+        testedSnapshotProducer = SnapshotProducer(
+            mockImageWireframeHelper,
+            mockTreeViewTraversal,
+            mockOptionSelectorDetector
+        )
     }
 
     @Test

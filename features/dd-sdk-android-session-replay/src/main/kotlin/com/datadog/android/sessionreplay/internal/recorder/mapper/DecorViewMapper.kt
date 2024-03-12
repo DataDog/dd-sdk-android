@@ -7,15 +7,17 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.Locale
 
 internal class DecorViewMapper(
     private val viewWireframeMapper: ViewWireframeMapper,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
+    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
 
     override fun map(
@@ -23,7 +25,7 @@ internal class DecorViewMapper(
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe.ShapeWireframe> {
-        val wireframes = viewWireframeMapper.map(view, mappingContext)
+        val wireframes = viewWireframeMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
             .toMutableList()
         if (mappingContext.systemInformation.themeColor != null) {
             // we add the background color from the theme to the decorView
@@ -44,9 +46,9 @@ internal class DecorViewMapper(
         // we could find. We know that the system classes are not obfuscated by Proguard so in case
         // this class name will be changed in the future we will see it in our replays and fix it.
         if (!decorClassName.lowercase(Locale.US)
-            .endsWith(POP_UP_DECOR_VIEW_CLASS_NAME_SUFFIX)
+                .endsWith(POP_UP_DECOR_VIEW_CLASS_NAME_SUFFIX)
         ) {
-            uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            viewIdentifierResolver.resolveChildUniqueIdentifier(
                 view,
                 WINDOW_KEY_NAME
             )?.let {

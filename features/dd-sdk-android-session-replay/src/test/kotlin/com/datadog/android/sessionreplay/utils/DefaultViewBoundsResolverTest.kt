@@ -29,7 +29,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ViewUtilsTest {
+internal class DefaultViewBoundsResolverTest {
 
     @Test
     fun `M correctly resolve the View global bounds W resolveViewGlobalBounds`(forge: Forge) {
@@ -51,16 +51,16 @@ internal class ViewUtilsTest {
         val fakePixelDensity = forge.aPositiveFloat()
 
         // When
-        val globalBounds = ViewUtils.resolveViewGlobalBounds(mockView, fakePixelDensity)
+        val viewBounds = DefaultViewBoundsResolver.resolveViewGlobalBounds(mockView, fakePixelDensity)
 
         // Then
-        assertThat(globalBounds.x)
+        assertThat(viewBounds.x)
             .isEqualTo(fakeGlobalX.densityNormalized(fakePixelDensity).toLong())
-        assertThat(globalBounds.y)
+        assertThat(viewBounds.y)
             .isEqualTo(fakeGlobalY.densityNormalized(fakePixelDensity).toLong())
-        assertThat(globalBounds.width)
+        assertThat(viewBounds.width)
             .isEqualTo(fakeWidth.densityNormalized(fakePixelDensity).toLong())
-        assertThat(globalBounds.height)
+        assertThat(viewBounds.height)
             .isEqualTo(fakeHeight.densityNormalized(fakePixelDensity).toLong())
     }
 }

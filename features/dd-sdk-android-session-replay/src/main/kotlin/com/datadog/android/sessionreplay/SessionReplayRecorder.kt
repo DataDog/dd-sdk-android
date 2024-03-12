@@ -25,14 +25,30 @@ import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetecto
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
+import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
@@ -94,15 +110,41 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             internalLogger = internalLogger
         )
 
+        val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
+        val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
+        val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
+        val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+
+        val defaultVWM = ViewWireframeMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
+
+        val resourcesSerializer = ResourcesSerializer.Builder(
+            applicationId = applicationId,
+            recordedDataQueueHandler = recordedDataQueueHandler,
+            bitmapPool = BitmapPool(),
+            resourcesLRUCache = ResourcesLRUCache()
+        ).build()
+
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
             SnapshotProducer(
+                DefaultImageWireframeHelper(
+                    logger = internalLogger,
+                    resourcesSerializer = resourcesSerializer,
+                    imageCompression = WebPImageCompression(),
+                    viewIdentifierResolver = viewIdentifierResolver,
+                    viewUtilsInternal = ViewUtilsInternal(),
+                    imageTypeResolver = ImageTypeResolver()
+                ),
                 TreeViewTraversal(
-                customMappers + privacy.mappers(
-                    internalLogger,
-                    applicationId,
-                    recordedDataQueueHandler
-                )
+                    mappers = customMappers + privacy.mappers(),
+                    viewMapper = defaultVWM,
+                    decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
+                    viewUtilsInternal = ViewUtilsInternal()
                 ),
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()

@@ -28,8 +28,8 @@ internal class MaskTabWireframeMapperTest : BaseTabWireframeMapperTest() {
 
     override fun provideTestInstance(): TabWireframeMapper {
         return MaskTabWireframeMapper(
-            viewUtils = mockViewUtils,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            viewBoundsResolver = mockViewBoundsResolver,
             textViewMapper = mockTextWireframeMapper
         )
     }
@@ -37,7 +37,12 @@ internal class MaskTabWireframeMapperTest : BaseTabWireframeMapperTest() {
     @Test
     fun `M use a MaskTextViewMapper when initialized`() {
         // Given
-        val maskTabWireframeMapper = MaskTabWireframeMapper()
+        val maskTabWireframeMapper = MaskTabWireframeMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
 
         // Then
         assertThat(maskTabWireframeMapper.textViewMapper)

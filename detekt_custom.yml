@@ -193,7 +193,8 @@ datadog:
       - "java.io.PrintWriter.constructor(java.io.Writer):java.lang.NullPointerException"
       - "java.lang.Character.toChars(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.lang.Class.forName(kotlin.String?):java.lang.LinkageError,java.lang.ExceptionInInitializerError,java.lang.ClassNotFoundException"
-      - "java.lang.Class.getDeclaredField(kotlin.String):java.lang.NoSuchFieldException,java.lang.SecurityException,java.lang.NullPointerException"
+      - "java.lang.Class.getDeclaredField(kotlin.String?):java.lang.NoSuchFieldException,java.lang.SecurityException,java.lang.NullPointerException"
+      - "java.lang.reflect.Field.get(kotlin.Any?):java.lang.IllegalArgumentException,java.lang.IllegalAccessException"
       - "java.lang.Class.getMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.isAssignableFrom(java.lang.Class?):java.lang.NullPointerException"
       - "java.lang.Runtime.addShutdownHook(java.lang.Thread):java.lang.IllegalArgumentException,java.lang.IllegalStateException,java.lang.SecurityException"
@@ -442,6 +443,7 @@ datadog:
       - "android.graphics.drawable.Drawable.setBounds(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.drawable.LayerDrawable.safeGetDrawable(kotlin.Int, com.datadog.android.api.InternalLogger)"
       - "android.graphics.drawable.RippleDrawable.safeGetDrawable(kotlin.Int, com.datadog.android.api.InternalLogger)"
+      - "android.graphics.drawable.RippleDrawable.findIndexByLayerId(kotlin.Int)"
       - "android.graphics.Point.constructor()"
       - "android.graphics.Rect.centerX()"
       - "android.graphics.Rect.centerY()"
@@ -984,6 +986,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.PlaceholderWireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.listOf(java.io.File)"
       - "kotlin.collections.listOf(kotlin.Array)"
       - "kotlin.collections.listOf(kotlin.String)"
@@ -1124,6 +1127,7 @@ datadog:
       - "kotlin.text.String(kotlin.ByteArray, java.nio.charset.Charset)"
       - "kotlin.text.String(kotlin.CharArray)"
       - "kotlin.text.StringBuilder()"
+      - "kotlin.text.buildString(kotlin.Function1)"
       # endregion
       # region Kotlin Misc
       - "kotlin.Any.resolveViewUrl()"
@@ -1135,6 +1139,7 @@ datadog:
       - "kotlin.Throwable.fillInStackTrace()"
       - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.ranges.IntRange.reversed()"
+      - "kotlin.ranges.IntRange.map(kotlin.Function1)"
       - "kotlin.text.Regex.constructor(kotlin.String)"
       - "kotlin.text.Regex.matchEntire(kotlin.CharSequence)"
       # endregion

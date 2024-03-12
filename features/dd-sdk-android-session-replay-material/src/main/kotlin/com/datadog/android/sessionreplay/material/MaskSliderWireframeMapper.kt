@@ -7,16 +7,15 @@
 package com.datadog.android.sessionreplay.material
 
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class MaskSliderWireframeMapper(
-    viewUtils: ViewUtils = ViewUtils,
-    stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator =
-        UniqueIdentifierGenerator
-) : SliderWireframeMapper(viewUtils, stringUtils, uniqueIdentifierGenerator) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver
+) : SliderWireframeMapper(viewIdentifierResolver, colorStringFormatter, viewBoundsResolver) {
 
     override fun resolveViewAsWireframesList(
         nonActiveTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,

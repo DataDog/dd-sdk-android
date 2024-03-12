@@ -28,10 +28,27 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class TextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
+      override fun initTestedMapper(): TextViewMapper {
+        return TextViewMapper(
+            mockObfuscationRule,
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        ).apply {
+            textValueObfuscationRule = mockObfuscationRule
+        }
+    }
+
     @Test
     fun `M use the AllowObfuscationRule when initialized`() {
         // When
-        val textViewMapper = TextViewMapper()
+        val textViewMapper = TextViewMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
 
         // Then
         assertThat(textViewMapper.textValueObfuscationRule)

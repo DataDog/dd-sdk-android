@@ -10,12 +10,14 @@ import android.content.res.ColorStateList
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.widget.SeekBar
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -127,13 +129,19 @@ internal abstract class BaseSeekBarWireframeMapperTest {
     lateinit var mockTrackActiveTintColors: ColorStateList
 
     @Mock
-    lateinit var mockViewUtils: ViewUtils
+    lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
 
     @Mock
-    lateinit var mockStringUtils: StringUtils
+    lateinit var mockColorStringFormatter: ColorStringFormatter
 
     @Mock
-    lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
+    lateinit var mockViewBoundsResolver: ViewBoundsResolver
+
+    @Mock
+    lateinit var mockDrawableToColorMapper: DrawableToColorMapper
+
+    @Mock
+    lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     lateinit var testedSeekBarWireframeMapper: SeekBarWireframeMapper
 
@@ -179,7 +187,7 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         fakeExpectedThumbYPos = normalizedSliderYPos + normalizedSliderTopPadding +
             (normalizedSliderHeight - fakeExpectedThumbHeight) / 2
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeThumbColor,
                 SeekBarWireframeMapper.OPAQUE_ALPHA_VALUE
             )
@@ -187,14 +195,14 @@ internal abstract class BaseSeekBarWireframeMapperTest {
             .thenReturn(fakeExpectedThumbHtmlColor)
 
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTrackColor,
                 SeekBarWireframeMapper.OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedTrackActiveHtmlColor)
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTrackColor,
                 SeekBarWireframeMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
@@ -203,26 +211,26 @@ internal abstract class BaseSeekBarWireframeMapperTest {
 
         mockSeekBar = generateMockedSeekBar(forge)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockSeekBar,
                 fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSeekBar,
                 SeekBarWireframeMapper.TRACK_ACTIVE_KEY_NAME
             )
         ).thenReturn(fakeActiveTrackId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSeekBar,
                 SeekBarWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
             )
         ).thenReturn(fakeInactiveTrackId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSeekBar,
                 SeekBarWireframeMapper.THUMB_KEY_NAME
             )
@@ -236,42 +244,51 @@ internal abstract class BaseSeekBarWireframeMapperTest {
     fun `M return empty list W map { could not generate thumb id`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSeekBar,
                 SeekBarWireframeMapper.THUMB_KEY_NAME
             )
         ).thenReturn(null)
 
+        // When
+        val map = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)).isEmpty()
+        assertThat(map).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { could not generate active track id`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSeekBar,
                 SeekBarWireframeMapper.TRACK_ACTIVE_KEY_NAME
             )
         ).thenReturn(null)
 
+        // When
+        val map = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)).isEmpty()
+        assertThat(map).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { could not generate inactive track id`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSeekBar,
                 SeekBarWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
             )
         ).thenReturn(null)
 
+        // When
+        val map = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)).isEmpty()
+        assertThat(map).isEmpty()
     }
 
     private fun generateMockedSeekBar(forge: Forge): SeekBar {

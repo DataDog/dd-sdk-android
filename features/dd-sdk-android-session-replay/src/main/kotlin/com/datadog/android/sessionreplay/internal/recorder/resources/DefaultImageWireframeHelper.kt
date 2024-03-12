@@ -19,26 +19,26 @@ import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.Locale
 
-// This should not have a callback but it should just create a placeholder for resourcesSerializer
+// This should not have a callback but it should just create a placeholder for base64Serializer
 // The resourcesSerializer dependency should be removed from here
 // TODO: RUM-0000 Remove the resourcesSerializer dependency from here
-internal class ImageWireframeHelper(
+internal class DefaultImageWireframeHelper(
     private val logger: InternalLogger,
     private val resourcesSerializer: ResourcesSerializer,
-    private val imageCompression: ImageCompression = WebPImageCompression(),
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
-) {
+    private val imageCompression: ImageCompression,
+    private val viewIdentifierResolver: ViewIdentifierResolver,
+    private val viewUtilsInternal: ViewUtilsInternal,
+    private val imageTypeResolver: ImageTypeResolver
+) : ImageWireframeHelper {
 
-    // Why is this function accepting an optional drawable ???
-    // TODO: RUM-0000 Make the drawable non optional for this function
     @Suppress("ReturnCount")
     @MainThread
-    internal fun createImageWireframe(
+    override fun createImageWireframe(
         view: View,
         currentWireframeIndex: Int,
         x: Long,
@@ -46,15 +46,14 @@ internal class ImageWireframeHelper(
         width: Int,
         height: Int,
         usePIIPlaceholder: Boolean,
-        clipping: MobileSegment.WireframeClip? = null,
-        drawable: Drawable? = null,
-        shapeStyle: MobileSegment.ShapeStyle? = null,
-        border: MobileSegment.ShapeBorder? = null,
-        imageWireframeHelperCallback: ImageWireframeHelperCallback,
-        prefix: String? = DRAWABLE_CHILD_NAME
+        drawable: Drawable,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        clipping: MobileSegment.WireframeClip?,
+        shapeStyle: MobileSegment.ShapeStyle?,
+        border: MobileSegment.ShapeBorder?,
+        prefix: String?
     ): MobileSegment.Wireframe? {
-        if (drawable == null) return null
-        val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
+        val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(view, drawable)
 
         if (id == null || !drawableProperties.isValid()) return null
@@ -95,21 +94,20 @@ internal class ImageWireframeHelper(
         val drawableWidthDp = width.densityNormalized(density).toLong()
         val drawableHeightDp = height.densityNormalized(density).toLong()
 
-        val imageWireframe =
-            MobileSegment.Wireframe.ImageWireframe(
-                id = id,
-                x,
-                y,
-                width = drawableWidthDp,
-                height = drawableHeightDp,
-                shapeStyle = shapeStyle,
-                border = border,
-                clip = clipping,
-                mimeType = mimeType,
-                isEmpty = true
-            )
+        val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = id,
+            x,
+            y,
+            width = drawableWidthDp,
+            height = drawableHeightDp,
+            shapeStyle = shapeStyle,
+            border = border,
+            clip = clipping,
+            mimeType = mimeType,
+            isEmpty = true
+        )
 
-        imageWireframeHelperCallback.onStart()
+        asyncJobStatusCallback.jobStarted()
 
         resourcesSerializer.handleBitmap(
             resources = resources,
@@ -121,7 +119,7 @@ internal class ImageWireframeHelper(
             imageWireframe = imageWireframe,
             resourcesSerializerCallback = object : ResourcesSerializerCallback {
                 override fun onReady() {
-                    imageWireframeHelperCallback.onFinished()
+                    asyncJobStatusCallback.jobFinished()
                 }
             }
         )
@@ -130,11 +128,11 @@ internal class ImageWireframeHelper(
     }
 
     @Suppress("NestedBlockDepth")
-    internal fun createCompoundDrawableWireframes(
-        view: TextView,
+    override fun createCompoundDrawableWireframes(
+        textView: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
-        imageWireframeHelperCallback: ImageWireframeHelperCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
         var wireframeIndex = prevWireframeIndex
@@ -142,7 +140,7 @@ internal class ImageWireframeHelper(
 
         // CompoundDrawables returns an array of indexes in the following order:
         // left, top, right, bottom
-        view.compoundDrawables.forEachIndexed { compoundDrawableIndex, _ ->
+        textView.compoundDrawables.forEachIndexed { compoundDrawableIndex, _ ->
             if (compoundDrawableIndex > CompoundDrawablePositions.values().size) {
                 return@forEachIndexed
             }
@@ -151,18 +149,18 @@ internal class ImageWireframeHelper(
                 compoundDrawableIndex
             ) ?: return@forEachIndexed
 
-            val drawable = view.compoundDrawables[compoundDrawableIndex]
+            val drawable = textView.compoundDrawables[compoundDrawableIndex]
 
             if (drawable != null) {
                 val drawableCoordinates = viewUtilsInternal.resolveCompoundDrawableBounds(
-                    view = view,
+                    view = textView,
                     drawable = drawable,
                     pixelsDensity = density,
                     position = compoundDrawablePosition
                 )
                 @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
                 createImageWireframe(
-                    view = view,
+                    view = textView,
                     currentWireframeIndex = ++wireframeIndex,
                     x = drawableCoordinates.x,
                     y = drawableCoordinates.y,
@@ -173,7 +171,7 @@ internal class ImageWireframeHelper(
                     border = null,
                     usePIIPlaceholder = true,
                     clipping = MobileSegment.WireframeClip(),
-                    imageWireframeHelperCallback = imageWireframeHelperCallback
+                    asyncJobStatusCallback = asyncJobStatusCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
                 }
@@ -193,6 +191,7 @@ internal class ImageWireframeHelper(
                     DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
                 }
             }
+
             is InsetDrawable -> {
                 val internalDrawable = drawable.drawable
                 if (internalDrawable != null) {
@@ -201,6 +200,7 @@ internal class ImageWireframeHelper(
                     DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
                 }
             }
+
             is GradientDrawable -> DrawableProperties(drawable, view.width, view.height)
             else -> DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
         }
@@ -212,8 +212,7 @@ internal class ImageWireframeHelper(
         density: Float
     ): MobileSegment.Wireframe.PlaceholderWireframe {
         val coordinates = IntArray(2)
-        // this will always have size >= 2
-        @Suppress("UnsafeThirdPartyFunctionCall")
+        @Suppress("UnsafeThirdPartyFunctionCall") // this will always have size >= 2
         view.getLocationOnScreen(coordinates)
         val viewX = coordinates[0].densityNormalized(density).toLong()
         val viewY = coordinates[1].densityNormalized(density).toLong()
@@ -257,14 +256,14 @@ internal class ImageWireframeHelper(
     }
 
     internal companion object {
-        internal const val DRAWABLE_CHILD_NAME = "drawable"
 
-        @VisibleForTesting internal const val PLACEHOLDER_CONTENT_LABEL = "Content Image"
+        @VisibleForTesting
+        internal const val PLACEHOLDER_CONTENT_LABEL = "Content Image"
 
-        @VisibleForTesting internal const val APPLICATION_CONTEXT_NULL_ERROR =
-            "Application context is null for view %s"
+        @VisibleForTesting
+        internal const val APPLICATION_CONTEXT_NULL_ERROR = "Application context is null for view %s"
 
-        @VisibleForTesting internal const val RESOURCES_NULL_ERROR =
-            "Resources is null for view %s"
+        @VisibleForTesting
+        internal const val RESOURCES_NULL_ERROR = "Resources is null for view %s"
     }
 }
