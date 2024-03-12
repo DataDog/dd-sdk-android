@@ -24,6 +24,8 @@ import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.opentelemetry.OpenTelemetrySdk
+import com.datadog.android.opentelemetry.OtelTraceProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
@@ -53,6 +55,7 @@ import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentracing.rxjava3.TracingRxJava3Utils
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
@@ -181,6 +184,14 @@ class SampleApplication : Application() {
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
+        val openTelemetry = OpenTelemetrySdk.Builder()
+            .setTracerProvider(
+                OtelTraceProvider.Builder()
+                    .setService(BuildConfig.APPLICATION_ID)
+                    .build()
+            )
+            .build()
+        GlobalOpenTelemetry.set(openTelemetry)
         GlobalRumMonitor.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
@@ -285,6 +296,7 @@ class SampleApplication : Application() {
 
     companion object {
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
+
         init {
             System.loadLibrary("datadog-native-sample-lib")
         }

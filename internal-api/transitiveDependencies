@@ -1,0 +1,11 @@
+Dependencies List
+
+androidx.annotation:annotation:1.1.0                            :   27 Kb
+com.datadoghq:dd-javac-plugin-client:0.1.7                      :    2 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10                :  212 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.8.10                       : 1598 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+org.slf4j:slf4j-api:1.7.30                                      :   40 Kb
+
+Total transitive dependencies size                              : 1898 Kb
+

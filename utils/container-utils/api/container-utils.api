@@ -1,0 +1,44 @@
+public class datadog/common/container/ContainerInfo {
+	public field cGroups Ljava/util/List;
+	public field containerId Ljava/lang/String;
+	public field podId Ljava/lang/String;
+	public fun <init> ()V
+	public static fun fromDefaultProcFile ()Ldatadog/common/container/ContainerInfo;
+	public static fun get ()Ldatadog/common/container/ContainerInfo;
+	public fun getCGroups ()Ljava/util/List;
+	public fun getContainerId ()Ljava/lang/String;
+	public fun getPodId ()Ljava/lang/String;
+	public static fun isRunningInContainer ()Z
+	public static fun parse (Ljava/lang/String;)Ldatadog/common/container/ContainerInfo;
+	public fun setContainerId (Ljava/lang/String;)V
+	public fun setPodId (Ljava/lang/String;)V
+	public fun setcGroups (Ljava/util/List;)V
+}
+
+public class datadog/common/container/ContainerInfo$CGroupInfo {
+	public field containerId Ljava/lang/String;
+	public field controllers Ljava/util/List;
+	public field id I
+	public field path Ljava/lang/String;
+	public field podId Ljava/lang/String;
+	public fun <init> ()V
+	public fun getContainerId ()Ljava/lang/String;
+	public fun getControllers ()Ljava/util/List;
+	public fun getId ()I
+	public fun getPath ()Ljava/lang/String;
+	public fun getPodId ()Ljava/lang/String;
+	public fun setContainerId (Ljava/lang/String;)V
+	public fun setControllers (Ljava/util/List;)V
+	public fun setId (I)V
+	public fun setPath (Ljava/lang/String;)V
+	public fun setPodId (Ljava/lang/String;)V
+}
+
+public class datadog/common/container/ServerlessInfo {
+	public fun <init> ()V
+	public static fun get ()Ldatadog/common/container/ServerlessInfo;
+	public fun getFunctionName ()Ljava/lang/String;
+	public fun hasExtension ()Z
+	public fun isRunningInServerlessEnvironment ()Z
+}
+

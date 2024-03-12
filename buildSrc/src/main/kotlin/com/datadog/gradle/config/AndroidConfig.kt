@@ -15,7 +15,7 @@ import org.gradle.api.Project
 object AndroidConfig {
 
     const val TARGET_SDK = 34
-    const val MIN_SDK = 21
+    const val MIN_SDK = 26
     const val MIN_SDK_FOR_WEAR = 23
     const val BUILD_TOOLS_VERSION = "34.0.0"
 

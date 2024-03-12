@@ -1,0 +1,25 @@
+public class datadog/trace/api/time/ControllableTimeSource : datadog/trace/api/time/TimeSource {
+	public fun <init> ()V
+	public fun advance (J)V
+	public fun getCurrentTimeMicros ()J
+	public fun getCurrentTimeMillis ()J
+	public fun getCurrentTimeNanos ()J
+	public fun getNanoTicks ()J
+	public fun set (J)V
+}
+
+public class datadog/trace/api/time/SystemTimeSource : datadog/trace/api/time/TimeSource {
+	public static final field INSTANCE Ldatadog/trace/api/time/TimeSource;
+	public fun getCurrentTimeMicros ()J
+	public fun getCurrentTimeMillis ()J
+	public fun getCurrentTimeNanos ()J
+	public fun getNanoTicks ()J
+}
+
+public abstract interface class datadog/trace/api/time/TimeSource {
+	public abstract fun getCurrentTimeMicros ()J
+	public abstract fun getCurrentTimeMillis ()J
+	public abstract fun getCurrentTimeNanos ()J
+	public abstract fun getNanoTicks ()J
+}
+

@@ -156,4 +156,5 @@
     <string name="number_password_label">Number Password</string>
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
+    <string name="otel_traces">Otel Traces</string>
 </resources>

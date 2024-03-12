@@ -38,6 +38,9 @@ plugins {
 }
 
 android {
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -51,10 +54,19 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     api(project(":dd-sdk-android-core"))
+    implementation(project(":dd-trace-core"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
+
+    compileOnly(libs.openTelemetry)
+    compileOnly(group = "com.google.auto.value", name = "auto-value-annotations", version = "1.6.6")
+
+    // Lint rules
+    lintPublish(project(":tools:lint"))
+    compileOnly(group = "com.github.spotbugs", name = "spotbugs-annotations", version = "4.2.0")
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
