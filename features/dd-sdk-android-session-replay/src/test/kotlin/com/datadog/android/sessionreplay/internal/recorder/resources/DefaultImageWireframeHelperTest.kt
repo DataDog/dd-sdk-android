@@ -71,9 +71,6 @@ internal class DefaultImageWireframeHelperTest {
     lateinit var mockLogger: InternalLogger
 
     @Mock
-    lateinit var mockImageCompression: ImageCompression
-
-    @Mock
     lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     @Mock
@@ -122,9 +119,6 @@ internal class DefaultImageWireframeHelperTest {
     var fakeDrawableHeight: Int = 0
 
     private lateinit var fakeDrawableXY: Pair<Long, Long>
-
-    @StringForgery
-    var fakeMimeType: String = ""
 
     @IntForgery(min = 1)
     var fakePadding: Int = 0
@@ -356,7 +350,7 @@ internal class DefaultImageWireframeHelperTest {
                 any()
             )
         ).thenAnswer {
-            val callback = it.arguments[6] as ResourcesSerializerCallback
+            val callback = it.arguments[6] as ResourceResolverCallback
             callback.onSuccess(fakeResourceId)
         }
 
@@ -390,7 +384,6 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
         verify(mockResourceResolver).resolveResourceId(
             resources = any(),
             applicationContext = any(),
@@ -398,7 +391,7 @@ internal class DefaultImageWireframeHelperTest {
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourcesSerializerCallback = argumentCaptor.capture()
+            resourceResolverCallback = any()
         )
         verify(mockAsyncJobStatusCallback).jobStarted()
         verify(mockAsyncJobStatusCallback).jobFinished()
@@ -454,16 +447,16 @@ internal class DefaultImageWireframeHelperTest {
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
 
         verify(mockResourceResolver).resolveResourceId(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            argumentCaptor.capture()
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            resourceResolverCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
             it.onSuccess(fakeResourceId)
@@ -499,7 +492,7 @@ internal class DefaultImageWireframeHelperTest {
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<ResourcesSerializerCallback>()
+        val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
         verify(mockResourceResolver, times(2)).resolveResourceId(
             any(),
             any(),
@@ -575,7 +568,7 @@ internal class DefaultImageWireframeHelperTest {
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            resourcesSerializerCallback = any()
+            resourceResolverCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -606,7 +599,7 @@ internal class DefaultImageWireframeHelperTest {
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            resourcesSerializerCallback = any()
+            resourceResolverCallback = any()
 
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth, fakeDrawableHeight)
@@ -688,7 +681,7 @@ internal class DefaultImageWireframeHelperTest {
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourcesSerializerCallback = any()
+            resourceResolverCallback = any()
         )
     }
 

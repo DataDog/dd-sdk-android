@@ -48,7 +48,7 @@ internal class ResourceResolver(
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
-        resourcesSerializerCallback: ResourcesSerializerCallback
+        resourceResolverCallback: ResourceResolverCallback
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
 
@@ -57,20 +57,21 @@ internal class ResourceResolver(
         if (resourceId != null) {
             // if we got here it means we saw the bitmap before,
             // so we don't need to send the resource again
-            resourcesSerializerCallback.onSuccess(resourceId)
+            resourceResolverCallback.onSuccess(resourceId)
             return
         }
 
-        val bitmapFromDrawable = if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) {
-            drawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
-        } else {
-            null
-        }
+        val bitmapFromDrawable =
+            if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) {
+                drawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
+            } else {
+                null
+            }
 
         // do in the background
         threadPoolExecutor.executeSafe("resolveResourceId", logger) {
             @Suppress("ThreadSafety") // this runs inside an executor
-            createBitmapAsync(
+            createBitmap(
                 resources = resources,
                 drawable = drawable,
                 drawableWidth = drawableWidth,
@@ -78,13 +79,13 @@ internal class ResourceResolver(
                 displayMetrics = displayMetrics,
                 bitmapFromDrawable = bitmapFromDrawable,
                 resolveResourceCallback = object : ResolveResourceCallback {
-                    override fun onResolved(resourceId: String, byteArray: ByteArray) {
-                        resourceItemCreationHandler.queueItem(resourceId, byteArray)
-                        resourcesSerializerCallback.onSuccess(resourceId)
+                    override fun onResolved(resourceId: String, resourceData: ByteArray) {
+                        resourceItemCreationHandler.queueItem(resourceId, resourceData)
+                        resourceResolverCallback.onSuccess(resourceId)
                     }
 
                     override fun onFailed() {
-                        resourcesSerializerCallback.onFailure()
+                        resourceResolverCallback.onFailure()
                     }
                 }
             )
@@ -96,7 +97,7 @@ internal class ResourceResolver(
     // region private
 
     @WorkerThread
-    private fun createBitmapAsync(
+    private fun createBitmap(
         resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
@@ -105,13 +106,14 @@ internal class ResourceResolver(
         bitmapFromDrawable: Bitmap?,
         resolveResourceCallback: ResolveResourceCallback
     ) {
-        var handledBitmap: Bitmap? = null
-        if (bitmapFromDrawable != null) {
-            handledBitmap = tryToGetBitmapFromBitmapDrawable(
+        val handledBitmap = if (bitmapFromDrawable != null) {
+            tryToGetBitmapFromBitmapDrawable(
                 drawable = drawable as BitmapDrawable,
                 bitmapFromDrawable = bitmapFromDrawable,
                 resolveResourceCallback = resolveResourceCallback
             )
+        } else {
+            null
         }
 
         if (handledBitmap == null) {
@@ -131,18 +133,18 @@ internal class ResourceResolver(
     private fun resolveResourceHash(
         drawable: Drawable,
         bitmap: Bitmap,
-        byteArray: ByteArray,
+        compressedBitmapBytes: ByteArray,
         shouldCacheBitmap: Boolean,
         resolveResourceCallback: ResolveResourceCallback
     ) {
         // failed to get image data
-        if (byteArray.isEmpty()) {
+        if (compressedBitmapBytes.isEmpty()) {
             // we are already logging the failure in webpImageCompression
             resolveResourceCallback.onFailed()
             return
         }
 
-        val resourceId = md5HashGenerator.generate(byteArray)
+        val resourceId = md5HashGenerator.generate(compressedBitmapBytes)
 
         // failed to resolve bitmap identifier
         if (resourceId == null) {
@@ -158,7 +160,7 @@ internal class ResourceResolver(
             drawable = drawable
         )
 
-        resolveResourceCallback.onResolved(resourceId, byteArray)
+        resolveResourceCallback.onResolved(resourceId, compressedBitmapBytes)
     }
 
     private fun cacheIfNecessary(
@@ -191,13 +193,19 @@ internal class ResourceResolver(
             displayMetrics = displayMetrics,
             bitmapCreationCallback = object : BitmapCreationCallback {
                 override fun onReady(bitmap: Bitmap) {
-                    val byteArray = webPImageCompression.compressBitmap(bitmap)
+                    val compressedBitmapBytes = webPImageCompression.compressBitmap(bitmap)
+
+                    // failed to compress bitmap
+                    if (compressedBitmapBytes.isEmpty()) {
+                        resolveResourceCallback.onFailed()
+                        return
+                    }
 
                     @Suppress("ThreadSafety") // this runs inside an executor
                     resolveResourceHash(
                         drawable = drawable,
                         bitmap = bitmap,
-                        byteArray = byteArray,
+                        compressedBitmapBytes = compressedBitmapBytes,
                         shouldCacheBitmap = true,
                         resolveResourceCallback = resolveResourceCallback
                     )
@@ -217,34 +225,37 @@ internal class ResourceResolver(
         bitmapFromDrawable: Bitmap,
         resolveResourceCallback: ResolveResourceCallback
     ): Bitmap? {
-        drawableUtils.createScaledBitmap(bitmapFromDrawable)?.let { scaledBitmap ->
-            val byteArray = webPImageCompression.compressBitmap(scaledBitmap)
+        val scaledBitmap = drawableUtils.createScaledBitmap(bitmapFromDrawable)
+            ?: return null
 
-            // failed to get byteArray potentially because the bitmap was recycled before imageCompression
-            // we'll now failover to attempting to create a new bitmap from the drawable
-            if (byteArray.isEmpty() && scaledBitmap.isRecycled) {
-                return null
-            }
+        val compressedBitmapBytes = webPImageCompression.compressBitmap(scaledBitmap)
 
-            /**
-             * Check whether the scaled bitmap is the same as the original.
-             * Since Bitmap.createScaledBitmap will return the original bitmap if the
-             * requested dimensions match the dimensions of the original
-             */
-            val shouldCacheBitmap = scaledBitmap != drawable.bitmap
-
-            resolveResourceHash(
-                drawable = drawable,
-                bitmap = scaledBitmap,
-                byteArray = byteArray,
-                shouldCacheBitmap = shouldCacheBitmap,
-                resolveResourceCallback = resolveResourceCallback
-            )
-
-            return scaledBitmap
+        // failed to get byteArray potentially because the bitmap was recycled before imageCompression
+        if (compressedBitmapBytes.isEmpty()) {
+            return null
         }
 
-        return null
+        /**
+         * Check whether the scaled bitmap is the same as the original.
+         * Since Bitmap.createScaledBitmap will return the original bitmap if the
+         * requested dimensions match the dimensions of the original
+         * Add a specific check for isRecycled, because getting width/height from a recycled bitmap
+         * is undefined behavior
+         */
+        val shouldCacheBitmap = !bitmapFromDrawable.isRecycled && (
+            scaledBitmap.width < bitmapFromDrawable.width ||
+                scaledBitmap.height < bitmapFromDrawable.height
+            )
+
+        resolveResourceHash(
+            drawable = drawable,
+            bitmap = scaledBitmap,
+            compressedBitmapBytes = compressedBitmapBytes,
+            shouldCacheBitmap = shouldCacheBitmap,
+            resolveResourceCallback = resolveResourceCallback
+        )
+
+        return scaledBitmap
     }
 
     private fun tryToGetResourceFromCache(
@@ -253,9 +264,9 @@ internal class ResourceResolver(
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&
-                !drawable.bitmap.isRecycled &&
-                drawable.bitmap.width > 0 &&
-                drawable.bitmap.height > 0
+            !drawable.bitmap.isRecycled &&
+            drawable.bitmap.width > 0 &&
+            drawable.bitmap.height > 0
     }
 
     // endregion

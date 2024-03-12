@@ -71,7 +71,7 @@ internal class ResourceResolverTest {
     lateinit var mockMD5HashGenerator: MD5HashGenerator
 
     @Mock
-    lateinit var mockSerializerCallback: ResourcesSerializerCallback
+    lateinit var mockSerializerCallback: ResourceResolverCallback
 
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
@@ -96,9 +96,6 @@ internal class ResourceResolverTest {
 
     @Mock
     lateinit var mockBitmapCachesManager: BitmapCachesManager
-
-    @Mock
-    lateinit var mockBitmapPool: BitmapPool
 
     @Mock
     lateinit var mockBitmapDrawable: BitmapDrawable
@@ -160,7 +157,7 @@ internal class ResourceResolverTest {
         whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
         whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
 
-        testedResourceResolver = createResourcesSerializer()
+        testedResourceResolver = createResourceResolver()
     }
 
     @Test
@@ -179,7 +176,7 @@ internal class ResourceResolverTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -215,7 +212,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -251,7 +248,7 @@ internal class ResourceResolverTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -271,7 +268,7 @@ internal class ResourceResolverTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -314,7 +311,7 @@ internal class ResourceResolverTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -362,7 +359,7 @@ internal class ResourceResolverTest {
             drawable = mockStateListDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -382,7 +379,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -411,7 +408,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -437,7 +434,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -460,7 +457,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -493,7 +490,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -527,20 +524,28 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verify(mockBitmapPool, never()).put(any())
+        verify(mockBitmapCachesManager, never()).putInBitmapPool(any())
     }
 
     @Test
-    fun `M cache bitmap W resolveResourceId() { BitmapDrawable with bitmap was resized }`(
-        @Mock mockResizedBitmap: Bitmap
+    fun `M cache bitmap W resolveResourceId() { BitmapDrawable width was resized }`(
+        @Mock mockResizedBitmap: Bitmap,
+        @StringForgery fakeString: String
     ) {
         // Given
-        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
-            .thenReturn(mockResizedBitmap)
+        val fakeByteArray = fakeString.toByteArray()
+        assertThat(fakeByteArray).isNotEmpty()
+
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockResizedBitmap.width).thenReturn(fakeBitmapWidth - 1)
+        whenever(mockResizedBitmap.height).thenReturn(fakeBitmapHeight)
+
+        whenever(mockWebPImageCompression.compressBitmap(mockResizedBitmap)).thenReturn(fakeByteArray)
+        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
 
         // When
         testedResourceResolver.resolveResourceId(
@@ -550,7 +555,38 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockBitmapCachesManager).putInBitmapPool(any())
+    }
+
+    @Test
+    fun `M cache bitmap W resolveResourceId() { BitmapDrawable height was resized }`(
+        @Mock mockResizedBitmap: Bitmap,
+        @StringForgery fakeString: String
+    ) {
+        // Given
+        val fakeByteArray = fakeString.toByteArray()
+        assertThat(fakeByteArray).isNotEmpty()
+
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockResizedBitmap.width).thenReturn(fakeBitmapWidth)
+        whenever(mockResizedBitmap.height).thenReturn(fakeBitmapHeight - 1)
+
+        whenever(mockWebPImageCompression.compressBitmap(mockResizedBitmap)).thenReturn(fakeByteArray)
+        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -572,7 +608,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -592,7 +628,7 @@ internal class ResourceResolverTest {
             drawable = mockLayerDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -601,8 +637,8 @@ internal class ResourceResolverTest {
 
     @Test
     fun `M return all callbacks W resolveResourceId() { multiple threads, first takes longer }`(
-        @Mock mockFirstCallback: ResourcesSerializerCallback,
-        @Mock mockSecondCallback: ResourcesSerializerCallback,
+        @Mock mockFirstCallback: ResourceResolverCallback,
+        @Mock mockSecondCallback: ResourceResolverCallback,
         @Mock mockFirstDrawable: Drawable,
         @Mock mockSecondDrawable: Drawable,
         @StringForgery fakeFirstResourceId: String,
@@ -623,7 +659,7 @@ internal class ResourceResolverTest {
                 drawable = mockFirstDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
-                resourcesSerializerCallback = mockFirstCallback
+                resourceResolverCallback = mockFirstCallback
             )
             Thread.sleep(1500)
             countDownLatch.countDown()
@@ -636,7 +672,7 @@ internal class ResourceResolverTest {
                 drawable = mockSecondDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
-                resourcesSerializerCallback = mockSecondCallback
+                resourceResolverCallback = mockSecondCallback
             )
             Thread.sleep(500)
             countDownLatch.countDown()
@@ -684,7 +720,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -735,7 +771,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -748,7 +784,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
@@ -765,7 +801,7 @@ internal class ResourceResolverTest {
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
@@ -775,7 +811,7 @@ internal class ResourceResolverTest {
         )
     }
 
-    private fun createResourcesSerializer(): ResourceResolver = ResourceResolver(
+    private fun createResourceResolver(): ResourceResolver = ResourceResolver(
         logger = mockLogger,
         threadPoolExecutor = mockExecutorService,
         drawableUtils = mockDrawableUtils,

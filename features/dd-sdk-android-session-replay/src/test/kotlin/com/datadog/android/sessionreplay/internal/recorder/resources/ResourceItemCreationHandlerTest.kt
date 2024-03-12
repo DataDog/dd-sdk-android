@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,7 +49,7 @@ internal class ResourceItemCreationHandlerTest {
     }
 
     @Test
-    fun `M queue item W queueItemIfNotPreviouslySeen() { not previously seen }`() {
+    fun `M queue item W queueItem() { not previously seen }`() {
         // Given
         val fakeByteArray = fakeResourceId.toByteArray()
 
@@ -64,7 +65,7 @@ internal class ResourceItemCreationHandlerTest {
     }
 
     @Test
-    fun `M not queue item W queueItemIfNotPreviouslySeen() { previously seen }`() {
+    fun `M not queue item W queueItem() { previously seen }`() {
         // Given
         val fakeByteArray = fakeResourceId.toByteArray()
 
@@ -81,7 +82,7 @@ internal class ResourceItemCreationHandlerTest {
     }
 
     @Test
-    fun `M add unique resourceId only once W queueItemIfNotPreviouslySeen()`() {
+    fun `M add unique resourceId only once W queueItem()`() {
         // Given
         val fakeByteArray = fakeResourceId.toByteArray()
 
@@ -90,6 +91,6 @@ internal class ResourceItemCreationHandlerTest {
         testedHandler.queueItem(fakeResourceId, fakeByteArray)
 
         // Then
-        assert(testedHandler.resourceIdsSeen.size == 1)
+        assertThat(testedHandler.resourceIdsSeen).hasSize(1)
     }
 }

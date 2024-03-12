@@ -32,14 +32,17 @@ import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefr
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver
+import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
 import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -122,20 +125,28 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             drawableToColorMapper
         )
 
-        val resourcesSerializer = ResourceResolver.Builder(
-            applicationId = applicationId,
-            recordedDataQueueHandler = recordedDataQueueHandler,
+        val bitmapCachesManager = BitmapCachesManager(
             bitmapPool = BitmapPool(),
             resourcesLRUCache = ResourcesLRUCache(),
+            logger = internalLogger
+        )
+
+        val resourceResolver = ResourceResolver(
+            applicationId = applicationId,
+            recordedDataQueueHandler = recordedDataQueueHandler,
+            bitmapCachesManager = bitmapCachesManager,
+            drawableUtils = DrawableUtils(internalLogger, bitmapCachesManager),
+            logger = internalLogger,
+            md5HashGenerator = MD5HashGenerator(internalLogger),
             webPImageCompression = WebPImageCompression(internalLogger)
-        ).build()
+        )
 
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
             SnapshotProducer(
                 DefaultImageWireframeHelper(
                     logger = internalLogger,
-                    resourceResolver = resourcesSerializer,
+                    resourceResolver = resourceResolver,
                     viewIdentifierResolver = viewIdentifierResolver,
                     viewUtilsInternal = ViewUtilsInternal(),
                     imageTypeResolver = ImageTypeResolver()

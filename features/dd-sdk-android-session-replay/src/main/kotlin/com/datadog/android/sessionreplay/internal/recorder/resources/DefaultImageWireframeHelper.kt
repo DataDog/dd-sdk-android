@@ -24,15 +24,15 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.Locale
 
-// This should not have a callback but it should just create a placeholder for base64Serializer
-// The resourcesSerializer dependency should be removed from here
-// TODO: RUM-0000 Remove the resourcesSerializer dependency from here
+// This should not have a callback but it should just create a placeholder for resourceResolver
+// The resourceResolver dependency should be removed from here
+// TODO: RUM-0000 Remove the resourceResolver dependency from here
 internal class DefaultImageWireframeHelper(
     private val logger: InternalLogger,
     private val resourceResolver: ResourceResolver,
     private val viewIdentifierResolver: ViewIdentifierResolver,
-    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
+    private val viewUtilsInternal: ViewUtilsInternal,
+    private val imageTypeResolver: ImageTypeResolver
 ) : ImageWireframeHelper {
 
     @Suppress("ReturnCount")
@@ -114,7 +114,7 @@ internal class DefaultImageWireframeHelper(
             drawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
-            resourcesSerializerCallback = object : ResourcesSerializerCallback {
+            resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
                     asyncJobStatusCallback.jobFinished()

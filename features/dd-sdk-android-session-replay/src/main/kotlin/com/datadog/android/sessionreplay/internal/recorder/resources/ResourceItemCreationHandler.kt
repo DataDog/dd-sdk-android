@@ -20,13 +20,13 @@ internal class ResourceItemCreationHandler(
     @VisibleForTesting internal val resourceIdsSeen: MutableSet<String> =
         Collections.synchronizedSet(HashSet<String>())
 
-    internal fun queueItem(resourceId: String, byteArray: ByteArray) {
+    internal fun queueItem(resourceId: String, resourceData: ByteArray) {
         if (!resourceIdsSeen.contains(resourceId)) {
             resourceIdsSeen.add(resourceId)
 
             recordedDataQueueHandler.addResourceItem(
                 identifier = resourceId,
-                resourceData = byteArray,
+                resourceData = resourceData,
                 applicationId = applicationId
             )
         }
