@@ -5046,8 +5046,10 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        attributes[RumAttributes.ERROR_FINGERPRINT] = fingerprint
+        val mockAttributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val fullAttributes = mockAttributes.toMutableMap().apply {
+            put(RumAttributes.ERROR_FINGERPRINT, fingerprint)
+        }
         val throwableMessage = throwable.message
         check(!throwableMessage.isNullOrBlank()) {
             "Expected throwable to have a non null, non blank message"
@@ -5059,7 +5061,7 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = fullAttributes
         )
 
         // When
@@ -5071,9 +5073,42 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
+                    hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     hasErrorFingerprint(fingerprint)
+                    isCrash(false)
+                    hasNoThreads()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(mockAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
