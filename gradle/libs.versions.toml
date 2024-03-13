@@ -301,6 +301,14 @@ ktor = [
     "ktorGson"
 ]
 
+traceCore = [
+    "moshi",
+    "jctools",
+    "okHttp",
+    "datadogSketchesJava",
+    "re2j"
+]
+
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 

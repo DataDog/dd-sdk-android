@@ -52,6 +52,3 @@ include(":tools:unit")
 include(":tools:noopfactory")
 include(":tools:javabackport")
 include(":tools:lint")
-
-// Otel
-include(":features:dd-trace-core")

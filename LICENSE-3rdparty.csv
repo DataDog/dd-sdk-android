@@ -42,6 +42,7 @@ import,androidx.vectordrawable,Apache-2.0,Copyright 2018 The Android Open Source
 import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.android.tools,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.github.bumptech.glide,"Simplified BSD License/The Apache Software License, Version 2.0","Copyright 2014 Google, Inc. All rights reserved, Copyright (c) 2013. Bump Technologies Inc. All Rights Reserved."
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."
