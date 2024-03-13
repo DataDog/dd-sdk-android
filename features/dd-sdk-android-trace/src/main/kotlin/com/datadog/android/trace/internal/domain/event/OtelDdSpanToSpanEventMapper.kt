@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.core.DDSpan
+import com.datadog.trace.core.DDSpanContext
 
 internal class OtelDdSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean
@@ -52,8 +53,7 @@ internal class OtelDdSpanToSpanEventMapper(
 
     private fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
         val metrics = resolveMetricsFromSpanContext(event).apply {
-            this["_dd.agent_psr"] = 1.0f
-            this["_sampling_priority_v1"] = 1
+            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = event.samplingPriority()
         }
         return SpanEvent.Metrics(
             topLevel = if (event.parentId == 0L) 1 else null,

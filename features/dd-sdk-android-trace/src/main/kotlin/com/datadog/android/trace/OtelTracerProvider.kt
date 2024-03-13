@@ -95,7 +95,7 @@ class OtelTracerProvider(
     ) {
         private var tracingHeaderTypes: Set<TracingHeaderType> =
             setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-        private var sampleRate: Double = DEFAULT_SAMPLE_RATE
+        private var sampleRate: Double? = null
         private var serviceName: String = ""
             get() {
                 return field.ifEmpty {
@@ -201,11 +201,24 @@ class OtelTracerProvider(
                 TracerConfig.SPAN_TAGS,
                 globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
             )
-            properties.setProperty(
-                TracerConfig.TRACE_SAMPLE_RATE,
-                (sampleRate / DEFAULT_SAMPLE_RATE).toString()
-            )
 
+            // In case the sample rate is not set we should not specify it. The agent code under the hood
+            // will provide different sampler based on this property and also different sampling priorities used
+            // in the metrics
+            // -1 MANUAL_DROP User indicated to drop the trace via configuration (sampling rate).
+            // 0 AUTO_DROP Sampler indicated to drop the trace using a sampling rate provided by the Agent through
+            // a remote configuration. The Agent API is not used in Android so this `sampling_priority:0` will never
+            // be used.
+            // 1 AUTO_KEEP Sampler indicated to keep the trace using a sampling rate from the default configuration
+            // which right now is 100.0
+            // (Default sampling priority value. or in our case no specified sample rate will be considered as 100)
+            // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
+            sampleRate?.let {
+                properties.setProperty(
+                    TracerConfig.TRACE_SAMPLE_RATE,
+                    (it / KEEP_ALL_SAMPLE_RATE_PERCENT).toString()
+                )
+            }
             val propagationStyles = tracingHeaderTypes.joinToString(",")
             properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
             properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
@@ -224,7 +237,7 @@ class OtelTracerProvider(
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"
-        internal const val DEFAULT_SAMPLE_RATE = 100.0
+        internal const val KEEP_ALL_SAMPLE_RATE_PERCENT = 100.0
 
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an OtelTracerProvider instance, " +

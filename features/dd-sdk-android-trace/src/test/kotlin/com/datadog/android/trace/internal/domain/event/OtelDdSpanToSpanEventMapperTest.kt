@@ -13,6 +13,7 @@ import com.datadog.android.trace.assertj.SpanEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.api.DD128bTraceId
 import com.datadog.trace.core.DDSpan
+import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -223,8 +224,7 @@ internal class OtelDdSpanToSpanEventMapperTest {
 
     private fun DDSpan.expectedMetrics(): Map<String, Number> {
         return tags.filterValues { it is Number }.mapValues { it.value as Number }.toMutableMap().apply {
-            this["_dd.agent_psr"] = 1.0f
-            this["_sampling_priority_v1"] = 1
+            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = samplingPriority()
         }
     }
 

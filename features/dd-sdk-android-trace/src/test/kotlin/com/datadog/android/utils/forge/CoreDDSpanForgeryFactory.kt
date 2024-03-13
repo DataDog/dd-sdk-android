@@ -29,6 +29,7 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
         val traceId = forge.aLong(min = 1)
         val spanId = forge.aLong(min = 1)
         val parentId = forge.aLong(min = 1)
+        val samplingPriority = forge.anInt()
         val tagsAndMetrics = tags + metrics
         val mockSpanContext: DDSpanContext = mock {
             whenever(it.baggageItems).thenReturn(baggageItems)
@@ -48,6 +49,7 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
             whenever(it.parentId).thenReturn(parentId)
             whenever(it.baggage).thenReturn(baggageItems)
             whenever(it.tags).thenReturn(tagsAndMetrics)
+            whenever(it.samplingPriority()).thenReturn(samplingPriority)
         }
         return mockDDSpan
     }
