@@ -5037,6 +5037,50 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view { error fingerprint attribute }`(
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        @StringForgery fingerprint: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        attributes[RumAttributes.ERROR_FINGERPRINT] = fingerprint
+        val throwableMessage = throwable.message
+        check(!throwableMessage.isNullOrBlank()) {
+            "Expected throwable to have a non null, non blank message"
+        }
+        fakeEvent = RumRawEvent.AddError(
+            throwableMessage,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasMessage(throwableMessage)
+                    hasStackTrace(stacktrace)
+                    hasErrorFingerprint(fingerprint)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(AddError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,

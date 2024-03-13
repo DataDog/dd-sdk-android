@@ -159,6 +159,11 @@ object RumAttributes {
      */
     const val ERROR_DATABASE_PATH: String = "error.database.path"
 
+    /**
+     * Specifies a custom error fingerprint for the supplied.
+     */
+    const val ERROR_FINGERPRINT: String = "_dd.error.fingerprint"
+
     // endregion
 
     // region Action

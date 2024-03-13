@@ -407,10 +407,12 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
-    fun `M add fingerprint W creating the Log { fingerprint attribute set }`() {
+    fun `M add fingerprint W creating the Log { fingerprint attribute set }`(
+        @StringForgery fakeFingerprint: String
+    ) {
         // WHEN
         val modifiedAttributes = fakeAttributes.toMutableMap().apply {
-            put(LogAttributes.ERROR_FINGERPRINT, "fake_fingerprint")
+            put(LogAttributes.ERROR_FINGERPRINT, fakeFingerprint)
         }
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -432,7 +434,7 @@ internal class DatadogLogGeneratorTest {
                 stack = fakeThrowable.stackTraceToString(),
                 message = fakeThrowable.message,
                 sourceType = null,
-                fingerprint = "fake_fingerprint",
+                fingerprint = fakeFingerprint,
                 threads = null
             )
         )
