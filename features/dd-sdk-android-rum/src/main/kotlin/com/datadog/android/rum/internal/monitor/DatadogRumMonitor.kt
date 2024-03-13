@@ -312,6 +312,10 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         val errorType = getErrorType(attributes)
+        val mutableAttributes = attributes.toMutableMap()
+
+        @Suppress("UNCHECKED_CAST")
+        val threads = mutableAttributes.remove(RumAttributes.INTERNAL_ALL_THREADS) as? List<ThreadDump>
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -319,10 +323,10 @@ internal class DatadogRumMonitor(
                 throwable,
                 null,
                 false,
-                attributes.toMap(),
+                mutableAttributes,
                 eventTime,
                 errorType,
-                threads = emptyList()
+                threads = threads.orEmpty()
             )
         )
     }

@@ -245,6 +245,8 @@ object com.datadog.android.core.internal.utils.JsonSerializer
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
+fun Thread.State.asString(): String
+fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
 interface com.datadog.android.core.persistence.PersistenceStrategy
   interface Factory

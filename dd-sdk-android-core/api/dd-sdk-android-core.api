@@ -663,6 +663,11 @@ public final class com/datadog/android/core/internal/utils/NumberExtKt {
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
 }
 
+public final class com/datadog/android/core/internal/utils/ThreadExtKt {
+	public static final fun asString (Ljava/lang/Thread$State;)Ljava/lang/String;
+	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;
+}
+
 public final class com/datadog/android/core/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
