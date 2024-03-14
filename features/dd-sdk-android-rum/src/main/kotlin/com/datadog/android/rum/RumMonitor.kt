@@ -179,7 +179,9 @@ interface RumMonitor {
      * @param source the source of the error
      * @param throwable the throwable
      * @param attributes additional custom attributes to attach to the error. Attributes can be
-     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
+     * that want to supply a custom fingerprint for this error can add a value under the key
+     * [RumAttributes.ERROR_CUSTOM_FINGERPRINT]
      * @see [startResource]
      * @see [stopResource]
      */
@@ -205,7 +207,9 @@ interface RumMonitor {
      * @param errorType the type of the error. Usually it should be the canonical name of the
      * of the Exception class.
      * @param attributes additional custom attributes to attach to the error. Attributes can be
-     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
+     * that want to supply a custom fingerprint for this error can add a value under the key
+     * [RumAttributes.ERROR_CUSTOM_FINGERPRINT]
      * @see [startResource]
      * @see [stopResource]
      */
