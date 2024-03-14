@@ -25,6 +25,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -127,9 +128,8 @@ internal class RumFeature(
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
-    internal lateinit var anrDetectorExecutorService: ExecutorService
-    internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
-    internal lateinit var anrDetectorHandler: Handler
+    private var anrDetectorExecutorService: ExecutorService? = null
+    internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
     internal lateinit var telemetry: Telemetry
 
@@ -177,7 +177,9 @@ internal class RumFeature(
 
         initializeVitalMonitors(configuration.vitalsMonitorUpdateFrequency)
 
-        initializeANRDetector()
+        if (configuration.trackNonFatalAnrs) {
+            initializeANRDetector()
+        }
 
         registerTrackingStrategies(appContext)
 
@@ -217,8 +219,8 @@ internal class RumFeature(
         frameRateVitalMonitor = NoOpVitalMonitor()
 
         vitalExecutorService.shutdownNow()
-        anrDetectorExecutorService.shutdownNow()
-        anrDetectorRunnable.stop()
+        anrDetectorExecutorService?.shutdownNow()
+        anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
@@ -435,14 +437,14 @@ internal class RumFeature(
     }
 
     private fun initializeANRDetector() {
-        anrDetectorHandler = Handler(Looper.getMainLooper())
-        anrDetectorRunnable = ANRDetectorRunnable(sdkCore, anrDetectorHandler)
+        val detectorRunnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
-        anrDetectorExecutorService.executeSafe(
+        anrDetectorExecutorService?.executeSafe(
             "ANR detection",
             sdkCore.internalLogger,
-            anrDetectorRunnable
+            detectorRunnable
         )
+        anrDetectorRunnable = detectorRunnable
     }
 
     private fun addJvmCrash(crashEvent: JvmCrash.Rum) {
@@ -581,6 +583,7 @@ internal class RumFeature(
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
+        val trackNonFatalAnrs: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
         val additionalConfig: Map<String, Any>
@@ -588,7 +591,6 @@ internal class RumFeature(
 
     internal companion object {
 
-        internal const val JVM_CRASH_BUS_MESSAGE_TYPE = "jvm_crash"
         internal const val NDK_CRASH_BUS_MESSAGE_TYPE = "ndk_crash"
         internal const val LOGGER_ERROR_BUS_MESSAGE_TYPE = "logger_error"
         internal const val LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE = "logger_error_with_stacktrace"
@@ -627,6 +629,7 @@ internal class RumFeature(
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,
+            trackNonFatalAnrs = isTrackNonFatalAnrsEnabledByDefault(),
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
             sessionListener = NoOpRumSessionListener(),
             additionalConfig = emptyMap()
@@ -689,6 +692,12 @@ internal class RumFeature(
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
             return DatadogGesturesTracker(providers, interactionPredicate, internalLogger)
+        }
+
+        internal fun isTrackNonFatalAnrsEnabledByDefault(
+            buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+        ): Boolean {
+            return buildSdkVersionProvider.version < Build.VERSION_CODES.R
         }
     }
 }

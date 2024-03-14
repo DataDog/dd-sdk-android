@@ -92,6 +92,11 @@ internal class RumConfigurationBuilderTest {
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
                 backgroundEventTracking = false,
                 trackFrustrations = true,
+                // on Android R+ this should be false, but since default value is static property
+                // RumFeature.DEFAULT_RUM_CONFIG, it is evaluated at the static() block during class
+                // loading, so we are not able to set Build API version at this point. We will test
+                // it through a helper method in RumFeature.Companion
+                trackNonFatalAnrs = true,
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
                 sessionListener = NoOpRumSessionListener(),
                 additionalConfig = emptyMap()
@@ -315,6 +320,23 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 backgroundEventTracking = backgroundEventEnabled
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 build config with track non-fatal ANRs 𝕎 trackNonFatalAnrs() and build()`(
+        @BoolForgery trackNonFatalAnrsEnabled: Boolean
+    ) {
+        // When
+        val rumConfiguration = testedBuilder
+            .trackNonFatalAnrs(trackNonFatalAnrsEnabled)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                trackNonFatalAnrs = trackNonFatalAnrsEnabled
             )
         )
     }

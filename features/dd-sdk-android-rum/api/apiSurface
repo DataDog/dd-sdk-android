@@ -69,6 +69,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun disableUserInteractionTracking(): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
     fun trackLongTasks(Long = RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+    fun trackNonFatalAnrs(Boolean): Builder
     fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
     fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
