@@ -55,12 +55,18 @@ public final class com/datadog/android/log/Logger$Builder {
 
 public final class com/datadog/android/log/Logs {
 	public static final field INSTANCE Lcom/datadog/android/log/Logs;
+	public static final fun addAttribute (Ljava/lang/String;Ljava/lang/Object;)V
+	public static final fun addAttribute (Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun addAttribute$default (Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun enable$default (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun isEnabled ()Z
 	public static final fun isEnabled (Lcom/datadog/android/api/SdkCore;)Z
 	public static synthetic fun isEnabled$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
+	public static final fun removeAttribute (Ljava/lang/String;)V
+	public static final fun removeAttribute (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun removeAttribute$default (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/log/LogsConfiguration {
@@ -194,22 +200,27 @@ public final class com/datadog/android/log/model/LogEvent$Device$Companion {
 public final class com/datadog/android/log/model/LogEvent$Error {
 	public static final field Companion Lcom/datadog/android/log/model/LogEvent$Error$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Error;
-	public static synthetic fun copy$default (Lcom/datadog/android/log/model/LogEvent$Error;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/log/model/LogEvent$Error;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lcom/datadog/android/log/model/LogEvent$Error;
+	public static synthetic fun copy$default (Lcom/datadog/android/log/model/LogEvent$Error;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/log/model/LogEvent$Error;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Error;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/log/model/LogEvent$Error;
 	public final fun getKind ()Ljava/lang/String;
 	public final fun getMessage ()Ljava/lang/String;
+	public final fun getSourceType ()Ljava/lang/String;
 	public final fun getStack ()Ljava/lang/String;
+	public final fun getThreads ()Ljava/util/List;
 	public fun hashCode ()I
 	public final fun setKind (Ljava/lang/String;)V
 	public final fun setMessage (Ljava/lang/String;)V
+	public final fun setSourceType (Ljava/lang/String;)V
 	public final fun setStack (Ljava/lang/String;)V
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
@@ -307,6 +318,33 @@ public final class com/datadog/android/log/model/LogEvent$Status : java/lang/Enu
 
 public final class com/datadog/android/log/model/LogEvent$Status$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Status;
+}
+
+public final class com/datadog/android/log/model/LogEvent$Thread {
+	public static final field Companion Lcom/datadog/android/log/model/LogEvent$Thread$Companion;
+	public fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Thread;
+	public static synthetic fun copy$default (Lcom/datadog/android/log/model/LogEvent$Thread;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/log/model/LogEvent$Thread;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Thread;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/log/model/LogEvent$Thread;
+	public final fun getCrashed ()Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getStack ()Ljava/lang/String;
+	public final fun getState ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/log/model/LogEvent$Thread$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Thread;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/log/model/LogEvent$Thread;
 }
 
 public final class com/datadog/android/log/model/LogEvent$Usr {

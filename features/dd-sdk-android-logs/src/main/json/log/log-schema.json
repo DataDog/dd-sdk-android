@@ -176,6 +176,42 @@
           "type": "string",
           "description": "The error stack trace",
           "readOnly": false
+        },
+        "source_type": {
+          "type": "string",
+          "description": "The source_type of the error (e.g. 'android', 'flutter', 'react-native')",
+          "readOnly": false
+        },
+        "threads": {
+          "type": "array",
+          "description": "Description of each thread in the process when error happened.",
+          "items": {
+            "type": "object",
+            "description": "Description of the thread in the process when error happened.",
+            "required": ["name", "crashed", "stack"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the thread (e.g. 'Thread 0').",
+                "readOnly": true
+              },
+              "crashed": {
+                "type": "boolean",
+                "description": "Tells if the thread crashed.",
+                "readOnly": true
+              },
+              "stack": {
+                "type": "string",
+                "description": "Unsymbolicated stack trace of the given thread.",
+                "readOnly": true
+              },
+              "state": {
+                "type": "string",
+                "description": "Platform-specific state of the thread when its state was captured (CPU registers dump for iOS, thread state enum for Android, etc.).",
+                "readOnly": true
+              }
+            }
+          }
         }
       },
       "readOnly": true

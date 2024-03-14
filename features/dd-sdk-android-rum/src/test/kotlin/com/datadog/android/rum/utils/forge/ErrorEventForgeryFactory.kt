@@ -44,7 +44,17 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 isCrash = forge.aNullable { aBool() },
                 type = forge.aNullable { anAlphabeticalString() },
                 handling = forge.aNullable { getForgery() },
-                handlingStack = forge.aNullable { aThrowable().loggableStackTrace() }
+                handlingStack = forge.aNullable { aThrowable().loggableStackTrace() },
+                threads = forge.aNullable {
+                    aList {
+                        ErrorEvent.Thread(
+                            name = anAlphaNumericalString(),
+                            crashed = aBool(),
+                            stack = aThrowable().stackTraceToString(),
+                            state = aNullable { getForgery<Thread.State>().name.lowercase() }
+                        )
+                    }
+                }
             ),
             view = ErrorEvent.ErrorEventView(
                 id = forge.getForgery<UUID>().toString(),

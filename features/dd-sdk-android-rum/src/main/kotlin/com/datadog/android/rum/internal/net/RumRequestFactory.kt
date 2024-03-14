@@ -27,7 +27,7 @@ internal class RumRequestFactory(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request {
+    ): Request? {
         val requestId = UUID.randomUUID().toString()
 
         return Request(

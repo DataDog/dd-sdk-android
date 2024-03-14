@@ -6,10 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 
 internal interface Processor {
+
+    fun processResources(item: ResourceRecordedDataQueueItem)
 
     fun processScreenSnapshots(item: SnapshotRecordedDataQueueItem)
 

@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -74,6 +75,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
@@ -1368,7 +1370,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with initial global attributes 𝕎 handleEvent(StopView) on active view`(
+    fun `𝕄 send event with updated global attributes 𝕎 handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
@@ -1377,7 +1379,7 @@ internal class RumViewScopeTest {
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
+        expectedAttributes.putAll(emptyMap())
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
         testedScope = RumViewScope(
@@ -1474,6 +1476,22 @@ internal class RumViewScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+        mockSessionReplayContext(testedScope)
 
         // When
         val result = testedScope.handleEvent(
@@ -1664,7 +1682,7 @@ internal class RumViewScopeTest {
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
+        expectedAttributes[fakeGlobalAttributeKey] = fakeGlobalAttributeNewValue
         whenever(rumMonitor.mockInstance.getAttributes())
             .doReturn(mapOf(fakeGlobalAttributeKey to fakeGlobalAttributeNewValue))
 
@@ -4427,8 +4445,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4446,6 +4465,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4498,8 +4518,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -4522,6 +4543,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4572,8 +4594,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4590,6 +4613,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4642,8 +4666,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4660,6 +4685,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4714,8 +4740,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -4732,6 +4759,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4779,10 +4807,11 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
-            null,
+            throwable = null,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -4797,6 +4826,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4831,9 +4861,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributes,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -4852,6 +4883,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4904,10 +4936,11 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
-            null,
-            null,
-            false,
-            attributes,
+            throwable = null,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -4925,6 +4958,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -4969,6 +5003,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery sourceType: RumErrorSourceType,
+        @Forgery threads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -4977,10 +5012,11 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
-            null,
-            null,
-            true,
-            attributes,
+            throwable = null,
+            stacktrace = null,
+            isFatal = true,
+            threads = threads,
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -4997,6 +5033,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(true)
+                    hasThreads(threads)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5100,9 +5137,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            emptyMap(),
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap(),
             sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
@@ -5123,6 +5161,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5168,6 +5207,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
+        @Forgery threads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -5177,9 +5217,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            attributes,
+            stacktrace = null,
+            isFatal = true,
+            threads = threads,
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -5197,6 +5238,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
+                    hasThreads(threads)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5303,9 +5345,11 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributesWithCrash,
+            stacktrace = null,
+            isFatal = false,
+            // empty list, because _dd.error.is_crash is coming from Cross Platform, this not a native crash
+            threads = emptyList(),
+            attributes = attributesWithCrash,
             sourceType = sourceType
         )
 
@@ -5314,9 +5358,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            attributes,
+            stacktrace = null,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes,
             sourceType = sourceType
         )
 
@@ -5336,6 +5381,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5439,9 +5485,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributesWithCrash,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributesWithCrash,
             sourceType = sourceType
         )
 
@@ -5459,6 +5506,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5513,9 +5561,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            attributes,
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
             type = errorType,
             sourceType = sourceType
         )
@@ -5535,6 +5584,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
+                    hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5580,6 +5630,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
+        @Forgery threads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -5588,9 +5639,10 @@ internal class RumViewScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            emptyMap(),
+            stacktrace = null,
+            isFatal = true,
+            threads = threads,
+            attributes = emptyMap(),
             sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
@@ -5610,6 +5662,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
+                    hasThreads(threads)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
@@ -5710,7 +5763,15 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, null, fatal, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace = null,
+            isFatal = fatal,
+            threads = emptyList(),
+            attributes = attributes
+        )
         testedScope.stopped = true
 
         // When
@@ -5732,7 +5793,15 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, fatal, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = null,
+            stacktrace,
+            fatal,
+            threads = emptyList(),
+            attributes = attributes
+        )
         testedScope.stopped = true
 
         // When
@@ -5751,7 +5820,15 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingErrorCount = 0
-        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = null,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
+        )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -5767,7 +5844,15 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingErrorCount = 0
-        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = null,
+            stacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = emptyMap()
+        )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -7411,10 +7496,11 @@ internal class RumViewScopeTest {
             RumRawEvent.AddError(
                 forge.anAlphabeticalString(),
                 forge.aValueFrom(RumErrorSource::class.java),
-                null,
-                null,
-                false,
-                mapOf()
+                throwable = null,
+                stacktrace = null,
+                isFatal = false,
+                threads = emptyList(),
+                attributes = emptyMap()
             ),
             mockWriter
         )
@@ -7474,8 +7560,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -7502,8 +7589,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
 
@@ -7531,8 +7619,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            false,
-            attributes
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
@@ -7562,8 +7651,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            true,
-            attributes
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes
         )
 
         // When
@@ -7590,8 +7680,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            true,
-            attributes
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
 
@@ -7619,8 +7710,9 @@ internal class RumViewScopeTest {
             source,
             throwable,
             stacktrace,
-            true,
-            attributes
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes
         )
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
@@ -7807,6 +7899,8 @@ internal class RumViewScopeTest {
             .eventDropped(testedScope.viewId, StorageEvent.FrozenFrame)
     }
 
+    // endregion
+
     // region Misc
 
     @ParameterizedTest
@@ -7847,6 +7941,446 @@ internal class RumViewScopeTest {
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name)
         )
+    }
+
+    // endregion
+
+    // region Global Attributes
+
+    @Test
+    fun `𝕄 update the global attributes 𝕎 handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStopEventAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val excludedKeys = fakeAttributes.keys + fakeStopEventAttributes.keys
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeNewGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeNewGlobalAttributes)
+        expectedAttributes.putAll(fakeStopEventAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second for event handling
+            fakeNewGlobalAttributes
+        )
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+
+        // When
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, fakeStopEventAttributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 not update the global attributes 𝕎 handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeNewGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second for event handling
+            fakeNewGlobalAttributes
+        )
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+
+        // When
+        val result = testedScope.handleEvent(
+            RumRawEvent.StartView(forge.getForgery(), emptyMap()),
+            mockWriter
+        )
+
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 not update the global attributes 𝕎 handleEvent(Resource Sent) on new started view`(
+        @StringForgery key: String,
+        @Forgery method: RumResourceMethod,
+        @StringForgery url: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeNewGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second one for when the resource is started
+            fakeGlobalAttributes,
+            // third one for when the resource scope init
+            fakeGlobalAttributes,
+            // third one when the new view was started
+            fakeNewGlobalAttributes
+        )
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartResource(key, url, method, emptyMap()),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartView(forge.getForgery(), emptyMap()),
+            mockWriter
+        )
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.ResourceSent(testedScope.viewId),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 not update the global attributes 𝕎 handleEvent(Action Sent) on new started view`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeNewGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second one for when the action is started
+            fakeGlobalAttributes,
+            // third one for when the action scope init
+            fakeGlobalAttributes,
+            // third one new when the new view was started
+            fakeNewGlobalAttributes
+        )
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartAction(type, name, forge.aBool(), emptyMap()),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartView(forge.getForgery(), emptyMap()),
+            mockWriter
+        )
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.ActionSent(testedScope.viewId, forge.anInt()),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+    }
+
+    @Test
+    fun `𝕄 not update the global attributes 𝕎 handleEvent(Resource Sent) on stopped view`(
+        @StringForgery key: String,
+        @Forgery method: RumResourceMethod,
+        @StringForgery url: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStopEventAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val excludedKeys = fakeAttributes.keys + fakeStopEventAttributes.keys
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeViewStoppedGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeResourceStoppedGlobalProperties = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeViewStoppedGlobalAttributes)
+        expectedAttributes.putAll(fakeStopEventAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second one for when the resource is started
+            fakeGlobalAttributes,
+            // third one for when the resource scope init
+            fakeGlobalAttributes,
+            // fourth one for when the view is stopped
+            fakeViewStoppedGlobalAttributes,
+            // last one when the resource is stopped
+            fakeResourceStoppedGlobalProperties
+        )
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartResource(key, url, method, emptyMap()),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, fakeStopEventAttributes),
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.ResourceSent(testedScope.viewId),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 not update the global attributes 𝕎 handleEvent(Action Sent) on stopped view`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStopEventAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val excludedKeys = fakeAttributes.keys + fakeStopEventAttributes.keys
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeViewStoppedGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val fakeActionSentGlobalProperties = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeViewStoppedGlobalAttributes)
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeStopEventAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second one for when the action is started
+            fakeGlobalAttributes,
+            // third one for the action scope init
+            fakeGlobalAttributes,
+            // fourth one for when the view is stopped
+            fakeViewStoppedGlobalAttributes,
+            // last one when the action was sent
+            fakeActionSentGlobalProperties
+        )
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartAction(type, name, forge.aBool(), emptyMap()),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, fakeStopEventAttributes),
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.ActionSent(testedScope.viewId, forge.anInt()),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+    }
+
+    @Test
+    fun `𝕄 use a copy of the global attributes 𝕎 handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStopEventAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val excludedKeys = fakeAttributes.keys + fakeStopEventAttributes.keys
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = excludedKeys) {
+            anHexadecimalString() to anAsciiString()
+        }.toMutableMap()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        expectedAttributes.putAll(fakeStopEventAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+
+        // When
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, fakeStopEventAttributes),
+            mockWriter
+        )
+        // updating the global attributes here
+        fakeGlobalAttributes[forge.anAlphabeticalString()] = forge.anAlphabeticalString()
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
     }
 
     // endregion

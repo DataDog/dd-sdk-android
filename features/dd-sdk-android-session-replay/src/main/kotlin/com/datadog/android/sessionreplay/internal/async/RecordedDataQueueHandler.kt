@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
  * The items are added to the queue from the main thread and processed on a background thread.
  */
 @Suppress("TooManyFunctions")
-internal class RecordedDataQueueHandler {
+internal class RecordedDataQueueHandler : DataQueueHandler {
     private var executorService: ExecutorService
     private var processor: RecordedDataProcessor
     private var rumContextDataHandler: RumContextDataHandler
@@ -85,13 +85,34 @@ internal class RecordedDataQueueHandler {
     }
 
     @Synchronized
-    internal fun clearAndStopProcessingQueue() {
+    override fun clearAndStopProcessingQueue() {
         recordedDataQueue.clear()
         executorService.shutdown()
     }
 
     @MainThread
-    internal fun addTouchEventItem(
+    override fun addResourceItem(
+        identifier: String,
+        applicationId: String,
+        resourceData: ByteArray
+    ): ResourceRecordedDataQueueItem? {
+        val rumContextData = rumContextDataHandler.createRumContextData()
+            ?: return null
+
+        val item = ResourceRecordedDataQueueItem(
+            recordedQueuedItemContext = rumContextData,
+            identifier = identifier,
+            applicationId = applicationId,
+            resourceData = resourceData
+        )
+
+        insertIntoRecordedDataQueue(item)
+
+        return item
+    }
+
+    @MainThread
+    override fun addTouchEventItem(
         pointerInteractions: List<MobileSegment.MobileRecord>
     ): TouchEventRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
@@ -108,7 +129,7 @@ internal class RecordedDataQueueHandler {
     }
 
     @MainThread
-    internal fun addSnapshotItem(
+    override fun addSnapshotItem(
         systemInformation: SystemInformation
     ): SnapshotRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
@@ -132,7 +153,7 @@ internal class RecordedDataQueueHandler {
      * If neither of the previous conditions occurs, the loop breaks.
      */
     @MainThread
-    internal fun tryToConsumeItems() {
+    override fun tryToConsumeItems() {
         // no need to create a thread if the queue is empty
         if (recordedDataQueue.isEmpty()) {
             return
@@ -200,12 +221,20 @@ internal class RecordedDataQueueHandler {
 
             is TouchEventRecordedDataQueueItem ->
                 processTouchEvent(nextItem)
+
+            is ResourceRecordedDataQueueItem ->
+                processResourceEvent(nextItem)
         }
     }
 
     @WorkerThread
     private fun processSnapshotEvent(item: SnapshotRecordedDataQueueItem) {
         processor.processScreenSnapshots(item)
+    }
+
+    @WorkerThread
+    private fun processResourceEvent(item: ResourceRecordedDataQueueItem) {
+        processor.processResources(item)
     }
 
     @WorkerThread

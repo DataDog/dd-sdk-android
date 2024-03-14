@@ -19,9 +19,9 @@ import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageCompression
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -165,7 +165,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -204,7 +203,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -289,7 +287,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -375,7 +372,6 @@ internal class ImageViewMapperTest {
             height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
-            base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )

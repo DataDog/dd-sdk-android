@@ -17,6 +17,9 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
@@ -226,7 +229,63 @@ internal class LogsFeatureTest {
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)
     }
 
-    // region FeatureEventReceiver#onReceive
+    @Test
+    fun `M add attributes W addAttribute`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // When
+        testedFeature.addAttribute(key, value)
+
+        // Then
+        val attributes = testedFeature.getAttributes()
+        assertThat(attributes).containsEntry(key, value)
+    }
+
+    @Test
+    fun `M remove attributes W removeAttribute`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        testedFeature.addAttribute(key, value)
+
+        // When
+        testedFeature.removeAttribute(key)
+
+        // Then
+        val attributes = testedFeature.getAttributes()
+        assertThat(attributes).isEmpty()
+    }
+
+    @Test
+    fun `M provide attribute snapshot W getAttributes`(
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @StringForgery secondValue: String
+    ) {
+        // Given
+        testedFeature.addAttribute(key, value)
+        val attributes = testedFeature.getAttributes()
+
+        // When
+        testedFeature.addAttribute(key, secondValue)
+
+        // Then
+        assertThat(attributes).containsEntry(key, value)
+    }
+
+    @Test
+    fun `M add attributes replaces null W addAttribute { null value }`(
+        @StringForgery key: String
+    ) {
+        testedFeature.addAttribute(key, null)
+
+        // Then
+        assertThat(testedFeature.getAttributes()).containsEntry(key, NULL_MAP_VALUE)
+    }
+
+    // region FeatureEventReceiver#onReceive + unknown
 
     @Test
     fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
@@ -291,82 +350,26 @@ internal class LogsFeatureTest {
 
     // endregion
 
-    // region FeatureEventReceiver#onReceive
-
-    @ParameterizedTest
-    @EnumSource
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { corrupted mandatory fields, JVM crash }`(
-        missingType: ValueMissingType,
-        @LongForgery fakeTimestamp: Long,
-        @StringForgery fakeMessage: String,
-        @StringForgery fakeLoggerName: String,
-        forge: Forge
-    ) {
-        // Given
-        testedFeature.dataWriter = mockDataWriter
-        val fakeThrowable = forge.aThrowable()
-        val event = mutableMapOf<String, Any?>(
-            "type" to "jvm_crash",
-            "threadName" to fakeThreadName,
-            "timestamp" to fakeTimestamp,
-            "message" to fakeMessage,
-            "loggerName" to fakeLoggerName,
-            "throwable" to fakeThrowable
-        )
-
-        when (missingType) {
-            ValueMissingType.MISSING -> event.remove(
-                forge.anElementFrom(event.keys.filterNot { it == "type" })
-            )
-
-            ValueMissingType.NULL -> event[
-                forge.anElementFrom(event.keys.filterNot { it == "type" })
-            ] = null
-
-            ValueMissingType.WRONG_TYPE -> event[
-                forge.anElementFrom(event.keys.filterNot { it == "type" })
-            ] = Any()
-        }
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(
-                LogsFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
-            )
-        }
-
-        verifyNoMoreInteractions(mockInternalLogger)
-        verifyNoInteractions(mockDataWriter)
-    }
+    // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { JVM crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
+        @Forgery fakeThreads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
         val fakeThrowable = forge.aThrowable()
-        val event = mapOf(
-            "type" to "jvm_crash",
-            "threadName" to fakeThreadName,
-            "timestamp" to fakeTimestamp,
-            "message" to fakeMessage,
-            "loggerName" to fakeLoggerName,
-            "throwable" to fakeThrowable
+        val event = JvmCrash.Logs(
+            threadName = fakeThreadName,
+            timestamp = fakeTimestamp,
+            message = fakeMessage,
+            loggerName = fakeLoggerName,
+            throwable = fakeThrowable,
+            threads = fakeThreads
         )
 
         // When
@@ -387,7 +390,15 @@ internal class LogsFeatureTest {
                     LogEvent.Error(
                         kind = fakeThrowable.javaClass.canonicalName,
                         stack = fakeThrowable.stackTraceToString(),
-                        message = fakeThrowable.message
+                        message = fakeThrowable.message,
+                        threads = fakeThreads.map {
+                            LogEvent.Thread(
+                                name = it.name,
+                                crashed = it.crashed,
+                                state = it.state,
+                                stack = it.stack
+                            )
+                        }.ifEmpty { null }
                     )
                 )
                 .hasThreadName(fakeThreadName)
@@ -415,10 +426,54 @@ internal class LogsFeatureTest {
     }
 
     @Test
+    fun `𝕄 write feature attributes to crash log event 𝕎 onReceive() { JVM crash }`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.addAttribute(fakeKey, fakeValue)
+        val fakeThrowable = forge.aThrowable()
+        val event = JvmCrash.Logs(
+            threadName = fakeThreadName,
+            timestamp = forge.aLong(),
+            message = forge.aString(),
+            loggerName = forge.aString(),
+            throwable = fakeThrowable,
+            threads = forge.aList { forge.getForgery() }
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        argumentCaptor<LogEvent> {
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+
+            val log = lastValue
+
+            assertThatLog(log)
+                .hasExactlyAttributes(
+                    mapOf(
+                        fakeKey to fakeValue,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumActionId,
+                        LogAttributes.DD_TRACE_ID to fakeTraceId,
+                        LogAttributes.DD_SPAN_ID to fakeSpanId
+                    )
+                )
+        }
+    }
+
+    @Test
     fun `𝕄 write crash log event and wait 𝕎 onReceive() { JVM crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
+        @Forgery fakeThreads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -432,13 +487,13 @@ internal class LogsFeatureTest {
         }
         testedFeature.dataWriter = mockDataWriter
         val fakeThrowable = forge.aThrowable()
-        val event = mapOf(
-            "type" to "jvm_crash",
-            "threadName" to fakeThreadName,
-            "timestamp" to fakeTimestamp,
-            "message" to fakeMessage,
-            "loggerName" to fakeLoggerName,
-            "throwable" to fakeThrowable
+        val event = JvmCrash.Logs(
+            threadName = fakeThreadName,
+            timestamp = fakeTimestamp,
+            message = fakeMessage,
+            loggerName = fakeLoggerName,
+            throwable = fakeThrowable,
+            threads = fakeThreads
         )
 
         // When
@@ -455,6 +510,21 @@ internal class LogsFeatureTest {
                 .hasLoggerName(fakeLoggerName)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasMessage(fakeMessage)
+                .hasError(
+                    LogEvent.Error(
+                        kind = fakeThrowable.javaClass.canonicalName,
+                        stack = fakeThrowable.stackTraceToString(),
+                        message = fakeThrowable.message,
+                        threads = fakeThreads.map {
+                            LogEvent.Thread(
+                                name = it.name,
+                                crashed = it.crashed,
+                                state = it.state,
+                                stack = it.stack
+                            )
+                        }.ifEmpty { null }
+                    )
+                )
                 .hasThreadName(fakeThreadName)
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
@@ -484,6 +554,7 @@ internal class LogsFeatureTest {
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
+        @Forgery fakeThreads: List<ThreadDump>,
         forge: Forge
     ) {
         // Given
@@ -497,13 +568,13 @@ internal class LogsFeatureTest {
         }
         testedFeature.dataWriter = mockDataWriter
         val fakeThrowable = forge.aThrowable()
-        val event = mapOf(
-            "type" to "jvm_crash",
-            "threadName" to fakeThreadName,
-            "timestamp" to fakeTimestamp,
-            "message" to fakeMessage,
-            "loggerName" to fakeLoggerName,
-            "throwable" to fakeThrowable
+        val event = JvmCrash.Logs(
+            threadName = fakeThreadName,
+            timestamp = fakeTimestamp,
+            message = fakeMessage,
+            loggerName = fakeLoggerName,
+            throwable = fakeThrowable,
+            threads = fakeThreads
         )
 
         // When

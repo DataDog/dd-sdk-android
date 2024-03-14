@@ -19,6 +19,8 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
@@ -29,6 +31,7 @@ import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.internal.storage.NoOpDataWriter
 import com.datadog.android.log.model.LogEvent
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -36,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Logs feature class, which needs to be registered with Datadog SDK instance.
  */
-internal class LogsFeature constructor(
+internal class LogsFeature(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val eventMapper: EventMapper<LogEvent>
@@ -46,6 +49,43 @@ internal class LogsFeature constructor(
     internal val initialized = AtomicBoolean(false)
     internal var packageName = ""
     private val logGenerator = DatadogLogGenerator()
+    private val attributes = ConcurrentHashMap<String, Any?>()
+
+    // region Context Information (attributes)
+    /**
+     * Add a custom attribute to all logs sent by any logger created from this feature.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
+     * @param key the key for this attribute
+     * @param value the attribute value
+     */
+    internal fun addAttribute(key: String, value: Any?) {
+        if (value == null) {
+            attributes[key] = NULL_MAP_VALUE
+        } else {
+            attributes[key] = value
+        }
+    }
+
+    /**
+     * Remove a custom attribute from all future logs sent by any logger created from this feature.
+     * Previous logs won't lose the attribute value associated with this key if they were created
+     * prior to this call.
+     * @param key the key of the attribute to remove
+     */
+    internal fun removeAttribute(key: String) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        attributes.remove(key)
+    }
+
+    internal fun getAttributes(): Map<String, Any?> {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        return attributes.toMap()
+    }
+
+    // endregion
 
     // region Feature
 
@@ -75,6 +115,8 @@ internal class LogsFeature constructor(
         dataWriter = NoOpDataWriter()
         packageName = ""
         initialized.set(false)
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        attributes.clear()
     }
 
     // endregion
@@ -83,7 +125,10 @@ internal class LogsFeature constructor(
 
     @AnyThread
     override fun onReceive(event: Any) {
-        if (event !is Map<*, *>) {
+        if (event is JvmCrash.Logs) {
+            sendJvmCrashLog(event)
+            return
+        } else if (event !is Map<*, *>) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -92,9 +137,7 @@ internal class LogsFeature constructor(
             return
         }
 
-        if (event[TYPE_EVENT_KEY] == "jvm_crash") {
-            sendJvmCrashLog(event)
-        } else if (event[TYPE_EVENT_KEY] == "ndk_crash") {
+        if (event[TYPE_EVENT_KEY] == "ndk_crash") {
             sendNdkCrashLog(event)
         } else if (event[TYPE_EVENT_KEY] == "span_log") {
             sendSpanLog(event)
@@ -123,45 +166,28 @@ internal class LogsFeature constructor(
         )
     }
 
-    @Suppress("ComplexMethod")
-    private fun sendJvmCrashLog(data: Map<*, *>) {
-        val threadName = data[THREAD_NAME_EVENT_KEY] as? String
-        val throwable = data[THROWABLE_EVENT_KEY] as? Throwable
-        val timestamp = data[TIMESTAMP_EVENT_KEY] as? Long
-        val message = data[MESSAGE_EVENT_KEY] as? String
-        val loggerName = data[LOGGER_NAME_EVENT_KEY] as? String
-
-        @Suppress("ComplexCondition")
-        if (threadName == null || throwable == null ||
-            timestamp == null || message == null || loggerName == null
-        ) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING }
-            )
-            return
-        }
-
+    private fun sendJvmCrashLog(jvmCrash: JvmCrash.Logs) {
         @Suppress("UnsafeThirdPartyFunctionCall") // argument is good
         val lock = CountDownLatch(1)
 
+        val attributes = getAttributes()
         sdkCore.getFeature(name)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val log = logGenerator.generateLog(
                     DatadogLogGenerator.CRASH,
                     datadogContext = datadogContext,
                     attachNetworkInfo = true,
-                    loggerName = loggerName,
-                    message = message,
-                    throwable = throwable,
-                    attributes = emptyMap(),
-                    timestamp = timestamp,
+                    loggerName = jvmCrash.loggerName,
+                    message = jvmCrash.message,
+                    throwable = jvmCrash.throwable,
+                    attributes = attributes,
+                    timestamp = jvmCrash.timestamp,
                     bundleWithTraces = true,
                     bundleWithRum = true,
                     networkInfo = null,
                     userInfo = null,
-                    threadName = threadName,
+                    threadName = jvmCrash.threadName,
+                    threads = jvmCrash.threads,
                     tags = emptySet()
                 )
 
@@ -277,19 +303,13 @@ internal class LogsFeature constructor(
         private const val LOGGER_NAME_EVENT_KEY = "loggerName"
         private const val ATTRIBUTES_EVENT_KEY = "attributes"
         private const val MESSAGE_EVENT_KEY = "message"
-        private const val THROWABLE_EVENT_KEY = "throwable"
         private const val USER_INFO_EVENT_KEY = "userInfo"
         private const val NETWORK_INFO_EVENT_KEY = "networkInfo"
-        private const val THREAD_NAME_EVENT_KEY = "threadName"
 
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Logs feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Logs feature received an event with unknown value of \"type\" property=%s."
-        internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
-            "Logs feature received a JVM crash event where" +
-                " one or more mandatory (loggerName, throwable, message, timestamp," +
-                " threadName) fields are either missing or have wrong type."
         internal const val NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
             "Logs feature received a NDK crash event where" +
                 " one or more mandatory (loggerName, message, timestamp, attributes)" +

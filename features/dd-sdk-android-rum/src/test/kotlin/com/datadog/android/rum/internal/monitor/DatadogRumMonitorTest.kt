@@ -724,7 +724,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.drainExecutorService()
 
         // When
-        testedMonitor.addCrash(message, source, throwable)
+        testedMonitor.addCrash(message, source, throwable, threads = emptyList())
         Thread.sleep(PROCESSING_DELAY)
 
         // Then
@@ -1102,6 +1102,8 @@ internal class DatadogRumMonitorTest {
             "browser" to RumErrorSourceType.BROWSER,
             "react-native" to RumErrorSourceType.REACT_NATIVE,
             "flutter" to RumErrorSourceType.FLUTTER,
+            "ndk" to RumErrorSourceType.NDK,
+            "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
@@ -1891,6 +1893,7 @@ internal class DatadogRumMonitorTest {
                         isFatal = true,
                         throwable = forge.aThrowable(),
                         stacktrace = forge.anAlphaNumericalString(),
+                        threads = emptyList(),
                         attributes = emptyMap()
                     ),
                     RumRawEvent.StartAction(

@@ -103,6 +103,8 @@ internal fun RumErrorSourceType.toSchemaSourceType(): ErrorEvent.SourceType {
         RumErrorSourceType.BROWSER -> ErrorEvent.SourceType.BROWSER
         RumErrorSourceType.REACT_NATIVE -> ErrorEvent.SourceType.REACT_NATIVE
         RumErrorSourceType.FLUTTER -> ErrorEvent.SourceType.FLUTTER
+        RumErrorSourceType.NDK -> ErrorEvent.SourceType.NDK
+        RumErrorSourceType.NDK_IL2CPP -> ErrorEvent.SourceType.NDK_IL2CPP
     }
 }
 

@@ -1,3 +1,30 @@
+# 2.6.2 / 2024-02-23
+
+* [BUGFIX] RUM: Fix crash in frame rate vital detection. See [#1872](https://github.com/DataDog/dd-sdk-android/pull/1872)
+
+# 2.6.1 / 2024-02-21
+
+* [BUGFIX] RUM: Fix missing source in telemetry json schema. See [#1865](https://github.com/DataDog/dd-sdk-android/pull/1865)
+* [MAINTENANCE] RUM: Remove stale json schema file. See [#1866](https://github.com/DataDog/dd-sdk-android/pull/1866)
+
+# 2.6.0 / 2024-02-19
+
+* [FEATURE] RUM\Logs: Report all threads in case of crash. See [#1848](https://github.com/DataDog/dd-sdk-android/pull/1848)
+* [BUGFIX] RUM: Make a copy of attributes before passing them to RUM event. See [#1830](https://github.com/DataDog/dd-sdk-android/pull/1830)
+* [BUGFIX] Session Replay: Add traversal flag to snapshot items. See [#1837](https://github.com/DataDog/dd-sdk-android/pull/1837)
+* [BUGFIX] Drop batch telemetry where duration or age have negative values. See [#1850](https://github.com/DataDog/dd-sdk-android/pull/1850)
+* [BUGFIX] RUM: Do not update RUM View global properties after the view is stopped. See [#1851](https://github.com/DataDog/dd-sdk-android/pull/1851)
+* [IMPROVEMENT] RUM: Improve vital support for higher refresh rate devices. See [#1806](https://github.com/DataDog/dd-sdk-android/pull/1806)
+* [IMPROVEMENT] RUM: Add more HTTP methods to RUM. See [#1826](https://github.com/DataDog/dd-sdk-android/pull/1826)
+* [IMPROVEMENT] RUM: Start session when RUM is initialized. See [#1832](https://github.com/DataDog/dd-sdk-android/pull/1832)
+* [IMPROVEMENT] RUM: Add new error source types to RUM schema. See [#1855](https://github.com/DataDog/dd-sdk-android/pull/1855)
+* [IMPROVEMENT] RUM: Set `source_type` on native crashes to `ndk`. See [#1856](https://github.com/DataDog/dd-sdk-android/pull/1856)
+* [MAINTENANCE] Next dev iteration 2.6.0. See [#1823](https://github.com/DataDog/dd-sdk-android/pull/1823)
+* [MAINTENANCE] Merge `release/2.5.0` branch into `develop` branch. See [#1825](https://github.com/DataDog/dd-sdk-android/pull/1825)
+* [MAINTENANCE] Update RUM Schema. See [#1828](https://github.com/DataDog/dd-sdk-android/pull/1828)
+* [MAINTENANCE] Merge 2.5.1 into develop. See [#1842](https://github.com/DataDog/dd-sdk-android/pull/1842)
+* [MAINTENANCE] Introduce github issue forms. See [#1852](https://github.com/DataDog/dd-sdk-android/pull/1852)
+
 # 2.5.1 / 2024-01-24
 
 * [BUGFIX] RUM: Prevent crash due to concurrent modification of custom attributes. See [#1838](https://github.com/DataDog/dd-sdk-android/pull/1838)

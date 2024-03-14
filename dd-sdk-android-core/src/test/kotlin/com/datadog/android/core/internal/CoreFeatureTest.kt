@@ -14,6 +14,7 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
+import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -760,6 +761,48 @@ internal class CoreFeatureTest {
                         CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
                     )
                 )
+            }
+    }
+
+    @Test
+    fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {source type override}`(
+        @TempDir tempDir: File,
+        @StringForgery otherProcessName: String
+    ) {
+        // Given
+        fakeConfig = fakeConfig.copy(
+            additionalConfig = fakeConfig.additionalConfig.toMutableMap().apply {
+                put(Datadog.DD_NATIVE_SOURCE_TYPE, "ndk+il2cpp")
+            }
+        )
+        val mockActivityManager = mock<ActivityManager>()
+        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+            mockActivityManager
+        )
+        val myProcess = forgeAppProcessInfo(
+            Process.myPid(),
+            appContext.fakePackageName
+        )
+        val otherProcess = forgeAppProcessInfo(
+            Process.myPid() + 1,
+            otherProcessName
+        )
+        whenever(mockActivityManager.runningAppProcesses)
+            .thenReturn(listOf(myProcess, otherProcess))
+        whenever(appContext.mockInstance.cacheDir) doReturn tempDir
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.ndkCrashHandler)
+            .isInstanceOfSatisfying(DatadogNdkCrashHandler::class.java) {
+                assertThat(it.nativeCrashSourceType).isEqualTo("ndk+il2cpp")
             }
     }
 

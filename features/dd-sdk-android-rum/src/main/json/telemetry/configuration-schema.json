@@ -310,6 +310,11 @@
                   "type": "string",
                   "description": "The version of Dart used in a Flutter application",
                   "readOnly": false
+                },
+                "unity_version": {
+                  "type": "string",
+                  "description": "The version of Unity used in a Unity application",
+                  "readOnly": false
                 }
               }
             }

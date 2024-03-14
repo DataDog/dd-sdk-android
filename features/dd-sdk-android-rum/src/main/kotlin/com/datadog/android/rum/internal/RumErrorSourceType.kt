@@ -14,5 +14,7 @@ internal enum class RumErrorSourceType {
     ANDROID,
     BROWSER,
     REACT_NATIVE,
-    FLUTTER
+    FLUTTER,
+    NDK,
+    NDK_IL2CPP
 }

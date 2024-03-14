@@ -19,10 +19,8 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
@@ -45,6 +43,10 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
@@ -78,9 +80,16 @@ enum class SessionReplayPrivacy {
     MASK_USER_INPUT;
 
     @Suppress("LongMethod")
-    internal fun mappers(): List<MapperTypeWrapper> {
-        val base64Serializer = buildBase64Serializer()
-        val imageWireframeHelper = ImageWireframeHelper(base64Serializer = base64Serializer)
+    internal fun mappers(
+        internalLogger: InternalLogger,
+        applicationId: String,
+        recordedDataQueueHandler: RecordedDataQueueHandler
+    ): List<MapperTypeWrapper> {
+        val resourcesSerializer = buildResourcesSerializer(applicationId, recordedDataQueueHandler)
+        val imageWireframeHelper = ImageWireframeHelper(
+            logger = internalLogger,
+            resourcesSerializer = resourcesSerializer
+        )
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
         val unsupportedViewMapper = UnsupportedViewMapper()
@@ -170,13 +179,19 @@ enum class SessionReplayPrivacy {
         return mappersList
     }
 
-    private fun buildBase64Serializer(): Base64Serializer {
+    private fun buildResourcesSerializer(
+        applicationId: String,
+        recordedDataQueueHandler:
+        RecordedDataQueueHandler
+    ): ResourcesSerializer {
         val bitmapPool = BitmapPool()
-        val base64LRUCache = Base64LRUCache()
+        val resourcesLRUCache = ResourcesLRUCache()
 
-        val builder = Base64Serializer.Builder(
+        val builder = ResourcesSerializer.Builder(
+            applicationId = applicationId,
+            recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapPool = bitmapPool,
-            base64LRUCache = base64LRUCache
+            resourcesLRUCache = resourcesLRUCache
         )
         return builder.build()
     }

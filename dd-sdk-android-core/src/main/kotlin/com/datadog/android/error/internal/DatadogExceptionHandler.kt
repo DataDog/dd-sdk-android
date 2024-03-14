@@ -12,7 +12,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.thread.waitToIdle
+import com.datadog.android.core.internal.utils.asString
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
@@ -28,17 +32,18 @@ internal class DatadogExceptionHandler(
     // region Thread.UncaughtExceptionHandler
 
     override fun uncaughtException(t: Thread, e: Throwable) {
+        val threads = getAllThreadsDump(t, e)
         // write the log immediately
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
             logsFeature.sendEvent(
-                mapOf(
-                    "threadName" to t.name,
-                    "throwable" to e,
-                    "timestamp" to System.currentTimeMillis(),
-                    "message" to createCrashMessage(e),
-                    "type" to "jvm_crash",
-                    "loggerName" to LOGGER_NAME
+                JvmCrash.Logs(
+                    threadName = t.name,
+                    throwable = e,
+                    timestamp = System.currentTimeMillis(),
+                    message = createCrashMessage(e),
+                    loggerName = LOGGER_NAME,
+                    threads = threads
                 )
             )
         } else {
@@ -53,10 +58,10 @@ internal class DatadogExceptionHandler(
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             rumFeature.sendEvent(
-                mapOf(
-                    "type" to "jvm_crash",
-                    "throwable" to e,
-                    "message" to createCrashMessage(e)
+                JvmCrash.Rum(
+                    throwable = e,
+                    message = createCrashMessage(e),
+                    threads = threads
                 )
             )
         } else {
@@ -113,6 +118,41 @@ internal class DatadogExceptionHandler(
             "$MESSAGE: $className"
         } else {
             rawMessage
+        }
+    }
+
+    private fun getAllThreadsDump(
+        crashedThread: Thread,
+        crashException: Throwable
+    ): List<ThreadDump> {
+        return try {
+            Thread.getAllStackTraces()
+                // from getAllStackTraces: A zero-length array will be returned in the map value if
+                // the virtual machine has no stack trace information about a thread.
+                .filterValues { it.isNotEmpty() }
+                .map {
+                    val thread = it.key
+                    val isCrashedThread = thread == crashedThread
+                    val stack = if (isCrashedThread) {
+                        crashException.loggableStackTrace()
+                    } else {
+                        thread.stackTrace.loggableStackTrace()
+                    }
+                    ThreadDump(
+                        name = thread.name,
+                        state = thread.state.asString(),
+                        stack = stack,
+                        crashed = isCrashedThread
+                    )
+                }
+        } catch (e: SecurityException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to get all threads dump" },
+                e
+            )
+            emptyList()
         }
     }
 

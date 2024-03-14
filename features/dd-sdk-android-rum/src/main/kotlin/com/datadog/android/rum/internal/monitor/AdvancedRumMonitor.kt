@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
@@ -31,7 +32,8 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
     fun addCrash(
         message: String,
         source: RumErrorSource,
-        throwable: Throwable
+        throwable: Throwable,
+        threads: List<ThreadDump>
     )
 
     fun eventSent(viewId: String, event: StorageEvent)
