@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.event.EventMapper
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -701,6 +702,38 @@ class LoggerTest {
         assertThat(event0.getString("error.kind")).isEqualTo(fakeErrorKind)
         assertThat(event0.getString("error.message")).isEqualTo(fakeErrorMessage)
         assertThat(event0.getString("error.stack")).isEqualTo(fakeErrorStack)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with custom error fingerprint W Logger#log()`(
+        @StringForgery fakeErrorKind: String,
+        @StringForgery fakeErrorMessage: String,
+        @StringForgery fakeErrorStack: String,
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeFingerprint: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        val attributes = mapOf(LogAttributes.ERROR_FINGERPRINT to fakeFingerprint)
+        testedLogger.log(fakeLevel, fakeMessage, fakeErrorKind, fakeErrorMessage, fakeErrorStack, attributes)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("error.kind")).isEqualTo(fakeErrorKind)
+        assertThat(event0.getString("error.message")).isEqualTo(fakeErrorMessage)
+        assertThat(event0.getString("error.stack")).isEqualTo(fakeErrorStack)
+        assertThat(event0.getString("error.fingerprint")).isEqualTo(fakeFingerprint)
     }
 
     @RepeatedTest(16)

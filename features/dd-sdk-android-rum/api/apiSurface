@@ -43,6 +43,7 @@ object com.datadog.android.rum.RumAttributes
   const val ERROR_RESOURCE_URL: String
   const val ERROR_DATABASE_VERSION: String
   const val ERROR_DATABASE_PATH: String
+  const val ERROR_FINGERPRINT: String
   const val ACTION_TARGET_CLASS_NAME: String
   const val ACTION_TARGET_TITLE: String
   const val ACTION_TARGET_PARENT_INDEX: String

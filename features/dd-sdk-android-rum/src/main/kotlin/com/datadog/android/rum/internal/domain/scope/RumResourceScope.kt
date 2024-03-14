@@ -331,6 +331,7 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
+        val errorFingerprint = attributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
 
         val rumContext = getRumContext()
 
@@ -364,6 +365,7 @@ internal class RumResourceScope(
                     source = source.toSchemaSource(),
                     stack = stackTrace,
                     isCrash = false,
+                    fingerprint = errorFingerprint,
                     resource = ErrorEvent.Resource(
                         url = url,
                         method = method.toErrorMethod(),
