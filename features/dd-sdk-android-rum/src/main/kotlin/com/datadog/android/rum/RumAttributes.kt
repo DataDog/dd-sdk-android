@@ -75,6 +75,11 @@ object RumAttributes {
      */
     const val INTERNAL_ERROR_IS_CRASH: String = "_dd.error.is_crash"
 
+    /**
+     * All threads information.
+     */
+    internal const val INTERNAL_ALL_THREADS: String = "_dd.error.threads"
+
     // endregion
 
     // region Resource
