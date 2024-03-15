@@ -4,11 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal
+package com.datadog.android.sessionreplay.utils
+
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * A callback to be notified when an async job starts or finishes.
  */
+@NoOpImplementation
 interface AsyncJobStatusCallback {
 
     /**

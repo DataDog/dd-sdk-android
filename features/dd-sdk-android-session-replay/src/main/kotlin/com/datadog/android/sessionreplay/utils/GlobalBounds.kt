@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder
+package com.datadog.android.sessionreplay.utils
 
 /**
  * Defines the dimension and positions in Global coordinates for a geometry. By Global we mean that

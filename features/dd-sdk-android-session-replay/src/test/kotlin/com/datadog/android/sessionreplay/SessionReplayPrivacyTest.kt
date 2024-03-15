@@ -103,21 +103,9 @@ internal class SessionReplayPrivacyTest {
 
         // When
         val actualMappers = when (maskLevel) {
-            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers(
-                mockLogger,
-                fakeApplicationId.toString(),
-                mockRecordedDataQueueHandler
-            )
-            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers(
-                mockLogger,
-                fakeApplicationId.toString(),
-                mockRecordedDataQueueHandler
-            )
-            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers(
-                mockLogger,
-                fakeApplicationId.toString(),
-                mockRecordedDataQueueHandler
-            )
+            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers()
+            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers()
+            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers()
             else -> throw IllegalArgumentException("Unknown masking level")
         }
 

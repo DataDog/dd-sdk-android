@@ -7,24 +7,41 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.TabView
 
-internal open class TabWireframeMapper(
-    private val viewUtils: ViewUtils = ViewUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator =
-        UniqueIdentifierGenerator,
-    internal val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe> = TextViewMapper()
+internal open class TabWireframeMapper internal constructor(
+    private val viewIdentifierResolver: ViewIdentifierResolver,
+    private val viewBoundsResolver: ViewBoundsResolver,
+    internal val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe>
 ) : WireframeMapper<TabLayout.TabView, MobileSegment.Wireframe> {
+
+    constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper
+    ) : this(
+        viewIdentifierResolver,
+        viewBoundsResolver,
+        TextViewMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
+    )
 
     override fun map(
         view: TabView,
@@ -54,12 +71,12 @@ internal open class TabWireframeMapper(
         systemInformation: SystemInformation,
         wireframe: MobileSegment.Wireframe?
     ): MobileSegment.Wireframe? {
-        val selectorId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val selectorId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             SELECTED_TAB_INDICATOR_KEY_NAME
         ) ?: return null
         val screenDensity = systemInformation.screenDensity
-        val viewBounds = viewUtils.resolveViewGlobalBounds(view, screenDensity)
+        val viewBounds = viewBoundsResolver.resolveViewGlobalBounds(view, screenDensity)
         val selectionIndicatorHeight = SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(screenDensity)
         val paddingStart = view.paddingStart.toLong().densityNormalized(screenDensity)

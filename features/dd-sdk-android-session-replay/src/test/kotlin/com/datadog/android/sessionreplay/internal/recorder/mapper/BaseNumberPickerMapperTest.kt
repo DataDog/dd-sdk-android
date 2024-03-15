@@ -7,12 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.NumberPicker
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -22,20 +19,10 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mock
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
-
-    @Mock
-    lateinit var mockViewUtils: ViewUtils
-
-    @Mock
-    lateinit var mockStringUtils: StringUtils
-
-    @Mock
-    lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     lateinit var testedNumberPickerMapper: BasePickerMapper
 
@@ -138,52 +125,52 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         fakeExpectedNextLabelYPos = fakeExpectedBottomDividerYPos + normalizedPadding
 
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockNumberPicker,
                 fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
                 BaseWireframeMapper.OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedSelectedLabelHtmlColor)
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
                 BasePickerMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedNextPrevLabelHtmlColor)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockNumberPicker,
                 BasePickerMapper.PREV_INDEX_KEY_NAME
             )
         ).thenReturn(fakePrevLabelId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockNumberPicker,
                 BasePickerMapper.DIVIDER_TOP_KEY_NAME
             )
         ).thenReturn(fakeTopDividerId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockNumberPicker,
                 BasePickerMapper.SELECTED_INDEX_KEY_NAME
             )
         ).thenReturn(fakeSelectedLabelId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockNumberPicker,
                 BasePickerMapper.DIVIDER_BOTTOM_KEY_NAME
             )
         ).thenReturn(fakeBottomDividerId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockNumberPicker,
                 BasePickerMapper.NEXT_INDEX_KEY_NAME
             )
@@ -209,45 +196,57 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
     fun `M return empty list W map { topDividerId null }`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.DIVIDER_TOP_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { selectedLabelId null }`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.SELECTED_INDEX_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { bottomDividerId null }`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.DIVIDER_BOTTOM_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 
     protected fun fakeNextLabelWireframe() =
