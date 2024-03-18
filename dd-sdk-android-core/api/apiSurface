@@ -96,6 +96,7 @@ interface com.datadog.android.api.feature.Feature
     const val RUM_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
+    const val NDK_CRASH_REPORTS_FEATURE_NAME: String
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
@@ -145,7 +146,11 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val rootStorageDir: java.io.File?
   val isDeveloperModeEnabled: Boolean
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+  val lastViewEvent: com.google.gson.JsonObject?
+  val lastFatalAnrSent: Long?
   fun writeLastViewEvent(ByteArray)
+  fun deleteLastViewEvent()
+  fun writeLastFatalAnrSent(Long)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
   fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
@@ -228,9 +233,9 @@ fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
 interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
-  fun version(): Int
-class com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider : BuildSdkVersionProvider
-  override fun version(): Int
+  val version: Int
+  companion object 
+    val DEFAULT: BuildSdkVersionProvider
 class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
   constructor(Int, com.datadog.android.api.InternalLogger)
   override fun afterExecute(Runnable?, Throwable?)

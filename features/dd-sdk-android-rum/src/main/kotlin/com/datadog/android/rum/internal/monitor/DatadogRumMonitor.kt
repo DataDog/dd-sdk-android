@@ -72,7 +72,7 @@ internal class DatadogRumMonitor(
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
     private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    internal val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(

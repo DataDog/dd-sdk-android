@@ -53,5 +53,10 @@ interface Feature {
          * Session Replay feature name.
          */
         const val SESSION_REPLAY_FEATURE_NAME: String = "session-replay"
+
+        /**
+         * NDK Crash Reports feature name.
+         */
+        const val NDK_CRASH_REPORTS_FEATURE_NAME: String = "ndk-crash-reporting"
     }
 }

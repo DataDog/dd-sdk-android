@@ -9,6 +9,7 @@ package com.datadog.android.core
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.os.Build
 import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.Datadog
@@ -22,7 +23,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -32,14 +32,12 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
+import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -52,6 +50,7 @@ import java.util.concurrent.TimeUnit
  * @param name the name of this instance
  * @param internalLoggerProvider Provider for [InternalLogger] instance.
  * @param persistenceExecutorServiceFactory Custom factory for persistence executor, used only in unit-tests
+ * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test
  */
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
@@ -60,7 +59,8 @@ internal class DatadogCore(
     override val name: String,
     internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) },
     // only for unit tests
-    private val persistenceExecutorServiceFactory: ((InternalLogger) -> ExecutorService)? = null
+    private val persistenceExecutorServiceFactory: ((InternalLogger) -> ExecutorService)? = null,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : InternalSdkCore {
 
     internal lateinit var coreFeature: CoreFeature
@@ -80,13 +80,6 @@ internal class DatadogCore(
 
     internal val isActive: Boolean
         get() = coreFeature.initialized.get()
-
-    private val ndkLastViewEventFileWriter: FileWriter<RawBatchEvent> by lazy {
-        BatchFileReaderWriter.create(
-            internalLogger = internalLogger,
-            encryption = coreFeature.localDataEncryption
-        )
-    }
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
 
@@ -183,6 +176,10 @@ internal class DatadogCore(
         features.values.forEach {
             it.clearAllData()
         }
+        @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
+        coreFeature.deleteLastViewEvent()
+        @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
+        coreFeature.deleteLastFatalAnrSent()
     }
 
     /** @inheritDoc */
@@ -245,21 +242,39 @@ internal class DatadogCore(
     override val rootStorageDir: File
         get() = coreFeature.storageDir
 
+    @get:WorkerThread
+    override val lastViewEvent: JsonObject?
+        get() = coreFeature.lastViewEvent
+
+    @get:WorkerThread
+    override val lastFatalAnrSent: Long?
+        get() = coreFeature.lastFatalAnrSent
+
     @WorkerThread
     override fun writeLastViewEvent(data: ByteArray) {
-        // directory structure may not exist: currently it is a file which is located in NDK reports
-        // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
-        // as well (and no need to write).
-        val lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
-        if (lastViewEventFile.parentFile?.existsSafe(internalLogger) == true) {
-            ndkLastViewEventFileWriter.writeData(lastViewEventFile, RawBatchEvent(data), false)
+        // we need to write it only if we are going to read ApplicationExitInfo (available on
+        // API 30+) or if there is NDK crash tracking enabled
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.R ||
+            features.containsKey(Feature.NDK_CRASH_REPORTS_FEATURE_NAME)
+        ) {
+            coreFeature.writeLastViewEvent(data)
         } else {
             internalLogger.log(
-                InternalLogger.Level.WARN,
+                InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
-                { LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent) }
+                { NO_NEED_TO_WRITE_LAST_VIEW_EVENT }
             )
         }
+    }
+
+    @WorkerThread
+    override fun deleteLastViewEvent() {
+        coreFeature.deleteLastViewEvent()
+    }
+
+    @WorkerThread
+    override fun writeLastFatalAnrSent(anrTimestamp: Long) {
+        coreFeature.writeLastFatalAnrSent(anrTimestamp)
     }
 
     override fun getPersistenceExecutorService(): ExecutorService {
@@ -487,8 +502,9 @@ internal class DatadogCore(
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
 
-        const val LAST_VIEW_EVENT_DIR_MISSING_MESSAGE = "Directory structure %s for writing" +
-            " last view event doesn't exist."
+        internal const val NO_NEED_TO_WRITE_LAST_VIEW_EVENT =
+            "No need to write last RUM view event: NDK" +
+                    " crash reports feature is not enabled and API is below 30."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
     }

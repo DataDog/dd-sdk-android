@@ -14,11 +14,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
-import com.datadog.android.core.internal.utils.join
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.log.LogAttributes
 import com.google.gson.JsonObject
@@ -31,12 +29,11 @@ internal class DatadogNdkCrashHandler(
     storageDir: File,
     private val dataPersistenceExecutorService: ExecutorService,
     private val ndkCrashLogDeserializer: Deserializer<String, NdkCrashLog>,
-    private val rumEventDeserializer: Deserializer<String, JsonObject>,
     private val networkInfoDeserializer: Deserializer<String, NetworkInfo>,
     private val userInfoDeserializer: Deserializer<String, UserInfo>,
     private val internalLogger: InternalLogger,
-    private val rumFileReader: BatchFileReader,
     private val envFileReader: FileReader<ByteArray>,
+    private val lastRumViewEventProvider: () -> JsonObject?,
     internal val nativeCrashSourceType: String = "ndk"
 ) : NdkCrashHandler {
 
@@ -80,6 +77,8 @@ internal class DatadogNdkCrashHandler(
             return
         }
         try {
+            lastRumViewEvent = lastRumViewEventProvider()
+
             ndkCrashDataDirectory.listFilesSafe(internalLogger)?.forEach { file ->
                 when (file.name) {
                     // TODO RUMM-1944 Data from NDK should be also encrypted
@@ -88,13 +87,6 @@ internal class DatadogNdkCrashHandler(
                             file.readTextSafe(internalLogger = internalLogger)?.let {
                                 ndkCrashLogDeserializer.deserialize(it)
                             }
-
-                    RUM_VIEW_EVENT_FILE_NAME ->
-                        lastRumViewEvent =
-                            readRumFileContent(
-                                file,
-                                rumFileReader
-                            )?.let { rumEventDeserializer.deserialize(it) }
 
                     USER_INFO_FILE_NAME ->
                         lastUserInfo =
@@ -142,16 +134,6 @@ internal class DatadogNdkCrashHandler(
                     )
                 }
             }
-        }
-    }
-
-    @WorkerThread
-    private fun readRumFileContent(file: File, fileReader: BatchFileReader): String? {
-        val content = fileReader.readData(file)
-        return if (content.isEmpty()) {
-            null
-        } else {
-            String(content.map { it.data }.join(ByteArray(0), internalLogger = internalLogger))
         }
     }
 
@@ -363,7 +345,7 @@ internal class DatadogNdkCrashHandler(
 
     companion object {
 
-        internal const val RUM_VIEW_EVENT_FILE_NAME = "last_view_event"
+        private const val RUM_VIEW_EVENT_FILE_NAME = "last_view_event"
         internal const val CRASH_DATA_FILE_NAME = "crash_log"
         internal const val USER_INFO_FILE_NAME = "user_information"
         internal const val NETWORK_INFO_FILE_NAME = "network_information"
@@ -395,6 +377,10 @@ internal class DatadogNdkCrashHandler(
             return File(storageDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
         }
 
+        @Deprecated(
+        "We will still process this path to check file from the old SDK" +
+                " versions, but don't use it anymore for writing."
+        )
         internal fun getLastViewEventFile(storageDir: File): File {
             return File(getNdkGrantedDir(storageDir), RUM_VIEW_EVENT_FILE_NAME)
         }
