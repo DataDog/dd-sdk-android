@@ -15,6 +15,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRumMonitor
@@ -642,6 +643,48 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `𝕄 initialize non-fatal ANR tracking  𝕎 initialize { trackNonFatalAnrs = true }()`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            trackNonFatalAnrs = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.anrDetectorRunnable)
+            .isNotNull()
+    }
+
+    @Test
+    fun `𝕄 not initialize non-fatal ANR tracking  𝕎 initialize { trackNonFatalAnrs = false }()`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            trackNonFatalAnrs = false
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.anrDetectorRunnable)
+            .isNull()
+    }
+
+    @Test
     fun `𝕄 shut down vital executor 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -965,6 +1008,36 @@ internal class RumFeatureTest {
             RumFeature.FAILED_TO_GET_HISTORICAL_EXIT_REASONS,
             exceptionThrown
         )
+    }
+
+    @Test
+    fun `𝕄 return true 𝕎 isTrackNonFatalAnrsEnabledByDefault() { Android Q and below }`(
+        @IntForgery(min = 1, max = Build.VERSION_CODES.R) fakeBuildSdkVersion: Int
+    ) {
+        // Given
+        val mockBuildSdkVersionProvider = mock<BuildSdkVersionProvider>()
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
+
+        // When
+        val isEnabled = RumFeature.isTrackNonFatalAnrsEnabledByDefault(mockBuildSdkVersionProvider)
+
+        // Then
+        assertThat(isEnabled).isTrue()
+    }
+
+    @Test
+    fun `𝕄 return false 𝕎 isTrackNonFatalAnrsEnabledByDefault() { Android R and above }`(
+        @IntForgery(min = Build.VERSION_CODES.R) fakeBuildSdkVersion: Int
+    ) {
+        // Given
+        val mockBuildSdkVersionProvider = mock<BuildSdkVersionProvider>()
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
+
+        // When
+        val isEnabled = RumFeature.isTrackNonFatalAnrsEnabledByDefault(mockBuildSdkVersionProvider)
+
+        // Then
+        assertThat(isEnabled).isFalse()
     }
 
     // region FeatureEventReceiver#onReceive + logger error

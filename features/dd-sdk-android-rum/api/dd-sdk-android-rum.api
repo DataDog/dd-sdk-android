@@ -112,6 +112,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun trackLongTasks ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackLongTasks (J)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public static synthetic fun trackLongTasks$default (Lcom/datadog/android/rum/RumConfiguration$Builder;JILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun trackNonFatalAnrs (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackUserInteractions ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackUserInteractions ([Lcom/datadog/android/rum/tracking/ViewAttributesProvider;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackUserInteractions ([Lcom/datadog/android/rum/tracking/ViewAttributesProvider;Lcom/datadog/android/rum/tracking/InteractionPredicate;)Lcom/datadog/android/rum/RumConfiguration$Builder;
