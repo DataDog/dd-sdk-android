@@ -57,7 +57,8 @@ internal open class RumViewScope(
 
     internal val url = key.url.replace('.', '/')
 
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    internal val eventAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    private var globalAttributes: MutableMap<String, Any?> = resolveGlobalAttributes(sdkCore)
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -140,7 +141,6 @@ internal open class RumViewScope(
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
         }
-        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
@@ -159,6 +159,7 @@ internal open class RumViewScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ): RumScope? {
+        updateGlobalAttributes(sdkCore, event)
         when (event) {
             is RumRawEvent.ResourceSent -> onResourceSent(event, writer)
             is RumRawEvent.ActionSent -> onActionSent(event, writer)
@@ -283,7 +284,7 @@ internal open class RumViewScope(
                     )
                 }
             }
-            attributes.putAll(event.attributes)
+            eventAttributes.putAll(event.attributes)
             stopped = true
             sendViewUpdate(event, writer)
             sendViewChanged()
@@ -419,7 +420,15 @@ internal open class RumViewScope(
                     stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
                     isCrash = isFatal,
                     type = errorType,
-                    sourceType = event.sourceType.toSchemaSourceType()
+                    sourceType = event.sourceType.toSchemaSourceType(),
+                    threads = event.threads.map {
+                        ErrorEvent.Thread(
+                            name = it.name,
+                            crashed = it.crashed,
+                            stack = it.stack,
+                            state = it.state
+                        )
+                    }.ifEmpty { null }
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
                 view = ErrorEvent.ErrorEventView(
@@ -698,7 +707,6 @@ internal open class RumViewScope(
     @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
-        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -731,7 +739,7 @@ internal open class RumViewScope(
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
-        val eventAdditionalAttributes = attributes.toMutableMap()
+        val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
 
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
@@ -848,6 +856,16 @@ internal open class RumViewScope(
         }.submit()
     }
 
+    private fun updateGlobalAttributes(sdkCore: InternalSdkCore, event: RumRawEvent) {
+        if (!stopped && event !is RumRawEvent.StartView) {
+            globalAttributes = resolveGlobalAttributes(sdkCore)
+        }
+    }
+
+    private fun resolveGlobalAttributes(sdkCore: InternalSdkCore): MutableMap<String, Any?> {
+        return GlobalRumMonitor.get(sdkCore).getAttributes().toMutableMap()
+    }
+
     private fun resolveViewDuration(event: RumRawEvent): Long {
         val duration = event.eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
@@ -881,8 +899,7 @@ internal open class RumViewScope(
     private fun addExtraAttributes(
         attributes: Map<String, Any?>
     ): MutableMap<String, Any?> {
-        return attributes.toMutableMap()
-            .apply { putAll(GlobalRumMonitor.get(sdkCore).getAttributes()) }
+        return attributes.toMutableMap().apply { putAll(globalAttributes) }
     }
 
     @Suppress("LongMethod")
@@ -893,9 +910,7 @@ internal open class RumViewScope(
     ) {
         pendingActionCount++
         val rumContext = getRumContext()
-
-        val globalAttributes = GlobalRumMonitor.get(sdkCore).getAttributes().toMutableMap()
-
+        val localCopyOfGlobalAttributes = globalAttributes.toMutableMap()
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
@@ -965,7 +980,7 @@ internal open class RumViewScope(
                     architecture = datadogContext.deviceInfo.architecture
                 ),
                 context = ActionEvent.Context(
-                    additionalProperties = globalAttributes
+                    additionalProperties = localCopyOfGlobalAttributes
                 ),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
@@ -1107,7 +1122,7 @@ internal open class RumViewScope(
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 key = key,
-                attributes = attributes,
+                attributes = eventAttributes,
                 isActive = isActive()
             )
         )

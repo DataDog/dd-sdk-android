@@ -310,6 +310,7 @@ internal class LogEventSerializerTest {
         val errorMessage = errorInfo.message
         val errorKind = errorInfo.kind
         val errorStack = errorInfo.stack
+        val errorSourceType = errorInfo.sourceType
         if (errorMessage != null) {
             hasField(KEY_MESSAGE, errorMessage)
         } else {
@@ -325,6 +326,11 @@ internal class LogEventSerializerTest {
         } else {
             doesNotHaveField(KEY_STACK)
         }
+        if (errorSourceType != null) {
+            hasField(KEY_SOURCE_TYPE, errorSourceType)
+        } else {
+            doesNotHaveField(KEY_SOURCE_TYPE)
+        }
     }
 
     // endregion
@@ -337,6 +343,7 @@ internal class LogEventSerializerTest {
         private const val KEY_MESSAGE = "message"
         private const val KEY_KIND = "kind"
         private const val KEY_STACK = "stack"
+        private const val KEY_SOURCE_TYPE = "source_type"
         private const val KEY_ERROR = "error"
         private const val KEY_VERSION = "version"
         private const val KEY_THREAD_NAME = "thread_name"

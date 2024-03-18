@@ -27,6 +27,8 @@ class com.datadog.android.log.Logger
 object com.datadog.android.log.Logs
   fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+  fun addAttribute(String, Any?, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun removeAttribute(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.log.LogsConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
@@ -63,7 +65,7 @@ data class com.datadog.android.log.model.LogEvent
       fun fromJson(kotlin.String): Network
       fun fromJsonObject(com.google.gson.JsonObject): Network
   data class Error
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<Thread>? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Error
@@ -80,6 +82,12 @@ data class com.datadog.android.log.model.LogEvent
     companion object 
       fun fromJson(kotlin.String): Client
       fun fromJsonObject(com.google.gson.JsonObject): Client
+  data class Thread
+    constructor(kotlin.String, kotlin.Boolean, kotlin.String, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Thread
+      fun fromJsonObject(com.google.gson.JsonObject): Thread
   data class SimCarrier
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement

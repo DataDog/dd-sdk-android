@@ -19,6 +19,9 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
@@ -41,16 +44,32 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedVie
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.tools.unit.setStaticValue
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.runners.Parameterized
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
+import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.stream.Stream
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayPrivacyTest {
 
     /*
@@ -59,6 +78,15 @@ internal class SessionReplayPrivacyTest {
         see: https://stackoverflow.com/questions/3301635/change-private-static-final-field-using-java-reflection/3301720#3301720
      */
     private val origApiLevel = Build.VERSION.SDK_INT
+
+    @Mock
+    lateinit var mockLogger: InternalLogger
+
+    @Forgery
+    lateinit var fakeApplicationId: UUID
+
+    @Mock
+    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @AfterEach
     fun teardown() {
@@ -77,9 +105,21 @@ internal class SessionReplayPrivacyTest {
 
         // When
         val actualMappers = when (maskLevel) {
-            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers()
-            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers()
-            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers()
+            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers(
+                mockLogger,
+                fakeApplicationId.toString(),
+                mockRecordedDataQueueHandler
+            )
+            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers(
+                mockLogger,
+                fakeApplicationId.toString(),
+                mockRecordedDataQueueHandler
+            )
+            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers(
+                mockLogger,
+                fakeApplicationId.toString(),
+                mockRecordedDataQueueHandler
+            )
             else -> throw IllegalArgumentException("Unknown masking level")
         }
 

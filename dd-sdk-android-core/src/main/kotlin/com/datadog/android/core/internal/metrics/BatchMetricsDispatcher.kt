@@ -84,12 +84,18 @@ internal class BatchMetricsDispatcher(
 
     // region Internal
 
+    @SuppressWarnings("ReturnCount")
     private fun resolveBatchDeletedMetricAttributes(
         file: File,
         deletionReason: RemovalReason
     ): Map<String, Any?>? {
         val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
         val fileAgeInMillis = dateTimeProvider.getDeviceTimestamp() - fileCreationTimestamp
+        if (fileAgeInMillis < 0) {
+            // the device time was manually modified or the time zone changed
+            // we are dropping this metric to not skew our charts
+            return null
+        }
         return mapOf(
             TRACK_KEY to trackName,
             TYPE_KEY to BATCH_DELETED_TYPE_VALUE,
@@ -108,12 +114,18 @@ internal class BatchMetricsDispatcher(
         )
     }
 
+    @SuppressWarnings("ReturnCount")
     private fun resolveBatchClosedMetricAttributes(
         file: File,
         batchMetadata: BatchClosedMetadata
     ): Map<String, Any?>? {
         val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
         val batchDurationInMs = batchMetadata.lastTimeWasUsedInMs - fileCreationTimestamp
+        if (batchDurationInMs < 0) {
+            // the device time was manually modified or the time zone changed
+            // we are dropping this metric to not skew our charts
+            return null
+        }
         return mapOf(
             TRACK_KEY to trackName,
             TYPE_KEY to BATCH_CLOSED_TYPE_VALUE,

@@ -285,7 +285,7 @@ internal class RumApplicationScopeTest {
         val viewScope = viewManager.childrenScopes.first()
         check(viewScope is RumViewScope)
         assertThat(viewScope.key).isEqualTo(fakeKey)
-        assertThat(viewScope.attributes).isEqualTo(mockAttributes)
+        assertThat(viewScope.eventAttributes).isEqualTo(mockAttributes)
     }
 
     @Test

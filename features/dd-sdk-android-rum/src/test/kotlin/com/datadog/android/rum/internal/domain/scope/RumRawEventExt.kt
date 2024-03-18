@@ -99,12 +99,14 @@ internal fun Forge.stopResourceWithStacktraceEvent(): RumRawEvent.StopResourceWi
 }
 
 internal fun Forge.addErrorEvent(): RumRawEvent.AddError {
+    val isFatal = aBool()
     return RumRawEvent.AddError(
         message = anAlphabeticalString(),
         source = aValueFrom(RumErrorSource::class.java),
         stacktrace = null,
         throwable = null,
-        isFatal = this.aBool(),
+        isFatal = isFatal,
+        threads = if (isFatal) aList { getForgery() } else emptyList(),
         attributes = exhaustiveAttributes()
     )
 }

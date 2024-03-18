@@ -726,9 +726,10 @@ internal class RumContinuousActionScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            emptyMap()
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
@@ -802,9 +803,10 @@ internal class RumContinuousActionScopeTest {
             message,
             source,
             throwable,
-            null,
-            true,
-            emptyMap()
+            stacktrace = null,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -870,18 +872,20 @@ internal class RumContinuousActionScopeTest {
             message,
             source,
             throwable,
-            null,
-            false,
-            emptyMap()
+            stacktrace = null,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
             throwable,
-            null,
-            true,
-            emptyMap()
+            stacktrace = null,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = emptyMap()
         )
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
 

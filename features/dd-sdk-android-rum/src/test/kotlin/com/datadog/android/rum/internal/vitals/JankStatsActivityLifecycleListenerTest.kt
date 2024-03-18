@@ -10,13 +10,18 @@ import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import android.view.Display
+import android.view.View
 import android.view.Window
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -46,7 +51,8 @@ import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -70,6 +76,9 @@ internal class JankStatsActivityLifecycleListenerTest {
     lateinit var mockWindow: Window
 
     @Mock
+    lateinit var mockDecorView: View
+
+    @Mock
     lateinit var mockJankStatsProvider: JankStatsProvider
 
     @Mock
@@ -77,6 +86,8 @@ internal class JankStatsActivityLifecycleListenerTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockWindow.decorView) doReturn mockDecorView
+        whenever(mockWindow.peekDecorView()) doReturn mockDecorView
         whenever(mockActivity.window) doReturn mockWindow
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockJankStatsProvider.createJankStatsAndTrack(any(), any(), any())) doReturn mockJankStats
@@ -247,6 +258,29 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
+    fun `M add listener to window only once W onActivityStarted()`() {
+        // Given
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
+        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.S
+        testedJankListener = JankStatsActivityLifecycleListener(
+            mockObserver,
+            mockInternalLogger,
+            mockJankStatsProvider,
+            60.0,
+            mockBuildSdkVersionProvider
+        )
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+        testedJankListener.onActivityStarted(mockActivity)
+
+        // Then
+        verify(mockWindow).addOnFrameMetricsAvailableListener(any(), any()) // should be called only once
+    }
+
+    @Test
     fun `𝕄 do nothing 𝕎 onActivityCreated() {}`() {
         // Given
         val mockBundle = mock<Bundle>()
@@ -404,6 +438,31 @@ internal class JankStatsActivityLifecycleListenerTest {
         }
     }
 
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityStarted() {android framework throws an exception}`() {
+        // Given
+        whenever(mockWindow.addOnFrameMetricsAvailableListener(any(), any())) doThrow IllegalStateException()
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+
+        // Then
+        // no-crash
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityStarted() + onActivityDestroyed() {android framework throws an exception}`() {
+        // Given
+        whenever(mockWindow.removeOnFrameMetricsAvailableListener(any())) doThrow IllegalArgumentException()
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        // no-crash
+    }
+
     companion object {
         const val ONE_MILLISECOND_NS: Long = 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
@@ -411,5 +470,13 @@ internal class JankStatsActivityLifecycleListenerTest {
         const val ONE_MINUTE_NS: Long = 60L * ONE_SECOND_NS
         const val MIN_FPS: Double = 1.0
         const val MAX_FPS: Double = 60.0
+
+        private val mainLooper = MainLooperTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(mainLooper)
+        }
     }
 }
