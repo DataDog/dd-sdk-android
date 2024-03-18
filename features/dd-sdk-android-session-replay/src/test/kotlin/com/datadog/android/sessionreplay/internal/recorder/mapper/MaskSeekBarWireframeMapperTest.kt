@@ -34,9 +34,10 @@ internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest()
 
     override fun provideTestInstance(): SeekBarWireframeMapper {
         return MaskSeekBarWireframeMapper(
-            viewUtils = mockViewUtils,
-            stringUtils = mockStringUtils,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
         )
     }
 
@@ -56,7 +57,11 @@ internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest()
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(
+            mockSeekBar,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -71,7 +76,7 @@ internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest()
         // Given
         val fakeDefaultDayNotActiveHtmlColor = forge.aStringMatching("#[0-9A-Fa-f]{8}")
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 SeekBarWireframeMapper.DAY_MODE_COLOR,
                 SeekBarWireframeMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
@@ -103,7 +108,11 @@ internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest()
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(
+            mockSeekBar,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(listOf(expectedInactiveTrackWireframe))
@@ -114,7 +123,7 @@ internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest()
         // Given
         val fakeDefaultNightNotActiveHtmlColor = forge.aStringMatching("#[0-9A-Fa-f]{8}")
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 SeekBarWireframeMapper.NIGHT_MODE_COLOR,
                 SeekBarWireframeMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
@@ -146,7 +155,11 @@ internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest()
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(
+            mockSeekBar,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(listOf(expectedInactiveTrackWireframe))

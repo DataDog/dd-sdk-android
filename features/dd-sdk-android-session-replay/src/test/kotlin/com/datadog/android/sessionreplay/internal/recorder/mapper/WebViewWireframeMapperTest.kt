@@ -6,13 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.view.View
 import android.webkit.WebView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.aMockView
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import fr.xgouchet.elmyr.Forge
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -20,8 +19,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -31,39 +33,59 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class WebViewWireframeMapperTest : BaseWireframeMapperTest() {
+
     private lateinit var testedWebViewWireframeMapper: WebViewWireframeMapper
+
+    @Mock
+    lateinit var mockWebView: WebView
+
+    @Forgery
+    lateinit var fakeViewGlobalBounds: GlobalBounds
+
+    @LongForgery
+    var fakeWireframeId: Long = 0L
 
     @BeforeEach
     fun `set up`() {
-        testedWebViewWireframeMapper = WebViewWireframeMapper()
+        whenever(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
+                mockWebView,
+                fakeMappingContext.systemInformation.screenDensity
+            )
+        ).thenReturn(fakeViewGlobalBounds)
+        whenever(
+            mockViewIdentifierResolver.resolveViewId(mockWebView)
+        ) doReturn fakeWireframeId
+
+        testedWebViewWireframeMapper = WebViewWireframeMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
     }
 
     @Test
-    fun `M resolve a WebViewWireframe W map()`(forge: Forge) {
+    fun `M resolve a WebViewWireframe W map()`() {
         // Given
-        val mockView: WebView = forge.aMockView()
-        val expectedWireframes = listOf(mockView.toWebViewWireframe())
+        val expectedWireframe = MobileSegment.Wireframe.WebviewWireframe(
+            id = fakeWireframeId,
+            x = fakeViewGlobalBounds.x,
+            y = fakeViewGlobalBounds.y,
+            width = fakeViewGlobalBounds.width,
+            height = fakeViewGlobalBounds.height,
+            slotId = fakeWireframeId.toString()
+        )
 
         // When
-        val mappedWireframes = testedWebViewWireframeMapper.map(mockView, fakeMappingContext)
+        val mappedWireframes = testedWebViewWireframeMapper.map(
+            mockWebView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
 
         // Then
-        assertThat(mappedWireframes).isEqualTo(expectedWireframes)
-    }
-
-    private fun View.toWebViewWireframe(): MobileSegment.Wireframe.WebviewWireframe {
-        val coordinates = IntArray(2)
-        val screenDensity = fakeMappingContext.systemInformation.screenDensity
-        this.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(screenDensity).toLong()
-        val y = coordinates[1].densityNormalized(screenDensity).toLong()
-        return MobileSegment.Wireframe.WebviewWireframe(
-            System.identityHashCode(this).toLong(),
-            x = x,
-            y = y,
-            width = width.toLong().densityNormalized(screenDensity),
-            height = height.toLong().densityNormalized(screenDensity),
-            slotId = System.identityHashCode(this).toString()
-        )
+        assertThat(mappedWireframes).hasSize(1)
+            .contains(expectedWireframe)
     }
 }

@@ -10,18 +10,16 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.CheckBox
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -50,9 +49,6 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     lateinit var testedCheckBoxMapper: CheckBoxMapper
 
     @Mock
-    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
-
-    @Mock
     lateinit var mockTextWireframeMapper: TextViewMapper
 
     @Forgery
@@ -61,9 +57,6 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     @LongForgery
     var fakeGeneratedIdentifier: Long = 0L
 
-    @Mock
-    lateinit var mockViewUtils: ViewUtils
-
     @Forgery
     lateinit var fakeViewGlobalBounds: GlobalBounds
 
@@ -71,6 +64,9 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
 
     @IntForgery(min = 0, max = 0xffffff)
     var fakeCurrentTextColor: Int = 0
+
+    @StringForgery(regex = "#[0-9A-F]{8}")
+    lateinit var fakeCurrentTextColorString: String
 
     @FloatForgery(min = 1f, max = 100f)
     var fakeTextSize: Float = 1f
@@ -83,22 +79,29 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         mockCheckBox = mock {
             whenever(it.textSize).thenReturn(fakeTextSize)
             whenever(it.currentTextColor).thenReturn(fakeCurrentTextColor)
+            whenever(it.alpha) doReturn 1f
         }
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckBox,
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
+
         whenever(mockTextWireframeMapper.map(eq(mockCheckBox), eq(fakeMappingContext), any()))
             .thenReturn(fakeTextWireframes)
+
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockCheckBox,
                 fakeMappingContext.systemInformation.screenDensity
             )
-        )
-            .thenReturn(fakeViewGlobalBounds)
+        ).thenReturn(fakeViewGlobalBounds)
+
+        whenever(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(fakeCurrentTextColor, OPAQUE_ALPHA_VALUE)
+        ) doReturn fakeCurrentTextColorString
+
         testedCheckBoxMapper = setupTestedMapper()
     }
 
@@ -122,12 +125,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         }
         whenever(mockCheckBox.buttonDrawable).thenReturn(mockDrawable)
         whenever(mockCheckBox.isChecked).thenReturn(true)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
-            fakeCurrentTextColor,
-            OPAQUE_ALPHA_VALUE
-        )
-        val checkBoxSize =
-            resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
+        val checkBoxSize = resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
@@ -136,16 +134,17 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = fakeCurrentTextColorString,
                 width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
-            shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
+            shapeStyle = expectedCheckedShapeStyle(fakeCurrentTextColorString)
         )
 
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
@@ -161,10 +160,6 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         }
         whenever(mockCheckBox.buttonDrawable).thenReturn(mockDrawable)
         whenever(mockCheckBox.isChecked).thenReturn(false)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
-            fakeCurrentTextColor,
-            OPAQUE_ALPHA_VALUE
-        )
         val checkBoxSize =
             resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
@@ -175,7 +170,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = fakeCurrentTextColorString,
                 width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = null
@@ -184,7 +179,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
@@ -195,10 +191,6 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     fun `M resolve the checkbox as ShapeWireframe W map() { checked }`() {
         // Given
         whenever(mockCheckBox.isChecked).thenReturn(true)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
-            fakeCurrentTextColor,
-            OPAQUE_ALPHA_VALUE
-        )
         val checkBoxSize =
             resolveCheckBoxSize(CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
@@ -209,16 +201,17 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = fakeCurrentTextColorString,
                 width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
-            shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
+            shapeStyle = expectedCheckedShapeStyle(fakeCurrentTextColorString)
         )
 
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
@@ -229,10 +222,6 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     fun `M resolve the checkbox as ShapeWireframe W map() { not checked }`() {
         // Given
         whenever(mockCheckBox.isChecked).thenReturn(false)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
-            fakeCurrentTextColor,
-            OPAQUE_ALPHA_VALUE
-        )
         val checkBoxSize =
             resolveCheckBoxSize(CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
@@ -243,7 +232,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = fakeCurrentTextColorString,
                 width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = null
@@ -252,7 +241,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
@@ -263,7 +253,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     fun `M ignore the checkbox W map() { unique id could not be generated }`() {
         // Given
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckBox,
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
@@ -272,7 +262,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then

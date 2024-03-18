@@ -7,13 +7,16 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.tabs.TabLayout.TabView
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -33,14 +36,8 @@ internal abstract class BaseTabWireframeMapperTest {
     @Forgery
     lateinit var fakeMappingContext: MappingContext
 
-    @Mock
-    lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
-
     @Forgery
     lateinit var fakeGlobalBounds: GlobalBounds
-
-    @Mock
-    lateinit var mockViewUtils: ViewUtils
 
     @Mock
     lateinit var mockTextWireframeMapper: TextViewMapper
@@ -63,18 +60,33 @@ internal abstract class BaseTabWireframeMapperTest {
     @IntForgery(min = 0, max = 10)
     var fakePaddingEnd: Int = 0
 
+    @Mock
+    lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
+
+    @Mock
+    lateinit var mockColorStringFormatter: ColorStringFormatter
+
+    @Mock
+    lateinit var mockViewBoundsResolver: ViewBoundsResolver
+
+    @Mock
+    lateinit var mockDrawableToColorMapper: DrawableToColorMapper
+
+    @Mock
+    lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTextWireframes = forge.aList(size = 1) { getForgery() }
         mockTabView = forge.mockTabView()
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockTabView,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeGlobalBounds)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockTabView,
                 TabWireframeMapper.SELECTED_TAB_INDICATOR_KEY_NAME
             )
@@ -98,9 +110,9 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedTabIndicatorHeight = TabWireframeMapper.SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(density)
         val expectedTabIndicatorYPos = fakeGlobalBounds.y + fakeGlobalBounds.height -
-            expectedTabIndicatorHeight
+                expectedTabIndicatorHeight
         val expectedTabIndicatorWidth = fakeGlobalBounds.width - expectedTabIndicatorStartPadding -
-            expectedTabIndicatorEndPadding
+                expectedTabIndicatorEndPadding
         val expectedTabIndicatorColor = fakeTextWireframes.first().textStyle.color
         val expectedTabIndicatorWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeTabIndicatorUniqueId,
@@ -116,7 +128,7 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = fakeTextWireframes + expectedTabIndicatorWireframe
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -129,7 +141,7 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = fakeTextWireframes
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -149,9 +161,9 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedTabIndicatorHeight = TabWireframeMapper.SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(density)
         val expectedTabIndicatorYPos = fakeGlobalBounds.y + fakeGlobalBounds.height -
-            expectedTabIndicatorHeight
+                expectedTabIndicatorHeight
         val expectedTabIndicatorWidth = fakeGlobalBounds.width - expectedTabIndicatorStartPadding -
-            expectedTabIndicatorEndPadding
+                expectedTabIndicatorEndPadding
         val expectedTabIndicatorColor = TabWireframeMapper.SELECTED_TAB_INDICATOR_DEFAULT_COLOR
         val expectedTabIndicatorWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeTabIndicatorUniqueId,
@@ -167,7 +179,7 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = listOf(expectedTabIndicatorWireframe)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -182,7 +194,7 @@ internal abstract class BaseTabWireframeMapperTest {
         whenever(mockTabView.isSelected).thenReturn(false)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEmpty()
@@ -200,9 +212,9 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedTabIndicatorHeight = TabWireframeMapper.SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(density)
         val expectedTabIndicatorYPos = fakeGlobalBounds.y + fakeGlobalBounds.height -
-            expectedTabIndicatorHeight
+                expectedTabIndicatorHeight
         val expectedTabIndicatorWidth = fakeGlobalBounds.width - expectedTabIndicatorStartPadding -
-            expectedTabIndicatorEndPadding
+                expectedTabIndicatorEndPadding
         val expectedTabIndicatorColor = TabWireframeMapper.SELECTED_TAB_INDICATOR_DEFAULT_COLOR
         val expectedTabIndicatorWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeTabIndicatorUniqueId,
@@ -218,7 +230,7 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = listOf(expectedTabIndicatorWireframe)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -231,7 +243,7 @@ internal abstract class BaseTabWireframeMapperTest {
         whenever(mockTabView.isSelected).thenReturn(false)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEmpty()
@@ -240,13 +252,13 @@ internal abstract class BaseTabWireframeMapperTest {
     @Test
     fun `M map the Tab to a list of wireframes W map() { tab not selected, id generate failed }`() {
         // Given
-        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(null)
         whenever(mockTabView.isSelected).thenReturn(false)
         val expectedMappedWireframes = fakeTextWireframes
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -255,13 +267,13 @@ internal abstract class BaseTabWireframeMapperTest {
     @Test
     fun `M map the Tab to a list of wireframes W map() { tab selected, id generate failed }`() {
         // Given
-        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(null)
         whenever(mockTabView.isSelected).thenReturn(true)
         val expectedMappedWireframes = fakeTextWireframes
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext)
+        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)

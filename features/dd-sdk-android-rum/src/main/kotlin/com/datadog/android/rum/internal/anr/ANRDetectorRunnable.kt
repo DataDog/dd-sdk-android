@@ -7,8 +7,13 @@
 package com.datadog.android.rum.internal.anr
 
 import android.os.Handler
-import com.datadog.android.api.SdkCore
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.core.internal.utils.asString
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 
 /**
@@ -17,7 +22,7 @@ import com.datadog.android.rum.RumErrorSource
  * It runs in a background thread and schedules regular no-op
  */
 internal class ANRDetectorRunnable(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     private val handler: Handler,
     private val anrThresholdMs: Long = ANR_THRESHOLD_MS,
     private val anrTestDelayMs: Long = ANR_TEST_DELAY_MS
@@ -43,11 +48,30 @@ internal class ANRDetectorRunnable(
                     callback.wait(anrThresholdMs)
 
                     if (!callback.wasCalled()) {
+                        val anrThread = handler.looper.thread
+                        val anrException = ANRException(anrThread)
+                        val allThreads = safeGetAllStacktraces()
+                            .filterValues { it.isNotEmpty() }
+                            .map {
+                                val thread = it.key
+                                val isAnrThread = thread == anrThread
+                                val stack = if (isAnrThread) {
+                                    anrException.loggableStackTrace()
+                                } else {
+                                    thread.stackTrace.loggableStackTrace()
+                                }
+                                ThreadDump(
+                                    name = thread.name,
+                                    state = thread.state.asString(),
+                                    stack = stack,
+                                    crashed = false
+                                )
+                            }
                         GlobalRumMonitor.get(sdkCore).addError(
                             ANR_MESSAGE,
                             RumErrorSource.SOURCE,
-                            ANRException(handler.looper.thread),
-                            emptyMap()
+                            anrException,
+                            mapOf(RumAttributes.INTERNAL_ALL_THREADS to allThreads)
                         )
                         callback.wait()
                     }
@@ -67,6 +91,20 @@ internal class ANRDetectorRunnable(
 
     fun stop() {
         shouldStop = true
+    }
+
+    private fun safeGetAllStacktraces(): Map<Thread, Array<StackTraceElement>> {
+        return try {
+            Thread.getAllStackTraces()
+        } catch (e: SecurityException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to get all stack traces." },
+                e
+            )
+            emptyMap()
+        }
     }
 
     // We need to let this class extend java's Object

@@ -69,6 +69,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasErrorFingerprint(expected: String?): ErrorEventAssert {
+        assertThat(actual.error.fingerprint)
+            .overridingErrorMessage(
+                "Expected event data to have error.fingerprint $expected " +
+                    "but was ${actual.error.fingerprint}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun isCrash(expected: Boolean): ErrorEventAssert {
         assertThat(actual.error.isCrash)
             .overridingErrorMessage(

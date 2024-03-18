@@ -8,21 +8,28 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Rect
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class SwitchCompatMapper(
     private val textWireframeMapper: TextViewMapper,
-    private val stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
-) : CheckableWireframeMapper<SwitchCompat>(viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : CheckableWireframeMapper<SwitchCompat>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     // region CheckableWireframeMapper
 
@@ -39,8 +46,8 @@ internal open class SwitchCompatMapper(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val thumbId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-        val trackId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
+        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
         val trackThumbDimensions = resolveThumbAndTrackDimensions(
             view,
             mappingContext.systemInformation
@@ -53,7 +60,7 @@ internal open class SwitchCompatMapper(
         val thumbHeight = trackThumbDimensions[THUMB_HEIGHT_INDEX]
         val thumbWidth = trackThumbDimensions[THUMB_WIDTH_INDEX]
         val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
@@ -84,8 +91,8 @@ internal open class SwitchCompatMapper(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val thumbId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-        val trackId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
+        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
         val trackThumbDimensions = resolveThumbAndTrackDimensions(
             view,
             mappingContext.systemInformation
@@ -98,7 +105,7 @@ internal open class SwitchCompatMapper(
         val thumbHeight = trackThumbDimensions[THUMB_HEIGHT_INDEX]
         val thumbWidth = trackThumbDimensions[THUMB_WIDTH_INDEX]
         val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
@@ -130,7 +137,7 @@ internal open class SwitchCompatMapper(
     // region Internal
 
     protected fun resolveCheckableColor(view: SwitchCompat): String {
-        return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
+        return colorStringFormatter.formatColorAndAlphaAsHexString(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
     private fun resolveThumbShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {

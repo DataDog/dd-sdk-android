@@ -13,10 +13,10 @@ import android.os.Build
 import android.util.TypedValue
 import android.view.WindowManager
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
@@ -83,14 +83,14 @@ internal object MiscUtils {
 
     fun resolveSystemInformation(context: Context): SystemInformation {
         val screenDensity = context.resources.displayMetrics.density
-        val themeColorAsHexa = resolveThemeColor(context.theme)?.let {
-            StringUtils.formatColorAndAlphaAsHexa(it, OPAQUE_ALPHA_VALUE)
+        val themeColorAsHexString = resolveThemeColor(context.theme)?.let {
+            DefaultColorStringFormatter.formatColorAndAlphaAsHexString(it, OPAQUE_ALPHA_VALUE)
         }
         return SystemInformation(
             screenBounds = resolveScreenBounds(context, screenDensity),
             screenOrientation = context.resources.configuration.orientation,
             screenDensity = screenDensity,
-            themeColor = themeColorAsHexa
+            themeColor = themeColorAsHexString
         )
     }
 

@@ -7,18 +7,17 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.InsetDrawable
-import android.graphics.drawable.RippleDrawable
-import android.os.Build
 import android.view.View
-import androidx.annotation.RequiresApi
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.aMockView
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -43,236 +43,92 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
 
     lateinit var testedWireframeMapper: ViewWireframeMapper
 
+    @Forgery
+    lateinit var fakeBounds: GlobalBounds
+
+    @LongForgery
+    var fakeWireframeId: Long = 0L
+
     @BeforeEach
     fun `set up`() {
-        testedWireframeMapper = ViewWireframeMapper()
+        testedWireframeMapper = ViewWireframeMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
     }
 
     @Test
     fun `M resolve a ShapeWireframe W map()`(forge: Forge) {
         // Given
         val mockView: View = forge.aMockView()
-        val expectedWireframes = mockView.toShapeWireframes()
-
-        // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
-
-        // Then
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @Test
-    fun `M use the View hashcode for Wireframe id W produce()`(forge: Forge) {
-        // Given
-        val mockViews = forge.aList(size = forge.anInt(min = 10, max = 20)) {
-            aMockView<View>()
-        }
-
-        // When
-        val shapeWireframes = mockViews.flatMap {
-            testedWireframeMapper.map(
-                it,
-                fakeMappingContext
+        whenever(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
+                mockView,
+                fakeMappingContext.systemInformation.screenDensity
             )
-        }
+        ) doReturn fakeBounds
+        whenever(mockViewIdentifierResolver.resolveViewId(mockView)) doReturn fakeWireframeId
+
+        // When
+        val wireframes = testedWireframeMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
-        val idsSet: MutableSet<Long> = mutableSetOf()
-        shapeWireframes.forEach {
-            assertThat(idsSet).doesNotContain(it.id)
-            idsSet.add(it.id)
-        }
+        assertThat(wireframes.size).isEqualTo(1)
+        val wireframe = wireframes.first()
+
+        assertThat(wireframe.id).isEqualTo(fakeWireframeId)
+        assertThat(wireframe.x).isEqualTo(fakeBounds.x)
+        assertThat(wireframe.y).isEqualTo(fakeBounds.y)
+        assertThat(wireframe.width).isEqualTo(fakeBounds.width)
+        assertThat(wireframe.height).isEqualTo(fakeBounds.height)
+        assertThat(wireframe.clip).isNull()
+        assertThat(wireframe.shapeStyle).isNull()
+        assertThat(wireframe.border).isNull()
     }
 
     @Test
     fun `M resolve a ShapeWireframe with shapeStyle W map { ColorDrawable }`(
-        forge: Forge
+        forge: Forge,
+        @IntForgery(0, 0xFFFFFF) fakeBackgroundColor: Int,
+        @StringForgery(regex = "#[0-9A-Z]{8}") fakeBackgroundColorString: String
     ) {
         // Given
         val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
-        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
-        val fakeDrawableColor = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .shr(8)
-            .toInt()
-        val fakeDrawableAlpha = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .and(ALPHA_MASK)
-            .toInt()
-        val mockDrawable = mock<ColorDrawable> {
-            whenever(it.color).thenReturn(fakeDrawableColor)
-            whenever(it.alpha).thenReturn(fakeDrawableAlpha)
-        }
+        val mockDrawable = mock<ColorDrawable>()
         val mockView = forge.aMockView<View>().apply {
             whenever(this.background).thenReturn(mockDrawable)
             whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
-
-        // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
-
-        // Then
-        val expectedWireframes = mockView.toShapeWireframes().map {
-            it.copy(
-                shapeStyle = MobileSegment.ShapeStyle(
-                    backgroundColor = fakeStyleColor,
-                    opacity = fakeViewAlpha,
-                    cornerRadius = null
-                )
+        whenever(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
+                mockView,
+                fakeMappingContext.systemInformation.screenDensity
             )
-        }
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    @TestTargetApi(Build.VERSION_CODES.M)
-    @Test
-    fun `M resolve a ShapeWireframe with shapeStyle W map {InsetDrawable, M}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
-        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
-        val fakeDrawableColor = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .shr(8)
-            .toInt()
-        val fakeDrawableAlpha = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .and(ALPHA_MASK)
-            .toInt()
-        val mockDrawable = mock<ColorDrawable> {
-            whenever(it.color).thenReturn(fakeDrawableColor)
-            whenever(it.alpha).thenReturn(fakeDrawableAlpha)
-        }
-        val mockInsetDrawable = mock<InsetDrawable> {
-            whenever(it.drawable).thenReturn(mockDrawable)
-        }
-        val mockView = forge.aMockView<View>().apply {
-            whenever(this.background).thenReturn(mockInsetDrawable)
-            whenever(this.alpha).thenReturn(fakeViewAlpha)
-        }
+        ) doReturn fakeBounds
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable)) doReturn fakeBackgroundColor
+        whenever(mockColorStringFormatter.formatColorAsHexString(fakeBackgroundColor))
+            .doReturn(fakeBackgroundColorString)
+        whenever(mockViewIdentifierResolver.resolveViewId(mockView)) doReturn fakeWireframeId
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
-        val expectedWireframes = mockView.toShapeWireframes().map {
-            it.copy(
-                shapeStyle = MobileSegment.ShapeStyle(
-                    backgroundColor = fakeStyleColor,
-                    opacity = fakeViewAlpha,
-                    cornerRadius = null
-                )
+        val expectedWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeWireframeId,
+            x = fakeBounds.x,
+            y = fakeBounds.y,
+            width = fakeBounds.width,
+            height = fakeBounds.height,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = fakeBackgroundColorString,
+                opacity = fakeViewAlpha,
+                cornerRadius = null
             )
-        }
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
-    }
+        )
 
-    @Test
-    fun `M resolve a ShapeWireframe no shapeStyle W map { InsetDrawable, lower than M }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
-        val fakeDrawableColor = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .shr(8)
-            .toInt()
-        val fakeDrawableAlpha = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .and(ALPHA_MASK)
-            .toInt()
-        val mockDrawable = mock<ColorDrawable> {
-            whenever(it.color).thenReturn(fakeDrawableColor)
-            whenever(it.alpha).thenReturn(fakeDrawableAlpha)
-        }
-        val mockInsetDrawable = mock<InsetDrawable> {
-            whenever(it.drawable).thenReturn(mockDrawable)
-        }
-        val mockView = forge.aMockView<View>().apply {
-            whenever(this.background).thenReturn(mockInsetDrawable)
-        }
-
-        // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
-
-        // Then
-        val expectedWireframes = mockView.toShapeWireframes()
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @Test
-    fun `M resolve a ShapeWireframe with shapeStyle W map {RippleDrawable, ColorDrawable}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
-        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
-        val fakeDrawableColor = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .shr(8)
-            .toInt()
-        val fakeDrawableAlpha = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .and(ALPHA_MASK)
-            .toInt()
-        val mockDrawable = mock<ColorDrawable> {
-            whenever(it.color).thenReturn(fakeDrawableColor)
-            whenever(it.alpha).thenReturn(fakeDrawableAlpha)
-        }
-        val mockRipple = mock<RippleDrawable> {
-            whenever(it.numberOfLayers).thenReturn(forge.anInt(min = 1))
-            whenever(it.getDrawable(0)).thenReturn(mockDrawable)
-        }
-        val mockView = forge.aMockView<View>().apply {
-            whenever(this.background).thenReturn(mockRipple)
-            whenever(this.alpha).thenReturn(fakeViewAlpha)
-        }
-
-        // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
-
-        // Then
-        val expectedWireframes = mockView.toShapeWireframes().map {
-            it.copy(
-                shapeStyle = MobileSegment.ShapeStyle(
-                    backgroundColor = fakeStyleColor,
-                    opacity = fakeViewAlpha,
-                    cornerRadius = null
-                )
-            )
-        }
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @Test
-    fun `M resolve a ShapeWireframe no shapeStyle W produce {RippleDrawable, NonColorDrawable}`(
-        forge: Forge
-    ) {
-        // Given
-        val mockDrawable = mock<Drawable>()
-        val mockRipple: RippleDrawable = mock {
-            whenever(it.numberOfLayers).thenReturn(forge.anInt(min = 1))
-            whenever(it.getDrawable(0)).thenReturn(mockDrawable)
-        }
-        val mockView = forge.aMockView<View>().apply {
-            whenever(this.background).thenReturn(mockRipple)
-        }
-
-        // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
-
-        // Then
-        val expectedWireframes = mockView.toShapeWireframes()
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
+        assertThat(shapeWireframes).isEqualTo(listOf(expectedWireframe))
     }
 }

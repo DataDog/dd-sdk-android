@@ -1230,6 +1230,85 @@ internal class RumResourceScopeTest {
     }
 
     @Test
+    fun `𝕄 send Error with fingerprint 𝕎 handleEvent(StopResourceWithError) { contains fingerprint }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery fakeFingerprint: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        // Expected attributes should not have the ERROR_FINGERPRINT attribute so add it after
+        attributes[RumAttributes.ERROR_FINGERPRINT] = fakeFingerprint
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(false)
+                    hasResource(fakeUrl, fakeMethod, 0L)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                    hasUserSession()
+                    hasErrorFingerprint(fakeFingerprint)
+                    hasNoSyntheticsTest()
+                    hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
     fun `𝕄 send Error 𝕎 handleEvent(StopResourceWithStackTrace)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,

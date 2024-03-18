@@ -11,7 +11,6 @@ import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.aMockView
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -40,9 +39,6 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     @Mock
     lateinit var mockViewWireframeMapper: ViewWireframeMapper
 
-    @Mock
-    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
-
     lateinit var mockDecorView: View
 
     lateinit var mockViewWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
@@ -56,7 +52,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     fun `set up`(forge: Forge) {
         mockDecorView = forge.aMockView()
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockDecorView,
                 DecorViewMapper.WINDOW_KEY_NAME
             )
@@ -69,7 +65,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
             .thenReturn(mockViewWireframes)
         testedDecorViewMapper = DecorViewMapper(
             mockViewWireframeMapper,
-            mockuniqueIdentifierGenerator
+            mockViewIdentifierResolver
         )
     }
 
@@ -87,7 +83,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
         fakeMappingContext = fakeMappingContext.copy(
             systemInformation =
-            fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
+                fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
         )
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
@@ -101,7 +97,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
 
         // When
         val mappedDecorViewWireframes = testedDecorViewMapper
-            .map(mockDecorView, fakeMappingContext)
+            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
             .filter { it.id in viewWireframesIds }
 
         // Then
@@ -116,7 +112,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         val fakeThemeColor = forge.aStringMatching("#[0-9A-Fa-f]{6}[fF]{2}")
         fakeMappingContext = fakeMappingContext.copy(
             systemInformation =
-            fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
+                fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
         )
         val randIndex = forge.anInt(min = 0, max = mockViewWireframes.size)
         mockViewWireframes = mockViewWireframes.mapIndexed { index, wireframe ->
@@ -133,7 +129,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
 
         // When
         val mappedDecorViewWireframes = testedDecorViewMapper
-            .map(mockDecorView, fakeMappingContext)
+            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
             .filter { it.id in viewWireframesIds }
 
         // Then
@@ -145,7 +141,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         // Given
         fakeMappingContext = fakeMappingContext.copy(
             systemInformation =
-            fakeMappingContext.systemInformation.copy(themeColor = null)
+                fakeMappingContext.systemInformation.copy(themeColor = null)
         )
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
@@ -157,7 +153,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
 
         // When
         val mappedDecorViewWireframes = testedDecorViewMapper
-            .map(mockDecorView, fakeMappingContext)
+            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
             .filter { it.id in viewWireframesIds }
 
         // Then
@@ -184,7 +180,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeMappingContext)
+        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size + 1)
@@ -195,7 +191,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     fun `M do not handle the Window background W map {uniqueIdentifier could not be generated}`() {
         // Given
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockDecorView,
                 DecorViewMapper.WINDOW_KEY_NAME
             )
@@ -213,7 +209,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeMappingContext)
+        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)
@@ -225,7 +221,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         // Given
         val mockPopUpDecorView = forge.aMockView<PopUpDecorView>()
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockPopUpDecorView,
                 DecorViewMapper.WINDOW_KEY_NAME
             )
@@ -245,7 +241,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val wireframes = testedDecorViewMapper.map(mockPopUpDecorView, fakeMappingContext)
+        val wireframes = testedDecorViewMapper.map(mockPopUpDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)

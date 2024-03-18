@@ -28,9 +28,11 @@ internal class MaskCheckedTextViewMapperTest : BaseCheckedTextViewMapperTest() {
 
     override fun setupTestedMapper(): CheckedTextViewMapper {
         return MaskCheckedTextViewMapper(
-            textWireframeMapper = mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
-            viewUtils = mockViewUtils
+            mockTextWireframeMapper,
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
         )
     }
 
