@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -417,6 +418,7 @@ internal open class RumViewScope(
                     isCrash = isFatal,
                     type = errorType,
                     sourceType = event.sourceType.toSchemaSourceType(),
+                    category = ErrorEvent.Category.tryFrom(event),
                     threads = event.threads.map {
                         ErrorEvent.Thread(
                             name = it.name,
@@ -1130,6 +1132,18 @@ internal open class RumViewScope(
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
+    }
+
+    private fun ErrorEvent.Category.Companion.tryFrom(
+        event: RumRawEvent.AddError
+    ): ErrorEvent.Category? {
+        return if (event.throwable != null) {
+            if (event.throwable is ANRException) ErrorEvent.Category.ANR else ErrorEvent.Category.EXCEPTION
+        } else if (event.stacktrace != null) {
+            ErrorEvent.Category.EXCEPTION
+        } else {
+            null
+        }
     }
 
     enum class RumViewType(val asString: String) {

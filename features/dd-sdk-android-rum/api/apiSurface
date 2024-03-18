@@ -637,7 +637,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
   data class Error
-    constructor(kotlin.String? = null, kotlin.String, ErrorSource, kotlin.String? = null, kotlin.collections.List<Cause>? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, Handling? = null, kotlin.String? = null, SourceType? = null, Resource? = null, kotlin.collections.List<Thread>? = null, kotlin.collections.List<BinaryImage>? = null, kotlin.Boolean? = null, Meta? = null)
+    constructor(kotlin.String? = null, kotlin.String, ErrorSource, kotlin.String? = null, kotlin.collections.List<Cause>? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, Category? = null, Handling? = null, kotlin.String? = null, SourceType? = null, Resource? = null, kotlin.collections.List<Thread>? = null, kotlin.collections.List<BinaryImage>? = null, kotlin.Boolean? = null, Meta? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Error
@@ -784,6 +784,14 @@ data class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorSource
+  enum Category
+    constructor(kotlin.String)
+    - ANR
+    - APP_HANG
+    - EXCEPTION
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Category
   enum Handling
     constructor(kotlin.String)
     - HANDLED
