@@ -122,7 +122,7 @@ public class DDSpan
    * @param timestampMicro if greater than zero, use this time instead of the current time
    * @param context the context used for the span
    */
-  private DDSpan(
+  public DDSpan(
       @NonNull String instrumentationName,
       final long timestampMicro,
       @NonNull DDSpanContext context,

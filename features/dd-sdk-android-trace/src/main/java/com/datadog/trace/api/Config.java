@@ -778,11 +778,11 @@ public class Config {
     private final boolean telemetryDebugRequestsEnabled;
 
     // Read order: System Properties -> Env Variables, [-> properties file], [-> default value]
-    private Config() {
+    public Config() {
         this(ConfigProvider.createDefault());
     }
 
-    private Config(final ConfigProvider configProvider) {
+    public Config(final ConfigProvider configProvider) {
         this(configProvider, new InstrumenterConfig(configProvider));
     }
 

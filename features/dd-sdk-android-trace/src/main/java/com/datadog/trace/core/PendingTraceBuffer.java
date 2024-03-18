@@ -236,23 +236,6 @@ public abstract class PendingTraceBuffer implements AutoCloseable {
               : null;
     }
   }
-//    public DelayingPendingTraceBuffer(
-//        int bufferSize,
-//        TimeSource timeSource,
-//        Config config,
-//        SharedCommunicationObjects sharedCommunicationObjects,
-//        HealthMetrics healthMetrics) {
-//      this.queue = new MpscBlockingConsumerArrayQueue<>(bufferSize);
-//      this.worker = newAgentThread(TRACE_MONITOR, new Worker());
-//      this.timeSource = timeSource;
-//      boolean runningSpansEnabled = config.isLongRunningTraceEnabled();
-//      this.runningTracesTracker =
-//          runningSpansEnabled
-//              ? new LongRunningTracesTracker(
-//                  config, bufferSize, sharedCommunicationObjects, healthMetrics)
-//              : null;
-//    }
-//  }
 
   static class DiscardingPendingTraceBuffer extends PendingTraceBuffer {
     private static final Logger log = LoggerFactory.getLogger(DiscardingPendingTraceBuffer.class);
@@ -273,14 +256,6 @@ public abstract class PendingTraceBuffer implements AutoCloseable {
     }
   }
 
-//  public static PendingTraceBuffer delaying(
-//      TimeSource timeSource,
-//      Config config,
-//      SharedCommunicationObjects sharedCommunicationObjects,
-//      HealthMetrics healthMetrics) {
-//    return new DelayingPendingTraceBuffer(
-//        BUFFER_SIZE, timeSource, config, sharedCommunicationObjects, healthMetrics);
-//  }
   public static PendingTraceBuffer delaying(
       TimeSource timeSource,
       Config config,

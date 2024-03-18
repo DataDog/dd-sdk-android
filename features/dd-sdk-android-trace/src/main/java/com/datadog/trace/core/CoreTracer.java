@@ -57,6 +57,7 @@ import com.datadog.trace.common.metrics.NoOpMetricsAggregator;
 import com.datadog.trace.common.sampling.Sampler;
 import com.datadog.trace.common.sampling.SpanSamplingRules;
 import com.datadog.trace.common.sampling.TraceSamplingRules;
+import com.datadog.trace.common.writer.NoOpWriter;
 import com.datadog.trace.common.writer.Writer;
 import com.datadog.trace.core.datastreams.DataStreamsMonitoring;
 import com.datadog.trace.core.datastreams.NoOpDataStreamMonitoring;
@@ -112,11 +113,11 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         return new CoreTracerBuilder();
     }
 
-    private static final String LANG_STATSD_TAG = "lang";
-    private static final String LANG_VERSION_STATSD_TAG = "lang_version";
-    private static final String LANG_INTERPRETER_STATSD_TAG = "lang_interpreter";
-    private static final String LANG_INTERPRETER_VENDOR_STATSD_TAG = "lang_interpreter_vendor";
-    private static final String TRACER_VERSION_STATSD_TAG = "tracer_version";
+    public static final String LANG_STATSD_TAG = "lang";
+    public static final String LANG_VERSION_STATSD_TAG = "lang_version";
+    public static final String LANG_INTERPRETER_STATSD_TAG = "lang_interpreter";
+    public static final String LANG_INTERPRETER_VENDOR_STATSD_TAG = "lang_interpreter_vendor";
+    public static final String TRACER_VERSION_STATSD_TAG = "tracer_version";
 
     /**
      * Tracer start time in nanoseconds measured up to a millisecond accuracy
@@ -264,7 +265,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
 
         private Config config;
         private String serviceName;
-        private Writer writer;
+        private Writer writer = new NoOpWriter();
         private IdGenerationStrategy idGenerationStrategy;
         private Sampler sampler;
         private HttpCodec.Extractor extractor;
@@ -344,11 +345,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         }
 
         public CoreTracerBuilder tagInterceptor(TagInterceptor tagInterceptor) {
-            this.tagInterceptor = tagInterceptor;
-            return this;
-        }
-
-        public CoreTracerBuilder statsDClient(TagInterceptor tagInterceptor) {
             this.tagInterceptor = tagInterceptor;
             return this;
         }
@@ -1000,7 +996,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         TracerFlare.addText(zip, "span_metrics.txt", SpanMetricRegistry.getInstance().summary());
     }
 
-    private static String[] generateConstantTags(final Config config) {
+    public static String[] generateConstantTags(final Config config) {
         final List<String> constantTags = new ArrayList<>();
 
         constantTags.add(statsdTag(LANG_STATSD_TAG, "java"));
@@ -1421,7 +1417,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         }
     }
 
-    protected class ConfigSnapshot extends DynamicConfig.Snapshot {
+    public class ConfigSnapshot extends DynamicConfig.Snapshot {
         final Sampler sampler;
 
         protected ConfigSnapshot(

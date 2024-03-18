@@ -37,6 +37,9 @@ public class ListWriter extends CopyOnWriteArrayList<List<DDSpan>> implements Wr
   public List<DDSpan> firstTrace() {
     return get(0);
   }
+  public List<DDSpan> secondTrace() {
+    return get(1);
+  }
 
   @Override
   public void write(List<DDSpan> trace) {
@@ -141,6 +144,10 @@ public class ListWriter extends CopyOnWriteArrayList<List<DDSpan>> implements Wr
   public boolean flush() {
     filter = ACCEPT_ALL;
     return true;
+  }
+
+  public AtomicInteger getTraceCount() {
+    return traceCount;
   }
 
   @Override

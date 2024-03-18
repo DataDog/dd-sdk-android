@@ -1322,6 +1322,8 @@ public abstract interface annotation class com/datadog/trace/advice/RequiresRequ
 
 public class com/datadog/trace/api/Config {
 	public static final field PREFIX Ljava/lang/String;
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;)V
 	public fun configProvider ()Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;
 	public static fun get ()Lcom/datadog/trace/api/Config;
 	public static fun get (Ljava/util/Properties;)Lcom/datadog/trace/api/Config;
@@ -5659,7 +5661,9 @@ public class com/datadog/trace/common/writer/ListWriter : java/util/concurrent/C
 	public fun close ()V
 	public fun firstTrace ()Ljava/util/List;
 	public fun flush ()Z
+	public fun getTraceCount ()Ljava/util/concurrent/atomic/AtomicInteger;
 	public fun incrementDropCounts (I)V
+	public fun secondTrace ()Ljava/util/List;
 	public fun setFilter (Lcom/datadog/trace/common/writer/ListWriter$Filter;)V
 	public fun start ()V
 	public fun toString ()Ljava/lang/String;
@@ -5681,6 +5685,15 @@ public class com/datadog/trace/common/writer/LoggingWriter : com/datadog/trace/c
 	public fun incrementDropCounts (I)V
 	public fun start ()V
 	public fun toString ()Ljava/lang/String;
+	public fun write (Ljava/util/List;)V
+}
+
+public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/common/writer/Writer {
+	public fun <init> ()V
+	public fun close ()V
+	public fun flush ()Z
+	public fun incrementDropCounts (I)V
+	public fun start ()V
 	public fun write (Ljava/util/List;)V
 }
 
@@ -5921,6 +5934,11 @@ public abstract interface class com/datadog/trace/core/CoreSpan {
 }
 
 public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI {
+	public static final field LANG_INTERPRETER_STATSD_TAG Ljava/lang/String;
+	public static final field LANG_INTERPRETER_VENDOR_STATSD_TAG Ljava/lang/String;
+	public static final field LANG_STATSD_TAG Ljava/lang/String;
+	public static final field LANG_VERSION_STATSD_TAG Ljava/lang/String;
+	public static final field TRACER_VERSION_STATSD_TAG Ljava/lang/String;
 	public static final field TRACE_ID_MAX Ljava/math/BigInteger;
 	public fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
@@ -5944,6 +5962,7 @@ public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/ins
 	protected fun finalize ()V
 	public fun flush ()V
 	public fun flushMetrics ()V
+	public static fun generateConstantTags (Lcom/datadog/trace/api/Config;)[Ljava/lang/String;
 	public fun getCallbackProvider (Lcom/datadog/trace/api/gateway/RequestContextSlot;)Lcom/datadog/trace/api/gateway/CallbackProvider;
 	public fun getDataStreamsCheckpointer ()Lcom/datadog/trace/api/experimental/DataStreamsCheckpointer;
 	public fun getDataStreamsMonitoring ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentDataStreamsMonitoring;
@@ -5974,7 +5993,7 @@ public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/ins
 	public fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;J)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 }
 
-protected class com/datadog/trace/core/CoreTracer$ConfigSnapshot : com/datadog/trace/api/DynamicConfig$Snapshot {
+public class com/datadog/trace/core/CoreTracer$ConfigSnapshot : com/datadog/trace/api/DynamicConfig$Snapshot {
 	protected fun <init> (Lcom/datadog/trace/core/CoreTracer;Lcom/datadog/trace/api/DynamicConfig$Builder;Lcom/datadog/trace/core/CoreTracer$ConfigSnapshot;)V
 }
 
@@ -6023,7 +6042,6 @@ public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
 	public fun scopeManager (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun serviceName (Ljava/lang/String;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun serviceNameMappings (Ljava/util/Map;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
-	public fun statsDClient (Lcom/datadog/trace/core/taginterceptor/TagInterceptor;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun strictTraceWrites (Z)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun tagInterceptor (Lcom/datadog/trace/core/taginterceptor/TagInterceptor;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun taggedHeaders (Ljava/util/Map;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
@@ -6034,6 +6052,7 @@ public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
 
 public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/TransientProfilingContextHolder, com/datadog/trace/bootstrap/instrumentation/api/AgentSpan, com/datadog/trace/bootstrap/instrumentation/api/AttachableWrapper, com/datadog/trace/core/CoreSpan {
 	public static final field CHECKPOINTED_TAG Ljava/lang/String;
+	public fun <init> (Ljava/lang/String;JLcom/datadog/trace/core/DDSpanContext;Ljava/util/List;)V
 	public fun addLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)V
 	public synthetic fun addThrowable (Ljava/lang/Throwable;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public synthetic fun addThrowable (Ljava/lang/Throwable;)Lcom/datadog/trace/core/CoreSpan;
@@ -6307,6 +6326,7 @@ public abstract interface class com/datadog/trace/core/MetadataConsumer : java/u
 }
 
 public class com/datadog/trace/core/PendingTrace : com/datadog/trace/bootstrap/instrumentation/api/AgentTrace, com/datadog/trace/core/PendingTraceBuffer$Element {
+	public fun <init> (Lcom/datadog/trace/core/CoreTracer;Lcom/datadog/trace/api/DDTraceId;Lcom/datadog/trace/core/PendingTraceBuffer;Lcom/datadog/trace/api/time/TimeSource;Lcom/datadog/trace/core/CoreTracer$ConfigSnapshot;ZLcom/datadog/trace/core/monitor/HealthMetrics;)V
 	public fun beginEndToEnd ()V
 	public fun cancelContinuation (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;)V
 	public fun compareAndSetLongRunningState (II)Z
@@ -6316,12 +6336,17 @@ public class com/datadog/trace/core/PendingTrace : com/datadog/trace/bootstrap/i
 	public static fun getDurationNano (Lcom/datadog/trace/core/CoreSpan;)J
 	public fun getEndToEndStartTime ()J
 	public fun getLastWriteTime ()J
+	public fun getPendingReferenceCount ()I
+	public fun getPendingTraceBuffer ()Lcom/datadog/trace/core/PendingTraceBuffer;
 	public fun getRootSpan ()Lcom/datadog/trace/core/DDSpan;
 	public fun getRunningTraceStartTime ()J
+	public fun getSpans ()Ljava/util/concurrent/ConcurrentLinkedDeque;
 	public fun getTimeSource ()Lcom/datadog/trace/api/time/TimeSource;
+	public fun isRootSpanWritten ()Z
 	public fun lastReferencedNanosAgo (J)Z
 	public fun oldestFinishedTime ()J
 	public fun registerContinuation (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;)V
+	public fun registerSpan (Lcom/datadog/trace/core/DDSpan;)V
 	public fun sample (Lcom/datadog/trace/core/DDSpan;)Z
 	public fun setEnqueued (Z)Z
 	public fun setLastWriteTime (J)V
@@ -6711,6 +6736,13 @@ public class com/datadog/trace/core/propagation/TagContextExtractor : com/datado
 	public fun <init> (Ljava/util/function/Supplier;Lcom/datadog/trace/core/propagation/ContextInterpreter$Factory;)V
 	public fun cleanup ()V
 	public fun extract (Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor;)Lcom/datadog/trace/bootstrap/instrumentation/api/TagContext;
+}
+
+public class com/datadog/trace/core/propagation/W3CHttpCodec {
+	public static final field TRACE_PARENT_KEY Ljava/lang/String;
+	public static final field TRACE_STATE_KEY Ljava/lang/String;
+	public static fun newExtractor (Lcom/datadog/trace/api/Config;Ljava/util/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
+	public static fun newInjector (Ljava/util/Map;)Lcom/datadog/trace/core/propagation/HttpCodec$Injector;
 }
 
 public class com/datadog/trace/core/propagation/ptags/PTagsFactory : com/datadog/trace/core/propagation/PropagationTags$Factory {
