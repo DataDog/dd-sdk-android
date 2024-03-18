@@ -17,15 +17,17 @@ import android.view.View
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper.Companion.RESOURCES_NULL_ERROR
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.RESOURCES_NULL_ERROR
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.datadog.android.utils.isCloseTo
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -61,7 +63,7 @@ import java.util.Locale
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ImageWireframeHelperTest {
+internal class DefaultImageWireframeHelperTest {
     private lateinit var testedHelper: ImageWireframeHelper
 
     @Mock
@@ -71,13 +73,10 @@ internal class ImageWireframeHelperTest {
     lateinit var mockLogger: InternalLogger
 
     @Mock
-    lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
-
-    @Mock
     lateinit var mockImageCompression: ImageCompression
 
     @Mock
-    lateinit var mockImageWireframeHelperCallback: ImageWireframeHelperCallback
+    lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     @Mock
     lateinit var mockImageTypeResolver: ImageTypeResolver
@@ -92,6 +91,9 @@ internal class ImageWireframeHelperTest {
     lateinit var mockTextView: TextView
 
     @Mock
+    lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
+
+    @Mock // TODO RUM-000 use forgery instead of mock !
     lateinit var mockMappingContext: MappingContext
 
     @Mock
@@ -100,7 +102,7 @@ internal class ImageWireframeHelperTest {
     @Mock
     lateinit var mockDrawable: Drawable
 
-    @Mock
+    @Mock // TODO RUM-000 use forgery instead of mock !
     lateinit var mockBounds: GlobalBounds
 
     @Mock
@@ -139,7 +141,7 @@ internal class ImageWireframeHelperTest {
         fakeDrawableXY = Pair(randomXLocation, randomYLocation)
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockSystemInformation.screenDensity).thenReturn(0f)
-        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(mockView, "drawable"))
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(mockView, "drawable"))
             .thenReturn(fakeGeneratedIdentifier)
         whenever(mockDrawable.intrinsicWidth).thenReturn(fakeDrawableWidth.toInt())
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight.toInt())
@@ -159,7 +161,7 @@ internal class ImageWireframeHelperTest {
         whenever(mockTextView.paddingTop).thenReturn(fakePadding)
         whenever(mockTextView.paddingBottom).thenReturn(fakePadding)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockTextView,
                 DRAWABLE_CHILD_NAME + 1
             )
@@ -169,11 +171,11 @@ internal class ImageWireframeHelperTest {
         whenever(mockBounds.x).thenReturn(0L)
         whenever(mockBounds.y).thenReturn(0L)
 
-        testedHelper = ImageWireframeHelper(
+        testedHelper = DefaultImageWireframeHelper(
             logger = mockLogger,
             resourcesSerializer = mockResourcesSerializer,
             imageCompression = mockImageCompression,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
+            viewIdentifierResolver = mockViewIdentifierResolver,
             viewUtilsInternal = mockViewUtilsInternal,
             imageTypeResolver = mockImageTypeResolver
         )
@@ -198,7 +200,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -222,7 +224,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -250,7 +252,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -262,28 +264,9 @@ internal class ImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { drawable is null }`() {
-        // When
-        val wireframe = testedHelper.createImageWireframe(
-            view = mockView,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 0,
-            height = 0,
-            usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
-        )
-
-        // Then
-        assertThat(wireframe).isNull()
-        verifyNoInteractions(mockImageWireframeHelperCallback)
-    }
-
-    @Test
     fun `M return null W createImageWireframe() { id is null }`() {
         // Given
-        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(null)
 
         // When
@@ -298,12 +281,12 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
-        verifyNoInteractions(mockImageWireframeHelperCallback)
+        verifyNoInteractions(mockAsyncJobStatusCallback)
     }
 
     @Test
@@ -323,7 +306,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -347,7 +330,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -361,7 +344,7 @@ internal class ImageWireframeHelperTest {
         @Mock stubWireframeClip: MobileSegment.WireframeClip
     ) {
         // Given
-        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeGeneratedIdentifier)
 
         val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
@@ -388,7 +371,7 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = mockShapeStyle,
             border = mockBorder,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
             usePIIPlaceholder = true,
             clipping = stubWireframeClip
         )
@@ -408,9 +391,9 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockImageWireframeHelperCallback).onStart()
-        verify(mockImageWireframeHelperCallback).onFinished()
-        verifyNoMoreInteractions(mockImageWireframeHelperCallback)
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
         assertThat(wireframe).isEqualTo(expectedWireframe)
     }
 
@@ -429,11 +412,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
-        verifyNoInteractions(mockImageWireframeHelperCallback)
+        verifyNoInteractions(mockAsyncJobStatusCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -457,7 +440,7 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -476,8 +459,8 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockImageWireframeHelperCallback).onStart()
-        verify(mockImageWireframeHelperCallback).onFinished()
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
         assertThat(wireframes.size).isEqualTo(1)
     }
 
@@ -502,7 +485,7 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -521,8 +504,8 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockImageWireframeHelperCallback, times(2)).onStart()
-        verify(mockImageWireframeHelperCallback, times(2)).onFinished()
+        verify(mockAsyncJobStatusCallback, times(2)).jobStarted()
+        verify(mockAsyncJobStatusCallback, times(2)).jobFinished()
         assertThat(wireframes.size).isEqualTo(2)
     }
 
@@ -537,11 +520,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
-        verifyNoInteractions(mockImageWireframeHelperCallback)
+        verifyNoInteractions(mockAsyncJobStatusCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -572,7 +555,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -604,7 +587,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -662,7 +645,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
@@ -698,7 +681,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
@@ -731,13 +714,13 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
         assertThat(actualWireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
         assertThat((actualWireframe as MobileSegment.Wireframe.PlaceholderWireframe).label)
-            .isEqualTo(ImageWireframeHelper.PLACEHOLDER_CONTENT_LABEL)
+            .isEqualTo(DefaultImageWireframeHelper.PLACEHOLDER_CONTENT_LABEL)
     }
 
     // endregion

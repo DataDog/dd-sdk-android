@@ -52,6 +52,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun build(): SessionReplayConfiguration
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(SessionReplayPrivacy): Builder
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: fun Array<StackTraceElement>.loggableStackTrace(): String
  * apiMethodSignature: fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
  * apiMethodSignature: fun java.math.BigInteger.toHexString(): String
  * apiMethodSignature: fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
@@ -59,6 +60,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
  * apiMethodSignature: fun Int.toHexString(): String
  * apiMethodSignature: fun Long.toHexString(): String
+ * apiMethodSignature: fun Thread.State.asString(): String
  * apiMethodSignature: fun Throwable.loggableStackTrace(): String
  * apiMethodSignature: fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
  * apiMethodSignature: fun <T> allowThreadDiskReads(() -> T): T

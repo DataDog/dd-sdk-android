@@ -7,35 +7,31 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 @Suppress("UndocumentedPublicClass")
-abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
-    stringUtils: StringUtils = StringUtils,
-    viewUtils: ViewUtils = ViewUtils
-) : BaseWireframeMapper<T, MobileSegment.Wireframe>(stringUtils, viewUtils) {
+abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<T, MobileSegment.Wireframe>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
-    // Why is this nullable ???
-    // TODO: RUM-0000 Make the ImageWireframeHelper non nullable
-    private var imageWireframeHelper: ImageWireframeHelper? = null
-    private var uniqueIdentifierGenerator = UniqueIdentifierGenerator
-
-    internal constructor(
-        imageWireframeHelper: ImageWireframeHelper,
-        uniqueIdentifierGenerator: UniqueIdentifierGenerator
-    ) : this() {
-        this.imageWireframeHelper = imageWireframeHelper
-        this.uniqueIdentifierGenerator = uniqueIdentifierGenerator
-    }
+    private var uniqueIdentifierGenerator = DefaultViewIdentifierResolver
 
     /**
      * Maps the [View] into a list of [MobileSegment.Wireframe].
@@ -45,34 +41,31 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
-        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+        val backgroundWireframe = resolveViewBackground(view, mappingContext, asyncJobStatusCallback)
 
-        resolveViewBackground(view, asyncJobStatusCallback)?.let {
-            wireframes.add(it)
-        }
-
-        return wireframes
+        return backgroundWireframe?.let { listOf(it) } ?: emptyList()
     }
 
     private fun resolveViewBackground(
         view: View,
+        mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MobileSegment.Wireframe? {
-        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
-            ?: (null to null)
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
 
         val resources = view.resources
         val density = resources.displayMetrics.density
-        val bounds = resolveViewGlobalBounds(view, density)
+        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
         val width = view.width
         val height = view.height
 
-        return if (border == null && shapeStyle == null) {
+        return if (shapeStyle == null) {
             resolveBackgroundAsImageWireframe(
                 view = view,
                 bounds = bounds,
                 width = width,
                 height = height,
+                mappingContext = mappingContext,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         } else {
@@ -81,8 +74,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
                 bounds = bounds,
                 width = width,
                 height = height,
-                shapeStyle = shapeStyle,
-                border = border
+                shapeStyle = shapeStyle
             )
         }
     }
@@ -92,8 +84,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
         bounds: GlobalBounds,
         width: Int,
         height: Int,
-        shapeStyle: MobileSegment.ShapeStyle?,
-        border: MobileSegment.ShapeBorder?
+        shapeStyle: MobileSegment.ShapeStyle?
     ): MobileSegment.Wireframe.ShapeWireframe? {
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -109,7 +100,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
             width = width.densityNormalized(density).toLong(),
             height = height.densityNormalized(density).toLong(),
             shapeStyle = shapeStyle,
-            border = border
+            border = null
         )
     }
 
@@ -118,38 +109,35 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
         bounds: GlobalBounds,
         width: Int,
         height: Int,
+        mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MobileSegment.Wireframe? {
         val resources = view.resources
 
         val drawableCopy = view.background?.constantState?.newDrawable(resources)
-        @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
-        return imageWireframeHelper?.createImageWireframe(
-            view = view,
-            0,
-            x = bounds.x,
-            y = bounds.y,
-            width,
-            height,
-            clipping = MobileSegment.WireframeClip(),
-            drawable = drawableCopy,
-            shapeStyle = null,
-            border = null,
-            prefix = PREFIX_BACKGROUND_DRAWABLE,
-            usePIIPlaceholder = false,
-            imageWireframeHelperCallback = object : ImageWireframeHelperCallback {
-                override fun onFinished() {
-                    asyncJobStatusCallback.jobFinished()
-                }
-
-                override fun onStart() {
-                    asyncJobStatusCallback.jobStarted()
-                }
-            }
-        )
+        return if (drawableCopy != null) {
+            @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
+            mappingContext.imageWireframeHelper.createImageWireframe(
+                view = view,
+                currentWireframeIndex = 0,
+                x = bounds.x,
+                y = bounds.y,
+                width = width,
+                height = height,
+                usePIIPlaceholder = false,
+                drawable = drawableCopy,
+                asyncJobStatusCallback = asyncJobStatusCallback,
+                clipping = MobileSegment.WireframeClip(),
+                shapeStyle = null,
+                border = null,
+                prefix = PREFIX_BACKGROUND_DRAWABLE
+            )
+        } else {
+            null
+        }
     }
 
     companion object {
-        private const val PREFIX_BACKGROUND_DRAWABLE = "backgroundDrawable"
+        internal const val PREFIX_BACKGROUND_DRAWABLE = "backgroundDrawable"
     }
 }

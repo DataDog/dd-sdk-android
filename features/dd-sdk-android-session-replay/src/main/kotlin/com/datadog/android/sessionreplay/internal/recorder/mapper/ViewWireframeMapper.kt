@@ -7,24 +7,37 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class ViewWireframeMapper :
-    BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
+internal class ViewWireframeMapper(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     override fun map(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe.ShapeWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
-        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
-            ?: (null to null)
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
+
         return listOf(
             MobileSegment.Wireframe.ShapeWireframe(
                 resolveViewId(view),
@@ -33,7 +46,7 @@ internal class ViewWireframeMapper :
                 viewGlobalBounds.width,
                 viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
-                border = border
+                border = null
             )
         )
     }

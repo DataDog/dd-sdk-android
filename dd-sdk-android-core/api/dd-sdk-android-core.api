@@ -664,9 +664,15 @@ public final class com/datadog/android/core/internal/utils/MapUtilsKt {
 }
 
 public final class com/datadog/android/core/internal/utils/NumberExtKt {
+	public static final field HEX_RADIX I
 	public static final fun toHexString (I)Ljava/lang/String;
 	public static final fun toHexString (J)Ljava/lang/String;
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/utils/ThreadExtKt {
+	public static final fun asString (Ljava/lang/Thread$State;)Ljava/lang/String;
+	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;
 }
 
 public final class com/datadog/android/core/internal/utils/ThrowableExtKt {
@@ -760,6 +766,7 @@ public final class com/datadog/android/log/LogAttributes {
 	public static final field DD_TRACE_ID Ljava/lang/String;
 	public static final field DURATION Ljava/lang/String;
 	public static final field ENV Ljava/lang/String;
+	public static final field ERROR_FINGERPRINT Ljava/lang/String;
 	public static final field ERROR_KIND Ljava/lang/String;
 	public static final field ERROR_MESSAGE Ljava/lang/String;
 	public static final field ERROR_SOURCE_TYPE Ljava/lang/String;

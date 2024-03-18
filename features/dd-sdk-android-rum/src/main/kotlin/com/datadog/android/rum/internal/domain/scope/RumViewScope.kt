@@ -377,6 +377,7 @@ internal open class RumViewScope(
         val updatedAttributes = addExtraAttributes(event.attributes)
         val isFatal = updatedAttributes
             .remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true || event.isFatal
+        val errorFingerprint = updatedAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         // if a cross-platform crash was already reported, do not send its native version
         if (crashCount > 0 && isFatal) return
 
@@ -419,6 +420,7 @@ internal open class RumViewScope(
                     source = event.source.toSchemaSource(),
                     stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
                     isCrash = isFatal,
+                    fingerprint = errorFingerprint,
                     type = errorType,
                     sourceType = event.sourceType.toSchemaSourceType(),
                     threads = event.threads.map {

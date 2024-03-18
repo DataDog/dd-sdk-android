@@ -9,6 +9,9 @@ package com.datadog.android.rum.internal.anr
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -36,7 +39,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.reset
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -52,7 +54,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(value = Configurator::class)
 internal class ANRDetectorRunnableTest {
 
-    lateinit var testedRunnable: ANRDetectorRunnable
+    private lateinit var testedRunnable: ANRDetectorRunnable
 
     @Mock
     lateinit var mockHandler: Handler
@@ -82,12 +84,25 @@ internal class ANRDetectorRunnableTest {
 
         // Then
         Thread.sleep(TEST_ANR_THRESHOLD_MS)
-        verify(rumMonitor.mockInstance).addError(
-            eq("Application Not Responding"),
-            eq(RumErrorSource.SOURCE),
-            any(),
-            eq(emptyMap())
-        )
+        argumentCaptor<Map<String, Any?>> {
+            val anrExceptionCaptor = argumentCaptor<Throwable>()
+            verify(rumMonitor.mockInstance).addError(
+                message = eq("Application Not Responding"),
+                source = eq(RumErrorSource.SOURCE),
+                throwable = anrExceptionCaptor.capture(),
+                attributes = capture()
+            )
+            assertThat(anrExceptionCaptor.lastValue).isInstanceOf(ANRException::class.java)
+
+            assertThat(lastValue).containsOnlyKeys(RumAttributes.INTERNAL_ALL_THREADS)
+            @Suppress("UNCHECKED_CAST")
+            val allThreads = lastValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+            assertThat(allThreads.all { !it.crashed }).isTrue()
+
+            val anrThread = allThreads.firstOrNull { it.name == Thread.currentThread().name }
+            check(anrThread != null)
+            assertThat(anrThread.stack).isEqualTo(anrExceptionCaptor.lastValue.loggableStackTrace())
+        }
 
         argumentCaptor<Runnable> {
             verify(mockHandler).post(capture())
@@ -128,7 +143,7 @@ internal class ANRDetectorRunnableTest {
 
             lastValue.run()
             // +10 is to remove flakiness, otherwise it seems current thread can resume execution
-            // before AND test thread
+            // before ANR test thread
             Thread.sleep(TEST_ANR_TEST_DELAY_MS + 10)
             verify(mockHandler).post(capture())
             lastValue.run()

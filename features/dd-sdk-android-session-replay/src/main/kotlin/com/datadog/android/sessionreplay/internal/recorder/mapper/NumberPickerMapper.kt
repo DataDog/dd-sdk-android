@@ -9,43 +9,45 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 @RequiresApi(Build.VERSION_CODES.Q)
 internal open class NumberPickerMapper(
-    stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
-) : BasePickerMapper(stringUtils, viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BasePickerMapper(viewIdentifierResolver, colorStringFormatter, viewBoundsResolver, drawableToColorMapper) {
 
     override fun map(
         view: NumberPicker,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
-        val prevIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val prevIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             PREV_INDEX_KEY_NAME
         )
-        val selectedIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val selectedIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             SELECTED_INDEX_KEY_NAME
         )
-        val topDividerId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val topDividerId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             DIVIDER_TOP_KEY_NAME
         )
-        val bottomDividerId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val bottomDividerId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             DIVIDER_BOTTOM_KEY_NAME
         )
-        val nextIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val nextIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             NEXT_INDEX_KEY_NAME
         )
@@ -82,7 +84,7 @@ internal open class NumberPickerMapper(
         nextIndexLabelId: Long
     ): List<MobileSegment.Wireframe> {
         val screenDensity = systemInformation.screenDensity
-        val viewGlobalBounds = viewUtils.resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             screenDensity
         )
@@ -91,7 +93,7 @@ internal open class NumberPickerMapper(
         val paddingStart = resolveDividerPaddingStart(view, screenDensity)
         val paddingEnd = resolveDividerPaddingEnd(view, screenDensity)
         val textColor = resolveSelectedTextColor(view)
-        val nextPrevLabelTextColor = colorAndAlphaAsStringHexa(
+        val nextPrevLabelTextColor = colorStringFormatter.formatColorAndAlphaAsHexString(
             view.textColor,
             PARTIALLY_OPAQUE_ALPHA_VALUE
         )

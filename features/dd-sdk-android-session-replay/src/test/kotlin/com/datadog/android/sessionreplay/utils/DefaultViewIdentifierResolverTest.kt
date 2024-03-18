@@ -27,7 +27,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class UniqueIdentifierGeneratorTest {
+internal class DefaultViewIdentifierResolverTest {
 
     @Test
     fun `M resolve an unique identifier W resolveChildUniqueIdentifier()`(forge: Forge) {
@@ -37,7 +37,7 @@ internal class UniqueIdentifierGeneratorTest {
         // When
         val uniqueNumbers = forge.aList(numberOfCalls) { aString() }
             .map { mock<View>() to it }
-            .map { UniqueIdentifierGenerator.resolveChildUniqueIdentifier(it.first, it.second) }
+            .map { DefaultViewIdentifierResolver.resolveChildUniqueIdentifier(it.first, it.second) }
             .distinct()
 
         // Then
@@ -54,11 +54,11 @@ internal class UniqueIdentifierGeneratorTest {
         val parentViews: List<View> = forge.aList(numberOfCalls) { mock() }
         val uniqueNumbers = keyNames
             .mapIndexed { index, key -> parentViews[index] to key }
-            .map { UniqueIdentifierGenerator.resolveChildUniqueIdentifier(it.first, it.second) }
+            .map { DefaultViewIdentifierResolver.resolveChildUniqueIdentifier(it.first, it.second) }
             .distinct()
 
         parentViews.forEachIndexed { index, view ->
-            val keyName = UniqueIdentifierGenerator.DATADOG_UNIQUE_IDENTIFIER_KEY_PREFIX +
+            val keyName = DefaultViewIdentifierResolver.DATADOG_UNIQUE_IDENTIFIER_KEY_PREFIX +
                 keyNames[index]
             whenever(view.getTag(keyName.hashCode())).thenReturn(uniqueNumbers[index])
         }
@@ -66,7 +66,7 @@ internal class UniqueIdentifierGeneratorTest {
         // When
         val secondTimeCallNumbers = keyNames
             .mapIndexed { index, key -> parentViews[index] to key }
-            .map { UniqueIdentifierGenerator.resolveChildUniqueIdentifier(it.first, it.second) }
+            .map { DefaultViewIdentifierResolver.resolveChildUniqueIdentifier(it.first, it.second) }
             .distinct()
 
         // Then
@@ -85,11 +85,11 @@ internal class UniqueIdentifierGeneratorTest {
         // When
         val generatedUniqueNumbers = forge.aList<View>(numberOfCalls) { mock() }
             .mapIndexed { index: Int, view: View ->
-                val keyName = UniqueIdentifierGenerator.DATADOG_UNIQUE_IDENTIFIER_KEY_PREFIX +
+                val keyName = DefaultViewIdentifierResolver.DATADOG_UNIQUE_IDENTIFIER_KEY_PREFIX +
                     keyNames[index]
                 whenever(view.getTag(keyName.hashCode()))
                     .thenReturn(alreadyRegisteredValues[index])
-                UniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, keyNames[index])
+                DefaultViewIdentifierResolver.resolveChildUniqueIdentifier(view, keyNames[index])
             }
         assertThat(generatedUniqueNumbers).isEqualTo(alreadyRegisteredValues)
     }
@@ -106,11 +106,11 @@ internal class UniqueIdentifierGeneratorTest {
         // When
         val generatedUniqueNumbers = forge.aList<View>(numberOfCalls) { mock() }
             .mapIndexedNotNull { index: Int, view: View ->
-                val keyName = UniqueIdentifierGenerator.DATADOG_UNIQUE_IDENTIFIER_KEY_PREFIX +
+                val keyName = DefaultViewIdentifierResolver.DATADOG_UNIQUE_IDENTIFIER_KEY_PREFIX +
                     keyNames[index]
                 whenever(view.getTag(keyName.hashCode()))
                     .thenReturn(alreadyRegisteredValues[index])
-                UniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, keyNames[index])
+                DefaultViewIdentifierResolver.resolveChildUniqueIdentifier(view, keyNames[index])
             }
 
         assertThat(generatedUniqueNumbers).isEmpty()
@@ -124,7 +124,7 @@ internal class UniqueIdentifierGeneratorTest {
         // When
         val results = forge.aList<View>(numberOfCalls) { mock() }
             .map {
-                UniqueIdentifierGenerator.resolveChildUniqueIdentifier(mock(), forge.aString())
+                DefaultViewIdentifierResolver.resolveChildUniqueIdentifier(mock(), forge.aString())
             }
 
         // Then

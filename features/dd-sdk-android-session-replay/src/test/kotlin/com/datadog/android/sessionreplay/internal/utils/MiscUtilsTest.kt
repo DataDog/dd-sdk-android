@@ -20,11 +20,11 @@ import android.view.WindowManager
 import android.view.WindowMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils.DESERIALIZE_JSON_ERROR
-import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -118,7 +118,7 @@ internal class MiscUtilsTest {
     @Test
     fun `M resolve system information W resolveSystemInformation`(forge: Forge) {
         // Given
-        val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
+        val expectedThemeColorAsHexa = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
             fakeThemeColor,
             MiscUtils.OPAQUE_ALPHA_VALUE
         )
@@ -157,7 +157,7 @@ internal class MiscUtilsTest {
     @Test
     fun `M resolve system information W resolveSystemInformation{ R and above }`(forge: Forge) {
         // Given
-        val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
+        val expectedThemeColorAsHexa = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
             fakeThemeColor,
             MiscUtils.OPAQUE_ALPHA_VALUE
         )
@@ -200,7 +200,7 @@ internal class MiscUtilsTest {
     @Test
     fun `M return empty screen bounds W resolveSystemInformation{windowManager was null}`() {
         // Given
-        val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
+        val expectedThemeColorAsHexa = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
             fakeThemeColor,
             MiscUtils.OPAQUE_ALPHA_VALUE
         )
@@ -285,6 +285,7 @@ internal class MiscUtilsTest {
 
         return fakeColor
     }
+
     private fun Forge.forgeThemeInvalidNoColor(theme: Theme): Int {
         val fakeColor = aPositiveInt()
         whenever(

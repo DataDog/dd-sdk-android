@@ -9,15 +9,14 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,9 +31,6 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     lateinit var testedSwitchCompatMapper: SwitchCompatMapper
 
     @Mock
-    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
-
-    @Mock
     lateinit var mockTextWireframeMapper: TextViewMapper
 
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -44,9 +40,6 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
 
     @LongForgery
     var fakeTrackIdentifier: Long = 0L
-
-    @Mock
-    lateinit var mockViewUtils: ViewUtils
 
     @Forgery
     lateinit var fakeViewGlobalBounds: GlobalBounds
@@ -79,6 +72,9 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
 
     @IntForgery(min = 0, max = 0xffffff)
     var fakeCurrentTextColor: Int = 0
+
+    @StringForgery(regex = "#[0-9A-F]{8}")
+    lateinit var fakeCurrentTextColorString: String
 
     private var normalizedThumbHeight: Long = 0
     protected var normalizedThumbWidth: Long = 0
@@ -118,13 +114,13 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
             whenever(it.thumbDrawable).thenReturn(mockThumbDrawable)
         }
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.TRACK_KEY_NAME
             )
         ).thenReturn(fakeTrackIdentifier)
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
@@ -132,11 +128,16 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         whenever(mockTextWireframeMapper.map(eq(mockSwitch), eq(fakeMappingContext), any()))
             .thenReturn(fakeTextWireframes)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockSwitch,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
+
+        whenever(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(fakeCurrentTextColor, OPAQUE_ALPHA_VALUE)
+        ).thenReturn(fakeCurrentTextColorString)
+
         testedSwitchCompatMapper = setupTestedMapper()
     }
 
@@ -151,7 +152,8 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
@@ -167,7 +169,8 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
@@ -180,7 +183,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     ) {
         // Given
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.TRACK_KEY_NAME
             )
@@ -190,7 +193,8 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then
