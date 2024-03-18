@@ -31,6 +31,7 @@ internal class SrImageButtonsAllowTest :
         runInstrumentationScenario()
         assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
     }
+
     companion object {
         const val EXPECTED_PAYLOAD_FILE_NAME = "sr_image_buttons_allow_payload.json"
     }
