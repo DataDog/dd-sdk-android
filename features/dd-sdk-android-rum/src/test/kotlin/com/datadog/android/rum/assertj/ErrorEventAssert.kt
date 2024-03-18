@@ -565,7 +565,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         assertThat(actual.error.threads)
             .overridingErrorMessage(
                 "Expected RUM event to have error.threads: $expected" +
-                        " but instead was: ${actual.error.threads}"
+                    " but instead was: ${actual.error.threads}"
             )
             .isEqualTo(expected)
         return this
@@ -575,7 +575,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         assertThat(actual.error.threads)
             .overridingErrorMessage(
                 "Expected RUM event to not have error.threads," +
-                        " but instead was: ${actual.error.threads}"
+                    " but instead was: ${actual.error.threads}"
             )
             .isNull()
         return this

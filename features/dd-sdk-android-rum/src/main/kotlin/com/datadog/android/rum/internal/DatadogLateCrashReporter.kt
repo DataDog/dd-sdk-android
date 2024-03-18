@@ -327,7 +327,7 @@ internal class DatadogLateCrashReporter(
                 " where one or more mandatory (timestamp, signalName, stacktrace," +
                 " message, lastViewEvent) fields are either missing or have wrong type."
         internal const val MISSING_ANR_TRACE = "Last known exit reason has no trace information" +
-                " attached, cannot report fatal ANR."
+            " attached, cannot report fatal ANR."
 
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
     }

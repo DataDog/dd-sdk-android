@@ -12,9 +12,9 @@ import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 
 internal abstract class ActivityTrackingTest :
     RumTest<
-            ActivityTrackingPlaygroundActivity,
-            RumMockServerActivityTestRule<ActivityTrackingPlaygroundActivity>
-            >() {
+        ActivityTrackingPlaygroundActivity,
+        RumMockServerActivityTestRule<ActivityTrackingPlaygroundActivity>
+        >() {
 
     // region RumTest
 

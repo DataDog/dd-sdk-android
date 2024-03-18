@@ -128,7 +128,7 @@ internal class DatadogNdkCrashHandler(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.TELEMETRY,
                         {
-                        "Decoded file (${file.name}) content contains NULL character, file content={$it}," +
+                            "Decoded file (${file.name}) content contains NULL character, file content={$it}," +
                                 " raw_bytes=${content.joinToString(",")}"
                         }
                     )
@@ -378,7 +378,7 @@ internal class DatadogNdkCrashHandler(
         }
 
         @Deprecated(
-        "We will still process this path to check file from the old SDK" +
+            "We will still process this path to check file from the old SDK" +
                 " versions, but don't use it anymore for writing."
         )
         internal fun getLastViewEventFile(storageDir: File): File {

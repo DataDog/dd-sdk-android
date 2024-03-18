@@ -1535,7 +1535,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn true
             }
@@ -1571,7 +1571,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn false
             }
@@ -1895,7 +1895,7 @@ internal class DatadogRumMonitorTest {
                 if (isMethodOccupied) {
                     throw IllegalStateException(
                         "Only one thread should" +
-                                " be allowed to enter rootScope at the time."
+                            " be allowed to enter rootScope at the time."
                     )
                 }
                 isMethodOccupied = true

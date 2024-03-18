@@ -194,7 +194,7 @@ internal class DatadogRumMonitor(
 
     @Deprecated(
         "This method is deprecated and will be removed in the future versions." +
-                " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
+            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
         key: String,
@@ -412,7 +412,7 @@ internal class DatadogRumMonitor(
     override fun start() {
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val processStartTimeNs = appStartTimeProvider.appStartTimeNs
         handleEvent(
             RumRawEvent.SdkInit(isAppInForeground, processStartTimeNs)

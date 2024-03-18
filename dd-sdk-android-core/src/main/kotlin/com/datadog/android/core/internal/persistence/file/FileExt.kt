@@ -184,7 +184,8 @@ fun File.readLinesSafe(
 }
 
 internal fun File.writeTextSafe(
-    text: String, charset: Charset = Charsets.UTF_8,
+    text: String,
+    charset: Charset = Charsets.UTF_8,
     internalLogger: InternalLogger
 ) {
     if (existsSafe(internalLogger) && canWriteSafe(internalLogger)) {

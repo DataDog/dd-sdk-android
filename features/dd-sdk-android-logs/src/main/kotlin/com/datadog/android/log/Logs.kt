@@ -110,5 +110,5 @@ object Logs {
 
     internal const val LOGS_NOT_ENABLED_MESSAGE =
         "You're trying to add attributes to logs, but the feature is not enabled. " +
-                "Please enable it first."
+            "Please enable it first."
 }
