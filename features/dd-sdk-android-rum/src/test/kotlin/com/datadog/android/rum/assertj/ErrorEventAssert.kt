@@ -585,7 +585,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         assertThat(actual.error.category)
             .overridingErrorMessage(
                 "Expected RUM event to have error.category: $category" +
-                        " but instead was: ${actual.error.category}"
+                    " but instead was: ${actual.error.category}"
             )
             .isEqualTo(category)
         return this
