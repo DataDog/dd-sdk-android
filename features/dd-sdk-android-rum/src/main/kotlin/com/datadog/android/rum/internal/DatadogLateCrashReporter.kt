@@ -78,6 +78,7 @@ internal class DatadogLateCrashReporter(
             val toSendErrorEvent = resolveErrorEventFromViewEvent(
                 datadogContext,
                 ErrorEvent.SourceType.tryFromSource(sourceType),
+                ErrorEvent.Category.EXCEPTION,
                 errorLogMessage,
                 timestamp,
                 stacktrace,
@@ -130,6 +131,7 @@ internal class DatadogLateCrashReporter(
                 val toSendErrorEvent = resolveErrorEventFromViewEvent(
                     datadogContext,
                     ErrorEvent.SourceType.ANDROID,
+                    ErrorEvent.Category.ANR,
                     ANRDetectorRunnable.ANR_MESSAGE,
                     anrExitInfo.timestamp,
                     threadDumps.mainThread?.stack.orEmpty(),
@@ -158,6 +160,7 @@ internal class DatadogLateCrashReporter(
     private fun resolveErrorEventFromViewEvent(
         datadogContext: DatadogContext,
         sourceType: ErrorEvent.SourceType,
+        category: ErrorEvent.Category,
         errorLogMessage: String,
         timestamp: Long,
         stacktrace: String,
@@ -238,6 +241,7 @@ internal class DatadogLateCrashReporter(
                 isCrash = true,
                 type = errorType,
                 sourceType = sourceType,
+                category = category,
                 threads = threadDumps?.map {
                     ErrorEvent.Thread(
                         it.name,

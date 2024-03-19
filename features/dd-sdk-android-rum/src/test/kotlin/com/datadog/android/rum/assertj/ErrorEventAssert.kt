@@ -581,6 +581,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasErrorCategory(category: ErrorEvent.Category?): ErrorEventAssert {
+        assertThat(actual.error.category)
+            .overridingErrorMessage(
+                "Expected RUM event to have error.category: $category" +
+                        " but instead was: ${actual.error.category}"
+            )
+            .isEqualTo(category)
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =
