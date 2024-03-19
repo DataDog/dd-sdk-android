@@ -90,16 +90,16 @@ internal class BatchesToSegmentsMapperTest {
             forge.getForgery<MobileSegment.MobileRecord>().copy(fakeTimestamp)
         }
         val fakeEnrichedRecords = fakeRecords
-                .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-                .map {
-                    val rumContext: SessionReplayRumContext = forge.getForgery()
-                    EnrichedRecord(
-                            rumContext.applicationId,
-                            rumContext.sessionId,
-                            rumContext.sessionId,
-                            it
-                    )
-                }
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                val rumContext: SessionReplayRumContext = forge.getForgery()
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
         val fakeExpectedPairs = fakeEnrichedRecords.map {
             Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
         }
@@ -124,16 +124,16 @@ internal class BatchesToSegmentsMapperTest {
             forge.getForgery()
         }.sortedBy { it.timestamp() }
         val fakeEnrichedRecords = fakeRecords
-                .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-                .map {
-                    val rumContext: SessionReplayRumContext = forge.getForgery()
-                    EnrichedRecord(
-                            rumContext.applicationId,
-                            rumContext.sessionId,
-                            rumContext.sessionId,
-                            it
-                    )
-                }
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                val rumContext: SessionReplayRumContext = forge.getForgery()
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
         val fakeExpectedPairs = fakeEnrichedRecords.map {
             Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
         }
@@ -145,7 +145,7 @@ internal class BatchesToSegmentsMapperTest {
         // Then
         mappedSegments.forEachIndexed { index, pair ->
             val serializedRecordStartTimestamp = pair.second.getAsJsonPrimitive("start")
-                    ?.asLong
+                ?.asLong
             assertThat(pair.first.start).isEqualTo(serializedRecordStartTimestamp)
             assertThat(pair.first).isEqualTo(fakeExpectedPairs[index].first)
             assertThat(pair.second.toString()).isEqualTo(fakeExpectedPairs[index].second.toString())
@@ -161,16 +161,16 @@ internal class BatchesToSegmentsMapperTest {
         val fakeRecords = forge.aList<MobileSegment.MobileRecord>(fakeRecordsSize) { forge.getForgery() }
             .sortedBy { it.timestamp() }
         val fakeEnrichedRecords = fakeRecords
-                .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-                .map {
-                    val rumContext: SessionReplayRumContext = forge.getForgery()
-                    EnrichedRecord(
-                            rumContext.applicationId,
-                            rumContext.sessionId,
-                            rumContext.sessionId,
-                            it
-                    )
-                }
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                val rumContext: SessionReplayRumContext = forge.getForgery()
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
         val fakeExpectedPairs = fakeEnrichedRecords.map {
             Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
         }
@@ -182,7 +182,7 @@ internal class BatchesToSegmentsMapperTest {
         // Then
         mappedSegments.forEachIndexed { index, pair ->
             val serializedRecordEndTimestamp = pair.second.getAsJsonPrimitive("end")
-                    ?.asLong
+                ?.asLong
             assertThat(pair.first.end).isEqualTo(serializedRecordEndTimestamp)
             assertThat(pair.first).isEqualTo(fakeExpectedPairs[index].first)
             assertThat(pair.second.toString()).isEqualTo(fakeExpectedPairs[index].second.toString())
@@ -381,7 +381,7 @@ internal class BatchesToSegmentsMapperTest {
         val expectedRecordsSize = fakeRecords.size - removedRecords
         assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
         val recordsAsJsonArray = mappedSegments[0].second.getAsJsonArray(
-                BatchesToSegmentsMapper.RECORDS_KEY
+            BatchesToSegmentsMapper.RECORDS_KEY
         )
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
@@ -469,7 +469,7 @@ internal class BatchesToSegmentsMapperTest {
         assertThat(mappedSegments.size).isEqualTo(1)
         assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
         val recordsAsJsonArray = mappedSegments[0].second
-                .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
@@ -556,7 +556,7 @@ internal class BatchesToSegmentsMapperTest {
         assertThat(mappedSegments.size).isEqualTo(1)
         assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
         val recordsAsJsonArray = mappedSegments[0].second
-                .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 

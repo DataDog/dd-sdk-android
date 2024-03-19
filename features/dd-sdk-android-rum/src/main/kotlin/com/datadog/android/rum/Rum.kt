@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.Datadog
@@ -72,6 +73,15 @@ object Rum {
         sdkCore.registerFeature(rumFeature)
 
         val rumMonitor = createMonitor(sdkCore, rumFeature)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // small hack: we need to read last RUM view event file, but we don't want to do on the
+            // main thread, but at the same time we want to read it surely before it is updated
+            // by the new RUM session, so we will read it on the RUM events thread (once read we
+            // will switch to another worker thread, so that RUM events thread is not busy)
+            rumFeature.consumeLastFatalAnr(rumMonitor.executorService)
+        }
+
         GlobalRumMonitor.registerIfAbsent(
             monitor = rumMonitor,
             sdkCore

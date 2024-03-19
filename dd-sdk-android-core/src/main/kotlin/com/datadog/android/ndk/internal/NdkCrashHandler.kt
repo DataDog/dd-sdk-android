@@ -11,6 +11,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface NdkCrashHandler {
+
     fun prepareData()
 
     fun handleNdkCrash(sdkCore: FeatureSdkCore, reportTarget: ReportTarget)

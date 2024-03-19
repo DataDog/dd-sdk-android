@@ -28,7 +28,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class TextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
-      override fun initTestedMapper(): TextViewMapper {
+    override fun initTestedMapper(): TextViewMapper {
         return TextViewMapper(
             mockObfuscationRule,
             mockViewIdentifierResolver,

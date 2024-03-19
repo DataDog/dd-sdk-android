@@ -142,9 +142,9 @@ object WebViewTracking {
 
     private fun resolveRumFeature(sdkCore: FeatureSdkCore): WebViewRumFeature? {
         (
-        sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
                 ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
-        )?.let {
+            )?.let {
             return it
         }
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
@@ -163,9 +163,9 @@ object WebViewTracking {
     }
     private fun resolveReplayFeature(sdkCore: FeatureSdkCore): WebViewReplayFeature? {
         (
-        sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
+            sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
                 ?.unwrap<StorageBackedFeature>() as? WebViewReplayFeature
-        )?.let {
+            )?.let {
             return it
         }
         val sessionReplayFeature = sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
@@ -184,9 +184,9 @@ object WebViewTracking {
     }
     private fun resolveLogsFeature(sdkCore: FeatureSdkCore): WebViewLogsFeature? {
         (
-        sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
-            ?.unwrap<StorageBackedFeature>() as? WebViewLogsFeature
-        )?.let {
+            sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+                ?.unwrap<StorageBackedFeature>() as? WebViewLogsFeature
+            )?.let {
             return it
         }
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)

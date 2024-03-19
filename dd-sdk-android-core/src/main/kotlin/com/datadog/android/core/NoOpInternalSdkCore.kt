@@ -18,6 +18,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
+import com.google.gson.JsonObject
 import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
@@ -58,6 +59,10 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         get() = false
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
+    override val lastViewEvent: JsonObject?
+        get() = null
+    override val lastFatalAnrSent: Long?
+        get() = null
 
     // endregion
 
@@ -110,6 +115,10 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     // region InternalSdkCore
 
     override fun writeLastViewEvent(data: ByteArray) = Unit
+
+    override fun deleteLastViewEvent() = Unit
+
+    override fun writeLastFatalAnrSent(anrTimestamp: Long) = Unit
 
     override fun getPersistenceExecutorService(): ExecutorService = NoOpExecutorService()
 

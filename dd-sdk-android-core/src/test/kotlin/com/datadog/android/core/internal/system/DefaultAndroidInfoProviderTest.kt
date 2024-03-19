@@ -73,7 +73,7 @@ internal class DefaultAndroidInfoProviderTest {
             mockUiModeManager
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE)) doReturn
             mockTelephonyManager
-        whenever(mockSdkVersionProvider.version()) doReturn
+        whenever(mockSdkVersionProvider.version) doReturn
             forge.anInt(min = Build.VERSION_CODES.BASE)
         whenever(mockContext.packageManager) doReturn mockPackageManager
         whenever(mockContext.resources) doReturn mockResources

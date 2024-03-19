@@ -262,7 +262,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         // Given
         whenever(mockDecorView.isHardwareAccelerated) doReturn true
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.S
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.S
         testedJankListener = JankStatsActivityLifecycleListener(
             mockObserver,
             mockInternalLogger,
@@ -376,7 +376,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
 
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.S
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.S
 
         val variableRefreshRateListener = JankStatsActivityLifecycleListener(
             mockObserver,
@@ -412,7 +412,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
 
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.R
 
         val mockDisplay: Display = mock()
         whenever(mockDisplay.refreshRate) doReturn displayRefreshRate.toFloat()

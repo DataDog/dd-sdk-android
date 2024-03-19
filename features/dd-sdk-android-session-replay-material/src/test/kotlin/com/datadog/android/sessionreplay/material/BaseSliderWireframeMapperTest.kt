@@ -172,7 +172,7 @@ internal abstract class BaseSliderWireframeMapperTest {
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedSliderHeight = fakeSliderHeight
         val normalizedSliderValue = (fakeSliderValue - fakeSliderFromValue) /
-                (fakeSliderToValue - fakeSliderFromValue)
+            (fakeSliderToValue - fakeSliderFromValue)
 
         fakeExpectedInactiveTrackHeight = fakeTrackHeight.toLong()
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
@@ -185,16 +185,16 @@ internal abstract class BaseSliderWireframeMapperTest {
         fakeExpectedThumbHeight = fakeThumbRadius.toLong()
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity) * 2
         fakeExpectedInactiveTrackXPos = normalizedSliderXPos + normalizedSliderStartPadding +
-                normalizedTrackSidePadding
+            normalizedTrackSidePadding
         fakeExpectedInactiveTrackYPos = normalizedSliderYPos + normalizedSliderTopPadding +
-                (normalizedSliderHeight - fakeExpectedActiveTrackHeight) / 2
+            (normalizedSliderHeight - fakeExpectedActiveTrackHeight) / 2
         fakeExpectedActiveTrackYPos = fakeExpectedInactiveTrackYPos
         fakeExpectedActiveTrackXPos = fakeExpectedInactiveTrackXPos
         fakeExpectedActiveTrackXPos = fakeExpectedInactiveTrackXPos
         fakeExpectedActiveTrackYPos = fakeExpectedInactiveTrackYPos
         fakeExpectedThumbXPos = fakeExpectedActiveTrackXPos + fakeExpectedActiveTrackWidth
         fakeExpectedThumbYPos = normalizedSliderYPos + normalizedSliderTopPadding +
-                (normalizedSliderHeight - fakeExpectedThumbHeight) / 2
+            (normalizedSliderHeight - fakeExpectedThumbHeight) / 2
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeThumbColor,

@@ -216,7 +216,7 @@ internal class WebViewRumEventMapperTest {
         val fakeRumJsonObject = forge.aRumEventAsJson()
         val fakeEventDate = fakeRumJsonObject.get(WebViewRumEventMapper.DATE_KEY_NAME).asLong
         val expectedDate = fakeEventDate +
-                fakeServerTimeOffset
+            fakeServerTimeOffset
         val expectedApplicationId = fakeRumJsonObject
             .getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME)
             .getAsJsonPrimitive(WebViewRumEventMapper.ID_KEY_NAME)
