@@ -13,7 +13,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
@@ -31,7 +30,7 @@ internal class OreoFragmentLifecycleCallbacks(
     private val componentPredicate: ComponentPredicate<Fragment>,
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     private lateinit var sdkCore: FeatureSdkCore
@@ -50,13 +49,13 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun register(activity: Activity, sdkCore: SdkCore) {
         this.sdkCore = sdkCore as FeatureSdkCore
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
             activity.fragmentManager.registerFragmentLifecycleCallbacks(this, true)
         }
     }
 
     override fun unregister(activity: Activity) {
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
             activity.fragmentManager.unregisterFragmentLifecycleCallbacks(this)
         }
     }

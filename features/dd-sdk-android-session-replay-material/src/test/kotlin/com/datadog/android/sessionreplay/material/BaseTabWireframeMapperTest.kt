@@ -110,9 +110,9 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedTabIndicatorHeight = TabWireframeMapper.SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(density)
         val expectedTabIndicatorYPos = fakeGlobalBounds.y + fakeGlobalBounds.height -
-                expectedTabIndicatorHeight
+            expectedTabIndicatorHeight
         val expectedTabIndicatorWidth = fakeGlobalBounds.width - expectedTabIndicatorStartPadding -
-                expectedTabIndicatorEndPadding
+            expectedTabIndicatorEndPadding
         val expectedTabIndicatorColor = fakeTextWireframes.first().textStyle.color
         val expectedTabIndicatorWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeTabIndicatorUniqueId,
@@ -161,9 +161,9 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedTabIndicatorHeight = TabWireframeMapper.SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(density)
         val expectedTabIndicatorYPos = fakeGlobalBounds.y + fakeGlobalBounds.height -
-                expectedTabIndicatorHeight
+            expectedTabIndicatorHeight
         val expectedTabIndicatorWidth = fakeGlobalBounds.width - expectedTabIndicatorStartPadding -
-                expectedTabIndicatorEndPadding
+            expectedTabIndicatorEndPadding
         val expectedTabIndicatorColor = TabWireframeMapper.SELECTED_TAB_INDICATOR_DEFAULT_COLOR
         val expectedTabIndicatorWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeTabIndicatorUniqueId,
@@ -212,9 +212,9 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedTabIndicatorHeight = TabWireframeMapper.SELECTED_TAB_INDICATOR_HEIGHT_IN_PX
             .densityNormalized(density)
         val expectedTabIndicatorYPos = fakeGlobalBounds.y + fakeGlobalBounds.height -
-                expectedTabIndicatorHeight
+            expectedTabIndicatorHeight
         val expectedTabIndicatorWidth = fakeGlobalBounds.width - expectedTabIndicatorStartPadding -
-                expectedTabIndicatorEndPadding
+            expectedTabIndicatorEndPadding
         val expectedTabIndicatorColor = TabWireframeMapper.SELECTED_TAB_INDICATOR_DEFAULT_COLOR
         val expectedTabIndicatorWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeTabIndicatorUniqueId,

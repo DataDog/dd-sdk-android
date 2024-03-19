@@ -59,9 +59,9 @@ internal class WebViewNativeRumViewsCache(
     ) {
         if (parentViewsHistoryQueue.isEmpty() ||
             (
-            parentViewsHistoryQueue.first.viewId != entry.viewId &&
+                parentViewsHistoryQueue.first.viewId != entry.viewId &&
                     parentViewsHistoryQueue.first.timestamp <= entry.timestamp
-            )
+                )
         ) {
             parentViewsHistoryQueue.addFirst(entry)
         } else if (parentViewsHistoryQueue.first.viewId == entry.viewId) {

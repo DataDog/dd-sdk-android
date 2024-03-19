@@ -98,6 +98,12 @@
               "description": "The type of the error",
               "readOnly": true
             },
+            "category": {
+              "type": "string",
+              "description": "The specific category of the error. It provides a high-level grouping for different types of errors.",
+              "enum": ["ANR", "App Hang", "Exception"],
+              "readOnly": true
+            },
             "handling": {
               "type": "string",
               "description": "Whether the error has been handled manually in the source code or not",

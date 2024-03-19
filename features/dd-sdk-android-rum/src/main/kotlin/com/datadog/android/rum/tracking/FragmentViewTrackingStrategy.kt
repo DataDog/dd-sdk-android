@@ -6,12 +6,14 @@
 
 package com.datadog.android.rum.tracking
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Build
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
@@ -26,24 +28,41 @@ import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
  *
  * **Note**: This version of the [FragmentViewTrackingStrategy] is compatible with
  * the AndroidX Compat Library.
- * @param trackArguments whether we track Fragment arguments
- * @param supportFragmentComponentPredicate to accept the Androidx Fragments
- * that will be taken into account as valid RUM View events.
- * @param defaultFragmentComponentPredicate to accept the default Android Fragments
- * that will be taken into account as valid RUM View events.
  */
 @Suppress("DEPRECATION")
+@SuppressLint("NewApi")
 class FragmentViewTrackingStrategy
-@JvmOverloads
-constructor(
+internal constructor(
     internal val trackArguments: Boolean,
-    internal val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
-        AcceptAllSupportFragments(),
-    internal val defaultFragmentComponentPredicate: ComponentPredicate<android.app.Fragment> =
-        AcceptAllDefaultFragment()
+    internal val supportFragmentComponentPredicate: ComponentPredicate<Fragment>,
+    internal val defaultFragmentComponentPredicate: ComponentPredicate<android.app.Fragment>,
+    internal val buildSdkVersionProvider: BuildSdkVersionProvider
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
+
+    /**
+     *  Creates instance of [FragmentViewTrackingStrategy].
+     *
+     *  @param trackArguments whether we track Fragment arguments
+     *  @param supportFragmentComponentPredicate to accept the Androidx Fragments
+     *  that will be taken into account as valid RUM View events.
+     *  @param defaultFragmentComponentPredicate to accept the default Android Fragments
+     *  that will be taken into account as valid RUM View events.
+     */
+    @JvmOverloads
+    constructor(
+        trackArguments: Boolean,
+        supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
+            AcceptAllSupportFragments(),
+        defaultFragmentComponentPredicate: ComponentPredicate<android.app.Fragment> =
+            AcceptAllDefaultFragment()
+    ) : this(
+        trackArguments,
+        supportFragmentComponentPredicate,
+        defaultFragmentComponentPredicate,
+        BuildSdkVersionProvider.DEFAULT
+    )
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
         by lazy {
@@ -64,6 +83,7 @@ constructor(
                 NoOpFragmentLifecycleCallbacks()
             }
         }
+
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
         by lazy {
             val rumFeature = withSdkCore {
@@ -71,7 +91,7 @@ constructor(
             }
             val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
             if (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                buildSdkVersionProvider.version >= Build.VERSION_CODES.O &&
                 rumFeature != null && rumMonitor != null
             ) {
                 OreoFragmentLifecycleCallbacks(
@@ -80,7 +100,8 @@ constructor(
                     },
                     componentPredicate = defaultFragmentComponentPredicate,
                     rumMonitor = rumMonitor,
-                    rumFeature = rumFeature
+                    rumFeature = rumFeature,
+                    buildSdkVersionProvider = buildSdkVersionProvider
                 )
             } else {
                 NoOpFragmentLifecycleCallbacks()

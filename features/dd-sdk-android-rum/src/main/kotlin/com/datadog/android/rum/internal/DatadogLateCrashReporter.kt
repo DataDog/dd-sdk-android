@@ -4,14 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.ndk
+package com.datadog.android.rum.internal
 
+import android.app.ApplicationExitInfo
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.anr.ANRException
+import com.datadog.android.rum.internal.anr.AndroidTraceParser
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
@@ -20,17 +28,25 @@ import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
 
-internal class DatadogNdkCrashEventHandler(
-    private val internalLogger: InternalLogger,
-    private val rumEventDeserializer: Deserializer<JsonObject, Any> = RumEventDeserializer(internalLogger)
-) : NdkCrashEventHandler {
+internal class DatadogLateCrashReporter(
+    private val sdkCore: InternalSdkCore,
+    private val rumEventDeserializer: Deserializer<JsonObject, Any> = RumEventDeserializer(
+        sdkCore.internalLogger
+    ),
+    private val androidTraceParser: AndroidTraceParser = AndroidTraceParser(sdkCore.internalLogger)
+) : LateCrashReporter {
+
+    // region LateCrashEventHandler
 
     @Suppress("ComplexCondition")
-    override fun handleEvent(event: Map<*, *>, sdkCore: FeatureSdkCore, rumWriter: DataWriter<Any>) {
+    override fun handleNdkCrashEvent(
+        event: Map<*, *>,
+        rumWriter: DataWriter<Any>
+    ) {
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
         if (rumFeature == null) {
-            internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { INFO_RUM_FEATURE_NOT_REGISTERED }
@@ -47,12 +63,10 @@ internal class DatadogNdkCrashEventHandler(
             rumEventDeserializer.deserialize(it) as? ViewEvent
         }
 
-        val sampleRate = lastViewEvent?.dd?.configuration?.sessionSampleRate?.toFloat() ?: 0f
-
         if (timestamp == null || signalName == null || stacktrace == null ||
             errorLogMessage == null || lastViewEvent == null
         ) {
-            internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS }
@@ -60,22 +74,21 @@ internal class DatadogNdkCrashEventHandler(
             return
         }
 
-        val now = System.currentTimeMillis()
         rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
             val toSendErrorEvent = resolveErrorEventFromViewEvent(
                 datadogContext,
-                sourceType,
+                ErrorEvent.SourceType.tryFromSource(sourceType),
+                ErrorEvent.Category.EXCEPTION,
                 errorLogMessage,
                 timestamp,
                 stacktrace,
                 signalName,
-                lastViewEvent,
-                sampleRate
+                null,
+                lastViewEvent
             )
             @Suppress("ThreadSafety") // called in a worker thread context
             rumWriter.write(eventBatchWriter, toSendErrorEvent)
-            val sessionsTimeDifference = now - lastViewEvent.date
-            if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD) {
+            if (lastViewEvent.isWithinSessionAvailability) {
                 val updatedViewEvent = updateViewEvent(lastViewEvent)
                 @Suppress("ThreadSafety") // called in a worker thread context
                 rumWriter.write(eventBatchWriter, updatedViewEvent)
@@ -83,21 +96,83 @@ internal class DatadogNdkCrashEventHandler(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.R)
+    override fun handleAnrCrash(
+        anrExitInfo: ApplicationExitInfo,
+        lastRumViewEventJson: JsonObject,
+        rumWriter: DataWriter<Any>
+    ) {
+        val lastViewEvent =
+            rumEventDeserializer.deserialize(lastRumViewEventJson) as? ViewEvent ?: return
+
+        val lastKnownViewStartedAt = lastViewEvent.date
+        if (anrExitInfo.timestamp > lastKnownViewStartedAt) {
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+
+            if (rumFeature == null) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { INFO_RUM_FEATURE_NOT_REGISTERED }
+                )
+                return
+            }
+
+            rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
+                // means we are too late, last view event belongs to the ongoing session
+                if (lastViewEvent.session.id == datadogContext.rumSessionId) return@withWriteContext
+
+                val lastFatalAnrSent = sdkCore.lastFatalAnrSent
+                if (anrExitInfo.timestamp == lastFatalAnrSent) return@withWriteContext
+
+                val threadDumps = readThreadsDump(anrExitInfo)
+                if (threadDumps.isEmpty()) return@withWriteContext
+
+                val toSendErrorEvent = resolveErrorEventFromViewEvent(
+                    datadogContext,
+                    ErrorEvent.SourceType.ANDROID,
+                    ErrorEvent.Category.ANR,
+                    ANRDetectorRunnable.ANR_MESSAGE,
+                    anrExitInfo.timestamp,
+                    threadDumps.mainThread?.stack.orEmpty(),
+                    ANRException::class.java.canonicalName.orEmpty(),
+                    threadDumps,
+                    lastViewEvent
+                )
+                @Suppress("ThreadSafety") // called in a worker thread context
+                rumWriter.write(eventBatchWriter, toSendErrorEvent)
+                if (lastViewEvent.isWithinSessionAvailability) {
+                    val updatedViewEvent = updateViewEvent(lastViewEvent)
+                    @Suppress("ThreadSafety") // called in a worker thread context
+                    rumWriter.write(eventBatchWriter, updatedViewEvent)
+                }
+                @Suppress("ThreadSafety") // called in a worker thread context
+                sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
+            }
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
     @Suppress("LongMethod", "LongParameterList")
     private fun resolveErrorEventFromViewEvent(
         datadogContext: DatadogContext,
-        sourceTypeStr: String?,
+        sourceType: ErrorEvent.SourceType,
+        category: ErrorEvent.Category,
         errorLogMessage: String,
         timestamp: Long,
         stacktrace: String,
-        signalName: String,
-        viewEvent: ViewEvent,
-        sampleRate: Float
+        errorType: String,
+        threadDumps: List<ThreadDump>?,
+        viewEvent: ViewEvent
     ): ErrorEvent {
         val connectivity = viewEvent.connectivity?.let {
             val connectivityStatus =
                 ErrorEvent.Status.valueOf(it.status.name)
-            val connectivityInterfaces = it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
+            val connectivityInterfaces =
+                it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(
                 it.cellular?.technology,
                 it.cellular?.carrierName
@@ -111,21 +186,6 @@ internal class DatadogNdkCrashEventHandler(
             user?.email != null || additionalUserProperties.isNotEmpty()
         val deviceInfo = datadogContext.deviceInfo
 
-        val sourceType = sourceTypeStr?.let {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                ErrorEvent.SourceType.fromJson(sourceTypeStr)
-            } catch (e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.TELEMETRY,
-                    { "Error parsing source type from NDK crash event: $sourceTypeStr" },
-                    e
-                )
-                ErrorEvent.SourceType.NDK
-            }
-        } ?: ErrorEvent.SourceType.NDK
-
         return ErrorEvent(
             date = timestamp + datadogContext.time.serverTimeOffsetMs,
             application = ErrorEvent.Application(viewEvent.application.id),
@@ -137,7 +197,7 @@ internal class DatadogNdkCrashEventHandler(
             source = viewEvent.source?.toJson()?.asString?.let {
                 ErrorEvent.ErrorEventSource.tryFromSource(
                     it,
-                    internalLogger
+                    sdkCore.internalLogger
                 )
             },
             view = ErrorEvent.ErrorEventView(
@@ -171,7 +231,7 @@ internal class DatadogNdkCrashEventHandler(
             ),
             dd = ErrorEvent.Dd(
                 session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
-                configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = ErrorEvent.Configuration(sessionSampleRate = viewEvent.sampleRate)
             ),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),
             error = ErrorEvent.Error(
@@ -179,11 +239,35 @@ internal class DatadogNdkCrashEventHandler(
                 source = ErrorEvent.ErrorSource.SOURCE,
                 stack = stacktrace,
                 isCrash = true,
-                type = signalName,
-                sourceType = sourceType
+                type = errorType,
+                sourceType = sourceType,
+                category = category,
+                threads = threadDumps?.map {
+                    ErrorEvent.Thread(
+                        it.name,
+                        it.crashed,
+                        it.stack,
+                        it.state
+                    )
+                }
             ),
             version = viewEvent.version
         )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun readThreadsDump(anrExitInfo: ApplicationExitInfo): List<ThreadDump> {
+        val traceInputStream = anrExitInfo.traceInputStream
+        if (traceInputStream == null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { MISSING_ANR_TRACE }
+            )
+            return emptyList()
+        }
+
+        return androidTraceParser.parse(traceInputStream)
     }
 
     private fun updateViewEvent(lastViewEvent: ViewEvent): ViewEvent {
@@ -200,6 +284,43 @@ internal class DatadogNdkCrashEventHandler(
         )
     }
 
+    private val ViewEvent.sampleRate: Float
+        get() = dd.configuration?.sessionSampleRate?.toFloat() ?: 0f
+
+    private val ViewEvent.isWithinSessionAvailability: Boolean
+        get() {
+            val now = System.currentTimeMillis()
+            val sessionsTimeDifference = now - this.date
+            return sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
+        }
+
+    private val List<ThreadDump>.mainThread: ThreadDump?
+        get() = firstOrNull { it.name == "main" }
+
+    private fun ErrorEvent.SourceType.Companion.tryFromSource(
+        sourceType: String?
+    ): ErrorEvent.SourceType {
+        return if (sourceType != null) {
+            try {
+                ErrorEvent.SourceType.fromJson(sourceType)
+            } catch (e: NoSuchElementException) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Error parsing source type from NDK crash event: $sourceType" },
+                    e
+                )
+                ErrorEvent.SourceType.NDK
+            }
+        } else {
+            ErrorEvent.SourceType.NDK
+        }
+    }
+
+    private val DatadogContext.rumSessionId: String?
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]
+            .orEmpty()[RumContext.SESSION_ID] as? String
+
     // endregion
 
     companion object {
@@ -209,6 +330,8 @@ internal class DatadogNdkCrashEventHandler(
             "RUM feature received a NDK crash event" +
                 " where one or more mandatory (timestamp, signalName, stacktrace," +
                 " message, lastViewEvent) fields are either missing or have wrong type."
+        internal const val MISSING_ANR_TRACE = "Last known exit reason has no trace information" +
+            " attached, cannot report fatal ANR."
 
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
     }

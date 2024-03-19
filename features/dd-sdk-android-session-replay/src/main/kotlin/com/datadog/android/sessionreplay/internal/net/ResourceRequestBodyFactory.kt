@@ -206,7 +206,7 @@ internal class ResourceRequestBodyFactory(
         internal const val MULTIPLE_APPLICATION_ID_ERROR =
             "There were multiple applicationIds associated with the resources"
         internal const val NO_RESOURCES_TO_SEND_ERROR =
-                "No resources to send"
+            "No resources to send"
         private const val ERROR_CREATING_REQUEST_BODY =
             "Error creating request body"
         private const val EMPTY_REQUEST_BODY_ERROR =

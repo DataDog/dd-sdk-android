@@ -140,6 +140,7 @@ internal class RumResourceScope(
             event.statusCode,
             event.throwable.loggableStackTrace(),
             event.throwable.javaClass.canonicalName,
+            ErrorEvent.Category.EXCEPTION,
             writer
         )
     }
@@ -153,12 +154,16 @@ internal class RumResourceScope(
 
         attributes.putAll(event.attributes)
 
+        val errorCategory =
+            if (event.stackTrace.isNotEmpty()) ErrorEvent.Category.EXCEPTION else null
+
         sendError(
             event.message,
             event.source,
             event.statusCode,
             event.stackTrace,
             event.errorType,
+            errorCategory,
             writer
         )
     }
@@ -328,6 +333,7 @@ internal class RumResourceScope(
         statusCode: Long?,
         stackTrace: String?,
         errorType: String?,
+        errorCategory: ErrorEvent.Category?,
         writer: DataWriter<Any>
     ) {
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
@@ -373,6 +379,7 @@ internal class RumResourceScope(
                         provider = resolveErrorProvider()
                     ),
                     type = errorType,
+                    category = errorCategory,
                     sourceType = ErrorEvent.SourceType.ANDROID
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },

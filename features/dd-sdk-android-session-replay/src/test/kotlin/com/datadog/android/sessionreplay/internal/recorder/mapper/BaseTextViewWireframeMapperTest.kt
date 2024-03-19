@@ -117,11 +117,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                 textPosition = MobileSegment.TextPosition(
                     MobileSegment.Padding(0, 0, 0, 0),
                     alignment =
-                        MobileSegment.Alignment(
-                            MobileSegment.Horizontal.LEFT,
-                            MobileSegment.Vertical
-                                .CENTER
-                        )
+                    MobileSegment.Alignment(
+                        MobileSegment.Horizontal.LEFT,
+                        MobileSegment.Vertical
+                            .CENTER
+                    )
                 )
             )
         )

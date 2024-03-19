@@ -813,12 +813,12 @@ internal class ResourcesSerializerTest {
             resourcesSerializerCallback = mockSerializerCallback
         )
 
-            verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
-                identifier = eq(fakeResourceId),
-                applicationId = eq(fakeApplicationid.toString()),
-                resourceData = eq(fakeByteArray)
-            )
-        }
+        verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
+            identifier = eq(fakeResourceId),
+            applicationId = eq(fakeApplicationid.toString()),
+            resourceData = eq(fakeByteArray)
+        )
+    }
 
     private fun createResourcesSerializer(): ResourcesSerializer {
         val builder = ResourcesSerializer.Builder(

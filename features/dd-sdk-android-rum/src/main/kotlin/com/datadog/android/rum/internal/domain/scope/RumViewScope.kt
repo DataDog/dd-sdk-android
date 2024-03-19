@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -423,6 +424,7 @@ internal open class RumViewScope(
                     fingerprint = errorFingerprint,
                     type = errorType,
                     sourceType = event.sourceType.toSchemaSourceType(),
+                    category = ErrorEvent.Category.tryFrom(event),
                     threads = event.threads.map {
                         ErrorEvent.Thread(
                             name = it.name,
@@ -1132,12 +1134,24 @@ internal open class RumViewScope(
 
     private fun isViewComplete(): Boolean {
         val pending = pendingActionCount +
-                pendingResourceCount +
-                pendingErrorCount +
-                pendingLongTaskCount
+            pendingResourceCount +
+            pendingErrorCount +
+            pendingLongTaskCount
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
+    }
+
+    private fun ErrorEvent.Category.Companion.tryFrom(
+        event: RumRawEvent.AddError
+    ): ErrorEvent.Category? {
+        return if (event.throwable != null) {
+            if (event.throwable is ANRException) ErrorEvent.Category.ANR else ErrorEvent.Category.EXCEPTION
+        } else if (event.stacktrace != null) {
+            ErrorEvent.Category.EXCEPTION
+        } else {
+            null
+        }
     }
 
     enum class RumViewType(val asString: String) {
@@ -1159,19 +1173,19 @@ internal open class RumViewScope(
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
-                " another action is still active for the same view"
+            " another action is still active for the same view"
 
         internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE =
             "Trying to update global RUM context when StopView event arrived, but the context" +
-                    " doesn't reference this view."
+                " doesn't reference this view."
         internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE =
             "Trying to update active action in the global RUM context, but the context" +
-                    " doesn't reference this view."
+                " doesn't reference this view."
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
-                "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
+            "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
 
         internal fun fromEvent(
             parentScope: RumScope,

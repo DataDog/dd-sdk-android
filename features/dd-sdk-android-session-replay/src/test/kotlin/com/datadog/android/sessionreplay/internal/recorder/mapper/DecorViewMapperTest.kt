@@ -83,7 +83,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
         fakeMappingContext = fakeMappingContext.copy(
             systemInformation =
-                fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
+            fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
         )
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
@@ -112,7 +112,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         val fakeThemeColor = forge.aStringMatching("#[0-9A-Fa-f]{6}[fF]{2}")
         fakeMappingContext = fakeMappingContext.copy(
             systemInformation =
-                fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
+            fakeMappingContext.systemInformation.copy(themeColor = fakeThemeColor)
         )
         val randIndex = forge.anInt(min = 0, max = mockViewWireframes.size)
         mockViewWireframes = mockViewWireframes.mapIndexed { index, wireframe ->
@@ -141,7 +141,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         // Given
         fakeMappingContext = fakeMappingContext.copy(
             systemInformation =
-                fakeMappingContext.systemInformation.copy(themeColor = null)
+            fakeMappingContext.systemInformation.copy(themeColor = null)
         )
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
