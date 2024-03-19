@@ -25,9 +25,9 @@ import org.junit.runner.RunWith
 @LargeTest
 internal class KioskTrackingTest :
     RumTest<
-            KioskSplashPlaygroundActivity,
-            RumMockServerActivityTestRule<KioskSplashPlaygroundActivity>
-            >() {
+        KioskSplashPlaygroundActivity,
+        RumMockServerActivityTestRule<KioskSplashPlaygroundActivity>
+        >() {
 
     @get:Rule
     val mockServerRule = KioskTrackingActivityTestRule(

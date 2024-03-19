@@ -276,7 +276,7 @@ internal class JankStatsActivityLifecycleListener(
 
         internal const val JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR =
             "Trying to disable JankStats instance which was already disabled before, this" +
-                    " shouldn't happen."
+                " shouldn't happen."
         internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
             "Failed to disable JankStats tracking"
 

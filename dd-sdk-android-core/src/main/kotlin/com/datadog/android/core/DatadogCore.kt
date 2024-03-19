@@ -504,7 +504,7 @@ internal class DatadogCore(
 
         internal const val NO_NEED_TO_WRITE_LAST_VIEW_EVENT =
             "No need to write last RUM view event: NDK" +
-                    " crash reports feature is not enabled and API is below 30."
+                " crash reports feature is not enabled and API is below 30."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
     }

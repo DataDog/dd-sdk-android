@@ -238,8 +238,8 @@ internal class RumSessionScope(
         // To do so, we take the offset of those times in the event time, which should be consistent,
         // then add that to our processStartTime to get the correct value.
         val timestampNs = (
-                TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
-                ) + processStartTimeNs
+            TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
+            ) + processStartTimeNs
         val applicationLaunchViewTime = Time(
             timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
             nanoTime = processStartTimeNs

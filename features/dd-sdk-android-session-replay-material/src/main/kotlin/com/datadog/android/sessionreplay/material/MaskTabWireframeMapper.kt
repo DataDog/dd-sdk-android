@@ -31,9 +31,13 @@ internal class MaskTabWireframeMapper internal constructor(
         viewBoundsResolver: ViewBoundsResolver,
         drawableToColorMapper: DrawableToColorMapper
     ) : this(
-        viewIdentifierResolver, viewBoundsResolver,
+        viewIdentifierResolver,
+        viewBoundsResolver,
         MaskTextViewMapper(
-            viewIdentifierResolver, colorStringFormatter, viewBoundsResolver, drawableToColorMapper
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
         )
     )
 }
