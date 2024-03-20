@@ -1,0 +1,11 @@
+public final class com/datadog/android/sessionreplay/compose/ComposeExtensionSupport : com/datadog/android/sessionreplay/ExtensionSupport {
+	public static final field $stable I
+	public static final field Companion Lcom/datadog/android/sessionreplay/compose/ComposeExtensionSupport$Companion;
+	public fun <init> ()V
+	public fun getCustomViewMappers ()Ljava/util/Map;
+	public fun getOptionSelectorDetectors ()Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/compose/ComposeExtensionSupport$Companion {
+}
+
