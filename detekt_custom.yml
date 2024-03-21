@@ -90,6 +90,11 @@ datadog:
     - '**/reliability/**'
     - '**/sample/**'
     - '**/tools/**'
+  TodoWithoutTask:
+    active: true
+    deprecatedPrefixes:
+      - "RUMM"
+      - "REPLAY"
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'

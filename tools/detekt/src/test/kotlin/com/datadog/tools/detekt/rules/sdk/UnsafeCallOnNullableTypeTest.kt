@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.tools.detekt.rules
+package com.datadog.tools.detekt.rules.sdk
 
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.gitlab.arturbosch.detekt.test.assertThat

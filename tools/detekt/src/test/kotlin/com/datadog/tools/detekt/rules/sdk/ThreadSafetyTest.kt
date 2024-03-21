@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.tools.detekt.rules
+package com.datadog.tools.detekt.rules.sdk
 
 import android.webkit.JavascriptInterface
 import androidx.annotation.MainThread

@@ -6,8 +6,8 @@
 
 package com.datadog.tools.detekt
 
-import com.datadog.tools.detekt.rules.ApiSurface
-import com.datadog.tools.detekt.rules.ApiUsage
+import com.datadog.tools.detekt.rules.pyramid.ApiSurface
+import com.datadog.tools.detekt.rules.pyramid.ApiUsage
 import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.api.RuleSet
 import io.gitlab.arturbosch.detekt.api.RuleSetProvider

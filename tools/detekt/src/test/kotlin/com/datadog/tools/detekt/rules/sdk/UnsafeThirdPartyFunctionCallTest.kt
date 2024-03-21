@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.tools.detekt.rules
+package com.datadog.tools.detekt.rules.sdk
 
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
@@ -319,7 +319,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.FileNotFoundException
                 import java.lang.ArrayIndexOutOfBoundsException
                 
-                public actual typealias FNE = java.io.FileNotFoundException
+                actual typealias FNE = java.io.FileNotFoundException
                 
                 fun test(f: File): Any? {
                     try {
@@ -392,7 +392,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
             """
                 import java.io.File
                 
-                fun test(f: File): Any? {
+                fun test(f: File): Any {
                     return f.inputStream()
                 }
             """.trimIndent()
