@@ -15,7 +15,7 @@ import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
+import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
@@ -93,7 +93,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             rateBasedSampler = mockSampler
-        ) { _, _ -> mockRecorder }
+        ) { _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -166,7 +166,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             rateBasedSampler = mockSampler
-        ) { _, _ -> mockRecorder }
+        ) { _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
@@ -882,7 +882,7 @@ internal class SessionReplayFeatureTest {
     fun `𝕄 provide Session Replay request factory 𝕎 requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
-            .isInstanceOf(SessionReplayRequestFactory::class.java)
+            .isInstanceOf(SegmentRequestFactory::class.java)
     }
 
     @Test

@@ -29,6 +29,7 @@ import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -4376,6 +4377,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4454,6 +4456,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4524,6 +4527,79 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasStackTrace(stacktrace)
+                    isCrash(false)
+                    hasNoThreads()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {throwable is ANR}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.ANR)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4596,6 +4672,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4670,6 +4747,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4738,6 +4816,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     isCrash(false)
                     hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
@@ -4794,6 +4873,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -4869,6 +4949,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
+                    hasErrorCategory(null)
                     hasStackTrace(null)
                     isCrash(false)
                     hasNoThreads()
@@ -4955,6 +5036,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(null)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasErrorCategory(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5037,6 +5119,85 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view { error fingerprint attribute }`(
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        @StringForgery fingerprint: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val mockAttributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val fullAttributes = mockAttributes.toMutableMap().apply {
+            put(RumAttributes.ERROR_FINGERPRINT, fingerprint)
+        }
+        val throwableMessage = throwable.message
+        check(!throwableMessage.isNullOrBlank()) {
+            "Expected throwable to have a non null, non blank message"
+        }
+        fakeEvent = RumRawEvent.AddError(
+            throwableMessage,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = fullAttributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(throwableMessage)
+                    hasErrorSource(source)
+                    hasStackTrace(stacktrace)
+                    hasErrorFingerprint(fingerprint)
+                    isCrash(false)
+                    hasNoThreads()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(mockAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(AddError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -5072,6 +5233,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5160,6 +5322,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5303,6 +5466,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5428,6 +5592,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5495,6 +5660,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5584,6 +5750,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()

@@ -5,6 +5,8 @@ First of all, thanks for contributing!
 This document provides some basic guidelines for contributing to this repository.
 To propose improvements, feel free to submit a PR or open an Issue.
 
+**Note:** Datadog requires that all commits within this repository must be signed, including those within external contribution PRs. Please ensure you have followed GitHub's [Signing Commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) guide before proposing a contribution. PRs lacking signed commits will not be processed and may be rejected.
+
 ## Setup your developer Environment
 
 To setup your environment, make sure you installed [Android Studio](https://developer.android.com/studio).

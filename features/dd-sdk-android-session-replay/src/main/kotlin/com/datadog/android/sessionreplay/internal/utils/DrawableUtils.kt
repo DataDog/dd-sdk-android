@@ -7,6 +7,7 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Color
@@ -20,8 +21,8 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import java.util.concurrent.ExecutorService
@@ -42,13 +43,14 @@ internal class DrawableUtils(
      * bitmap, since the file size of a bitmap can be known by the formula width*height*color depth
      */
     internal fun createBitmapOfApproxSizeFromDrawable(
+        resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
-        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES,
+        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT,
         config: Config = Config.ARGB_8888,
-        bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
     ) {
         Runnable {
             @Suppress("ThreadSafety") // this runs inside an executor
@@ -64,6 +66,7 @@ internal class DrawableUtils(
                         mainThreadHandler.post {
                             @Suppress("ThreadSafety") // this runs on the main thread
                             drawOnCanvas(
+                                resources,
                                 bitmap,
                                 drawable,
                                 bitmapCreationCallback
@@ -88,7 +91,7 @@ internal class DrawableUtils(
     @WorkerThread
     internal fun createScaledBitmap(
         bitmap: Bitmap,
-        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES
+        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT
     ): Bitmap? {
         val (width, height) = getScaledWidthAndHeight(
             bitmap.width,
@@ -105,21 +108,24 @@ internal class DrawableUtils(
 
     @MainThread
     private fun drawOnCanvas(
+        resources: Resources,
         bitmap: Bitmap,
         drawable: Drawable,
-        bitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
     ) {
+        // don't use the original drawable - it will affect the view hierarchy
+        val newDrawable = drawable.constantState?.newDrawable(resources)
         val canvas = canvasWrapper.createCanvas(bitmap)
 
-        if (canvas == null) {
+        if (canvas == null || newDrawable == null) {
             bitmapCreationCallback.onFailure()
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
 
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
+            newDrawable.setBounds(0, 0, canvas.width, canvas.height)
+            newDrawable.draw(canvas)
             bitmapCreationCallback.onReady(bitmap)
         }
     }
@@ -185,7 +191,8 @@ internal class DrawableUtils(
             ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
 
     internal companion object {
-        @VisibleForTesting internal const val MAX_BITMAP_SIZE_IN_BYTES = 15000 // 15kb
+        @VisibleForTesting
+        internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
     }
 }

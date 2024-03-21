@@ -44,12 +44,15 @@ internal class DatadogLogGenerator(
         networkInfo: NetworkInfo?,
         threads: List<ThreadDump>
     ): LogEvent {
+        val mutableAttributes = attributes.toMutableMap()
         val error = throwable?.let {
+            val fingerprint = mutableAttributes.remove(LogAttributes.ERROR_FINGERPRINT) as? String
             val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
             LogEvent.Error(
                 kind = kind,
                 stack = it.stackTraceToString(),
                 message = it.message,
+                fingerprint = fingerprint,
                 threads = threads.map { thread ->
                     LogEvent.Thread(
                         name = thread.name,
@@ -64,7 +67,7 @@ internal class DatadogLogGenerator(
             level,
             message,
             error,
-            attributes,
+            mutableAttributes,
             tags,
             timestamp,
             threadName,
@@ -96,8 +99,17 @@ internal class DatadogLogGenerator(
         userInfo: UserInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
+        val mutableAttributes = attributes.toMutableMap()
         val error = if (errorKind != null || errorMessage != null || errorStack != null) {
-            LogEvent.Error(kind = errorKind, message = errorMessage, stack = errorStack)
+            val sourceType = mutableAttributes.remove(LogAttributes.SOURCE_TYPE) as? String
+            val fingerprint = mutableAttributes.remove(LogAttributes.ERROR_FINGERPRINT) as? String
+            LogEvent.Error(
+                kind = errorKind,
+                message = errorMessage,
+                stack = errorStack,
+                fingerprint = fingerprint,
+                sourceType = sourceType
+            )
         } else {
             null
         }
@@ -105,7 +117,7 @@ internal class DatadogLogGenerator(
             level,
             message,
             error,
-            attributes,
+            mutableAttributes,
             tags,
             timestamp,
             threadName,

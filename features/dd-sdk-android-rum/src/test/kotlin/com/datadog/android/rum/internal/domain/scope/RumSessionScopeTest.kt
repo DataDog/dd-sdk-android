@@ -205,7 +205,7 @@ internal class RumSessionScopeTest {
         val expectedEventTimestamp =
             TimeUnit.NANOSECONDS.toMillis(
                 TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
-                        fakeEvent.eventTime.nanoTime + fakeEvent.appStartTimeNs
+                    fakeEvent.eventTime.nanoTime + fakeEvent.appStartTimeNs
             )
 
         // When

@@ -80,7 +80,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.BASE
 
         testedProvider = BroadcastReceiverNetworkInfoProvider(
             mockWriter,
@@ -246,7 +246,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         forge: Forge
     ) {
         // GIVEN
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.P
 
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
@@ -291,7 +291,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         forge: Forge
     ) {
         // GIVEN
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.P
 
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
@@ -336,7 +336,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         forge: Forge
     ) {
         // GIVEN
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.P
 
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
@@ -381,7 +381,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         forge: Forge
     ) {
         // GIVEN
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.P
 
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
@@ -423,7 +423,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @MethodSource("getKnownMobileTypes")
     fun `connected to mobile unknown API 28+`(mobileType: MobileType, forge: Forge) {
         // GIVEN
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.P
 
         val subtype = forge.anInt(min = 32)
         val carrierName = forge.anAlphabeticalString()
@@ -447,7 +447,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @MethodSource("getKnownMobileTypes")
     fun `connected to mobile unknown carrier`(mobileType: MobileType) {
         // GIVEN
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.P
 
         stubNetworkInfo(
             mobileType.id,

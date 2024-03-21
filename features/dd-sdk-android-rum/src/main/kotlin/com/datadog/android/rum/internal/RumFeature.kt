@@ -6,12 +6,15 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.ActivityManager
 import android.app.Application
+import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.AnyThread
+import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
@@ -22,9 +25,11 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -46,8 +51,6 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.rum.internal.ndk.DatadogNdkCrashEventHandler
-import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -79,6 +82,7 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import java.lang.RuntimeException
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -91,12 +95,12 @@ import java.util.concurrent.atomic.AtomicReference
  * RUM feature class, which needs to be registered with Datadog SDK instance.
  */
 @Suppress("TooManyFunctions")
-internal class RumFeature constructor(
+internal class RumFeature(
     private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
     internal val configuration: Configuration,
-    private val ndkCrashEventHandlerFactory: (InternalLogger) -> NdkCrashEventHandler = {
-        DatadogNdkCrashEventHandler(it)
+    private val lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
+        DatadogLateCrashReporter(it)
     }
 ) : StorageBackedFeature, FeatureEventReceiver {
 
@@ -124,13 +128,12 @@ internal class RumFeature constructor(
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
-    internal lateinit var anrDetectorExecutorService: ExecutorService
-    internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
-    internal lateinit var anrDetectorHandler: Handler
+    private var anrDetectorExecutorService: ExecutorService? = null
+    internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
     internal lateinit var telemetry: Telemetry
 
-    private val ndkCrashEventHandler by lazy { ndkCrashEventHandlerFactory(sdkCore.internalLogger) }
+    private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
     // region Feature
 
@@ -174,7 +177,9 @@ internal class RumFeature constructor(
 
         initializeVitalMonitors(configuration.vitalsMonitorUpdateFrequency)
 
-        initializeANRDetector()
+        if (configuration.trackNonFatalAnrs) {
+            initializeANRDetector()
+        }
 
         registerTrackingStrategies(appContext)
 
@@ -214,8 +219,8 @@ internal class RumFeature constructor(
         frameRateVitalMonitor = NoOpVitalMonitor()
 
         vitalExecutorService.shutdownNow()
-        anrDetectorExecutorService.shutdownNow()
-        anrDetectorRunnable.stop()
+        anrDetectorExecutorService?.shutdownNow()
+        anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
@@ -263,7 +268,7 @@ internal class RumFeature constructor(
 
         when (event["type"]) {
             NDK_CRASH_BUS_MESSAGE_TYPE ->
-                ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
+                lateCrashEventHandler.handleNdkCrashEvent(event, dataWriter)
             LOGGER_ERROR_BUS_MESSAGE_TYPE -> addLoggerError(event)
             LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE -> addLoggerErrorWithStacktrace(event)
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
@@ -323,6 +328,43 @@ internal class RumFeature constructor(
                 val listener = debugActivityLifecycleListener.get()
                 context.unregisterActivityLifecycleCallbacks(listener)
                 debugActivityLifecycleListener.set(null)
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    internal fun consumeLastFatalAnr(rumEventsExecutorService: ExecutorService) {
+        val activityManager =
+            appContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val lastKnownAnr = try {
+            activityManager.getHistoricalProcessExitReasons(null, 0, 0)
+                // from docs: Returns: a list of ApplicationExitInfo records matching the criteria,
+                // sorted in the order from most recent to least recent.
+                .firstOrNull { it.reason == ApplicationExitInfo.REASON_ANR }
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { FAILED_TO_GET_HISTORICAL_EXIT_REASONS },
+                e
+            )
+            null
+        } ?: return
+
+        rumEventsExecutorService.submitSafe("Send fatal ANR", sdkCore.internalLogger) {
+            val lastRumViewEvent = (sdkCore as InternalSdkCore).lastViewEvent
+            if (lastRumViewEvent != null) {
+                lateCrashEventHandler.handleAnrCrash(
+                    lastKnownAnr,
+                    lastRumViewEvent,
+                    dataWriter
+                )
+            } else {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    { NO_LAST_RUM_VIEW_EVENT_AVAILABLE }
+                )
             }
         }
     }
@@ -395,14 +437,14 @@ internal class RumFeature constructor(
     }
 
     private fun initializeANRDetector() {
-        anrDetectorHandler = Handler(Looper.getMainLooper())
-        anrDetectorRunnable = ANRDetectorRunnable(sdkCore, anrDetectorHandler)
+        val detectorRunnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
-        anrDetectorExecutorService.executeSafe(
+        anrDetectorExecutorService?.executeSafe(
             "ANR detection",
             sdkCore.internalLogger,
-            anrDetectorRunnable
+            detectorRunnable
         )
+        anrDetectorRunnable = detectorRunnable
     }
 
     private fun addJvmCrash(crashEvent: JvmCrash.Rum) {
@@ -541,6 +583,7 @@ internal class RumFeature constructor(
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
+        val trackNonFatalAnrs: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
         val additionalConfig: Map<String, Any>
@@ -548,7 +591,6 @@ internal class RumFeature constructor(
 
     internal companion object {
 
-        internal const val JVM_CRASH_BUS_MESSAGE_TYPE = "jvm_crash"
         internal const val NDK_CRASH_BUS_MESSAGE_TYPE = "ndk_crash"
         internal const val LOGGER_ERROR_BUS_MESSAGE_TYPE = "logger_error"
         internal const val LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE = "logger_error_with_stacktrace"
@@ -587,6 +629,7 @@ internal class RumFeature constructor(
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,
+            trackNonFatalAnrs = isTrackNonFatalAnrsEnabledByDefault(),
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
             sessionListener = NoOpRumSessionListener(),
             additionalConfig = emptyMap()
@@ -605,10 +648,10 @@ internal class RumFeature constructor(
             "RUM feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "RUM feature received an event with unknown value of \"type\" property=%s."
-        internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS =
-            "RUM feature received a JVM crash event" +
-                " where one or more mandatory (throwable, message) fields" +
-                " are either missing or have a wrong type."
+        internal const val FAILED_TO_GET_HISTORICAL_EXIT_REASONS =
+            "Couldn't get historical exit reasons"
+        internal const val NO_LAST_RUM_VIEW_EVENT_AVAILABLE =
+            "No last known RUM view event found, skipping fatal ANR reporting."
         internal const val LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event" +
                 " where mandatory message field is either missing or has a wrong type."
@@ -649,6 +692,12 @@ internal class RumFeature constructor(
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
             return DatadogGesturesTracker(providers, interactionPredicate, internalLogger)
+        }
+
+        internal fun isTrackNonFatalAnrsEnabledByDefault(
+            buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+        ): Boolean {
+            return buildSdkVersionProvider.version < Build.VERSION_CODES.R
         }
     }
 }

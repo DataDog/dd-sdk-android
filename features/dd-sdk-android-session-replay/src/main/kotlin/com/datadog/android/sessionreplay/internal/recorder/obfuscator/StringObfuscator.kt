@@ -6,6 +6,20 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
+import android.os.Build
+
 internal interface StringObfuscator {
     fun obfuscate(stringValue: String): String
+
+    companion object {
+        internal const val CHARACTER_MASK = 'x'
+
+        fun getStringObfuscator(): StringObfuscator {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                AndroidNStringObfuscator()
+            } else {
+                LegacyStringObfuscator()
+            }
+        }
+    }
 }

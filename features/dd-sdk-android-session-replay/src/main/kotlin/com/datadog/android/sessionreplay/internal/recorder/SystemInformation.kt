@@ -7,11 +7,12 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.content.res.Configuration
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 /**
  * Provides information about the current system.
- * @param screenBounds as screen bounds in Global coordinates
- * @param screenOrientation as current screen orientation
+ * @param screenBounds the screen bounds in Global coordinates
+ * @param screenOrientation the current screen orientation
  * @param screenDensity current screen density
  * @param themeColor application theme color
  */

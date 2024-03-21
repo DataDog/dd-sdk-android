@@ -158,6 +158,6 @@ internal class RumApplicationScope(
 
     companion object {
         internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
-                "sessions when starting a new session"
+            "sessions when starting a new session"
     }
 }

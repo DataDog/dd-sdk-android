@@ -70,7 +70,7 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.signalStrength) doReturn
             NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         whenever(mockCapabilities.hasTransport(any())) doReturn false
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.BASE
 
         testedProvider =
             CallbackNetworkInfoProvider(mockWriter, mockBuildSdkVersionProvider, mockInternalLogger)
@@ -100,7 +100,7 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
         whenever(mockCapabilities.signalStrength) doReturn strength
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.Q
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.Q
 
         // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
@@ -171,7 +171,7 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
         whenever(mockCapabilities.signalStrength) doReturn strength
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.Q
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.Q
 
         // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)

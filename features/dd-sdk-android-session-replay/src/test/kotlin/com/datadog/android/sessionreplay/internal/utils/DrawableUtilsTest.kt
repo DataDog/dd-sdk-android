@@ -6,15 +6,17 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Drawable.ConstantState
 import android.os.Handler
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -32,6 +34,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -75,7 +78,7 @@ internal class DrawableUtilsTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockBitmapCreationCallback: Base64Serializer.BitmapCreationCallback
+    private lateinit var mockBitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
 
     @Mock
     private lateinit var mockMainThreadHandler: Handler
@@ -83,8 +86,19 @@ internal class DrawableUtilsTest {
     @Mock
     private lateinit var mockLogger: InternalLogger
 
+    @Mock
+    lateinit var mockConstantState: ConstantState
+
+    @Mock
+    lateinit var mockSecondDrawable: Drawable
+
+    @Mock
+    lateinit var mockResources: Resources
+
     @BeforeEach
     fun setup() {
+        whenever(mockConstantState.newDrawable(mockResources)).thenReturn(mockSecondDrawable)
+        whenever(mockDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any()))
             .thenReturn(mockBitmap)
         whenever(mockCanvasWrapper.createCanvas(any()))
@@ -130,6 +144,7 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -167,6 +182,7 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -201,6 +217,7 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -240,6 +257,7 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -264,6 +282,30 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            displayMetrics = mockDisplayMetrics,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
+
+        // Then
+        verify(mockBitmapCreationCallback).onFailure()
+    }
+
+    @Test
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { failed to create new drawable }`() {
+        // Given
+        whenever(mockDrawable.intrinsicWidth).thenReturn(1)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(1)
+        whenever(mockConstantState.newDrawable(mockResources))
+            .thenReturn(null)
+
+        // When
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -286,6 +328,7 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -296,6 +339,70 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockBitmapCreationCallback).onFailure()
+    }
+
+    @Test
+    fun `M resize image that is greater than limit W createBitmapOfApproxSizeFromDrawable { when resizing }`(
+        @IntForgery(min = 501, max = 1000) fakeViewWidth: Int,
+        @IntForgery(min = 501, max = 1000) fakeViewHeight: Int
+    ) {
+        // Given
+        val requestedSize = 1000
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeViewWidth)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeViewHeight)
+
+        val argumentCaptor = argumentCaptor<Int>()
+        val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
+
+        // When
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            displayMetrics = mockDisplayMetrics,
+            requestedSizeInBytes = requestedSize,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
+
+        // Then
+        verify(mockBitmapWrapper).createBitmap(
+            displayMetrics = displayMetricsCaptor.capture(),
+            bitmapWidth = argumentCaptor.capture(),
+            bitmapHeight = argumentCaptor.capture(),
+            config = any()
+        )
+
+        val width = argumentCaptor.firstValue
+        val height = argumentCaptor.secondValue
+        assertThat(width).isLessThanOrEqualTo(fakeViewWidth)
+        assertThat(height).isLessThanOrEqualTo(fakeViewHeight)
+        assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
+    }
+
+    @Test
+    fun `M not use original drawable W createBitmapOfApproxSizeFromDrawable`() {
+        // Given
+        whenever(mockDrawable.intrinsicWidth).thenReturn(1)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(1)
+
+        // When
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            resources = mockResources,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            displayMetrics = mockDisplayMetrics,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
+
+        // Then
+        verify(mockDrawable, never()).setBounds(any(), any(), any(), any())
+        verify(mockDrawable, never()).draw(any())
+        verify(mockSecondDrawable).setBounds(any(), any(), any(), any())
+        verify(mockSecondDrawable).draw(any())
     }
 
     @Test

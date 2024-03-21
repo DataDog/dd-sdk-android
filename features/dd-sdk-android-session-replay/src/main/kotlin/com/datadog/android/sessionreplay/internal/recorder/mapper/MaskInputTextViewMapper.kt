@@ -8,23 +8,25 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.TextView
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskInputObfuscationRule
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component and apply the
  * [SessionReplayPrivacy.MASK_USER_INPUT] masking rule.
  */
-open class MaskInputTextViewMapper : TextViewMapper {
-    constructor() : super(textValueObfuscationRule = MaskInputObfuscationRule())
-
-    internal constructor(
-        imageWireframeHelper: ImageWireframeHelper,
-        uniqueIdentifierGenerator: UniqueIdentifierGenerator
-    ) : super(
-        imageWireframeHelper = imageWireframeHelper,
-        uniqueIdentifierGenerator = uniqueIdentifierGenerator,
-        textValueObfuscationRule = MaskInputObfuscationRule()
-    )
-}
+open class MaskInputTextViewMapper(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : TextViewMapper(
+    MaskInputObfuscationRule(),
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+)

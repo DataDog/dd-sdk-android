@@ -61,6 +61,7 @@ internal class LogsRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
+        requireNotNull(request)
         assertThat(request.url).isEqualTo(
             "${fakeDatadogContext.site.intakeEndpoint}/api/v2/logs?" +
                 "ddsource=${fakeDatadogContext.source}"
@@ -106,6 +107,7 @@ internal class LogsRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
+        requireNotNull(request)
         assertThat(request.url).isEqualTo(
             "$fakeEndpoint/api/v2/logs?" +
                 "ddsource=${fakeDatadogContext.source}"

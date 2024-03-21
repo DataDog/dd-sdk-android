@@ -29,7 +29,7 @@ internal class DataOkHttpUploader(
 
     // region DataUploader
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     override fun upload(
         context: DatadogContext,
         batch: List<RawBatchEvent>,
@@ -37,6 +37,7 @@ internal class DataOkHttpUploader(
     ): UploadStatus {
         val request = try {
             requestFactory.create(context, batch, batchMeta)
+                ?: return UploadStatus.RequestCreationError
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,

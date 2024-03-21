@@ -32,7 +32,7 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn apiVersion
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val startTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 
@@ -51,7 +51,7 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn apiVersion
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
         val startTimeNs = RumFeature.startupTimeNs
 
         // WHEN

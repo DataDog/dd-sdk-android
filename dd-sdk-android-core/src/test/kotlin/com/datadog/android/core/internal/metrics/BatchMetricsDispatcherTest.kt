@@ -269,8 +269,8 @@ internal class BatchMetricsDispatcherTest {
             eq(InternalLogger.Target.MAINTAINER),
             argThat {
                 this.invoke() ==
-                        BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
-                            .format(Locale.ENGLISH, fakeFile.name)
+                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                        .format(Locale.ENGLISH, fakeFile.name)
             },
             eq(null),
             eq(false),
@@ -510,8 +510,8 @@ internal class BatchMetricsDispatcherTest {
             eq(InternalLogger.Target.MAINTAINER),
             argThat {
                 this.invoke() ==
-                        BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
-                            .format(Locale.ENGLISH, fakeFile.name)
+                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                        .format(Locale.ENGLISH, fakeFile.name)
             },
             eq(null),
             eq(false),
@@ -584,12 +584,12 @@ internal class BatchMetricsDispatcherTest {
             BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
             BatchMetricsDispatcher.BATCH_AGE_KEY to max(0, (currentTimeInMillis - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                    fakeFilePersistenceConfig.recentDelayMs,
+                fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
                 BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
-                        fakeUploadConfiguration.minDelayMs,
+                    fakeUploadConfiguration.minDelayMs,
                 BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
-                        fakeUploadConfiguration.maxDelayMs
+                    fakeUploadConfiguration.maxDelayMs
             ),
             BatchMetricsDispatcher.FILE_NAME to file.name,
             BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,
@@ -606,9 +606,9 @@ internal class BatchMetricsDispatcherTest {
             BatchMetricsDispatcher.TYPE_KEY to BatchMetricsDispatcher.BATCH_CLOSED_TYPE_VALUE,
             BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
             BatchMetricsDispatcher.BATCH_DURATION_KEY to
-                    max(0, (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong())),
+                max(0, (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                    fakeFilePersistenceConfig.recentDelayMs,
+                fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.FORCE_NEW_KEY to batchClosedMetadata.forcedNew,
             BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to batchClosedMetadata.eventsCount,
             BatchMetricsDispatcher.FILE_NAME to file.name,

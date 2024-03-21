@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.DdRumContentProvider
@@ -99,7 +100,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class DatadogRumMonitorTest {
 
-    lateinit var testedMonitor: DatadogRumMonitor
+    private lateinit var testedMonitor: DatadogRumMonitor
 
     @Mock
     lateinit var mockScope: RumScope
@@ -638,7 +639,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
@@ -975,6 +976,34 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope with all threads W addError`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @Forgery allThreads: List<ThreadDump>
+    ) {
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_ALL_THREADS to allThreads)
+
+        testedMonitor.addError(message, source, throwable, attributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.stacktrace).isNull()
+            assertThat(event.isFatal).isFalse
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.threads).isEqualTo(allThreads)
+            assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `M delegate event to rootScope with timestamp W addError`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -1002,7 +1031,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope with timestamp W onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope with timestamp W addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
@@ -1057,7 +1086,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W error type onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W error type addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -1090,7 +1119,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @RepeatedTest(10)
-    fun `M delegate event to rootScope W error source type onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W error source type addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -1506,7 +1535,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn true
             }
@@ -1542,7 +1571,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn false
             }
@@ -1866,7 +1895,7 @@ internal class DatadogRumMonitorTest {
                 if (isMethodOccupied) {
                     throw IllegalStateException(
                         "Only one thread should" +
-                                " be allowed to enter rootScope at the time."
+                            " be allowed to enter rootScope at the time."
                     )
                 }
                 isMethodOccupied = true

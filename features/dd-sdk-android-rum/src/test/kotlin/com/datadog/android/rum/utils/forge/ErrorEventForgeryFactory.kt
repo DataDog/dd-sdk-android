@@ -45,6 +45,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 type = forge.aNullable { anAlphabeticalString() },
                 handling = forge.aNullable { getForgery() },
                 handlingStack = forge.aNullable { aThrowable().loggableStackTrace() },
+                category = forge.aNullable { getForgery() },
                 threads = forge.aNullable {
                     aList {
                         ErrorEvent.Thread(

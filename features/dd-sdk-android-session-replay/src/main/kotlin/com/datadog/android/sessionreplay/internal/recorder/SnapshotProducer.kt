@@ -10,9 +10,11 @@ import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import java.util.LinkedList
 
 internal class SnapshotProducer(
+    private val imageWireframeHelper: ImageWireframeHelper,
     private val treeViewTraversal: TreeViewTraversal,
     private val optionSelectorDetector: OptionSelectorDetector =
         ComposedOptionSelectorDetector(listOf(DefaultOptionSelectorDetector()))
@@ -25,7 +27,7 @@ internal class SnapshotProducer(
     ): Node? {
         return convertViewToNode(
             rootView,
-            MappingContext(systemInformation),
+            MappingContext(systemInformation, imageWireframeHelper),
             LinkedList(),
             recordedDataQueueRefs
         )
