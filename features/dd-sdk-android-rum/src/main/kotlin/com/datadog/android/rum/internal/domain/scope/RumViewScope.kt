@@ -385,6 +385,8 @@ internal open class RumViewScope(
         } else {
             event.message
         }
+        // make a copy - by the time we iterate over it on another thread, it may already be changed
+        val eventFeatureFlags = featureFlags.toMutableMap()
 
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
@@ -411,7 +413,7 @@ internal open class RumViewScope(
             }
             ErrorEvent(
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
-                featureFlags = ErrorEvent.Context(featureFlags),
+                featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(
                     message = message,
                     source = event.source.toSchemaSource(),
