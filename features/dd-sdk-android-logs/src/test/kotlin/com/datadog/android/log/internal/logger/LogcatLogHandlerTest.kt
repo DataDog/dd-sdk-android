@@ -12,7 +12,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -62,13 +61,6 @@ internal class LogcatLogHandlerTest {
             .isEqualTo(javaClass.canonicalName)
     }
 
-    // TODO RUMM-1732
-    @Disabled(
-        "Check this test later. After update to Gradle 7 it seems there is some change to" +
-            " the test run mechanism, because .className returns parent enclosing class" +
-            " without any anonymous classes, and anonymous class itself is called \$lambda-0" +
-            " instead of \$1"
-    )
     @Test
     fun `resolves nested stack trace element from caller`() {
         testedHandler = LogcatLogHandler(fakeServiceName, true, isDebug = true)

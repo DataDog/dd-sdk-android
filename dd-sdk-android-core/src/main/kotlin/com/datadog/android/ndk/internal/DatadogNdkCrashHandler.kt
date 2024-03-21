@@ -81,7 +81,7 @@ internal class DatadogNdkCrashHandler(
 
             ndkCrashDataDirectory.listFilesSafe(internalLogger)?.forEach { file ->
                 when (file.name) {
-                    // TODO RUMM-1944 Data from NDK should be also encrypted
+                    // TODO RUM-639 Data from NDK should be also encrypted
                     CRASH_DATA_FILE_NAME ->
                         lastNdkCrashLog =
                             file.readTextSafe(internalLogger = internalLogger)?.let {

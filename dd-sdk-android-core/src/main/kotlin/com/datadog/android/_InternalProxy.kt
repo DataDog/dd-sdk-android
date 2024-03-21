@@ -79,7 +79,7 @@ class _InternalProxy internal constructor(
     }
 
     companion object {
-        // TODO RUMM-3008 Expose it as public API? Needed for the integration tests at least,
+        // TODO RUM-368 Expose it as public API? Needed for the integration tests at least,
         //  because OkHttp MockWebServer is HTTP based
         fun allowClearTextHttp(builder: Configuration.Builder): Configuration.Builder {
             return builder.allowClearTextHttp()

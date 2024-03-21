@@ -42,16 +42,19 @@ internal open class NdkCrashService : CrashService() {
                 initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
+
             RUM_DISABLED_SCENARIO -> {
-                // TODO RUMM-1554
+                // TODO RUM-508
                 // NoOp for now as we could not find a way yet to assert the NDK error log
                 // in the monitors
             }
+
             ENCRYPTION_ENABLED_SCENARIO -> {
                 val sdkCore = startSdk(encryptionEnabled = true)
                 initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
+
             else -> {
                 val sdkCore = startSdk()
                 initRum(sdkCore, intent.extras)

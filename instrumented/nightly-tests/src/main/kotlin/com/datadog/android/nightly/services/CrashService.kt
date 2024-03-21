@@ -18,7 +18,7 @@ internal abstract class CrashService : Service() {
         val rumMonitor = GlobalRumMonitor.get(sdkCore)
         extras?.let { bundle ->
             bundle.keySet().forEach {
-                // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
+                // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
                 // Issue is opened in the Google Issue Tracker.
                 @Suppress("DEPRECATION")
                 rumMonitor.addAttribute(it, bundle[it])

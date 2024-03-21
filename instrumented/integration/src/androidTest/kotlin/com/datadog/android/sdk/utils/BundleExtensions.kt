@@ -15,7 +15,7 @@ fun Bundle?.asMap(): Map<String, Any?> {
 
     return keySet()
         .fold(mutableMapOf()) { map, key ->
-            // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
+            // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
             // Issue is opened in the Google Issue Tracker.
             @Suppress("DEPRECATION")
             map[key] = this[key]

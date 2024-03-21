@@ -15,6 +15,7 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.os.Build
 import android.telephony.TelephonyManager
+import androidx.annotation.MainThread
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
@@ -33,12 +34,13 @@ internal class BroadcastReceiverNetworkInfoProvider(
     private var networkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             dataWriter.write(field)
         }
 
     // region BroadcastReceiver
 
+    @MainThread
     override fun onReceive(context: Context, intent: Intent?) {
         val connectivityMgr =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager

@@ -104,7 +104,7 @@ internal class SdkFeature(
     }
 
     fun clearAllData() {
-        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+        @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
         storage.dropAll()
     }
 
