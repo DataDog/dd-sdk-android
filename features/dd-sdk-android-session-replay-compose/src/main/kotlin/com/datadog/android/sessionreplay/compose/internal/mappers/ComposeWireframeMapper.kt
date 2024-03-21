@@ -34,8 +34,8 @@ internal class ComposeWireframeMapper(
 ) : BaseWireframeMapper<ComposeView, MobileSegment.Wireframe>() {
 
     private val mappers = mapOf<String, CompositionGroupMapper>(
+        "Text" to TextCompositionGroupMapper()
         // TODO: RUM-0000 Implement mappers for different Composable groups
-        // "Text"
         // "Button"
         // "TabRow" : holds the tab row bg color
         //  "Tab": holds selected tab info

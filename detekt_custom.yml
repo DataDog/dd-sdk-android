@@ -1058,6 +1058,7 @@ datadog:
       - "kotlin.Double.toFloat()"
       - "kotlin.Double.toInt()"
       - "kotlin.Double.toLong()"
+      - "kotlin.Float.fromBits(kotlin.Int)"
       - "kotlin.Float.percent()"
       - "kotlin.Float.roundToInt()"
       - "kotlin.Float.roundToLong()"
