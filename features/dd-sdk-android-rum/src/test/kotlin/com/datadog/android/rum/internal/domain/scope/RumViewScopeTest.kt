@@ -7504,6 +7504,34 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M send event only once W handleEvent(AddFeatureFlagEvaluation) on active view {same value}`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    @Test
     fun `M not add feature flag W handleEvent(AddFeatureFlagEvaluation) on stopped view`(
         @StringForgery flagName: String,
         @StringForgery flagValue: String
@@ -7589,6 +7617,165 @@ internal class RumViewScopeTest {
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    // endregion
+
+    // region Feature Flags Batch
+
+    @Test
+    fun `M send event W handleEvent(AddFeatureFlagBatchEvaluation) on active view`(
+        @StringForgery flagName1: String,
+        @StringForgery flagName2: String,
+        @StringForgery flagName3: String,
+        @StringForgery flagValue1: String,
+        @StringForgery flagValue2: String,
+        @StringForgery flagValue3: String
+    ) {
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName1, flagValue1)
+            assertThat(lastValue).hasFeatureFlag(flagName2, flagValue2)
+            assertThat(lastValue).hasFeatureFlag(flagName3, flagValue3)
+        }
+    }
+
+    @Test
+    fun `M send event only once W handleEvent(AddFeatureFlagBatchEvaluation) on active view {same values}`(
+        @StringForgery flagName1: String,
+        @StringForgery flagName2: String,
+        @StringForgery flagName3: String,
+        @StringForgery flagValue1: String,
+        @StringForgery flagValue2: String,
+        @StringForgery flagValue3: String
+    ) {
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+            ),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName1, flagValue1)
+            assertThat(lastValue).hasFeatureFlag(flagName2, flagValue2)
+            assertThat(lastValue).hasFeatureFlag(flagName3, flagValue3)
+        }
+    }
+
+    @Test
+    fun `M not add feature flag W handleEvent(AddFeatureFlagBatchEvaluation) on stopped view`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.stopped = true
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(mapOf(flagName to flagValue)),
+            mockWriter
+        )
+
+        // THEN
+        assertThat(testedScope.featureFlags).isEmpty()
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M modify flag W handleEvent(AddFeatureFlagBatchEvaluation) on active view { existing feature flag }`(
+        @StringForgery flagName1: String,
+        @StringForgery flagName2: String,
+        @StringForgery flagName3: String,
+        @StringForgery oldFlagValue1: String,
+        @StringForgery oldFlagValue2: String,
+        @StringForgery oldFlagValue3: String,
+        @StringForgery flagValue1: String,
+        @StringForgery flagValue2: String,
+        @StringForgery flagValue3: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(
+                mapOf(flagName1 to oldFlagValue1, flagName2 to oldFlagValue2, flagName3 to oldFlagValue3)
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName1, flagValue1)
+            assertThat(lastValue).hasFeatureFlag(flagName2, flagValue2)
+            assertThat(lastValue).hasFeatureFlag(flagName3, flagValue3)
+        }
+    }
+
+    @Test
+    fun `M send flags on ErrorEvent W handleEvent(AddError) on active view { existing feature flags set }`(
+        forge: Forge,
+        @StringForgery flagName1: String,
+        @StringForgery flagName2: String,
+        @StringForgery flagName3: String,
+        @StringForgery flagValue1: String,
+        @StringForgery flagValue2: String,
+        @StringForgery flagValue3: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddError(
+                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                throwable = null,
+                stacktrace = null,
+                isFatal = false,
+                threads = emptyList(),
+                attributes = emptyMap()
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName1, flagValue1)
+            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName2, flagValue2)
+            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName3, flagValue3)
         }
     }
 

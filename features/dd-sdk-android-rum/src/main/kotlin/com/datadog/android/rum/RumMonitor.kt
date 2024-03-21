@@ -284,6 +284,13 @@ interface RumMonitor {
     )
 
     /**
+     * Adds result of evaluating a set of feature flag to the view.
+     * Feature flag evaluations are local to the active view and are cleared when the view is stopped.
+     * @param featureFlags the map of feature flags
+     */
+    fun addFeatureFlagBatchEvaluation(featureFlags: Map<String, Any>)
+
+    /**
      * Adds a global attribute to all future RUM events.
      * @param key the attribute key (non null)
      * @param value the attribute value (or null)

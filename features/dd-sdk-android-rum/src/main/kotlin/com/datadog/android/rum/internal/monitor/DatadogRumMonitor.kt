@@ -365,6 +365,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun addFeatureFlagBatchEvaluation(featureFlags: Map<String, Any>) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagBatchEvaluation(featureFlags)
+        )
+    }
+
     override fun stopSession() {
         handleEvent(
             RumRawEvent.StopSession()
