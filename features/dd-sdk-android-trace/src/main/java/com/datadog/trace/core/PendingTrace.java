@@ -491,7 +491,6 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
     if (traceConfig.sampler instanceof PrioritySampler
         && rootSpan != null
         && rootSpan.context().getSamplingPriority() == PrioritySampling.UNSET) {
-
       ((PrioritySampler) traceConfig.sampler).setSamplingPriority(rootSpan);
     }
   }
