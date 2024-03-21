@@ -1,3 +1,32 @@
+# 2.7.0 / 2024-03-21
+
+* [FEATURE] Session Replay: Add a request builder for resources. See [#1827](https://github.com/DataDog/dd-sdk-android/pull/1827)
+* [FEATURE] Session Replay: Add Resources feature. See [#1840](https://github.com/DataDog/dd-sdk-android/pull/1840)
+* [FEATURE] Session Replay: Implement resource capture during traversal. See [#1854](https://github.com/DataDog/dd-sdk-android/pull/1854)
+* [FEATURE] Add `source_type` when sent from cross platform logs. See [#1895](https://github.com/DataDog/dd-sdk-android/pull/1895)
+* [FEATURE] Session Replay: Enable Resource Endpoint by default. See [#1858](https://github.com/DataDog/dd-sdk-android/pull/1858)
+* [FEATURE] Logs: Add support for global attributes on logs. See [#1900](https://github.com/DataDog/dd-sdk-android/pull/1900)
+* [FEATURE] RUM: Allow setting custom error fingerprint. See [#1911](https://github.com/DataDog/dd-sdk-android/pull/1911)
+* [FEATURE] RUM: Report all threads for non-fatal ANRs. See [#1912](https://github.com/DataDog/dd-sdk-android/pull/1912)
+* [FEATURE] RUM: Report fatal ANRs. See [#1909](https://github.com/DataDog/dd-sdk-android/pull/1909)
+* [BUGFIX] Session Replay: Avoid crash when `applicationContext` is `null`. See [#1864](https://github.com/DataDog/dd-sdk-android/pull/1864)
+* [BUGFIX] Session Replay: Fix image resizing issue. See [#1897](https://github.com/DataDog/dd-sdk-android/pull/1897)
+* [BUGFIX] Fix typo in source type. See [#1904](https://github.com/DataDog/dd-sdk-android/pull/1904)
+* [BUGFIX] RUM: Prevent `ConcurrentModificationException` when reading feature flags. See [#1925](https://github.com/DataDog/dd-sdk-android/pull/1925)
+* [IMPROVEMENT] RUM: Disable non-fatal ANR reporting by default. See [#1914](https://github.com/DataDog/dd-sdk-android/pull/1914)
+* [IMPROVEMENT] RUM: Introduce `error.category` attribute for exceptions, categorize ANRs separately. See [#1918](https://github.com/DataDog/dd-sdk-android/pull/1918)
+* [MAINTENANCE] Next dev iteration. See [#1861](https://github.com/DataDog/dd-sdk-android/pull/1861)
+* [MAINTENANCE] Merge `release/2.6.0` in `develop`. See [#1862](https://github.com/DataDog/dd-sdk-android/pull/1862)
+* [MAINTENANCE] Merge `release/2.6.1` changes into `develop` branch. See [#1868](https://github.com/DataDog/dd-sdk-android/pull/1868)
+* [MAINTENANCE] Update telemetry schema. See [#1874](https://github.com/DataDog/dd-sdk-android/pull/1874)
+* [MAINTENANCE] Merge Hotfix 2.6.2. See [#1890](https://github.com/DataDog/dd-sdk-android/pull/1890)
+* [MAINTENANCE] Add signed commits requirement to `CONTRIBUTING.md`. See [#1905](https://github.com/DataDog/dd-sdk-android/pull/1905)
+* [MAINTENANCE] Session Replay: Cleanup SR code. See [#1910](https://github.com/DataDog/dd-sdk-android/pull/1910)
+* [MAINTENANCE] Session Replay: Fix integration tests post Session Replay refactoring. See [#1916](https://github.com/DataDog/dd-sdk-android/pull/1916)
+* [MAINTENANCE] Session Replay: Fix `SrImageButtonsMaskUserInputTest`. See [#1920](https://github.com/DataDog/dd-sdk-android/pull/1920)
+* [MAINTENANCE] Adjust `ktlint` formatting rules. See [#1919](https://github.com/DataDog/dd-sdk-android/pull/1919)
+* [MAINTENANCE] Fix formatting. See [#1921](https://github.com/DataDog/dd-sdk-android/pull/1921)
+
 # 2.6.2 / 2024-02-23
 
 * [BUGFIX] RUM: Fix crash in frame rate vital detection. See [#1872](https://github.com/DataDog/dd-sdk-android/pull/1872)
