@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.tools.detekt.rules
+package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.isContainingEntryPointPublic
 import io.gitlab.arturbosch.detekt.api.CodeSmell

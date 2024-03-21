@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.tools.detekt.rules
+package com.datadog.tools.detekt.rules.sdk
 
 import io.gitlab.arturbosch.detekt.api.CodeSmell
 import io.gitlab.arturbosch.detekt.api.Debt
@@ -121,6 +121,7 @@ class ThreadSafety : Rule() {
                     }
                     typeName?.toMethodGroup()
                 }
+
                 else -> {
                     println("\nUnknown type class for $type (${type.javaClass})")
                     null
