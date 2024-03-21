@@ -6,7 +6,9 @@
 
 package com.datadog.android.log
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.net.LogsRequestFactory
@@ -25,6 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -89,5 +93,89 @@ internal class LogsTest {
 
         // Then
         assertThat(result).isFalse
+    }
+
+    @Test
+    fun `M log user error W addAttribute { logs not enabled }`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+
+        // When
+        Logs.addAttribute(key, value, mockSdkCore)
+
+        // Then
+        argumentCaptor<() -> String> {
+            verify(mockSdkCore.internalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false),
+                eq(null)
+            )
+            assertThat(lastValue()).isEqualTo(Logs.LOGS_NOT_ENABLED_MESSAGE)
+        }
+    }
+
+    @Test
+    fun `M log user error W removeAttribute { logs not enabled }`(
+        @StringForgery key: String
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+
+        // When
+        Logs.removeAttribute(key, mockSdkCore)
+
+        // Then
+        argumentCaptor<() -> String> {
+            verify(mockSdkCore.internalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false),
+                eq(null)
+            )
+            assertThat(lastValue()).isEqualTo(Logs.LOGS_NOT_ENABLED_MESSAGE)
+        }
+    }
+
+    @Test
+    fun `M forward attributes to Feature W addAttribute`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        val mockFeatureScope: FeatureScope = mock()
+        val mockLogsFeature: LogsFeature = mock()
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockFeatureScope
+        whenever(mockFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
+
+        // When
+        Logs.addAttribute(key, value, mockSdkCore)
+
+        // Then
+        verify(mockLogsFeature).addAttribute(key, value)
+    }
+
+    @Test
+    fun `M forward remove attributes to Feature W removeAttribute`(
+        @StringForgery key: String
+    ) {
+        // Given
+        val mockFeatureScope: FeatureScope = mock()
+        val mockLogsFeature: LogsFeature = mock()
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockFeatureScope
+        whenever(mockFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
+
+        // When
+        Logs.removeAttribute(key, mockSdkCore)
+
+        // Then
+        verify(mockLogsFeature).removeAttribute(key)
     }
 }

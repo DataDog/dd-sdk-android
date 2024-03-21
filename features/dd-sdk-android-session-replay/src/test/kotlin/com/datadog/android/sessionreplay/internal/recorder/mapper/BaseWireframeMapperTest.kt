@@ -12,13 +12,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.annotation.Forgery
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.params.provider.Arguments
+import org.mockito.Mock
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.stream.Stream
@@ -27,6 +31,21 @@ internal abstract class BaseWireframeMapperTest {
 
     @Forgery
     lateinit var fakeMappingContext: MappingContext
+
+    @Mock
+    lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
+
+    @Mock
+    lateinit var mockColorStringFormatter: ColorStringFormatter
+
+    @Mock
+    lateinit var mockViewBoundsResolver: ViewBoundsResolver
+
+    @Mock
+    lateinit var mockDrawableToColorMapper: DrawableToColorMapper
+
+    @Mock
+    lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     protected fun mockNonDecorView(): View {
         return mock {
@@ -42,56 +61,6 @@ internal abstract class BaseWireframeMapperTest {
         return mock {
             whenever(it.parent).thenReturn(mock())
         }
-    }
-
-    protected fun View.toShapeWireframes(): List<MobileSegment.Wireframe.ShapeWireframe> {
-        val coordinates = IntArray(2)
-        val screenDensity = fakeMappingContext.systemInformation.screenDensity
-        this.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(screenDensity).toLong()
-        val y = coordinates[1].densityNormalized(screenDensity).toLong()
-        return listOf(
-            MobileSegment.Wireframe.ShapeWireframe(
-                System.identityHashCode(this).toLong(),
-                x = x,
-                y = y,
-                width = width.toLong().densityNormalized(screenDensity),
-                height = height.toLong().densityNormalized(screenDensity)
-            )
-        )
-    }
-
-    protected fun TextView.toTextWireframes(): List<MobileSegment.Wireframe.TextWireframe> {
-        val coordinates = IntArray(2)
-        this.getLocationOnScreen(coordinates)
-        val screenDensity = fakeMappingContext.systemInformation.screenDensity
-        val x = coordinates[0].densityNormalized(screenDensity).toLong()
-        val y = coordinates[1].densityNormalized(screenDensity).toLong()
-        val textColor = StringUtils.formatColorAndAlphaAsHexa(currentTextColor, OPAQUE_ALPHA_VALUE)
-        return listOf(
-            MobileSegment.Wireframe.TextWireframe(
-                System.identityHashCode(this).toLong(),
-                x = x,
-                y = y,
-                text = resolveTextValue(this),
-                width = width.toLong().densityNormalized(screenDensity),
-                height = height.toLong().densityNormalized(screenDensity),
-                textStyle = MobileSegment.TextStyle(
-                    TextViewMapper.SANS_SERIF_FAMILY_NAME,
-                    textSize.toLong().densityNormalized(screenDensity),
-                    textColor
-                ),
-                textPosition = MobileSegment.TextPosition(
-                    MobileSegment.Padding(0, 0, 0, 0),
-                    alignment =
-                    MobileSegment.Alignment(
-                        MobileSegment.Horizontal.LEFT,
-                        MobileSegment.Vertical
-                            .CENTER
-                    )
-                )
-            )
-        )
     }
 
     protected open fun resolveTextValue(textView: TextView): String {

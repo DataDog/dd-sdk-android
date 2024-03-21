@@ -1,4 +1,4 @@
- /*
+/*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
@@ -8,18 +8,23 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import android.content.res.Configuration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.RecordWriter
+import com.datadog.android.sessionreplay.internal.ResourcesFeature
+import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -60,19 +65,28 @@ internal class RecordedDataProcessorTest {
     @Mock
     lateinit var mockNodeFlattener: NodeFlattener
 
+    @Mock
+    lateinit var mockResourcesWriter: ResourcesWriter
+
     @LongForgery
     var fakeTimestamp: Long = 0L
 
     @Forgery
     lateinit var fakeRumContext: SessionReplayRumContext
 
-    lateinit var testedProcessor: RecordedDataProcessor
+    private lateinit var testedProcessor: RecordedDataProcessor
 
     @Mock
     lateinit var mockRumContextDataHandler: RumContextDataHandler
 
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
+
+    @StringForgery
+    lateinit var fakeIdentifier: String
+
+    @Mock
+    lateinit var mockResourcesFeature: ResourcesFeature
 
     private val invalidRumContext = SessionReplayRumContext()
 
@@ -93,6 +107,8 @@ internal class RecordedDataProcessorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockResourcesFeature.dataWriter).thenReturn(mockResourcesWriter)
+
         initialRecordedQueuedItemContext = RecordedQueuedItemContext(
             fakeTimestamp,
             fakeRumContext
@@ -133,9 +149,10 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.getForgery())
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedProcessor = RecordedDataProcessor(
-            mockWriter,
-            mockMutationResolver,
-            mockNodeFlattener
+            resourcesWriter = mockResourcesWriter,
+            writer = mockWriter,
+            mutationResolver = mockMutationResolver,
+            nodeFlattener = mockNodeFlattener
         )
     }
 
@@ -1108,7 +1125,7 @@ internal class RecordedDataProcessorTest {
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
         }
 
-        fakeSnapshot3.forEach() {
+        fakeSnapshot3.forEach {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
@@ -1194,6 +1211,33 @@ internal class RecordedDataProcessorTest {
 
     // endregion
 
+    // region resources
+
+    @Test
+    fun `M write resource data W processResources`(forge: Forge) {
+        // Given
+        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
+        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+
+        // When
+        testedProcessor.processResources(fakeResourceItem)
+
+        // Then
+        val captor = argumentCaptor<EnrichedResource>()
+        verify(mockResourcesWriter, times(1)).write(captor.capture())
+        val capturedResource = captor.allValues[0]
+
+        assertThat(capturedResource.resource).isEqualTo(fakeByteArray)
+        val jsonString = capturedResource.asBinaryMetadata().toString(Charsets.UTF_8)
+        val metadataJson = JsonParser.parseString(jsonString).asJsonObject
+        val itemApplicationId = metadataJson.get(EnrichedResource.APPLICATION_ID_KEY).asString
+        val itemFilename = metadataJson.get(EnrichedResource.FILENAME_KEY).asString
+        assertThat(itemApplicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(itemFilename).isEqualTo(fakeIdentifier)
+    }
+
+    // endregion
+
     // region Internal
 
     private fun MobileSegment.Wireframe.copy(id: Long): MobileSegment.Wireframe {
@@ -1223,30 +1267,35 @@ internal class RecordedDataProcessorTest {
         )
     }
 
+    private fun createResourceItem(
+        resourceData: ByteArray,
+        usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
+    ): ResourceRecordedDataQueueItem = ResourceRecordedDataQueueItem(
+        recordedQueuedItemContext = usedContext,
+        resourceData = resourceData,
+        applicationId = fakeRumContext.applicationId,
+        identifier = fakeIdentifier
+    )
+
     private fun createSnapshotItem(
         snapshot: List<Node>,
         systemInformation: SystemInformation = fakeSystemInformation,
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
-    ): SnapshotRecordedDataQueueItem {
-        val item = SnapshotRecordedDataQueueItem(
-            usedContext,
-            systemInformation = systemInformation
-        )
-
-        item.nodes = snapshot
-
-        return item
+    ): SnapshotRecordedDataQueueItem = SnapshotRecordedDataQueueItem(
+        usedContext,
+        systemInformation = systemInformation
+    ).apply {
+        this.nodes = snapshot
     }
 
     private fun createTouchEventItem(
         touchEvent: List<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>,
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
-    ): TouchEventRecordedDataQueueItem {
-        return TouchEventRecordedDataQueueItem(
+    ): TouchEventRecordedDataQueueItem =
+        TouchEventRecordedDataQueueItem(
             usedContext,
             touchData = touchEvent
         )
-    }
 
     // endregion
 }

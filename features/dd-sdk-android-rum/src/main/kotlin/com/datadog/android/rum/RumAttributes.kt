@@ -75,6 +75,11 @@ object RumAttributes {
      */
     const val INTERNAL_ERROR_IS_CRASH: String = "_dd.error.is_crash"
 
+    /**
+     * All threads information.
+     */
+    internal const val INTERNAL_ALL_THREADS: String = "_dd.error.threads"
+
     // endregion
 
     // region Resource
@@ -158,6 +163,11 @@ object RumAttributes {
      * This value is filled automatically by the [RumMonitor].
      */
     const val ERROR_DATABASE_PATH: String = "error.database.path"
+
+    /**
+     * Specifies a custom error fingerprint for the supplied error.
+     */
+    const val ERROR_FINGERPRINT: String = "_dd.error.fingerprint"
 
     // endregion
 

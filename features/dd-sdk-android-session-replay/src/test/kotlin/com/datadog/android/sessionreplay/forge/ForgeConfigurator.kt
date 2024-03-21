@@ -35,6 +35,8 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(MetaRecordForgeryFactory())
         forge.addFactory(ViewEndRecordForgeryFactory())
         forge.addFactory(EnrichedRecordForgeryFactory())
+        forge.addFactory(ResourceEventForgeryFactory())
+        forge.addFactory(EnrichedResourceForgeryFactory())
         forge.addFactory(WireframeClipForgeryFactory())
         forge.addFactory(PointerInteractionDataForgeryFactory())
         forge.addFactory(ShapeStyleForgeryFactory())
@@ -48,6 +50,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ImageWireframeForgeryFactory())
         forge.addFactory(PlaceholderWireframeForgeryFactory())
         forge.addFactory(SnapshotRecordedDataQueueItemForgeryFactory())
+        forge.addFactory(ResourceRecordedDataQueueItemForgeryFactory())
         forge.addFactory(TouchEventRecordedDataQueueItemForgeryFactory())
         forge.addFactory(WireframeBoundsForgeryFactory())
 

@@ -18,6 +18,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
@@ -36,8 +37,13 @@ import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.persistence.file.deleteSafe
+import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.readTextSafe
+import com.datadog.android.core.internal.persistence.file.writeTextSafe
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -72,6 +78,7 @@ import com.datadog.android.ndk.internal.NdkUserInfoDataWriter
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
+import com.google.gson.JsonObject
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
 import okhttp3.CipherSuite
@@ -144,6 +151,37 @@ internal class CoreFeature(
     internal lateinit var androidInfoProvider: AndroidInfoProvider
 
     internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
+
+    // lazy here on purpose: we need to read it only once, even if it is used in different features
+    @get:WorkerThread
+    internal val lastViewEvent: JsonObject? by lazy {
+        @Suppress("ThreadSafety") // called in worker thread context
+        val viewEvent = readLastViewEvent()
+        if (viewEvent != null) {
+            @Suppress("ThreadSafety") // called in worker thread context
+            deleteLastViewEvent()
+        }
+        viewEvent
+    }
+
+    @get:WorkerThread
+    private val lastViewEventFile: File by lazy { File(storageDir, LAST_RUM_VIEW_EVENT_FILE_NAME) }
+    private val lastViewEventFileWriter: FileWriter<RawBatchEvent> by lazy {
+        BatchFileReaderWriter.create(
+            internalLogger = internalLogger,
+            encryption = localDataEncryption
+        )
+    }
+
+    internal val lastFatalAnrSent: Long?
+        get() {
+            val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
+            return if (file.existsSafe(internalLogger)) {
+                file.readTextSafe(Charsets.UTF_8, internalLogger)?.toLongOrNull()
+            } else {
+                null
+            }
+        }
 
     fun initialize(
         appContext: Context,
@@ -256,19 +294,81 @@ internal class CoreFeature(
 
     // region Internal
 
+    @WorkerThread
+    internal fun writeLastViewEvent(data: ByteArray) {
+        lastViewEventFileWriter.writeData(lastViewEventFile, RawBatchEvent(data), false)
+    }
+
+    @WorkerThread
+    internal fun deleteLastViewEvent() {
+        if (lastViewEventFile.existsSafe(internalLogger)) {
+            lastViewEventFile.deleteSafe(internalLogger)
+        } else {
+            @Suppress("DEPRECATION")
+            val legacyViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(storageDir)
+            if (legacyViewEventFile.existsSafe(internalLogger)) {
+                legacyViewEventFile.deleteSafe(internalLogger)
+            }
+        }
+    }
+
+    @WorkerThread
+    internal fun writeLastFatalAnrSent(anrTimestamp: Long) {
+        // TODO RUMM-0000 this is temporary solution for storing just a timestamp, later we will
+        //  migrate to a dedicated data store solution (same applies to the last RUM view event)
+        val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
+        file.writeTextSafe(anrTimestamp.toString(), Charsets.UTF_8, internalLogger)
+    }
+
+    @WorkerThread
+    internal fun deleteLastFatalAnrSent() {
+        val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
+        if (file.existsSafe(internalLogger)) {
+            file.deleteSafe(internalLogger)
+        }
+    }
+
+    @WorkerThread
+    private fun readLastViewEvent(): JsonObject? {
+        val lastViewEventFile = if (lastViewEventFile.existsSafe(internalLogger)) {
+            lastViewEventFile
+        } else {
+            @Suppress("DEPRECATION")
+            val legacyViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(storageDir)
+            if (legacyViewEventFile.existsSafe(internalLogger)) {
+                legacyViewEventFile
+            } else {
+                null
+            }
+        }
+
+        if (lastViewEventFile == null) return null
+
+        val reader =
+            BatchFileReaderWriter.create(internalLogger, localDataEncryption)
+        val content = reader.readData(lastViewEventFile)
+        return if (content.isEmpty()) {
+            null
+        } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // safe to call last, collection is not empty
+            String(content.last().data, Charsets.UTF_8).run {
+                JsonObjectDeserializer(internalLogger).deserialize(this)
+            }
+        }
+    }
+
     private fun prepareNdkCrashData(nativeSourceType: String?) {
         if (isMainProcess) {
             ndkCrashHandler = DatadogNdkCrashHandler(
                 storageDir,
                 persistenceExecutorService,
                 NdkCrashLogDeserializer(internalLogger),
-                rumEventDeserializer = JsonObjectDeserializer(internalLogger),
                 NetworkInfoDeserializer(internalLogger),
                 UserInfoDeserializer(internalLogger),
                 internalLogger,
-                rumFileReader = BatchFileReaderWriter.create(internalLogger, localDataEncryption),
                 envFileReader = FileReaderWriter.create(internalLogger, localDataEncryption),
-                nativeSourceType ?: "ndk"
+                lastRumViewEventProvider = { lastViewEvent },
+                nativeCrashSourceType = nativeSourceType ?: "ndk"
             )
             ndkCrashHandler.prepareData()
         }
@@ -541,6 +641,9 @@ internal class CoreFeature(
         internal const val DEFAULT_SOURCE_NAME = "android"
         internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
         internal const val DEFAULT_APP_VERSION = "?"
+
+        internal const val LAST_RUM_VIEW_EVENT_FILE_NAME = "last_view_event"
+        internal const val LAST_FATAL_ANR_SENT_FILE_NAME = "last_fatal_anr_sent"
 
         internal val RESTRICTED_CIPHER_SUITES = arrayOf(
             // TLS 1.3

@@ -15,6 +15,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.Datadog#fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
  * apiMethodSignature: com.datadog.android.Datadog#fun isInitialized(String? = null): Boolean
  * apiMethodSignature: com.datadog.android.Datadog#fun setVerbosity(Int)
+ * apiMethodSignature: com.datadog.android.Datadog#fun getVerbosity(): Int
  * apiMethodSignature: com.datadog.android.Datadog#fun stopInstance(String? = null)
  * apiMethodSignature: com.datadog.android.Datadog#fun stopSession()
  * apiMethodSignature: com.datadog.android.Datadog#fun _internalProxy(String? = null): _InternalProxy
@@ -23,6 +24,8 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUploadFrequency(UploadFrequency): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
+ * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setBatchProcessingLevel(BatchProcessingLevel): Builder
+ * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
  * apiMethodSignature: com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor#constructor(Int, com.datadog.android.api.InternalLogger)
  * apiMethodSignature: com.datadog.android.core.internal.utils.JsonSerializer#fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
  * apiMethodSignature: com.datadog.android.core.internal.utils.JsonSerializer#fun toJsonElement(Any?): com.google.gson.JsonElement
@@ -49,6 +52,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun build(): SessionReplayConfiguration
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(SessionReplayPrivacy): Builder
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: fun Array<StackTraceElement>.loggableStackTrace(): String
  * apiMethodSignature: fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
  * apiMethodSignature: fun java.math.BigInteger.toHexString(): String
  * apiMethodSignature: fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
@@ -56,6 +60,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
  * apiMethodSignature: fun Int.toHexString(): String
  * apiMethodSignature: fun Long.toHexString(): String
+ * apiMethodSignature: fun Thread.State.asString(): String
  * apiMethodSignature: fun Throwable.loggableStackTrace(): String
  * apiMethodSignature: fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
  * apiMethodSignature: fun <T> allowThreadDiskReads(() -> T): T
@@ -95,5 +100,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun build(): LogsConfiguration
  * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
  * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.log.Logs#fun addAttribute(String, Any?, com.datadog.android.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.log.Logs#fun removeAttribute(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
  *
  */

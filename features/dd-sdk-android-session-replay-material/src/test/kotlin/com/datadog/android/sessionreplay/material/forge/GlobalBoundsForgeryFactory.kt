@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.material.forge
 
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

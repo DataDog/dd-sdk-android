@@ -121,7 +121,7 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { ip addresses }`(
         @StringForgery(
             regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
-                    "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
         ) hosts: List<String>
     ) {
         // When
@@ -148,7 +148,7 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
     ) {
         // When
@@ -202,7 +202,7 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 sanitize hosts 𝕎 setFirstPartyHosts()`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
     ) {
         // When
@@ -224,7 +224,7 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHostsWithHeaderType() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>,
         forge: Forge
     ) {

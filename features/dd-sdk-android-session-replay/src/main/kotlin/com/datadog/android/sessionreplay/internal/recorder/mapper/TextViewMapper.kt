@@ -9,16 +9,17 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
@@ -27,32 +28,31 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
  * All the other text fields will not be masked.
  */
 @Suppress("TooManyFunctions")
-open class TextViewMapper :
-    BaseAsyncBackgroundWireframeMapper<TextView> {
+open class TextViewMapper internal constructor(
+    internal var textValueObfuscationRule: TextValueObfuscationRule,
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseAsyncBackgroundWireframeMapper<TextView>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
-    internal var textValueObfuscationRule: TextValueObfuscationRule = AllowObfuscationRule()
-    private var imageWireframeHelper: ImageWireframeHelper? = null
-    private var uniqueIdentifierGenerator: UniqueIdentifierGenerator? = null
-
-    constructor()
-
-    internal constructor(
-        imageWireframeHelper: ImageWireframeHelper,
-        uniqueIdentifierGenerator: UniqueIdentifierGenerator,
-        textValueObfuscationRule: TextValueObfuscationRule? = null
-    ) : super(imageWireframeHelper, uniqueIdentifierGenerator) {
-        this.imageWireframeHelper = imageWireframeHelper
-        this.uniqueIdentifierGenerator = uniqueIdentifierGenerator
-        textValueObfuscationRule?.let {
-            this.textValueObfuscationRule = it
-        }
-    }
-
-    internal constructor(
-        textValueObfuscationRule: TextValueObfuscationRule
-    ) {
-        this.textValueObfuscationRule = textValueObfuscationRule
-    }
+    constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper
+    ) : this(
+        AllowObfuscationRule(),
+        viewIdentifierResolver,
+        colorStringFormatter,
+        viewBoundsResolver,
+        drawableToColorMapper
+    )
 
     override fun map(
         view: TextView,
@@ -64,7 +64,7 @@ open class TextViewMapper :
         wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
 
         val density = mappingContext.systemInformation.screenDensity
-        val viewGlobalBounds = resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             density
         )
@@ -88,30 +88,17 @@ open class TextViewMapper :
     // region Internal
 
     private fun resolveImages(
-        view: TextView,
+        textView: TextView,
         mappingContext: MappingContext,
         currentIndex: Int,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
-        val wireframes = mutableListOf<MobileSegment.Wireframe>()
-        imageWireframeHelper?.let {
-            val results = it.createCompoundDrawableWireframes(
-                view,
-                mappingContext,
-                currentIndex,
-                object : ImageWireframeHelperCallback {
-                    override fun onFinished() {
-                        asyncJobStatusCallback.jobFinished()
-                    }
-
-                    override fun onStart() {
-                        asyncJobStatusCallback.jobStarted()
-                    }
-                }
-            )
-            wireframes.addAll(results)
-        }
-        return wireframes
+        return mappingContext.imageWireframeHelper.createCompoundDrawableWireframes(
+            textView,
+            mappingContext,
+            currentIndex,
+            asyncJobStatusCallback
+        )
     }
 
     private fun resolveTextElements(
@@ -150,16 +137,16 @@ open class TextViewMapper :
         return if (textView.text.isNullOrEmpty()) {
             resolveHintTextColor(textView)
         } else {
-            colorAndAlphaAsStringHexa(textView.currentTextColor, OPAQUE_ALPHA_VALUE)
+            colorStringFormatter.formatColorAndAlphaAsHexString(textView.currentTextColor, OPAQUE_ALPHA_VALUE)
         }
     }
 
     private fun resolveHintTextColor(textView: TextView): String {
         val hintTextColors = textView.hintTextColors
         return if (hintTextColors != null) {
-            colorAndAlphaAsStringHexa(hintTextColors.defaultColor, OPAQUE_ALPHA_VALUE)
+            colorStringFormatter.formatColorAndAlphaAsHexString(hintTextColors.defaultColor, OPAQUE_ALPHA_VALUE)
         } else {
-            colorAndAlphaAsStringHexa(textView.currentTextColor, OPAQUE_ALPHA_VALUE)
+            colorStringFormatter.formatColorAndAlphaAsHexString(textView.currentTextColor, OPAQUE_ALPHA_VALUE)
         }
     }
 

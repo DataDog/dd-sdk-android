@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.storage
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.RecordCallback
-import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
@@ -43,13 +42,13 @@ internal class SessionReplayRecordWriter(
     }
 
     private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {
-        val newRumContextId = resoleRumContextId(record)
+        val newRumContextId = resolveRumContextId(record)
         val forceNewBatch = lastRumContextId != newRumContextId
         lastRumContextId = newRumContextId
         return forceNewBatch
     }
 
-    private fun resoleRumContextId(record: EnrichedRecord): String {
+    private fun resolveRumContextId(record: EnrichedRecord): String {
         return "${record.applicationId}-${record.sessionId}-${record.viewId}"
     }
 }

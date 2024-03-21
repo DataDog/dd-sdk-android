@@ -8,14 +8,25 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Checkable
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
-    BaseWireframeMapper<T, MobileSegment.Wireframe>(viewUtils = viewUtils)
-        where T : View, T : Checkable {
+internal abstract class CheckableWireframeMapper<T>(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<T, MobileSegment.Wireframe>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) where T : View, T : Checkable {
 
     override fun map(
         view: T,

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -21,11 +22,13 @@ import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SessionReplayRecorder
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
+import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
+import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import java.util.Locale
@@ -37,10 +40,10 @@ import java.util.concurrent.atomic.AtomicReference
  */
 internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
-    customEndpointUrl: String?,
+    private val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
     private val rateBasedSampler: Sampler,
-    private val sessionReplayRecorderProvider: (RecordWriter, Application) -> Recorder
+    private val sessionReplayRecorderProvider: (ResourcesWriter, RecordWriter, Application) -> Recorder
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
@@ -57,9 +60,10 @@ internal class SessionReplayFeature(
         customEndpointUrl,
         privacy,
         RateBasedSampler(sampleRate),
-        { recordWriter, application ->
+        { resourceWriter, recordWriter, application ->
             SessionReplayRecorder(
                 application,
+                resourcesWriter = resourceWriter,
                 rumContextProvider = SessionReplayRumContextProvider(sdkCore),
                 privacy = privacy,
                 recordWriter = recordWriter,
@@ -71,7 +75,7 @@ internal class SessionReplayFeature(
         }
     )
 
-    internal lateinit var appContext: Context
+    private lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
@@ -92,10 +96,12 @@ internal class SessionReplayFeature(
         }
 
         this.appContext = appContext
-
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
+
+        val resourcesFeature = registerResourceFeature(sdkCore)
+
         dataWriter = createDataWriter()
-        sessionReplayRecorder = sessionReplayRecorderProvider(dataWriter, appContext)
+        sessionReplayRecorder = sessionReplayRecorderProvider(resourcesFeature.dataWriter, dataWriter, appContext)
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
@@ -110,7 +116,7 @@ internal class SessionReplayFeature(
     }
 
     override val requestFactory: RequestFactory =
-        SessionReplayRequestFactory(
+        SegmentRequestFactory(
             customEndpointUrl,
             BatchesToSegmentsMapper(sdkCore.internalLogger)
         )
@@ -240,6 +246,20 @@ internal class SessionReplayFeature(
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.stopRecorders()
         }
+    }
+
+    // endregion
+
+    // region resourcesFeature
+
+    private fun registerResourceFeature(sdkCore: SdkCore): ResourcesFeature {
+        val resourcesFeature = ResourcesFeature(
+            sdkCore = sdkCore as FeatureSdkCore,
+            customEndpointUrl = customEndpointUrl
+        )
+        sdkCore.registerFeature(resourcesFeature)
+
+        return resourcesFeature
     }
 
     // endregion

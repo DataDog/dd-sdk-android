@@ -18,10 +18,6 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
@@ -43,7 +39,15 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
+import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 /**
@@ -75,17 +79,28 @@ enum class SessionReplayPrivacy {
      */
     MASK_USER_INPUT;
 
+    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
+    private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
+    private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
+    private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+
     @Suppress("LongMethod")
     internal fun mappers(): List<MapperTypeWrapper> {
-        val base64Serializer = buildBase64Serializer()
-        val imageWireframeHelper = ImageWireframeHelper(base64Serializer = base64Serializer)
-        val uniqueIdentifierGenerator = UniqueIdentifierGenerator
-
-        val unsupportedViewMapper = UnsupportedViewMapper()
-        val imageViewMapper = ImageViewMapper(
-            imageWireframeHelper = imageWireframeHelper,
-            uniqueIdentifierGenerator = uniqueIdentifierGenerator
-        )
+        val unsupportedViewMapper =
+            UnsupportedViewMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
+        val imageViewMapper =
+            ImageViewMapper(
+                ImageViewUtils,
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
         val checkedTextViewMapper: CheckedTextViewMapper
@@ -97,40 +112,121 @@ enum class SessionReplayPrivacy {
         when (this) {
             ALLOW -> {
                 textMapper = TextViewMapper(
-                    imageWireframeHelper = imageWireframeHelper,
-                    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+                    AllowObfuscationRule(),
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
                 )
                 buttonMapper = ButtonMapper(textMapper)
-                checkedTextViewMapper = CheckedTextViewMapper(textMapper)
-                checkBoxMapper = CheckBoxMapper(textMapper)
-                radioButtonMapper = RadioButtonMapper(textMapper)
-                switchCompatMapper = SwitchCompatMapper(textMapper)
+                checkedTextViewMapper = CheckedTextViewMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                checkBoxMapper = CheckBoxMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                radioButtonMapper = RadioButtonMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                switchCompatMapper = SwitchCompatMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
                 seekBarMapper = getSeekBarMapper()
                 numberPickerMapper = getNumberPickerMapper()
             }
+
             MASK -> {
                 textMapper = MaskTextViewMapper(
-                    imageWireframeHelper = imageWireframeHelper,
-                    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
                 )
                 buttonMapper = ButtonMapper(textMapper)
-                checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
-                checkBoxMapper = MaskCheckBoxMapper(textMapper)
-                radioButtonMapper = MaskRadioButtonMapper(textMapper)
-                switchCompatMapper = MaskSwitchCompatMapper(textMapper)
+                checkedTextViewMapper = MaskCheckedTextViewMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                checkBoxMapper = MaskCheckBoxMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                radioButtonMapper = MaskRadioButtonMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                switchCompatMapper = MaskSwitchCompatMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
                 seekBarMapper = getMaskSeekBarMapper()
                 numberPickerMapper = getMaskNumberPickerMapper()
             }
+
             MASK_USER_INPUT -> {
                 textMapper = MaskInputTextViewMapper(
-                    imageWireframeHelper = imageWireframeHelper,
-                    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
                 )
                 buttonMapper = ButtonMapper(textMapper)
-                checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
-                checkBoxMapper = MaskCheckBoxMapper(textMapper)
-                radioButtonMapper = MaskRadioButtonMapper(textMapper)
-                switchCompatMapper = MaskSwitchCompatMapper(textMapper)
+                checkedTextViewMapper = MaskCheckedTextViewMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                checkBoxMapper = MaskCheckBoxMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                radioButtonMapper = MaskRadioButtonMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+                switchCompatMapper = MaskSwitchCompatMapper(
+                    textMapper,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
                 seekBarMapper = getMaskSeekBarMapper()
                 numberPickerMapper = getMaskNumberPickerMapper()
             }
@@ -166,20 +262,14 @@ enum class SessionReplayPrivacy {
         return mappersList
     }
 
-    private fun buildBase64Serializer(): Base64Serializer {
-        val bitmapPool = BitmapPool()
-        val base64LRUCache = Base64LRUCache()
-
-        val builder = Base64Serializer.Builder(
-            bitmapPool = bitmapPool,
-            base64LRUCache = base64LRUCache
-        )
-        return builder.build()
-    }
-
     private fun getMaskSeekBarMapper(): MaskSeekBarWireframeMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            MaskSeekBarWireframeMapper()
+            MaskSeekBarWireframeMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
         } else {
             null
         }
@@ -187,7 +277,12 @@ enum class SessionReplayPrivacy {
 
     private fun getSeekBarMapper(): SeekBarWireframeMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            SeekBarWireframeMapper()
+            SeekBarWireframeMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
         } else {
             null
         }
@@ -195,7 +290,12 @@ enum class SessionReplayPrivacy {
 
     private fun getNumberPickerMapper(): BasePickerMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            NumberPickerMapper()
+            NumberPickerMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
         } else {
             null
         }
@@ -203,7 +303,12 @@ enum class SessionReplayPrivacy {
 
     private fun getMaskNumberPickerMapper(): BasePickerMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MaskNumberPickerMapper()
+            MaskNumberPickerMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
         } else {
             null
         }
