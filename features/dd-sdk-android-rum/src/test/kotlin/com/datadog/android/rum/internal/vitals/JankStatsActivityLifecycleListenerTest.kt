@@ -352,7 +352,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         @BoolForgery isJank: Boolean
     ) {
         // Given
-        val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
+        val expectedFrameRate = (ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()).coerceAtMost(MAX_FPS)
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
 
         // When
