@@ -365,9 +365,9 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addFeatureFlagBatchEvaluation(featureFlags: Map<String, Any>) {
+    override fun addFeatureFlagEvaluations(featureFlags: Map<String, Any>) {
         handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(featureFlags)
+            RumRawEvent.AddFeatureFlagEvaluations(featureFlags)
         )
     }
 

@@ -105,7 +105,7 @@ interface com.datadog.android.rum.RumMonitor
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
   fun addFeatureFlagEvaluation(String, Any)
-  fun addFeatureFlagBatchEvaluation(Map<String, Any>)
+  fun addFeatureFlagEvaluations(Map<String, Any>)
   fun addAttribute(String, Any?)
   fun removeAttribute(String)
   fun getAttributes(): Map<String, Any?>

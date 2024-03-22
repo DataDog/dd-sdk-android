@@ -182,7 +182,7 @@ internal open class RumViewScope(
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
 
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
-            is RumRawEvent.AddFeatureFlagBatchEvaluation -> onAddFeatureFlagBatchEvaluation(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
@@ -1122,8 +1122,8 @@ internal open class RumViewScope(
         }
     }
 
-    private fun onAddFeatureFlagBatchEvaluation(
-        event: RumRawEvent.AddFeatureFlagBatchEvaluation,
+    private fun onAddFeatureFlagEvaluations(
+        event: RumRawEvent.AddFeatureFlagEvaluations,
         writer: DataWriter<Any>
     ) {
         if (stopped) return

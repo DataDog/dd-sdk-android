@@ -1372,13 +1372,13 @@ internal class DatadogRumMonitorTest {
         @StringForgery value: String
     ) {
         val batch = mapOf(name to value)
-        testedMonitor.addFeatureFlagBatchEvaluation(batch)
+        testedMonitor.addFeatureFlagEvaluations(batch)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
-            val event = firstValue as RumRawEvent.AddFeatureFlagBatchEvaluation
+            val event = firstValue as RumRawEvent.AddFeatureFlagEvaluations
             assertThat(event.featureFlags).isSameAs(batch)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)

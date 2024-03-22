@@ -7635,7 +7635,7 @@ internal class RumViewScopeTest {
     ) {
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(
+            RumRawEvent.AddFeatureFlagEvaluations(
                 mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
             ),
             mockWriter
@@ -7661,13 +7661,13 @@ internal class RumViewScopeTest {
     ) {
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(
+            RumRawEvent.AddFeatureFlagEvaluations(
                 mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
             ),
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(
+            RumRawEvent.AddFeatureFlagEvaluations(
                 mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
             ),
             mockWriter
@@ -7692,7 +7692,7 @@ internal class RumViewScopeTest {
 
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(mapOf(flagName to flagValue)),
+            RumRawEvent.AddFeatureFlagEvaluations(mapOf(flagName to flagValue)),
             mockWriter
         )
 
@@ -7715,7 +7715,7 @@ internal class RumViewScopeTest {
     ) {
         // GIVEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(
+            RumRawEvent.AddFeatureFlagEvaluations(
                 mapOf(flagName1 to oldFlagValue1, flagName2 to oldFlagValue2, flagName3 to oldFlagValue3)
             ),
             mockWriter
@@ -7723,7 +7723,7 @@ internal class RumViewScopeTest {
 
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(
+            RumRawEvent.AddFeatureFlagEvaluations(
                 mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
             ),
             mockWriter
@@ -7750,7 +7750,7 @@ internal class RumViewScopeTest {
     ) {
         // GIVEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagBatchEvaluation(
+            RumRawEvent.AddFeatureFlagEvaluations(
                 mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
             ),
             mockWriter
