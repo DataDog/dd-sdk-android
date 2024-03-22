@@ -60,7 +60,7 @@ internal open class RumViewScope(
     internal val url = key.url.replace('.', '/')
 
     internal val eventAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
-    private var globalAttributes: MutableMap<String, Any?> = resolveGlobalAttributes(sdkCore)
+    private var globalAttributes: Map<String, Any?> = resolveGlobalAttributes(sdkCore)
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -862,8 +862,8 @@ internal open class RumViewScope(
         }
     }
 
-    private fun resolveGlobalAttributes(sdkCore: InternalSdkCore): MutableMap<String, Any?> {
-        return GlobalRumMonitor.get(sdkCore).getAttributes().toMutableMap()
+    private fun resolveGlobalAttributes(sdkCore: InternalSdkCore): Map<String, Any?> {
+        return GlobalRumMonitor.get(sdkCore).getAttributes().toMap()
     }
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
