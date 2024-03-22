@@ -1367,7 +1367,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addFeatureFlagBatchEvaluation`(
+    fun `M delegate event to rootScope W addFeatureFlagEvaluations`(
         @StringForgery name: String,
         @StringForgery value: String
     ) {

@@ -7625,7 +7625,7 @@ internal class RumViewScopeTest {
     // region Feature Flags Batch
 
     @Test
-    fun `M send event W handleEvent(AddFeatureFlagBatchEvaluation) on active view`(
+    fun `M send event W handleEvent(AddFeatureFlagEvaluations) on active view`(
         @StringForgery flagName1: String,
         @StringForgery flagName2: String,
         @StringForgery flagName3: String,
@@ -7651,7 +7651,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event only once W handleEvent(AddFeatureFlagBatchEvaluation) on active view {same values}`(
+    fun `M send event only once W handleEvent(AddFeatureFlagEvaluations) on active view {same values}`(
         @StringForgery flagName1: String,
         @StringForgery flagName2: String,
         @StringForgery flagName3: String,
@@ -7683,7 +7683,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M not add feature flag W handleEvent(AddFeatureFlagBatchEvaluation) on stopped view`(
+    fun `M not add feature flag W handleEvent(AddFeatureFlagEvaluations) on stopped view`(
         @StringForgery flagName: String,
         @StringForgery flagValue: String
     ) {
@@ -7702,7 +7702,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M modify flag W handleEvent(AddFeatureFlagBatchEvaluation) on active view { existing feature flag }`(
+    fun `M modify flag W handleEvent(AddFeatureFlagEvaluations) on active view { existing feature flag }`(
         @StringForgery flagName1: String,
         @StringForgery flagName2: String,
         @StringForgery flagName3: String,
