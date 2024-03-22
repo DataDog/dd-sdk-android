@@ -1349,6 +1349,42 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W addFeatureFlagEvaluation`(
+        @StringForgery name: String,
+        @StringForgery value: String
+    ) {
+        testedMonitor.addFeatureFlagEvaluation(name, value)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddFeatureFlagEvaluation
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.value).isEqualTo(value)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W addFeatureFlagEvaluations`(
+        @StringForgery name: String,
+        @StringForgery value: String
+    ) {
+        val batch = mapOf(name to value)
+        testedMonitor.addFeatureFlagEvaluations(batch)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddFeatureFlagEvaluations
+            assertThat(event.featureFlags).isSameAs(batch)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `sends keep alive event to rootScope regularly`() {
         argumentCaptor<Runnable> {
             inOrder(mockScope, mockWriter, mockHandler) {
