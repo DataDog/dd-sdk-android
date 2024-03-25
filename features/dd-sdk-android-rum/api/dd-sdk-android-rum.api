@@ -5170,9 +5170,11 @@ public class com/datadog/android/rum/tracking/AcceptAllSupportFragments : com/da
 }
 
 public abstract class com/datadog/android/rum/tracking/ActivityLifecycleTrackingStrategy : android/app/Application$ActivityLifecycleCallbacks, com/datadog/android/rum/tracking/TrackingStrategy {
+	protected field sdkCore Lcom/datadog/android/api/feature/FeatureSdkCore;
 	public fun <init> ()V
 	protected final fun convertToRumAttributes (Landroid/content/Intent;)Ljava/util/Map;
 	protected final fun convertToRumAttributes (Landroid/os/Bundle;)Ljava/util/Map;
+	protected final fun getSdkCore ()Lcom/datadog/android/api/feature/FeatureSdkCore;
 	public fun onActivityCreated (Landroid/app/Activity;Landroid/os/Bundle;)V
 	public fun onActivityDestroyed (Landroid/app/Activity;)V
 	public fun onActivityPaused (Landroid/app/Activity;)V
@@ -5181,6 +5183,7 @@ public abstract class com/datadog/android/rum/tracking/ActivityLifecycleTracking
 	public fun onActivityStarted (Landroid/app/Activity;)V
 	public fun onActivityStopped (Landroid/app/Activity;)V
 	public fun register (Lcom/datadog/android/api/SdkCore;Landroid/content/Context;)V
+	protected final fun setSdkCore (Lcom/datadog/android/api/feature/FeatureSdkCore;)V
 	public fun unregister (Landroid/content/Context;)V
 	protected final fun withSdkCore (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }

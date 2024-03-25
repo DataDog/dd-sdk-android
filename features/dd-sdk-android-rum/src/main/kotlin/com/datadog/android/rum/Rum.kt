@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
@@ -119,7 +120,9 @@ object Rum {
         frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
-        sessionListener = rumFeature.sessionListener
+        sessionListener = rumFeature.sessionListener,
+        appStartTimeProvider = DefaultAppStartTimeProvider(),
+        executorService = sdkCore.createExecutorService()
     )
 
     // endregion

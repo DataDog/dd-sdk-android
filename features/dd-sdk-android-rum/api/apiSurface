@@ -202,6 +202,7 @@ open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : Componen
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
+  protected var sdkCore: com.datadog.android.api.feature.FeatureSdkCore
   override fun register(com.datadog.android.api.SdkCore, android.content.Context)
   override fun unregister(android.content.Context?)
   override fun onActivityPaused(android.app.Activity)

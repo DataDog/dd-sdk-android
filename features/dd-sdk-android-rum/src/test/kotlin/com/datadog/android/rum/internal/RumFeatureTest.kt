@@ -33,6 +33,7 @@ import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
+import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
@@ -75,10 +76,13 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -87,7 +91,9 @@ import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -119,9 +125,13 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockLateCrashReporter: LateCrashReporter
 
+    @Mock
+    lateinit var mockScheduledExecutorService: ScheduledExecutorService
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.createScheduledExecutorService()) doReturn mockScheduledExecutorService
 
         testedFeature = RumFeature(
             mockSdkCore,
@@ -617,8 +627,16 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        val scheduledRunnables = testedFeature.vitalExecutorService.shutdownNow()
-        assertThat(scheduledRunnables).isNotEmpty
+        argumentCaptor<Runnable> {
+            verify(mockScheduledExecutorService, times(2)).schedule(
+                capture(),
+                eq(fakeFrequency.periodInMs),
+                eq(TimeUnit.MILLISECONDS)
+            )
+            allValues.forEach {
+                assertThat(it).isInstanceOf(VitalReaderRunnable::class.java)
+            }
+        }
     }
 
     @Test

@@ -28,7 +28,6 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -51,7 +50,6 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -71,8 +69,8 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    internal val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    private val appStartTimeProvider: AppStartTimeProvider,
+    internal val executorService: ExecutorService
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(

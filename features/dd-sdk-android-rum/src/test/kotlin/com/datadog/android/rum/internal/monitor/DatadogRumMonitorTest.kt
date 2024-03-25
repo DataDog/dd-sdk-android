@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -138,6 +139,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -158,9 +162,18 @@ internal class DatadogRumMonitorTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @Forgery
+    lateinit var fakeTimeInfo: TimeInfo
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            StubFuture()
+        }
+
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.time) doReturn fakeTimeInfo
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeAppStartTimeNs
 
         fakeAttributes = forge.exhaustiveAttributes()
@@ -178,7 +191,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider
+            mockAppStartTimeProvider,
+            mockExecutorService
         )
         testedMonitor.rootScope = mockScope
     }
@@ -198,7 +212,9 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockAppStartTimeProvider,
+            mockExecutorService
         )
 
         val rootScope = testedMonitor.rootScope
@@ -210,21 +226,6 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M send null for current session W getCurrentSessionId { no session started }`() {
         // Given
-        testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener
-        )
         val completableFuture = CompletableFuture<String>()
 
         // When
@@ -273,7 +274,9 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockAppStartTimeProvider,
+            mockExecutorService
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.startView(key, name, fakeAttributes)
@@ -311,7 +314,9 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockAppStartTimeProvider,
+            mockExecutorService
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -349,6 +354,11 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            StubFuture()
+        }
+
         testedMonitor.addAction(type, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
@@ -1890,41 +1900,6 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockExecutorService = mock<ExecutorService>().apply {
-            // this is the mock for the inner ExecutorService, Futures returned by this one
-            // are never used in the code
-            whenever(submit(any())) doAnswer {
-                it.getArgument<Runnable>(0).run()
-                object : Future<Any> {
-                    override fun cancel(mayInterruptIfRunning: Boolean) =
-                        error("Not supposed to be called")
-
-                    override fun isCancelled(): Boolean = error("Not supposed to be called")
-                    override fun isDone(): Boolean = error("Not supposed to be called")
-                    override fun get(): Any = error("Not supposed to be called")
-                    override fun get(timeout: Long, unit: TimeUnit?): Any =
-                        error("Not supposed to be called")
-                }
-            }
-        }
-
-        testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            executorService = mockExecutorService
-        )
-
         var isMethodOccupied = false
         val mockRootScope = mock<RumScope>().apply {
             whenever(handleEvent(any(), any())) doAnswer {
@@ -2113,6 +2088,17 @@ internal class DatadogRumMonitorTest {
             InternalLogger.Target.USER,
             DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
         )
+    }
+
+    class StubFuture : Future<Any> {
+        override fun cancel(mayInterruptIfRunning: Boolean) =
+            error("Not supposed to be called")
+
+        override fun isCancelled(): Boolean = error("Not supposed to be called")
+        override fun isDone(): Boolean = error("Not supposed to be called")
+        override fun get(): Any = error("Not supposed to be called")
+        override fun get(timeout: Long, unit: TimeUnit?): Any =
+            error("Not supposed to be called")
     }
 
     companion object {
