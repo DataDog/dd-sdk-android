@@ -158,6 +158,11 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+enum com.datadog.android.core.configuration.BackPressureMitigation
+  - DROP_OLDEST
+  - IGNORE_NEWEST
+data class com.datadog.android.core.configuration.BackPressureStrategy
+  constructor(Int, () -> Unit, (Any) -> Unit, BackPressureMitigation)
 enum com.datadog.android.core.configuration.BatchProcessingLevel
   constructor(Int)
   - LOW
@@ -184,6 +189,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setEncryption(com.datadog.android.security.Encryption): Builder
     fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
     fun setCrashReportsEnabled(Boolean): Builder
+    fun setBackpressureStrategy(BackPressureStrategy): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -279,6 +285,10 @@ class com.datadog.android.core.sampling.RateBasedSampler : Sampler
 interface com.datadog.android.core.sampling.Sampler
   fun sample(): Boolean
   fun getSampleRate(): Float?
+interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
+  fun drainTo(MutableCollection<Runnable>)
+  interface Factory
+    fun create(com.datadog.android.api.InternalLogger, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
