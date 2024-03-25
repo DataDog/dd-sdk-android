@@ -326,6 +326,8 @@ public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureSdkCore : com/datadog/android/api/SdkCore {
+	public abstract fun createExecutorService ()Ljava/util/concurrent/ExecutorService;
+	public abstract fun createScheduledExecutorService ()Ljava/util/concurrent/ScheduledExecutorService;
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
 	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
@@ -663,10 +665,6 @@ public final class com/datadog/android/core/internal/system/BuildSdkVersionProvi
 	public final fun getDEFAULT ()Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider;
 }
 
-public final class com/datadog/android/core/internal/thread/LoggingScheduledThreadPoolExecutor : java/util/concurrent/ScheduledThreadPoolExecutor {
-	public fun <init> (ILcom/datadog/android/api/InternalLogger;)V
-}
-
 public final class com/datadog/android/core/internal/utils/ByteArrayExtKt {
 	public static final fun join (Ljava/util/Collection;[B[B[BLcom/datadog/android/api/InternalLogger;)[B
 	public static synthetic fun join$default (Ljava/util/Collection;[B[B[BLcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)[B
@@ -766,6 +764,10 @@ public abstract interface class com/datadog/android/core/thread/FlushableExecuto
 
 public abstract interface class com/datadog/android/core/thread/FlushableExecutorService$Factory {
 	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/thread/FlushableExecutorService;
+}
+
+public abstract interface class com/datadog/android/core/thread/ScheduledExecutorServiceFactory {
+	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Ljava/util/concurrent/ScheduledExecutorService;
 }
 
 public abstract interface class com/datadog/android/event/EventMapper {

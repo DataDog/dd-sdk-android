@@ -8,6 +8,8 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 /**
  * Extension of [SdkCore] containing the necessary methods for the features development.
@@ -71,4 +73,14 @@ interface FeatureSdkCore : SdkCore {
      * @param featureName Feature name.
      */
     fun removeEventReceiver(featureName: String)
+
+    /**
+     * Returns a new [ExecutorService], set up with backpressure and internal monitoring.
+     */
+    fun createExecutorService(): ExecutorService
+
+    /**
+     * Returns a new [ScheduledExecutorService], set up with internal monitoring.
+     */
+    fun createScheduledExecutorService(): ScheduledExecutorService
 }

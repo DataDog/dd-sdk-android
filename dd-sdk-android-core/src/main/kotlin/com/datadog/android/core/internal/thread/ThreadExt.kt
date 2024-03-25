@@ -47,7 +47,7 @@ internal fun sleepSafe(durationMs: Long, internalLogger: InternalLogger): Boolea
 
 /**
  * Logs any exception raised during the execution. Tested indirectly using
- * the tests of [LoggingThreadPoolExecutor] and [LoggingScheduledThreadPoolExecutor].
+ * the tests of [BackPressureExecutorService] and [LoggingScheduledThreadPoolExecutor].
  */
 internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: InternalLogger) {
     var throwable = t

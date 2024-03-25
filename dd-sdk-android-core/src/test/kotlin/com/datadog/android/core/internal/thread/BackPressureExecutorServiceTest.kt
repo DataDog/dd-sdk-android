@@ -6,30 +6,15 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
-import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
-import org.mockito.Mockito.mock
 
 internal class BackPressureExecutorServiceTest :
     AbstractLoggingExecutorServiceTest<BackPressureExecutorService>() {
 
-    @IntForgery(128, 1024)
-    var fakeBackPressureCapacity: Int = 0
-
-    @Forgery
-    lateinit var fakeBackPressureMitigation: BackPressureMitigation
-
-    override fun createTestedExecutorService(): BackPressureExecutorService {
+    override fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): BackPressureExecutorService {
         return BackPressureExecutorService(
             mockInternalLogger,
-            BackPressureStrategy(
-                fakeBackPressureCapacity,
-                mock(),
-                mock(),
-                fakeBackPressureMitigation
-            )
+            backPressureStrategy
         )
     }
 }
