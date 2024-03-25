@@ -65,6 +65,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -92,6 +93,8 @@ import org.mockito.quality.Strictness
 import java.util.Arrays
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
@@ -8464,6 +8467,79 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    @Test
+    fun `𝕄 produce event safe for serialization 𝕎 handleEvent()`(
+        forge: Forge
+    ) {
+        // Given
+        val writeWorker = Executors.newCachedThreadPool()
+        val tasks = mutableListOf<Future<*>>()
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+            tasks += writeWorker.submit {
+                callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            }
+        }
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doAnswer {
+            when (val event = it.getArgument<Any>(1)) {
+                is ViewEvent -> assertDoesNotThrow { event.toJson() }
+                is ErrorEvent -> assertDoesNotThrow { event.toJson() }
+                is ActionEvent -> assertDoesNotThrow { event.toJson() }
+                is LongTaskEvent -> assertDoesNotThrow { event.toJson() }
+                // error is on purpose here, because under the hood all the Exceptions are caught
+                else -> throw Error("unsupported event type ${event::class}")
+            }
+            true
+        }
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn forge.exhaustiveAttributes()
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+
+        // When
+        repeat(1000) {
+            testedScope.handleEvent(forge.applicationStartedEvent(), mockWriter)
+            testedScope.handleEvent(
+                forge.anyRumEvent(
+                    excluding = listOf(
+                        RumRawEvent.StartView::class.java,
+                        RumRawEvent.StopView::class.java,
+                        RumRawEvent.StartAction::class.java,
+                        RumRawEvent.StopAction::class.java,
+                        RumRawEvent.StartResource::class.java,
+                        RumRawEvent.StopResource::class.java,
+                        RumRawEvent.StopResourceWithError::class.java,
+                        RumRawEvent.StopResourceWithStackTrace::class.java
+                    )
+                ),
+                mockWriter
+            )
+        }
+        testedScope.handleEvent(forge.stopViewEvent(), mockWriter)
+
+        writeWorker.shutdown()
+        writeWorker.awaitTermination(5, TimeUnit.SECONDS)
+
+        // Then
+        tasks.forEach {
+            // if there is any assertion error, it will be re-thrown
+            it.get()
+        }
+    }
 
     // region Internal
 
