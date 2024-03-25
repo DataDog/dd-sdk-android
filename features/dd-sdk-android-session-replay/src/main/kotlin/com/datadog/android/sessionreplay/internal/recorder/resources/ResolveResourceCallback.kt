@@ -6,16 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
-import android.graphics.Bitmap
-import java.io.ByteArrayOutputStream
-
-/**
- * Interface for handling image compression formats.
- */
-internal interface ImageCompression {
-
-    /**
-     * Compress the bitmap to a [ByteArrayOutputStream].
-     */
-    fun compressBitmap(bitmap: Bitmap): ByteArray
+internal interface ResolveResourceCallback {
+    fun onResolved(resourceId: String, resourceData: ByteArray)
+    fun onFailed()
 }

@@ -17,12 +17,9 @@ import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.resources.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
-import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -36,7 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -56,8 +52,8 @@ import java.util.concurrent.Future
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ResourcesSerializerTest {
-    private lateinit var testedResourcesSerializer: ResourcesSerializer
+internal class ResourceResolverTest {
+    private lateinit var testedResourceResolver: ResourceResolver
 
     @Mock
     lateinit var mockDrawableUtils: DrawableUtils
@@ -75,7 +71,7 @@ internal class ResourcesSerializerTest {
     lateinit var mockMD5HashGenerator: MD5HashGenerator
 
     @Mock
-    lateinit var mockSerializerCallback: ResourcesSerializerCallback
+    lateinit var mockSerializerCallback: ResourceResolverCallback
 
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
@@ -99,7 +95,7 @@ internal class ResourcesSerializerTest {
     lateinit var mockStateListDrawable: StateListDrawable
 
     @Mock
-    lateinit var mockBitmapPool: BitmapPool
+    lateinit var mockBitmapCachesManager: BitmapCachesManager
 
     @Mock
     lateinit var mockBitmapDrawable: BitmapDrawable
@@ -107,17 +103,15 @@ internal class ResourcesSerializerTest {
     @Mock
     lateinit var mockResources: Resources
 
-    @IntForgery(min = 1)
-    var fakeBitmapWidth: Int = 0
+    private var fakeBitmapWidth: Int = 1
 
-    @IntForgery(min = 1)
-    var fakeBitmapHeight: Int = 0
+    private var fakeBitmapHeight: Int = 1
 
     @Forgery
     lateinit var fakeApplicationid: UUID
 
-    @Forgery
-    lateinit var fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe
+    @StringForgery
+    lateinit var fakeResourceId: String
 
     private lateinit var fakeImageCompressionByteArray: ByteArray
 
@@ -125,7 +119,10 @@ internal class ResourcesSerializerTest {
     fun setup(forge: Forge) {
         fakeImageCompressionByteArray = forge.aString().toByteArray()
 
-        fakeImageWireframe.isEmpty = true
+        fakeBitmapWidth = forge.anInt(min = 1)
+        fakeBitmapHeight = forge.anInt(min = 1)
+
+        whenever(mockMD5HashGenerator.generate(any())).thenReturn(fakeResourceId)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(fakeImageCompressionByteArray)
@@ -142,10 +139,15 @@ internal class ResourcesSerializerTest {
                 bitmapCreationCallback = any()
             )
         ).then {
-            (it.arguments[7] as ResourcesSerializer.BitmapCreationCallback).onReady(mockBitmap)
+            (it.arguments[7] as ResourceResolver.BitmapCreationCallback).onReady(mockBitmap)
         }
 
-        whenever(mockExecutorService.execute(any())).then {
+        // executeSafe is an extension so we have to mock the internal execute function
+        whenever(
+            mockExecutorService.execute(
+                any()
+            )
+        ).then {
             (it.arguments[0] as Runnable).run()
             mock<Future<Boolean>>()
         }
@@ -155,203 +157,62 @@ internal class ResourcesSerializerTest {
         whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
         whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
 
-        testedResourcesSerializer = createResourcesSerializer()
+        testedResourceResolver = createResourceResolver()
     }
 
     @Test
-    fun `M get data from cache and update wireframe W handleBitmap() { cache hit with resourceId }`(
-        @StringForgery fakeResourceId: String
-    ) {
+    fun `M get data from cache W resolveResourceId() { cache hit with resourceId }`() {
         // Given
-        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
-        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(fakeResourceIdByteArray)
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockDrawable)).thenReturn(fakeResourceId)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(fakeImageCompressionByteArray)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
         verifyNoInteractions(mockDrawableUtils)
-        assertThat(fakeImageWireframe.isEmpty).isFalse()
-        assertThat(fakeImageWireframe.base64).isEqualTo(null)
-        assertThat(fakeImageWireframe.resourceId).isEqualTo(fakeResourceId)
-        verify(mockSerializerCallback).onReady()
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
     }
 
     @Test
-    fun `M register cache only once for callbacks W handleBitmap() { multiple calls }`() {
-        // When
-        repeat(5) {
-            testedResourcesSerializer.handleBitmap(
-                resources = mockResources,
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
-                drawableWidth = mockDrawable.intrinsicWidth,
-                drawableHeight = mockDrawable.intrinsicHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSerializerCallback
-            )
-        }
-
-        // Then
-        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockResourcesLRUCache)
-    }
-
-    @Test
-    fun `M retry image creation only once W handleBitmap() { image was recycled while working on it }`() {
+    fun `M retry image creation only once W resolveResourceId() { image was recycled while working on it }`() {
         // Given
+        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
+            .thenReturn(mockBitmap)
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+
         whenever(mockBitmap.isRecycled)
-            .thenReturn(true)
             .thenReturn(false)
+            .thenReturn(true)
 
         val emptyByteArray = ByteArray(0)
+
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockBitmapDrawable))
+            .thenReturn(null)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(emptyByteArray)
             .thenReturn(fakeImageCompressionByteArray)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
+            drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        verify(mockDrawableUtils, times(2)).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
-            drawable = any(),
-            drawableWidth = any(),
-            drawableHeight = any(),
-            displayMetrics = any(),
-            requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull(),
-            bitmapCreationCallback = any()
-        )
-    }
-
-    @Test
-    fun `M send onReady W handleBitmap { failed to get image data }`() {
-        // Given
-        whenever(mockBitmap.isRecycled)
-            .thenReturn(true)
-            .thenReturn(false)
-
-        val emptyByteArray = ByteArray(0)
-
-        whenever(mockWebPImageCompression.compressBitmap(any()))
-            .thenReturn(emptyByteArray)
-
-        // When
-        testedResourcesSerializer.handleBitmap(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        verify(mockSerializerCallback).onReady()
-    }
-
-    @Test
-    fun `M log error W handleBitmap() { cache does not subclass ComponentCallbacks2 }`() {
-        // Given
-        val fakeBase64CacheInstance = FakeNonComponentsCallbackCache()
-        testedResourcesSerializer = ResourcesSerializer.Builder(
-            logger = mockLogger,
-            threadPoolExecutor = mockExecutorService,
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = fakeBase64CacheInstance,
-            drawableUtils = mockDrawableUtils,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString(),
-            webPImageCompression = mockWebPImageCompression
-        ).build()
-
-        // When
-        testedResourcesSerializer.handleBitmap(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
-        )
-
-        // Then
-        val captor = argumentCaptor<() -> String>()
-        verify(mockLogger).log(
-            level = any(),
-            target = any(),
-            captor.capture(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull()
-        )
-        assertThat(captor.firstValue.invoke()).isEqualTo(
-            DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
-        )
-    }
-
-    @Test
-    fun `M register BitmapPool only once for callbacks W handleBitmap() { multiple calls }`() {
-        // When
-        repeat(5) {
-            testedResourcesSerializer.handleBitmap(
-                resources = mockResources,
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
-                drawableWidth = mockDrawable.intrinsicWidth,
-                drawableHeight = mockDrawable.intrinsicHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSerializerCallback
-            )
-        }
-
-        // Then
-        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockBitmapPool)
-    }
-
-    @Test
-    fun `M calculate resourceId W handleBitmap() { cache miss }`() {
-        // Given
-        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(null)
-
-        // When
-        testedResourcesSerializer.handleBitmap(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -368,42 +229,137 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M use the same ThreadPoolExecutor W build()`() {
+    fun `M send onReady W resolveResourceId() { failed to get image data }`() {
+        // Given
+        whenever(mockBitmap.isRecycled)
+            .thenReturn(true)
+            .thenReturn(false)
+
+        val emptyByteArray = ByteArray(0)
+
+        whenever(mockWebPImageCompression.compressBitmap(any()))
+            .thenReturn(emptyByteArray)
+
         // When
-        val instance1 = ResourcesSerializer.Builder(
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = mockResourcesLRUCache,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString()
-        ).build()
-        val instance2 = ResourcesSerializer.Builder(
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = mockResourcesLRUCache,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString()
-        ).build()
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
+        )
 
         // Then
-        assertThat(instance1.getThreadPoolExecutor()).isEqualTo(
-            instance2.getThreadPoolExecutor()
+        verify(mockSerializerCallback).onFailure()
+    }
+
+    @Test
+    fun `M calculate resourceId W resolveResourceId() { cache miss }`() {
+        // Given
+        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(null)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
         )
     }
 
     @Test
-    fun `M not try to cache resourceId W handleBitmap() { and did not get resourceId }`() {
+    fun `M return failure W resolveResourceId { createBitmapOfApproxSizeFromDrawable failed }`() {
+        // Given
+        whenever(mockResourcesLRUCache.get(mockDrawable)).thenReturn(null)
+        whenever(
+            mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+                resources = any(),
+                drawable = any(),
+                drawableWidth = any(),
+                drawableHeight = any(),
+                displayMetrics = any(),
+                requestedSizeInBytes = anyOrNull(),
+                config = anyOrNull(),
+                bitmapCreationCallback = any()
+            )
+        ).then {
+            (it.arguments[7] as ResourceResolver.BitmapCreationCallback).onFailure()
+        }
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+    }
+
+    @Test
+    fun `M use the same ThreadPoolExecutor W build()`() {
+        // When
+        val instance1 = ResourceResolver(
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            applicationId = fakeApplicationid.toString(),
+            webPImageCompression = mockWebPImageCompression,
+            drawableUtils = mockDrawableUtils,
+            logger = mockLogger,
+            md5HashGenerator = mockMD5HashGenerator,
+            bitmapCachesManager = mockBitmapCachesManager
+        )
+        val instance2 = ResourceResolver(
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            applicationId = fakeApplicationid.toString(),
+            webPImageCompression = mockWebPImageCompression,
+            drawableUtils = mockDrawableUtils,
+            logger = mockLogger,
+            md5HashGenerator = mockMD5HashGenerator,
+            bitmapCachesManager = mockBitmapCachesManager
+        )
+
+        // Then
+        assertThat(instance1.threadPoolExecutor).isEqualTo(
+            instance2.threadPoolExecutor
+        )
+    }
+
+    @Test
+    fun `M not try to cache resourceId W resolveResourceId() { and did not get resourceId }`() {
         // Given
         whenever(mockMD5HashGenerator.generate(any())).thenReturn(null)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockStateListDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -411,20 +367,19 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M not use bitmap from bitmapDrawable W handleBitmap() { no bitmap }`() {
+    fun `M not use bitmap from bitmapDrawable W resolveResourceId() { no bitmap }`() {
         // Given
         whenever(mockBitmapDrawable.bitmap).thenReturn(null)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -441,20 +396,19 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M not use bitmap from bitmapDrawable W handleBitmap() { bitmap was recycled }`() {
+    fun `M not use bitmap from bitmapDrawable W resolveResourceId() { bitmap was recycled }`() {
         // Given
         whenever(mockBitmap.isRecycled).thenReturn(true)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -471,17 +425,16 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M use scaled bitmap from bitmapDrawable W handleBitmap() { has bitmap }`() {
+    fun `M use scaled bitmap from bitmapDrawable W resolveResourceId() { has bitmap }`() {
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -492,20 +445,19 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M draw bitmap W handleBitmap() { bitmapDrawable where bitmap has no width }`() {
+    fun `M draw bitmap W resolveResourceId() { bitmapDrawable where bitmap has no width }`() {
         // Given
         whenever(mockBitmap.width).thenReturn(0)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -526,20 +478,19 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M draw bitmap W handleBitmap() { bitmapDrawable where bitmap has no height }`() {
+    fun `M draw bitmap W resolveResourceId() { bitmapDrawable where bitmap has no height }`() {
         // Given
         whenever(mockBitmap.height).thenReturn(0)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
@@ -560,124 +511,168 @@ internal class ResourcesSerializerTest {
     }
 
     @Test
-    fun `M not cache bitmap W handleBitmap() { BitmapDrawable with bitmap not resized }`() {
+    fun `M not cache bitmap W resolveResourceId() { BitmapDrawable with bitmap not resized }`() {
         // Given
         whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
             .thenReturn(mockBitmap)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verify(mockBitmapPool, never()).put(any())
+        verify(mockBitmapCachesManager, never()).putInBitmapPool(any())
     }
 
     @Test
-    fun `M cache bitmap W handleBitmap() { BitmapDrawable with bitmap was resized }`(
-        @Mock mockResizedBitmap: Bitmap
+    fun `M cache bitmap W resolveResourceId() { BitmapDrawable width was resized }`(
+        @Mock mockResizedBitmap: Bitmap,
+        @StringForgery fakeString: String
     ) {
         // Given
-        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
-            .thenReturn(mockResizedBitmap)
+        val fakeByteArray = fakeString.toByteArray()
+        assertThat(fakeByteArray).isNotEmpty()
+
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockResizedBitmap.width).thenReturn(fakeBitmapWidth - 1)
+        whenever(mockResizedBitmap.height).thenReturn(fakeBitmapHeight)
+
+        whenever(mockWebPImageCompression.compressBitmap(mockResizedBitmap)).thenReturn(fakeByteArray)
+        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verify(mockBitmapPool).put(any())
+        verify(mockBitmapCachesManager).putInBitmapPool(any())
     }
 
     @Test
-    fun `M cache bitmap W handleBitmap() { from BitmapDrawable with null bitmap }`() {
+    fun `M cache bitmap W resolveResourceId() { BitmapDrawable height was resized }`(
+        @Mock mockResizedBitmap: Bitmap,
+        @StringForgery fakeString: String
+    ) {
         // Given
+        val fakeByteArray = fakeString.toByteArray()
+        assertThat(fakeByteArray).isNotEmpty()
+
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockResizedBitmap.width).thenReturn(fakeBitmapWidth)
+        whenever(mockResizedBitmap.height).thenReturn(fakeBitmapHeight - 1)
+
+        whenever(mockWebPImageCompression.compressBitmap(mockResizedBitmap)).thenReturn(fakeByteArray)
+        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockBitmapCachesManager).putInBitmapPool(any())
+    }
+
+    @Test
+    fun `M cache bitmap W resolveResourceId() { from BitmapDrawable with null bitmap }`() {
+        // Given
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockBitmapDrawable))
+            .thenReturn(null)
         whenever(mockBitmapDrawable.bitmap).thenReturn(null)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verify(mockBitmapPool, times(1)).put(any())
+        verify(mockBitmapCachesManager, times(1)).putInBitmapPool(any())
     }
 
     @Test
-    fun `M cache bitmap W handleBitmap() { not a BitmapDrawable }`() {
+    fun `M cache bitmap W resolveResourceId() { not a BitmapDrawable }`() {
         // Given
         val mockLayerDrawable = mock<LayerDrawable>()
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockLayerDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verify(mockBitmapPool, times(1)).put(any())
+        verify(mockBitmapCachesManager, times(1)).putInBitmapPool(any())
     }
 
     @Test
-    fun `M return correct callback W handleBitmap() { multiple threads, first takes longer }`(
-        @Mock mockFirstCallback: ResourcesSerializerCallback,
-        @Mock mockSecondCallback: ResourcesSerializerCallback
+    fun `M return all callbacks W resolveResourceId() { multiple threads, first takes longer }`(
+        @Mock mockFirstCallback: ResourceResolverCallback,
+        @Mock mockSecondCallback: ResourceResolverCallback,
+        @Mock mockFirstDrawable: Drawable,
+        @Mock mockSecondDrawable: Drawable,
+        @StringForgery fakeFirstResourceId: String,
+        @StringForgery fakeSecondResourceId: String
     ) {
         // Given
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockFirstDrawable))
+            .thenReturn(fakeFirstResourceId)
+        whenever(mockBitmapCachesManager.getFromResourceCache(mockSecondDrawable))
+            .thenReturn(fakeSecondResourceId)
+
         val countDownLatch = CountDownLatch(2)
         val thread1 = Thread {
-            testedResourcesSerializer.handleBitmap(
+            testedResourceResolver.resolveResourceId(
                 resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
+                drawable = mockFirstDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockFirstCallback
+                resourceResolverCallback = mockFirstCallback
             )
             Thread.sleep(1500)
             countDownLatch.countDown()
         }
         val thread2 = Thread {
-            testedResourcesSerializer.handleBitmap(
+            testedResourceResolver.resolveResourceId(
                 resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
+                drawable = mockSecondDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
-                imageWireframe = fakeImageWireframe,
-                resourcesSerializerCallback = mockSecondCallback
+                resourceResolverCallback = mockSecondCallback
             )
             Thread.sleep(500)
             countDownLatch.countDown()
@@ -689,12 +684,12 @@ internal class ResourcesSerializerTest {
 
         // Then
         countDownLatch.await()
-        verify(mockFirstCallback).onReady()
-        verify(mockSecondCallback).onReady()
+        verify(mockFirstCallback).onSuccess(fakeFirstResourceId)
+        verify(mockSecondCallback).onSuccess(fakeSecondResourceId)
     }
 
     @Test
-    fun `M failover to bitmap creation W handleBitmap { bitmapDrawable returned empty bytearray }`(
+    fun `M failover to bitmap creation W resolveResourceId() { bitmapDrawable returned empty bytearray }`(
         @Mock mockCreatedBitmap: Bitmap
     ) {
         // Given
@@ -718,46 +713,31 @@ internal class ResourcesSerializerTest {
             .thenReturn(mockCreatedBitmap)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
-
-        val drawableCaptor = argumentCaptor<Drawable>()
-        val intCaptor = argumentCaptor<Int>()
-        val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
-        val configCaptor = argumentCaptor<Bitmap.Config>()
-        val bitmapCreationCallbackCaptor = argumentCaptor<ResourcesSerializer.BitmapCreationCallback>()
-        val resourcesCaptor = argumentCaptor<Resources>()
 
         // Then
-        verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
-            resources = resourcesCaptor.capture(),
-            drawable = drawableCaptor.capture(),
-            drawableWidth = intCaptor.capture(),
-            drawableHeight = intCaptor.capture(),
-            displayMetrics = displayMetricsCaptor.capture(),
-            requestedSizeInBytes = intCaptor.capture(),
-            config = configCaptor.capture(),
-            bitmapCreationCallback = bitmapCreationCallbackCaptor.capture()
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            resources = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
         )
-
-        assertThat(drawableCaptor.firstValue).isEqualTo(mockBitmapDrawable)
-        assertThat(intCaptor.firstValue).isEqualTo(fakeBitmapWidth)
-        assertThat(intCaptor.secondValue).isEqualTo(fakeBitmapHeight)
-        assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
-        assertThat(configCaptor.firstValue).isEqualTo(Bitmap.Config.ARGB_8888)
-        assertThat(resourcesCaptor.firstValue).isEqualTo(mockResources)
     }
 
     @Test
-    fun `M only send resource once W handleBitmap { call twice on the same image }`(
+    fun `M only send resource once W resolveResourceId() { call twice on the same image }`(
         @Mock mockCreatedBitmap: Bitmap,
         @StringForgery fakeResourceId: String,
         @StringForgery fakeResource: String
@@ -784,15 +764,27 @@ internal class ResourcesSerializerTest {
             .thenReturn(mockCreatedBitmap)
 
         // When
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+
+        // second time
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
+            resourceResolverCallback = mockSerializerCallback
         )
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
@@ -802,15 +794,14 @@ internal class ResourcesSerializerTest {
         )
 
         // second time
-        testedResourcesSerializer.handleBitmap(
+        testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             drawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
-            imageWireframe = fakeImageWireframe,
-            resourcesSerializerCallback = mockSerializerCallback
+            resourceResolverCallback = mockSerializerCallback
         )
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
@@ -820,27 +811,14 @@ internal class ResourcesSerializerTest {
         )
     }
 
-    private fun createResourcesSerializer(): ResourcesSerializer {
-        val builder = ResourcesSerializer.Builder(
-            logger = mockLogger,
-            threadPoolExecutor = mockExecutorService,
-            bitmapPool = mockBitmapPool,
-            resourcesLRUCache = mockResourcesLRUCache,
-            drawableUtils = mockDrawableUtils,
-            webPImageCompression = mockWebPImageCompression,
-            md5HashGenerator = mockMD5HashGenerator,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString()
-        )
-        return builder.build()
-    }
-
-    // this is in order to test having a class that implements
-    // Cache, but does NOT implement ComponentCallbacks2
-    private class FakeNonComponentsCallbackCache : Cache<Drawable, ByteArray> {
-
-        override fun size(): Int = 0
-
-        override fun clear() {}
-    }
+    private fun createResourceResolver(): ResourceResolver = ResourceResolver(
+        logger = mockLogger,
+        threadPoolExecutor = mockExecutorService,
+        drawableUtils = mockDrawableUtils,
+        webPImageCompression = mockWebPImageCompression,
+        md5HashGenerator = mockMD5HashGenerator,
+        recordedDataQueueHandler = mockRecordedDataQueueHandler,
+        applicationId = fakeApplicationid.toString(),
+        bitmapCachesManager = mockBitmapCachesManager
+    )
 }

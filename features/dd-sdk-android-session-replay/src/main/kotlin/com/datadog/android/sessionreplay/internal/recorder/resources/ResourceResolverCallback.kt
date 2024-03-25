@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
-internal interface ResourcesSerializerCallback {
-    fun onReady()
+internal interface ResourceResolverCallback {
+    fun onSuccess(resourceId: String)
+
+    fun onFailure()
 }
