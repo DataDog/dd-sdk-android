@@ -43,23 +43,30 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
 
     @BeforeEach
     override fun setup() {
+        super.setup()
         writer = ListWriter()
         tracer = tracerBuilder().writer(writer).build()
     }
 
     @AfterEach
     override fun cleanup() {
+        super.cleanup()
         tracer.close()
+        writer.clear()
     }
 
     @Test
     fun `build simple span`() {
+        // Given
         val span = tracer.buildSpan(instrumentationName, "op name").withServiceName("foo").start()
+
+        // Then
         assertThat(span.operationName).isEqualTo("op name")
     }
 
     @Test
     fun `build complex span`() {
+        // Given
         val expectedName = "fakeName"
         val tags = mapOf(
             "1" to true,
@@ -67,38 +74,26 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             "3" to 42.0
         )
 
-        var builder = tracer
+        // When
+        val builder = tracer
             .buildSpan(instrumentationName, expectedName)
             .withServiceName("foo")
-        tags.forEach {
-            builder = builder.withTag(it.key, it.value)
-        }
+            .apply { tags.forEach { (k, v) -> withTag(k, v) } }
 
-        var span = builder.start()
+        val span = builder.start()
 
+        // Then
         assertThat(span.operationName).isEqualTo(expectedName)
         assertThat(span.tags).containsAllEntriesOf(tags)
 
-        span = tracer.buildSpan(instrumentationName, expectedName).withServiceName("foo").start()
-
-        assertThat(span.tags).isEqualTo(
-            mapOf(
-                DDTags.THREAD_NAME to Thread.currentThread().name,
-                DDTags.THREAD_ID to Thread.currentThread().id,
-                DDTags.RUNTIME_ID_TAG to Config.get().runtimeId,
-                DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
-                DDTags.PID_TAG to Config.get().processId,
-                DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
-                DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
-            )
-        )
-
+        // Given
         // with all custom fields provided
         val expectedResource = "fakeResource"
         val expectedService = "fakeService"
         val expectedType = "fakeType"
 
-        span = tracer
+        // When
+        val thirdSpan = tracer
             .buildSpan(instrumentationName, expectedName)
             .withServiceName("foo")
             .withResourceName(expectedResource)
@@ -107,73 +102,72 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             .withSpanType(expectedType)
             .start()
 
-        val context = span.context() as DDSpanContext
+        val context = thirdSpan.context() as DDSpanContext
 
+        // Then
         assertThat(context.resourceName).isEqualTo(expectedResource)
         assertThat(context.errorFlag).isTrue
         assertThat(context.serviceName).isEqualTo(expectedService)
         assertThat(context.spanType).isEqualTo(expectedType)
+    }
 
-        assertThat(context.getTag(DDTags.THREAD_NAME)).isEqualTo(Thread.currentThread().name)
-        assertThat(context.getTag(DDTags.THREAD_ID)).isEqualTo(Thread.currentThread().id)
+    @ParameterizedTest
+    @MethodSource("brokenTags")
+    fun `setting a tag with same name should replace the previous one`(tagName: String, tagValue: Any?) {
+        // Given
+        val span = tracer.buildSpan(instrumentationName, "op name")
+            .withTag(tagName, "tag value")
+            .withTag(tagName, tagValue)
+            .start()
+
+        // Then
+        assertThat(span.tags[tagName]).isEqualTo(tagValue)
+        // When
+        span.setTag(tagName, "a tag")
+        // Then
+        assertThat(span.tags[tagName]).isEqualTo("a tag")
+        // When
+        span.setTag(tagName, tagValue)
+        // Then
+        assertThat(span.tags[tagName]).isEqualTo(tagValue)
     }
 
     @Test
-    fun `setting name should remove`() {
-        val nameValues = listOf(
-            Pair("null.tag", null),
-            Pair("empty.tag", "")
-        )
-
-        for ((name, value) in nameValues) {
-            val span = tracer.buildSpan(instrumentationName, "op name")
-                .withTag(name, "tag value")
-                .withTag(name, value)
-                .start()
-
-            assertThat(span.tags[name]).isNull()
-
-            span.setTag(name, "a tag")
-
-            assertThat(span.tags[name]).isEqualTo("a tag")
-
-            span.setTag(name, value)
-
-            assertThat(span.tags[name]).isNull()
-        }
-    }
-
-    @Test
-    fun `should build span timestamp in nano`() {
-        // time in micro
+    fun `should build span timestamp in nanoseconds`() {
+        // Given
+        // time in microseconds
         val expectedTimestamp = 487517802L * 1000 * 1000L
         val expectedName = "fakeName"
 
-        var span = tracer
+        // When
+        val span = tracer
             .buildSpan(instrumentationName, expectedName)
             .withServiceName("foo")
             .withStartTimestamp(expectedTimestamp)
             .start()
 
+        // Then
         // get return nano time
         assertThat(span.startTime).isEqualTo(expectedTimestamp * 1000L)
 
+        // When
         // auto-timestamp in nanoseconds
         val start = System.currentTimeMillis()
-        span = tracer.buildSpan(instrumentationName, expectedName).withServiceName("foo").start()
+        val secondSpan = tracer.buildSpan(instrumentationName, expectedName).withServiceName("foo").start()
         val stop = System.currentTimeMillis()
 
-        // Give a range of +/- 5 millis
-        assertThat(span.startTime).isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(start - 1))
-        assertThat(span.startTime).isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(stop + 1))
+        // Then
+        // Give a range of +/- 1 millis
+        assertThat(secondSpan.startTime).isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(start - 1))
+        assertThat(secondSpan.startTime).isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(stop + 1))
     }
 
     @Test
     fun `should link to parent span`() {
+        // Given
         val spanId = 1L
         val traceId = DDTraceId.ONE
         val expectedParentId = spanId
-
         val mockedContext = mock<DDSpanContext> {
             on { getTraceId() } doReturn traceId
             on { getSpanId() } doReturn spanId
@@ -182,17 +176,17 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             on { trace } doReturn tracer.pendingTraceFactory().create(DDTraceId.ONE)
             on { pathwayContext } doReturn NoopPathwayContext.INSTANCE
         }
-
         val expectedName = "fakeName"
 
+        // When
         val span = tracer
             .buildSpan(instrumentationName, expectedName)
             .withServiceName("foo")
             .asChildOf(mockedContext)
             .start()
-
         val actualContext = span.context() as DDSpanContext
 
+        // Then
         assertThat(actualContext.parentId).isEqualTo(expectedParentId)
         assertThat(actualContext.traceId).isEqualTo(traceId)
     }
@@ -205,34 +199,36 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         "true, another service, true"
     )
     fun `should link to parent span implicitly`(noopParent: Boolean, serviceName: String, expectTopLevel: Boolean) {
+        // Given
         val parent = tracer.activateSpan(
             if (noopParent) {
-            AgentTracer.NoopAgentSpan.INSTANCE
+                AgentTracer.NoopAgentSpan.INSTANCE
             } else {
-            tracer.buildSpan(instrumentationName, "parent")
-                .withServiceName("service").start()
+                tracer.buildSpan(instrumentationName, "parent")
+                    .withServiceName("service").start()
             }
         )
-
         val expectedParentId = if (noopParent) DDSpanId.ZERO else parent.span().context().spanId
-
         val expectedName = "fakeName"
 
+        // When
         val span = tracer
             .buildSpan(instrumentationName, expectedName)
             .withServiceName(serviceName)
             .start() as DDSpan
-
         val actualContext = span.context()
 
+        // Then
         assertThat(actualContext.parentId).isEqualTo(expectedParentId)
         assertThat(span.isTopLevel).isEqualTo(expectTopLevel)
 
+        // Tear down
         parent.close()
     }
 
     @Test
     fun `should inherit the DD parent attributes`() {
+        // Given
         val expectedName = "fakeName"
         val expectedParentServiceName = "fakeServiceName"
         val expectedParentResourceName = "fakeResourceName"
@@ -242,7 +238,6 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         val expectedChildType = "fakeType-child"
         val expectedBaggageItemKey = "fakeKey"
         val expectedBaggageItemValue = "fakeValue"
-
         val parent = tracer
             .buildSpan(instrumentationName, expectedName)
             .withServiceName("foo")
@@ -252,6 +247,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
 
         parent.setBaggageItem(expectedBaggageItemKey, expectedBaggageItemValue)
 
+        // When
         // ServiceName and SpanType are always set by the parent if they are not present in the child
         var span = tracer
             .buildSpan(instrumentationName, expectedName)
@@ -259,6 +255,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             .asChildOf(parent.context())
             .start() as DDSpan
 
+        // Then
         assertThat(span.operationName).isEqualTo(expectedName)
         assertThat(span.getBaggageItem(expectedBaggageItemKey)).isEqualTo(expectedBaggageItemValue)
         assertThat(span.context().serviceName).isEqualTo(expectedParentServiceName)
@@ -266,6 +263,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         assertThat(span.context().spanType).isNull()
         assertThat(span.isTopLevel).isTrue() // service names differ between parent and child
 
+        // When
         // ServiceName and SpanType are always overwritten by the child if they are present
         span = tracer
             .buildSpan(instrumentationName, expectedName)
@@ -275,6 +273,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             .asChildOf(parent.context())
             .start() as DDSpan
 
+        // Then
         assertThat(span.operationName).isEqualTo(expectedName)
         assertThat(span.getBaggageItem(expectedBaggageItemKey)).isEqualTo(expectedBaggageItemValue)
         assertThat(span.context().serviceName).isEqualTo(expectedChildServiceName)
@@ -284,16 +283,15 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
 
     @Test
     fun `should track all spans in trace`() {
+        // Given
         val spans = mutableListOf<DDSpan>()
         val nbSamples = 10
 
+        // When
         // root (aka spans[0]) is the parent
         // others are just for fun
-
         val root = tracer.buildSpan(instrumentationName, "fake_O").withServiceName("foo").start()
-
         var lastSpan = root
-
         for (i in 1..nbSamples) {
             lastSpan = tracer
                 .buildSpan(instrumentationName, "fake_$i")
@@ -304,6 +302,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             lastSpan.finish()
         }
 
+        // Then
         val trace = root.context().trace as PendingTrace
         assertThat(trace.rootSpan).isEqualTo(root)
         assertThat(trace.size()).isEqualTo(nbSamples)
@@ -314,12 +313,14 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("extractedContextProvider")
     fun `ExtractedContext should populate new span details`(extractedContext: ExtractedContext) {
-        // setup:
+        // Given
         val thread = Thread.currentThread()
+
+        // When
         val span = tracer.buildSpan(instrumentationName, "op name")
             .asChildOf(extractedContext).start() as DDSpan
 
-        // expect:
+        // Then
         assertThat(span.traceId).isEqualTo(extractedContext.traceId)
         assertThat(span.parentId).isEqualTo(extractedContext.spanId)
         assertThat(span.samplingPriority).isEqualTo(extractedContext.samplingPriority)
@@ -340,15 +341,15 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("tagContextProvider")
     fun `TagContext should populate default span details`(tagContext: TagContext) {
-        // setup:
+        // Given
         val thread = Thread.currentThread()
+        // When
         val span = tracer.buildSpan(instrumentationName, "op name").asChildOf(tagContext).start() as DDSpan
 
-        // expect:
+        // Then
         assertThat(span.traceId).isNotEqualTo(DDTraceId.ZERO)
         assertThat(span.parentId).isEqualTo(DDSpanId.ZERO)
-        val samplingPriority = span.samplingPriority
-        assert(samplingPriority == null)
+        assertThat(span.samplingPriority).isNull()
         assertThat(span.context().origin).isEqualTo(tagContext.origin)
         assertThat(span.context().baggageItems).isEqualTo(emptyMap<String, String>())
         assertThat(span.context().tags).containsExactlyInAnyOrderEntriesOf(
@@ -368,11 +369,13 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("tagStringProvider")
     fun `default span tags populated on each span`(tags: Map<String, String>) {
-        // setup:
+        // Given
         val customTracer = tracerBuilder().writer(writer).config(Config.get()).defaultSpanTags(tags).build()
+
+        // When
         val span = customTracer.buildSpan(instrumentationName, "op name").withServiceName("foo").start()
 
-        // expect:
+        // Then
         assertThat(span.tags).containsExactlyInAnyOrderEntriesOf(
             tags +
                     mapOf(
@@ -386,16 +389,16 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
                     )
         )
 
-        // cleanup:
+        // Tear down
         customTracer.close()
     }
 
     @Test
     fun `can overwrite RequestContext data with builder from empty`() {
-        // when:
+        // When
         val span1 = tracer.startSpan("test", "span1")
 
-        // then:
+        // Then
         val appSecContext1 = span1.getRequestContext().getData<Any>(RequestContextSlot.APPSEC)
         assertThat(appSecContext1).isNull()
         val ciVisibilityContext1 = span1.getRequestContext().getData<Any>(RequestContextSlot.CI_VISIBILITY)
@@ -403,7 +406,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         val iastContext1 = span1.getRequestContext().getData<Any>(RequestContextSlot.IAST)
         assertThat(iastContext1).isNull()
 
-        // when:
+        // When
         val span2 = tracer.buildSpan(instrumentationName, "span2")
             .asChildOf(span1.context())
             .withRequestContextData(RequestContextSlot.APPSEC, "override")
@@ -411,7 +414,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             .withRequestContextData(RequestContextSlot.IAST, "override")
             .start()
 
-        // then:
+        // Then
         val appSecContext2 = span2.getRequestContext().getData<Any>(RequestContextSlot.APPSEC)
         assertThat(appSecContext2).isEqualTo("override")
         val ciVisibilityContext2 = span2.getRequestContext().getData<Any>(RequestContextSlot.CI_VISIBILITY)
@@ -419,24 +422,24 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         val iastContext2 = span2.getRequestContext().getData<Any>(RequestContextSlot.IAST)
         assertThat(iastContext2).isEqualTo("override")
 
-        // cleanup:
+        // Tear down
         span2.finish()
         span1.finish()
     }
 
     @Test
     fun `can overwrite RequestContext data with builder`() {
-        // setup:
+        // Given
         val context = TagContext()
             .withCiVisibilityContextData("value")
             .withRequestContextDataIast("value")
             .withRequestContextDataAppSec("value")
         val span1 = tracer.buildSpan(instrumentationName, "span1").asChildOf(context).start()
 
-        // when:
+        // When
         val span2 = tracer.buildSpan(instrumentationName, "span2").asChildOf(span1.context()).start()
 
-        // then:
+        // Then
         val appSecContext1 = span2.getRequestContext().getData<Any>(RequestContextSlot.APPSEC)
         assertThat(appSecContext1).isEqualTo("value")
         val ciVisibilityContext1 = span2.getRequestContext().getData<Any>(RequestContextSlot.CI_VISIBILITY)
@@ -444,7 +447,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         val iastContext1 = span2.getRequestContext().getData<Any>(RequestContextSlot.IAST)
         assertThat(iastContext1).isEqualTo("value")
 
-        // when:
+        // When
         val span3 = tracer.buildSpan(instrumentationName, "span3")
             .asChildOf(span2.context())
             .withRequestContextData(RequestContextSlot.APPSEC, "override")
@@ -452,7 +455,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             .withRequestContextData(RequestContextSlot.IAST, "override")
             .start()
 
-        // then:
+        // Then
         val appSecContext2 = span3.getRequestContext().getData<Any>(RequestContextSlot.APPSEC)
         assertThat(appSecContext2).isEqualTo("override")
         val ciVisibilityContext2 = span3.getRequestContext().getData<Any>(RequestContextSlot.CI_VISIBILITY)
@@ -460,7 +463,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         val iastContext2 = span3.getRequestContext().getData<Any>(RequestContextSlot.IAST)
         assertThat(iastContext2).isEqualTo("override")
 
-        // cleanup:
+        // Tear down
         span3.finish()
         span2.finish()
         span1.finish()
@@ -526,6 +529,14 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
                 Arguments.of(mapOf("a" to "x")),
                 Arguments.of(mapOf("a" to "c")),
                 Arguments.of(mapOf("a" to "1", "b-c" to "d"))
+            )
+        }
+
+        @JvmStatic
+        fun brokenTags(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of("null.tag", null),
+                Arguments.of("empty.tag", "")
             )
         }
     }

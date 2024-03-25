@@ -25,7 +25,6 @@ import com.datadog.trace.core.propagation.ExtractedContext
 import com.datadog.trace.core.propagation.PropagationTags
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -40,16 +39,19 @@ import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
 internal class DDSpanTest : DDCoreSpecification() {
+    private val sampler = RateByServiceTraceSampler()
     lateinit var writer: ListWriter
-    lateinit var sampler: RateByServiceTraceSampler
     lateinit var tracer: CoreTracer
 
     @BeforeEach
     override fun setup() {
         super.setup()
+        // we need to initialize after to wait for the config reset
         writer = ListWriter()
-        sampler = RateByServiceTraceSampler()
-        tracer = tracerBuilder().writer(writer).sampler(sampler).build()
+        tracer = tracerBuilder()
+            .writer(writer)
+            .sampler(sampler)
+            .build()
     }
 
     @AfterEach
@@ -61,64 +63,93 @@ internal class DDSpanTest : DDCoreSpecification() {
     @Suppress("DEPRECATION")
     @Test
     fun `getters and setters`() {
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
             .withSpanType("fakeType")
             .start()
 
+        // When
         span.setServiceName("service")
+        // Then
         assertThat(span.serviceName).isEqualTo("service")
 
+        // When
         span.setOperationName("operation")
+        // Then
         assertThat(span.operationName).isEqualTo("operation")
 
+        // When
         span.setResourceName("resource")
+        // Then
         assertThat(span.resourceName).isEqualTo("resource")
 
+        // When
         span.setSpanType("type")
+        // Then
         assertThat(span.spanType).isEqualTo("type")
 
+        // When
         span.setSamplingPriority(PrioritySampling.UNSET.toInt())
-        assertNull(span.samplingPriority)
+        // Then
+        assertThat(span.samplingPriority).isNull()
 
+        // When
         span.setSamplingPriority(PrioritySampling.SAMPLER_KEEP.toInt())
+        // Then
         assertThat(span.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
 
+        // When
         (span.context() as DDSpanContext).lockSamplingPriority()
         span.setSamplingPriority(PrioritySampling.USER_KEEP.toInt())
+        // Then
         assertThat(span.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
     }
 
     @Test
     fun `resource name equals operation name if null`() {
+        // Given
         val opName = "operationName"
+
+        // When
         var span = tracer.buildSpan(instrumentationName, opName).start()
 
+        // Then
         assertThat(span.resourceName).isEqualTo(opName)
         assertThat(span.serviceName).isNotEmpty()
 
+        // Given
         val resourceName = "fake"
         val serviceName = "myService"
-        span = tracer.buildSpan(instrumentationName, opName)
+
+        // When
+        span = tracer
+            .buildSpan(instrumentationName, opName)
             .withResourceName(resourceName)
             .withServiceName(serviceName)
             .start()
 
+        // Then
         assertThat(span.resourceName).isEqualTo(resourceName)
         assertThat(span.serviceName).isEqualTo(serviceName)
     }
 
     @Test
     fun `duration measured in nanoseconds`() {
+        // Given
         val mod = TimeUnit.MILLISECONDS.toNanos(1)
         val builder = tracer.buildSpan(instrumentationName, "test")
         val start = System.nanoTime()
         val span = builder.start()
         val between = System.nanoTime()
         val betweenDur = System.nanoTime() - between
-        span.finish()
         val total = System.nanoTime() - start
+
+        // When
+        span.finish()
+
+        // Then
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
                 TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
         assertThat(timeDifference).isLessThan(5)
@@ -129,6 +160,7 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `phasedFinish captures duration but doesn't publish immediately`() {
+        // Given
         val mod = TimeUnit.MILLISECONDS.toNanos(1)
         val builder = tracer.buildSpan(instrumentationName, "test")
         val start = System.nanoTime()
@@ -136,17 +168,20 @@ internal class DDSpanTest : DDCoreSpecification() {
         val between = System.nanoTime()
         val betweenDur = System.nanoTime() - between
 
+        // When
         span.publish()
 
+        // Then
         assertThat(span.durationNano).isEqualTo(0)
         assertThat(writer.size).isEqualTo(0)
 
+        // When
         var finish = span.phasedFinish()
         val total = System.nanoTime() - start
 
+        // Then
         assertThat(finish).isTrue()
         assertThat(writer).isEmpty()
-
         val actualDurationNano = span.durationNano and Long.MAX_VALUE
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
                 TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
@@ -155,22 +190,32 @@ internal class DDSpanTest : DDCoreSpecification() {
         assertThat(actualDurationNano).isLessThan(total)
         assertThat(actualDurationNano % mod).isGreaterThan(0)
 
+        // When
         finish = span.phasedFinish()
         span.finish()
+
+        // Then
         assertThat(finish).isFalse()
         assertThat(writer).isEmpty()
 
+        // When
         span.publish()
+
+        // Then
         assertThat(span.durationNano).isPositive()
         assertThat(span.durationNano).isEqualTo(actualDurationNano)
         assertThat(writer.size).isEqualTo(1)
 
+        // When
         span.publish()
+
+        // Then
         assertThat(writer.size).isEqualTo(1)
     }
 
     @Test
     fun `starting with a timestamp disables nanotime`() {
+        // Given
         val mod = TimeUnit.MILLISECONDS.toNanos(1)
         val start = System.currentTimeMillis()
         val builder = tracer.buildSpan(instrumentationName, "test")
@@ -178,11 +223,14 @@ internal class DDSpanTest : DDCoreSpecification() {
         val span = builder.start()
         val between = System.currentTimeMillis()
         val betweenDur = System.currentTimeMillis() - between
+
+        // When
         span.finish()
+
+        // Then
         val total = Math.max(1, System.currentTimeMillis() - start)
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
                 TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
-
         assertThat(timeDifference).isLessThan(5)
         assertThat(span.durationNano).isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(betweenDur))
         assertThat(span.durationNano).isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(total))
@@ -191,17 +239,21 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `stopping with a timestamp disables nanotime`() {
+        // Given
         val mod = TimeUnit.MILLISECONDS.toNanos(1)
         val builder = tracer.buildSpan(instrumentationName, "test")
         val start = System.currentTimeMillis()
         val span = builder.start()
         val between = System.currentTimeMillis()
         val betweenDur = System.currentTimeMillis() - between
+
+        // When
         span.finish(TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis() + 1))
         val total = System.currentTimeMillis() - start + 1
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
                 TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
 
+        // Then
         assertThat(timeDifference).isLessThan(5)
         assertThat(span.durationNano).isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(betweenDur))
         assertThat(span.durationNano).isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(total))
@@ -210,27 +262,43 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `stopping with a timestamp before start time yields a min duration of 1`() {
-        val span = tracer.buildSpan(instrumentationName, "test").start() as DDSpan
+        // Given
+        val span = tracer
+            .buildSpan(instrumentationName, "test")
+            .start() as DDSpan
 
+        // When
         span.finish(TimeUnit.MILLISECONDS.toMicros(TimeUnit.NANOSECONDS.toMillis(span.startTimeNano)) - 10)
 
+        // Then
         assertThat(span.durationNano).isEqualTo(1)
     }
 
     @Suppress("DEPRECATION")
     @Test
     fun `priority sampling metric set only on root span`() {
-        val parent = tracer.buildSpan(instrumentationName, "testParent").start()
-        val child1 = tracer.buildSpan(instrumentationName, "testChild1").asChildOf(parent.context()).start()
+        // Given
+        val parent = tracer
+            .buildSpan(instrumentationName, "testParent")
+            .start()
+        val child1 = tracer
+            .buildSpan(instrumentationName, "testChild1")
+            .asChildOf(parent.context())
+            .start()
 
+        // When
         child1.setSamplingPriority(PrioritySampling.SAMPLER_KEEP.toInt())
         (child1.context() as DDSpanContext).lockSamplingPriority()
         parent.setSamplingPriority(PrioritySampling.SAMPLER_DROP.toInt())
         child1.finish()
-        val child2 = tracer.buildSpan(instrumentationName, "testChild2").asChildOf(parent.context()).start()
+        val child2 = tracer
+            .buildSpan(instrumentationName, "testChild2")
+            .asChildOf(parent.context())
+            .start()
         child2.finish()
         parent.finish()
 
+        // Then
         assertThat(parent.context().samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
         assertThat(parent.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
         assertThat(child1.samplingPriority).isEqualTo(parent.samplingPriority)
@@ -240,6 +308,7 @@ internal class DDSpanTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("originExtractionTests")
     fun `origin set only on root span`(extractedContext: AgentSpan.Context) {
+        // Given
         val parent = tracer
             .buildSpan(instrumentationName, "testParent")
             .asChildOf(extractedContext)
@@ -251,10 +320,9 @@ internal class DDSpanTest : DDCoreSpecification() {
             .start()
             .context() as DDSpanContext
 
+        // Then
         assertThat(child.origin).isEqualTo("some-origin")
-        // Access field directly instead of getter not directly possible in Kotlin
         assertThat(child.origin).isEqualTo("some-origin")
-        // Access field directly instead of getter not directly possible in Kotlin, Nullable origin would be null at runtime
     }
 
     @ParameterizedTest
@@ -263,9 +331,17 @@ internal class DDSpanTest : DDCoreSpecification() {
         context: AgentSpan.Context?,
         isTraceRootSpan: Boolean
     ) {
-        val root = tracer.buildSpan(instrumentationName, "root").asChildOf(context).start() as DDSpan
-        val child = tracer.buildSpan(instrumentationName, "child").asChildOf(root.context()).start() as DDSpan
+        // Given
+        val root = tracer
+            .buildSpan(instrumentationName, "root")
+            .asChildOf(context)
+            .start() as DDSpan
+        val child = tracer
+            .buildSpan(instrumentationName, "child")
+            .asChildOf(root.context())
+            .start() as DDSpan
 
+        // Then
         assertThat(child.isRootSpan).isFalse
         assertThat(root.isRootSpan).isEqualTo(isTraceRootSpan)
     }
@@ -276,10 +352,17 @@ internal class DDSpanTest : DDCoreSpecification() {
     fun `getApplicationRootSpan() in and not in the context of distributed tracing`(
         extractedContext: AgentSpan.Context?
     ) {
-        val root = tracer.buildSpan(instrumentationName, "root").asChildOf(extractedContext).start()
-        val child = tracer.buildSpan(instrumentationName, "child").asChildOf(root.context()).start()
+        // Given
+        val root = tracer
+            .buildSpan(instrumentationName, "root")
+            .asChildOf(extractedContext)
+            .start()
+        val child = tracer
+            .buildSpan(instrumentationName, "child")
+            .asChildOf(root.context())
+            .start()
 
-        assertThat(child.localRootSpan).isEqualTo(root)
+        // Then
         assertThat(child.localRootSpan).isEqualTo(root)
         assertThat(root.rootSpan).isEqualTo(root)
         assertThat(child.rootSpan).isEqualTo(root)
@@ -287,27 +370,40 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `publishing of root span closes the request context data`() {
+        // Given
         val reqContextData: Closeable = mock()
         val context = TagContext().withRequestContextDataAppSec(reqContextData)
-        val root = tracer.buildSpan(instrumentationName, "root").asChildOf(context).start()
-        val child = tracer.buildSpan(instrumentationName, "child").asChildOf(root.context()).start()
-
+        val root = tracer
+            .buildSpan(instrumentationName, "root")
+            .asChildOf(context)
+            .start()
+        val child = tracer
+            .buildSpan(instrumentationName, "child")
+            .asChildOf(root.context())
+            .start()
         val rootContextData = root.requestContext.getData<Any>(RequestContextSlot.APPSEC)
-        assertThat(rootContextData).isEqualTo(reqContextData)
         val childContextData = child.requestContext.getData<Any>(RequestContextSlot.APPSEC)
+
+        // Then
+        assertThat(rootContextData).isEqualTo(reqContextData)
         assertThat(childContextData).isEqualTo(reqContextData)
 
+        // When
         child.finish()
 
+        // Then
         verify(reqContextData, times(0)).close()
 
+        // When
         root.finish()
 
+        // Then
         verify(reqContextData, times(1)).close()
     }
 
     @Test
     fun `infer top level from parent service name`() {
+        // Given
         val propagationTagsFactory = tracer.propagationTagsFactory
         val dataSet = listOf(
             Pair("foo", true),
@@ -318,6 +414,8 @@ internal class DDSpanTest : DDCoreSpecification() {
             Pair(null, true)
         )
         val pendingTracerFactory: PendingTrace.Factory = tracer.getFieldValue("pendingTraceFactory")
+
+        // Then
         dataSet.forEach { (parentServiceName, expectedTopLevel) ->
             val context = DDSpanContext(
                 DDTraceId.ONE,
@@ -346,9 +444,15 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `broken pipe exception does not create error span`() {
-        val span = tracer.buildSpan(instrumentationName, "root").start()
+        // Given
+        val span = tracer
+            .buildSpan(instrumentationName, "root")
+            .start()
+
+        // When
         span.addThrowable(IOException("Broken pipe"))
 
+        // Then
         assertThat(span.isError()).isFalse
         assertThat(span.getTag(DDTags.ERROR_STACK)).isNull()
         assertThat(span.getTag(DDTags.ERROR_MSG)).isEqualTo("Broken pipe")
@@ -356,9 +460,15 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `wrapped broken pipe exception does not create error span`() {
-        val span = tracer.buildSpan(instrumentationName, "root").start()
+        // Given
+        val span = tracer
+            .buildSpan(instrumentationName, "root")
+            .start()
+
+        // When
         span.addThrowable(RuntimeException(IOException("Broken pipe")))
 
+        // Then
         assertThat(span.isError()).isFalse
         assertThat(span.getTag(DDTags.ERROR_STACK)).isNull()
         assertThat(span.getTag(DDTags.ERROR_MSG)).isEqualTo("java.io.IOException: Broken pipe")
@@ -366,9 +476,13 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `null exception safe to add`() {
+        // Given
         val span = tracer.buildSpan(instrumentationName, "root").start()
+
+        // When
         span.addThrowable(null)
 
+        // Then
         assertThat(span.isError()).isFalse
         assertThat(span.getTag(DDTags.ERROR_STACK)).isNull()
     }
@@ -376,13 +490,19 @@ internal class DDSpanTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("spanSamplingAttributes")
     fun `set single span sampling tags`(rate: Double, limit: Int) {
-        val span = tracer.buildSpan(instrumentationName, "testSpan").start() as DDSpan
-        val expectedLimit = if (limit == Int.MAX_VALUE) null else limit
+        // When
+        val span = tracer
+            .buildSpan(instrumentationName, "testSpan")
+            .start() as DDSpan
 
+        // Then
+        val expectedLimit = if (limit == Int.MAX_VALUE) null else limit
         assertThat(span.samplingPriority()).isEqualTo(PrioritySampling.UNSET.toInt())
 
+        // When
         span.setSpanSamplingPriority(rate, limit)
 
+        // Then
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_MECHANISM_TAG))
             .isEqualTo(SamplingMechanism.SPAN_SAMPLING_RATE)
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_RULE_RATE_TAG)).isEqualTo(rate)
@@ -392,19 +512,34 @@ internal class DDSpanTest : DDCoreSpecification() {
 
     @Test
     fun `error priorities should be respected`() {
+        // Given
         val span = tracer.buildSpan(instrumentationName, "testSpan").start()
+
+        // Then
         assertThat(span.isError()).isFalse
 
+        // When
         span.setError(true)
+
+        // Then
         assertThat(span.isError()).isTrue
 
+        // When
         span.setError(false)
+
+        // Then
         assertThat(span.isError()).isFalse
 
+        // When
         span.setError(true, ErrorPriorities.HTTP_SERVER_DECORATOR)
+
+        // Then
         assertThat(span.isError()).isFalse
 
+        // When
         span.setError(true, Byte.MAX_VALUE)
+
+        // Then
         assertThat(span.isError()).isTrue
     }
 

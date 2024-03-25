@@ -11,6 +11,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DDSpanId;
@@ -122,6 +123,7 @@ public class DDSpan
    * @param timestampMicro if greater than zero, use this time instead of the current time
    * @param context the context used for the span
    */
+  @VisibleForTesting
   public DDSpan(
       @NonNull String instrumentationName,
       final long timestampMicro,

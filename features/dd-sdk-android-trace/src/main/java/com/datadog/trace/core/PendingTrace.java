@@ -146,7 +146,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
   private static final AtomicLongFieldUpdater<PendingTrace> END_TO_END_START_TIME =
       AtomicLongFieldUpdater.newUpdater(PendingTrace.class, "endToEndStartTime");
 
-  public PendingTrace(
+  private PendingTrace(
       @NonNull CoreTracer tracer,
       @NonNull DDTraceId traceId,
       @NonNull PendingTraceBuffer pendingTraceBuffer,
@@ -206,7 +206,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
     return nanos < age;
   }
 
-  public void registerSpan(final DDSpan span) {
+  void registerSpan(final DDSpan span) {
     ROOT_SPAN.compareAndSet(this, null, span);
     PENDING_REFERENCE_COUNT.incrementAndGet(this);
     healthMetrics.onCreateSpan();
@@ -455,12 +455,8 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
     return rootSpanWritten;
   }
 
-  public PendingTraceBuffer getPendingTraceBuffer() {
-    return pendingTraceBuffer;
-  }
-
-  public ConcurrentLinkedDeque<DDSpan> getSpans() {
-    return spans;
+  public List<DDSpan> getSpans() {
+    return spans.isEmpty() ? EMPTY : new ArrayList<>(spans);
   }
 
 

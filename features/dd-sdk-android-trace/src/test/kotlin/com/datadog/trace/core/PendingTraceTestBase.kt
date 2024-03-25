@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core
 
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.common.writer.ListWriter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -19,16 +20,15 @@ import kotlin.concurrent.thread
 
 internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
-    lateinit var writer: ListWriter
-    lateinit var tracer: CoreTracer
-    lateinit var rootSpan: DDSpan
-    lateinit var trace: PendingTrace
+    protected val writer = ListWriter()
+    protected val tracer = tracerBuilder().writer(writer).build()
+
+    protected lateinit var rootSpan: DDSpan
+    protected lateinit var trace: PendingTrace
 
     @BeforeEach
     override fun setup() {
         super.setup()
-        writer = ListWriter()
-        tracer = tracerBuilder().writer(writer).build()
         rootSpan = tracer.buildSpan(instrumentationName, "fakeOperation").start() as DDSpan
         trace = rootSpan.context().trace as PendingTrace
         assertThat(trace.size()).isEqualTo(0)
@@ -44,9 +44,11 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
     @Test
     fun `single span gets added to trace and written when finished`() {
+        // When
         rootSpan.finish()
         writer.waitForTraces(1)
 
+        // Then
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(rootSpan)
         assertThat(writer.traceCount.get()).isEqualTo(1)
@@ -54,22 +56,28 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
     @Test
     fun `child finishes before parent`() {
+        // Given
         val child = tracer
             .buildSpan(instrumentationName, "child")
             .asChildOf(rootSpan.context())
             .start() as DDSpan
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(2)
 
+        // When
         child.finish()
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(1)
         assertThat(trace.spans.toList()).containsExactly(child)
         assertThat(writer).isEmpty()
 
+        // When
         rootSpan.finish()
         writer.waitForTraces(1)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(rootSpan, child)
@@ -78,20 +86,26 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
     @Test
     fun `parent finishes before child which holds up trace`() {
+        // Given
         val child = tracer.buildSpan(instrumentationName, "child")
             .asChildOf(rootSpan.context()).start() as DDSpan
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(2)
 
+        // When
         rootSpan.finish()
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(1)
         assertThat(trace.spans.toList()).containsExactly(rootSpan)
         assertThat(writer).isEmpty()
 
+        // When
         child.finish()
         writer.waitForTraces(1)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(child, rootSpan)
@@ -100,6 +114,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
     @Test
     fun `child spans created after trace written reported separately`() {
+        // When
         rootSpan.finish()
         // this shouldn't happen, but it's possible users of the api
         // may incorrectly add spans after the trace is reported.
@@ -108,6 +123,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
         childSpan.finish()
         writer.waitForTraces(2)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(rootSpan)
@@ -118,15 +134,16 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
     fun `test getCurrentTimeNano`() {
         // Generous 5 seconds to execute this test
         assertThat(
-        Math.abs(
-        TimeUnit.NANOSECONDS.toSeconds(trace.currentTimeNano) -
-                TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
-        )
+            Math.abs(
+                TimeUnit.NANOSECONDS.toSeconds(trace.currentTimeNano) -
+                        TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+            )
         ).isLessThan(5)
     }
 
     @Test
     fun `partial flush`() {
+        // Given
         val quickTracer = tracerBuilder().writer(writer).partialFlushMinSpans(2).build()
         val rootSpan = quickTracer.buildSpan(instrumentationName, "root").start() as DDSpan
         val trace = rootSpan.context().trace as PendingTrace
@@ -135,37 +152,46 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
         val child2 = quickTracer.buildSpan(instrumentationName, "child2")
             .asChildOf(rootSpan.context()).start() as DDSpan
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(3)
 
+        // When
         child2.finish()
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(2)
         assertThat(trace.spans.toList()).isEqualTo(listOf(child2))
         assertThat(writer).isEmpty()
         assertThat(writer.traceCount.get()).isEqualTo(0)
 
+        // When
         child1.finish()
         writer.waitForTraces(1)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(1)
         assertThat(trace.spans.toList()).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(child1, child2)
         assertThat(writer.traceCount.get()).isEqualTo(1)
 
+        // When
         rootSpan.finish()
         writer.waitForTraces(2)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(child1, child2)
         assertThat(writer.secondTrace()).containsExactly(rootSpan)
         assertThat(writer.traceCount.get()).isEqualTo(2)
 
+        // Tear down
         quickTracer.close()
     }
 
     @Test
     fun `partial flush with root span closed last`() {
+        // Given
         val quickTracer = tracerBuilder().writer(writer).partialFlushMinSpans(2).build() as CoreTracer
         val rootSpan = quickTracer.buildSpan(instrumentationName, "root").start() as DDSpan
         val trace = rootSpan.context().trace
@@ -178,32 +204,40 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
             .asChildOf(rootSpan.context())
             .start() as DDSpan
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(3)
 
+        // When
         child1.finish()
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(2)
         assertThat(trace.spans.toList()).containsExactly(child1)
         assertThat(writer).isEmpty()
         assertThat(writer.traceCount.get()).isEqualTo(0)
 
+        // When
         child2.finish()
         writer.waitForTraces(1)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(1)
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(child2, child1)
         assertThat(writer.traceCount.get()).isEqualTo(1)
 
+        // When
         rootSpan.finish()
         writer.waitForTraces(2)
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         assertThat(trace.spans).isEmpty()
         assertThat(writer.firstTrace()).containsExactly(child2, child1)
         assertThat(writer.secondTrace()).containsExactly(rootSpan)
         assertThat(writer.traceCount.get()).isEqualTo(2)
 
+        // Tear down
         quickTracer.close()
     }
 
@@ -217,6 +251,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
         "50, 500"
     )
     fun `partial flush concurrency test`(threadCount: Int, spanCount: Int) {
+        // Given
         val latch = CountDownLatch(1)
         val rootSpan = tracer.buildSpan("test", "root").start() as DDSpan
         val trace = rootSpan.context().trace as PendingTrace
@@ -237,6 +272,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
             }
         }
 
+        // When
         // Finish root span so other spans are queued automatically
         rootSpan.finish()
         writer.waitForTraces(1)
@@ -245,8 +281,9 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
         threads.forEach {
             it.join()
         }
+        trace.getFieldValue<PendingTraceBuffer, PendingTrace>("pendingTraceBuffer").flush()
 
-        trace.pendingTraceBuffer.flush()
+        // Then
         assertThat(exceptions).isEmpty()
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         assertThat(writer.sumOf { it.size }).isEqualTo(threadCount * spanCount + 1)

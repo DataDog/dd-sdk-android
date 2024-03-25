@@ -408,7 +408,7 @@ public class InstrumenterConfig {
   }
 
   // This has to be placed after all other static fields to give them a chance to initialize
-  private final static InstrumenterConfig INSTANCE =
+  private static final InstrumenterConfig INSTANCE =
       new InstrumenterConfig(
           Platform.isNativeImageBuilder()
               ? ConfigProvider.withoutCollector()

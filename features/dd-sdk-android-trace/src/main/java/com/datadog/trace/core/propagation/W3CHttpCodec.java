@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * A codec designed for HTTP transport via headers using W3C traceparent and tracestate headers
  */
-public class W3CHttpCodec {
+class W3CHttpCodec {
     private static final Logger log = LoggerFactory.getLogger(W3CHttpCodec.class);
 
     public static final String TRACE_PARENT_KEY = "traceparent";

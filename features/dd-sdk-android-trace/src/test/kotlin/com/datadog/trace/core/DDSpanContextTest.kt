@@ -32,7 +32,9 @@ internal class DDSpanContextTest : DDCoreSpecification() {
     override fun setup() {
         super.setup()
         writer = ListWriter()
-        tracer = tracerBuilder().writer(writer).build()
+        tracer = tracerBuilder()
+            .writer(writer)
+            .build()
     }
 
     @AfterEach
@@ -44,6 +46,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("provideTagsForTestNullValues")
     fun `null values for tags delete existing tags`(name: String, tags: Map<String, Any>) {
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
@@ -51,13 +54,14 @@ internal class DDSpanContextTest : DDCoreSpecification() {
             .start()
         val context = span.context() as DDSpanContext
 
+        // When
         context.setTag("some.tag", "asdf")
         context.setTag(name, null)
         span.finish()
-
         // This is assuming you have a writer.waitForTraces() function
         writer.waitForTraces(1)
 
+        // Then
         assertThat(context.tags).containsAllEntriesOf(tags)
         assertThat(context.serviceName).isEqualTo("fakeService")
         assertThat(context.resourceName).isEqualTo("fakeResource")
@@ -67,6 +71,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("provideSpecialTagsForTest")
     fun `special tags set certain values`(name: String, value: String, method: String) {
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
@@ -74,15 +79,20 @@ internal class DDSpanContextTest : DDCoreSpecification() {
             .start()
         val context = span.context() as DDSpanContext
 
+        // When
         context.setTag(name, value)
         span.finish()
-
         writer.waitForTraces(1)
 
+        // Then
         val thread = Thread.currentThread()
         val expectedTags = mapOf(DDTags.THREAD_NAME to thread.name, DDTags.THREAD_ID to thread.id)
         assertThat(context.tags).containsAllEntriesOf(expectedTags)
-        assertThat(context::class.java.getMethod(method).invoke(context)).isEqualTo(value)
+        assertThat(
+        context::class.java.getMethod(method)
+            .invoke(context)
+        )
+            .isEqualTo(value)
     }
 
     @ParameterizedTest
@@ -114,17 +124,17 @@ internal class DDSpanContextTest : DDCoreSpecification() {
     @ParameterizedTest
     @MethodSource("provideMetricsForTest")
     fun `metrics use the expected types`(type: Class<*>, value: Number) {
-        // setup
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
             .start()
         val context = span.context() as DDSpanContext
 
-        // when
+        // When
         context.setMetric("test", value)
 
-        // then
+        // Then
         val tag = context.getTag("test")
         assertThat(tag).isInstanceOf(type)
     }
@@ -132,54 +142,56 @@ internal class DDSpanContextTest : DDCoreSpecification() {
     @Suppress("DEPRECATION")
     @Test
     fun `force keep really keeps the trace`() {
-        // setup
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
             .start()
         val context = span.context() as DDSpanContext
 
-        // when
+        // When
         context.setSamplingPriority(PrioritySampling.SAMPLER_DROP.toInt(), SamplingMechanism.DEFAULT.toInt())
 
-        // then: "priority should be set"
+        // Then: "priority should be set"
         assertThat(context.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
 
-        // when: "sampling priority locked"
+        // When: "sampling priority locked"
         context.lockSamplingPriority()
 
-        // then: "override ignored"
-        assertThat(context.setSamplingPriority(PrioritySampling.USER_DROP.toInt(), SamplingMechanism.MANUAL.toInt()))
+        // Then: "override ignored"
+        val samplingPriority =
+            context.setSamplingPriority(PrioritySampling.USER_DROP.toInt(), SamplingMechanism.MANUAL.toInt())
+        assertThat(samplingPriority)
             .isFalse()
         assertThat(context.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
 
-        // when
+        // When
         context.forceKeep()
 
-        // then: "lock is bypassed and priority set to USER_KEEP"
+        // Then: "lock is bypassed and priority set to USER_KEEP"
         assertThat(context.samplingPriority).isEqualTo(PrioritySampling.USER_KEEP.toInt())
 
-        // cleanup
+        // Tear down
         span.finish()
     }
 
     @ParameterizedTest
     @MethodSource("provideSamplingRatesForTest")
     fun `set single span sampling tags`(rate: Double, limit: Int) {
-        // setup
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
             .start()
         val context = span.context() as DDSpanContext
 
-        // expect
+        // Then
         assertThat(context.samplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
 
-        // when
+        // Given
         context.setSpanSamplingPriority(rate, limit)
 
-        // then
+        // Then
         assertThat(context.getTag(DDSpanContext.SPAN_SAMPLING_MECHANISM_TAG))
             .isEqualTo(SamplingMechanism.SPAN_SAMPLING_RATE)
         assertThat(context.getTag(DDSpanContext.SPAN_SAMPLING_RULE_RATE_TAG))
@@ -194,7 +206,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
 
     @Test
     fun `set TraceSegment tags and data on correct span`() {
-        // setup
+        // Given
         val extracted = ExtractedContext(
             DDTraceId.from(123),
             456,
@@ -210,11 +222,14 @@ internal class DDSpanContextTest : DDCoreSpecification() {
             .start()
         val topC = top.context() as DDSpanContext
         val topTS = top.requestContext.traceSegment
-        val current = tracer.buildSpan(instrumentationName, "current").asChildOf(top.context()).start()
+        val current = tracer
+            .buildSpan(instrumentationName, "current")
+            .asChildOf(top.context())
+            .start()
         val currentTS = current.requestContext.traceSegment
         val currentC = current.context() as DDSpanContext
 
-        // when
+        // When
         currentTS.setDataTop("ctd", "[1]")
         currentTS.setTagTop("ctt", "t1")
         currentTS.setDataCurrent("ccd", "[2]")
@@ -224,7 +239,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         topTS.setDataCurrent("tcd", "[4]")
         topTS.setTagCurrent("tct", "t4")
 
-        // then
+        // Then
         val expectedTopTags = mapOf(
             dataTagFormat("ctd") to "[1]",
             "ctt" to "t1",
@@ -241,23 +256,23 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         )
         assertThat(currentC.tags).containsAllEntriesOf(expectedCurrentTags)
 
-        // cleanup
+        // Tear down
         current.finish()
         top.finish()
     }
 
     @Test
     fun `setting resource name to null is ignored`() {
-        // setup
+        // Given
         val span = tracer.buildSpan(instrumentationName, "fakeOperation")
             .withServiceName("fakeService")
             .withResourceName("fakeResource")
             .start()
 
-        // when
+        // When
         span.setResourceName(null)
 
-        // then
+        // Then
         assertThat(span.resourceName).isEqualTo("fakeResource")
     }
 

@@ -996,7 +996,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         TracerFlare.addText(zip, "span_metrics.txt", SpanMetricRegistry.getInstance().summary());
     }
 
-    public static String[] generateConstantTags(final Config config) {
+    private static String[] generateConstantTags(final Config config) {
         final List<String> constantTags = new ArrayList<>();
 
         constantTags.add(statsdTag(LANG_STATSD_TAG, "java"));
@@ -1417,7 +1417,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         }
     }
 
-    public class ConfigSnapshot extends DynamicConfig.Snapshot {
+    protected class ConfigSnapshot extends DynamicConfig.Snapshot {
         final Sampler sampler;
 
         protected ConfigSnapshot(

@@ -35,24 +35,17 @@ import org.mockito.kotlin.whenever
 @Timeout(5)
 internal class PendingTraceBufferTest : DDSpecification() {
 
-    lateinit var buffer: PendingTraceBuffer
-    lateinit var bufferSpy: PendingTraceBuffer
-    lateinit var tracer: CoreTracer
-    lateinit var traceConfig: CoreTracer.ConfigSnapshot
-    lateinit var scopeManager: ContinuableScopeManager
-    lateinit var factory: PendingTrace.Factory
-    lateinit var continuations: MutableList<TraceScope.Continuation>
+    private val buffer = PendingTraceBuffer.delaying(SystemTimeSource.INSTANCE, mock(), null)
+    private val bufferSpy = spy(buffer)
+    private val tracer = mock<CoreTracer>()
+    private val traceConfig = mock<CoreTracer.ConfigSnapshot>()
+    private val scopeManager = ContinuableScopeManager(10, true, true)
+    private val factory = PendingTrace.Factory(tracer, bufferSpy, SystemTimeSource.INSTANCE, false, HealthMetrics.NO_OP)
+    private val continuations = mutableListOf<TraceScope.Continuation>()
 
     @BeforeEach
     override fun setup() {
         super.setup()
-        buffer = PendingTraceBuffer.delaying(SystemTimeSource.INSTANCE, mock(), null)
-        bufferSpy = spy(buffer)
-        tracer = mock<CoreTracer>()
-        traceConfig = mock<CoreTracer.ConfigSnapshot>()
-        scopeManager = ContinuableScopeManager(10, true, true)
-        factory = PendingTrace.Factory(tracer, bufferSpy, SystemTimeSource.INSTANCE, false, HealthMetrics.NO_OP)
-        continuations = mutableListOf<TraceScope.Continuation>()
         whenever(tracer.captureTraceConfig()).thenReturn(traceConfig)
         whenever(traceConfig.serviceMapping).thenReturn(emptyMap())
     }
@@ -66,36 +59,43 @@ internal class PendingTraceBufferTest : DDSpecification() {
 
     @Test
     fun `test buffer lifecycle`() {
+        // Then
         assertThat(buffer.worker().isAlive).isFalse()
 
+        // When
         buffer.start()
 
+        // Then
         assertThat(buffer.worker().isAlive).isTrue()
         assertThat(buffer.worker().isDaemon).isTrue()
-
         assertThrows<IllegalThreadStateException> {
             buffer.start()
         }
-
         assertThat(buffer.worker().isAlive).isTrue()
         assertThat(buffer.worker().isDaemon).isTrue()
 
+        // When
         buffer.close()
         buffer.worker().join(1000)
 
+        // Then
         assertThat(buffer.worker().isAlive).isFalse()
     }
 
     @Test
     fun `continuation buffers root`() {
+        // Given
         val trace = factory.create(DDTraceId.ONE)
         val span = newSpanOf(trace)
 
+        // Then
         assertThat(trace.isRootSpanWritten).isFalse()
 
+        // When
         addContinuation(span)
         span.finish() // This should enqueue
 
+        // Then
         assertThat(continuations.size).isEqualTo(1)
         assertThat(trace.pendingReferenceCount).isEqualTo(1)
         verify(bufferSpy, times(2)).longRunningSpansEnabled()
@@ -103,8 +103,10 @@ internal class PendingTraceBufferTest : DDSpecification() {
         verify(tracer, times(1)).partialFlushMinSpans
         verify(tracer, times(2)).getTimeWithNanoTicks(any())
 
+        // When
         continuations[0].cancel()
 
+        // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
         argumentCaptor<List<DDSpan>>() {
             verify(tracer, times(1)).write(capture())

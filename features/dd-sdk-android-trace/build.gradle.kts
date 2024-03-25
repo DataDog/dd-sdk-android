@@ -78,6 +78,8 @@ dependencies {
     testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    testImplementation(libs.systemStubsJupiter)
+
     unmock(libs.robolectric)
 }
 

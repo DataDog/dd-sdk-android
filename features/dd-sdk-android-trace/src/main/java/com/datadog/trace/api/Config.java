@@ -778,11 +778,11 @@ public class Config {
     private final boolean telemetryDebugRequestsEnabled;
 
     // Read order: System Properties -> Env Variables, [-> properties file], [-> default value]
-    public Config() {
+    private Config() {
         this(ConfigProvider.createDefault());
     }
 
-    public Config(final ConfigProvider configProvider) {
+    private Config(final ConfigProvider configProvider) {
         this(configProvider, new InstrumenterConfig(configProvider));
     }
 
@@ -2610,7 +2610,7 @@ public class Config {
     }
 
     public boolean isCiVisibilityEnabled() {
-        return instrumenterConfig.isCiVisibilityEnabled();
+        return false;
     }
 
     public boolean isUsmEnabled() {
