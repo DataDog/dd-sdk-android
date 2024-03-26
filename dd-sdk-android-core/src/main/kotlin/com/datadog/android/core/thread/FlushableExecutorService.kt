@@ -8,12 +8,13 @@ package com.datadog.android.core.thread
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.lint.InternalApi
 import java.util.concurrent.ExecutorService
 
 /**
  * An [ExecutorService] which backing queue can be drained to a collection.
- *
  */
+@InternalApi
 interface FlushableExecutorService : ExecutorService {
 
     /**

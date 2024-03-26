@@ -403,7 +403,7 @@ class IgnoreNewestBackPressuredBlockingQueueTest {
 
         // When
         Thread {
-            // PutInserts the specified element into this queue, waiting if necessary for space to become available.
+            // put() inserts the specified element into this queue, waiting if necessary for space to become available.
             // In order to not wait indefinitely, we need to remove an element
             sleep(100)
             testedQueue.take()

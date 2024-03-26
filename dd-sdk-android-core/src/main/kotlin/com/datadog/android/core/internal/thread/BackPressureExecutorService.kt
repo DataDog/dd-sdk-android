@@ -12,6 +12,9 @@ import com.datadog.android.core.thread.FlushableExecutorService
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
+/**
+ * A single threaded executor service using a BackPressureStrategy.
+ */
 internal class BackPressureExecutorService(
     val logger: InternalLogger,
     backpressureStrategy: BackPressureStrategy
