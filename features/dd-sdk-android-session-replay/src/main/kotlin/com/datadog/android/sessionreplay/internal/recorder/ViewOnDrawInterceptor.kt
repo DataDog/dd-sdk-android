@@ -23,7 +23,8 @@ internal class ViewOnDrawInterceptor(
             decorViews,
             recordedDataQueueHandler,
             snapshotProducer,
-            privacy
+            privacy,
+            logger = internalLogger
         )
     }
 ) {

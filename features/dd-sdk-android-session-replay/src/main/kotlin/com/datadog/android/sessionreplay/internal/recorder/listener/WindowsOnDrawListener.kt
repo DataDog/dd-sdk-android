@@ -10,11 +10,14 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryWrapper
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
@@ -24,7 +27,12 @@ internal class WindowsOnDrawListener(
     private val snapshotProducer: SnapshotProducer,
     private val privacy: SessionReplayPrivacy,
     private val debouncer: Debouncer = Debouncer(),
-    private val miscUtils: MiscUtils = MiscUtils
+    private val miscUtils: MiscUtils = MiscUtils,
+    private val logger: InternalLogger,
+    private var telemetryWrapper: TelemetryWrapper = TelemetryWrapper(
+        samplingRate = 5f,
+        logger = logger
+    )
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
@@ -60,10 +68,17 @@ internal class WindowsOnDrawListener(
             RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
+        val methodCallTelemetry = telemetryWrapper.startMethodCalled(
+            callerClass = this.javaClass.name,
+            operationName = METHOD_CALL_OPERATION_NAME
+        )
+
         val nodes = views
             .mapNotNull {
                 snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
             }
+
+        methodCallTelemetry?.stopMethodCalled(isSuccessful = nodes.isNotEmpty())
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
