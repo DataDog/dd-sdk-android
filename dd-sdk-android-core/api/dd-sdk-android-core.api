@@ -459,6 +459,30 @@ public final class com/datadog/android/core/StrictModeExtKt {
 	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 }
 
+public final class com/datadog/android/core/configuration/BackPressureMitigation : java/lang/Enum {
+	public static final field DROP_OLDEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public static final field IGNORE_NEWEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public static fun values ()[Lcom/datadog/android/core/configuration/BackPressureMitigation;
+}
+
+public final class com/datadog/android/core/configuration/BackPressureStrategy {
+	public fun <init> (ILkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lcom/datadog/android/core/configuration/BackPressureMitigation;)V
+	public final fun component1 ()I
+	public final fun component2 ()Lkotlin/jvm/functions/Function0;
+	public final fun component3 ()Lkotlin/jvm/functions/Function1;
+	public final fun component4 ()Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public final fun copy (ILkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lcom/datadog/android/core/configuration/BackPressureMitigation;)Lcom/datadog/android/core/configuration/BackPressureStrategy;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/BackPressureStrategy;ILkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lcom/datadog/android/core/configuration/BackPressureMitigation;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/BackPressureStrategy;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBackpressureMitigation ()Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public final fun getCapacity ()I
+	public final fun getOnItemDropped ()Lkotlin/jvm/functions/Function1;
+	public final fun getOnThresholdReached ()Lkotlin/jvm/functions/Function0;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/core/configuration/BatchProcessingLevel : java/lang/Enum {
 	public static final field HIGH Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static final field LOW Lcom/datadog/android/core/configuration/BatchProcessingLevel;
@@ -492,6 +516,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/core/configuration/Configuration;
 	public final fun setAdditionalConfiguration (Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setBackpressureStrategy (Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setBatchProcessingLevel (Lcom/datadog/android/core/configuration/BatchProcessingLevel;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setBatchSize (Lcom/datadog/android/core/configuration/BatchSize;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setCrashReportsEnabled (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
@@ -733,6 +758,14 @@ public final class com/datadog/android/core/sampling/RateBasedSampler : com/data
 public abstract interface class com/datadog/android/core/sampling/Sampler {
 	public abstract fun getSampleRate ()Ljava/lang/Float;
 	public abstract fun sample ()Z
+}
+
+public abstract interface class com/datadog/android/core/thread/FlushableExecutorService : java/util/concurrent/ExecutorService {
+	public abstract fun drainTo (Ljava/util/Collection;)V
+}
+
+public abstract interface class com/datadog/android/core/thread/FlushableExecutorService$Factory {
+	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/thread/FlushableExecutorService;
 }
 
 public abstract interface class com/datadog/android/event/EventMapper {
