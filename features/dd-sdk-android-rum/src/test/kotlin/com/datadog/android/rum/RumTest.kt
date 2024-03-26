@@ -62,7 +62,7 @@ internal class RumTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mock()
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
-        whenever(mockSdkCore.createExecutorService()) doReturn mock()
+        whenever(mockSdkCore.createSingleThreadExecutorService()) doReturn mock()
         whenever(mockSdkCore.createScheduledExecutorService()) doReturn mock()
     }
 

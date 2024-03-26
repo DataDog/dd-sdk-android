@@ -436,7 +436,7 @@ internal class RumFeature(
 
     private fun initializeANRDetector() {
         val detectorRunnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
-        anrDetectorExecutorService = sdkCore.createExecutorService()
+        anrDetectorExecutorService = sdkCore.createSingleThreadExecutorService()
         anrDetectorExecutorService?.executeSafe(
             "ANR detection",
             sdkCore.internalLogger,

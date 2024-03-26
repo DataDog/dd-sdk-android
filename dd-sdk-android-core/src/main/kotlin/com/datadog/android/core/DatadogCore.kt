@@ -232,7 +232,7 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun createExecutorService(): ExecutorService {
+    override fun createSingleThreadExecutorService(): ExecutorService {
         return coreFeature.createExecutorService()
     }
 

@@ -103,7 +103,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun removeEventReceiver(featureName: String) = Unit
 
-    override fun createExecutorService(): ExecutorService {
+    override fun createSingleThreadExecutorService(): ExecutorService {
         return NoOpExecutorService()
     }
 

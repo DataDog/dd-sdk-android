@@ -59,6 +59,7 @@ import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
@@ -72,7 +73,6 @@ import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
-import com.datadog.android.core.thread.ScheduledExecutorServiceFactory
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer

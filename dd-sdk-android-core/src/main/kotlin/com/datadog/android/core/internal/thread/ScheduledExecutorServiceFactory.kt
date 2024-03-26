@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.thread
+package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService
 /**
  * A factory for [ScheduledExecutorService].
  */
-fun interface ScheduledExecutorServiceFactory {
+internal fun interface ScheduledExecutorServiceFactory {
 
     /**
      * Create an instance of [ScheduledExecutorService].

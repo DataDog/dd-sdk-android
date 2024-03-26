@@ -122,7 +122,7 @@ object Rum {
         trackFrustrations = rumFeature.trackFrustrations,
         sessionListener = rumFeature.sessionListener,
         appStartTimeProvider = DefaultAppStartTimeProvider(),
-        executorService = sdkCore.createExecutorService()
+        executorService = sdkCore.createSingleThreadExecutorService()
     )
 
     // endregion

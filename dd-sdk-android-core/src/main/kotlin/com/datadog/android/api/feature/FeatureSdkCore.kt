@@ -75,12 +75,13 @@ interface FeatureSdkCore : SdkCore {
     fun removeEventReceiver(featureName: String)
 
     /**
-     * Returns a new [ExecutorService], set up with backpressure and internal monitoring.
+     * Returns a new single thread [ExecutorService], set up with backpressure and internal monitoring.
      */
-    fun createExecutorService(): ExecutorService
+    fun createSingleThreadExecutorService(): ExecutorService
 
     /**
      * Returns a new [ScheduledExecutorService], set up with internal monitoring.
+     * It will use a default of one thread and can spawn at most as many thread as there are CPU cores.
      */
     fun createScheduledExecutorService(): ScheduledExecutorService
 }
