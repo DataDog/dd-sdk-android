@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewTreeObserver
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
@@ -37,7 +38,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ViewOnDrawInterceptorTest {
 
-    lateinit var testedInterceptor: ViewOnDrawInterceptor
+    private lateinit var testedInterceptor: ViewOnDrawInterceptor
 
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
@@ -45,14 +46,18 @@ internal class ViewOnDrawInterceptorTest {
     @Mock
     lateinit var mockSnapshotProducer: SnapshotProducer
 
-    lateinit var fakeDecorViews: List<View>
+    @Mock
+    lateinit var mockLogger: InternalLogger
+
+    private lateinit var fakeDecorViews: List<View>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeDecorViews = forge.aMockedDecorViewsList()
         testedInterceptor = ViewOnDrawInterceptor(
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            logger = mockLogger
         )
     }
 
@@ -74,8 +79,9 @@ internal class ViewOnDrawInterceptorTest {
         // Given
         val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
         testedInterceptor = ViewOnDrawInterceptor(
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            logger = mockLogger
         ) { _ -> mockOnDrawListener }
 
         // When

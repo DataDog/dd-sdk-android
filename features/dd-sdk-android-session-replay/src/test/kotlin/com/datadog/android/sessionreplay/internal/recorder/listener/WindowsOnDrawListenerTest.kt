@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -19,6 +20,9 @@ import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryWrapper
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -94,6 +98,15 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Mock
+    lateinit var mockLogger: InternalLogger
+
+    @Mock
+    lateinit var mockTelemetryWrapper: TelemetryWrapper
+
+    @Mock
+    lateinit var mockMethodCalledTelemetry: MethodCalledTelemetry
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
@@ -127,11 +140,13 @@ internal class WindowsOnDrawListenerTest {
         }
         whenever(mockContext.resources).thenReturn(mockResources)
         testedListener = WindowsOnDrawListener(
-            fakeMockedDecorViews,
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer,
-            mockDebouncer,
-            mockMiscUtils
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            logger = mockLogger,
+            telemetryWrapper = mockTelemetryWrapper
         )
     }
 
@@ -175,10 +190,11 @@ internal class WindowsOnDrawListenerTest {
         // Given
         stubDebouncer()
         testedListener = WindowsOnDrawListener(
-            emptyList(),
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer,
-            mockDebouncer
+            zOrderedDecorViews = emptyList(),
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            debouncer = mockDebouncer,
+            logger = mockLogger
         )
 
         // When
@@ -213,6 +229,60 @@ internal class WindowsOnDrawListenerTest {
 
         // Then
         verify(mockRecordedDataQueueHandler, never()).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M call methodCall telemetry with true W onDraw() { has nodes }`() {
+        // Given
+        stubDebouncer()
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        whenever(
+            mockTelemetryWrapper.startMethodCalled(
+                operationName = eq(METHOD_CALL_OPERATION_NAME),
+                callerClass = any()
+            )
+        )
+            .thenReturn(mockMethodCalledTelemetry)
+
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        verify(mockTelemetryWrapper).startMethodCalled(any(), any())
+        verify(mockMethodCalledTelemetry).stopMethodCalled(true)
+    }
+
+    @Test
+    fun `M send methodCall telemetry with false W onDraw() { no nodes }`() {
+        // Given
+        stubDebouncer()
+
+        whenever(mockSnapshotProducer.produce(any(), any(), any())).thenReturn(null)
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        whenever(
+            mockTelemetryWrapper.startMethodCalled(
+                operationName = eq(METHOD_CALL_OPERATION_NAME),
+                callerClass = any()
+            )
+        )
+            .thenReturn(mockMethodCalledTelemetry)
+
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        verify(mockTelemetryWrapper).startMethodCalled(any(), any())
+        verify(mockMethodCalledTelemetry).stopMethodCalled(false)
     }
 
     // region Internal
