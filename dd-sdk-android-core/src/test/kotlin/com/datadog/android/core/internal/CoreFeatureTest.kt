@@ -33,6 +33,7 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
@@ -86,10 +87,9 @@ import org.mockito.quality.Strictness
 import java.io.File
 import java.net.Proxy
 import java.util.Locale
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.experimental.xor
 
@@ -112,7 +112,10 @@ internal class CoreFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockPersistenceExecutorService: ExecutorService
+    lateinit var mockPersistenceExecutorService: FlushableExecutorService
+
+    @Mock
+    lateinit var mockScheduledExecutorService: ScheduledExecutorService
 
     @Forgery
     lateinit var fakeConfig: Configuration
@@ -128,7 +131,8 @@ internal class CoreFeatureTest {
         CoreFeature.disableKronosBackgroundSync = true
         testedFeature = CoreFeature(
             mockInternalLogger,
-            persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
+            executorServiceFactory = { _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _ -> mockScheduledExecutorService }
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
@@ -1186,7 +1190,7 @@ internal class CoreFeatureTest {
         )
         val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
         testedFeature.uploadExecutorService = mockUploadExecutorService
-        val mockPersistenceExecutorService: ExecutorService = mock()
+        val mockPersistenceExecutorService: FlushableExecutorService = mock()
         testedFeature.persistenceExecutorService = mockPersistenceExecutorService
 
         // When
@@ -1251,8 +1255,13 @@ internal class CoreFeatureTest {
         )
 
         val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
-        val persistenceExecutor =
-            ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, blockingQueue)
+        val persistenceExecutor: FlushableExecutorService = mock()
+        whenever(persistenceExecutor.drainTo(any())) doAnswer { invocation ->
+            blockingQueue.forEach {
+                @Suppress("UNCHECKED_CAST")
+                (invocation.arguments[0] as MutableCollection<Any>).add(it)
+            }
+        }
         testedFeature.persistenceExecutorService = persistenceExecutor
 
         // When
@@ -1298,7 +1307,7 @@ internal class CoreFeatureTest {
             fakeConsent
         )
 
-        val mockPersistenceExecutorService: ExecutorService = mock()
+        val mockPersistenceExecutorService: FlushableExecutorService = mock()
         testedFeature.persistenceExecutorService = mockPersistenceExecutorService
 
         // When

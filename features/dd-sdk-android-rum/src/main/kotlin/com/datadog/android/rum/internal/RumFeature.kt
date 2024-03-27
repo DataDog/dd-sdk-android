@@ -26,7 +26,6 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
@@ -82,10 +81,8 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import java.lang.RuntimeException
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -269,6 +266,7 @@ internal class RumFeature(
         when (event["type"]) {
             NDK_CRASH_BUS_MESSAGE_TYPE ->
                 lateCrashEventHandler.handleNdkCrashEvent(event, dataWriter)
+
             LOGGER_ERROR_BUS_MESSAGE_TYPE -> addLoggerError(event)
             LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE -> addLoggerErrorWithStacktrace(event)
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
@@ -393,7 +391,7 @@ internal class RumFeature(
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, sdkCore.internalLogger)
+        vitalExecutorService = sdkCore.createScheduledExecutorService()
 
         initializeVitalMonitor(
             CPUVitalReader(internalLogger = sdkCore.internalLogger),
@@ -438,7 +436,7 @@ internal class RumFeature(
 
     private fun initializeANRDetector() {
         val detectorRunnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
-        anrDetectorExecutorService = Executors.newSingleThreadExecutor()
+        anrDetectorExecutorService = sdkCore.createSingleThreadExecutorService()
         anrDetectorExecutorService?.executeSafe(
             "ANR detection",
             sdkCore.internalLogger,
