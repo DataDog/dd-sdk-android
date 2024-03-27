@@ -71,7 +71,6 @@ internal constructor(
 
         private var coreConfig = DEFAULT_CORE_CONFIG
         private var crashReportsEnabled: Boolean = true
-        private var backpressureStrategy: BackPressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY
 
         internal var hostsSanitizer = HostsSanitizer()
 
@@ -256,7 +255,7 @@ internal constructor(
          * 1024 items)
          */
         fun setBackpressureStrategy(backpressureStrategy: BackPressureStrategy): Builder {
-            this.backpressureStrategy = backpressureStrategy
+            coreConfig = coreConfig.copy(backpressureStrategy = backpressureStrategy)
             return this
         }
 

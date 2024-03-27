@@ -79,9 +79,10 @@ internal class BackPressuredBlockingQueue<E : Any>(
     private fun onItemDropped(item: E) {
         backPressureStrategy.onItemDropped(item)
 
+        // Note, do not send this to telemetry as it might cause a stack overflow
         logger.log(
             level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            target = InternalLogger.Target.MAINTAINER,
             messageBuilder = { "Dropped item in BackPressuredBlockingQueue queue: $item" },
             throwable = null,
             onlyOnce = false,

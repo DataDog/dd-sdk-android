@@ -19,6 +19,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -385,6 +386,32 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 persistenceStrategyFactory = mockFactory
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 build config with BackPressure strategy 𝕎 setBackpressureStrategy() and build()`(
+        @IntForgery capacity: Int,
+        @Forgery mitigation: BackPressureMitigation
+    ) {
+        // Given
+        val fakeBackpressureStrategy = BackPressureStrategy(
+            capacity,
+            mock<() -> Unit>(),
+            mock<(Any) -> Unit>(),
+            mitigation
+        )
+
+        // When
+        val config = testedBuilder
+            .setBackpressureStrategy(fakeBackpressureStrategy)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                backpressureStrategy = fakeBackpressureStrategy
             )
         )
     }
