@@ -11,7 +11,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 
 internal class MethodCalledTelemetry(
-    private val operationName: String,
     private val callerClass: String,
     private val logger: InternalLogger,
     private val startTime: Long = System.nanoTime(),
@@ -24,7 +23,7 @@ internal class MethodCalledTelemetry(
         val deviceInfo = internalSdkCore?.getDatadogContext()?.deviceInfo
 
         additionalProperties[EXECUTION_TIME] = executionTime
-        additionalProperties[OPERATION_NAME] = operationName
+        additionalProperties[OPERATION_NAME] = METHOD_CALL_OPERATION_NAME
         additionalProperties[CALLER_CLASS] = callerClass
         additionalProperties[IS_SUCCESSFUL] = isSuccessful
         additionalProperties[METRIC_TYPE] = METRIC_TYPE_VALUE

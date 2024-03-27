@@ -21,7 +21,6 @@ import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryWrapper
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import fr.xgouchet.elmyr.Forge
@@ -38,6 +37,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -240,9 +240,10 @@ internal class WindowsOnDrawListenerTest {
             .thenReturn(fakeSnapshotQueueItem)
 
         whenever(
-            mockTelemetryWrapper.startMethodCalled(
-                operationName = eq(METHOD_CALL_OPERATION_NAME),
-                callerClass = any()
+            mockTelemetryWrapper.startMetric(
+                operationName = any(),
+                callerClass = any(),
+                samplingRate = anyOrNull()
             )
         )
             .thenReturn(mockMethodCalledTelemetry)
@@ -253,7 +254,11 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verify(mockTelemetryWrapper).startMethodCalled(any(), any())
+        verify(mockTelemetryWrapper).startMetric(
+            operationName = any(),
+            callerClass = any(),
+            samplingRate = anyOrNull()
+        )
         verify(mockMethodCalledTelemetry).stopMethodCalled(true)
     }
 
@@ -268,9 +273,10 @@ internal class WindowsOnDrawListenerTest {
             .thenReturn(fakeSnapshotQueueItem)
 
         whenever(
-            mockTelemetryWrapper.startMethodCalled(
-                operationName = eq(METHOD_CALL_OPERATION_NAME),
-                callerClass = any()
+            mockTelemetryWrapper.startMetric(
+                operationName = any(),
+                callerClass = any(),
+                samplingRate = anyOrNull()
             )
         )
             .thenReturn(mockMethodCalledTelemetry)
@@ -281,7 +287,11 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verify(mockTelemetryWrapper).startMethodCalled(any(), any())
+        verify(mockTelemetryWrapper).startMetric(
+            operationName = any(),
+            callerClass = any(),
+            samplingRate = anyOrNull()
+        )
         verify(mockMethodCalledTelemetry).stopMethodCalled(false)
     }
 

@@ -9,34 +9,39 @@ package com.datadog.android.sessionreplay.internal.recorder.telemetry
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
 
 internal class TelemetryWrapper(
-
-    // The sampling rate of the method call. Value between `0.0` and `100.0`,
-    // where `0.0` means NO event will be processed and `100.0` means ALL events will be processed.
-    // Note that this value is multiplicated by telemetry sampling (by default 20%) and
-    // metric events sampling (hardcoded to 15%). Making it effectively 3% sampling rate
-    // for sending events, when this value is set to `100`.
-    private val samplingRate: Float = 100.0f,
-
-    private val logger: InternalLogger,
-    private val sampler: Sampler = RateBasedSampler(samplingRate)
+    private val logger: InternalLogger
 ) {
-    internal fun startMethodCalled(
+    internal fun startMetric(
         // Platform agnostic name of the operation.
         operationName: String,
 
         // The name of the class that calls the method.
-        callerClass: String
+        callerClass: String,
+
+        // The sampling rate of the method call. Value between `0.0` and `100.0`,
+        // where `0.0` means NO event will be processed and `100.0` means ALL events will be processed.
+        // Note that this value is multiplicated by telemetry sampling (by default 20%) and
+        // metric events sampling (hardcoded to 15%). Making it effectively 3% sampling rate
+        // for sending events, when this value is set to `100`.
+        samplingRate: Float = 100.0f
     ): MethodCalledTelemetry? {
-        return if (sampler.sample()) {
-            MethodCalledTelemetry(
-                operationName,
-                callerClass,
-                logger
-            )
-        } else {
-            null
+        val sampler: Sampler = RateBasedSampler(samplingRate)
+        if (!sampler.sample()) return null
+
+        return when (operationName) {
+            METHOD_CALL_OPERATION_NAME -> {
+                MethodCalledTelemetry(
+                    callerClass,
+                    logger
+                )
+            }
+
+            else -> {
+                null
+            }
         }
     }
 }
