@@ -2610,7 +2610,7 @@ public class Config {
     }
 
     public boolean isCiVisibilityEnabled() {
-        return instrumenterConfig.isCiVisibilityEnabled();
+        return false;
     }
 
     public boolean isUsmEnabled() {

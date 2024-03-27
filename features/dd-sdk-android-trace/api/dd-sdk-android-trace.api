@@ -3848,6 +3848,10 @@ public class com/datadog/trace/api/naming/SpanNaming {
 	public fun version ()I
 }
 
+public class com/datadog/trace/api/naming/SpanNaming$Singleton {
+	public fun <init> ()V
+}
+
 public class com/datadog/trace/api/naming/v0/CacheNamingV0 : com/datadog/trace/api/naming/NamingSchema$ForCache {
 	public fun <init> (Z)V
 	public fun operation (Ljava/lang/String;)Ljava/lang/String;
@@ -5659,7 +5663,9 @@ public class com/datadog/trace/common/writer/ListWriter : java/util/concurrent/C
 	public fun close ()V
 	public fun firstTrace ()Ljava/util/List;
 	public fun flush ()Z
+	public fun getTraceCount ()Ljava/util/concurrent/atomic/AtomicInteger;
 	public fun incrementDropCounts (I)V
+	public fun secondTrace ()Ljava/util/List;
 	public fun setFilter (Lcom/datadog/trace/common/writer/ListWriter$Filter;)V
 	public fun start ()V
 	public fun toString ()Ljava/lang/String;
@@ -5681,6 +5687,15 @@ public class com/datadog/trace/common/writer/LoggingWriter : com/datadog/trace/c
 	public fun incrementDropCounts (I)V
 	public fun start ()V
 	public fun toString ()Ljava/lang/String;
+	public fun write (Ljava/util/List;)V
+}
+
+public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/common/writer/Writer {
+	public fun <init> ()V
+	public fun close ()V
+	public fun flush ()Z
+	public fun incrementDropCounts (I)V
+	public fun start ()V
 	public fun write (Ljava/util/List;)V
 }
 
@@ -5921,6 +5936,11 @@ public abstract interface class com/datadog/trace/core/CoreSpan {
 }
 
 public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI {
+	public static final field LANG_INTERPRETER_STATSD_TAG Ljava/lang/String;
+	public static final field LANG_INTERPRETER_VENDOR_STATSD_TAG Ljava/lang/String;
+	public static final field LANG_STATSD_TAG Ljava/lang/String;
+	public static final field LANG_VERSION_STATSD_TAG Ljava/lang/String;
+	public static final field TRACER_VERSION_STATSD_TAG Ljava/lang/String;
 	public static final field TRACE_ID_MAX Ljava/math/BigInteger;
 	public fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
@@ -6023,7 +6043,6 @@ public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
 	public fun scopeManager (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun serviceName (Ljava/lang/String;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun serviceNameMappings (Ljava/util/Map;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
-	public fun statsDClient (Lcom/datadog/trace/core/taginterceptor/TagInterceptor;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun strictTraceWrites (Z)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun tagInterceptor (Lcom/datadog/trace/core/taginterceptor/TagInterceptor;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun taggedHeaders (Ljava/util/Map;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
@@ -6034,6 +6053,7 @@ public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
 
 public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/TransientProfilingContextHolder, com/datadog/trace/bootstrap/instrumentation/api/AgentSpan, com/datadog/trace/bootstrap/instrumentation/api/AttachableWrapper, com/datadog/trace/core/CoreSpan {
 	public static final field CHECKPOINTED_TAG Ljava/lang/String;
+	public fun <init> (Ljava/lang/String;JLcom/datadog/trace/core/DDSpanContext;Ljava/util/List;)V
 	public fun addLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)V
 	public synthetic fun addThrowable (Ljava/lang/Throwable;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public synthetic fun addThrowable (Ljava/lang/Throwable;)Lcom/datadog/trace/core/CoreSpan;
@@ -6316,9 +6336,12 @@ public class com/datadog/trace/core/PendingTrace : com/datadog/trace/bootstrap/i
 	public static fun getDurationNano (Lcom/datadog/trace/core/CoreSpan;)J
 	public fun getEndToEndStartTime ()J
 	public fun getLastWriteTime ()J
+	public fun getPendingReferenceCount ()I
 	public fun getRootSpan ()Lcom/datadog/trace/core/DDSpan;
 	public fun getRunningTraceStartTime ()J
+	public fun getSpans ()Ljava/util/List;
 	public fun getTimeSource ()Lcom/datadog/trace/api/time/TimeSource;
+	public fun isRootSpanWritten ()Z
 	public fun lastReferencedNanosAgo (J)Z
 	public fun oldestFinishedTime ()J
 	public fun registerContinuation (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;)V

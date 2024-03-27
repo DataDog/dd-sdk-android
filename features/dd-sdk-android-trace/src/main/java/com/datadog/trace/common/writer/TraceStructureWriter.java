@@ -120,7 +120,6 @@ public class TraceStructureWriter implements Writer {
                   + ")"
                   + "->"
                   + span.getTraceId();
-          out.println("ERROR: " + message);
           if (debugLog) {
             log.error(message);
           }
@@ -139,7 +138,6 @@ public class TraceStructureWriter implements Writer {
                     + ")"
                     + "->"
                     + span.getParentId();
-            out.println("ERROR: " + message);
             if (debugLog) {
               log.error(message);
             }

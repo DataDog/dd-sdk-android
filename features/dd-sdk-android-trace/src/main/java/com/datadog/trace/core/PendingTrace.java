@@ -447,6 +447,19 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
     LAST_WRITE_TIME_NANO.set(this, now);
   }
 
+  public int getPendingReferenceCount() {
+    return pendingReferenceCount;
+  }
+
+  public boolean isRootSpanWritten() {
+    return rootSpanWritten;
+  }
+
+  public List<DDSpan> getSpans() {
+    return spans.isEmpty() ? EMPTY : new ArrayList<>(spans);
+  }
+
+
   @Override
   public boolean setEnqueued(boolean enqueued) {
     int expected = enqueued ? 0 : 1;

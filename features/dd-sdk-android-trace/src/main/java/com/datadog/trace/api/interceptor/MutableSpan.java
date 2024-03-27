@@ -1,5 +1,7 @@
 package com.datadog.trace.api.interceptor;
 
+import androidx.annotation.Nullable;
+
 import com.datadog.trace.api.DDTags;
 
 import java.util.Map;
@@ -24,6 +26,7 @@ public interface MutableSpan {
 
   MutableSpan setResourceName(final CharSequence resourceName);
 
+  @Nullable
   Integer getSamplingPriority();
 
   /**

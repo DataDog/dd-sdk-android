@@ -35,6 +35,7 @@ jUnitJupiter = "5.9.3"
 jUnitPlatform = "1.9.3"
 jUnitVintage = "5.9.3"
 jUnitMockitoExt = "5.4.0"
+systemStubsJupiter = "2.1.6"
 
 # Android JUnit
 androidXJunitRunner = "1.5.0"
@@ -180,6 +181,7 @@ kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = 
 kover = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
 kspTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "kspTesting" }
 androidLintTests = { module = "com.android.tools.lint:lint-tests", version.ref = "androidLint" }
+systemStubsJupiter = { module = "uk.org.webcompere:system-stubs-jupiter", version.ref = "systemStubsJupiter" }
 
 # Tools
 detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }

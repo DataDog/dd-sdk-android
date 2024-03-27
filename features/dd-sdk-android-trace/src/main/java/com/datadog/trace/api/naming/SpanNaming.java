@@ -11,7 +11,7 @@ public class SpanNaming {
   public static final int SCHEMA_MIN_VERSION = 0;
   public static final int SCHEMA_MAX_VERSION = 1;
 
-  private static class Singleton {
+  public static class Singleton {
     private static SpanNaming INSTANCE = new SpanNaming();
   }
 

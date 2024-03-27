@@ -13,11 +13,13 @@ fun Project.registerSubModuleAggregationTask(
     taskName: String,
     subModuleTaskName: String,
     subModuleNamePrefix: String = "dd-sdk-android-",
+    exceptions: Set<String> = emptySet(),
     additionalConfiguration: Task.() -> Unit = {}
 ) {
     tasks.register(taskName) {
         project.subprojects.forEach { subProject ->
-            if (subProject.name.startsWith(subModuleNamePrefix)) {
+            val name = subProject.name
+            if (!exceptions.contains(name) && name.startsWith(subModuleNamePrefix)) {
                 dependsOn("${subProject.path}:$subModuleTaskName")
             }
         }
