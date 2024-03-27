@@ -316,7 +316,7 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
-    fun `M note add sourceType W creating the Log { source_type attribute not set }`() {
+    fun `M not add sourceType W creating the Log { source_type attribute not set }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -375,6 +375,105 @@ internal class DatadogLogGeneratorTest {
             )
         )
         assertThat(log.additionalProperties).doesNotContainKey(LogAttributes.SOURCE_TYPE)
+    }
+
+    @Test
+    fun `M not add fingerprint W creating the Log { fingerprint attribute not set }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message,
+                sourceType = null,
+                fingerprint = null,
+                threads = null
+            )
+        )
+    }
+
+    @Test
+    fun `M add fingerprint W creating the Log { fingerprint attribute set }`(
+        @StringForgery fakeFingerprint: String
+    ) {
+        // WHEN
+        val modifiedAttributes = fakeAttributes.toMutableMap().apply {
+            put(LogAttributes.ERROR_FINGERPRINT, fakeFingerprint)
+        }
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            modifiedAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message,
+                sourceType = null,
+                fingerprint = fakeFingerprint,
+                threads = null
+            )
+        )
+        assertThat(log.additionalProperties).doesNotContainKey(LogAttributes.ERROR_FINGERPRINT)
+    }
+
+    @Test
+    fun `M add fingerprint W creating the Log { expanded error, fingerprint attribute set }`() {
+        // WHEN
+        val modifiedAttributes = fakeAttributes.toMutableMap().apply {
+            put(LogAttributes.ERROR_FINGERPRINT, "fake_fingerprint")
+        }
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable.javaClass.canonicalName,
+            fakeThrowable.message,
+            fakeThrowable.stackTraceToString(),
+            modifiedAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message,
+                sourceType = null,
+                fingerprint = "fake_fingerprint",
+                threads = null
+            )
+        )
+        assertThat(log.additionalProperties).doesNotContainKey(LogAttributes.ERROR_FINGERPRINT)
     }
 
     @Test

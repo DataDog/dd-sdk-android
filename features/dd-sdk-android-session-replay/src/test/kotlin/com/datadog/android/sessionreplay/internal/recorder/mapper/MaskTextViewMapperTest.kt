@@ -30,16 +30,24 @@ internal class MaskTextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
     override fun initTestedMapper(): TextViewMapper {
         return MaskTextViewMapper(
-            imageWireframeHelper = mockImageWireframeHelper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        ).apply {
             textValueObfuscationRule = mockObfuscationRule
-        )
+        }
     }
 
     @Test
     fun `M use the MaskObfuscationRule as defaultObfuscator when initialized`() {
         // When
-        val textViewMapper = MaskTextViewMapper()
+        val textViewMapper = MaskTextViewMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
 
         // Then
         assertThat(textViewMapper.textValueObfuscationRule)

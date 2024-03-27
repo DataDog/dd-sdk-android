@@ -6,73 +6,38 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.InsetDrawable
-import android.graphics.drawable.RippleDrawable
-import android.os.Build
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 @Suppress("UndocumentedPublicClass")
 abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
-    private val stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils
+    protected val viewIdentifierResolver: ViewIdentifierResolver,
+    protected val colorStringFormatter: ColorStringFormatter,
+    protected val viewBoundsResolver: ViewBoundsResolver,
+    protected val drawableToColorMapper: DrawableToColorMapper
 ) : WireframeMapper<T, S> {
 
     /**
      * Resolves the [View] unique id to be used in the mapped [MobileSegment.Wireframe].
      */
     protected fun resolveViewId(view: View): Long {
-        // we will use the System.identityHashcode in here which always returns the default
-        // hashcode value whether or not a child class overrides this.
-        return System.identityHashCode(view).toLong()
+        return viewIdentifierResolver.resolveViewId(view)
     }
 
     /**
-     * Takes color and the alpha value and returns a string formatted color in RGBA format
-     * (e.g. #000000FF).
+     * Resolves the [MobileSegment.ShapeStyle] based on the [View] drawables.
      */
-    protected fun colorAndAlphaAsStringHexa(color: Int, alphaAsHexa: Int): String {
-        return stringUtils.formatColorAndAlphaAsHexa(color, alphaAsHexa)
-    }
-
-    /**
-     * Resolves the [View] bounds. These dimensions are already normalized according with
-     * the provided [pixelsDensity]. By Global we mean that the View position will not be relative
-     * to its parent but to the Device screen.
-     */
-    protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds {
-        // RUMM-0000 return an array of primitives here instead of creating an object.
-        // This method is being called too often every time we take a screen snapshot
-        // and we might want to avoid creating too many instances.
-        return viewUtils.resolveViewGlobalBounds(view, pixelsDensity)
-    }
-
-    /**
-     * Resolves the [MobileSegment.ShapeStyle] and [MobileSegment.ShapeBorder] based on the [View]
-     * drawables.
-     */
-    protected fun Drawable.resolveShapeStyleAndBorder(
-        viewAlpha: Float
-    ): Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
-        return if (this is ColorDrawable) {
-            val color = colorAndAlphaAsStringHexa(color, alpha)
-            MobileSegment.ShapeStyle(color, viewAlpha) to null
-        } else if (this is RippleDrawable && numberOfLayers >= 1) {
-            this.safeGetDrawable(0)?.resolveShapeStyleAndBorder(viewAlpha)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && this is InsetDrawable) {
-            drawable?.resolveShapeStyleAndBorder(viewAlpha)
+    protected fun resolveShapeStyle(drawable: Drawable, viewAlpha: Float): MobileSegment.ShapeStyle? {
+        val color = drawableToColorMapper.mapDrawableToColor(drawable)
+        return if (color != null) {
+            MobileSegment.ShapeStyle(colorStringFormatter.formatColorAsHexString(color), viewAlpha)
         } else {
-            // We cannot handle this drawable so we will use a border to delimit its container
-            // bounds.
-            // TODO: RUMM-0000 In case the background drawable could not be handled we should
-            // instead resolve it as an ImageWireframe.
-            null to null
+            null
         }
     }
 

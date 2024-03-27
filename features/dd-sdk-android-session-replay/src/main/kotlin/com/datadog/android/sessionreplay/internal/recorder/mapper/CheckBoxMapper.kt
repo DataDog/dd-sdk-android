@@ -7,18 +7,21 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.CheckBox
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class CheckBoxMapper(
     textWireframeMapper: TextViewMapper,
-    stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
 ) : CheckableCompoundButtonMapper<CheckBox>(
     textWireframeMapper,
-    stringUtils,
-    uniqueIdentifierGenerator,
-    viewUtils
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
 )

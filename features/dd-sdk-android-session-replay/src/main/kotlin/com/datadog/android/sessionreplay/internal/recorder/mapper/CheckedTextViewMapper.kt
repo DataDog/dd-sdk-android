@@ -7,38 +7,36 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.CheckedTextView
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class CheckedTextViewMapper(
     textWireframeMapper: TextViewMapper,
-    private val stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
 ) : CheckableTextViewMapper<CheckedTextView>(
     textWireframeMapper,
-    stringUtils,
-    uniqueIdentifierGenerator,
-    viewUtils
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
 ) {
 
     // region CheckableTextViewMapper
 
     override fun resolveCheckableColor(view: CheckedTextView): String {
-        view.checkMarkTintList?.let {
-            return stringUtils.formatColorAndAlphaAsHexa(
-                it.defaultColor,
-                OPAQUE_ALPHA_VALUE
-            )
-        }
-        return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
+        val color = view.checkMarkTintList?.defaultColor ?: view.currentTextColor
+        return colorStringFormatter.formatColorAndAlphaAsHexString(color, OPAQUE_ALPHA_VALUE)
     }
 
     override fun resolveCheckableBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
         val textViewPaddingRight =
             view.totalPaddingRight.toLong().densityNormalized(pixelsDensity)
         var checkBoxHeight = 0L

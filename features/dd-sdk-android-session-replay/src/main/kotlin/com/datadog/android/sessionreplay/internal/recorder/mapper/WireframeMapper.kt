@@ -7,11 +7,10 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.NoOpAsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 
 /**
  * Maps a View to a [List] of [MobileSegment.Wireframe].
@@ -37,6 +36,6 @@ interface WireframeMapper<in T : View, out S : MobileSegment.Wireframe> {
     fun map(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback = NoOpAsyncJobStatusCallback()
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<S>
 }

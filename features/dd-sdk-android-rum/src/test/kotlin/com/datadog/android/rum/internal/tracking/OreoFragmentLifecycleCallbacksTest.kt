@@ -102,7 +102,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
         whenever(mockActivity.window).thenReturn(mockWindow)
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.BASE
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
@@ -312,7 +312,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will register the callback to fragment manager on O`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.O
 
         // When
         testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
@@ -327,7 +327,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will unregister the callback from fragment manager on O`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.O
 
         // When
         testedLifecycleCallbacks.unregister(mockActivity)
@@ -339,7 +339,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will do nothing when calling register on M`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.M
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.M
 
         // When
         testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
@@ -351,7 +351,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will do nothing when calling unregister on M`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.M
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.M
 
         // When
         testedLifecycleCallbacks.unregister(mockActivity)

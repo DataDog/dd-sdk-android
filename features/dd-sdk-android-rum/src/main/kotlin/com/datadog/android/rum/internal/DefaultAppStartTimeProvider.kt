@@ -11,17 +11,16 @@ import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import java.util.concurrent.TimeUnit
 
 internal class DefaultAppStartTimeProvider(
-    buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : AppStartTimeProvider {
 
     override val appStartTimeNs: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
         @SuppressLint("NewApi")
         when {
-            buildSdkVersionProvider.version() >= Build.VERSION_CODES.N -> {
+            buildSdkVersionProvider.version >= Build.VERSION_CODES.N -> {
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
             }

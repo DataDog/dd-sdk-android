@@ -8,28 +8,31 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.os.Build
 import android.widget.CompoundButton
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
     textWireframeMapper: TextViewMapper,
-    stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
 ) : CheckableTextViewMapper<T>(
     textWireframeMapper,
-    stringUtils,
-    uniqueIdentifierGenerator,
-    viewUtils
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
 ) {
 
     // region CheckableTextViewMapper
 
     override fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
         var checkBoxHeight = DEFAULT_CHECKABLE_HEIGHT_IN_PX
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             view.buttonDrawable?.let {

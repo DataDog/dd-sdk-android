@@ -8,18 +8,16 @@ package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.DefaultStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 
 internal class MaskObfuscationRule(
-    private val defaultStringObfuscator: DefaultStringObfuscator =
-        DefaultStringObfuscator(),
-    private val fixedLengthStringObfuscator: FixedLengthStringObfuscator =
-        FixedLengthStringObfuscator(),
-    private val textTypeResolver: TextTypeResolver =
-        TextTypeResolver(),
+    private val defaultStringObfuscator: StringObfuscator = StringObfuscator.getStringObfuscator(),
+    private val fixedLengthStringObfuscator: FixedLengthStringObfuscator = FixedLengthStringObfuscator(),
+    private val textTypeResolver: TextTypeResolver = TextTypeResolver(),
     private val textValueResolver: TextValueResolver = TextValueResolver()
 ) : TextValueObfuscationRule {
+
     override fun resolveObfuscatedValue(
         textView: TextView,
         mappingContext: MappingContext

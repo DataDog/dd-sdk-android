@@ -12,10 +12,8 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -76,9 +74,6 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockNdkCrashLogDeserializer: Deserializer<String, NdkCrashLog>
 
     @Mock
-    lateinit var mockRumEventDeserializer: Deserializer<String, JsonObject>
-
-    @Mock
     lateinit var mockNetworkInfoDeserializer: Deserializer<String, NetworkInfo>
 
     @Mock
@@ -97,10 +92,10 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockRumFileReader: BatchFileReader
+    lateinit var mockEnvFileReader: FileReader<ByteArray>
 
     @Mock
-    lateinit var mockEnvFileReader: FileReader<ByteArray>
+    lateinit var mockLastRumViewEventProvider: () -> JsonObject?
 
     lateinit var fakeNdkCacheDir: File
 
@@ -113,11 +108,6 @@ internal class DatadogNdkCrashHandlerTest {
     @BeforeEach
     fun `set up`() {
         fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
-        whenever(mockRumFileReader.readData(any())) doAnswer {
-            listOf(
-                RawBatchEvent(it.getArgument<File>(0).readBytes())
-            )
-        }
         whenever(mockEnvFileReader.readData(any())) doAnswer {
             it.getArgument<File>(0).readBytes()
         }
@@ -134,12 +124,11 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             mockInternalLogger,
-            mockRumFileReader,
-            mockEnvFileReader
+            mockEnvFileReader,
+            mockLastRumViewEventProvider
         )
     }
 
@@ -168,16 +157,12 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Test
     fun `𝕄 read last RUM View event 𝕎 prepareData()`(
-        @StringForgery viewEventStr: String,
         forge: Forge
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(
-            viewEventStr
-        )
         val fakeViewEvent = forge.aFakeViewEvent()
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr)) doReturn fakeViewEvent.toJson()
+        whenever(mockLastRumViewEventProvider()) doReturn fakeViewEvent.toJson()
 
         // When
         testedHandler.prepareData()
@@ -237,7 +222,6 @@ internal class DatadogNdkCrashHandlerTest {
     fun `𝕄 do nothing 𝕎 prepareData() {directory does not exist}`() {
         // When
         testedHandler.prepareData()
-        whenever(mockRumEventDeserializer.deserialize(any())) doReturn mock()
         whenever(mockNdkCrashLogDeserializer.deserialize(any())) doReturn mock()
         whenever(mockUserInfoDeserializer.deserialize(any())) doReturn mock()
         whenever(mockNetworkInfoDeserializer.deserialize(any())) doReturn mock()
@@ -254,7 +238,6 @@ internal class DatadogNdkCrashHandlerTest {
     @Test
     fun `𝕄 clear crash data 𝕎 prepareData()`(
         @StringForgery crashData: String,
-        @StringForgery viewEvent: String,
         @StringForgery networkInfo: String,
         @StringForgery userInfo: String
     ) {
@@ -262,7 +245,6 @@ internal class DatadogNdkCrashHandlerTest {
         fakeNdkCacheDir.mkdirs()
 
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME)
             .writeText(networkInfo)
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
@@ -393,13 +375,12 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             mockInternalLogger,
-            mockRumFileReader,
             mockEnvFileReader,
-            "ndk+il2cpp"
+            lastRumViewEventProvider = { JsonObject() },
+            nativeCrashSourceType = "ndk+il2cpp"
         )
 
         val fakeViewEvent = forge.aFakeViewEvent()
@@ -565,13 +546,12 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             mockInternalLogger,
-            mockRumFileReader,
             mockEnvFileReader,
-            "ndk+il2cpp"
+            lastRumViewEventProvider = { JsonObject() },
+            nativeCrashSourceType = "ndk+il2cpp"
         )
 
         val fakeViewEvent = forge.aFakeViewEvent()

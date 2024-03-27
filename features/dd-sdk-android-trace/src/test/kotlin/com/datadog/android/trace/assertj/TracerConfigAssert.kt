@@ -11,7 +11,7 @@ import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
 internal class TracerConfigAssert(actual: Config) : AbstractObjectAssert<TracerConfigAssert, Config>
-(actual, TracerConfigAssert::class.java) {
+    (actual, TracerConfigAssert::class.java) {
 
     fun hasServiceName(expected: String): TracerConfigAssert {
         assertThat(actual.serviceName)

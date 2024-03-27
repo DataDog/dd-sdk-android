@@ -217,6 +217,7 @@ class SampleApplication : Application() {
             .setTelemetrySampleRate(100f)
             .trackUserInteractions()
             .trackLongTasks(250L)
+            .trackNonFatalAnrs(true)
             .setViewEventMapper(object : ViewEventMapper {
                 override fun map(event: ViewEvent): ViewEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)

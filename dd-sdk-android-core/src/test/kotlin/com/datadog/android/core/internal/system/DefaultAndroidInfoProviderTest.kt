@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -73,7 +74,7 @@ internal class DefaultAndroidInfoProviderTest {
             mockUiModeManager
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE)) doReturn
             mockTelephonyManager
-        whenever(mockSdkVersionProvider.version()) doReturn
+        whenever(mockSdkVersionProvider.version) doReturn
             forge.anInt(min = Build.VERSION_CODES.BASE)
         whenever(mockContext.packageManager) doReturn mockPackageManager
         whenever(mockContext.resources) doReturn mockResources
@@ -350,6 +351,7 @@ internal class DefaultAndroidInfoProviderTest {
         @StringForgery fakeModel: String
     ) {
         // Given
+        assumeFalse(fakeModel.contains(fakeBrand, ignoreCase = true))
         Build::class.java.setStaticValue("BRAND", fakeBrand)
         Build::class.java.setStaticValue("MODEL", fakeModel)
         testedProvider = createProvider()

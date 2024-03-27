@@ -13,7 +13,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -256,7 +256,7 @@ internal class ViewUtilsInternalTest {
             mockTextView,
             mockDrawable,
             0f,
-            ImageWireframeHelper.CompoundDrawablePositions.LEFT
+            DefaultImageWireframeHelper.CompoundDrawablePositions.LEFT
         )
 
         // Then
@@ -276,7 +276,7 @@ internal class ViewUtilsInternalTest {
             mockTextView,
             mockDrawable,
             0f,
-            ImageWireframeHelper.CompoundDrawablePositions.TOP
+            DefaultImageWireframeHelper.CompoundDrawablePositions.TOP
         )
 
         // Then
@@ -298,7 +298,7 @@ internal class ViewUtilsInternalTest {
             mockTextView,
             mockDrawable,
             0f,
-            ImageWireframeHelper.CompoundDrawablePositions.RIGHT
+            DefaultImageWireframeHelper.CompoundDrawablePositions.RIGHT
         )
 
         // Then
@@ -320,7 +320,7 @@ internal class ViewUtilsInternalTest {
             mockTextView,
             mockDrawable,
             0f,
-            ImageWireframeHelper.CompoundDrawablePositions.BOTTOM
+            DefaultImageWireframeHelper.CompoundDrawablePositions.BOTTOM
         )
 
         // Then

@@ -15,8 +15,8 @@ import android.os.Handler
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -54,7 +54,7 @@ internal class DrawableUtilsTest {
     private lateinit var mockDisplayMetrics: DisplayMetrics
 
     @Mock
-    private lateinit var mockBitmapPool: BitmapPool
+    private lateinit var mockBitmapCachesManager: BitmapCachesManager
 
     @Mock
     private lateinit var mockDrawable: Drawable
@@ -78,13 +78,10 @@ internal class DrawableUtilsTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockBitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
+    private lateinit var mockBitmapCreationCallback: ResourceResolver.BitmapCreationCallback
 
     @Mock
     private lateinit var mockMainThreadHandler: Handler
-
-    @Mock
-    private lateinit var mockLogger: InternalLogger
 
     @Mock
     lateinit var mockConstantState: ConstantState
@@ -95,6 +92,9 @@ internal class DrawableUtilsTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    private lateinit var mockLogger: InternalLogger
+
     @BeforeEach
     fun setup() {
         whenever(mockConstantState.newDrawable(mockResources)).thenReturn(mockSecondDrawable)
@@ -104,7 +104,7 @@ internal class DrawableUtilsTest {
         whenever(mockCanvasWrapper.createCanvas(any()))
             .thenReturn(mockCanvas)
         whenever(mockBitmap.config).thenReturn(mockConfig)
-        whenever(mockBitmapPool.getBitmapByProperties(any(), any(), any())).thenReturn(null)
+        whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any())).thenReturn(null)
 
         doAnswer { invocation ->
             val work = invocation.getArgument(0) as Runnable
@@ -122,8 +122,7 @@ internal class DrawableUtilsTest {
         testedDrawableUtils = DrawableUtils(
             bitmapWrapper = mockBitmapWrapper,
             canvasWrapper = mockCanvasWrapper,
-            bitmapPool = mockBitmapPool,
-            threadPoolExecutor = mockExecutorService,
+            bitmapCachesManager = mockBitmapCachesManager,
             mainThreadHandler = mockMainThreadHandler,
             logger = mockLogger
         )
@@ -252,7 +251,7 @@ internal class DrawableUtilsTest {
         val mockBitmapFromPool: Bitmap = mock()
         whenever(mockDrawable.intrinsicWidth).thenReturn(viewWidth)
         whenever(mockDrawable.intrinsicHeight).thenReturn(viewHeight)
-        whenever(mockBitmapPool.getBitmapByProperties(any(), any(), any()))
+        whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any()))
             .thenReturn(mockBitmapFromPool)
 
         // When
@@ -275,7 +274,7 @@ internal class DrawableUtilsTest {
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
-        whenever(mockBitmapPool.getBitmapByProperties(any(), any(), any()))
+        whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any()))
             .thenReturn(null)
         whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any()))
             .thenReturn(null)

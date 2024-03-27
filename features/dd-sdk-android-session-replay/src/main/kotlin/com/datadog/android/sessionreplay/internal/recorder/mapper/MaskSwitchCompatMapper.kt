@@ -9,16 +9,24 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal class MaskSwitchCompatMapper(
     textWireframeMapper: TextViewMapper,
-    stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
-) : SwitchCompatMapper(textWireframeMapper, stringUtils, uniqueIdentifierGenerator, viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : SwitchCompatMapper(
+    textWireframeMapper,
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     // region CheckableWireframeMapper
 
@@ -33,7 +41,7 @@ internal class MaskSwitchCompatMapper(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val trackId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
+        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
         val trackThumbDimensions = resolveThumbAndTrackDimensions(
             view,
             mappingContext.systemInformation
@@ -44,7 +52,7 @@ internal class MaskSwitchCompatMapper(
         val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
         val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
         val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )

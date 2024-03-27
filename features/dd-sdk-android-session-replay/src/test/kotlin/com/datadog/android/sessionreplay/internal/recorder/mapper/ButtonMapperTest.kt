@@ -72,7 +72,7 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
         ).thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext)
+        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -93,7 +93,7 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
         ).thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext)
+        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -116,7 +116,7 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext)
+        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(expectedWireframes)

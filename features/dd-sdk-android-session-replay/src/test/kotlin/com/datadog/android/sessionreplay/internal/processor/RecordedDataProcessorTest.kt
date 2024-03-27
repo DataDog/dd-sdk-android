@@ -1,4 +1,4 @@
- /*
+/*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
@@ -1271,22 +1271,22 @@ internal class RecordedDataProcessorTest {
         resourceData: ByteArray,
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
     ): ResourceRecordedDataQueueItem = ResourceRecordedDataQueueItem(
-            recordedQueuedItemContext = usedContext,
-            resourceData = resourceData,
-            applicationId = fakeRumContext.applicationId,
-            identifier = fakeIdentifier
-        )
+        recordedQueuedItemContext = usedContext,
+        resourceData = resourceData,
+        applicationId = fakeRumContext.applicationId,
+        identifier = fakeIdentifier
+    )
 
     private fun createSnapshotItem(
         snapshot: List<Node>,
         systemInformation: SystemInformation = fakeSystemInformation,
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
     ): SnapshotRecordedDataQueueItem = SnapshotRecordedDataQueueItem(
-            usedContext,
-            systemInformation = systemInformation
-        ).apply {
-            this.nodes = snapshot
-        }
+        usedContext,
+        systemInformation = systemInformation
+    ).apply {
+        this.nodes = snapshot
+    }
 
     private fun createTouchEventItem(
         touchEvent: List<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>,

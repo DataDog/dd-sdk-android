@@ -7,39 +7,37 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.slider.Slider
 
 internal open class SliderWireframeMapper(
-    private val viewUtils: ViewUtils = ViewUtils,
-    private val stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator =
-        UniqueIdentifierGenerator
-) :
-    WireframeMapper<Slider, MobileSegment.Wireframe> {
+    private val viewIdentifierResolver: ViewIdentifierResolver,
+    private val colorStringFormatter: ColorStringFormatter,
+    private val viewBoundsResolver: ViewBoundsResolver
+) : WireframeMapper<Slider, MobileSegment.Wireframe> {
 
     @Suppress("LongMethod")
     override fun map(view: Slider, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
         List<MobileSegment.Wireframe> {
-        val activeTrackId = uniqueIdentifierGenerator
+        val activeTrackId = viewIdentifierResolver
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)
-        val nonActiveTrackId = uniqueIdentifierGenerator
+        val nonActiveTrackId = viewIdentifierResolver
             .resolveChildUniqueIdentifier(view, TRACK_NON_ACTIVE_KEY_NAME)
-        val thumbId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
 
         if (activeTrackId == null || thumbId == null || nonActiveTrackId == null) {
             return emptyList()
         }
 
         val screenDensity = mappingContext.systemInformation.screenDensity
-        val viewGlobalBounds = viewUtils.resolveViewGlobalBounds(view, screenDensity)
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, screenDensity)
         val normalizedSliderValue = view.normalizedValue()
         val viewAlpha = view.alpha
 
@@ -52,15 +50,15 @@ internal open class SliderWireframeMapper(
         val trackActiveColor = view.trackActiveTintList.getColor(drawableState)
         val trackNonActiveColor = view.trackInactiveTintList.getColor(drawableState)
         val thumbColor = view.thumbTintList.getColor(drawableState)
-        val trackActiveColorAsHexa = stringUtils.formatColorAndAlphaAsHexa(
+        val trackActiveColorAsHexa = colorStringFormatter.formatColorAndAlphaAsHexString(
             trackActiveColor,
             OPAQUE_ALPHA_VALUE
         )
-        val trackNonActiveColorAsHexa = stringUtils.formatColorAndAlphaAsHexa(
+        val trackNonActiveColorAsHexa = colorStringFormatter.formatColorAndAlphaAsHexString(
             trackNonActiveColor,
             PARTIALLY_OPAQUE_ALPHA_VALUE
         )
-        val thumbColorAsHexa = stringUtils.formatColorAndAlphaAsHexa(thumbColor, OPAQUE_ALPHA_VALUE)
+        val thumbColorAsHexa = colorStringFormatter.formatColorAndAlphaAsHexString(thumbColor, OPAQUE_ALPHA_VALUE)
 
         // track dimensions
         val trackWidth = view.trackWidth.toLong().densityNormalized(screenDensity)

@@ -196,44 +196,11 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M send ApplicationStarted event once W handleEvent(SdkInit) { app is in foreground }`(
+    fun `M not send any event downstream W handleEvent(SdkInit)`(
         forge: Forge
     ) {
         // Given
-        val fakeEvent = forge.sdkInitEvent().copy(isAppInForeground = true)
-
-        val expectedEventTimestamp =
-            TimeUnit.NANOSECONDS.toMillis(
-                TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
-                        fakeEvent.eventTime.nanoTime + fakeEvent.appStartTimeNs
-            )
-
-        // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        argumentCaptor<RumRawEvent> {
-            verify(mockChildScope).handleEvent(capture(), eq(mockWriter))
-            assertThat(firstValue).isInstanceOf(RumRawEvent.ApplicationStarted::class.java)
-            val appStartEventTime = (firstValue as RumRawEvent.ApplicationStarted).eventTime
-            assertThat(appStartEventTime.timestamp).isEqualTo(expectedEventTimestamp)
-            assertThat(appStartEventTime.nanoTime).isEqualTo(fakeEvent.appStartTimeNs)
-
-            val processStartTimeNs = (firstValue as RumRawEvent.ApplicationStarted)
-                .applicationStartupNanos
-            assertThat(processStartTimeNs)
-                .isEqualTo(fakeEvent.eventTime.nanoTime - fakeEvent.appStartTimeNs)
-
-            assertThat(allValues.filterIsInstance<RumRawEvent.ApplicationStarted>()).hasSize(1)
-        }
-    }
-
-    @Test
-    fun `M not send ApplicationStarted event W handleEvent(SdkInit) { app is not in foreground }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeEvent = forge.sdkInitEvent().copy(isAppInForeground = false)
+        val fakeEvent = forge.sdkInitEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)

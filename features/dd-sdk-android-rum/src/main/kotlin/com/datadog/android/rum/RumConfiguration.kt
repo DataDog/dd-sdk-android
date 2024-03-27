@@ -134,6 +134,21 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Enable tracking of non-fatal ANRs. This is enabled by default on Android API 29 and
+         * below, and disabled by default on Android API 30 and above. Android API 30+ has a
+         * capability to report fatal ANRs (always enabled). Please note, that tracking non-fatal
+         * ANRs is using Watchdog thread approach, which can be noisy, and also leads to ANR
+         * duplication on Android 30+ if fatal ANR happened, because Watchdog thread approach cannot
+         * categorize ANR as fatal or non-fatal.
+         *
+         * @param enabled whether tracking of non-fatal ANRs is enabled or not.
+         */
+        fun trackNonFatalAnrs(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(trackNonFatalAnrs = enabled)
+            return this
+        }
+
+        /**
          * Sets the [ViewEventMapper] for the RUM [ViewEvent]. You can use this interface implementation
          * to modify the [ViewEvent] attributes before serialisation.
          *

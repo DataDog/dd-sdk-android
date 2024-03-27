@@ -10,12 +10,34 @@ import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class MaskTabWireframeMapper(
-    viewUtils: ViewUtils = ViewUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe> =
-        MaskTextViewMapper()
-) : TabWireframeMapper(viewUtils, uniqueIdentifierGenerator, textViewMapper)
+internal class MaskTabWireframeMapper internal constructor(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    viewBoundsResolver: ViewBoundsResolver,
+    textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe>
+) : TabWireframeMapper(
+    viewIdentifierResolver,
+    viewBoundsResolver,
+    textViewMapper
+) {
+
+    constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper
+    ) : this(
+        viewIdentifierResolver,
+        viewBoundsResolver,
+        MaskTextViewMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
+    )
+}
