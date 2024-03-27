@@ -17,8 +17,8 @@ import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalle
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.DEVICE_MODEL
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.EXECUTION_TIME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OPERATION_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_BUILD
@@ -115,22 +115,22 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct title W stopMethodCalled()`() {
+    fun `M call logger with correct title W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(false)
+        testedMethodCalledTelemetry.sendMetric(false)
 
         // Then
         verify(mockInternalLogger).logMetric(lambdaCaptor.capture(), any())
         lambdaCaptor.firstValue.run {
             val title = this()
-            assertThat(title).isEqualTo(METRIC_NAME)
+            assertThat(title).isEqualTo(METHOD_CALLED_METRIC_NAME)
         }
     }
 
     @Test
-    fun `M call logger with correct execution time W stopMethodCalled()`() {
+    fun `M call logger with correct execution time W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(false)
+        testedMethodCalledTelemetry.sendMetric(false)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -140,9 +140,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct operation name W stopMethodCalled()`() {
+    fun `M call logger with correct operation name W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(false)
+        testedMethodCalledTelemetry.sendMetric(false)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -152,9 +152,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct caller class W stopMethodCalled()`() {
+    fun `M call logger with correct caller class W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(false)
+        testedMethodCalledTelemetry.sendMetric(false)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -164,9 +164,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct isSuccessful value W stopMethodCalled()`() {
+    fun `M call logger with correct isSuccessful value W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -176,9 +176,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct metric type value W stopMethodCalled()`() {
+    fun `M call logger with correct metric type value W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -188,9 +188,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct device model W stopMethodCalled()`() {
+    fun `M call logger with correct device model W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -201,9 +201,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct device brand W stopMethodCalled()`() {
+    fun `M call logger with correct device brand W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -214,9 +214,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct device architecture W stopMethodCalled()`() {
+    fun `M call logger with correct device architecture W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -227,9 +227,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct os name W stopMethodCalled()`() {
+    fun `M call logger with correct os name W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -240,9 +240,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct os version W stopMethodCalled()`() {
+    fun `M call logger with correct os version W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -253,9 +253,9 @@ internal class MethodCalledTelemetryTest {
     }
 
     @Test
-    fun `M call logger with correct os build W stopMethodCalled()`() {
+    fun `M call logger with correct os build W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.stopMethodCalled(fakeStatus)
+        testedMethodCalledTelemetry.sendMetric(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())

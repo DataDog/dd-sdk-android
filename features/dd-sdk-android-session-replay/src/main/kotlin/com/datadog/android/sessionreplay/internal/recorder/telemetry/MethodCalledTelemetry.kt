@@ -17,7 +17,8 @@ internal class MethodCalledTelemetry(
     private val startTime: Long = System.nanoTime(),
     private val internalSdkCore: InternalSdkCore? = Datadog.getInstance() as? InternalSdkCore
 ) : MetricBase {
-    internal fun stopMethodCalled(isSuccessful: Boolean) {
+
+    override fun sendMetric(isSuccessful: Boolean) {
         val executionTime = System.nanoTime() - startTime
         val additionalProperties: MutableMap<String, Any> = mutableMapOf()
 
@@ -59,14 +60,14 @@ internal class MethodCalledTelemetry(
         additionalProperties[OS_KEY] = osMap
 
         logger.logMetric(
-            messageBuilder = { METRIC_NAME },
+            messageBuilder = { METHOD_CALLED_METRIC_NAME },
             additionalProperties = additionalProperties
         )
     }
 
     internal companion object {
         // Title of the metric to be sent
-        internal const val METRIC_NAME = "[Mobile Metric] Method Called"
+        internal const val METHOD_CALLED_METRIC_NAME = "[Mobile Metric] Method Called"
 
         // Metric type value.
         internal const val METRIC_TYPE_VALUE = "method called"
