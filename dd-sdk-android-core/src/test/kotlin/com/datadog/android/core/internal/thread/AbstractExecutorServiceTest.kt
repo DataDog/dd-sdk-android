@@ -37,7 +37,7 @@ import java.util.concurrent.ExecutorService
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> {
+internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
 
     lateinit var testedExecutor: T
 

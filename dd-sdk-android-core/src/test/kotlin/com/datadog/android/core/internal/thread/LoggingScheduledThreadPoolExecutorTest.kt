@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class LoggingScheduledThreadPoolExecutorTest :
-    AbstractLoggingExecutorServiceTest<ScheduledThreadPoolExecutor>() {
+    AbstractExecutorServiceTest<ScheduledThreadPoolExecutor>() {
 
     override fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): ScheduledThreadPoolExecutor {
         return LoggingScheduledThreadPoolExecutor(1, mockInternalLogger, backPressureStrategy)

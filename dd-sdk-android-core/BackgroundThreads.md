@@ -7,7 +7,7 @@ with their purposes, where they are created, and the stress testing done on each
 
 ##### Purpose and Usage
 
-This instance (one per CoreFeature) is used to treat all data writing process.
+This instance (one per `CoreFeature`) is used to treat all data writing process.
 It is specifically used for:
 
 - (internal) initialize the NTP process on startup
@@ -60,11 +60,11 @@ Except for our unit tests, the actual implementation is our own `LoggingSchedule
 
 ---
 
-### RumFeature.vitalExecutorService: `ScheduledExecutorService`
+### `RumFeature.vitalExecutorService`: `ScheduledExecutorService`
 
 ##### Purpose and Usage
 
-This instance (one per RumFeature) is used to schedule regular readings of the system vitals, namely the CPU and
+This instance (one per `RumFeature`) is used to schedule regular readings of the system vitals, namely the CPU and
 memory usage.
 
 ##### Load and scalability
