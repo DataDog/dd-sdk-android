@@ -7,10 +7,14 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -33,16 +37,36 @@ import java.util.concurrent.ExecutorService
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> {
+internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
 
     lateinit var testedExecutor: T
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockOnThresholdReached: () -> Unit
+
+    @Mock
+    lateinit var mockOnItemDropped: (Any) -> Unit
+
+    @IntForgery(8, 128)
+    var fakeBackPressureCapacity: Int = 0
+
+    @Forgery
+    lateinit var fakeBackPressureMitigation: BackPressureMitigation
+
+    lateinit var fakeBackpressureStrategy: BackPressureStrategy
+
     @BeforeEach
     fun `set up`() {
-        testedExecutor = createTestedExecutorService()
+        fakeBackpressureStrategy = BackPressureStrategy(
+            fakeBackPressureCapacity,
+            mockOnThresholdReached,
+            mockOnItemDropped,
+            fakeBackPressureMitigation
+        )
+        testedExecutor = createTestedExecutorService(fakeBackpressureStrategy)
     }
 
     @AfterEach
@@ -50,7 +74,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         testedExecutor.shutdownNow()
     }
 
-    abstract fun createTestedExecutorService(): T
+    abstract fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): T
 
     // region execute
 

@@ -119,7 +119,8 @@ object Rum {
         frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
-        sessionListener = rumFeature.sessionListener
+        sessionListener = rumFeature.sessionListener,
+        executorService = sdkCore.createSingleThreadExecutorService()
     )
 
     // endregion

@@ -41,7 +41,8 @@ internal constructor(
         val encryption: Encryption?,
         val site: DatadogSite,
         val batchProcessingLevel: BatchProcessingLevel,
-        val persistenceStrategyFactory: PersistenceStrategy.Factory?
+        val persistenceStrategyFactory: PersistenceStrategy.Factory?,
+        val backpressureStrategy: BackPressureStrategy
     )
 
     // region Builder
@@ -236,12 +237,25 @@ internal constructor(
         }
 
         /**
-         * Allows to control if JVM crashes are tracked or not. Default value is [true].
+         * Allows to control if JVM crashes are tracked or not. Default value is `true`.
          *
          * @param crashReportsEnabled whether crashes are tracked and sent to Datadog
          */
         fun setCrashReportsEnabled(crashReportsEnabled: Boolean): Builder {
             this.crashReportsEnabled = crashReportsEnabled
+            return this
+        }
+
+        /**
+         * Sets the strategy to handle scalability issues.
+         * Many operations (data processing, event I/O, …) are queued in background threads.
+         * This configuration lets one decide how to handle the edge case when the queue starts growing, which can lead
+         * to a lot of memory usage, delayed processing, and possibly OOM or ANR.
+         * @param backpressureStrategy the backpressure strategy (default strategy ignores new tasks if a queue reaches
+         * 1024 items)
+         */
+        fun setBackpressureStrategy(backpressureStrategy: BackPressureStrategy): Builder {
+            coreConfig = coreConfig.copy(backpressureStrategy = backpressureStrategy)
             return this
         }
 
@@ -262,6 +276,15 @@ internal constructor(
          */
         private const val NO_VARIANT: String = ""
 
+        private const val DEFAULT_BACKPRESSURE_THRESHOLD = 1024
+
+        internal val DEFAULT_BACKPRESSURE_STRATEGY = BackPressureStrategy(
+            DEFAULT_BACKPRESSURE_THRESHOLD,
+            {},
+            {},
+            BackPressureMitigation.IGNORE_NEWEST
+        )
+
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
             enableDeveloperModeWhenDebuggable = false,
@@ -273,7 +296,8 @@ internal constructor(
             encryption = null,
             site = DatadogSite.US1,
             batchProcessingLevel = BatchProcessingLevel.MEDIUM,
-            persistenceStrategyFactory = null
+            persistenceStrategyFactory = null,
+            backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

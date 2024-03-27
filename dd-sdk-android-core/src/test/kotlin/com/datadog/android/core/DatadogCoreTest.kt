@@ -26,6 +26,7 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
+import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -68,7 +69,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -91,7 +91,7 @@ internal class DatadogCoreTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockPersistenceExecutorService: ExecutorService
+    lateinit var mockPersistenceExecutorService: FlushableExecutorService
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -121,7 +121,7 @@ internal class DatadogCoreTest {
             fakeInstanceId,
             fakeInstanceName,
             internalLoggerProvider = { mockInternalLogger },
-            persistenceExecutorServiceFactory = { mockPersistenceExecutorService },
+            executorServiceFactory = { _, _ -> mockPersistenceExecutorService },
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         ).apply {
             initialize(fakeConfiguration)
