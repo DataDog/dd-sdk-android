@@ -18,21 +18,17 @@ internal interface MetricBase {
         // Basic Metric type key.
         internal const val METRIC_TYPE = "metric_type"
 
-        internal enum class TelemetryMetrics {
-            MethodCalled
-        }
-
         fun startMetric(
             logger: InternalLogger,
             callerClass: String,
-            metric: TelemetryMetrics,
+            metric: TelemetryMetricType,
             samplingRate: Float = 100.0f
         ): MetricBase? {
             val sampler: Sampler = RateBasedSampler(samplingRate)
             if (!sampler.sample()) return null
 
             return when (metric) {
-                TelemetryMetrics.MethodCalled -> {
+                TelemetryMetricType.MethodCalled -> {
                     MethodCalledTelemetry(
                         callerClass,
                         logger
