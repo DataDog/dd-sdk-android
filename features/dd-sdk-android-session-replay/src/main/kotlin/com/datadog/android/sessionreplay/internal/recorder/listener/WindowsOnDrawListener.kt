@@ -15,8 +15,7 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryWrapper
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
@@ -27,9 +26,7 @@ internal class WindowsOnDrawListener(
     private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
     private val logger: InternalLogger,
-    private var telemetryWrapper: TelemetryWrapper = TelemetryWrapper(
-        logger = logger
-    )
+    private val methodCallTelemetrySamplingRate: Float = METHOD_CALL_SAMPLING_RATE
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
@@ -65,18 +62,19 @@ internal class WindowsOnDrawListener(
             RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
-        val methodCallTelemetry = telemetryWrapper.startMetric(
-            operationName = MethodCalledTelemetry.METHOD_CALL_OPERATION_NAME,
+        val methodCallTelemetry = MetricBase.startMetric(
+            logger = logger,
+            metric = MetricBase.Companion.TelemetryMetrics.MethodCalled,
             callerClass = this.javaClass.name,
-            samplingRate = METHOD_CALL_SAMPLE_RATE
-        ) as? MethodCalledTelemetry
+            samplingRate = methodCallTelemetrySamplingRate
+        )
 
         val nodes = views
             .mapNotNull {
                 snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
             }
 
-        methodCallTelemetry?.stopMethodCalled(isSuccessful = nodes.isNotEmpty())
+        methodCallTelemetry?.sendMetric(isSuccessful = nodes.isNotEmpty())
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
@@ -94,6 +92,6 @@ internal class WindowsOnDrawListener(
     }
 
     private companion object {
-        private const val METHOD_CALL_SAMPLE_RATE = 5f
+        private const val METHOD_CALL_SAMPLING_RATE = 5f
     }
 }
