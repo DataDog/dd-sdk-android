@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.telemetry
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -41,14 +42,14 @@ internal class TelemetryWrapperTest {
     fun `M return null W event is sampled out`() {
         // Given
         testedTelemetryWrapper = TelemetryWrapper(
-            logger = mockInternalLogger,
-            samplingRate = 0f
+            logger = mockInternalLogger
         )
 
         // When
-        val result = testedTelemetryWrapper.startMethodCalled(
+        val result = testedTelemetryWrapper.startMetric(
             operationName = fakeOperationName,
-            callerClass = fakeCallerClass
+            callerClass = fakeCallerClass,
+            samplingRate = 0f
         )
 
         // Then
@@ -56,20 +57,38 @@ internal class TelemetryWrapperTest {
     }
 
     @Test
-    fun `M return telemetry event W sampled in`() {
+    fun `M return method call event W sampled in`() {
         // Given
         testedTelemetryWrapper = TelemetryWrapper(
-            logger = mockInternalLogger,
-            samplingRate = 100f
+            logger = mockInternalLogger
         )
 
         // When
-        val result = testedTelemetryWrapper.startMethodCalled(
-            operationName = fakeOperationName,
-            callerClass = fakeCallerClass
+        val result = testedTelemetryWrapper.startMetric(
+            operationName = METHOD_CALL_OPERATION_NAME,
+            callerClass = fakeCallerClass,
+            samplingRate = 100f
         )
 
         // Then
         assertThat(result).isInstanceOf(MethodCalledTelemetry::class.java)
+    }
+
+    @Test
+    fun `M return null event W sampled in { unknown metric }`() {
+        // Given
+        testedTelemetryWrapper = TelemetryWrapper(
+            logger = mockInternalLogger
+        )
+
+        // When
+        val result = testedTelemetryWrapper.startMetric(
+            operationName = fakeOperationName,
+            callerClass = fakeCallerClass,
+            samplingRate = 100f
+        )
+
+        // Then
+        assertThat(result).isNull()
     }
 }

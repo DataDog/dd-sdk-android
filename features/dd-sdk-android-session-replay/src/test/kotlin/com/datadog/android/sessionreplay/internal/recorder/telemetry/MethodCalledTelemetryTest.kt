@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalle
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.DEVICE_MODEL
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.EXECUTION_TIME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
@@ -54,9 +55,6 @@ internal class MethodCalledTelemetryTest {
 
     @StringForgery
     private lateinit var fakeCallerClass: String
-
-    @StringForgery
-    private lateinit var fakeOperationName: String
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -109,7 +107,6 @@ internal class MethodCalledTelemetryTest {
 
         fakeStartTime = System.nanoTime()
         testedMethodCalledTelemetry = MethodCalledTelemetry(
-            operationName = fakeOperationName,
             callerClass = fakeCallerClass,
             logger = mockInternalLogger,
             startTime = fakeStartTime,
@@ -151,7 +148,7 @@ internal class MethodCalledTelemetryTest {
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
         val operationName = mapCaptor.firstValue[OPERATION_NAME] as String
 
-        assertThat(operationName).isEqualTo(fakeOperationName)
+        assertThat(operationName).isEqualTo(METHOD_CALL_OPERATION_NAME)
     }
 
     @Test

@@ -16,7 +16,7 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryWrapper
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
@@ -30,7 +30,6 @@ internal class WindowsOnDrawListener(
     private val miscUtils: MiscUtils = MiscUtils,
     private val logger: InternalLogger,
     private var telemetryWrapper: TelemetryWrapper = TelemetryWrapper(
-        samplingRate = 5f,
         logger = logger
     )
 ) : ViewTreeObserver.OnDrawListener {
@@ -68,9 +67,10 @@ internal class WindowsOnDrawListener(
             RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
-        val methodCallTelemetry = telemetryWrapper.startMethodCalled(
+        val methodCallTelemetry = telemetryWrapper.startMetric(
+            operationName = MethodCalledTelemetry.METHOD_CALL_OPERATION_NAME,
             callerClass = this.javaClass.name,
-            operationName = METHOD_CALL_OPERATION_NAME
+            samplingRate = METHOD_CALL_SAMPLE_RATE
         )
 
         val nodes = views
@@ -93,5 +93,9 @@ internal class WindowsOnDrawListener(
 
     private fun resolveContext(views: List<View>): Context? {
         return views.firstOrNull()?.context
+    }
+
+    private companion object {
+        private const val METHOD_CALL_SAMPLE_RATE = 5f
     }
 }
