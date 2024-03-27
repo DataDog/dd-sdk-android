@@ -13,7 +13,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -34,9 +33,7 @@ internal class OreoFragmentLifecycleCallbacks(
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     private lateinit var sdkCore: FeatureSdkCore
-    private val executor: ScheduledExecutorService by lazy {
-        LoggingScheduledThreadPoolExecutor(1, internalLogger)
-    }
+    private val executor: ScheduledExecutorService by lazy { sdkCore.createScheduledExecutorService() }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {

@@ -27,7 +27,8 @@ abstract class ActivityLifecycleTrackingStrategy :
     Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
-    private lateinit var sdkCore: FeatureSdkCore
+    /** The [FeatureSdkCore] this [TrackingStrategy] reports to. */
+    protected lateinit var sdkCore: FeatureSdkCore
 
     internal val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {

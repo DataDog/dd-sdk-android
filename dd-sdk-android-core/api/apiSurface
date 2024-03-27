@@ -111,6 +111,8 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
   fun removeEventReceiver(String)
+  fun createSingleThreadExecutorService(): java.util.concurrent.ExecutorService
+  fun createScheduledExecutorService(): java.util.concurrent.ScheduledExecutorService
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -242,9 +244,6 @@ interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
   val version: Int
   companion object 
     val DEFAULT: BuildSdkVersionProvider
-class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
-  constructor(Int, com.datadog.android.api.InternalLogger)
-  override fun afterExecute(Runnable?, Throwable?)
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
