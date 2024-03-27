@@ -24,7 +24,6 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -135,9 +134,6 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Mock
-    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
-
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -149,9 +145,6 @@ internal class DatadogRumMonitorTest {
     @LongForgery(TIMESTAMP_MIN, TIMESTAMP_MAX)
     var fakeTimestamp: Long = 0L
 
-    @LongForgery(min = 0L)
-    var fakeAppStartTimeNs: Long = 0L
-
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
@@ -161,7 +154,7 @@ internal class DatadogRumMonitorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeAppStartTimeNs
+        whenever(mockSdkCore.time) doReturn forge.getForgery()
 
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
@@ -177,8 +170,7 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockAppStartTimeProvider
+            mockSessionListener
         )
         testedMonitor.rootScope = mockScope
     }
@@ -255,10 +247,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`(
-        @StringForgery(type = StringForgeryType.ASCII) key: String,
-        @StringForgery name: String
-    ) {
+    fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`() {
         // Given
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
@@ -276,7 +265,7 @@ internal class DatadogRumMonitorTest {
             mockSessionListener
         )
         val completableFuture = CompletableFuture<String>()
-        testedMonitor.startView(key, name, fakeAttributes)
+        testedMonitor.start()
         Thread.sleep(PROCESSING_DELAY)
 
         // When
@@ -294,10 +283,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`(
-        @StringForgery(type = StringForgeryType.ASCII) key: String,
-        @StringForgery name: String
-    ) {
+    fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`() {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
@@ -315,7 +301,7 @@ internal class DatadogRumMonitorTest {
         )
 
         val completableFuture = CompletableFuture<String>()
-        testedMonitor.startView(key, name, fakeAttributes)
+        testedMonitor.start()
         Thread.sleep(PROCESSING_DELAY)
 
         // When
@@ -774,7 +760,6 @@ internal class DatadogRumMonitorTest {
             assertThat(firstValue).isInstanceOf(RumRawEvent.SdkInit::class.java)
             with(firstValue as RumRawEvent.SdkInit) {
                 assertThat(isAppInForeground).isTrue()
-                assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
             }
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -810,7 +795,6 @@ internal class DatadogRumMonitorTest {
             assertThat(firstValue).isInstanceOf(RumRawEvent.SdkInit::class.java)
             with(firstValue as RumRawEvent.SdkInit) {
                 assertThat(isAppInForeground).isFalse()
-                assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
             }
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1418,7 +1402,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider,
             mockExecutor
         )
 
@@ -1463,7 +1446,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider,
             mockExecutorService
         )
 
@@ -1495,7 +1477,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider,
             mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
