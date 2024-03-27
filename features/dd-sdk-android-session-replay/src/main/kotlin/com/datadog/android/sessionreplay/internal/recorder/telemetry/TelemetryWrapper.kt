@@ -27,7 +27,7 @@ internal class TelemetryWrapper(
         // metric events sampling (hardcoded to 15%). Making it effectively 3% sampling rate
         // for sending events, when this value is set to `100`.
         samplingRate: Float = 100.0f
-    ): MethodCalledTelemetry? {
+    ): MetricBase? {
         val sampler: Sampler = RateBasedSampler(samplingRate)
         if (!sampler.sample()) return null
 

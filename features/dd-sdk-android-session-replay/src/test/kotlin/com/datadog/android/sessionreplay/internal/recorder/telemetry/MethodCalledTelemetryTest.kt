@@ -19,13 +19,13 @@ import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalle
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OPERATION_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_BUILD
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_KEY
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_VERSION
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase.Companion.METRIC_TYPE
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
