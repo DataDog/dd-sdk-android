@@ -311,6 +311,11 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent)
             .isSameAs(fakeCrashEvent)
             .isEqualTo(fakeCrashEvent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumEventMapper.NO_DROPPING_FATAL_ERRORS_WARNING_MESSAGE
+        )
     }
 
     @Test
@@ -329,7 +334,6 @@ internal class RumEventMapperTest {
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
-
         )
     }
 
