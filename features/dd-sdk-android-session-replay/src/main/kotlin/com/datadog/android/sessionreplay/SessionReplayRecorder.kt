@@ -160,7 +160,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                 )
-            ),
+            )
         )
         this.windowCallbackInterceptor = WindowCallbackInterceptor(
             recordedDataQueueHandler,

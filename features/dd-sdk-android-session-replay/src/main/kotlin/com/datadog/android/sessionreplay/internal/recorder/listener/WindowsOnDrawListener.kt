@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryMetricType
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
@@ -66,7 +67,7 @@ internal class WindowsOnDrawListener(
 
         val methodCallTelemetry = MetricBase.startMetric(
             logger = logger,
-            metric = MetricBase.Companion.TelemetryMetrics.MethodCalled,
+            metric = TelemetryMetricType.MethodCalled,
             callerClass = this.javaClass.name,
             samplingRate = methodCallTelemetrySamplingRate
         )
