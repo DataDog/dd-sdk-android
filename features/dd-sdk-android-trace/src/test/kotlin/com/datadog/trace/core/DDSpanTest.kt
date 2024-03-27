@@ -151,7 +151,7 @@ internal class DDSpanTest : DDCoreSpecification() {
 
         // Then
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
-                TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
         assertThat(timeDifference).isLessThan(5)
         assertThat(span.durationNano).isGreaterThan(betweenDur)
         assertThat(span.durationNano).isLessThan(total)
@@ -184,7 +184,7 @@ internal class DDSpanTest : DDCoreSpecification() {
         assertThat(writer).isEmpty()
         val actualDurationNano = span.durationNano and Long.MAX_VALUE
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
-                TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
         assertThat(timeDifference).isLessThan(5)
         assertThat(actualDurationNano).isGreaterThan(betweenDur)
         assertThat(actualDurationNano).isLessThan(total)
@@ -230,7 +230,7 @@ internal class DDSpanTest : DDCoreSpecification() {
         // Then
         val total = Math.max(1, System.currentTimeMillis() - start)
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
-                TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
         assertThat(timeDifference).isLessThan(5)
         assertThat(span.durationNano).isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(betweenDur))
         assertThat(span.durationNano).isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(total))
@@ -251,7 +251,7 @@ internal class DDSpanTest : DDCoreSpecification() {
         span.finish(TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis() + 1))
         val total = System.currentTimeMillis() - start + 1
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
-                TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
 
         // Then
         assertThat(timeDifference).isLessThan(5)

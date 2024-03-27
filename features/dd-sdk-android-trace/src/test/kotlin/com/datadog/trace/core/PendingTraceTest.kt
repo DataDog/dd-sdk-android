@@ -193,7 +193,8 @@ internal class PendingTraceTest : PendingTraceTestBase() {
 
     private fun createSimpleSpanWithID(trace: PendingTrace, id: Long): DDSpan {
         return DDSpan(
-            "test", 0L,
+            "test",
+            0L,
             DDSpanContext(
                 DDTraceId.from(1),
                 id,

@@ -89,8 +89,8 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         val expectedTags = mapOf(DDTags.THREAD_NAME to thread.name, DDTags.THREAD_ID to thread.id)
         assertThat(context.tags).containsAllEntriesOf(expectedTags)
         assertThat(
-        context::class.java.getMethod(method)
-            .invoke(context)
+            context::class.java.getMethod(method)
+                .invoke(context)
         )
             .isEqualTo(value)
     }
