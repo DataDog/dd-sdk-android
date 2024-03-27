@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.thread
 import com.datadog.android.core.configuration.BackPressureStrategy
 
 internal class BackPressureExecutorServiceTest :
-    AbstractLoggingExecutorServiceTest<BackPressureExecutorService>() {
+    AbstractExecutorServiceTest<BackPressureExecutorService>() {
 
     override fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): BackPressureExecutorService {
         return BackPressureExecutorService(
