@@ -9,13 +9,14 @@ package com.datadog.android.sessionreplay.internal.recorder.telemetry
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase.Companion.METRIC_TYPE
 
 internal class MethodCalledTelemetry(
     private val callerClass: String,
     private val logger: InternalLogger,
     private val startTime: Long = System.nanoTime(),
     private val internalSdkCore: InternalSdkCore? = Datadog.getInstance() as? InternalSdkCore
-) {
+) : MetricBase {
     internal fun stopMethodCalled(isSuccessful: Boolean) {
         val executionTime = System.nanoTime() - startTime
         val additionalProperties: MutableMap<String, Any> = mutableMapOf()
@@ -64,9 +65,6 @@ internal class MethodCalledTelemetry(
     }
 
     internal companion object {
-        // Basic Metric type key.
-        internal const val METRIC_TYPE = "metric_type"
-
         // Title of the metric to be sent
         internal const val METRIC_NAME = "[Mobile Metric] Method Called"
 

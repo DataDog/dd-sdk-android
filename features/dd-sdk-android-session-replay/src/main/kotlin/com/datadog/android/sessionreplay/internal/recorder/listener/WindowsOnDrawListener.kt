@@ -71,7 +71,7 @@ internal class WindowsOnDrawListener(
             operationName = MethodCalledTelemetry.METHOD_CALL_OPERATION_NAME,
             callerClass = this.javaClass.name,
             samplingRate = METHOD_CALL_SAMPLE_RATE
-        )
+        ) as? MethodCalledTelemetry
 
         val nodes = views
             .mapNotNull {
