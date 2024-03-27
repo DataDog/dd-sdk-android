@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "6"
+  CURRENT_CI_IMAGE: "7"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -89,6 +89,18 @@ analysis:nightly-tests-coverage:
 
 # TODO RUM-1622 cleanup this section
 # TESTS
+test:emulator:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  timeout: 1h
+  script:
+    - emulator -avd "android_emulator" -grpc-use-jwt -no-snapstorage -no-audio -no-window -qemu -machine virt &
+    - adb start-server
+    - ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon
+    - adb install -t -d -g -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
+    - adb install -t -d -g -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
+    - adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner
 
 test:debug:
   tags: [ "arch:amd64" ]
