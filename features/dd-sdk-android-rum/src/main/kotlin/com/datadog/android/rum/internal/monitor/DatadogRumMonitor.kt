@@ -49,7 +49,6 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -69,7 +68,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    internal val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    internal val executorService: ExecutorService
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -359,6 +358,12 @@ internal class DatadogRumMonitor(
                 name,
                 value
             )
+        )
+    }
+
+    override fun addFeatureFlagEvaluations(featureFlags: Map<String, Any>) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluations(featureFlags)
         )
     }
 

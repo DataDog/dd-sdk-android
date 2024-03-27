@@ -180,7 +180,9 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
@@ -1113,9 +1115,31 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
-        featureFlags[event.name] = event.value
-        sendViewUpdate(event, writer)
-        sendViewChanged()
+        if (event.value != featureFlags[event.name]) {
+            featureFlags[event.name] = event.value
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
+    }
+
+    private fun onAddFeatureFlagEvaluations(
+        event: RumRawEvent.AddFeatureFlagEvaluations,
+        writer: DataWriter<Any>
+    ) {
+        if (stopped) return
+
+        var modified = false
+        event.featureFlags.forEach { (k, v) ->
+            if (v != featureFlags[k]) {
+                featureFlags[k] = v
+                modified = true
+            }
+        }
+
+        if (modified) {
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
     }
 
     private fun sendViewChanged() {

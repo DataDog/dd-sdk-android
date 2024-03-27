@@ -111,6 +111,8 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
   fun removeEventReceiver(String)
+  fun createSingleThreadExecutorService(): java.util.concurrent.ExecutorService
+  fun createScheduledExecutorService(): java.util.concurrent.ScheduledExecutorService
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -158,6 +160,11 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+enum com.datadog.android.core.configuration.BackPressureMitigation
+  - DROP_OLDEST
+  - IGNORE_NEWEST
+data class com.datadog.android.core.configuration.BackPressureStrategy
+  constructor(Int, () -> Unit, (Any) -> Unit, BackPressureMitigation)
 enum com.datadog.android.core.configuration.BatchProcessingLevel
   constructor(Int)
   - LOW
@@ -184,6 +191,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setEncryption(com.datadog.android.security.Encryption): Builder
     fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
     fun setCrashReportsEnabled(Boolean): Builder
+    fun setBackpressureStrategy(BackPressureStrategy): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -236,9 +244,6 @@ interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
   val version: Int
   companion object 
     val DEFAULT: BuildSdkVersionProvider
-class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
-  constructor(Int, com.datadog.android.api.InternalLogger)
-  override fun afterExecute(Runnable?, Throwable?)
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
@@ -279,6 +284,10 @@ class com.datadog.android.core.sampling.RateBasedSampler : Sampler
 interface com.datadog.android.core.sampling.Sampler
   fun sample(): Boolean
   fun getSampleRate(): Float?
+interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
+  fun drainTo(MutableCollection<Runnable>)
+  interface Factory
+    fun create(com.datadog.android.api.InternalLogger, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>

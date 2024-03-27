@@ -7,6 +7,8 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.NoOpEncryption
@@ -51,7 +53,13 @@ internal class ConfigurationCoreForgeryFactory :
                 mock<PersistenceStrategy.Factory>().apply {
                     whenever(create(any(), any(), any())) doReturn mock()
                 }
-            }
+            },
+            backpressureStrategy = BackPressureStrategy(
+                forge.aSmallInt(),
+                mock(),
+                mock(),
+                forge.aValueFrom(BackPressureMitigation::class.java)
+            )
         )
     }
 }

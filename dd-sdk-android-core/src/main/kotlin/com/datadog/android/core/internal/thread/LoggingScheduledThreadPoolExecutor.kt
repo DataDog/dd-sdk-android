@@ -7,6 +7,8 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.configuration.BackPressureStrategy
+import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 /**
@@ -15,16 +17,31 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
  *
  * @param corePoolSize see [ScheduledThreadPoolExecutor] docs.
  * @param logger [InternalLogger] instance.
+ * @param backPressureStrategy the back pressure strategy to notify dropped items
  */
-class LoggingScheduledThreadPoolExecutor(
+// TODO RUM-3704 create an implementation that uses the backpressure strategy
+internal class LoggingScheduledThreadPoolExecutor(
     corePoolSize: Int,
-    private val logger: InternalLogger
-) :
-    ScheduledThreadPoolExecutor(corePoolSize) {
+    private val logger: InternalLogger,
+    private val backPressureStrategy: BackPressureStrategy
+) : ScheduledThreadPoolExecutor(
+    corePoolSize,
+    RejectedExecutionHandler { r, _ ->
+        if (r != null) {
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { "Dropped scheduled item in LoggingScheduledThreadPoolExecutor queue: $r" },
+                throwable = null,
+                onlyOnce = false
+            )
+            backPressureStrategy.onItemDropped(r)
+        }
+    }
+) {
 
     /** @inheritdoc */
     override fun afterExecute(r: Runnable?, t: Throwable?) {
-        @Suppress("UnsafeThirdPartyFunctionCall") // we just call super
         super.afterExecute(r, t)
         loggingAfterExecute(r, t, logger)
     }
