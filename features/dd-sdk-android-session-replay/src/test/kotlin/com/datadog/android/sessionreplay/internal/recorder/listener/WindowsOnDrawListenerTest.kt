@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -19,6 +20,8 @@ import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -94,6 +97,9 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Mock
+    lateinit var mockLogger: InternalLogger
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
@@ -127,11 +133,12 @@ internal class WindowsOnDrawListenerTest {
         }
         whenever(mockContext.resources).thenReturn(mockResources)
         testedListener = WindowsOnDrawListener(
-            fakeMockedDecorViews,
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer,
-            mockDebouncer,
-            mockMiscUtils
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            logger = mockLogger
         )
     }
 
@@ -175,10 +182,11 @@ internal class WindowsOnDrawListenerTest {
         // Given
         stubDebouncer()
         testedListener = WindowsOnDrawListener(
-            emptyList(),
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer,
-            mockDebouncer
+            zOrderedDecorViews = emptyList(),
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            debouncer = mockDebouncer,
+            logger = mockLogger
         )
 
         // When
@@ -213,6 +221,76 @@ internal class WindowsOnDrawListenerTest {
 
         // Then
         verify(mockRecordedDataQueueHandler, never()).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M call methodCall telemetry with true W onDraw() { has nodes }`() {
+        // Given
+        testedListener = WindowsOnDrawListener(
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            logger = mockLogger,
+            methodCallTelemetrySamplingRate = 100f
+        )
+
+        stubDebouncer()
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        val metricTitleCaptor = argumentCaptor<() -> String>()
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any>>()
+        verify(mockLogger).logMetric(metricTitleCaptor.capture(), additionalPropertiesCaptor.capture())
+        metricTitleCaptor.firstValue.run {
+            assertThat(this()).isEqualTo(METHOD_CALLED_METRIC_NAME)
+        }
+        val isSuccessful = additionalPropertiesCaptor.firstValue[IS_SUCCESSFUL] as Boolean
+        assertThat(isSuccessful).isTrue()
+    }
+
+    @Test
+    fun `M send methodCall telemetry with false W onDraw() { no nodes }`() {
+        // Given
+        testedListener = WindowsOnDrawListener(
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            logger = mockLogger,
+            methodCallTelemetrySamplingRate = 100f
+        )
+
+        stubDebouncer()
+
+        whenever(mockSnapshotProducer.produce(any(), any(), any())).thenReturn(null)
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        val metricTitleCaptor = argumentCaptor<() -> String>()
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any>>()
+        verify(mockLogger).logMetric(metricTitleCaptor.capture(), additionalPropertiesCaptor.capture())
+        metricTitleCaptor.firstValue.run {
+            assertThat(this()).isEqualTo(METHOD_CALLED_METRIC_NAME)
+        }
+        val isSuccessful = additionalPropertiesCaptor.firstValue[IS_SUCCESSFUL] as Boolean
+        assertThat(isSuccessful).isFalse()
     }
 
     // region Internal

@@ -10,10 +10,13 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase
+import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryMetricType
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
@@ -22,7 +25,9 @@ internal class WindowsOnDrawListener(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val debouncer: Debouncer = Debouncer(),
-    private val miscUtils: MiscUtils = MiscUtils
+    private val miscUtils: MiscUtils = MiscUtils,
+    private val logger: InternalLogger,
+    private val methodCallTelemetrySamplingRate: Float = METHOD_CALL_SAMPLING_RATE
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
@@ -58,10 +63,19 @@ internal class WindowsOnDrawListener(
             RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
+        val methodCallTelemetry = MetricBase.startMetric(
+            logger = logger,
+            metric = TelemetryMetricType.MethodCalled,
+            callerClass = this.javaClass.name,
+            samplingRate = methodCallTelemetrySamplingRate
+        )
+
         val nodes = views
             .mapNotNull {
                 snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
             }
+
+        methodCallTelemetry?.sendMetric(isSuccessful = nodes.isNotEmpty())
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
@@ -76,5 +90,9 @@ internal class WindowsOnDrawListener(
 
     private fun resolveContext(views: List<View>): Context? {
         return views.firstOrNull()?.context
+    }
+
+    private companion object {
+        private const val METHOD_CALL_SAMPLING_RATE = 5f
     }
 }
