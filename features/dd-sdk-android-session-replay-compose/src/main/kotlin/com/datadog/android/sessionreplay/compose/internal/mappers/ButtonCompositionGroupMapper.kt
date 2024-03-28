@@ -14,7 +14,10 @@ import com.datadog.android.sessionreplay.compose.internal.data.ComposableParamet
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.reflection.accessible
+import com.datadog.android.sessionreplay.compose.internal.reflection.getDeclaredFieldSafe
+import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.lang.reflect.Field
 
 internal class ButtonCompositionGroupMapper : AbstractCompositionGroupMapper() {
 
@@ -44,15 +47,8 @@ internal class ButtonCompositionGroupMapper : AbstractCompositionGroupMapper() {
         var contentColor: String? = uiContext.parentContentColor
 
         colors?.let { c ->
-            // Because the methods on the ButtonColors class are marked composable, we can't call them here,
-            // meaning that we need to use reflection to get them.
-            // TODO RUM-3748 add memoization to the color fields
-            backgroundColor = (c.javaClass.getDeclaredField("backgroundColor").accessible().get(c) as? Long)?.let {
-                convertColor(it)
-            }
-            contentColor = (c.javaClass.getDeclaredField("contentColor").accessible().get(c) as? Long)?.let {
-                convertColor(it)
-            }
+            backgroundColor = getBackgroundColor(c)?.let { convertColor(it) }
+            contentColor = (getContentColor(c))?.let { convertColor(it) }
         }
 
         return ComposeWireframe(
@@ -73,5 +69,30 @@ internal class ButtonCompositionGroupMapper : AbstractCompositionGroupMapper() {
             ),
             UiContext(contentColor, uiContext.density)
         )
+    }
+
+    companion object {
+        private val backgroundColorFields = mutableMapOf<Class<*>, Field?>()
+        private val contentColorFields = mutableMapOf<Class<*>, Field?>()
+
+        fun getBackgroundColor(buttonColors: ButtonColors): Long? {
+            val javaClass = buttonColors.javaClass
+            val field = backgroundColorFields.getOrElse(javaClass) {
+                javaClass.getDeclaredFieldSafe("backgroundColor")?.accessible()
+            }
+            backgroundColorFields[javaClass] = field
+
+            return field?.getSafe(buttonColors) as? Long
+        }
+
+        fun getContentColor(buttonColors: ButtonColors): Long? {
+            val javaClass = buttonColors.javaClass
+            val field = contentColorFields.getOrElse(javaClass) {
+                javaClass.getDeclaredFieldSafe("contentColor")?.accessible()
+            }
+            contentColorFields[javaClass] = field
+
+            return field?.getSafe(buttonColors) as? Long
+        }
     }
 }
