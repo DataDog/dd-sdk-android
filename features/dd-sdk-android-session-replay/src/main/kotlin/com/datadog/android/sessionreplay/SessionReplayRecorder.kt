@@ -143,7 +143,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
-            SnapshotProducer(
+            snapshotProducer = SnapshotProducer(
                 DefaultImageWireframeHelper(
                     logger = internalLogger,
                     resourceResolver = resourceResolver,
@@ -160,7 +160,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                 )
-            )
+            ),
+            internalLogger = internalLogger
         )
         this.windowCallbackInterceptor = WindowCallbackInterceptor(
             recordedDataQueueHandler,
