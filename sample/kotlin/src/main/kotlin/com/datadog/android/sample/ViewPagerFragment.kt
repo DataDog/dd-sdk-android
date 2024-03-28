@@ -52,15 +52,9 @@ class ViewPagerFragment : Fragment() {
 
         override fun createFragment(position: Int): Fragment {
             return when (position) {
-                0 -> FragmentA()
-                1 -> FragmentB()
-                else -> FragmentC()
-            }.apply {
-                val args = Bundle().apply {
-                    putString("fragmentClassName", this::class.java.simpleName)
-                    putInt("adapterPosition", position)
-                }
-                arguments = args
+                0 -> FragmentA.newInstance()
+                1 -> FragmentB.newInstance()
+                else -> FragmentC.newInstance()
             }
         }
     }
