@@ -21,6 +21,7 @@ import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.anException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -36,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -146,6 +148,25 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
         // verify
         val mockRumMonitor = rumMonitor.mockInstance as AdvancedRumMonitor
         verify(mockRumMonitor).setSyntheticsAttribute(testId, resultId)
+    }
+
+    @Test
+    fun `M do nothing W onActivityCreated() { getting intent extras throws }`(
+        forge: Forge
+    ) {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+        val mockIntent = mock<Intent>()
+        val mockActivity = mock<Activity>()
+        whenever(mockActivity.intent) doReturn mockIntent
+        whenever(mockIntent.extras) doThrow forge.anException()
+
+        // When
+        testedStrategy.onActivityCreated(mockActivity, null)
+
+        // verify
+        val mockRumMonitor = rumMonitor.mockInstance as AdvancedRumMonitor
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
