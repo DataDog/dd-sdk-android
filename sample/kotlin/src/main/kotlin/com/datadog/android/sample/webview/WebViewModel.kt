@@ -6,6 +6,7 @@
 package com.datadog.android.sample.webview
 
 import androidx.lifecycle.ViewModel
+import com.datadog.android.sample.BuildConfig
 import com.datadog.android.vendor.sample.LocalServer
 
 internal class WebViewModel(
@@ -16,7 +17,10 @@ internal class WebViewModel(
 
     fun onResume() {
         localServer.start(
-            "https://datadoghq.dev/browser-sdk-test-playground/webview-support/"
+            "https://datadoghq.dev/browser-sdk-test-playground/" +
+                "?client_token=${BuildConfig.DD_CLIENT_TOKEN}" +
+                "&application_id=${BuildConfig.DD_RUM_APPLICATION_ID}" +
+                "&site=datadoghq.com"
         )
     }
 

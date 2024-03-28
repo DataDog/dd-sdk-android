@@ -45,7 +45,8 @@ internal class WebViewWireframeMapper(
                 viewGlobalBounds.y,
                 viewGlobalBounds.width,
                 viewGlobalBounds.height,
-                slotId = webViewId.toString()
+                slotId = webViewId.toString(),
+                isVisible = true
             )
         )
     }

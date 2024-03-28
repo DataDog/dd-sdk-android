@@ -74,7 +74,8 @@ internal class WebViewWireframeMapperTest : BaseWireframeMapperTest() {
             y = fakeViewGlobalBounds.y,
             width = fakeViewGlobalBounds.width,
             height = fakeViewGlobalBounds.height,
-            slotId = fakeWireframeId.toString()
+            slotId = fakeWireframeId.toString(),
+            isVisible = true
         )
 
         // When

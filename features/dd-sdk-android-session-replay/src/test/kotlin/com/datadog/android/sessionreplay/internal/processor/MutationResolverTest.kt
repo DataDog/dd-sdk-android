@@ -27,7 +27,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
-import java.util.ArrayList
 import java.util.LinkedList
 import java.util.Locale
 
@@ -506,6 +505,66 @@ internal class MutationResolverTest {
             MobileSegment.WireframeUpdateMutation.PlaceholderWireframeUpdate(
                 id = it.id(),
                 label = it.label
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    // endregion
+
+    // region WebView "remove" mutations
+
+    @Test
+    fun `M identify the updated wireframes W resolveMutations {WebView removed at beginning}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 3, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.WebviewWireframe::class.java)
+        }
+        val fakeHiddenWebViews = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
+        val fakeCurrentSnapshot = fakePrevSnapshot.drop(fakeHiddenWebViews)
+        val expectedUpdates = fakePrevSnapshot.take(fakeHiddenWebViews).map {
+            MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                id = it.id(),
+                slotId = it.slotId,
+                isVisible = false
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    @Test
+    fun `M identify the updated wireframes W resolveMutations {WebView removed at end}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 3, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.WebviewWireframe::class.java)
+        }
+        val fakeHiddenWebViews = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
+        val fakeCurrentSnapshot = fakePrevSnapshot.dropLast(fakeHiddenWebViews)
+        val expectedUpdates = fakePrevSnapshot.takeLast(fakeHiddenWebViews).map {
+            MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                id = it.id(),
+                slotId = it.slotId,
+                isVisible = false
             )
         }
 

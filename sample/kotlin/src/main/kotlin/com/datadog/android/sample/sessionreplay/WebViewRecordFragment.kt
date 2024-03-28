@@ -8,6 +8,9 @@ package com.datadog.android.sample.sessionreplay
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -25,6 +28,11 @@ internal class WebViewRecordFragment : Fragment() {
     private val webViewTrackingHosts = listOf(
         "datadoghq.dev"
     )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
@@ -51,5 +59,32 @@ internal class WebViewRecordFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         webView.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#click_event")
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.sr_webview, menu)
+        if (webView.visibility == View.VISIBLE) {
+            menu.findItem(R.id.webview_show).isVisible = false
+        } else {
+            menu.findItem(R.id.webview_hide).isVisible = false
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val newVisibility = when (item.itemId) {
+            R.id.webview_show -> View.VISIBLE
+            R.id.webview_hide -> View.GONE
+            else -> null
+        }
+
+        return if (newVisibility == null) {
+            super.onOptionsItemSelected(item)
+        } else {
+            webView.visibility = newVisibility
+            activity?.invalidateOptionsMenu()
+            true
+        }
     }
 }
