@@ -136,7 +136,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
         assertThat(
             Math.abs(
                 TimeUnit.NANOSECONDS.toSeconds(trace.currentTimeNano) -
-                        TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+                    TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
             )
         ).isLessThan(5)
     }

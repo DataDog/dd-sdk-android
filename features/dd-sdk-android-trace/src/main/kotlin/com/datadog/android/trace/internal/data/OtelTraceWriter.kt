@@ -38,12 +38,12 @@ internal class OtelTraceWriter(
     override fun write(trace: MutableList<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                ?.withWriteContext { datadogContext, eventBatchWriter ->
-                    trace.forEach { span ->
-                        @Suppress("ThreadSafety") // called in the worker context
-                        writeSpan(datadogContext, eventBatchWriter, span)
-                    }
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                trace.forEach { span ->
+                    @Suppress("ThreadSafety") // called in the worker context
+                    writeSpan(datadogContext, eventBatchWriter, span)
                 }
+            }
     }
 
     override fun flush(): Boolean {

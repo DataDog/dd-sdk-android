@@ -241,11 +241,11 @@ class OtelTracerProvider(
 
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an OtelTracerProvider instance, " +
-                    "but either the SDK was not initialized or the Tracing feature was " +
-                    "disabled in your Configuration. No tracing data will be sent."
+                "but either the SDK was not initialized or the Tracing feature was " +
+                "disabled in your Configuration. No tracing data will be sent."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
-                    " OtelTracerProvider creation, did you initialize SDK?"
+                " OtelTracerProvider creation, did you initialize SDK?"
 
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer

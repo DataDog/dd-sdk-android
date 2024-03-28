@@ -26,9 +26,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -71,8 +69,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    internal val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -194,7 +191,7 @@ internal class DatadogRumMonitor(
 
     @Deprecated(
         "This method is deprecated and will be removed in the future versions." +
-                " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
+            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
         key: String,
@@ -312,6 +309,10 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         val errorType = getErrorType(attributes)
+        val mutableAttributes = attributes.toMutableMap()
+
+        @Suppress("UNCHECKED_CAST")
+        val threads = mutableAttributes.remove(RumAttributes.INTERNAL_ALL_THREADS) as? List<ThreadDump>
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -319,10 +320,10 @@ internal class DatadogRumMonitor(
                 throwable,
                 null,
                 false,
-                attributes.toMap(),
+                mutableAttributes,
                 eventTime,
                 errorType,
-                threads = emptyList()
+                threads = threads.orEmpty()
             )
         )
     }
@@ -408,10 +409,9 @@ internal class DatadogRumMonitor(
     override fun start() {
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        val processStartTimeNs = appStartTimeProvider.appStartTimeNs
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         handleEvent(
-            RumRawEvent.SdkInit(isAppInForeground, processStartTimeNs)
+            RumRawEvent.SdkInit(isAppInForeground)
         )
     }
 

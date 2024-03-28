@@ -329,4 +329,9 @@ object LogAttributes {
      * or platform that the error originates from, such as Flutter or React Native (String).
      */
     const val SOURCE_TYPE: String = "_dd.error.source_type"
+
+    /**
+     * Specifies a custom error fingerprint for the supplied log. (String)
+     */
+    const val ERROR_FINGERPRINT: String = "_dd.error.fingerprint"
 }

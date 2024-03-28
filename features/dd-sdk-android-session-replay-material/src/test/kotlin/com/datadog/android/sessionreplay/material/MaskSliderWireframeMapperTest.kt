@@ -28,9 +28,9 @@ internal class MaskSliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
 
     override fun provideTestInstance(): SliderWireframeMapper {
         return MaskSliderWireframeMapper(
-            viewUtils = mockViewUtils,
-            stringUtils = mockStringUtils,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
+            viewBoundsResolver = mockViewBoundsResolver,
+            colorStringFormatter = mockColorStringFormatter,
+            viewIdentifierResolver = mockViewIdentifierResolver
         )
     }
 
@@ -50,7 +50,8 @@ internal class MaskSliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)
+        val mappedWireframes =
+            testedSliderWireframeMapper.map(mockSlider, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(listOf(expectedInactiveTrackWireframe))

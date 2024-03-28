@@ -7,12 +7,13 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.slider.Slider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -137,13 +138,16 @@ internal abstract class BaseSliderWireframeMapperTest {
     lateinit var mockTrackNotActiveTintColors: ColorStateList
 
     @Mock
-    lateinit var mockViewUtils: ViewUtils
+    lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
 
     @Mock
-    lateinit var mockStringUtils: StringUtils
+    lateinit var mockColorStringFormatter: ColorStringFormatter
 
     @Mock
-    lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
+    lateinit var mockViewBoundsResolver: ViewBoundsResolver
+
+    @Mock
+    lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     lateinit var testedSliderWireframeMapper: SliderWireframeMapper
 
@@ -192,7 +196,7 @@ internal abstract class BaseSliderWireframeMapperTest {
         fakeExpectedThumbYPos = normalizedSliderYPos + normalizedSliderTopPadding +
             (normalizedSliderHeight - fakeExpectedThumbHeight) / 2
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeThumbColor,
                 SliderWireframeMapper.OPAQUE_ALPHA_VALUE
             )
@@ -200,14 +204,14 @@ internal abstract class BaseSliderWireframeMapperTest {
             .thenReturn(fakeExpectedThumbHtmlColor)
 
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTrackActiveColor,
                 SliderWireframeMapper.OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedTrackActiveHtmlColor)
         whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTrackNotActiveColor,
                 SliderWireframeMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
@@ -216,26 +220,26 @@ internal abstract class BaseSliderWireframeMapperTest {
 
         mockSlider = generateMockedSlider(forge)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockSlider,
                 fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSlider,
                 SliderWireframeMapper.TRACK_ACTIVE_KEY_NAME
             )
         ).thenReturn(fakeActiveTrackId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSlider,
                 SliderWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
             )
         ).thenReturn(fakeInactiveTrackId)
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSlider,
                 SliderWireframeMapper.THUMB_KEY_NAME
             )
@@ -249,42 +253,60 @@ internal abstract class BaseSliderWireframeMapperTest {
     fun `M return empty list W map { could not generate thumb id`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSlider,
                 SliderWireframeMapper.THUMB_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)).isEmpty()
+        assertThat(
+            testedSliderWireframeMapper.map(
+                mockSlider,
+                fakeMappingContext,
+                mockAsyncJobStatusCallback
+            )
+        ).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { could not generate active track id`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSlider,
                 SliderWireframeMapper.TRACK_ACTIVE_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)).isEmpty()
+        assertThat(
+            testedSliderWireframeMapper.map(
+                mockSlider,
+                fakeMappingContext,
+                mockAsyncJobStatusCallback
+            )
+        ).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { could not generate inactive track id`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSlider,
                 SliderWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)).isEmpty()
+        assertThat(
+            testedSliderWireframeMapper.map(
+                mockSlider,
+                fakeMappingContext,
+                mockAsyncJobStatusCallback
+            )
+        ).isEmpty()
     }
 
     private fun generateMockedSlider(forge: Forge): Slider {

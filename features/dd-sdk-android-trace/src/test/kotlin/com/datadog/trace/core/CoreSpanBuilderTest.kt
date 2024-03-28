@@ -354,15 +354,15 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         assertThat(span.context().baggageItems).isEqualTo(emptyMap<String, String>())
         assertThat(span.context().tags).containsExactlyInAnyOrderEntriesOf(
             tagContext.tags +
-                    mapOf(
-                        DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
-                        DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
-                        DDTags.THREAD_NAME to thread.name,
-                        DDTags.THREAD_ID to thread.id,
-                        DDTags.PID_TAG to Config.get().processId,
-                        DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
-                        DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
-                    )
+                mapOf(
+                    DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
+                    DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
+                    DDTags.THREAD_NAME to thread.name,
+                    DDTags.THREAD_ID to thread.id,
+                    DDTags.PID_TAG to Config.get().processId,
+                    DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
+                    DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
+                )
         )
     }
 
@@ -378,15 +378,15 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         // Then
         assertThat(span.tags).containsExactlyInAnyOrderEntriesOf(
             tags +
-                    mapOf(
-                        DDTags.THREAD_NAME to Thread.currentThread().name,
-                        DDTags.THREAD_ID to Thread.currentThread().id,
-                        DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
-                        DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
-                        DDTags.PID_TAG to Config.get().getProcessId(),
-                        DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
-                        DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
-                    )
+                mapOf(
+                    DDTags.THREAD_NAME to Thread.currentThread().name,
+                    DDTags.THREAD_ID to Thread.currentThread().id,
+                    DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
+                    DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
+                    DDTags.PID_TAG to Config.get().getProcessId(),
+                    DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
+                    DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
+                )
         )
 
         // Tear down

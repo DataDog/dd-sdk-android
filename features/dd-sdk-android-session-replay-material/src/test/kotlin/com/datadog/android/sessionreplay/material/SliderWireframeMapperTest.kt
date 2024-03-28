@@ -27,11 +27,7 @@ import org.mockito.quality.Strictness
 internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
 
     override fun provideTestInstance(): SliderWireframeMapper {
-        return SliderWireframeMapper(
-            viewUtils = mockViewUtils,
-            stringUtils = mockStringUtils,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
-        )
+        return SliderWireframeMapper(mockViewIdentifierResolver, mockColorStringFormatter, mockViewBoundsResolver)
     }
 
     @Test
@@ -73,7 +69,8 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)
+        val mappedWireframes =
+            testedSliderWireframeMapper.map(mockSlider, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(

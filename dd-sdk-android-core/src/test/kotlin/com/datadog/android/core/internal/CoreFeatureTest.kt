@@ -16,11 +16,13 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -43,10 +45,12 @@ import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -886,7 +890,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise persitence strategy 𝕎 initialize`() {
+    fun `𝕄 initialise persistence strategy 𝕎 initialize`() {
         // Given
         val mockPersistenceStrategyFactory = mock<PersistenceStrategy.Factory>()
         fakeConfig = fakeConfig.copy(
@@ -909,6 +913,195 @@ internal class CoreFeatureTest {
     }
 
     // endregion
+
+    @Test
+    fun `𝕄 return last fatal ANR sent 𝕎 lastFatalAnrSent`(
+        @TempDir tempDir: File,
+        @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(fakeLastFatalAnrSent.toString())
+
+        // When
+        val lastFatalAnrSent = testedFeature.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isEqualTo(fakeLastFatalAnrSent)
+    }
+
+    @Test
+    fun `𝕄 return null 𝕎 lastFatalAnrSent { no file }`(
+        @TempDir tempDir: File
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+
+        // When
+        val lastFatalAnrSent = testedFeature.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isNull()
+    }
+
+    @Test
+    fun `𝕄 return null 𝕎 lastFatalAnrSent { file contains not a number }`(
+        @TempDir tempDir: File,
+        @StringForgery fakeBrokenLastFatalAnrSent: String
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(fakeBrokenLastFatalAnrSent)
+
+        // When
+        val lastFatalAnrSent = testedFeature.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isNull()
+    }
+
+    @Test
+    fun `𝕄 delete last fatal ANR sent 𝕎 deleteLastFatalAnrSent`(
+        @TempDir tempDir: File,
+        @LongForgery fakeLastFatalAnrSent: Long
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(fakeLastFatalAnrSent.toString())
+
+        // When
+        testedFeature.deleteLastFatalAnrSent()
+
+        // Then
+        assertThat(File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)).doesNotExist()
+    }
+
+    @Test
+    fun `𝕄 write last view event 𝕎 writeLastViewEvent`(
+        @TempDir tempDir: File,
+        @StringForgery viewEvent: String
+    ) {
+        // Given
+        val fakeViewEvent = viewEvent.toByteArray()
+
+        testedFeature.storageDir = tempDir
+
+        // When
+        testedFeature.writeLastViewEvent(fakeViewEvent)
+
+        // Then
+        val lastViewEventFile = File(
+            tempDir,
+            CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME
+        )
+        assertThat(lastViewEventFile).exists()
+
+        val fileContent = lastViewEventFile.readBytes()
+        // file will have batch file format, so beginning will contain some metadata,
+        // we need to skip it for the comparison
+        val payload = fileContent.takeLast(fakeViewEvent.size).toByteArray()
+        assertThat(payload).isEqualTo(fakeViewEvent)
+    }
+
+    @Test
+    fun `𝕄 delete last view event 𝕎 deleteLastViewEvent`(
+        @TempDir tempDir: File,
+        @StringForgery fakeViewEvent: String
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)
+            .writeText(fakeViewEvent)
+
+        // When
+        testedFeature.deleteLastViewEvent()
+
+        // Then
+        assertThat(File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)).doesNotExist()
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `𝕄 delete last view event 𝕎 deleteLastViewEvent { legacy NDK location }`(
+        @TempDir tempDir: File,
+        @StringForgery fakeViewEvent: String
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        DatadogNdkCrashHandler.getLastViewEventFile(tempDir)
+            .apply {
+                parentFile?.mkdirs()
+            }
+            .writeText(fakeViewEvent)
+
+        // When
+        testedFeature.deleteLastViewEvent()
+
+        // Then
+        assertThat(DatadogNdkCrashHandler.getLastViewEventFile(tempDir)).doesNotExist()
+    }
+
+    @Test
+    fun `𝕄 return null 𝕎 lastViewEvent { no last view event written }`(
+        @TempDir tempDir: File
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+
+        // When
+        val lastViewEvent = testedFeature.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent).isNull()
+    }
+
+    @Test
+    fun `𝕄 return last view event 𝕎 lastViewEvent`(
+        @TempDir tempDir: File,
+        @Forgery fakeViewEvent: JsonObject
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        testedFeature.writeLastViewEvent(fakeViewEvent.toString().toByteArray())
+
+        // When
+        val lastViewEvent = testedFeature.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent.toString()).isEqualTo(fakeViewEvent.toString())
+        // file must be deleted once view event is read
+        assertThat(File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)).doesNotExist()
+    }
+
+    @Test
+    fun `𝕄 return last view event 𝕎 lastViewEvent { check old NDK location }`(
+        @TempDir tempDir: File,
+        @Forgery fakeViewEvent: JsonObject
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+
+        @Suppress("DEPRECATION")
+        val legacyNdkViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(tempDir)
+        legacyNdkViewEventFile.parentFile?.mkdirs()
+
+        BatchFileReaderWriter
+            .create(internalLogger = mock(), encryption = null)
+            .writeData(
+                legacyNdkViewEventFile,
+                RawBatchEvent(fakeViewEvent.toString().toByteArray()),
+                append = false
+            )
+
+        // When
+        val lastViewEvent = testedFeature.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent.toString()).isEqualTo(fakeViewEvent.toString())
+    }
 
     // region shutdown
 

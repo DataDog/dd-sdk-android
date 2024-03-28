@@ -25,9 +25,11 @@
       {
         "width": 80,
         "height": 80,
-        "type": "image",
-        "mimeType": "image/webp",
-        "isEmpty": false
+        "shapeStyle": {
+          "backgroundColor": "#5a595bff",
+          "opacity": 1.0
+        },
+        "type": "shape"
       },
       {
         "width": 80,
@@ -39,15 +41,16 @@
           "right": 0
         },
         "type": "image",
-        "mimeType": "image/webp",
         "isEmpty": false
       },
       {
         "width": 80,
         "height": 80,
-        "type": "image",
-        "mimeType": "image/webp",
-        "isEmpty": false
+        "shapeStyle": {
+          "backgroundColor": "#5a595bff",
+          "opacity": 1.0
+        },
+        "type": "shape"
       },
       {
         "width": 80,
@@ -59,15 +62,16 @@
           "right": 0
         },
         "type": "image",
-        "mimeType": "image/webp",
         "isEmpty": false
       },
       {
         "width": 80,
         "height": 80,
-        "type": "image",
-        "mimeType": "image/webp",
-        "isEmpty": false
+        "shapeStyle": {
+          "backgroundColor": "#5a595bff",
+          "opacity": 1.0
+        },
+        "type": "shape"
       },
       {
         "width": 80,
@@ -79,7 +83,6 @@
           "right": 0
         },
         "type": "image",
-        "mimeType": "image/webp",
         "isEmpty": false
       },
       {

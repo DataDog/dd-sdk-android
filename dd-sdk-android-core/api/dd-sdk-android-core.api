@@ -294,6 +294,7 @@ public final class com/datadog/android/api/context/UserInfo {
 public abstract interface class com/datadog/android/api/feature/Feature {
 	public static final field Companion Lcom/datadog/android/api/feature/Feature$Companion;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
+	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
@@ -304,6 +305,7 @@ public abstract interface class com/datadog/android/api/feature/Feature {
 
 public final class com/datadog/android/api/feature/Feature$Companion {
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
+	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
@@ -430,14 +432,18 @@ public final class com/datadog/android/api/storage/RawBatchEvent {
 }
 
 public abstract interface class com/datadog/android/core/InternalSdkCore : com/datadog/android/api/feature/FeatureSdkCore {
+	public abstract fun deleteLastViewEvent ()V
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getDatadogContext ()Lcom/datadog/android/api/context/DatadogContext;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
+	public abstract fun getLastFatalAnrSent ()Ljava/lang/Long;
+	public abstract fun getLastViewEvent ()Lcom/google/gson/JsonObject;
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
 	public abstract fun getPersistenceExecutorService ()Ljava/util/concurrent/ExecutorService;
 	public abstract fun getRootStorageDir ()Ljava/io/File;
 	public abstract fun getTrackingConsent ()Lcom/datadog/android/privacy/TrackingConsent;
 	public abstract fun isDeveloperModeEnabled ()Z
+	public abstract fun writeLastFatalAnrSent (J)V
 	public abstract fun writeLastViewEvent ([B)V
 }
 
@@ -624,12 +630,12 @@ public final class com/datadog/android/core/internal/persistence/file/FileExtKt 
 }
 
 public abstract interface class com/datadog/android/core/internal/system/BuildSdkVersionProvider {
-	public abstract fun version ()I
+	public static final field Companion Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider$Companion;
+	public abstract fun getVersion ()I
 }
 
-public final class com/datadog/android/core/internal/system/DefaultBuildSdkVersionProvider : com/datadog/android/core/internal/system/BuildSdkVersionProvider {
-	public fun <init> ()V
-	public fun version ()I
+public final class com/datadog/android/core/internal/system/BuildSdkVersionProvider$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider;
 }
 
 public final class com/datadog/android/core/internal/thread/LoggingScheduledThreadPoolExecutor : java/util/concurrent/ScheduledThreadPoolExecutor {
@@ -658,9 +664,15 @@ public final class com/datadog/android/core/internal/utils/MapUtilsKt {
 }
 
 public final class com/datadog/android/core/internal/utils/NumberExtKt {
+	public static final field HEX_RADIX I
 	public static final fun toHexString (I)Ljava/lang/String;
 	public static final fun toHexString (J)Ljava/lang/String;
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/utils/ThreadExtKt {
+	public static final fun asString (Ljava/lang/Thread$State;)Ljava/lang/String;
+	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;
 }
 
 public final class com/datadog/android/core/internal/utils/ThrowableExtKt {
@@ -754,6 +766,7 @@ public final class com/datadog/android/log/LogAttributes {
 	public static final field DD_TRACE_ID Ljava/lang/String;
 	public static final field DURATION Ljava/lang/String;
 	public static final field ENV Ljava/lang/String;
+	public static final field ERROR_FINGERPRINT Ljava/lang/String;
 	public static final field ERROR_KIND Ljava/lang/String;
 	public static final field ERROR_MESSAGE Ljava/lang/String;
 	public static final field ERROR_SOURCE_TYPE Ljava/lang/String;

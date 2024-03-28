@@ -30,7 +30,8 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(MockitoExtension::class), ExtendWith(ForgeExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -206,7 +207,8 @@ internal class OtelDdSpanToSpanEventMapperTest {
 
     @Test
     fun `M not mark the SpanEvent as top span W map() { parentId is different than 0 }`(
-        forge: Forge, @Forgery fakeSpan: DDSpan
+        forge: Forge,
+        @Forgery fakeSpan: DDSpan
     ) {
         // Given
         whenever(fakeSpan.parentId).thenReturn(forge.aLong(min = 1))

@@ -15,12 +15,13 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChi
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
 
 internal class TreeViewTraversal(
     private val mappers: List<MapperTypeWrapper>,
-    private val viewMapper: ViewWireframeMapper = ViewWireframeMapper(),
-    private val decorViewMapper: DecorViewMapper = DecorViewMapper(viewMapper),
-    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
+    private val viewMapper: ViewWireframeMapper,
+    private val decorViewMapper: DecorViewMapper,
+    private val viewUtilsInternal: ViewUtilsInternal
 ) {
 
     @Suppress("ReturnCount")
@@ -52,10 +53,10 @@ internal class TreeViewTraversal(
             resolvedWireframes = queueableViewMapper.map(view, mappingContext)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = decorViewMapper.map(view, mappingContext)
+            resolvedWireframes = decorViewMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
         } else {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = viewMapper.map(view, mappingContext)
+            resolvedWireframes = viewMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
         }
 
         return TraversedTreeView(resolvedWireframes, traversalStrategy)

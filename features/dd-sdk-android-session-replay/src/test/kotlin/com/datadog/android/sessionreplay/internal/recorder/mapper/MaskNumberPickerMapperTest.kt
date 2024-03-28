@@ -29,9 +29,10 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
 
     override fun provideTestInstance(): BasePickerMapper {
         return MaskNumberPickerMapper(
-            mockStringUtils,
-            mockViewUtils,
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
         )
     }
 
@@ -44,7 +45,7 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -67,7 +68,7 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -91,7 +92,7 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -117,7 +118,7 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -145,7 +146,7 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -174,7 +175,7 @@ internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(

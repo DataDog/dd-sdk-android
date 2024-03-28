@@ -24,7 +24,6 @@ import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
@@ -37,8 +36,7 @@ internal class JankStatsActivityLifecycleListener(
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
     private var screenRefreshRate: Double = 60.0,
-    private var buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
-
+    private var buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
@@ -132,7 +130,7 @@ internal class JankStatsActivityLifecycleListener(
         if (activeActivities[activity.window].isNullOrEmpty()) {
             activeWindowsListener.remove(activity.window)
             activeActivities.remove(activity.window)
-            if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.S) {
+            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
                 unregisterMetricListener(activity.window)
             }
         }
@@ -147,9 +145,9 @@ internal class JankStatsActivityLifecycleListener(
         if (durationNs > 0.0) {
             var frameRate = (ONE_SECOND_NS / durationNs)
 
-            if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.S) {
+            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
                 screenRefreshRate = ONE_SECOND_NS / frameDeadline
-            } else if (buildSdkVersionProvider.version() == Build.VERSION_CODES.R) {
+            } else if (buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
                 screenRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
             }
 
@@ -205,9 +203,9 @@ internal class JankStatsActivityLifecycleListener(
     @SuppressLint("NewApi")
     @MainThread
     private fun trackWindowMetrics(isKnownWindow: Boolean, window: Window, activity: Activity) {
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.S && !isKnownWindow) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S && !isKnownWindow) {
             registerMetricListener(window)
-        } else if (display == null && buildSdkVersionProvider.version() == Build.VERSION_CODES.R) {
+        } else if (display == null && buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
             // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
             // Frame Metrics callbacks available
             val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -278,7 +276,7 @@ internal class JankStatsActivityLifecycleListener(
 
         internal const val JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR =
             "Trying to disable JankStats instance which was already disabled before, this" +
-                    " shouldn't happen."
+                " shouldn't happen."
         internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
             "Failed to disable JankStats tracking"
 

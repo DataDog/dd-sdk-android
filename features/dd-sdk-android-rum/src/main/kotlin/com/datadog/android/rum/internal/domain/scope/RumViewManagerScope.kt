@@ -279,9 +279,9 @@ internal class RumViewManagerScope(
         private const val MESSAGE_GAP_BETWEEN_VIEWS = "Gap between views was %d nanoseconds"
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
-                    "To track views automatically, try calling the " +
-                    "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
-                    "You can also track views manually using the RumMonitor.startView() and " +
-                    "RumMonitor.stopView() methods."
+                "To track views automatically, try calling the " +
+                "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
+                "You can also track views manually using the RumMonitor.startView() and " +
+                "RumMonitor.stopView() methods."
     }
 }

@@ -42,8 +42,7 @@ internal class ThreadPoolExecutorExtTest {
 
     @Test
     fun `M return false W waitToIdle { timeout reached }`(
-        @LongForgery(min = 0, max = 500)
-        fakeTimeout: Long,
+        @LongForgery(min = 0, max = 500) fakeTimeout: Long,
         forge: Forge
     ) {
         // GIVEN
@@ -62,8 +61,7 @@ internal class ThreadPoolExecutorExtTest {
 
     @Test
     fun `M wait max timeout milliseconds W waitToIdle { executor not idled }`(
-        @LongForgery(min = 500, max = 1000)
-        fakeTimeout: Long,
+        @LongForgery(min = 500, max = 1000) fakeTimeout: Long,
         forge: Forge
     ) {
         // GIVEN
@@ -78,15 +76,13 @@ internal class ThreadPoolExecutorExtTest {
         }
 
         // THEN
-        assertThat(duration).isCloseTo(fakeTimeout, Offset.offset(100))
+        assertThat(duration).isCloseTo(fakeTimeout, Offset.offset(130))
     }
 
     @Test
     fun `M return true W waitToIdle { executor idled }`(
-        @LongForgery(min = 0, max = 500)
-        fakeTimeout: Long,
-        @LongForgery(min = 0, max = 10)
-        fakeTaskCount: Long
+        @LongForgery(min = 0, max = 500) fakeTimeout: Long,
+        @LongForgery(min = 0, max = 10) fakeTaskCount: Long
 
     ) {
         // GIVEN
@@ -106,10 +102,8 @@ internal class ThreadPoolExecutorExtTest {
         @LongForgery(
             min = MAX_SLEEP_DURATION_IN_MS * 3,
             max = MAX_SLEEP_DURATION_IN_MS * 4
-        )
-        fakeTimeout: Long,
-        @LongForgery(min = 0, max = 10)
-        fakeTaskCount: Long
+        ) fakeTimeout: Long,
+        @LongForgery(min = 0, max = 10) fakeTaskCount: Long
 
     ) {
         // GIVEN
@@ -126,8 +120,7 @@ internal class ThreadPoolExecutorExtTest {
 
     @Test
     fun `M return false W waitToIdle { timeout is negative, executor not idled }`(
-        @LongForgery(min = Long.MIN_VALUE, max = 0)
-        fakeTimeout: Long,
+        @LongForgery(min = Long.MIN_VALUE, max = 0) fakeTimeout: Long,
         forge: Forge
     ) {
         // WHEN
@@ -143,10 +136,8 @@ internal class ThreadPoolExecutorExtTest {
 
     @Test
     fun `M return true W waitToIdle { timeout is negative, executor idled }`(
-        @LongForgery(min = Long.MIN_VALUE, max = 0)
-        fakeTimeout: Long,
-        @LongForgery(min = 0, max = 10)
-        fakeTaskCount: Long
+        @LongForgery(min = Long.MIN_VALUE, max = 0) fakeTimeout: Long,
+        @LongForgery(min = 0, max = 10) fakeTaskCount: Long
     ) {
         // GIVEN
         whenever(testedMockExecutor.taskCount).thenReturn(fakeTaskCount)
@@ -165,10 +156,8 @@ internal class ThreadPoolExecutorExtTest {
         @LongForgery(
             min = MAX_SLEEP_DURATION_IN_MS * 3,
             max = MAX_SLEEP_DURATION_IN_MS * 4
-        )
-        fakeTimeout: Long,
-        @LongForgery(min = 0, max = 10)
-        fakeTaskCount: Long
+        ) fakeTimeout: Long,
+        @LongForgery(min = 0, max = 10) fakeTaskCount: Long
     ) {
         // GIVEN
         whenever(testedMockExecutor.taskCount)

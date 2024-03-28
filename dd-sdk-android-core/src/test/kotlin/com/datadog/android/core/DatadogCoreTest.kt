@@ -7,6 +7,7 @@
 package com.datadog.android.core
 
 import android.app.Application
+import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
@@ -21,22 +22,23 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
-import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -49,14 +51,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -67,7 +67,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -86,13 +85,16 @@ import java.util.concurrent.atomic.AtomicReference
 @ForgeConfiguration(Configurator::class)
 internal class DatadogCoreTest {
 
-    lateinit var testedCore: DatadogCore
+    private lateinit var testedCore: DatadogCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
+
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Forgery
     lateinit var fakeConfiguration: Configuration
@@ -119,7 +121,8 @@ internal class DatadogCoreTest {
             fakeInstanceId,
             fakeInstanceName,
             internalLoggerProvider = { mockInternalLogger },
-            persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
+            persistenceExecutorServiceFactory = { mockPersistenceExecutorService },
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         ).apply {
             initialize(fakeConfiguration)
         }
@@ -486,6 +489,36 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `𝕄 provide last view event 𝕎 lastViewEvent()`(
+        @Forgery fakeLastViewEvent: JsonObject
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.lastViewEvent) doReturn fakeLastViewEvent
+
+        // When
+        val lastViewEvent = testedCore.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent).isSameAs(fakeLastViewEvent)
+    }
+
+    @Test
+    fun `𝕄 provide last fatal ANR sent 𝕎 lastFatalAnrSent()`(
+        @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.lastFatalAnrSent) doReturn fakeLastFatalAnrSent
+
+        // When
+        val lastFatalAnrSent = testedCore.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isEqualTo(fakeLastFatalAnrSent)
+    }
+
+    @Test
     fun `𝕄 return tracking consent 𝕎 trackingConsent()`(
         @Forgery fakeTrackingConsent: TrackingConsent
     ) {
@@ -509,58 +542,48 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `𝕄 persist the event into the NDK crash folder 𝕎 writeLastViewEvent(){ViewEvent+dir exists}`(
-        @TempDir tempStorageDir: File,
+    fun `𝕄 persist the event 𝕎 writeLastViewEvent(){ NDK feature registered }`(
         @StringForgery viewEvent: String
     ) {
         // Given
         val fakeViewEvent = viewEvent.toByteArray()
-
-        val ndkReportsFolder = File(
-            tempStorageDir,
-            DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME
-        )
-        ndkReportsFolder.mkdir()
+        testedCore.features += Feature.NDK_CRASH_REPORTS_FEATURE_NAME to mock()
         val mockCoreFeature = mock<CoreFeature>()
-        whenever(mockCoreFeature.storageDir) doReturn tempStorageDir
-
-        val mockEncryption = mock<Encryption>()
-        whenever(mockCoreFeature.localDataEncryption) doReturn mockEncryption
-        whenever(mockEncryption.encrypt(fakeViewEvent)) doReturn fakeViewEvent.reversedArray()
-        whenever(mockEncryption.encrypt(argThat { isEmpty() })) doAnswer { it.getArgument(0) }
-
         testedCore.coreFeature = mockCoreFeature
 
         // When
         testedCore.writeLastViewEvent(fakeViewEvent)
 
         // Then
-        val lastViewEventFile = File(
-            ndkReportsFolder,
-            DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME
-        )
-        assertThat(lastViewEventFile).exists()
-
-        val fileContent = lastViewEventFile.readBytes()
-        // file will have batch file format, so beginning will contain some metadata,
-        // we need to skip it for the comparison
-        val payload = fileContent.takeLast(fakeViewEvent.size).toByteArray()
-        assertThat(payload)
-            .isEqualTo(fakeViewEvent.reversedArray())
+        verify(mockCoreFeature).writeLastViewEvent(fakeViewEvent)
     }
 
     @Test
-    fun `𝕄 log info when writing last view event 𝕎 writeLastViewEvent(){ ViewEvent+no crash dir }`(
-        @TempDir tempStorageDir: File,
-        @StringForgery viewEvent: String
+    fun `𝕄 persist the event 𝕎 writeLastViewEvent(){ R+ }`(
+        @StringForgery viewEvent: String,
+        @IntForgery(min = Build.VERSION_CODES.R) fakeSdkVersion: Int
     ) {
         // Given
-        val ndkReportsFolder = File(
-            tempStorageDir,
-            DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME
-        )
+        val fakeViewEvent = viewEvent.toByteArray()
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeSdkVersion
         val mockCoreFeature = mock<CoreFeature>()
-        whenever(mockCoreFeature.storageDir) doReturn tempStorageDir
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        testedCore.writeLastViewEvent(fakeViewEvent)
+
+        // Then
+        verify(mockCoreFeature).writeLastViewEvent(fakeViewEvent)
+    }
+
+    @Test
+    fun `𝕄 log info when writing last view event 𝕎 writeLastViewEvent(){ below R and no NDK feature }`(
+        @StringForgery viewEvent: String,
+        @IntForgery(min = 1, max = Build.VERSION_CODES.R) fakeSdkVersion: Int
+    ) {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockBuildSdkVersionProvider.version) doReturn fakeSdkVersion
         testedCore.coreFeature = mockCoreFeature
         reset(mockInternalLogger)
 
@@ -568,15 +591,39 @@ internal class DatadogCoreTest {
         testedCore.writeLastViewEvent(viewEvent.toByteArray())
 
         // Then
-        assertThat(ndkReportsFolder).doesNotExist()
         mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
+            InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            DatadogCore.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
-                Locale.US,
-                ndkReportsFolder
-            )
+            DatadogCore.NO_NEED_TO_WRITE_LAST_VIEW_EVENT
         )
+    }
+
+    @Test
+    fun `𝕄 delete last view event 𝕎 deleteLastViewEvent()`() {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        testedCore.deleteLastViewEvent()
+
+        // Then
+        verify(mockCoreFeature).deleteLastViewEvent()
+    }
+
+    @Test
+    fun `𝕄 write last fatal ANR sent 𝕎 writeLastFatalAnrSent()`(
+        @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
+    ) {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        testedCore.writeLastFatalAnrSent(fakeLastFatalAnrSent)
+
+        // Then
+        verify(mockCoreFeature).writeLastFatalAnrSent(fakeLastFatalAnrSent)
     }
 
     @Test
@@ -591,6 +638,8 @@ internal class DatadogCoreTest {
                 anAlphaNumericalString() to mock()
             }
         )
+        val mockCoreFeature = mock<CoreFeature>()
+        testedCore.coreFeature = mockCoreFeature
 
         // When
         testedCore.clearAllData()
@@ -599,6 +648,8 @@ internal class DatadogCoreTest {
         testedCore.features.forEach {
             verify(it.value).clearAllData()
         }
+        verify(mockCoreFeature).deleteLastFatalAnrSent()
+        verify(mockCoreFeature).deleteLastViewEvent()
     }
 
     @Test

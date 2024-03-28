@@ -28,7 +28,12 @@ import org.mockito.quality.Strictness
 internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
 
     override fun provideTestInstance(): NumberPickerMapper {
-        return NumberPickerMapper(mockStringUtils, mockViewUtils, mockUniqueIdentifierGenerator)
+        return NumberPickerMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
     }
 
     @Test
@@ -47,7 +52,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -79,7 +84,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -111,7 +116,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -147,7 +152,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -184,7 +189,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -222,7 +227,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -240,29 +245,37 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     fun `M return empty list W map { prevLabelId null }`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.PREV_INDEX_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 
     @Test
     fun `M return empty list W map { nextLabelId null }`() {
         // Given
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.NEXT_INDEX_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 }

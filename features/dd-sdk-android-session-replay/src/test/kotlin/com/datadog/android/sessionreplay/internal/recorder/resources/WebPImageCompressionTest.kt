@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
 import android.os.Build
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -40,9 +41,12 @@ internal class WebPImageCompressionTest {
     @Mock
     lateinit var mockBitmap: Bitmap
 
+    @Mock
+    lateinit var logger: InternalLogger
+
     @BeforeEach
     fun setup() {
-        testedImageCompression = WebPImageCompression()
+        testedImageCompression = WebPImageCompression(logger)
     }
 
     // region compressBitmapToStream

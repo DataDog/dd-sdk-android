@@ -8,16 +8,24 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.CheckBox
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal class MaskCheckBoxMapper(
     textWireframeMapper: TextViewMapper,
-    stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
-) : CheckBoxMapper(textWireframeMapper, stringUtils, uniqueIdentifierGenerator, viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : CheckBoxMapper(
+    textWireframeMapper,
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     override fun resolveCheckedShapeStyle(view: CheckBox, checkBoxColor: String): MobileSegment.ShapeStyle? {
         // in case the MASK rule is applied we do not want to show the selection in the

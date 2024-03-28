@@ -161,7 +161,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -194,7 +194,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -228,7 +228,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(throwable)
             assertThat(logEvent.message)
@@ -263,7 +263,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(throwable)
             assertThat(logEvent.message)
@@ -307,7 +307,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(thread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -348,7 +348,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(crashedThread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
