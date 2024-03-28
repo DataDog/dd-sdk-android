@@ -127,6 +127,23 @@ internal class RumEventMapperTest {
     }
 
     @Test
+    fun `M map the bundled event W map { fatal ErrorEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeErrorEvent = forge.getForgery<ErrorEvent>()
+        val fakeCrashEvent = fakeErrorEvent.copy(
+            error = fakeErrorEvent.error.copy(isCrash = true)
+        )
+        whenever(mockErrorEventMapper.map(fakeCrashEvent)).thenReturn(fakeCrashEvent)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeCrashEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNotNull
+        assertThat(mappedRumEvent).isEqualTo(fakeCrashEvent)
+    }
+
+    @Test
     fun `M map the bundled event W map { ActionEvent }`(forge: Forge) {
         // GIVEN
         val fakeRumEvent = forge.getForgery<ActionEvent>()
