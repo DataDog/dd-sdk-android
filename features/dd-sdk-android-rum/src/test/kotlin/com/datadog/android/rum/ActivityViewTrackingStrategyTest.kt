@@ -12,6 +12,7 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.forge.anException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
@@ -130,6 +131,33 @@ internal class ActivityViewTrackingStrategyTest :
             .toMutableMap()
         expectedAttributes["view.intent.action"] = action
         expectedAttributes["view.intent.uri"] = uri
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        // Then
+        verify(rumMonitor.mockInstance).startView(
+            mockActivity,
+            mockActivity.resolveViewName(),
+            expectedAttributes
+        )
+    }
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() { getting intent extras throws }`(
+        @StringForgery action: String,
+        @StringForgery uri: String,
+        forge: Forge
+    ) {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+        whenever(mockIntent.extras).thenThrow(forge.anException())
+        whenever(mockIntent.action).thenReturn(action)
+        whenever(mockIntent.dataString).thenReturn(uri)
+        whenever(mockActivity.intent).thenReturn(mockIntent)
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        val expectedAttributes = mapOf("view.intent.action" to action, "view.intent.uri" to uri)
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When

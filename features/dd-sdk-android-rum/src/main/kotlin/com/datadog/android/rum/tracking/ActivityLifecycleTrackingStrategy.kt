@@ -93,7 +93,7 @@ abstract class ActivityLifecycleTrackingStrategy :
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         val intent = activity.intent
-        val extras = intent.extras
+        val extras = intent.safeExtras
         val testId = extras?.getString("_dd.synthetics.test_id")
         val resultId = extras?.getString("_dd.synthetics.result_id")
         if (!testId.isNullOrBlank() && !resultId.isNullOrBlank()) {
@@ -130,7 +130,7 @@ abstract class ActivityLifecycleTrackingStrategy :
             attributes[INTENT_URI_TAG] = it
         }
 
-        intent.extras?.let { bundle ->
+        intent.safeExtras?.let { bundle ->
             bundle.keySet().forEach {
                 // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
                 // Issue is opened in the Google Issue Tracker.
@@ -186,6 +186,20 @@ abstract class ActivityLifecycleTrackingStrategy :
             null
         }
     }
+
+    private val Intent.safeExtras: Bundle?
+        get() = try {
+            // old Androids can throw different exceptions here making native calls
+            extras
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { "Error getting Intent extras, ignoring it." },
+                e
+            )
+            null
+        }
 
     internal companion object {
         internal const val ARGUMENT_TAG = "view.arguments"
