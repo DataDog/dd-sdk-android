@@ -8,16 +8,10 @@
 package com.datadog.trace.logger;
 public interface Logger {
     public static String ROOT_LOGGER_NAME = "ROOT";
-    public String getName();
-    public void trace(String msg);
-    public void trace(String format, Object arg);
-    public void trace(String format, Object arg1, Object arg2);
-    public void trace(String format, Object... argArray);
-    public void trace(String msg, Throwable t);
-    public boolean isTraceEnabled();
+
     public boolean isInfoEnabled();
     public boolean isWarnEnabled();
-    public boolean isErrorEnabled();
+
     public boolean isDebugEnabled();
     public void debug(String msg);
     public void debug(String format, Object arg);

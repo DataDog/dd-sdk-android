@@ -6,48 +6,11 @@
 
 package com.datadog.trace.logger;
 
-
-// TODO: 04/03/2024 https://datadoghq.atlassian.net/browse/RUM-3405 Add a proper implementation here
 public class NoOpLogger implements Logger {
 
     @Override
     public boolean isDebugEnabled() {
         return false;
-    }
-
-    @Override
-    public String getName() {
-        return "";
-    }
-
-    @Override
-    public boolean isTraceEnabled() {
-        return false;
-    }
-
-    @Override
-    public void trace(String msg) {
-
-    }
-
-    @Override
-    public void trace(String format, Object arg) {
-
-    }
-
-    @Override
-    public void trace(String format, Object arg1, Object arg2) {
-
-    }
-
-    @Override
-    public void trace(String format, Object... argArray) {
-
-    }
-
-    @Override
-    public void trace(String msg, Throwable t) {
-
     }
 
     @Override
@@ -133,11 +96,6 @@ public class NoOpLogger implements Logger {
     @Override
     public void warn(String msg, Throwable t) {
 
-    }
-
-    @Override
-    public boolean isErrorEnabled() {
-        return false;
     }
 
     @Override
