@@ -34,7 +34,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
@@ -193,12 +193,11 @@ class SampleApplication : Application() {
                 }
             }
             .useViewTrackingStrategy(
-                ActivityViewTrackingStrategy(true)
-//                NavigationViewTrackingStrategy(
-//                    R.id.nav_host_fragment,
-//                    true,
-//                    SampleNavigationPredicate()
-//                )
+                NavigationViewTrackingStrategy(
+                    R.id.nav_host_fragment,
+                    true,
+                    SampleNavigationPredicate()
+                )
             )
             .setTelemetrySampleRate(100f)
             .trackUserInteractions()
