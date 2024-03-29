@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import com.datadog.android.api.InternalLogger;
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTags;
@@ -51,17 +52,16 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public class DDSpan
     implements AgentSpan, CoreSpan<DDSpan>, TransientProfilingContextHolder, AttachableWrapper {
-  private static final Logger log = LoggerFactory.getLogger(DDSpan.class);
-
+  private final Logger log;
   public static final String CHECKPOINTED_TAG = "checkpointed";
 
   static DDSpan create(
-      final String instrumentationName,
-      final long timestampMicro,
-      @NonNull DDSpanContext context,
-      final List<AgentSpanLink> links) {
-    final DDSpan span = new DDSpan(instrumentationName, timestampMicro, context, links);
-    log.debug("Started span: {}", span);
+          final String instrumentationName,
+          final long timestampMicro,
+          @NonNull DDSpanContext context,
+          final List<AgentSpanLink> links,
+          final InternalLogger internalLogger) {
+    final DDSpan span = new DDSpan(instrumentationName, timestampMicro, context, links, internalLogger);
     context.getTrace().registerSpan(span);
     return span;
   }
@@ -128,7 +128,8 @@ public class DDSpan
       @NonNull String instrumentationName,
       final long timestampMicro,
       @NonNull DDSpanContext context,
-      final List<AgentSpanLink> links) {
+      final List<AgentSpanLink> links,
+      final InternalLogger internalLogger) {
     this.context = context;
     this.metrics = SpanMetricRegistry.getInstance().get(instrumentationName);
     this.metrics.onSpanCreated();
@@ -144,6 +145,8 @@ public class DDSpan
     }
 
     this.links = links == null ? new CopyOnWriteArrayList<>() : new CopyOnWriteArrayList<>(links);
+    this.log = LoggerFactory.getLogger(DDSpan.class.getSimpleName(), internalLogger);
+    log.debug("Started span: {}", this);
   }
 
   public boolean isFinished() {

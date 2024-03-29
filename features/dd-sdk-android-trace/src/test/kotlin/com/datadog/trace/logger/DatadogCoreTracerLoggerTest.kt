@@ -37,7 +37,7 @@ internal class DatadogCoreTracerLoggerTest {
     @StringForgery
     lateinit var fakeMessage: String
 
-    private lateinit var expectedFakeMessage: String
+    private lateinit var expectedMessage: String
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeLoggerName: String
@@ -55,7 +55,7 @@ internal class DatadogCoreTracerLoggerTest {
     fun `set up`(forge: Forge) {
         fakeArgs = forge.aList(size = forge.aSmallInt()) { Object() }.toTypedArray()
         fakeThrowable = forge.getForgery()
-        expectedFakeMessage = String.format(Locale.US, "%s: %s", fakeLoggerName, fakeMessage)
+        expectedMessage = String.format(Locale.US, "%s: %s", fakeLoggerName, fakeMessage)
         testedLogger =
             DatadogCoreTracerLogger(fakeLoggerName, mockInternalLogger)
     }
@@ -63,7 +63,7 @@ internal class DatadogCoreTracerLoggerTest {
     // region debug logs
 
     @Test
-    fun `M send a debug log W debug`(forge: Forge) {
+    fun `M send a debug log W debug`() {
         // When
         testedLogger.debug(fakeMessage)
 
@@ -71,12 +71,12 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
-            expectedFakeMessage
+            expectedMessage
         )
     }
 
     @Test
-    fun `M send a debug log W debug { throwable }`(forge: Forge) {
+    fun `M send a debug log W debug { throwable }`() {
         // When
         testedLogger.debug(fakeMessage, fakeThrowable)
 
@@ -84,7 +84,7 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            expectedFakeMessage,
+            expectedMessage,
             fakeThrowable
         )
     }
@@ -128,7 +128,7 @@ internal class DatadogCoreTracerLoggerTest {
     // region info logs
 
     @Test
-    fun `M send an info log W info`(forge: Forge) {
+    fun `M send an info log W info`() {
         // When
         testedLogger.info(fakeMessage)
 
@@ -136,12 +136,12 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            expectedFakeMessage
+            expectedMessage
         )
     }
 
     @Test
-    fun `M send an info log W info { throwable }`(forge: Forge) {
+    fun `M send an info log W info { throwable }`() {
         // When
         testedLogger.info(fakeMessage, fakeThrowable)
 
@@ -149,7 +149,7 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            expectedFakeMessage,
+            expectedMessage,
             fakeThrowable
         )
     }
@@ -193,7 +193,7 @@ internal class DatadogCoreTracerLoggerTest {
     // region warn logs
 
     @Test
-    fun `M send an warn log W warn`(forge: Forge) {
+    fun `M send an warn log W warn`() {
         // When
         testedLogger.warn(fakeMessage)
 
@@ -201,12 +201,12 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            expectedFakeMessage
+            expectedMessage
         )
     }
 
     @Test
-    fun `M send a warn log W warn { throwable }`(forge: Forge) {
+    fun `M send a warn log W warn { throwable }`() {
         // When
         testedLogger.warn(fakeMessage, fakeThrowable)
 
@@ -214,7 +214,7 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            expectedFakeMessage,
+            expectedMessage,
             fakeThrowable
         )
     }
@@ -258,7 +258,7 @@ internal class DatadogCoreTracerLoggerTest {
     // region error logs
 
     @Test
-    fun `M send an error log W error`(forge: Forge) {
+    fun `M send an error log W error`() {
         // When
         testedLogger.error(fakeMessage)
 
@@ -266,12 +266,12 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            expectedFakeMessage
+            expectedMessage
         )
     }
 
     @Test
-    fun `M send an error log W error { throwable }`(forge: Forge) {
+    fun `M send an error log W error { throwable }`() {
         // When
         testedLogger.error(fakeMessage, fakeThrowable)
 
@@ -279,7 +279,7 @@ internal class DatadogCoreTracerLoggerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            expectedFakeMessage,
+            expectedMessage,
             fakeThrowable
         )
     }

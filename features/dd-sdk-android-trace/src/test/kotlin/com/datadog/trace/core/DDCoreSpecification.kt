@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.DDSpecification
 import com.datadog.trace.api.DDSpanId
@@ -19,6 +20,7 @@ import com.datadog.trace.core.propagation.PropagationTags
 import com.datadog.trace.core.tagprocessor.TagsPostProcessorFactory
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.mockito.kotlin.mock
 
 internal abstract class DDCoreSpecification : DDSpecification() {
 
@@ -26,6 +28,8 @@ internal abstract class DDCoreSpecification : DDSpecification() {
     protected open fun useStrictTraceWrites() = true
 
     protected val instrumentationName = "test"
+
+    protected val mockLogger: InternalLogger = mock()
 
     @BeforeEach
     override fun setup() {
@@ -40,7 +44,7 @@ internal abstract class DDCoreSpecification : DDSpecification() {
     }
 
     protected fun tracerBuilder(): CoreTracerBuilder {
-        val builder = CoreTracer.builder()
+        val builder = CoreTracerBuilder(mockLogger)
         return builder.strictTraceWrites(useStrictTraceWrites())
     }
 
@@ -101,7 +105,7 @@ internal abstract class DDCoreSpecification : DDSpecification() {
             true
         )
 
-        val span = DDSpan.create("test", timestamp, context, null)
+        val span = DDSpan.create("test", timestamp, context, null, mockLogger)
         for ((key, value) in tags.entries) {
             span.setTag(key, value)
         }

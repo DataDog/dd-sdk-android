@@ -4,6 +4,7 @@ import static com.datadog.trace.util.AgentThreadFactory.AgentThread.TRACE_MONITO
 import static com.datadog.trace.util.AgentThreadFactory.THREAD_JOIN_TIMOUT_MS;
 import static com.datadog.trace.util.AgentThreadFactory.newAgentThread;
 
+import com.datadog.android.api.InternalLogger;
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.time.TimeSource;
 import com.datadog.trace.core.monitor.HealthMetrics;
@@ -238,8 +239,11 @@ public abstract class PendingTraceBuffer implements AutoCloseable {
   }
 
   static class DiscardingPendingTraceBuffer extends PendingTraceBuffer {
-    private static final Logger log = LoggerFactory.getLogger(DiscardingPendingTraceBuffer.class);
+    private final Logger log;
 
+    public DiscardingPendingTraceBuffer(InternalLogger internalLogger) {
+      log = LoggerFactory.getLogger(DiscardingPendingTraceBuffer.class.getSimpleName(), internalLogger);
+    }
     @Override
     public void start() {}
 
@@ -264,8 +268,8 @@ public abstract class PendingTraceBuffer implements AutoCloseable {
         BUFFER_SIZE, timeSource, config, healthMetrics);
   }
 
-  public static PendingTraceBuffer discarding() {
-    return new DiscardingPendingTraceBuffer();
+  public static PendingTraceBuffer discarding(InternalLogger internalLogger) {
+    return new DiscardingPendingTraceBuffer(internalLogger);
   }
 
   public abstract void start();

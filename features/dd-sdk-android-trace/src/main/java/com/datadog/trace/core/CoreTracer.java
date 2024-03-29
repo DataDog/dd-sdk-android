@@ -9,6 +9,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import androidx.annotation.VisibleForTesting;
+
+import com.datadog.android.api.InternalLogger;
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
@@ -104,14 +107,11 @@ import java.util.zip.ZipOutputStream;
  * reporting, and propagating traces
  */
 public class CoreTracer implements AgentTracer.TracerAPI {
-    private static final Logger log = LoggerFactory.getLogger(CoreTracer.class);
+    @VisibleForTesting
+    final Logger log;
     // UINT64 max value
     public static final BigInteger TRACE_ID_MAX =
             BigInteger.valueOf(2).pow(64).subtract(BigInteger.ONE);
-
-    public static CoreTracerBuilder builder() {
-        return new CoreTracerBuilder();
-    }
 
     public static final String LANG_STATSD_TAG = "lang";
     public static final String LANG_VERSION_STATSD_TAG = "lang_version";
@@ -232,6 +232,8 @@ public class CoreTracer implements AgentTracer.TracerAPI {
 
     private final PropagationTags.Factory propagationTagsFactory;
 
+    final InternalLogger internalLogger;
+
     @Override
     public ConfigSnapshot captureTraceConfig() {
         return dynamicConfig.captureTraceConfig();
@@ -282,6 +284,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         private TimeSource timeSource;
         private ProfilingContextIntegration profilingContextIntegration =
                 ProfilingContextIntegration.NoOp.INSTANCE;
+        private InternalLogger internalLogger;
         private boolean injectBaggageAsTags;
 
         public CoreTracerBuilder serviceName(String serviceName) {
@@ -370,9 +373,10 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             return this;
         }
 
-        public CoreTracerBuilder() {
+        public CoreTracerBuilder(InternalLogger internalLogger) {
             // Apply the default values from config.
             config(Config.get());
+            this.internalLogger = internalLogger;
         }
 
         public CoreTracerBuilder withProperties(final Properties properties) {
@@ -417,7 +421,8 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     instrumentationGateway,
                     timeSource,
                     profilingContextIntegration,
-                    injectBaggageAsTags);
+                    injectBaggageAsTags,
+                    internalLogger);
         }
     }
 
@@ -441,7 +446,8 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             final InstrumentationGateway instrumentationGateway,
             final TimeSource timeSource,
             final ProfilingContextIntegration profilingContextIntegration,
-            final boolean injectBaggageAsTags) {
+            final boolean injectBaggageAsTags,
+            final InternalLogger internalLogger) {
 
         assert localRootSpanTags != null;
         assert defaultSpanTags != null;
@@ -449,6 +455,8 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         assert taggedHeaders != null;
         assert baggageMapping != null;
 
+        this.log = LoggerFactory.getLogger(CoreTracer.class.getSimpleName(), internalLogger);
+        this.rlLog = new RatelimitedLogger(log, 1, MINUTES);
         this.timeSource = timeSource == null ? SystemTimeSource.INSTANCE : timeSource;
         startTimeNano = this.timeSource.getCurrentTimeNanos();
         startNanoTicks = this.timeSource.getNanoTicks();
@@ -510,7 +518,8 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                             config.isScopeStrictMode(),
                             config.isScopeInheritAsyncPropagation(),
                             profilingContextIntegration,
-                            healthMetrics);
+                            healthMetrics,
+                            internalLogger);
         } else {
             this.scopeManager = scopeManager;
         }
@@ -520,7 +529,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         this.writer = writer;
         pendingTraceBuffer =
                 strictTraceWrites
-                        ? PendingTraceBuffer.discarding()
+                        ? PendingTraceBuffer.discarding(internalLogger)
                         : PendingTraceBuffer.delaying(
                         this.timeSource, config, healthMetrics);
         pendingTraceFactory =
@@ -577,6 +586,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         } else {
             this.localRootSpanTags = localRootSpanTags;
         }
+        this.internalLogger = internalLogger;
     }
 
     /**
@@ -765,7 +775,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         return timer;
     }
 
-    private final RatelimitedLogger rlLog = new RatelimitedLogger(log, 1, MINUTES);
+    private final RatelimitedLogger rlLog;
 
     /**
      * We use the sampler to know if the trace has to be reported/written. The sampler is called on
@@ -1073,7 +1083,12 @@ public class CoreTracer implements AgentTracer.TracerAPI {
 
         private DDSpan buildSpan() {
             addTerminatedContextAsLinks();
-            DDSpan span = DDSpan.create(instrumentationName, timestampMicro, buildSpanContext(), links);
+            DDSpan span = DDSpan.create(
+                    instrumentationName,
+                    timestampMicro,
+                    buildSpanContext(),
+                    links,
+                    tracer.internalLogger);
             if (span.isLocalRootSpan()) {
                 EndpointTracker tracker = tracer.onRootSpanStarted(span);
                 span.setEndpointTracker(tracker);

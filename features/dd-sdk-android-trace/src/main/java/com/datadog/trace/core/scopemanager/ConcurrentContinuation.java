@@ -2,6 +2,7 @@ package com.datadog.trace.core.scopemanager;
 
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
+import com.datadog.trace.logger.Logger;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -15,82 +16,85 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * way, and close the scopes without fear of closing the related {@link AgentSpan} prematurely.
  */
 final class ConcurrentContinuation extends AbstractContinuation {
-  private static final int START = 1;
-  private static final int CLOSED = Integer.MIN_VALUE >> 1;
-  private static final int BARRIER = Integer.MIN_VALUE >> 2;
-  private volatile int count = START;
+    private static final int START = 1;
+    private static final int CLOSED = Integer.MIN_VALUE >> 1;
+    private static final int BARRIER = Integer.MIN_VALUE >> 2;
+    private volatile int count = START;
 
-  private static final AtomicIntegerFieldUpdater<ConcurrentContinuation> COUNT =
-      AtomicIntegerFieldUpdater.newUpdater(ConcurrentContinuation.class, "count");
+    private static final AtomicIntegerFieldUpdater<ConcurrentContinuation> COUNT =
+            AtomicIntegerFieldUpdater.newUpdater(ConcurrentContinuation.class, "count");
 
-  public ConcurrentContinuation(
-      ContinuableScopeManager scopeManager, AgentSpan spanUnderScope, byte source) {
-    super(scopeManager, spanUnderScope, source);
-  }
-
-  private boolean tryActivate() {
-    int current = COUNT.incrementAndGet(this);
-    if (current < START) {
-      COUNT.decrementAndGet(this);
+    public ConcurrentContinuation(
+            ContinuableScopeManager scopeManager,
+            AgentSpan spanUnderScope,
+            byte source,
+            Logger logger) {
+        super(scopeManager, spanUnderScope, source, logger);
     }
-    return current > START;
-  }
 
-  private boolean tryClose() {
-    int current = COUNT.get(this);
-    if (current < BARRIER) {
-      return false;
+    private boolean tryActivate() {
+        int current = COUNT.incrementAndGet(this);
+        if (current < START) {
+            COUNT.decrementAndGet(this);
+        }
+        return current > START;
     }
-    // Now decrement the counter
-    current = COUNT.decrementAndGet(this);
-    // Try to close this if we are between START and BARRIER
-    while (current < START && current > BARRIER) {
-      if (COUNT.compareAndSet(this, current, CLOSED)) {
-        return true;
-      }
-      current = COUNT.get(this);
+
+    private boolean tryClose() {
+        int current = COUNT.get(this);
+        if (current < BARRIER) {
+            return false;
+        }
+        // Now decrement the counter
+        current = COUNT.decrementAndGet(this);
+        // Try to close this if we are between START and BARRIER
+        while (current < START && current > BARRIER) {
+            if (COUNT.compareAndSet(this, current, CLOSED)) {
+                return true;
+            }
+            current = COUNT.get(this);
+        }
+        return false;
     }
-    return false;
-  }
 
-  @Override
-  public AgentScope activate() {
-    if (tryActivate()) {
-      return scopeManager.continueSpan(this, spanUnderScope, source);
-    } else {
-      return null;
+    @Override
+    public AgentScope activate() {
+        if (tryActivate()) {
+            return scopeManager.continueSpan(this, spanUnderScope, source);
+        } else {
+            return null;
+        }
     }
-  }
 
-  @Override
-  public void cancel() {
-    if (tryClose()) {
-      trace.cancelContinuation(this);
+    @Override
+    public void cancel() {
+        if (tryClose()) {
+            trace.cancelContinuation(this);
+        }
+        logger.debug(
+                "t_id={} -> canceling continuation {}", spanUnderScope.getTraceId(), this);
     }
-    ContinuableScopeManager.log.debug(
-        "t_id={} -> canceling continuation {}", spanUnderScope.getTraceId(), this);
-  }
 
-  @Override
-  public AgentSpan getSpan() {
-    return spanUnderScope;
-  }
+    @Override
+    public AgentSpan getSpan() {
+        return spanUnderScope;
+    }
 
-  @Override
-  void cancelFromContinuedScopeClose() {
-    cancel();
-  }
+    @Override
+    void cancelFromContinuedScopeClose() {
+        cancel();
+    }
 
-  @Override
-  public String toString() {
-    int c = COUNT.get(this);
-    String s = c < BARRIER ? "CANCELED" : String.valueOf(c);
-    return getClass().getSimpleName()
-        + "@"
-        + Integer.toHexString(hashCode())
-        + "("
-        + s
-        + ")->"
-        + spanUnderScope;
-  }
+    @Override
+    public String toString() {
+        int c = COUNT.get(this);
+        String s = c < BARRIER ? "CANCELED" : String.valueOf(c);
+        return getClass().getSimpleName()
+                + "@"
+                + Integer.toHexString(hashCode())
+                + "("
+                + s
+                + ")->"
+                + spanUnderScope;
+    }
 }

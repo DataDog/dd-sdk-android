@@ -12,11 +12,23 @@ import com.datadog.android.api.InternalLogger;
 import java.util.Arrays;
 import java.util.Locale;
 
-// TODO: 04/03/2024 https://datadoghq.atlassian.net/browse/RUM-3405 Add a proper implementation here
 public class DatadogCoreTracerLogger implements Logger {
 
-    static final String LEGACY_ARG_PLACEHOLDER = "{}";
 
+    // region Static
+    private static final String LEGACY_ARG_PLACEHOLDER = "{}";
+
+    static String generateLogMessage(String title, final String format, Object... args) {
+        final String sanitizedFormat = format.replace(LEGACY_ARG_PLACEHOLDER, "%s");
+        return String.format(Locale.US, title + ": " + sanitizedFormat, args);
+    }
+
+
+    static String bundleMessageWithTitle(final String title, String message) {
+        return String.format(Locale.US, "%s: %s", title, message);
+    }
+
+    // endregion
 
     private final InternalLogger internalLogger;
 
@@ -26,6 +38,8 @@ public class DatadogCoreTracerLogger implements Logger {
         this.internalLogger = internalLogger;
         this.loggerName = loggerName;
     }
+
+    // region Logger
 
     @Override
     public boolean isDebugEnabled() {
@@ -282,13 +296,5 @@ public class DatadogCoreTracerLogger implements Logger {
         );
     }
 
-    static String generateLogMessage(String title, final String format, Object... args) {
-        final String sanitizedFormat = format.replace(LEGACY_ARG_PLACEHOLDER, "%s");
-        return String.format(Locale.US, title + ": " + sanitizedFormat, args);
-    }
-
-
-    static String bundleMessageWithTitle(final String title, String message) {
-        return String.format(Locale.US, "%s: %s", title, message);
-    }
+    // endregion
 }

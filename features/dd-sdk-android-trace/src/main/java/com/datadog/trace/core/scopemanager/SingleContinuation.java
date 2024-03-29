@@ -2,6 +2,7 @@ package com.datadog.trace.core.scopemanager;
 
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
+import com.datadog.trace.logger.Logger;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -17,8 +18,9 @@ final class SingleContinuation extends AbstractContinuation {
   SingleContinuation(
       final ContinuableScopeManager scopeManager,
       final AgentSpan spanUnderScope,
-      final byte source) {
-    super(scopeManager, spanUnderScope, source);
+      final byte source,
+      final Logger logger) {
+    super(scopeManager, spanUnderScope, source, logger);
   }
 
   @Override
@@ -26,7 +28,7 @@ final class SingleContinuation extends AbstractContinuation {
     if (USED.compareAndSet(this, 0, 1)) {
       return scopeManager.continueSpan(this, spanUnderScope, source);
     } else {
-      ContinuableScopeManager.log.debug(
+      logger.debug(
           "Failed to activate continuation. Reusing a continuation not allowed. Spans may be reported separately.");
       return scopeManager.continueSpan(null, spanUnderScope, source);
     }
@@ -37,7 +39,7 @@ final class SingleContinuation extends AbstractContinuation {
     if (USED.compareAndSet(this, 0, 1)) {
       trace.cancelContinuation(this);
     } else {
-      ContinuableScopeManager.log.debug("Failed to close continuation {}. Already used.", this);
+      logger.debug("Failed to close continuation {}. Already used.", this);
     }
   }
 
