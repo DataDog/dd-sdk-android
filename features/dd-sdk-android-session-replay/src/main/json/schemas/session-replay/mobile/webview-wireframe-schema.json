@@ -21,6 +21,11 @@
           "type": "string",
           "description": "Unique Id of the slot containing this webview.",
           "readOnly": true
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether this web-view is visible or not.",
+          "readOnly": true
         }
       }
     }

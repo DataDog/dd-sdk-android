@@ -6,27 +6,24 @@
 
 package com.datadog.android.sample.viewpager
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
-import androidx.fragment.app.Fragment
-import com.datadog.android.sample.R
+import androidx.core.os.bundleOf
+import com.datadog.android.sample.BuildConfig
 
-internal class FragmentC : Fragment() {
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.view_pager_child_fragment_layout, container, false)
-        view.findViewById<TextView>(R.id.textView).text = NAME
-        return view
-    }
+internal class FragmentC : PagerChildFragment() {
 
     companion object {
-        const val NAME = "Fragment C"
+        fun newInstance(): FragmentC {
+            return FragmentC().apply {
+                arguments = bundleOf(
+                    ARG_PAGE_NAME to "Fragment C",
+                    ARG_WEB_VIEW_URL to
+                        "https://datadoghq.dev/browser-sdk-test-playground/" +
+                        "?client_token=${BuildConfig.DD_CLIENT_TOKEN}" +
+                        "&application_id=${BuildConfig.DD_RUM_APPLICATION_ID}" +
+                        "&site=datadoghq.com",
+                    "fragmentClassName" to FragmentC::class.java.simpleName
+                )
+            }
+        }
     }
 }

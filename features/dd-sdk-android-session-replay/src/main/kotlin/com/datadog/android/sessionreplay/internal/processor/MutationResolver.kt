@@ -139,8 +139,21 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         oa.forEachIndexed { index, entry ->
             removalOffsets[index] = runningOffset
             if (entry is Entry.Reference) {
-                // Old element was removed
-                removes.add(MobileSegment.Remove(oldSnapshot[index].id()))
+                val oldWireframe = oldSnapshot[index]
+                if (oldWireframe is MobileSegment.Wireframe.WebviewWireframe) {
+                    if (oldWireframe.isVisible != false) {
+                        updates.add(
+                            MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                                id = oldWireframe.id,
+                                slotId = oldWireframe.slotId,
+                                isVisible = false
+                            )
+                        )
+                    }
+                } else {
+                    // Old element was removed
+                    removes.add(MobileSegment.Remove(oldWireframe.id()))
+                }
                 runningOffset++
             }
         }
@@ -169,6 +182,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                         }
                     } // else - element was not moved and not changed, so: skip
                 }
+
                 is Entry.Reference -> {
                     // New element was added:
                     val previousId = if (index > 0) newSnapshot[index - 1].id() else null
@@ -366,18 +380,22 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.TextWireframe
                     )
+
                     is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.ShapeWireframe
                     )
+
                     is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.ImageWireframe
                     )
+
                     is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
                     )
+
                     is MobileSegment.Wireframe.WebviewWireframe -> resolveWebViewWireframeMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.WebviewWireframe
