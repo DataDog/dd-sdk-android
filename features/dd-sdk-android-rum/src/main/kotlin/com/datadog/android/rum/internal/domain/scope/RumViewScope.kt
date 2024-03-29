@@ -436,7 +436,8 @@ internal open class RumViewScope(
                             stack = it.stack,
                             state = it.state
                         )
-                    }.ifEmpty { null }
+                    }.ifEmpty { null },
+                    timeSinceAppStart = event.timeSinceAppStartNs?.let { TimeUnit.NANOSECONDS.toMillis(it) }
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
                 view = ErrorEvent.ErrorEventView(

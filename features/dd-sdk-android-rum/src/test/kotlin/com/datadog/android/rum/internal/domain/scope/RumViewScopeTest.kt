@@ -4468,6 +4468,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4547,6 +4548,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4618,6 +4620,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4690,6 +4693,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.ANR)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4763,6 +4767,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4838,6 +4843,7 @@ internal class RumViewScopeTest {
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4907,6 +4913,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     isCrash(false)
                     hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
@@ -4964,6 +4971,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5040,6 +5048,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(null)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(null)
                     isCrash(false)
                     hasNoThreads()
@@ -5088,6 +5097,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery sourceType: RumErrorSourceType,
         @Forgery threads: List<ThreadDump>,
+        @LongForgery timeSinceAppStart: Long,
         forge: Forge
     ) {
         // Given
@@ -5101,7 +5111,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = threads,
             attributes = attributes,
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = timeSinceAppStart
         )
 
         // When
@@ -5127,6 +5138,7 @@ internal class RumViewScopeTest {
                     hasErrorType(null)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(null)
+                    hasTimeSinceAppStart(TimeUnit.NANOSECONDS.toMillis(timeSinceAppStart))
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5324,6 +5336,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5373,6 +5386,7 @@ internal class RumViewScopeTest {
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
         @Forgery threads: List<ThreadDump>,
+        @LongForgery timeSinceAppStart: Long,
         forge: Forge
     ) {
         // Given
@@ -5386,7 +5400,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = threads,
             attributes = attributes,
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = timeSinceAppStart
         )
 
         // When
@@ -5413,6 +5428,7 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(TimeUnit.NANOSECONDS.toMillis(timeSinceAppStart))
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5528,7 +5544,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = emptyList(),
             attributes = attributes,
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = forge.aPositiveLong()
         )
 
         // When
@@ -5557,6 +5574,9 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    // since this crash is coming externally (from cross-platform), expectation is to have it provided
+                    // as an attribute from there as well
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5683,6 +5703,7 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5751,6 +5772,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5800,6 +5822,7 @@ internal class RumViewScopeTest {
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
         @Forgery threads: List<ThreadDump>,
+        @LongForgery timeSinceAppStart: Long,
         forge: Forge
     ) {
         // Given
@@ -5812,7 +5835,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = threads,
             attributes = emptyMap(),
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = timeSinceAppStart
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
@@ -5841,6 +5865,7 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(TimeUnit.NANOSECONDS.toMillis(timeSinceAppStart))
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()

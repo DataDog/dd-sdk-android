@@ -25,6 +25,7 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -138,6 +139,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -183,7 +187,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAppStartTimeProvider
         )
         testedMonitor.rootScope = mockScope
     }
@@ -204,7 +209,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAppStartTimeProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -262,7 +268,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAppStartTimeProvider
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -298,7 +305,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAppStartTimeProvider
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -625,6 +633,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -649,6 +658,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -711,10 +721,14 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope on current thread W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
-        @Forgery throwable: Throwable
+        @Forgery throwable: Throwable,
+        forge: Forge
     ) {
         // Given
         testedMonitor.drainExecutorService()
+        val now = System.nanoTime()
+        val appStartTimeNs = forge.aLong(min = 0L, max = now)
+        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
 
         // When
         testedMonitor.addCrash(message, source, throwable, threads = emptyList())
@@ -730,6 +744,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.isFatal).isTrue
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isEqualTo(event.eventTime.nanoTime - appStartTimeNs)
             assertThat(event.attributes).isEmpty()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -988,6 +1003,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.threads).isEqualTo(allThreads)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1015,6 +1031,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1042,6 +1059,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1070,6 +1088,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1103,6 +1122,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
             assertThat(event.type).isEqualTo(errorType)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1148,8 +1168,9 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
             assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
+            assertThat(event.timeSinceAppStartNs).isNull()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1444,7 +1465,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutor
+            mockExecutor,
+            mockAppStartTimeProvider
         )
 
         // When
@@ -1488,7 +1510,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAppStartTimeProvider
         )
 
         // When
@@ -1519,7 +1542,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAppStartTimeProvider
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 

@@ -128,6 +128,7 @@ internal class DatadogLateCrashReporter(
                 val threadDumps = readThreadsDump(anrExitInfo)
                 if (threadDumps.isEmpty()) return@withWriteContext
 
+                // TODO RUM-3780 support reporting `error.time_since_app_start` for fatal ANRs
                 val toSendErrorEvent = resolveErrorEventFromViewEvent(
                     datadogContext,
                     ErrorEvent.SourceType.ANDROID,
