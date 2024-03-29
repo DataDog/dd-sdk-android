@@ -13,8 +13,18 @@ import com.datadog.android.api.InternalLogger
 internal class CanvasWrapper(
     private val logger: InternalLogger = InternalLogger.UNBOUND
 ) {
+
     internal fun createCanvas(bitmap: Bitmap): Canvas? {
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
+        if (bitmap.isRecycled || !bitmap.isMutable) {
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                { INVALID_BITMAP }
+            )
+            return null
+        }
+
+        @Suppress("TooGenericExceptionCaught")
         return try {
             Canvas(bitmap)
         } catch (e: IllegalStateException) {
@@ -38,6 +48,7 @@ internal class CanvasWrapper(
     }
 
     private companion object {
+        private const val INVALID_BITMAP = "Cannot create canvas: bitmap is either already recycled or immutable"
         private const val FAILED_TO_CREATE_CANVAS = "Failed to create canvas"
     }
 }
