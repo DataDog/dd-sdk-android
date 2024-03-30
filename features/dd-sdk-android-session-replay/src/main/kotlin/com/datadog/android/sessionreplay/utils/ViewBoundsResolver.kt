@@ -23,7 +23,7 @@ fun interface ViewBoundsResolver {
      * @param pixelsDensity the current device screen density
      * @return the computed view bounds
      */
-    // TODO RUM-0000 return an array of primitives here instead of creating an object.
+    // TODO RUM-3667 return an array of primitives here instead of creating an object.
     // This method is being called too often every time we take a screen snapshot
     // and we might want to avoid creating too many instances.
     fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds

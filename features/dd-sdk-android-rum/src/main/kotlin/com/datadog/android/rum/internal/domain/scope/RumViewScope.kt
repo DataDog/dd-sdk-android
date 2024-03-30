@@ -92,7 +92,7 @@ internal open class RumViewScope(
     private var longTaskCount: Long = 0
     private var frozenFrameCount: Long = 0
 
-    // TODO RUMM-0000 We have now access to the event write result through the closure,
+    // TODO RUM-3792 We have now access to the event write result through the closure,
     // we probably can drop AdvancedRumMonitor#eventSent/eventDropped usage
     internal var pendingResourceCount: Long = 0
     internal var pendingActionCount: Long = 0

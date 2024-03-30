@@ -631,7 +631,7 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)

@@ -150,6 +150,7 @@ internal class CoreFeature(
     // lazy here on purpose: we need to read it only once, even if it is used in different features
     @get:WorkerThread
     internal val lastViewEvent: JsonObject? by lazy {
+        // TODO RUM-1462 address Thread safety
         @Suppress("ThreadSafety") // called in worker thread context
         val viewEvent = readLastViewEvent()
         if (viewEvent != null) {
@@ -319,7 +320,7 @@ internal class CoreFeature(
 
     @WorkerThread
     internal fun writeLastFatalAnrSent(anrTimestamp: Long) {
-        // TODO RUMM-0000 this is temporary solution for storing just a timestamp, later we will
+        // TODO RUM-3790 this is temporary solution for storing just a timestamp, later we will
         //  migrate to a dedicated data store solution (same applies to the last RUM view event)
         val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
         file.writeTextSafe(anrTimestamp.toString(), Charsets.UTF_8, internalLogger)
@@ -690,7 +691,7 @@ internal class CoreFeature(
         // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests, otherwise
         // LoggingSyncListener can interact with internalLogger, breaking mockito
         // verification expectations.
-        // TODO RUMM-0000 isolate Kronos somehow for unit-tests
+        // TODO RUM-3791 isolate Kronos somehow for unit-tests
         internal var disableKronosBackgroundSync = false
 
         // endregion

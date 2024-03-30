@@ -25,7 +25,7 @@ internal class BitmapWrapper(
         } catch (e: IllegalArgumentException) {
             // should never happen since config is given as valid type and width/height are
             // normalized to be at least 1
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            // TODO RUM-806 Add logs here once the sdkLogger is added
             logger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
@@ -47,7 +47,7 @@ internal class BitmapWrapper(
         } catch (e: IllegalArgumentException) {
             // should never happen since config is given as valid type and width/height are
             // normalized to be at least 1
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            // TODO RUM-806 Add logs here once the sdkLogger is added
             logger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
