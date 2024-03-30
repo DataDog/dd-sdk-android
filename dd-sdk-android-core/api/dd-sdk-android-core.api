@@ -419,6 +419,11 @@ public final class com/datadog/android/api/storage/FeatureStorageConfiguration$C
 	public final fun getDEFAULT ()Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 }
 
+public final class com/datadog/android/api/storage/NoOpDataWriter : com/datadog/android/api/storage/DataWriter {
+	public fun <init> ()V
+	public fun write (Lcom/datadog/android/api/storage/EventBatchWriter;Ljava/lang/Object;)Z
+}
+
 public final class com/datadog/android/api/storage/RawBatchEvent {
 	public fun <init> ([B[B)V
 	public synthetic fun <init> ([B[BILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -867,5 +872,6 @@ public final class com/datadog/android/trace/TracingHeaderType : java/lang/Enum 
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
+	public abstract fun publicNoOpImplementation ()Z
 }
 

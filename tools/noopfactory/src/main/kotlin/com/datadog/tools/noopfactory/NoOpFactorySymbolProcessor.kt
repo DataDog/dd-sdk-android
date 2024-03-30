@@ -90,12 +90,15 @@ class NoOpFactorySymbolProcessor(
 
     // region Internal Generation
 
+    @OptIn(KspExperimental::class)
     private fun generateNoOpImplementation(interfaceDeclaration: KSClassDeclaration) {
         logger.logging("Generating NoOp for ${interfaceDeclaration.simpleName.getShortName()}")
 
+        val publicNoOpImplementation = interfaceDeclaration.getAnnotationsByType(NoOpImplementation::class)
+            .any { it.publicNoOpImplementation }
         val declarationSourceFile = interfaceDeclaration.containingFile
         val packageName = interfaceDeclaration.packageName.asString()
-        val typeSpec = generateTypeSpec(interfaceDeclaration, packageName)
+        val typeSpec = generateTypeSpec(interfaceDeclaration, packageName, publicNoOpImplementation)
 
         val className = typeSpec.name.orEmpty()
         val fileSpec = FileSpec.builder(packageName, className)
@@ -144,13 +147,14 @@ class NoOpFactorySymbolProcessor(
      */
     private fun generateTypeSpec(
         declaration: KSClassDeclaration,
-        packageName: String
+        packageName: String,
+        publicNoOpImplementation: Boolean
     ): TypeSpec {
         val interfaceName = declaration.simpleName.getShortName()
         val noOpName = "NoOp$interfaceName"
 
         val typeSpecBuilder = TypeSpec.classBuilder(noOpName)
-            .addModifiers(KModifier.INTERNAL)
+            .addModifiers(if (publicNoOpImplementation) KModifier.PUBLIC else KModifier.INTERNAL)
             .addAnnotation(
                 AnnotationSpec.builder(Suppress::class)
                     .addMember("%S", "RedundantUnitReturnType")
@@ -511,6 +515,7 @@ class NoOpFactorySymbolProcessor(
                     "emptyList"
                 )
             )
+
             rawTypeName == MAP -> propertySpecBuilder.initializer(
                 newInstance,
                 MemberName(
@@ -518,6 +523,7 @@ class NoOpFactorySymbolProcessor(
                     "emptyMap"
                 )
             )
+
             rawTypeName == SET -> propertySpecBuilder.initializer(
                 newInstance,
                 MemberName(
@@ -525,6 +531,7 @@ class NoOpFactorySymbolProcessor(
                     "emptySet"
                 )
             )
+
             propertyClassKind == ClassKind.ENUM_CLASS -> {
                 val firstValue = propertyClassDeclaration.declarations.firstOrNull {
                     (it as? KSClassDeclaration)?.classKind == ClassKind.ENUM_ENTRY
@@ -541,6 +548,7 @@ class NoOpFactorySymbolProcessor(
                     )
                 }
             }
+
             propertyClassKind == ClassKind.INTERFACE -> {
                 val packageName = propertyClassDeclaration.qualifiedName
                     ?.asString()
@@ -551,6 +559,7 @@ class NoOpFactorySymbolProcessor(
                 )
                 propertySpecBuilder.initializer("%T()", noOpType)
             }
+
             else -> {
                 propertySpecBuilder.initializer("%T()", propertyTypeName)
             }
