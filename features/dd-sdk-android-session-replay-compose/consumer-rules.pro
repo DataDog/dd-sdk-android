@@ -5,3 +5,4 @@
 -keepnames class androidx.compose.runtime.CompositionImpl
 -keepnames class androidx.compose.runtime.RecomposeScopeImpl
 -keepnames class androidx.compose.ui.platform.WrappedComposition
+-keepnames class androidx.compose.material.DefaultButtonColors
