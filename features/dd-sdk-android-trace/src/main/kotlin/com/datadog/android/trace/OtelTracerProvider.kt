@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.data.NoOpOtelWriter
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
@@ -19,6 +20,7 @@ import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.core.CoreTracer
+import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
 import io.opentelemetry.api.trace.TracerProvider
@@ -34,8 +36,10 @@ import java.util.Properties
  *
  */
 class OtelTracerProvider(
+    private val sdkCore: FeatureSdkCore,
     private val coreTracer: AgentTracer.TracerAPI,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val bundleWithRumEnabled: Boolean
 ) : TracerProvider {
 
     private val tracers: MutableMap<String, Tracer> = mutableMapOf()
@@ -76,15 +80,12 @@ class OtelTracerProvider(
     /** @inheritDoc */
     override fun tracerBuilder(instrumentationScopeName: String): TracerBuilder {
         val resolvedInstrumentationScopeName = resolveInstrumentationScopeName(instrumentationScopeName)
-        return OtelTracerBuilder(resolvedInstrumentationScopeName, coreTracer, internalLogger)
-    }
-
-    private fun resolveInstrumentationScopeName(instrumentationScopeName: String): String {
-        return if (instrumentationScopeName.trim { it <= ' ' }.isEmpty()) {
-            DEFAULT_TRACER_NAME
-        } else {
-            instrumentationScopeName
-        }
+        return OtelTracerBuilder(
+            resolvedInstrumentationScopeName,
+            coreTracer,
+            internalLogger,
+            resolveSpanBuilderDecorator()
+        )
     }
 
     /**
@@ -112,6 +113,7 @@ class OtelTracerProvider(
             }
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private val globalTags: MutableMap<String, String> = mutableMapOf()
+        private var bundleWithRumEnabled: Boolean = true
 
         /**
          * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
@@ -141,7 +143,7 @@ class OtelTracerProvider(
                 .partialFlushMinSpans(partialFlushThreshold)
                 .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
                 .build()
-            return OtelTracerProvider(coreTracer, sdkCore.internalLogger)
+            return OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
         }
 
         /**
@@ -194,6 +196,17 @@ class OtelTracerProvider(
             return this
         }
 
+        /**
+         * Enables the trace bundling with the current active View. If this feature is enabled all
+         * the spans from this moment on will be bundled with the current view information and you
+         * will be able to see all the traces sent during a specific view in the RUM Explorer.
+         * @param enabled true by default
+         */
+        fun setBundleWithRumEnabled(enabled: Boolean): Builder {
+            bundleWithRumEnabled = enabled
+            return this
+        }
+
         internal fun properties(): Properties {
             val properties = Properties()
             properties.setProperty(
@@ -228,11 +241,59 @@ class OtelTracerProvider(
         // endregion
     }
 
+    // region Internal
+
+    private fun resolveInstrumentationScopeName(instrumentationScopeName: String): String {
+        return if (instrumentationScopeName.trim { it <= ' ' }.isEmpty()) {
+            DEFAULT_TRACER_NAME
+        } else {
+            instrumentationScopeName
+        }
+    }
+
+    private fun resolveSpanBuilderDecorator(): (SpanBuilder) -> SpanBuilder {
+        return if (bundleWithRumEnabled) {
+            resolveSpanBuilderDecoratorFromContext()
+        } else {
+            NO_OP_SPAN_BUILDER_DECORATOR
+        }
+    }
+
+    private fun resolveSpanBuilderDecoratorFromContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
+        val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
+        val applicationId = rumContext[RUM_APPLICATION_ID_KEY] as? String
+        val sessionId = rumContext[RUM_SESSION_ID_KEY] as? String
+        val viewId = rumContext[RUM_VIEW_ID_KEY] as? String
+        val actionId = rumContext[RUM_ACTION_ID_KEY] as? String
+        if (applicationId != null && sessionId != null && viewId != null) {
+            spanBuilder.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId)
+            spanBuilder.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId)
+            spanBuilder.setAttribute(LogAttributes.RUM_VIEW_ID, viewId)
+            if (actionId != null) {
+                spanBuilder.setAttribute(LogAttributes.RUM_ACTION_ID, actionId)
+            }
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { RUM_CONTEXT_MISSING_ERROR_MESSAGE }
+            )
+        }
+        spanBuilder
+    }
+
     override fun toString(): String {
         return "OtelTracerProvider/${super.toString()}"
     }
 
+// endregion
+
     companion object {
+        internal const val RUM_APPLICATION_ID_KEY = "application_id"
+        internal const val RUM_SESSION_ID_KEY = "session_id"
+        internal const val RUM_VIEW_ID_KEY = "view_id"
+        internal const val RUM_ACTION_ID_KEY = "action_id"
+        internal val NO_OP_SPAN_BUILDER_DECORATOR: (SpanBuilder) -> SpanBuilder = { it }
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"
@@ -241,10 +302,14 @@ class OtelTracerProvider(
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an OtelTracerProvider instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +
-                "disabled in your Configuration. No tracing data will be sent."
+                "not registered. No tracing data will be sent."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
                 " OtelTracerProvider creation, did you initialize SDK?"
+        internal const val RUM_CONTEXT_MISSING_ERROR_MESSAGE =
+            "You are trying to bundle the traces with a RUM context, " +
+                "but the RUM context is missing. " +
+                "You should check if the RUM feature is enabled for your SDK instance."
 
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer

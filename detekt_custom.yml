@@ -1257,6 +1257,7 @@ datadog:
       # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.TracerBuilder.build()"
+      - "io.opentelemetry.api.trace.SpanBuilder.setAttribute(kotlin.String?, kotlin.String?)"
       - "io.opentelemetry.api.trace.TracerBuilder.setInstrumentationVersion(kotlin.String?)"
       # endregion
       # region RxJava
