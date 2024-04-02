@@ -211,6 +211,7 @@ datadog:
       - "java.lang.Class.getMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.isAssignableFrom(java.lang.Class?):java.lang.NullPointerException"
       - "java.lang.Runtime.addShutdownHook(java.lang.Thread):java.lang.IllegalArgumentException,java.lang.IllegalStateException,java.lang.SecurityException"
+      - "java.lang.Runtime.removeShutdownHook(java.lang.Thread?):java.lang.IllegalStateException,java.lang.SecurityException"
       - "java.lang.StringBuilder.constructor(kotlin.Int):java.lang.NegativeArraySizeException"
       - "java.lang.System.arraycopy(kotlin.Any, kotlin.Int, kotlin.Any, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.ArrayStoreException,java.lang.NullPointerException"
       - "java.lang.System.loadLibrary(kotlin.String?):java.lang.SecurityException,java.lang.UnsatisfiedLinkError,java.lang.NullPointerException"

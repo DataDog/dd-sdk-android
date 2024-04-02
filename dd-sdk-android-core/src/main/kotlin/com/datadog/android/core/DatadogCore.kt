@@ -67,6 +67,8 @@ internal class DatadogCore(
 
     internal lateinit var coreFeature: CoreFeature
 
+    private lateinit var shutdownHook: Thread
+
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
     internal val context: Context = context.applicationContext
@@ -417,9 +419,9 @@ internal class DatadogCore(
             val hookRunnable = Runnable { stop() }
 
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            val hook = Thread(hookRunnable, SHUTDOWN_THREAD_NAME)
+            shutdownHook = Thread(hookRunnable, SHUTDOWN_THREAD_NAME)
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            Runtime.getRuntime().addShutdownHook(hook)
+            Runtime.getRuntime().addShutdownHook(shutdownHook)
         } catch (e: IllegalStateException) {
             // Most probably Runtime is already shutting down
             internalLogger.log(
@@ -444,6 +446,29 @@ internal class DatadogCore(
                 { "Security Manager denied adding shutdown hook " },
                 e
             )
+        }
+    }
+
+    private fun removeShutdownHook() {
+        if (this::shutdownHook.isInitialized) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook)
+            } catch (e: IllegalStateException) {
+                // Most probably Runtime is already shutting down
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Unable to remove shutdown hook, Runtime is already shutting down" },
+                    e
+                )
+            } catch (e: SecurityException) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Security Manager denied removing shutdown hook " },
+                    e
+                )
+            }
         }
     }
 
@@ -487,6 +512,8 @@ internal class DatadogCore(
         }
 
         coreFeature.stop()
+
+        removeShutdownHook()
     }
 
     /**
