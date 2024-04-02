@@ -129,7 +129,7 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
             start = startTimestamp,
             end = stopTimestamp,
             recordsCount = orderedRecords.size().toLong(),
-            // TODO: RUMM-2518 Find a way or alternative to provide a reliable indexInView
+            // TODO RUM-861 Find a way or alternative to provide a reliable indexInView
             indexInView = null,
             hasFullSnapshot = hasFullSnapshotRecord,
             source = MobileSegment.Source.ANDROID,

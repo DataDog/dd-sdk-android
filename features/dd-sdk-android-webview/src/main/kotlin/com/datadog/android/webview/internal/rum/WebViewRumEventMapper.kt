@@ -9,9 +9,6 @@ package com.datadog.android.webview.internal.rum
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
-import java.lang.ClassCastException
-import java.lang.IllegalStateException
-import java.lang.NumberFormatException
 
 internal class WebViewRumEventMapper(
     private val nativeRumViewsCache: NativeRumViewsCache
@@ -45,7 +42,7 @@ internal class WebViewRumEventMapper(
         val dd = event.get(DD_KEY_NAME)?.asJsonObject
         if (dd != null) {
             val ddSession = dd.get(DD_SESSION_KEY_NAME)?.asJsonObject ?: JsonObject()
-            // TODO RUMM-0000 It was ViewEvent.Plan.PLAN_1 here before, but removed in order not to
+            // TODO RUM-3785 It was ViewEvent.Plan.PLAN_1 here before, but removed in order not to
             //  depend on RUM module. We may want to generate RUM models also in this package, but
             //  they shouldn't be public.
             ddSession.addProperty(SESSION_PLAN_KEY_NAME, SESSION_PLAN_VALUE)

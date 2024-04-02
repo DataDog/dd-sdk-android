@@ -15,6 +15,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.webview.internal.DatadogEventBridge
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
@@ -31,7 +32,6 @@ import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.WebViewRumEventMapper
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.android.webview.internal.rum.domain.NoOpNativeRumViewsCache
-import com.datadog.android.webview.internal.storage.NoOpDataWriter
 
 /**
  * An entry point to Datadog WebView Tracking feature.

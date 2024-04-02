@@ -113,8 +113,8 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +
@@ -151,8 +151,8 @@ internal class WireframeUtilsTest {
         assumeTrue(fakeWireframeBounds.right > 0)
         assumeTrue(fakeWireframeBounds.bottom > 0)
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +
@@ -185,8 +185,8 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +
@@ -219,8 +219,8 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +
@@ -253,8 +253,8 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +
@@ -288,8 +288,8 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +
@@ -316,8 +316,8 @@ internal class WireframeUtilsTest {
             whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
         }
         val fakeParentBounds = fakeWireframeBounds.copy(
-            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left),
-            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top),
+            left = fakeWireframeBounds.left - forge.aLong(min = 0, max = fakeWireframeBounds.left.coerceAtLeast(1)),
+            top = fakeWireframeBounds.top - forge.aLong(min = 0, max = fakeWireframeBounds.top.coerceAtLeast(1)),
             right = fakeWireframeBounds.right +
                 forge.aLong(min = 0, max = fakeWireframeBounds.right),
             bottom = fakeWireframeBounds.bottom +

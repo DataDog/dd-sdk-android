@@ -23,7 +23,7 @@ internal class RumContextDataHandler(
         // we will make sure we get the timestamp on the UI thread to avoid time skewing
         val timestamp = timeProvider.getDeviceTimestamp()
 
-        // TODO: RUMM-2426 Fetch the RumContext from the core SDKContext when available
+        // TODO RUM-836 Fetch the RumContext from the core SDKContext when available
         val newRumContext = rumContextProvider.getRumContext()
 
         if (newRumContext.isNotValid()) {

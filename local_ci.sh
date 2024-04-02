@@ -134,7 +134,7 @@ if [[ $ANALYSIS == 1 ]]; then
     echo "------ Build Detekt custom rules"
     ./gradlew :tools:detekt:jar
 
-    # TODO RUMM-3263 Switch to Java 17 bytecode
+    # TODO RUM-628 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
     detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 

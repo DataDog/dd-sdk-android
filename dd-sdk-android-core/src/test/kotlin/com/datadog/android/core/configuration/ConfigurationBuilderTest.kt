@@ -19,6 +19,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -63,21 +64,20 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.Core(
-                needsClearTextHttp = false,
-                enableDeveloperModeWhenDebuggable = false,
-                firstPartyHostsWithHeaderTypes = emptyMap(),
-                batchSize = BatchSize.MEDIUM,
-                uploadFrequency = UploadFrequency.AVERAGE,
-                proxy = null,
-                proxyAuth = Authenticator.NONE,
-                encryption = null,
-                site = DatadogSite.US1,
-                batchProcessingLevel = BatchProcessingLevel.MEDIUM,
-                persistenceStrategyFactory = null
-            )
-        )
+        assertThat(config.coreConfig.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig.enableDeveloperModeWhenDebuggable).isFalse()
+        assertThat(config.coreConfig.firstPartyHostsWithHeaderTypes).isEmpty()
+        assertThat(config.coreConfig.batchSize).isEqualTo(BatchSize.MEDIUM)
+        assertThat(config.coreConfig.uploadFrequency).isEqualTo(UploadFrequency.AVERAGE)
+        assertThat(config.coreConfig.proxy).isNull()
+        assertThat(config.coreConfig.proxyAuth).isEqualTo(Authenticator.NONE)
+        assertThat(config.coreConfig.encryption).isNull()
+        assertThat(config.coreConfig.site).isEqualTo(DatadogSite.US1)
+        assertThat(config.coreConfig.batchProcessingLevel).isEqualTo(BatchProcessingLevel.MEDIUM)
+        assertThat(config.coreConfig.persistenceStrategyFactory).isNull()
+        assertThat(config.coreConfig.backpressureStrategy.backpressureMitigation)
+            .isEqualTo(BackPressureMitigation.IGNORE_NEWEST)
+        assertThat(config.coreConfig.backpressureStrategy.capacity).isEqualTo(1024)
         assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
@@ -386,6 +386,32 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 persistenceStrategyFactory = mockFactory
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 build config with BackPressure strategy 𝕎 setBackpressureStrategy() and build()`(
+        @IntForgery capacity: Int,
+        @Forgery mitigation: BackPressureMitigation
+    ) {
+        // Given
+        val fakeBackpressureStrategy = BackPressureStrategy(
+            capacity,
+            mock<() -> Unit>(),
+            mock<(Any) -> Unit>(),
+            mitigation
+        )
+
+        // When
+        val config = testedBuilder
+            .setBackpressureStrategy(fakeBackpressureStrategy)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                backpressureStrategy = fakeBackpressureStrategy
             )
         )
     }

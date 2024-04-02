@@ -20,21 +20,18 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesSerializer
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
-import java.util.concurrent.ExecutorService
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
-    private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
-    private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
-    private val bitmapPool: BitmapPool? = null,
-    private val threadPoolExecutor: ExecutorService,
-    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
-    private val logger: InternalLogger
+    private val logger: InternalLogger,
+    private val bitmapCachesManager: BitmapCachesManager,
+    private val bitmapWrapper: BitmapWrapper = BitmapWrapper(logger),
+    private val canvasWrapper: CanvasWrapper = CanvasWrapper(logger),
+    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
 ) {
 
     /**
@@ -42,6 +39,7 @@ internal class DrawableUtils(
      * be equal or less than a given size. It does so by modifying the dimensions of the
      * bitmap, since the file size of a bitmap can be known by the formula width*height*color depth
      */
+    @WorkerThread
     internal fun createBitmapOfApproxSizeFromDrawable(
         resources: Resources,
         drawable: Drawable,
@@ -50,42 +48,38 @@ internal class DrawableUtils(
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT,
         config: Config = Config.ARGB_8888,
-        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        Runnable {
-            @Suppress("ThreadSafety") // this runs inside an executor
-            createScaledBitmap(
-                drawableWidth,
-                drawableHeight,
-                requestedSizeInBytes,
-                displayMetrics,
-                config,
-                resizeBitmapCallback = object :
-                    ResizeBitmapCallback {
-                    override fun onSuccess(bitmap: Bitmap) {
-                        mainThreadHandler.post {
-                            @Suppress("ThreadSafety") // this runs on the main thread
-                            drawOnCanvas(
-                                resources,
-                                bitmap,
-                                drawable,
-                                bitmapCreationCallback
-                            )
-                        }
-                    }
-
-                    override fun onFailure() {
-                        bitmapCreationCallback.onFailure()
+        createScaledBitmap(
+            drawableWidth,
+            drawableHeight,
+            requestedSizeInBytes,
+            displayMetrics,
+            config,
+            resizeBitmapCallback = object :
+                ResizeBitmapCallback {
+                override fun onSuccess(bitmap: Bitmap) {
+                    mainThreadHandler.post {
+                        @Suppress("ThreadSafety") // this runs on the main thread
+                        drawOnCanvas(
+                            resources,
+                            bitmap,
+                            drawable,
+                            bitmapCreationCallback
+                        )
                     }
                 }
-            )
-        }.let {
-            threadPoolExecutor.executeSafe(
-                "createBitmapOfApproxSizeFromDrawable",
-                logger,
-                it
-            )
-        }
+
+                override fun onFailure() {
+                    logger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { FAILED_TO_CREATE_SCALED_BITMAP_ERROR }
+                    )
+                    bitmapCreationCallback.onFailure()
+                }
+            }
+        )
     }
 
     @WorkerThread
@@ -111,7 +105,7 @@ internal class DrawableUtils(
         resources: Resources,
         bitmap: Bitmap,
         drawable: Drawable,
-        bitmapCreationCallback: ResourcesSerializer.BitmapCreationCallback
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
         // don't use the original drawable - it will affect the view hierarchy
         val newDrawable = drawable.constantState?.newDrawable(resources)
@@ -187,12 +181,14 @@ internal class DrawableUtils(
         height: Int,
         config: Config
     ): Bitmap? =
-        bitmapPool?.getBitmapByProperties(width, height, config)
+        bitmapCachesManager.getBitmapByProperties(width, height, config)
             ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
 
     internal companion object {
         @VisibleForTesting
         internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
+        internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
+            "Failed to create a scaled bitmap from the drawable"
     }
 }

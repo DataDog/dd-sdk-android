@@ -35,6 +35,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
@@ -42,6 +43,7 @@ import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 /**
@@ -50,7 +52,7 @@ import java.util.concurrent.TimeUnit
  * @param instanceId the unique identifier for this instance
  * @param name the name of this instance
  * @param internalLoggerProvider Provider for [InternalLogger] instance.
- * @param persistenceExecutorServiceFactory Custom factory for persistence executor, used only in unit-tests
+ * @param executorServiceFactory Custom factory for executors, used only in unit-tests
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test
  */
 @Suppress("TooManyFunctions")
@@ -60,7 +62,7 @@ internal class DatadogCore(
     override val name: String,
     internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) },
     // only for unit tests
-    private val persistenceExecutorServiceFactory: ((InternalLogger) -> ExecutorService)? = null,
+    private val executorServiceFactory: FlushableExecutorService.Factory? = null,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : InternalSdkCore {
 
@@ -177,6 +179,7 @@ internal class DatadogCore(
         features.values.forEach {
             it.clearAllData()
         }
+        // TODO RUM-1462 address Thread safety
         @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
         coreFeature.deleteLastViewEvent()
         @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
@@ -250,6 +253,16 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun removeEventReceiver(featureName: String) {
         features[featureName]?.eventReceiver?.set(null)
+    }
+
+    /** @inheritDoc */
+    override fun createSingleThreadExecutorService(): ExecutorService {
+        return coreFeature.createExecutorService()
+    }
+
+    /** @inheritDoc */
+    override fun createScheduledExecutorService(): ScheduledExecutorService {
+        return coreFeature.createScheduledExecutorService()
     }
 
     // endregion
@@ -332,11 +345,13 @@ internal class DatadogCore(
         }
 
         // always initialize Core Features first
-        coreFeature = if (persistenceExecutorServiceFactory != null) {
-            CoreFeature(internalLogger, persistenceExecutorServiceFactory)
-        } else {
-            CoreFeature(internalLogger)
-        }
+        val flushableExecutorServiceFactory =
+            executorServiceFactory ?: CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY
+        coreFeature = CoreFeature(
+            internalLogger,
+            flushableExecutorServiceFactory,
+            CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
+        )
         coreFeature.initialize(
             context,
             instanceId,
@@ -471,6 +486,7 @@ internal class DatadogCore(
             )
             rumFeature.sendEvent(coreConfigurationEvent)
         }
+
         coreFeature.uploadExecutorService.scheduleSafe(
             "Configuration telemetry",
             CONFIGURATION_TELEMETRY_DELAY_MS,

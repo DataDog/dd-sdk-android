@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -350,6 +351,7 @@ internal class DefaultAndroidInfoProviderTest {
         @StringForgery fakeModel: String
     ) {
         // Given
+        assumeFalse(fakeModel.contains(fakeBrand, ignoreCase = true))
         Build::class.java.setStaticValue("BRAND", fakeBrand)
         Build::class.java.setStaticValue("MODEL", fakeModel)
         testedProvider = createProvider()

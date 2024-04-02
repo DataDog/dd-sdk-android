@@ -67,6 +67,7 @@
     <string name="button_slow_frame_rate">Slow frame rate</string>
     <string name="button_high_cpu_usage">High CPU usage</string>
     <string name="button_high_memory_usage">High RAM usage</string>
+    <string name="button_stress_test_events">Stress Test Events</string>
 
     <string name="group_image_loader">Image Loader</string>
     <string name="group_data_source">Data Source</string>
