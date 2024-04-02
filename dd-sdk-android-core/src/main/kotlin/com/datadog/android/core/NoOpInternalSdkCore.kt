@@ -67,6 +67,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         get() = null
     override val lastFatalAnrSent: Long?
         get() = null
+    override val appStartTimeNs: Long
+        get() = 0
 
     // endregion
 

@@ -25,7 +25,6 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -139,9 +138,6 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
-    @Mock
-    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
-
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -187,8 +183,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
         testedMonitor.rootScope = mockScope
     }
@@ -209,8 +204,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
 
         val rootScope = testedMonitor.rootScope
@@ -268,8 +262,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -305,8 +298,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -728,7 +720,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.drainExecutorService()
         val now = System.nanoTime()
         val appStartTimeNs = forge.aLong(min = 0L, max = now)
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
 
         // When
         testedMonitor.addCrash(message, source, throwable, threads = emptyList())
@@ -1465,8 +1457,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutor,
-            mockAppStartTimeProvider
+            mockExecutor
         )
 
         // When
@@ -1510,8 +1501,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
 
         // When
@@ -1542,8 +1532,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 

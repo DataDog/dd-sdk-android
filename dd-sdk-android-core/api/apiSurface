@@ -154,6 +154,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   val lastViewEvent: com.google.gson.JsonObject?
   val lastFatalAnrSent: Long?
+  val appStartTimeNs: Long
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)

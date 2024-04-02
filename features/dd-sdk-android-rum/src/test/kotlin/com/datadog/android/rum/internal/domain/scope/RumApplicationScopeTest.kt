@@ -17,7 +17,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
@@ -72,9 +71,6 @@ internal class RumApplicationScopeTest {
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
-
-    @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
 
     @Mock
@@ -126,8 +122,7 @@ internal class RumApplicationScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockAppStartTimeProvider
+            mockSessionListener
         )
     }
 
@@ -386,7 +381,7 @@ internal class RumApplicationScopeTest {
         }
         val firstEvent = fakeEvents.first()
         val appStartTimeNs = forge.aLong(min = 0, max = fakeEvents.first().eventTime.nanoTime)
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
         DdRumContentProvider.processImportance =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val mockSessionScope = mock<RumScope>()
@@ -434,7 +429,7 @@ internal class RumApplicationScopeTest {
             )
         }
         val appStartTimeNs = forge.aLong(min = 0, max = fakeEvents.first().eventTime.nanoTime)
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
         DdRumContentProvider.processImportance = forge.anElementFrom(
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
@@ -471,7 +466,7 @@ internal class RumApplicationScopeTest {
         // Given
         val fakeSdkInitEvent = forge.sdkInitEvent()
         val appStartTimeNs = forge.aLong(min = 0, max = fakeSdkInitEvent.eventTime.nanoTime)
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
         DdRumContentProvider.processImportance = forge.anElementFrom(
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND,
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,

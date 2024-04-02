@@ -583,6 +583,21 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `𝕄 provide app start time 𝕎 appStartTimeNs()`(
+        @LongForgery(min = 0L) fakeAppStartTimeNs: Long
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.appStartTimeNs) doReturn fakeAppStartTimeNs
+
+        // When
+        val appStartTimeNs = testedCore.appStartTimeNs
+
+        // Then
+        assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
+    }
+
+    @Test
     fun `𝕄 return tracking consent 𝕎 trackingConsent()`(
         @Forgery fakeTrackingConsent: TrackingConsent
     ) {

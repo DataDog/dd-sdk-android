@@ -34,6 +34,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -288,6 +289,9 @@ internal class DatadogCore(
     override val lastFatalAnrSent: Long?
         get() = coreFeature.lastFatalAnrSent
 
+    override val appStartTimeNs: Long
+        get() = coreFeature.appStartTimeNs
+
     @WorkerThread
     override fun writeLastViewEvent(data: ByteArray) {
         // we need to write it only if we are going to read ApplicationExitInfo (available on
@@ -351,6 +355,7 @@ internal class DatadogCore(
             executorServiceFactory ?: CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY
         coreFeature = CoreFeature(
             internalLogger,
+            DefaultAppStartTimeProvider(),
             flushableExecutorServiceFactory,
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )
@@ -575,5 +580,8 @@ internal class DatadogCore(
                 " crash reports feature is not enabled and API is below 30."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
+
+        // fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
+        internal val startupTimeNs: Long = System.nanoTime()
     }
 }

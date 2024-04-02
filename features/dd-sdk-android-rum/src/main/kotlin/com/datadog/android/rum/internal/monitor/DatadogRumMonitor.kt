@@ -26,7 +26,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -69,8 +68,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    internal val executorService: ExecutorService,
-    private val appStartTimeProvider: AppStartTimeProvider
+    internal val executorService: ExecutorService
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -441,7 +439,7 @@ internal class DatadogRumMonitor(
         threads: List<ThreadDump>
     ) {
         val now = Time()
-        val timeSinceAppStartNs = now.nanoTime - appStartTimeProvider.appStartTimeNs
+        val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
                 message,
