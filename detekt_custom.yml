@@ -457,6 +457,7 @@ datadog:
       # endregion
       # region Androidx APIs
       - "androidx.compose.foundation.interaction.DragInteraction.Start.constructor()"
+      - "androidx.compose.foundation.shape.CornerSize.toPx(androidx.compose.ui.geometry.Size, androidx.compose.ui.unit.Density)"
       - "androidx.compose.runtime.DisposableEffect(kotlin.Any?, kotlin.Any?, kotlin.Function1)"
       - "androidx.compose.runtime.DisposableEffectScope.onDispose(kotlin.Function0)"
       - "androidx.compose.runtime.LaunchedEffect(kotlin.Any?, kotlin.Any?, kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
@@ -953,6 +954,7 @@ datadog:
       - "kotlin.collections.MutableMap.filterValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableMap.get(kotlin.String)"
+      - "kotlin.collections.MutableMap.getOrElse(java.lang.Class, kotlin.Function0)"
       - "kotlin.collections.MutableMap.isEmpty()"
       - "kotlin.collections.MutableMap.isNotEmpty()"
       - "kotlin.collections.MutableMap.iterator()"
@@ -1029,10 +1031,10 @@ datadog:
       - "kotlin.emptyArray()"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
       - "kotlin.sequences.Sequence.firstOrNull()"
+      - "kotlin.sequences.Sequence.flatMap(kotlin.Function1)"
       - "kotlin.sequences.Sequence.fold(com.google.gson.JsonArray, kotlin.Function2)"
       - "kotlin.sequences.Sequence.forEach(kotlin.Function1)"
       - "kotlin.sequences.Sequence.map(kotlin.Function1)"
-      - "kotlin.sequences.Sequence.flatMap(kotlin.Function1)"
       - "kotlin.sequences.Sequence.mapIndexedNotNull(kotlin.Function2)"
       - "kotlin.sequences.Sequence.mapNotNull(kotlin.Function1)"
       - "kotlin.sequences.Sequence.reduceOrNull(kotlin.Function2)"
