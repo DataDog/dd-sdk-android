@@ -81,6 +81,9 @@
     <string name="choice_sqlite">SQLite</string>
     <string name="choice_sqldelight">SQLDelight</string>
 
+    <string name="webview_show">Show</string>
+    <string name="webview_hide">Hide</string>
+
     <string-array name="log_levels">
         <item>💬 Verbose</item>
         <item>⚙️ Debug</item>
@@ -165,4 +168,7 @@
     <string name="number_password_label">Number Password</string>
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
+    <string name="web_view_recording">Web View Recording</string>
+    <string name="start_custom_rum_view">Start Custom Rum View</string>
+    <string name="webview_recording">WebView Recording</string>
 </resources>

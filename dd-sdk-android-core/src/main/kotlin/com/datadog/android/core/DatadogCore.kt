@@ -20,6 +20,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -199,6 +200,11 @@ internal class DatadogCore(
                 val mutableContext = featureContext.toMutableMap()
                 updateCallback(mutableContext)
                 it.setFeatureContext(featureName, mutableContext)
+                // notify all the other features
+                features.filter { it.key != featureName }
+                    .forEach { (_, feature) ->
+                        feature.notifyContextUpdated(featureName, mutableContext.toMap())
+                    }
             }
         }
     }
@@ -227,6 +233,23 @@ internal class DatadogCore(
             }
             feature.eventReceiver.set(receiver)
         }
+    }
+
+    override fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
+        val feature = features[featureName]
+        if (feature == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, featureName) }
+            )
+        } else {
+            feature.setContextUpdateListener(listener)
+        }
+    }
+
+    override fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
+        features[featureName]?.removeContextUpdateListener(listener)
     }
 
     /** @inheritDoc */
@@ -542,6 +565,8 @@ internal class DatadogCore(
 
         internal const val MISSING_FEATURE_FOR_EVENT_RECEIVER =
             "Cannot add event receiver for feature \"%s\", it is not registered."
+        internal const val MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER =
+            "Cannot add event listener for feature \"%s\", it is not registered."
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
 

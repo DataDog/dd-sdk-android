@@ -48,50 +48,42 @@ internal class BatchesToSegmentsMapperTest {
     }
 
     @Test
-    fun `M generate segment to jsonSegment pair W map`(forge: Forge) {
+    fun `M group the records into segments by context W map`(forge: Forge) {
         // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
         val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+        val fakeRecords = forge.aList<MobileSegment.MobileRecord>(fakeRecordsSize) {
             forge.getForgery()
-        }
-        val fakeExpectedRecords = fakeRecords.sortedBy { it.timestamp() }
+        }.sortedBy { it.timestamp() }
         val fakeEnrichedRecords = fakeRecords
             .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
             .map {
+                val fakeRumContext: SessionReplayRumContext = forge.getForgery()
                 EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
+                    fakeRumContext.applicationId,
+                    fakeRumContext.sessionId,
+                    fakeRumContext.sessionId,
                     it
                 )
             }
-        val fakeExpectedRecord = EnrichedRecord(
-            rumContext.applicationId,
-            rumContext.sessionId,
-            rumContext.sessionId,
-            fakeExpectedRecords
-        )
-
-        val expectedEmptySegment = fakeExpectedRecord.toSegment().copy(records = emptyList())
-        val expectedSerializedSegment = fakeExpectedRecord.toSegment()
-            .toJson().asJsonObject.toString()
+        val fakeExpectedPairs = fakeEnrichedRecords.map {
+            Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
+        }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
 
         // Then
-        val segment = mappedSegment?.first
-        val serializedSegment = mappedSegment?.second.toString()
-        assertThat(segment).isEqualTo(expectedEmptySegment)
-        assertThat(serializedSegment).isEqualTo(expectedSerializedSegment)
+        assertThat(mappedSegments.size).isEqualTo(fakeEnrichedRecords.size)
+        mappedSegments.forEachIndexed { index, pair ->
+            assertThat(pair.first).isEqualTo(fakeExpectedPairs[index].first)
+            assertThat(pair.second.toString()).isEqualTo(fakeExpectedPairs[index].second.toString())
+        }
     }
 
     @Test
     fun `M keep the same order W map { records have same timestamps }`(forge: Forge) {
         // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
         val fakeRecordsSize = forge.anInt(min = 10, max = 20)
         val fakeTimestamp = forge.aTimestamp()
         val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
@@ -100,6 +92,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeEnrichedRecords = fakeRecords
             .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
             .map {
+                val rumContext: SessionReplayRumContext = forge.getForgery()
                 EnrichedRecord(
                     rumContext.applicationId,
                     rumContext.sessionId,
@@ -107,43 +100,33 @@ internal class BatchesToSegmentsMapperTest {
                     it
                 )
             }
-        val fakeExpectedEnrichedRecord = EnrichedRecord(
-            rumContext.applicationId,
-            rumContext.sessionId,
-            rumContext.sessionId,
-            fakeRecords
-        )
-
-        val expectedEmptySegment =
-            fakeExpectedEnrichedRecord.toSegment().copy(records = emptyList())
-        val expectedSerializedSegment = fakeExpectedEnrichedRecord.toSegment()
-            .toJson().asJsonObject.toString()
+        val fakeExpectedPairs = fakeEnrichedRecords.map {
+            Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
+        }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
 
         // Then
-        val segment = mappedSegment?.first
-        val serializedSegment = mappedSegment?.second.toString()
-        assertThat(segment).isEqualTo(expectedEmptySegment)
-        assertThat(serializedSegment).isEqualTo(expectedSerializedSegment)
+        mappedSegments.forEachIndexed { index, pair ->
+            assertThat(pair.first).isEqualTo(fakeExpectedPairs[index].first)
+            assertThat(pair.second.toString()).isEqualTo(fakeExpectedPairs[index].second.toString())
+        }
     }
 
     @Test
     fun `M use the first record in the list as start timestamp W map`(
         forge: Forge
     ) {
-        // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
         val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+        val fakeRecords = forge.aList<MobileSegment.MobileRecord>(fakeRecordsSize) {
             forge.getForgery()
-        }
-        val fakeExpectedRecords = fakeRecords.sortedBy { it.timestamp() }
+        }.sortedBy { it.timestamp() }
         val fakeEnrichedRecords = fakeRecords
             .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
             .map {
+                val rumContext: SessionReplayRumContext = forge.getForgery()
                 EnrichedRecord(
                     rumContext.applicationId,
                     rumContext.sessionId,
@@ -151,17 +134,22 @@ internal class BatchesToSegmentsMapperTest {
                     it
                 )
             }
+        val fakeExpectedPairs = fakeEnrichedRecords.map {
+            Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
+        }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
-        val expectedStartTimestamp = fakeExpectedRecords.first().timestamp()
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
 
         // Then
-        assertThat(mappedSegment?.first?.start).isEqualTo(expectedStartTimestamp)
-        val serializedRecordStartTimestamp = mappedSegment?.second
-            ?.getAsJsonPrimitive("start")?.asLong
-        assertThat(serializedRecordStartTimestamp).isEqualTo(expectedStartTimestamp)
+        mappedSegments.forEachIndexed { index, pair ->
+            val serializedRecordStartTimestamp = pair.second.getAsJsonPrimitive("start")
+                ?.asLong
+            assertThat(pair.first.start).isEqualTo(serializedRecordStartTimestamp)
+            assertThat(pair.first).isEqualTo(fakeExpectedPairs[index].first)
+            assertThat(pair.second.toString()).isEqualTo(fakeExpectedPairs[index].second.toString())
+        }
     }
 
     @Test
@@ -169,15 +157,13 @@ internal class BatchesToSegmentsMapperTest {
         forge: Forge
     ) {
         // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
         val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeExpectedRecords = fakeRecords.sortedBy { it.timestamp() }
+        val fakeRecords = forge.aList<MobileSegment.MobileRecord>(fakeRecordsSize) { forge.getForgery() }
+            .sortedBy { it.timestamp() }
         val fakeEnrichedRecords = fakeRecords
             .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
             .map {
+                val rumContext: SessionReplayRumContext = forge.getForgery()
                 EnrichedRecord(
                     rumContext.applicationId,
                     rumContext.sessionId,
@@ -185,21 +171,26 @@ internal class BatchesToSegmentsMapperTest {
                     it
                 )
             }
+        val fakeExpectedPairs = fakeEnrichedRecords.map {
+            Pair(it.toSegment().copy(records = emptyList()), it.toSegment().toJson())
+        }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
-        val expectedEndTimestamp = fakeExpectedRecords.last().timestamp()
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
 
         // Then
-        assertThat(mappedSegment?.first?.end).isEqualTo(expectedEndTimestamp)
-        val serializedRecordStartTimestamp = mappedSegment?.second
-            ?.getAsJsonPrimitive("end")?.asLong
-        assertThat(serializedRecordStartTimestamp).isEqualTo(expectedEndTimestamp)
+        mappedSegments.forEachIndexed { index, pair ->
+            val serializedRecordEndTimestamp = pair.second.getAsJsonPrimitive("end")
+                ?.asLong
+            assertThat(pair.first.end).isEqualTo(serializedRecordEndTimestamp)
+            assertThat(pair.first).isEqualTo(fakeExpectedPairs[index].first)
+            assertThat(pair.second.toString()).isEqualTo(fakeExpectedPairs[index].second.toString())
+        }
     }
 
     @Test
-    fun `M return null W map{ empty records }`(
+    fun `M return empty list W map{ empty records }`(
         forge: Forge
     ) {
         // Given
@@ -210,22 +201,22 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isNull()
+        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
     }
 
     @Test
-    fun `M return empty null W map { broken serialized records }`(
+    fun `M return empty list W map { broken serialized records }`(
         forge: Forge
     ) {
         // Given
         val fakeBatchData = forge.aList { forge.anAlphabeticalString().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isNull()
+        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
     }
 
     @Test
-    fun `M return null W map { all records with missing timestamp key }`(
+    fun `M return empty list W map { all records with missing timestamp key }`(
         forge: Forge
     ) {
         // Given
@@ -258,7 +249,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isNull()
+        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
     }
 
     @Test
@@ -301,16 +292,17 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
         val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegment?.second
-            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(mappedSegments.size).isEqualTo(1)
+        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegments[0].second
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
     @Test
-    fun `M return null W map { enriched record with missing application id key }`(
+    fun `M return empty list W map { enriched record with missing application id key }`(
         forge: Forge
     ) {
         // Given
@@ -337,7 +329,7 @@ internal class BatchesToSegmentsMapperTest {
             }
             .map { it.toString().toByteArray() }
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isNull()
+        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
@@ -384,16 +376,18 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
+        assertThat(mappedSegments.size).isEqualTo(1)
         val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegment?.second
-            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegments[0].second.getAsJsonArray(
+            BatchesToSegmentsMapper.RECORDS_KEY
+        )
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
     @Test
-    fun `M return null W map { enriched records with missing session id key }`(
+    fun `M return empty list W map { enriched records with missing session id key }`(
         forge: Forge
     ) {
         // Given
@@ -421,7 +415,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isNull()
+        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
@@ -468,16 +462,19 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
+
+        // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegment?.second
-            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(mappedSegments.size).isEqualTo(1)
+        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegments[0].second
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
     @Test
-    fun `M return null W map {  enriched records with missing view id key }`(
+    fun `M return empty list W map {  enriched records with missing view id key }`(
         forge: Forge
     ) {
         // Given
@@ -504,8 +501,8 @@ internal class BatchesToSegmentsMapperTest {
             }
             .map { it.toString().toByteArray() }
 
-        // When
-        assertThat(testedMapper.map(fakeBatchData)).isNull()
+        // Then
+        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
@@ -552,11 +549,14 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
+
+        // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegment?.second
-            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(mappedSegments.size).isEqualTo(1)
+        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegments[0].second
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
@@ -603,11 +603,14 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
+
+        // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegment?.second
-            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(mappedSegments.size).isEqualTo(1)
+        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegments[0].second
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
@@ -648,11 +651,13 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegment = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(fakeBatchData)
+
+        // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegment?.second
-            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegments[0].second
+            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
@@ -660,16 +665,16 @@ internal class BatchesToSegmentsMapperTest {
 
     private fun EnrichedRecord.toSegment(): MobileSegment {
         return MobileSegment(
-            MobileSegment.Application(applicationId),
-            MobileSegment.Session(sessionId),
-            MobileSegment.View(viewId),
-            startTimestamp(),
-            endTimestamp(),
-            records.size.toLong(),
-            null,
-            hasFullSnapshot(),
-            MobileSegment.Source.ANDROID,
-            records
+            application = MobileSegment.Application(applicationId),
+            session = MobileSegment.Session(sessionId),
+            view = MobileSegment.View(viewId),
+            start = startTimestamp(),
+            end = endTimestamp(),
+            recordsCount = records.size.toLong(),
+            indexInView = null,
+            hasFullSnapshot = hasFullSnapshot(),
+            source = MobileSegment.Source.ANDROID,
+            records = records
         )
     }
 
@@ -686,7 +691,7 @@ internal class BatchesToSegmentsMapperTest {
     }
 
     private fun List<MobileSegment.MobileRecord>.hasFullSnapshot(): Boolean {
-        return firstOrNull { it is MobileSegment.MobileRecord.MobileFullSnapshotRecord } != null
+        return any { it is MobileSegment.MobileRecord.MobileFullSnapshotRecord }
     }
 
     private fun MobileSegment.MobileRecord.timestamp(): Long {

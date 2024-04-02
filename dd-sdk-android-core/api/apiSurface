@@ -97,6 +97,8 @@ interface com.datadog.android.api.feature.Feature
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
+interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
+  fun onContextUpdate(String, Map<String, Any?>)
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
@@ -110,6 +112,8 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
+  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
   fun createSingleThreadExecutorService(): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(): java.util.concurrent.ScheduledExecutorService

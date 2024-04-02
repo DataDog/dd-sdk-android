@@ -24,14 +24,14 @@ import com.google.gson.JsonParser
  */
 internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogger) {
 
-    fun map(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
+    fun map(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
         return groupBatchDataIntoSegments(batchData)
     }
 
     // region Internal
 
-    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
-        val reducedEnrichedRecord = batchData
+    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
+        return batchData
             .asSequence()
             .mapNotNull {
                 @Suppress("SwallowedException")
@@ -64,14 +64,17 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
                     Pair(rumContext, records)
                 }
             }
-            .reduceOrNull { accumulator, pair ->
-                val records = accumulator.second
-                val newRecords = pair.second
-                records.addAll(newRecords)
-                Pair(accumulator.first, records)
-            } ?: return null
-
-        return mapToSegment(reducedEnrichedRecord.first, reducedEnrichedRecord.second)
+            .groupBy { it.first }
+            .mapValues {
+                it.value.fold(JsonArray()) { acc, pair ->
+                    acc.addAll(pair.second)
+                    acc
+                }
+            }
+            .filter { !it.value.isEmpty }
+            .mapNotNull {
+                mapToSegment(it.key, it.value)
+            }
     }
 
     @Suppress("ReturnCount")
@@ -139,10 +142,10 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
     }
 
     private fun hasFullSnapshotRecord(records: JsonArray) =
-        records.firstOrNull {
-            it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong(internalLogger) ==
-                FULL_SNAPSHOT_RECORD_TYPE
-        } != null
+        records.any {
+            val typeAsLong = it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong(internalLogger)
+            typeAsLong == FULL_SNAPSHOT_RECORD_TYPE_MOBILE || typeAsLong == FULL_SNAPSHOT_RECORD_TYPE_BROWSER
+        }
 
     private fun JsonObject.records(): JsonArray? {
         return get(EnrichedRecord.RECORDS_KEY)?.safeGetAsJsonArray(internalLogger)
@@ -176,7 +179,10 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
     // endregion
 
     companion object {
-        private const val FULL_SNAPSHOT_RECORD_TYPE = 10L
+
+        private const val FULL_SNAPSHOT_RECORD_TYPE_MOBILE = 10L
+        private const val FULL_SNAPSHOT_RECORD_TYPE_BROWSER = 2L
+
         internal const val RECORDS_KEY = "records"
         private const val RECORD_TYPE_KEY = "type"
         internal const val TIMESTAMP_KEY = "timestamp"

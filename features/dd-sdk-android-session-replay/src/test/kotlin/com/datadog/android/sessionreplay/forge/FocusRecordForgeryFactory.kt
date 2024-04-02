@@ -14,8 +14,9 @@ internal class FocusRecordForgeryFactory :
     ForgeryFactory<MobileSegment.MobileRecord.FocusRecord> {
     override fun getForgery(forge: Forge): MobileSegment.MobileRecord.FocusRecord {
         return MobileSegment.MobileRecord.FocusRecord(
-            forge.aPositiveLong(),
-            MobileSegment.Data2(forge.aBool())
+            timestamp = forge.aPositiveLong(),
+            data = MobileSegment.Data2(forge.aBool()),
+            slotId = forge.aNullable { aPositiveLong().toString() }
         )
     }
 }

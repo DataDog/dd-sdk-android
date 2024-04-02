@@ -641,7 +641,6 @@ internal class RumFeature(
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
 
-        internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =

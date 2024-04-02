@@ -1,8 +1,8 @@
 /*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
+* Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+* This product includes software developed at Datadog (https://www.datadoghq.com/).
+* Copyright 2016-Present Datadog, Inc.
+*/
 
 package com.datadog.android.sessionreplay.internal.net
 
@@ -50,13 +50,7 @@ internal class SegmentRequestFactoryTest {
     @Mock
     lateinit var mockSegmentRequestBodyFactory: SegmentRequestBodyFactory
 
-    @Forgery
-    lateinit var fakeSegment: MobileSegment
-
-    @Forgery
-    lateinit var fakeSerializedSegment: JsonObject
-
-    private lateinit var fakeCompressedSegment: ByteArray
+    lateinit var fakeCompressedSegment: ByteArray
 
     @Forgery
     lateinit var fakeBatchData: List<RawBatchEvent>
@@ -71,8 +65,15 @@ internal class SegmentRequestFactoryTest {
 
     private var fakeBatchMetadata: ByteArray? = null
 
+    lateinit var fakeDataGroup: List<Pair<MobileSegment, JsonObject>>
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeDataGroup = forge.aList(size = forge.anInt(min = 1, max = 10)) {
+            val segment = forge.getForgery<MobileSegment>()
+            val json = forge.getForgery<JsonObject>()
+            Pair(segment, json)
+        }
         fakeMediaType = forge.anElementFrom(
             listOf(
                 MultipartBody.FORM,
@@ -84,10 +85,10 @@ internal class SegmentRequestFactoryTest {
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
         fakeCompressedSegment = forge.aString().toByteArray()
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
-        whenever(mockSegmentRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
+        whenever(mockSegmentRequestBodyFactory.create(fakeDataGroup))
             .thenReturn(mockRequestBody)
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
-            .thenReturn(Pair(fakeSegment, fakeSerializedSegment))
+            .thenReturn(fakeDataGroup)
         testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = null,
             mockBatchesToSegmentsMapper,
@@ -160,7 +161,7 @@ internal class SegmentRequestFactoryTest {
     fun `M throw exception W create(){ payload is broken }`() {
         // Given
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
-            .thenReturn(null)
+            .thenReturn(emptyList())
 
         // When
         assertThatThrownBy {

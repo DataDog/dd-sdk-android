@@ -28,7 +28,6 @@ import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -406,8 +405,37 @@ internal class RumViewScopeTest {
 
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
-            assertThat(rumContext[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY])
+            assertThat(rumContext[RumContext.VIEW_TIMESTAMP_OFFSET])
                 .isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `𝕄 update the feature context with the view timestamp W initializing`() {
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+            assertThat(rumContext[RumContext.VIEW_TIMESTAMP])
+                .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `𝕄 reset the hasReplay attribute in feature context with the view timestamp W initializing`() {
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+            assertThat(rumContext[RumContext.HAS_REPLAY] as Boolean).isFalse()
         }
     }
 
@@ -426,7 +454,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -437,6 +465,65 @@ internal class RumViewScopeTest {
                 acc
             }
             assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+        }
+    }
+
+    @Test
+    fun `𝕄 keep the resolved hasReplay value in the context W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext[RumContext.HAS_REPLAY] as Boolean).isEqualTo(fakeHasReplay)
+        }
+    }
+
+    @Test
+    fun `𝕄 keep the viewTimestamp value in the context W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext[RumContext.VIEW_TIMESTAMP] as Long)
+                .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
         }
     }
 
@@ -499,7 +586,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + B scope init + A scope stop
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -544,7 +631,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -586,7 +673,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // scope init + stop view + stop action
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -684,7 +771,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + onStopView + B scope init
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -738,7 +825,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + A scope stop + B scope init
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )

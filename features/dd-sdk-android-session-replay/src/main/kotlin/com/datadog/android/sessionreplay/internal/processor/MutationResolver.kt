@@ -139,8 +139,21 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         oa.forEachIndexed { index, entry ->
             removalOffsets[index] = runningOffset
             if (entry is Entry.Reference) {
-                // Old element was removed
-                removes.add(MobileSegment.Remove(oldSnapshot[index].id()))
+                val oldWireframe = oldSnapshot[index]
+                if (oldWireframe is MobileSegment.Wireframe.WebviewWireframe) {
+                    if (oldWireframe.isVisible != false) {
+                        updates.add(
+                            MobileSegment.WireframeUpdateMutation.WebviewWireframeUpdate(
+                                id = oldWireframe.id,
+                                slotId = oldWireframe.slotId,
+                                isVisible = false
+                            )
+                        )
+                    }
+                } else {
+                    // Old element was removed
+                    removes.add(MobileSegment.Remove(oldWireframe.id()))
+                }
                 runningOffset++
             }
         }
@@ -169,6 +182,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                         }
                     } // else - element was not moved and not changed, so: skip
                 }
+
                 is Entry.Reference -> {
                     // New element was added:
                     val previousId = if (index > 0) newSnapshot[index - 1].id() else null
@@ -304,6 +318,39 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         return mutation
     }
 
+    private fun resolveWebViewWireframeMutation(
+        prevWireframe: MobileSegment.Wireframe.WebviewWireframe,
+        currentWireframe: MobileSegment.Wireframe.WebviewWireframe
+    ): MobileSegment.WireframeUpdateMutation {
+        var mutation = MobileSegment.WireframeUpdateMutation
+            .WebviewWireframeUpdate(currentWireframe.id, slotId = currentWireframe.slotId)
+        if (prevWireframe.x != currentWireframe.x) {
+            mutation = mutation.copy(x = currentWireframe.x)
+        }
+        if (prevWireframe.y != currentWireframe.y) {
+            mutation = mutation.copy(y = currentWireframe.y)
+        }
+        if (prevWireframe.width != currentWireframe.width) {
+            mutation = mutation.copy(width = currentWireframe.width)
+        }
+        if (prevWireframe.height != currentWireframe.height) {
+            mutation = mutation.copy(height = currentWireframe.height)
+        }
+        if (prevWireframe.border != currentWireframe.border) {
+            mutation = mutation.copy(border = currentWireframe.border)
+        }
+        if (prevWireframe.shapeStyle != currentWireframe.shapeStyle) {
+            mutation = mutation.copy(shapeStyle = currentWireframe.shapeStyle)
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
+        return mutation
+    }
+
     private fun resolveUpdateMutation(
         currentWireframe: MobileSegment.Wireframe,
         prevWireframe: MobileSegment.Wireframe
@@ -333,17 +380,25 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.TextWireframe
                     )
+
                     is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.ShapeWireframe
                     )
+
                     is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.ImageWireframe
                     )
+
                     is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
+                    )
+
+                    is MobileSegment.Wireframe.WebviewWireframe -> resolveWebViewWireframeMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.WebviewWireframe
                     )
                 }
             }
@@ -402,6 +457,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
+            is MobileSegment.Wireframe.WebviewWireframe -> this.id
         }
     }
 

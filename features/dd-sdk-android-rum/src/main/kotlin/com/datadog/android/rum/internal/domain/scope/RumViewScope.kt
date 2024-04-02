@@ -19,7 +19,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -142,7 +141,6 @@ internal open class RumViewScope(
     init {
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
-            it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
@@ -218,7 +216,10 @@ internal open class RumViewScope(
                 viewName = key.name,
                 viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId,
-                viewType = type
+                viewType = type,
+                viewTimestamp = eventTimestamp,
+                viewTimestampOffset = serverTimeOffsetInMs,
+                hasReplay = false
             )
     }
 
@@ -254,6 +255,9 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
+            // we should not reset the timestamp offset here as due to async nature of feature context update
+            // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
+            // correction
             val newRumContext = getRumContext().copy(
                 viewType = RumViewType.NONE,
                 viewId = null,
@@ -752,6 +756,9 @@ internal open class RumViewScope(
                 datadogContext,
                 currentViewId
             )
+            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
+                currentRumContext[RumContext.HAS_REPLAY] = hasReplay
+            }
             val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
                 datadogContext,
                 currentViewId
@@ -854,8 +861,7 @@ internal open class RumViewScope(
                 service = datadogContext.service,
                 version = datadogContext.version
             )
-        }
-            .submit()
+        }.submit()
     }
 
     private fun updateGlobalAttributes(sdkCore: InternalSdkCore, event: RumRawEvent) {

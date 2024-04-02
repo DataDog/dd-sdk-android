@@ -11,6 +11,7 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
@@ -544,6 +545,122 @@ internal class SdkFeatureTest {
             // Kotlin compiler removing/optimizing code unused?
             @Suppress("UNUSED_VARIABLE")
             val result = testedFeature.unwrap<AnotherFakeFeature>()
+        }
+    }
+
+    // endregion
+
+    // region Context Update Listener
+
+    @Test
+    fun `M register listeners W setContextUpdateListener()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+
+        // When
+        mockListeners.map {
+            Thread {
+                testedFeature.setContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+
+        // Then
+        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
+            .containsExactlyInAnyOrderElementsOf(mockListeners)
+    }
+
+    fun `M register listener only once W setContextUpdateListener()`(forge: Forge) {
+        // Given
+        val mockListener = mock<FeatureContextUpdateReceiver>()
+        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mockListener }
+
+        // When
+        mockListeners.map {
+            Thread {
+                testedFeature.setContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+
+        // Then
+        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
+            .containsExactlyInAnyOrderElementsOf(listOf(mockListener))
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SdkFeature.CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS.format(
+                Locale.US,
+                fakeFeatureName
+            )
+        )
+    }
+
+    @Test
+    fun `M not throw W concurrent access to FeatureContextUpdateListeners{()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+        val removeListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
+        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeFeatureName = forge.anAlphabeticalString()
+        val updateRepeats = forge.anInt(min = 1, max = 10)
+
+        // When
+        mockListeners.map {
+            Thread {
+                testedFeature.setContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+        removeListeners.map {
+            Thread {
+                testedFeature.removeContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+        repeat(updateRepeats) {
+            Thread {
+                assertDoesNotThrow {
+                    testedFeature.notifyContextUpdated(fakeFeatureName, fakeContext)
+                }
+            }.apply { start() }.join(5000)
+        }
+
+        // Then
+    }
+
+    @Test
+    fun `M remove listeners W removeContextUpdateListener()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+        val removedListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
+        val remainingListeners = mockListeners - removedListeners.toSet()
+
+        // When
+        mockListeners.forEach {
+            testedFeature.setContextUpdateListener(it)
+        }
+        removedListeners.forEach {
+            testedFeature.removeContextUpdateListener(it)
+        }
+
+        // Then
+        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
+            .containsExactlyInAnyOrderElementsOf(remainingListeners)
+    }
+
+    @Test
+    fun `M update registered listeners W notifyContextUpdated()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeFeatureName = forge.anAlphabeticalString()
+        mockListeners.forEach {
+            testedFeature.setContextUpdateListener(it)
+        }
+
+        // When
+        testedFeature.notifyContextUpdated(fakeFeatureName, fakeContext)
+
+        // Then
+        mockListeners.forEach {
+            verify(it).onContextUpdate(fakeFeatureName, fakeContext)
         }
     }
 

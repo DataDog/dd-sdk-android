@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -16,77 +17,46 @@ import okhttp3.RequestBody.Companion.toRequestBody
 internal class SegmentRequestBodyFactory(
     private val compressor: BytesCompressor = BytesCompressor()
 ) {
-    fun create(
-        segment: MobileSegment,
-        serializedSegment: JsonObject
-    ): RequestBody {
-        // we need to add a new line at the end of each segment for being able to format it
-        // as an Array when read by the player
-        val segmentAsBinary = (serializedSegment.toString() + "\n").toByteArray()
-        return buildSegmentRequestBody(segment, segmentAsBinary)
-    }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
-    private fun buildSegmentRequestBody(segment: MobileSegment, segmentAsBinary: ByteArray): RequestBody {
-        val compressedData = compressor.compressBytes(segmentAsBinary)
-        return MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart(
-                SEGMENT_FORM_KEY,
-                segment.session.id,
-                compressedData
-                    .toRequestBody(CONTENT_TYPE_BINARY.toMediaTypeOrNull())
+    @Suppress("UnsafeThirdPartyFunctionCall") // Caught in the caller
+    fun create(serializedSegmentsPairs: List<Pair<MobileSegment, JsonObject>>): RequestBody {
+        val multipartBody = MultipartBody.Builder().setType(MultipartBody.FORM)
+        val metadata = JsonArray()
+        serializedSegmentsPairs.forEachIndexed { index, segment ->
+            // because of the way the compressed segments are concatenated in order to be
+            // decompressed when retrieved by the player,
+            // we need to add a new line at the end of each segment
+            val segmentAsByteArray = (segment.second.toString() + "\n").toByteArray()
+            val compressedData = compressor.compressBytes(segmentAsByteArray)
+            val segmentAsJson = segment.first.toJson().asJsonObject.apply {
+                addProperty(COMPRESSED_SEGMENT_SIZE_FORM_KEY, compressedData.size)
+                addProperty(RAW_SEGMENT_SIZE_FORM_KEY, segmentAsByteArray.size)
+            }
+            multipartBody.addFormDataPart(
+                name = SEGMENT_DATA_FORM_KEY,
+                filename = "${BINARY_FILENAME_PREFIX}$index",
+                body = compressedData.toRequestBody(CONTENT_TYPE_BINARY_TYPE)
             )
-            .addFormDataPart(
-                APPLICATION_ID_FORM_KEY,
-                segment.application.id
-            )
-            .addFormDataPart(
-                SESSION_ID_FORM_KEY,
-                segment.session.id
-            )
-            .addFormDataPart(
-                VIEW_ID_FORM_KEY,
-                segment.view.id
-            )
-            .addFormDataPart(
-                HAS_FULL_SNAPSHOT_FORM_KEY,
-                segment.hasFullSnapshot.toString()
-            )
-            .addFormDataPart(
-                RECORDS_COUNT_FORM_KEY,
-                segment.recordsCount.toString()
-            )
-            .addFormDataPart(
-                RAW_SEGMENT_SIZE_FORM_KEY,
-                compressedData.size.toString()
-            )
-            .addFormDataPart(
-                START_TIMESTAMP_FORM_KEY,
-                segment.start.toString()
-            )
-            .addFormDataPart(
-                END_TIMESTAMP_FORM_KEY,
-                segment.end.toString()
-            )
-            .addFormDataPart(
-                SOURCE_FORM_KEY,
-                segment.source.toJson().asString
-            )
-            .build()
+            metadata.add(segmentAsJson)
+        }
+
+        multipartBody.addFormDataPart(
+            name = EVENT_NAME_FORM_KEY,
+            filename = BLOB_FILENAME,
+            body = metadata.toString().toRequestBody(CONTENT_TYPE_JSON_TYPE)
+        )
+
+        return multipartBody.build()
     }
 
     companion object {
-        internal const val APPLICATION_ID_FORM_KEY = "application.id"
-        internal const val SESSION_ID_FORM_KEY = "session.id"
-        internal const val VIEW_ID_FORM_KEY = "view.id"
-        internal const val HAS_FULL_SNAPSHOT_FORM_KEY = "has_full_snapshot"
-        internal const val RECORDS_COUNT_FORM_KEY = "records_count"
+        internal const val BINARY_FILENAME_PREFIX = "file"
+        internal const val BLOB_FILENAME = "blob"
+        internal const val EVENT_NAME_FORM_KEY = "event"
         internal const val RAW_SEGMENT_SIZE_FORM_KEY = "raw_segment_size"
-        internal const val START_TIMESTAMP_FORM_KEY = "start"
-        internal const val END_TIMESTAMP_FORM_KEY = "end"
-        internal const val SOURCE_FORM_KEY = "source"
-        internal const val SEGMENT_FORM_KEY = "segment"
-        internal const val CONTENT_TYPE_BINARY = "application/octet-stream"
+        internal const val COMPRESSED_SEGMENT_SIZE_FORM_KEY = "compressed_segment_size"
+        internal const val SEGMENT_DATA_FORM_KEY = "segment"
+        internal val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
+        internal val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
     }
 }
