@@ -16,14 +16,15 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.io.File
 import java.lang.NullPointerException
+import java.util.concurrent.TimeUnit
 
 /**
  * An implementation of the [Feature] which will allow to intercept and report the
  * NDK crashes to our logs dashboard.
  */
-internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
-    Feature,
-    TrackingConsentProviderCallback {
+internal class NdkCrashReportsFeature(
+    private val sdkCore: FeatureSdkCore
+) : Feature, TrackingConsentProviderCallback {
     private var nativeLibraryLoaded = false
 
     override val name: String = Feature.NDK_CRASH_REPORTS_FEATURE_NAME
@@ -62,9 +63,12 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
             )
             return
         }
+        val appStartTimestamp =
+            TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis()) - System.nanoTime() + sdkCore.appStartTimeNs
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
-            consentToInt(internalSdkCore.trackingConsent)
+            consentToInt(internalSdkCore.trackingConsent),
+            TimeUnit.NANOSECONDS.toMillis(appStartTimestamp)
         )
     }
 
@@ -124,7 +128,8 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
 
     private external fun registerSignalHandler(
         storagePath: String,
-        consent: Int
+        consent: Int,
+        appStartTimeMs: Long
     )
 
     private external fun unregisterSignalHandler()

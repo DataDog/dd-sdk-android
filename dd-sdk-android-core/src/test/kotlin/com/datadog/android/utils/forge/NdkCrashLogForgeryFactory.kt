@@ -14,11 +14,12 @@ internal class NdkCrashLogForgeryFactory :
     ForgeryFactory<NdkCrashLog> {
     override fun getForgery(forge: Forge): NdkCrashLog {
         return NdkCrashLog(
-            forge.anInt(min = 1),
-            System.currentTimeMillis(),
-            forge.anAlphabeticalString(),
-            forge.anAlphabeticalString(),
-            forge.anAlphabeticalString()
+            signal = forge.anInt(min = 1),
+            timestamp = System.currentTimeMillis(),
+            timeSinceAppStartMs = forge.aNullable { aPositiveLong() },
+            signalName = forge.anAlphabeticalString(),
+            message = forge.anAlphabeticalString(),
+            stacktrace = forge.anAlphabeticalString()
         )
     }
 }
