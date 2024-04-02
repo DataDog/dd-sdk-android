@@ -1,3 +1,39 @@
+# 2.7.1 / 2024-03-27
+
+* [BUGFIX] RUM: Improve adding Feature Flag evaluation(s) performance.
+  See [#1932](https://github.com/DataDog/dd-sdk-android/pull/1932)
+* [MAINTENANCE] Core: add a BackPressure strategy to limit the load on background threads and get notified when capacity is reached.
+  See [#1938](https://github.com/DataDog/dd-sdk-android/pull/1938) and [#1939](https://github.com/DataDog/dd-sdk-android/pull/1939)
+
+# 2.7.0 / 2024-03-21
+
+* [FEATURE] Session Replay: Add a request builder for resources. See [#1827](https://github.com/DataDog/dd-sdk-android/pull/1827)
+* [FEATURE] Session Replay: Add Resources feature. See [#1840](https://github.com/DataDog/dd-sdk-android/pull/1840)
+* [FEATURE] Session Replay: Implement resource capture during traversal. See [#1854](https://github.com/DataDog/dd-sdk-android/pull/1854)
+* [FEATURE] Add `source_type` when sent from cross platform logs. See [#1895](https://github.com/DataDog/dd-sdk-android/pull/1895)
+* [FEATURE] Session Replay: Enable Resource Endpoint by default. See [#1858](https://github.com/DataDog/dd-sdk-android/pull/1858)
+* [FEATURE] Logs: Add support for global attributes on logs. See [#1900](https://github.com/DataDog/dd-sdk-android/pull/1900)
+* [FEATURE] RUM: Allow setting custom error fingerprint. See [#1911](https://github.com/DataDog/dd-sdk-android/pull/1911)
+* [FEATURE] RUM: Report all threads for non-fatal ANRs. See [#1912](https://github.com/DataDog/dd-sdk-android/pull/1912)
+* [FEATURE] RUM: Report fatal ANRs. See [#1909](https://github.com/DataDog/dd-sdk-android/pull/1909)
+* [BUGFIX] Session Replay: Avoid crash when `applicationContext` is `null`. See [#1864](https://github.com/DataDog/dd-sdk-android/pull/1864)
+* [BUGFIX] Session Replay: Fix image resizing issue. See [#1897](https://github.com/DataDog/dd-sdk-android/pull/1897)
+* [BUGFIX] Fix typo in source type. See [#1904](https://github.com/DataDog/dd-sdk-android/pull/1904)
+* [BUGFIX] RUM: Prevent `ConcurrentModificationException` when reading feature flags. See [#1925](https://github.com/DataDog/dd-sdk-android/pull/1925)
+* [IMPROVEMENT] RUM: Disable non-fatal ANR reporting by default. See [#1914](https://github.com/DataDog/dd-sdk-android/pull/1914)
+* [IMPROVEMENT] RUM: Introduce `error.category` attribute for exceptions, categorize ANRs separately. See [#1918](https://github.com/DataDog/dd-sdk-android/pull/1918)
+* [MAINTENANCE] Next dev iteration. See [#1861](https://github.com/DataDog/dd-sdk-android/pull/1861)
+* [MAINTENANCE] Merge `release/2.6.0` in `develop`. See [#1862](https://github.com/DataDog/dd-sdk-android/pull/1862)
+* [MAINTENANCE] Merge `release/2.6.1` changes into `develop` branch. See [#1868](https://github.com/DataDog/dd-sdk-android/pull/1868)
+* [MAINTENANCE] Update telemetry schema. See [#1874](https://github.com/DataDog/dd-sdk-android/pull/1874)
+* [MAINTENANCE] Merge Hotfix 2.6.2. See [#1890](https://github.com/DataDog/dd-sdk-android/pull/1890)
+* [MAINTENANCE] Add signed commits requirement to `CONTRIBUTING.md`. See [#1905](https://github.com/DataDog/dd-sdk-android/pull/1905)
+* [MAINTENANCE] Session Replay: Cleanup SR code. See [#1910](https://github.com/DataDog/dd-sdk-android/pull/1910)
+* [MAINTENANCE] Session Replay: Fix integration tests post Session Replay refactoring. See [#1916](https://github.com/DataDog/dd-sdk-android/pull/1916)
+* [MAINTENANCE] Session Replay: Fix `SrImageButtonsMaskUserInputTest`. See [#1920](https://github.com/DataDog/dd-sdk-android/pull/1920)
+* [MAINTENANCE] Adjust `ktlint` formatting rules. See [#1919](https://github.com/DataDog/dd-sdk-android/pull/1919)
+* [MAINTENANCE] Fix formatting. See [#1921](https://github.com/DataDog/dd-sdk-android/pull/1921)
+
 # 2.6.2 / 2024-02-23
 
 * [BUGFIX] RUM: Fix crash in frame rate vital detection. See [#1872](https://github.com/DataDog/dd-sdk-android/pull/1872)
@@ -217,7 +253,7 @@
 
 # 2.0.0 / 2023-07-31
 
-This is the first official production version of SDK v2 containing  the new architecture for features initialisation and dependencies distribution. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/62aac79c3c68c4da02c96ab1071fb5e63f1b8b89/MIGRATION.MD) for details.
+This is the first official production version of SDK v2 containing the new architecture for features initialisation and dependencies distribution. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/62aac79c3c68c4da02c96ab1071fb5e63f1b8b89/MIGRATION.MD) for details.
 
 Below you can find the change logs in comparison with out last stable version `1.19.3`:
 
@@ -635,7 +671,7 @@ Functional changes in comparison with `1.19.2`:
 
 * [BUGFIX] Global: Fix crash when using old OkHttp dependency [#658](https://github.com/DataDog/dd-sdk-android/issues/658) (Thanks [@JessicaYeh](https://github.com/VladBytsyuk))
 * [BUGFIX] Global: Prevent retrying endlessly data upload when Client Token is invalid
-* [BUGFIX] Global: Support using DD Android SDK with Java 11 
+* [BUGFIX] Global: Support using DD Android SDK with Java 11
 * [BUGFIX] Global: Support proper serialization of nested maps for custom attributes
 * [BUGFIX] RUM: Ensure all crashes are reported to RUM
 * [FEATURE] APM: Add Data Scrubbing for Spans
@@ -652,14 +688,14 @@ Functional changes in comparison with `1.19.2`:
 # 1.9.0 / 2021-06-07
 
 * [BUGFIX] APM: Fix network tracing inconsistencies
-* [BUGFIX] APM: Fix span  with custom `MESSAGE` field [#522](https://github.com/DataDog/dd-sdk-android/issues/522) (Thanks [@JessicaYeh](https://github.com/JessicaYeh))
+* [BUGFIX] APM: Fix span with custom `MESSAGE` field [#522](https://github.com/DataDog/dd-sdk-android/issues/522) (Thanks [@JessicaYeh](https://github.com/JessicaYeh))
 * [BUGFIX] Logs: Fix tag name in Timber `DatadogTree` [#483](https://github.com/DataDog/dd-sdk-android/issues/483) (Thanks [@cfa-eric](https://github.com/cfa-eric))
 * [BUGFIX] RUM: Ensure View linked events count is correct when events are discarded
 * [BUGFIX] RUM: Fix Resource network timings
 * [BUGFIX] APM: Fix span logs timestamp conversion
 * [FEATURE] RUM: Detect Long Tasks (tasks blocking the main thread)
 * [FEATURE] RUM: add a callback to enrich RUM Resources created from OkHttp Requests
-* [IMPROVEMENT] RUM: Remove the "Application crash detected" prefix and ensure the message  is kept
+* [IMPROVEMENT] RUM: Remove the "Application crash detected" prefix and ensure the message is kept
 * [IMPROVEMENT] RUM: Add warning when a RUM Action is dropped
 
 # 1.8.1 / 2021-03-04
@@ -770,7 +806,6 @@ Functional changes in comparison with `1.19.2`:
 * [BUGFIX] Logs: Fix rare crash on upload requests
 * [BUGFIX] Global: Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks [@alparp27](https://github.com/alparp27))
 
-
 # 1.3.1 / 2020-04-30
 
 ### Changes
@@ -829,7 +864,7 @@ Functional changes in comparison with `1.19.2`:
 
 * [BUGFIX] Make the packageVersion field optional in the SDK initialisation
 * [BUGFIX] Fix timestamp formatting in logs
-* [FEATURE] Add a developer targeted logger 
+* [FEATURE] Add a developer targeted logger
 * [FEATURE] Add user info in logs
 * [FEATURE] Create automatic Tags / Attribute (app / sdk version)
 * [FEATURE] Integrate SDK with Timber

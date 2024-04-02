@@ -10,9 +10,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
-import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.StringForgery

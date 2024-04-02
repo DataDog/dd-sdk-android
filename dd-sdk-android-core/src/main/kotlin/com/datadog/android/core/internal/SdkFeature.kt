@@ -111,7 +111,7 @@ internal class SdkFeature(
     }
 
     fun clearAllData() {
-        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+        @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
         storage.dropAll()
     }
 
@@ -143,7 +143,7 @@ internal class SdkFeature(
         forceNewBatch: Boolean,
         callback: (DatadogContext, EventBatchWriter) -> Unit
     ) {
-        // TODO RUMM-0000 thread safety. Thread switch happens in Storage right now. Open questions:
+        // TODO RUM-1462 thread safety. Thread switch happens in Storage right now. Open questions:
         // * what if caller wants to have a sync operation, without thread switch
         // * should context read and write be on the dedicated thread? risk - time gap between
         // caller and context
@@ -343,7 +343,6 @@ internal class SdkFeature(
 
     // Used for nightly tests only
     internal fun flushStoredData() {
-        // TODO RUMM-0000 should it just accept storage?
         val flusher = DataFlusher(
             coreFeature.contextProvider,
             fileOrchestrator,
@@ -352,7 +351,7 @@ internal class SdkFeature(
             FileMover(internalLogger),
             internalLogger
         )
-        @Suppress("ThreadSafety")
+        @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
         flusher.flush(uploader)
     }
 

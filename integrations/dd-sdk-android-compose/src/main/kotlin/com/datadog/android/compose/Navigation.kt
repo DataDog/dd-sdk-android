@@ -88,7 +88,7 @@ internal class ComposeNavigationObserver(
         val attributes = mutableMapOf<String, Any?>()
 
         bundle.keySet().forEach {
-            // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
+            // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
             // Issue is opened in the Google Issue Tracker.
             @Suppress("DEPRECATION")
             attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
@@ -133,11 +133,11 @@ fun NavigationViewTrackingEffect(
             GlobalRumMonitor.get(sdkCore)
         )
 
-        @Suppress("ThreadSafety") // TODO RUMM-2214 check composable threading rules
+        @Suppress("ThreadSafety") // TODO RUM-525 check composable threading rules
         lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose {
-            @Suppress("ThreadSafety") // TODO RUMM-2214 check composable threading rules
+            @Suppress("ThreadSafety") // TODO RUM-525 check composable threading rules
             lifecycleOwner.lifecycle.removeObserver(observer)
             observer.onDispose()
         }

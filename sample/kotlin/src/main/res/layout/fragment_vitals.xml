@@ -68,13 +68,13 @@
             app:layout_constraintTop_toBottomOf="@id/progress"/>
 
     <com.datadog.android.sample.vitals.BadView
-        android:id="@+id/vital_slow_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/vital_slow_frame_rate"
-        />
+            android:id="@+id/vital_slow_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/vital_slow_frame_rate"
+    />
 
 
     <androidx.appcompat.widget.AppCompatCheckBox
@@ -96,5 +96,15 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/vital_cpu"/>
+
+    <androidx.appcompat.widget.AppCompatCheckBox
+            android:id="@+id/vital_stress_test"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/button_stress_test_events"
+            android:layout_margin="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/vital_memory"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

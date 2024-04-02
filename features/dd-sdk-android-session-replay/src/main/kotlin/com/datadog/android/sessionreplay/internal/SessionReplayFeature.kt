@@ -102,7 +102,7 @@ internal class SessionReplayFeature(
 
         dataWriter = createDataWriter()
         sessionReplayRecorder = sessionReplayRecorderProvider(resourcesFeature.dataWriter, dataWriter, appContext)
-        @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
+        @Suppress("ThreadSafety") // TODO RUM-1462 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
@@ -231,7 +231,7 @@ internal class SessionReplayFeature(
             sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
                 it[SESSION_REPLAY_ENABLED_KEY] = true
             }
-            @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
+            @Suppress("ThreadSafety") // TODO RUM-1462 can be called from any thread
             sessionReplayRecorder.resumeRecorders()
         }
     }
@@ -249,7 +249,7 @@ internal class SessionReplayFeature(
             sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
                 it[SESSION_REPLAY_ENABLED_KEY] = false
             }
-            @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
+            @Suppress("ThreadSafety") // TODO RUM-1462 can be called from any thread
             sessionReplayRecorder.stopRecorders()
         }
     }

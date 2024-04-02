@@ -27,7 +27,7 @@ internal class SessionReplayTimeProvider(
     }
 
     companion object {
-        // TODO RUMM-0000 Share this property somehow, defined in RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY
+        // TODO RUM-3785 Share this property somehow, defined in RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY
         const val RUM_VIEW_TIMESTAMP_OFFSET = "view_timestamp_offset"
     }
 }

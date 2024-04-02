@@ -33,7 +33,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
     private var networkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             dataWriter.write(field)
         }
 
@@ -53,7 +53,11 @@ internal class BroadcastReceiverNetworkInfoProvider(
 
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        registerReceiver(context, filter).also { onReceive(context, it) }
+        registerReceiver(context, filter).also {
+            // TODO RUM-1462 address Thread safety
+            @Suppress("ThreadSafety") // Treatment should be fast enough
+            onReceive(context, it)
+        }
     }
 
     override fun unregister(context: Context) {

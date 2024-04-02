@@ -208,7 +208,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         }
     }
 
-    // TODO: RUMM-2481 Use the `diff` method int the ShapeWireframe type when available
+    // TODO RUM-841 Use the `diff` method int the ShapeWireframe type when available
     @Suppress("ComplexMethod")
     private fun resolveShapeMutation(
         prevWireframe: MobileSegment.Wireframe.ShapeWireframe,
@@ -405,7 +405,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         }
     }
 
-    // TODO: RUMM-2481 Use the `diff` method int the TextWireframe type when available
+    // TODO RUM-841 Use the `diff` method int the TextWireframe type when available
     @Suppress("ComplexMethod")
     private fun resolveTextMutation(
         prevWireframe: MobileSegment.Wireframe.TextWireframe,

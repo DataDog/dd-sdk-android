@@ -59,7 +59,7 @@ internal open class RumViewScope(
     internal val url = key.url.replace('.', '/')
 
     internal val eventAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
-    private var globalAttributes: MutableMap<String, Any?> = resolveGlobalAttributes(sdkCore)
+    private var globalAttributes: Map<String, Any?> = resolveGlobalAttributes(sdkCore)
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -91,7 +91,7 @@ internal open class RumViewScope(
     private var longTaskCount: Long = 0
     private var frozenFrameCount: Long = 0
 
-    // TODO RUMM-0000 We have now access to the event write result through the closure,
+    // TODO RUM-3792 We have now access to the event write result through the closure,
     // we probably can drop AdvancedRumMonitor#eventSent/eventDropped usage
     internal var pendingResourceCount: Long = 0
     internal var pendingActionCount: Long = 0
@@ -178,7 +178,9 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
@@ -389,6 +391,8 @@ internal open class RumViewScope(
         } else {
             event.message
         }
+        // make a copy - by the time we iterate over it on another thread, it may already be changed
+        val eventFeatureFlags = featureFlags.toMutableMap()
 
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
@@ -415,7 +419,7 @@ internal open class RumViewScope(
             }
             ErrorEvent(
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
-                featureFlags = ErrorEvent.Context(featureFlags),
+                featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(
                     message = message,
                     source = event.source.toSchemaSource(),
@@ -866,8 +870,8 @@ internal open class RumViewScope(
         }
     }
 
-    private fun resolveGlobalAttributes(sdkCore: InternalSdkCore): MutableMap<String, Any?> {
-        return GlobalRumMonitor.get(sdkCore).getAttributes().toMutableMap()
+    private fun resolveGlobalAttributes(sdkCore: InternalSdkCore): Map<String, Any?> {
+        return GlobalRumMonitor.get(sdkCore).getAttributes().toMap()
     }
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
@@ -1117,9 +1121,31 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
-        featureFlags[event.name] = event.value
-        sendViewUpdate(event, writer)
-        sendViewChanged()
+        if (event.value != featureFlags[event.name]) {
+            featureFlags[event.name] = event.value
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
+    }
+
+    private fun onAddFeatureFlagEvaluations(
+        event: RumRawEvent.AddFeatureFlagEvaluations,
+        writer: DataWriter<Any>
+    ) {
+        if (stopped) return
+
+        var modified = false
+        event.featureFlags.forEach { (k, v) ->
+            if (v != featureFlags[k]) {
+                featureFlags[k] = v
+                modified = true
+            }
+        }
+
+        if (modified) {
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
     }
 
     private fun sendViewChanged() {

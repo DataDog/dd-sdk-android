@@ -275,6 +275,8 @@ interface RumMonitor {
     /**
      * Adds result of evaluating a feature flag to the view.
      * Feature flag evaluations are local to the active view and are cleared when the view is stopped.
+     * If you need to submit more than one feature flag evaluation at the same time, consider using the
+     * [addFeatureFlagEvaluations] method instead.
      * @param name the name of the feature flag
      * @param value the value the feature flag evaluated to
      */
@@ -282,6 +284,13 @@ interface RumMonitor {
         name: String,
         value: Any
     )
+
+    /**
+     * Adds result of evaluating a set of feature flag to the view.
+     * Feature flag evaluations are local to the active view and are cleared when the view is stopped.
+     * @param featureFlags the map of feature flags
+     */
+    fun addFeatureFlagEvaluations(featureFlags: Map<String, Any>)
 
     /**
      * Adds a global attribute to all future RUM events.

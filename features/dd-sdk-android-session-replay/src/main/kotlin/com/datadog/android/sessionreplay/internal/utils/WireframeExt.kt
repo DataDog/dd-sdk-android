@@ -48,7 +48,6 @@ internal fun MobileSegment.Wireframe.copy(shapeStyle: MobileSegment.ShapeStyle?)
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.PlaceholderWireframe -> this
-        // TODO: RUM-0000 The WebViewWireframe should be updated to not have a ShapeStyle
         is MobileSegment.Wireframe.WebviewWireframe -> this.copy(shapeStyle = shapeStyle)
     }
 }
