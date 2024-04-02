@@ -72,7 +72,7 @@ internal class DatadogExceptionHandler(
             )
         }
 
-        // TODO RUMM-0000 If DatadogExceptionHandler goes into dedicated module (module of 1 class
+        // TODO RUM-3794 If DatadogExceptionHandler goes into dedicated module (module of 1 class
         //  only?), we have to wait for the write in some other way
         // give some time to the persistence executor service to finish its tasks
         if (sdkCore is InternalSdkCore) {

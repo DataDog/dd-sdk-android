@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.tools.detekt.rules
+package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.fqTypeName
 import com.datadog.tools.detekt.ext.type
@@ -101,10 +101,12 @@ class InvalidStringFormat : Rule() {
                     null
                 }
             }
+
             is ExpressionReceiver -> {
                 // "…".format(…)
                 explicitReceiver.expression
             }
+
             else -> {
                 println("Unknown receiver:$explicitReceiver")
                 null

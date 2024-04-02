@@ -9,7 +9,6 @@ package com.datadog.android.rum
 /**
  * This class holds constant rum attribute keys.
  */
-// @Suppress("unused")
 object RumAttributes {
 
     // region Tags
@@ -284,7 +283,6 @@ object RumAttributes {
 
     /**
      * Total number of bytes transmitted from the client to the server. (Number)
-     * TODO RUMM-469 rename to v2
      */
     const val NETWORK_BYTES_READ: String = "network.bytes_read"
 

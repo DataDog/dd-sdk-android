@@ -56,7 +56,7 @@ internal class ImageViewMapper(
 
         if (contentDrawable != null) {
             // resolve foreground
-            @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
+            @Suppress("ThreadSafety") // TODO RUM-1462 caller thread of .map is unknown?
             mappingContext.imageWireframeHelper.createImageWireframe(
                 view = view,
                 currentWireframeIndex = wireframes.size,

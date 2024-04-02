@@ -13,7 +13,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.webview.internal.storage.NoOpDataWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
 import com.datadog.android.webview.internal.storage.WebViewEventSerializer
 import com.google.gson.JsonObject

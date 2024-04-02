@@ -270,9 +270,7 @@ internal class TelemetryEventHandler(
     }
 
     private fun isGlobalTracerRegistered(): Boolean {
-        // TODO RUMM-0000 we don't reference io.opentracing from RUM directly, so using this.
-        // alternatively we can afford maybe to reference it, because it seems transitive size
-        // of io.opentracing is like 30 KBs in total?
+        // We don't reference io.opentracing from RUM directly, so using reflection for this.
         // Would be nice to add the test with the flavor which is has no io.opentracing and test
         // for obfuscation enabled case.
         return try {

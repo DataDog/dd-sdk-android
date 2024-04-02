@@ -26,7 +26,7 @@ import java.io.FileFilter
 import java.util.Locale
 import kotlin.math.roundToLong
 
-// TODO RUMM-3373 Improve this class: need to make it thread-safe and optimize work with file
+// TODO RUM-438 Improve this class: need to make it thread-safe and optimize work with file
 //  system in order to reduce the number of syscalls (which are expensive) for files already seen
 internal class BatchFileOrchestrator(
     private val rootDir: File,

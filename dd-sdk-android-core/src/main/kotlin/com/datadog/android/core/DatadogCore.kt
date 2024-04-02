@@ -178,6 +178,7 @@ internal class DatadogCore(
         features.values.forEach {
             it.clearAllData()
         }
+        // TODO RUM-1462 address Thread safety
         @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
         coreFeature.deleteLastViewEvent()
         @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
