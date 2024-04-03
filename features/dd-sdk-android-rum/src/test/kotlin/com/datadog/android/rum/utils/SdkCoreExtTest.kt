@@ -6,6 +6,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -216,6 +218,31 @@ internal class SdkCoreExtTest {
             target = InternalLogger.Target.MAINTAINER,
             message = WriteOperation.NO_ERROR_CALLBACK_PROVIDED_WARNING
         )
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 submit() { noop writer}`() {
+        // Given
+        var errorInvoked = false
+        var successInvoked = false
+        val fakeEvent = Any()
+        mockWriter = mock<NoOpDataWriter<Any>>()
+
+        // When
+        mockSdkCore.newRumEventWriteOperation(mockWriter) { fakeEvent }
+            .onError { errorInvoked = true }
+            .onSuccess { successInvoked = true }
+            .submit()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.USER,
+            message = WriteOperation.WRITE_OPERATION_IGNORED
+        )
+        assertThat(errorInvoked).isTrue()
+        assertThat(successInvoked).isFalse()
+        verifyNoInteractions(mockWriter)
     }
 
     companion object {
