@@ -6,12 +6,22 @@
 
 package com.datadog.trace.logger;
 
+import androidx.annotation.NonNull;
+
+import com.datadog.android.api.InternalLogger;
+
 public final class LoggerFactory {
 
+    @NonNull
     public static Logger getLogger(String name) {
         return new NoOpLogger();
     }
+    @NonNull
+    public static Logger getLogger(String name, InternalLogger internalLogger) {
+        return new DatadogCoreTracerLogger(name, internalLogger);
+    }
 
+    @NonNull
     public static Logger getLogger(Class<?> clazz) {
         return new NoOpLogger();
     }
@@ -21,6 +31,11 @@ public final class LoggerFactory {
             @Override
             public Logger getLogger(String name) {
                 return new NoOpLogger();
+            }
+
+            @Override
+            public Logger getLogger(String name, InternalLogger internalLogger) {
+                return new DatadogCoreTracerLogger(name, internalLogger);
             }
         };
     }

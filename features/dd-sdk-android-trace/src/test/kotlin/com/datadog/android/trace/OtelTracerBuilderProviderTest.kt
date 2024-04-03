@@ -16,6 +16,7 @@ import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.opentelemetry.trace.OtelSpanContext
+import com.datadog.opentelemetry.trace.OtelTracer
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.api.Config
 import com.datadog.trace.api.config.TracerConfig
@@ -419,6 +420,19 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer.spanBuilder(operation).startSpan() as OtelSpan
         val agentSpanContext = span.agentSpanContext as DDSpanContext
         assertThat(agentSpanContext.tags).containsEntry(key, value)
+    }
+
+    @Test
+    fun `M use the internalLogger in the CoreTracer W build`() {
+        // When
+        val tracerProvider = testedOtelTracerProviderBuilder
+            .build()
+        val tracer = tracerProvider.tracerBuilder(fakeInstrumentationName).build() as OtelTracer
+
+        // Then
+        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val internalLogger: InternalLogger = coreTracer.getFieldValue("internalLogger")
+        assertThat(internalLogger).isSameAs(mockInternalLogger)
     }
 
     // endregion

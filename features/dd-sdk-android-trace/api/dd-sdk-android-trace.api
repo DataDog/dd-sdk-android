@@ -5954,7 +5954,6 @@ public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/ins
 	public fun addTracerReportToFlare (Ljava/util/zip/ZipOutputStream;)V
 	public synthetic fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
-	public static fun builder ()Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun captureSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;
 	public synthetic fun captureTraceConfig ()Lcom/datadog/trace/api/TraceConfig;
 	public fun captureTraceConfig ()Lcom/datadog/trace/core/CoreTracer$ConfigSnapshot;
@@ -6028,7 +6027,7 @@ public class com/datadog/trace/core/CoreTracer$CoreSpanBuilder : com/datadog/tra
 }
 
 public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
-	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
 	public fun baggageMapping (Ljava/util/Map;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun build ()Lcom/datadog/trace/core/CoreTracer;
 	public fun config (Lcom/datadog/trace/api/Config;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
@@ -6053,7 +6052,7 @@ public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
 
 public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/TransientProfilingContextHolder, com/datadog/trace/bootstrap/instrumentation/api/AgentSpan, com/datadog/trace/bootstrap/instrumentation/api/AttachableWrapper, com/datadog/trace/core/CoreSpan {
 	public static final field CHECKPOINTED_TAG Ljava/lang/String;
-	public fun <init> (Ljava/lang/String;JLcom/datadog/trace/core/DDSpanContext;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;JLcom/datadog/trace/core/DDSpanContext;Ljava/util/List;Lcom/datadog/android/api/InternalLogger;)V
 	public fun addLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)V
 	public synthetic fun addThrowable (Ljava/lang/Throwable;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public synthetic fun addThrowable (Ljava/lang/Throwable;)Lcom/datadog/trace/core/CoreSpan;
@@ -6359,7 +6358,7 @@ public abstract class com/datadog/trace/core/PendingTraceBuffer : java/lang/Auto
 	public fun <init> ()V
 	public abstract fun close ()V
 	public static fun delaying (Lcom/datadog/trace/api/time/TimeSource;Lcom/datadog/trace/api/Config;Lcom/datadog/trace/core/monitor/HealthMetrics;)Lcom/datadog/trace/core/PendingTraceBuffer;
-	public static fun discarding ()Lcom/datadog/trace/core/PendingTraceBuffer;
+	public static fun discarding (Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/trace/core/PendingTraceBuffer;
 	public abstract fun enqueue (Lcom/datadog/trace/core/PendingTraceBuffer$Element;)V
 	public abstract fun flush ()V
 	public fun longRunningSpansEnabled ()Z
@@ -6761,8 +6760,8 @@ public class com/datadog/trace/core/propagation/ptags/W3CPTagsCodec {
 }
 
 public final class com/datadog/trace/core/scopemanager/ContinuableScopeManager : com/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager {
-	public fun <init> (IZZ)V
-	public fun <init> (IZZLcom/datadog/trace/bootstrap/instrumentation/api/ProfilingContextIntegration;Lcom/datadog/trace/core/monitor/HealthMetrics;)V
+	public fun <init> (IZZLcom/datadog/android/api/InternalLogger;)V
+	public fun <init> (IZZLcom/datadog/trace/bootstrap/instrumentation/api/ProfilingContextIntegration;Lcom/datadog/trace/core/monitor/HealthMetrics;Lcom/datadog/android/api/InternalLogger;)V
 	public fun activate (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activate (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
@@ -6904,8 +6903,36 @@ public final class com/datadog/trace/lambda/ReadFromInputStreamJsonAdapter : com
 	public synthetic fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/lang/Object;)V
 }
 
+public class com/datadog/trace/logger/DatadogCoreTracerLogger : com/datadog/trace/logger/Logger {
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)V
+	public fun debug (Ljava/lang/String;)V
+	public fun debug (Ljava/lang/String;Ljava/lang/Object;)V
+	public fun debug (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun debug (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun debug (Ljava/lang/String;[Ljava/lang/Object;)V
+	public fun error (Ljava/lang/String;)V
+	public fun error (Ljava/lang/String;Ljava/lang/Object;)V
+	public fun error (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun error (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun error (Ljava/lang/String;[Ljava/lang/Object;)V
+	public fun info (Ljava/lang/String;)V
+	public fun info (Ljava/lang/String;Ljava/lang/Object;)V
+	public fun info (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun info (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun info (Ljava/lang/String;[Ljava/lang/Object;)V
+	public fun isDebugEnabled ()Z
+	public fun isInfoEnabled ()Z
+	public fun isWarnEnabled ()Z
+	public fun warn (Ljava/lang/String;)V
+	public fun warn (Ljava/lang/String;Ljava/lang/Object;)V
+	public fun warn (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun warn (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun warn (Ljava/lang/String;[Ljava/lang/Object;)V
+}
+
 public abstract interface class com/datadog/trace/logger/ILoggerFactory {
 	public abstract fun getLogger (Ljava/lang/String;)Lcom/datadog/trace/logger/Logger;
+	public abstract fun getLogger (Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/trace/logger/Logger;
 }
 
 public abstract interface class com/datadog/trace/logger/Logger {
@@ -6920,22 +6947,14 @@ public abstract interface class com/datadog/trace/logger/Logger {
 	public abstract fun error (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
 	public abstract fun error (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public abstract fun error (Ljava/lang/String;[Ljava/lang/Object;)V
-	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun info (Ljava/lang/String;)V
 	public abstract fun info (Ljava/lang/String;Ljava/lang/Object;)V
 	public abstract fun info (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
 	public abstract fun info (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public abstract fun info (Ljava/lang/String;[Ljava/lang/Object;)V
 	public abstract fun isDebugEnabled ()Z
-	public abstract fun isErrorEnabled ()Z
 	public abstract fun isInfoEnabled ()Z
-	public abstract fun isTraceEnabled ()Z
 	public abstract fun isWarnEnabled ()Z
-	public abstract fun trace (Ljava/lang/String;)V
-	public abstract fun trace (Ljava/lang/String;Ljava/lang/Object;)V
-	public abstract fun trace (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
-	public abstract fun trace (Ljava/lang/String;Ljava/lang/Throwable;)V
-	public abstract fun trace (Ljava/lang/String;[Ljava/lang/Object;)V
 	public abstract fun warn (Ljava/lang/String;)V
 	public abstract fun warn (Ljava/lang/String;Ljava/lang/Object;)V
 	public abstract fun warn (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
@@ -6948,6 +6967,7 @@ public final class com/datadog/trace/logger/LoggerFactory {
 	public static fun getILoggerFactory ()Lcom/datadog/trace/logger/ILoggerFactory;
 	public static fun getLogger (Ljava/lang/Class;)Lcom/datadog/trace/logger/Logger;
 	public static fun getLogger (Ljava/lang/String;)Lcom/datadog/trace/logger/Logger;
+	public static fun getLogger (Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/trace/logger/Logger;
 }
 
 public class com/datadog/trace/logger/NoOpLogger : com/datadog/trace/logger/Logger {
@@ -6962,22 +6982,14 @@ public class com/datadog/trace/logger/NoOpLogger : com/datadog/trace/logger/Logg
 	public fun error (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
 	public fun error (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public fun error (Ljava/lang/String;[Ljava/lang/Object;)V
-	public fun getName ()Ljava/lang/String;
 	public fun info (Ljava/lang/String;)V
 	public fun info (Ljava/lang/String;Ljava/lang/Object;)V
 	public fun info (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
 	public fun info (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public fun info (Ljava/lang/String;[Ljava/lang/Object;)V
 	public fun isDebugEnabled ()Z
-	public fun isErrorEnabled ()Z
 	public fun isInfoEnabled ()Z
-	public fun isTraceEnabled ()Z
 	public fun isWarnEnabled ()Z
-	public fun trace (Ljava/lang/String;)V
-	public fun trace (Ljava/lang/String;Ljava/lang/Object;)V
-	public fun trace (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
-	public fun trace (Ljava/lang/String;Ljava/lang/Throwable;)V
-	public fun trace (Ljava/lang/String;[Ljava/lang/Object;)V
 	public fun warn (Ljava/lang/String;)V
 	public fun warn (Ljava/lang/String;Ljava/lang/Object;)V
 	public fun warn (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V

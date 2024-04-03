@@ -9,6 +9,8 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import com.datadog.trace.bootstrap.instrumentation.api.AttachableWrapper;
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.relocate.api.RatelimitedLogger;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -29,18 +31,26 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
       AtomicReferenceFieldUpdater.newUpdater(ContinuableScope.class, Object.class, "wrapper");
 
   private final Stateful scopeState;
+  
+  private final Logger log;
+
+  private final RatelimitedLogger ratelimitedLogger;
 
   ContinuableScope(
-      final ContinuableScopeManager scopeManager,
-      final AgentSpan span,
-      final byte source,
-      final boolean isAsyncPropagating,
-      final Stateful scopeState) {
+          final ContinuableScopeManager scopeManager,
+          final AgentSpan span,
+          final byte source,
+          final boolean isAsyncPropagating,
+          final Stateful scopeState,
+          final Logger logger,
+          final RatelimitedLogger ratelimitedLogger) {
     this.scopeManager = scopeManager;
     this.span = span;
     this.flags = source;
     this.isAsyncPropagating = isAsyncPropagating;
     this.scopeState = scopeState;
+    this.log = logger;
+    this.ratelimitedLogger = ratelimitedLogger;
   }
 
   @Override
@@ -49,8 +59,8 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
 
     // fast check first, only perform slower check when there's an inconsistency with the stack
     if (!scopeStack.checkTop(this) && !scopeStack.checkOverdueScopes(this)) {
-      if (ContinuableScopeManager.log.isDebugEnabled()) {
-        ContinuableScopeManager.log.debug(
+      if (log.isDebugEnabled()) {
+        log.debug(
             "Tried to close {} scope when not on top.  Current top: {}", this, scopeStack.top);
       }
 
@@ -85,7 +95,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
       try {
         listener.afterScopeClosed();
       } catch (Exception e) {
-        ContinuableScopeManager.log.debug("ScopeListener threw exception in close()", e);
+        log.debug("ScopeListener threw exception in close()", e);
       }
     }
 
@@ -93,7 +103,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
       try {
         listener.afterScopeClosed();
       } catch (Exception e) {
-        ContinuableScopeManager.log.debug("ScopeListener threw exception in close()", e);
+        log.debug("ScopeListener threw exception in close()", e);
       }
     }
   }
@@ -139,7 +149,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
   @Override
   public final AbstractContinuation capture() {
     return isAsyncPropagating
-        ? new SingleContinuation(scopeManager, span, source()).register()
+        ? new SingleContinuation(scopeManager, span, source(), log).register()
         : null;
   }
 
@@ -151,7 +161,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
   @Override
   public final AbstractContinuation captureConcurrent() {
     return isAsyncPropagating
-        ? new ConcurrentContinuation(scopeManager, span, source()).register()
+        ? new ConcurrentContinuation(scopeManager, span, source(), log).register()
         : null;
   }
 
@@ -164,7 +174,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
     try {
       scopeState.activate(span.context());
     } catch (Throwable e) {
-      ContinuableScopeManager.ratelimitedLog.warn(
+      ratelimitedLogger.warn(
           "ScopeState {} threw exception in beforeActivated()", scopeState.getClass(), e);
     }
   }
@@ -174,7 +184,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
       try {
         listener.afterScopeActivated();
       } catch (Throwable e) {
-        ContinuableScopeManager.log.debug("ScopeListener threw exception in afterActivated()", e);
+        log.debug("ScopeListener threw exception in afterActivated()", e);
       }
     }
 
@@ -186,7 +196,7 @@ class ContinuableScope implements AgentScope, AttachableWrapper {
             span.context().getSpanId(),
             span.traceConfig());
       } catch (Throwable e) {
-        ContinuableScopeManager.log.debug(
+        log.debug(
             "ExtendedScopeListener threw exception in afterActivated()", e);
       }
     }

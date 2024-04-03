@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.DDSpecification
 import com.datadog.trace.api.DDSpanId
@@ -35,11 +36,12 @@ import org.mockito.kotlin.whenever
 @Timeout(5)
 internal class PendingTraceBufferTest : DDSpecification() {
 
+    private val mockInternalLogger: InternalLogger = mock()
     private val buffer = PendingTraceBuffer.delaying(SystemTimeSource.INSTANCE, mock(), null)
     private val bufferSpy = spy(buffer)
     private val tracer = mock<CoreTracer>()
     private val traceConfig = mock<CoreTracer.ConfigSnapshot>()
-    private val scopeManager = ContinuableScopeManager(10, true, true)
+    private val scopeManager = ContinuableScopeManager(10, true, true, mockInternalLogger)
     private val factory = PendingTrace.Factory(tracer, bufferSpy, SystemTimeSource.INSTANCE, false, HealthMetrics.NO_OP)
     private val continuations = mutableListOf<TraceScope.Continuation>()
 
@@ -148,7 +150,7 @@ internal class PendingTraceBufferTest : DDSpecification() {
             false,
             PropagationTags.factory().empty()
         )
-        return DDSpan.create("test", 0, context, null)
+        return DDSpan.create("test", 0, context, null, mockInternalLogger)
     }
 
     private fun PendingTraceBuffer.worker(): Thread {

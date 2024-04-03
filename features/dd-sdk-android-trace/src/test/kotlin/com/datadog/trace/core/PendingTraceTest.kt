@@ -216,7 +216,8 @@ internal class PendingTraceTest : PendingTraceTestBase() {
                 false,
                 PropagationTags.factory().empty()
             ),
-            null
+            null,
+            mockLogger
         )
     }
 }

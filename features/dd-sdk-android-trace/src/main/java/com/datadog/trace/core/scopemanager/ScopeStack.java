@@ -2,6 +2,7 @@ package com.datadog.trace.core.scopemanager;
 
 import com.datadog.trace.bootstrap.instrumentation.api.ProfilingContextIntegration;
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
+import com.datadog.trace.relocate.api.RatelimitedLogger;
 
 import java.util.ArrayDeque;
 
@@ -19,8 +20,11 @@ final class ScopeStack {
   // set by background task when a root iteration scope remains unclosed for too long
   volatile ContinuableScope overdueRootScope;
 
-  ScopeStack(ProfilingContextIntegration profilingContextIntegration) {
+  private final RatelimitedLogger ratelimitedLogger;
+
+  ScopeStack(ProfilingContextIntegration profilingContextIntegration, RatelimitedLogger ratelimitedLogger) {
     this.profilingContextIntegration = profilingContextIntegration;
+    this.ratelimitedLogger = ratelimitedLogger;
   }
 
   ContinuableScope active() {
@@ -113,7 +117,7 @@ final class ScopeStack {
     try {
       profilingContextIntegration.onAttach();
     } catch (Throwable e) {
-      ContinuableScopeManager.ratelimitedLog.warn("Unexpected profiling exception", e);
+      ratelimitedLogger.warn("Unexpected profiling exception", e);
     }
   }
 
@@ -122,7 +126,7 @@ final class ScopeStack {
     try {
       profilingContextIntegration.onDetach();
     } catch (Throwable e) {
-      ContinuableScopeManager.ratelimitedLog.warn("Unexpected profiling exception", e);
+      ratelimitedLogger.warn("Unexpected profiling exception", e);
     }
   }
 }

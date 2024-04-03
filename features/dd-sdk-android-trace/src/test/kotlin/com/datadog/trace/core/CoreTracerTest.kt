@@ -18,6 +18,7 @@ import com.datadog.trace.common.sampling.RateByServiceTraceSampler
 import com.datadog.trace.common.writer.ListWriter
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
+import com.datadog.trace.logger.DatadogCoreTracerLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -31,12 +32,14 @@ internal class CoreTracerTest : DDCoreSpecification() {
     @Test
     fun `verify defaults on tracer`() {
         // When
-        val tracer = CoreTracer.builder().build()
+        val tracer = CoreTracer.CoreTracerBuilder(mockLogger).build()
 
         // Then
         assertThat(tracer.serviceName).isNotEmpty
         assertThat(tracer.initialSampler).isInstanceOf(RateByServiceTraceSampler::class.java)
         assertThat(tracer.writer).isInstanceOf(NoOpWriter::class.java)
+        assertThat(tracer.internalLogger).isSameAs(mockLogger)
+        assertThat(tracer.log).isInstanceOf(DatadogCoreTracerLogger::class.java)
 
         // Tear down
         tracer.close()

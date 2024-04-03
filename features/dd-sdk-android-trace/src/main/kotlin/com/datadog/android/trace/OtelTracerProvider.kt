@@ -134,8 +134,7 @@ class OtelTracerProvider(
                     { TRACING_NOT_ENABLED_ERROR_MESSAGE }
                 )
             }
-            // TODO: RUM-0000 Add a logs handler here maybe
-            val coreTracer = CoreTracer.CoreTracerBuilder()
+            val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
                 .withProperties(properties())
                 .serviceName(serviceName)
                 .writer(tracingFeature?.otelDataWriter ?: NoOpOtelWriter())

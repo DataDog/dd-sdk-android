@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
 
-  private static final Logger log = LoggerFactory.getLogger(PendingTrace.class);
+  private final Logger log;
 
   static class Factory {
     private final CoreTracer tracer;
@@ -162,6 +162,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
     this.strictTraceWrites = strictTraceWrites;
     this.healthMetrics = healthMetrics;
     this.spans = new ConcurrentLinkedDeque<>();
+    this.log = LoggerFactory.getLogger(PendingTrace.class.getSimpleName(), tracer.internalLogger);
   }
 
   CoreTracer getTracer() {
