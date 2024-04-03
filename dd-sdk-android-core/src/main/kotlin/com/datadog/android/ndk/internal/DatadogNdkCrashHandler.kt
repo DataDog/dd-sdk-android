@@ -271,6 +271,7 @@ internal class DatadogNdkCrashHandler(
                     "type" to "ndk_crash",
                     "sourceType" to nativeCrashSourceType,
                     "timestamp" to ndkCrashLog.timestamp,
+                    "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                     "signalName" to ndkCrashLog.signalName,
                     "stacktrace" to ndkCrashLog.stacktrace,
                     "message" to errorLogMessage,

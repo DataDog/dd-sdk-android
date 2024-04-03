@@ -56,6 +56,7 @@ internal class DatadogLateCrashReporter(
 
         val sourceType = event["sourceType"] as? String
         val timestamp = event["timestamp"] as? Long
+        val timeSinceAppStartMs = event["timeSinceAppStartMs"] as? Long
         val signalName = event["signalName"] as? String
         val stacktrace = event["stacktrace"] as? String
         val errorLogMessage = event["message"] as? String
@@ -81,6 +82,7 @@ internal class DatadogLateCrashReporter(
                 ErrorEvent.Category.EXCEPTION,
                 errorLogMessage,
                 timestamp,
+                timeSinceAppStartMs,
                 stacktrace,
                 signalName,
                 null,
@@ -134,6 +136,8 @@ internal class DatadogLateCrashReporter(
                     ErrorEvent.Category.ANR,
                     ANRDetectorRunnable.ANR_MESSAGE,
                     anrExitInfo.timestamp,
+                    // TODO RUM-3780 support reporting `error.time_since_app_start` for fatal ANRs
+                    null,
                     threadDumps.mainThread?.stack.orEmpty(),
                     ANRException::class.java.canonicalName.orEmpty(),
                     threadDumps,
@@ -163,6 +167,7 @@ internal class DatadogLateCrashReporter(
         category: ErrorEvent.Category,
         errorLogMessage: String,
         timestamp: Long,
+        timeSinceAppStartMs: Long?,
         stacktrace: String,
         errorType: String,
         threadDumps: List<ThreadDump>?,
@@ -249,7 +254,8 @@ internal class DatadogLateCrashReporter(
                         it.stack,
                         it.state
                     )
-                }
+                },
+                timeSinceAppStart = timeSinceAppStartMs
             ),
             version = viewEvent.version
         )

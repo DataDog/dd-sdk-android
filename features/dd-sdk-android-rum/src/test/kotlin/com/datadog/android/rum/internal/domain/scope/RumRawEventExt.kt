@@ -107,6 +107,7 @@ internal fun Forge.addErrorEvent(): RumRawEvent.AddError {
         throwable = null,
         isFatal = isFatal,
         threads = if (isFatal) aList { getForgery() } else emptyList(),
+        timeSinceAppStartNs = if (isFatal) aPositiveLong() else null,
         attributes = exhaustiveAttributes()
     )
 }

@@ -28,6 +28,7 @@ import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
+import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
@@ -117,6 +118,9 @@ internal class CoreFeatureTest {
     @Mock
     lateinit var mockScheduledExecutorService: ScheduledExecutorService
 
+    @Mock
+    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
+
     @Forgery
     lateinit var fakeConfig: Configuration
 
@@ -131,6 +135,7 @@ internal class CoreFeatureTest {
         CoreFeature.disableKronosBackgroundSync = true
         testedFeature = CoreFeature(
             mockInternalLogger,
+            mockAppStartTimeProvider,
             executorServiceFactory = { _, _ -> mockPersistenceExecutorService },
             scheduledExecutorServiceFactory = { _, _ -> mockScheduledExecutorService }
         )
@@ -1105,6 +1110,20 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(lastViewEvent.toString()).isEqualTo(fakeViewEvent.toString())
+    }
+
+    @Test
+    fun `𝕄 return app start time 𝕎 appStartTimeNs`(
+        @LongForgery(min = 0L) fakeAppStartTimeNs: Long
+    ) {
+        // Given
+        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeAppStartTimeNs
+
+        // When
+        val appStartTimeNs = testedFeature.appStartTimeNs
+
+        // Then
+        assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
     }
 
     // region shutdown

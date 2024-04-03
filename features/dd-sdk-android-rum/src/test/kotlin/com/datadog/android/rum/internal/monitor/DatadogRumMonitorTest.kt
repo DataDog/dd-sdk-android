@@ -625,6 +625,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -649,6 +650,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -711,10 +713,14 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope on current thread W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
-        @Forgery throwable: Throwable
+        @Forgery throwable: Throwable,
+        forge: Forge
     ) {
         // Given
         testedMonitor.drainExecutorService()
+        val now = System.nanoTime()
+        val appStartTimeNs = forge.aLong(min = 0L, max = now)
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
 
         // When
         testedMonitor.addCrash(message, source, throwable, threads = emptyList())
@@ -730,6 +736,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.isFatal).isTrue
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isEqualTo(event.eventTime.nanoTime - appStartTimeNs)
             assertThat(event.attributes).isEmpty()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -988,6 +995,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.threads).isEqualTo(allThreads)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1015,6 +1023,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1042,6 +1051,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1070,6 +1080,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1103,6 +1114,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
             assertThat(event.type).isEqualTo(errorType)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1148,8 +1160,9 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
             assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
+            assertThat(event.timeSinceAppStartNs).isNull()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

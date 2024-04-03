@@ -18,6 +18,8 @@ void update_main_context(JNIEnv *env,
 
 void update_tracking_consent(jint consent);
 
+void update_app_start_time_millis(jlong time_ms);
+
 void write_crash_report(int signum,
                         const char *signal_name,
                         const char *error_message,

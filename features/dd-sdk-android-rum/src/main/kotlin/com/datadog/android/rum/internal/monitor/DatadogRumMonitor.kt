@@ -438,6 +438,8 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
+        val now = Time()
+        val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -446,6 +448,8 @@ internal class DatadogRumMonitor(
                 stacktrace = null,
                 isFatal = true,
                 threads = threads,
+                timeSinceAppStartNs = timeSinceAppStartNs,
+                eventTime = now,
                 attributes = emptyMap()
             )
         )

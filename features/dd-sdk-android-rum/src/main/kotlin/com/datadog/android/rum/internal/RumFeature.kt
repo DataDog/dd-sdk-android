@@ -633,8 +633,6 @@ internal class RumFeature(
             additionalConfig = emptyMap()
         )
 
-        internal val startupTimeNs: Long = System.nanoTime()
-
         internal const val EVENT_MESSAGE_PROPERTY = "message"
         internal const val EVENT_ADDITIONAL_PROPERTIES = "additionalProperties"
         internal const val EVENT_THROWABLE_PROPERTY = "throwable"

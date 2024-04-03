@@ -4,11 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal
+package com.datadog.android.core.internal.time
 
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
+import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -52,7 +53,7 @@ class DefaultAppStartTimeProviderTest {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
-        val startTimeNs = RumFeature.startupTimeNs
+        val startTimeNs = DatadogCore.startupTimeNs
 
         // WHEN
         val timeProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)

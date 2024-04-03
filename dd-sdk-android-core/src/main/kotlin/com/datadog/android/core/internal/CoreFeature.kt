@@ -60,6 +60,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
+import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
@@ -102,8 +103,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("TooManyFunctions")
 internal class CoreFeature(
     private val internalLogger: InternalLogger,
-    val executorServiceFactory: FlushableExecutorService.Factory,
-    val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
+    private val appStartTimeProvider: AppStartTimeProvider,
+    private val executorServiceFactory: FlushableExecutorService.Factory,
+    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
     internal val initialized = AtomicBoolean(false)
@@ -146,6 +148,9 @@ internal class CoreFeature(
     internal lateinit var androidInfoProvider: AndroidInfoProvider
 
     internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
+
+    internal val appStartTimeNs: Long
+        get() = appStartTimeProvider.appStartTimeNs
 
     // lazy here on purpose: we need to read it only once, even if it is used in different features
     @get:WorkerThread

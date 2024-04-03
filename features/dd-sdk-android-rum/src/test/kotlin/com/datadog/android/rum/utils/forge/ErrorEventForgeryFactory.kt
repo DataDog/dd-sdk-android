@@ -55,7 +55,8 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                             state = aNullable { getForgery<Thread.State>().name.lowercase() }
                         )
                     }
-                }
+                },
+                timeSinceAppStart = forge.aNullable { aPositiveLong() }
             ),
             view = ErrorEvent.ErrorEventView(
                 id = forge.getForgery<UUID>().toString(),
