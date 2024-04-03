@@ -411,12 +411,13 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo with valid task number`(
         @StringForgery(regex = "[\\w ]+") commentText: String,
-        @StringForgery(regex = "[A-Z]+-\\d{1,8}") task: String
+        @StringForgery(regex = "[A-Z]+") taskProject: String,
+        @IntForgery(min = 1) taskNumber: Int
     ) {
         val code = """
             class Foo {
                 fun bar() {
-                    // TODO $task $commentText
+                    // TODO $taskProject-$taskNumber $commentText
                 }
             }
         """.trimIndent()
@@ -428,14 +429,15 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo with valid task number in multiline comment`(
         @StringForgery(regex = "[\\w ]+") commentText: String,
-        @StringForgery(regex = "[A-Z]+-\\d{1,8}") task: String
+        @StringForgery(regex = "[A-Z]+") taskProject: String,
+        @IntForgery(min = 1) taskNumber: Int
     ) {
         val code =
             """
             class Foo {
                 fun bar() {
                     /*
-                     * TODO $task $commentText
+                     * TODO $taskProject-$taskNumber $commentText
                      */
                 }
             }
@@ -448,7 +450,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo with valid task number in property doc comment`(
         @StringForgery(regex = "[\\w ]+") commentText: String,
-        @StringForgery(regex = "[A-Z]+-\\d{1,8}") task: String
+        @StringForgery(regex = "[A-Z]+") taskProject: String,
+        @IntForgery(min = 1) taskNumber: Int
     ) {
         val code =
             """
@@ -456,7 +459,7 @@ class TodoWithoutTaskTest {
             
                 /**
                  * Do Something.
-                 * TODO $task $commentText
+                 * TODO $taskProject-$taskNumber $commentText
                  */
                 lateinit var property : String 
             }
@@ -469,7 +472,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo with valid task number in method doc comment`(
         @StringForgery(regex = "[\\w ]+") commentText: String,
-        @StringForgery(regex = "[A-Z]+-\\d{1,8}") task: String
+        @StringForgery(regex = "[A-Z]+") taskProject: String,
+        @IntForgery(min = 1) taskNumber: Int
     ) {
         val code =
             """
@@ -477,7 +481,7 @@ class TodoWithoutTaskTest {
             
                 /**
                  * Do Something.
-                 * TODO $task $commentText
+                 * TODO $taskProject-$taskNumber $commentText
                  */
                 fun bar() {
                 }
@@ -491,12 +495,13 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo with valid task number in class doc comment`(
         @StringForgery(regex = "[\\w ]+") commentText: String,
-        @StringForgery(regex = "[A-Z]+-\\d{1,8}") task: String
+        @StringForgery(regex = "[A-Z]+") taskProject: String,
+        @IntForgery(min = 1) taskNumber: Int
     ) {
         val code =
             """
             /**
-             * TODO $task $commentText
+             * TODO $taskProject-$taskNumber $commentText
              */
             class Foo {
                 fun bar() {
@@ -511,12 +516,13 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo with valid task number in object doc comment`(
         @StringForgery(regex = "[\\w ]+") commentText: String,
-        @StringForgery(regex = "[A-Z]+-\\d{1,8}") task: String
+        @StringForgery(regex = "[A-Z]+") taskProject: String,
+        @IntForgery(min = 1) taskNumber: Int
     ) {
         val code =
             """
             /**
-             * TODO $task $commentText
+             * TODO $taskProject-$taskNumber $commentText
              */
             object Foo {
                 fun bar() {
