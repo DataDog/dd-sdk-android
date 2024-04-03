@@ -756,7 +756,7 @@ internal class DatadogCoreTest {
 
     @Test
     fun `𝕄 stop all features 𝕎 stop()`(
-        @StringForgery fakeFeatureNames: List<String>
+        @StringForgery fakeFeatureNames: Set<String>
     ) {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
