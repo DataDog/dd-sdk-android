@@ -17,11 +17,13 @@ import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.OtelDdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
+import com.datadog.android.trace.opentelemetry.DatadogContextStorage
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentelemetry.context.ContextStorage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -85,6 +87,7 @@ internal class TracingFeatureTest {
         assertThat(ddSpanToSpanEventMapper).isInstanceOf(DdSpanToSpanEventMapper::class.java)
         assertThat((ddSpanToSpanEventMapper as DdSpanToSpanEventMapper).networkInfoEnabled)
             .isEqualTo(fakeNetworkInfoEnabled)
+        assertThat(ContextStorage.get()).isInstanceOf(DatadogContextStorage::class.java)
     }
 
     @Test

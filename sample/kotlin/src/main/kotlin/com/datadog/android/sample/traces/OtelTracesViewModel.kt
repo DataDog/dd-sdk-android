@@ -47,6 +47,13 @@ internal class OtelTracesViewModel : ViewModel() {
             .startSpan()
         val scope: Scope = parentSpan.makeCurrent()
 
+        init {
+            tracer
+                .spanBuilder("Child of AsyncOperation")
+                .startSpan()
+                .end()
+        }
+
         @Suppress("CheckInternal")
         private val logger: Logger by lazy {
             Logger.Builder()

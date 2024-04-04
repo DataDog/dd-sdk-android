@@ -54,6 +54,6 @@ public class OtelTracer implements Tracer {
                 this.tracer
                         .buildSpan(instrumentationScopeName, OtelConventions.SPAN_KIND_INTERNAL)
                         .withResourceName(spanName);
-        return spanBuilderDecorator.apply(new OtelSpanBuilder(delegate, logger));
+        return spanBuilderDecorator.apply(new OtelSpanBuilder(delegate, tracer, logger));
     }
 }

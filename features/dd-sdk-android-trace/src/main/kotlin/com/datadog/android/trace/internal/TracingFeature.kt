@@ -22,7 +22,9 @@ import com.datadog.android.trace.internal.domain.event.OtelDdSpanToSpanEventMapp
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
+import com.datadog.android.trace.opentelemetry.DatadogContextStorage
 import com.datadog.legacy.trace.common.writer.Writer
+import io.opentelemetry.context.ContextStorage
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -46,6 +48,7 @@ internal class TracingFeature constructor(
     override fun onInitialize(appContext: Context) {
         dataWriter = createDataWriter(sdkCore)
         otelDataWriter = createOtelDataWriter(sdkCore)
+        ContextStorage.addWrapper { DatadogContextStorage(it) }
         initialized.set(true)
     }
 
