@@ -17,7 +17,6 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.isFileSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
@@ -35,7 +34,7 @@ internal class BatchFileOrchestrator(
     private val metricsDispatcher: MetricsDispatcher
 ) : FileOrchestrator {
 
-    private val fileFilter = BatchFileFilter(internalLogger)
+    private val fileFilter = BatchFileFilter()
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
@@ -328,7 +327,7 @@ internal class BatchFileOrchestrator(
 
     // region FileFilter
 
-    internal inner class BatchFileFilter(private val internalLogger: InternalLogger) : FileFilter {
+    internal inner class BatchFileFilter : FileFilter {
         @Suppress("ReturnCount")
         override fun accept(file: File?): Boolean {
             if (file == null) return false
@@ -338,9 +337,7 @@ internal class BatchFileOrchestrator(
                 return true
             }
 
-            return if (file.isFileSafe(internalLogger) &&
-                file.name.matches(batchFileNameRegex)
-            ) {
+            return if (file.name.matches(batchFileNameRegex)) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // both values are not null
                 knownBatchFiles.put(file, Unit)
                 true
