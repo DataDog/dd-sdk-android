@@ -221,8 +221,8 @@ internal class BatchFileOrchestrator(
 
     @Suppress("ReturnCount")
     private fun getReusableWritableFile(): File? {
-        val files = listSortedBatchFiles()
-        val lastFile = files.lastOrNull() ?: return null
+        val files = listBatchFiles()
+        val lastFile = files.latestBatchFile ?: return null
 
         val lastKnownFile = previousFile
         val lastKnownFileItemCount = previousFileItemCount
@@ -255,7 +255,7 @@ internal class BatchFileOrchestrator(
     }
 
     private fun deleteObsoleteFiles() {
-        val files = listSortedBatchFiles()
+        val files = listBatchFiles()
         val threshold = System.currentTimeMillis() - config.oldFileThreshold
         files
             .asSequence()
@@ -312,8 +312,14 @@ internal class BatchFileOrchestrator(
         }
     }
 
+    private fun listBatchFiles(): List<File> {
+        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().toList()
+    }
+
     private fun listSortedBatchFiles(): List<File> {
-        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().sorted()
+        // note: since it is using File#compareTo, lexicographical sorting will be used, meaning "10" comes before "9".
+        // but for our needs it is fine, because the moment when Unix timestamp adds one more digit will be in 2286.
+        return listBatchFiles().sorted()
     }
 
     private fun canDoCleanup(): Boolean {
@@ -325,6 +331,9 @@ internal class BatchFileOrchestrator(
 
     private val File.isBatchFile: Boolean
         get() = name.toLongOrNull() != null
+
+    private val List<File>.latestBatchFile: File?
+        get() = maxOrNull()
 
     // endregion
 
