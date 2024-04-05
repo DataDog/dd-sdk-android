@@ -127,7 +127,7 @@ internal class BatchFileOrchestrator(
             )
         }
 
-        return if (file.name.matches(batchFileNameRegex)) {
+        return if (file.isBatchFile) {
             file.metadata
         } else {
             internalLogger.log(
@@ -316,12 +316,15 @@ internal class BatchFileOrchestrator(
         return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().sorted()
     }
 
-    private val File.metadata: File
-        get() = File("${this.path}_metadata")
-
     private fun canDoCleanup(): Boolean {
         return System.currentTimeMillis() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
     }
+
+    private val File.metadata: File
+        get() = File("${this.path}_metadata")
+
+    private val File.isBatchFile: Boolean
+        get() = name.toLongOrNull() != null
 
     // endregion
 
@@ -337,7 +340,7 @@ internal class BatchFileOrchestrator(
                 return true
             }
 
-            return if (file.name.matches(batchFileNameRegex)) {
+            return if (file.isBatchFile) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // both values are not null
                 knownBatchFiles.put(file, Unit)
                 true
@@ -358,7 +361,6 @@ internal class BatchFileOrchestrator(
         // Holding 400 items at max will be below 400 Kb of retained size.
         private const val KNOWN_FILES_MAX_CACHE_SIZE = 400
 
-        private val batchFileNameRegex = Regex("\\d+")
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
         internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"
         internal const val ERROR_CANT_CREATE_ROOT = "The provided root dir can't be created: %s"
