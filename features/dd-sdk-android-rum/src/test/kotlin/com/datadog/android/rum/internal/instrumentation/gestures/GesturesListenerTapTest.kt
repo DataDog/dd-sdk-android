@@ -247,6 +247,43 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     }
 
     @Test
+    fun `onTap does nothing if not visible ViewGroup contains visible views`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val validTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.visibility).thenReturn(forge.anElementFrom(View.INVISIBLE, View.GONE))
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
     fun `onTap does nothing if no children present and decor view not clickable`(
         forge: Forge
     ) {
