@@ -47,6 +47,7 @@ internal class NoOpContextProvider : ContextProvider {
             deviceInfo = DeviceInfo("", "", "", DeviceType.OTHER, "", "", "", "", ""),
             userInfo = UserInfo(null, null, null, emptyMap()),
             trackingConsent = TrackingConsent.NOT_GRANTED,
+            appBuildId = null,
             featuresContext = emptyMap()
         )
 

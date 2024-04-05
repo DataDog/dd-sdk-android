@@ -365,6 +365,7 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = eventTimestamp,
                 error = ErrorEvent.Error(
                     message = message,

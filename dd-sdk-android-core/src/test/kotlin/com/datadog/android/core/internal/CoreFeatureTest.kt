@@ -41,6 +41,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf
@@ -86,8 +87,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.io.InputStream
+import java.lang.RuntimeException
 import java.net.Proxy
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -130,6 +136,9 @@ internal class CoreFeatureTest {
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeSdkInstanceId: String
 
+    @Forgery
+    lateinit var fakeBuildId: UUID
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
@@ -141,6 +150,9 @@ internal class CoreFeatureTest {
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doReturn fakeBuildId.toString().byteInputStream()
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
@@ -476,6 +488,97 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
+    }
+
+    @Test
+    fun `𝕄 initializes build ID 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isEqualTo(fakeBuildId.toString())
+    }
+
+    @Test
+    fun `𝕄 initializes build ID 𝕎 initialize() { asset manager is closed }`() {
+        // Given
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doThrow RuntimeException()
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = CoreFeature.BUILD_ID_READ_ERROR,
+            throwableClass = RuntimeException::class.java
+        )
+    }
+
+    @Test
+    fun `𝕄 initializes build ID 𝕎 initialize() { build ID file is missing }`() {
+        // Given
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doThrow FileNotFoundException()
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            CoreFeature.BUILD_ID_IS_MISSING_INFO_MESSAGE
+        )
+    }
+
+    @Test
+    fun `𝕄 initializes build ID 𝕎 initialize() { IOException during build ID read }`() {
+        // Given
+        val mockBrokenStream = mock<InputStream>().apply {
+            whenever(read(any())) doThrow IOException()
+        }
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doReturn mockBrokenStream
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = CoreFeature.BUILD_ID_READ_ERROR,
+            throwableClass = IOException::class.java
+        )
     }
 
     @Test

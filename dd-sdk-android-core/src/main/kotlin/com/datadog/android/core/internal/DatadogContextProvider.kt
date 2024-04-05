@@ -56,6 +56,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 },
                 userInfo = coreFeature.userInfoProvider.getUserInfo(),
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
+                appBuildId = coreFeature.appBuildId,
                 // toMap call here (and in getFeatureContext) is VERY important - this will make
                 // independent snapshot of the features context which is not affected by the
                 // changes which can be made later by another thread.
