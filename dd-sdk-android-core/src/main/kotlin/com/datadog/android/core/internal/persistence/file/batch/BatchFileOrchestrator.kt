@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
-import androidx.collection.LruCache
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
@@ -48,9 +47,6 @@ internal class BatchFileOrchestrator(
     private var previousFile: File? = null
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // argument is not negative
-    private val knownBatchFiles = LruCache<File, Unit>(KNOWN_FILES_MAX_CACHE_SIZE)
     private var lastCleanupTimestamp: Long = 0L
 
     // region FileOrchestrator
@@ -215,8 +211,6 @@ internal class BatchFileOrchestrator(
         previousFile = newFile
         previousFileItemCount = 1
         lastFileAccessTimestamp = System.currentTimeMillis()
-        @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-        knownBatchFiles.put(newFile, Unit)
         return newFile
     }
 
@@ -264,8 +258,6 @@ internal class BatchFileOrchestrator(
                     if (it.deleteSafe(internalLogger)) {
                         metricsDispatcher.sendBatchDeletedMetric(it, RemovalReason.Obsolete)
                     }
-                    @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-                    knownBatchFiles.remove(it)
                     if (it.metadata.existsSafe(internalLogger)) {
                         it.metadata.deleteSafe(internalLogger)
                     }
@@ -302,8 +294,6 @@ internal class BatchFileOrchestrator(
         if (!file.existsSafe(internalLogger)) return 0
 
         val size = file.lengthSafe(internalLogger)
-        @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-        knownBatchFiles.remove(file)
         val wasDeleted = file.deleteSafe(internalLogger)
         return if (wasDeleted) {
             if (sendMetric) {
@@ -347,18 +337,7 @@ internal class BatchFileOrchestrator(
         override fun accept(file: File?): Boolean {
             if (file == null) return false
 
-            @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-            if (knownBatchFiles.get(file) != null) {
-                return true
-            }
-
-            return if (file.isBatchFile) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // both values are not null
-                knownBatchFiles.put(file, Unit)
-                true
-            } else {
-                false
-            }
+            return file.isBatchFile
         }
     }
 
@@ -368,10 +347,6 @@ internal class BatchFileOrchestrator(
 
         const val DECREASE_PERCENT = 0.95
         const val INCREASE_PERCENT = 1.05
-
-        // File class contains only few simple fields, so retained size usually is way below even 1Kb.
-        // Holding 400 items at max will be below 400 Kb of retained size.
-        private const val KNOWN_FILES_MAX_CACHE_SIZE = 400
 
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
         internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"
