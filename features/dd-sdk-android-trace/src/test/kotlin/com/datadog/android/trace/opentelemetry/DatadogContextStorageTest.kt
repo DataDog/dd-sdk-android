@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.opentelemetry
 
-import com.datadog.opentelemetry.context.OtelContext
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.context.Scope
@@ -72,7 +71,7 @@ internal class DatadogContextStorageTest {
     // region attach
 
     @Test
-    fun `M delgate to the wrapper W attach { }`() {
+    fun `M delegate to the wrapper W attach { }`() {
         // Given
         val mockScope: Scope = mock()
         val mockContext: Context = mock()

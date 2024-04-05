@@ -157,4 +157,7 @@
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
     <string name="title_otel_traces">OpenTelemetry Traces</string>
+    <string name="start_chained_contexts_test">Start Chained Contexts Test</string>
+    <string name="start_async_operation">Start Async Operation</string>
+    <string name="chained_contexts_test">Chained Otel Contexts Test</string>
 </resources>

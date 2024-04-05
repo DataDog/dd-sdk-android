@@ -7,7 +7,6 @@
 package com.datadog.android.trace.opentelemetry
 
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.opentelemetry.context.OtelContext
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 import fr.xgouchet.elmyr.Forge
@@ -50,7 +49,6 @@ internal class OtelContextTest {
 
     @BeforeEach
     fun setUp() {
-        mockContext = mock()
         testedContext = OtelContext(mockContext, mockCurrentSpan, mockRootSpan)
     }
 
@@ -110,6 +108,7 @@ internal class OtelContextTest {
 
         // Then
         assertThat(result).isInstanceOf(OtelContext::class.java)
+        assertThat((result as OtelContext).currentSpan).isSameAs(value)
     }
 
     @Test
@@ -123,6 +122,7 @@ internal class OtelContextTest {
 
         // Then
         assertThat(result).isInstanceOf(OtelContext::class.java)
+        assertThat((result as OtelContext).rootSpan).isSameAs(value)
     }
 
     @Test
@@ -131,19 +131,19 @@ internal class OtelContextTest {
         val fakeKeyName = forge.anAlphabeticalString()
         val key = ContextKey.named<String>(fakeKeyName)
         val fakeKeyValue = forge.anAlphabeticalString()
-        val value = fakeKeyValue
         val wrappedContext: Context = mock()
-        whenever(mockContext.with(key, value)).thenReturn(wrappedContext)
+        whenever(mockContext.with(key, fakeKeyValue)).thenReturn(wrappedContext)
 
         // When
-        val result = testedContext.with(key, value)
+        val result = testedContext.with(key, fakeKeyValue)
 
         // Then
         assertThat(result).isInstanceOf(OtelContext::class.java)
+        assertThat((result as OtelContext).currentSpan).isEqualTo(mockCurrentSpan)
     }
 
     @Test
-    fun `M return OtelContext W with consecutively { key is OTEL_CONTEXT_SPAN_KEY }`(forge: Forge) {
+    fun `M return OtelContext W with consecutively`(forge: Forge) {
         // Given
         val keysToValues = forge.aList {
             ContextKey.named<String>(forge.anAlphabeticalString()) to forge.anAlphabeticalString()
@@ -156,7 +156,7 @@ internal class OtelContextTest {
 
         // Then
         assertThat(context).isInstanceOf(OtelContext::class.java)
-        val wrapped = (context as OtelContext).wrapped
+        val wrapped = context.wrapped
         assertThat(wrapped).isInstanceOf(Context::class.java)
         assertThat(wrapped).isNotExactlyInstanceOf(OtelContext::class.java)
         keysToValues.forEach {

@@ -186,10 +186,12 @@ class SampleApplication : Application() {
                 .build()
         )
         GlobalOpenTelemetry.set(object : OpenTelemetry {
+            private val tracerProvider = OtelTracerProvider.Builder()
+                .setService(BuildConfig.APPLICATION_ID)
+                .build()
+
             override fun getTracerProvider(): OtelTracerProvider {
-                return OtelTracerProvider.Builder()
-                    .setService(BuildConfig.APPLICATION_ID)
-                    .build()
+                return tracerProvider
             }
 
             override fun getPropagators(): ContextPropagators {

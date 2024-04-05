@@ -8,7 +8,6 @@ package com.datadog.opentelemetry.trace
 
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.api.ConfigDefaults
-import com.datadog.trace.api.DDTags
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ErrorPriorities
@@ -82,46 +81,46 @@ internal class OtelSpanTest {
 
     // region setAttribute
 
-    fun `M add attribute W setAttribute`(tagBuilder: Boolean, tagSpan: Boolean) {
+    @Test
+    fun `M add attribute W setAttribute`() {
         // Given
-        val expectedTags = mapOf(
-            "string" to "a",
+        val expectedTags = listOf(
+            "string" to "b",
             "empty_string" to "",
-            "number" to 1,
-            "boolean" to true,
+            "number" to 2L,
+            "boolean" to false,
             "empty-string-attribute" to "",
-            "string-array.0" to "a",
-            "string-array.1" to "b",
-            "string-array.2" to "c",
-            "boolean-array.0" to true,
-            "boolean-array.1" to false,
-            "long-array.0" to 1L,
-            "long-array.1" to 2L,
-            "long-array.2" to 3L,
-            "long-array.3" to 4L,
-            "double-array.0" to 1.23,
-            "double-array.1" to 4.56,
+            "string-array.0" to "d",
+            "string-array.1" to "e",
+            "string-array.2" to "f",
+            "boolean-array.0" to false,
+            "boolean-array.1" to true,
+            "long-array.0" to 5L,
+            "long-array.1" to 6L,
+            "long-array.2" to 7L,
+            "long-array.3" to 8L,
+            "double-array.0" to 34.0,
+            "double-array.1" to 5.67,
             "empty-array" to ""
         )
 
         // When
-        testedSpan.setAttribute(DDTags.RESOURCE_NAME, "other-resource")
-            .setAttribute("string", "b")
-            .setAttribute("empty_string", "")
-            .setAttribute("number", 2)
-            .setAttribute("boolean", false)
-            .setAttribute(AttributeKey.stringKey("null-string-attribute"), null)
-            .setAttribute(AttributeKey.stringKey("empty-string-attribute"), "")
-            .setAttribute(AttributeKey.stringArrayKey("string-array"), listOf("d", "e", "f"))
-            .setAttribute(AttributeKey.booleanArrayKey("boolean-array"), listOf(false, true))
-            .setAttribute(AttributeKey.longArrayKey("long-array"), listOf(5L, 6L, 7L, 8L))
-            .setAttribute(AttributeKey.doubleArrayKey("double-array"), listOf(2.34, 5.67))
-            .setAttribute(AttributeKey.stringArrayKey("empty-array"), emptyList<String>())
-            .setAttribute(AttributeKey.stringArrayKey("null-array"), null)
+        testedSpan.setAttribute("string", "b")
+        testedSpan.setAttribute("empty_string", "")
+        testedSpan.setAttribute("number", 2L)
+        testedSpan.setAttribute("boolean", false)
+        testedSpan.setAttribute(AttributeKey.stringKey("null-string-attribute"), null)
+        testedSpan.setAttribute(AttributeKey.stringKey("empty-string-attribute"), "")
+        testedSpan.setAttribute(AttributeKey.stringArrayKey("string-array"), listOf("d", "e", "f"))
+        testedSpan.setAttribute(AttributeKey.booleanArrayKey("boolean-array"), listOf(false, true))
+        testedSpan.setAttribute(AttributeKey.longArrayKey("long-array"), listOf(5L, 6L, 7L, 8L))
+        testedSpan.setAttribute(AttributeKey.doubleArrayKey("double-array"), listOf(34.0, 5.67))
+        testedSpan.setAttribute(AttributeKey.stringArrayKey("empty-array"), emptyList())
+        testedSpan.setAttribute(AttributeKey.stringArrayKey("null-array"), null)
 
         // Then
-        expectedTags.entries.forEach {
-            verify(mockAgentSpan).setTag(it.key, it.value)
+        expectedTags.forEach {
+            verify(mockAgentSpan).setTag(it.first, it.second)
         }
     }
 
@@ -156,8 +155,6 @@ internal class OtelSpanTest {
     ) {
         // Given
         testedSpan.end()
-        val expectedIsError = fakeStatusCode == StatusCode.ERROR
-        val expectedErrorMessage = if (expectedIsError) fakeDescription else null
 
         // When
         testedSpan.setStatus(fakeStatusCode, fakeDescription)

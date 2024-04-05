@@ -1,6 +1,11 @@
-package com.datadog.opentelemetry.context
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
 
-import com.datadog.android.trace.opentelemetry.OtelScope
+package com.datadog.android.trace.opentelemetry
+
 import com.datadog.opentelemetry.trace.OtelSpan
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.context.Context
@@ -9,18 +14,21 @@ import io.opentelemetry.context.Scope
 
 internal class OtelContext(
     internal val wrapped: Context,
-    private val currentSpan: Span = Span.getInvalid(),
-    private val rootSpan: Span = Span.getInvalid()
+    internal val currentSpan: Span = Span.getInvalid(),
+    internal val rootSpan: Span = Span.getInvalid()
 ) : Context {
+
+    @Suppress("ReturnCount", "UNCHECKED_CAST")
     override fun <V> get(key: ContextKey<V>): V? {
         if (OTEL_CONTEXT_SPAN_KEY == key.toString()) {
-            return currentSpan as V
+            return currentSpan as? V
         } else if (OTEL_CONTEXT_ROOT_SPAN_KEY == key.toString()) {
-            return rootSpan as V
+            return rootSpan as? V
         }
         return wrapped.get(key)
     }
 
+    @Suppress("ReturnCount")
     override fun <V> with(k1: ContextKey<V>, v1: V): Context {
         if (OTEL_CONTEXT_SPAN_KEY == k1.toString()) {
             return OtelContext(wrapped, v1 as Span, rootSpan)

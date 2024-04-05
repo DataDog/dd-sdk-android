@@ -253,13 +253,13 @@ class OtelTracerProvider(
 
     private fun resolveSpanBuilderDecorator(): (SpanBuilder) -> SpanBuilder {
         return if (bundleWithRumEnabled) {
-            resolveSpanBuilderDecoratorFromContext()
+            resolveDecoratorFromRumContext()
         } else {
             NO_OP_SPAN_BUILDER_DECORATOR
         }
     }
 
-    private fun resolveSpanBuilderDecoratorFromContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
+    private fun resolveDecoratorFromRumContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
         val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
         val applicationId = rumContext[RUM_APPLICATION_ID_KEY] as? String
         val sessionId = rumContext[RUM_SESSION_ID_KEY] as? String
