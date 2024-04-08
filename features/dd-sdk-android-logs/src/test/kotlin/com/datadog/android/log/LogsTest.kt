@@ -51,7 +51,7 @@ internal class LogsTest {
     }
 
     @Test
-    fun `𝕄 register logs feature 𝕎 enable()`(
+    fun `M register logs feature W enable()`(
         @StringForgery fakePackageName: String,
         @Forgery fakeLogsConfiguration: LogsConfiguration
     ) {

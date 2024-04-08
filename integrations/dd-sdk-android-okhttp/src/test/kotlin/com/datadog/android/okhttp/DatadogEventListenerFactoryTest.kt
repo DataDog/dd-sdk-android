@@ -60,7 +60,7 @@ internal class DatadogEventListenerFactoryTest {
     }
 
     @Test
-    fun `𝕄 create event listener 𝕎 create()`() {
+    fun `M create event listener W create()`() {
         // When
         val result = testedFactory.create(mockCall)
 
@@ -70,7 +70,7 @@ internal class DatadogEventListenerFactoryTest {
     }
 
     @Test
-    fun `𝕄 create no-op event listener 𝕎 create() { SDK instance is not ready }`(
+    fun `M create no-op event listener W create() { SDK instance is not ready }`(
         @StringForgery fakeSdkInstanceName: String
     ) {
         // When

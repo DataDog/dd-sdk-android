@@ -52,7 +52,7 @@ internal class WebViewLogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize data writer 𝕎 initialize()`() {
+    fun `M initialize data writer W initialize()`() {
         // When
         testedFeature.onInitialize(mock())
 
@@ -62,7 +62,7 @@ internal class WebViewLogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset data writer 𝕎 onStop()`() {
+    fun `M reset data writer W onStop()`() {
         // Given
         testedFeature.onInitialize(mock())
 
@@ -75,21 +75,21 @@ internal class WebViewLogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide web view logs feature name 𝕎 name()`() {
+    fun `M provide web view logs feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
             .isEqualTo(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
     }
 
     @Test
-    fun `𝕄 provide initial request factory 𝕎 requestFactory()`() {
+    fun `M provide initial request factory W requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
             .isSameAs(mockRequestFactory)
     }
 
     @Test
-    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+    fun `M provide default storage configuration W storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)

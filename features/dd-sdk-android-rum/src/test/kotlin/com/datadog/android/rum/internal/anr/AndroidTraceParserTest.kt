@@ -47,7 +47,7 @@ internal class AndroidTraceParserTest {
 
     @Suppress("RECEIVER_NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
     @Test
-    fun `𝕄 return threads dump 𝕎 parse()`() {
+    fun `M return threads dump W parse()`() {
         // Given
         val traceStream = javaClass.classLoader.getResourceAsStream("anr_crash_trace.txt")
 
@@ -75,7 +75,7 @@ internal class AndroidTraceParserTest {
     }
 
     @Test
-    fun `𝕄 return empty list 𝕎 parse() { malformed trace }`(
+    fun `M return empty list W parse() { malformed trace }`(
         @StringForgery fakeTrace: String
     ) {
         // When
@@ -92,7 +92,7 @@ internal class AndroidTraceParserTest {
     }
 
     @Test
-    fun `𝕄 return empty list 𝕎 parse() { error reading stream }`() {
+    fun `M return empty list W parse() { error reading stream }`() {
         // When
         val mockStream = mock<InputStream>().apply {
             whenever(read()) doThrow IOException()

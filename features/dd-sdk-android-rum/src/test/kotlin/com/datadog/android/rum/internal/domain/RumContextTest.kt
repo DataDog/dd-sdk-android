@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 internal class RumContextTest {
 
     @RepeatedTest(8)
-    fun `𝕄 return the same object 𝕎 toMap + fromFeatureContext()`(
+    fun `M return the same object W toMap + fromFeatureContext()`(
         @Forgery fakeRumContext: RumContext
     ) {
         // Given

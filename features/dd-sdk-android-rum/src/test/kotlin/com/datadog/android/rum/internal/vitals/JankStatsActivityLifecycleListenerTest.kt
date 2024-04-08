@@ -101,7 +101,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 register jankStats 𝕎 onActivityStarted() {}`() {
+    fun `M register jankStats W onActivityStarted() {}`() {
         // Given
 
         // When
@@ -112,7 +112,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 handle null jankStats 𝕎 onActivityStarted() {}`() {
+    fun `M handle null jankStats W onActivityStarted() {}`() {
         // Given
         whenever(mockJankStatsProvider.createJankStatsAndTrack(any(), any(), any())) doReturn null
 
@@ -124,7 +124,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 register jankStats once 𝕎 onActivityStarted() { multiple activities, same window}`() {
+    fun `M register jankStats once W onActivityStarted() { multiple activities, same window}`() {
         // Given
         val mockActivity2 = mock<Activity>()
         whenever(mockActivity2.window) doReturn mockWindow
@@ -146,7 +146,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 pause stats 𝕎 onActivityStarted() + onActivityStopped() {}`() {
+    fun `M pause stats W onActivityStarted() + onActivityStopped() {}`() {
         // Given
 
         // When
@@ -161,7 +161,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 log error 𝕎 onActivityStopped() { jankStats instance is already stopped }`() {
+    fun `M log error W onActivityStopped() { jankStats instance is already stopped }`() {
         // Given
         whenever(mockJankStats.isTrackingEnabled) doReturn false
 
@@ -178,7 +178,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 log error 𝕎 onActivityStopped() { jankStats stop tracking throws error }`() {
+    fun `M log error W onActivityStopped() { jankStats stop tracking throws error }`() {
         // Given
         val exception = IllegalArgumentException()
         whenever(mockJankStats::isTrackingEnabled.set(false)) doThrow exception
@@ -197,7 +197,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 remove window 𝕎 onActivityDestroyed() { no more activities for window }`() {
+    fun `M remove window W onActivityDestroyed() { no more activities for window }`() {
         // Given
 
         // When
@@ -211,7 +211,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 not remove window 𝕎 onActivityDestroyed() { there are activities for window }`() {
+    fun `M not remove window W onActivityDestroyed() { there are activities for window }`() {
         // Given
         val anotherActivity = mock<Activity>().apply {
             whenever(window) doReturn mockWindow
@@ -230,7 +230,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityStopped() {}`() {
+    fun `M do nothing W onActivityStopped() {}`() {
         // Given
 
         // When
@@ -241,7 +241,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 resume stats 𝕎 onActivityStarted() + onActivityStopped() + onActivityStarted() {}`() {
+    fun `M resume stats W onActivityStarted() + onActivityStopped() + onActivityStarted() {}`() {
         // Given
 
         // When
@@ -281,7 +281,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityCreated() {}`() {
+    fun `M do nothing W onActivityCreated() {}`() {
         // Given
         val mockBundle = mock<Bundle>()
 
@@ -293,7 +293,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityResumed() {}`() {
+    fun `M do nothing W onActivityResumed() {}`() {
         // When
         testedJankListener.onActivityResumed(mockActivity)
 
@@ -302,7 +302,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityPaused() {}`() {
+    fun `M do nothing W onActivityPaused() {}`() {
         // When
         testedJankListener.onActivityPaused(mockActivity)
 
@@ -311,7 +311,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityDestroyed() {}`() {
+    fun `M do nothing W onActivityDestroyed() {}`() {
         // When
         testedJankListener.onActivityDestroyed(mockActivity)
 
@@ -320,7 +320,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivitySaveInstanceState() {}`() {
+    fun `M do nothing W onActivitySaveInstanceState() {}`() {
         // Given
         val mockBundle = mock<Bundle>()
 
@@ -331,7 +331,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         verifyNoInteractions(mockJankStatsProvider, mockJankStats, mockBundle)
     }
 
-    fun `𝕄 do nothing 𝕎 onFrame() {zero ns duration}`(
+    fun `M do nothing W onFrame() {zero ns duration}`(
         @LongForgery timestampNs: Long,
         @BoolForgery isJank: Boolean
     ) {
@@ -346,7 +346,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 forward frame rate to observer 𝕎 doFrame() {acceptable frame rate}`(
+    fun `M forward frame rate to observer W doFrame() {acceptable frame rate}`(
         @LongForgery timestampNs: Long,
         @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean
@@ -363,7 +363,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {S, refresh rate over 60hz}`(
+    fun `M adjust sample value to refresh rate W doFrame() {S, refresh rate over 60hz}`(
         @LongForgery timestampNs: Long,
         @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean,
@@ -399,7 +399,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 adjust sample value to refresh rate 𝕎 doFrame() {R, refresh rate over 60hz}`(
+    fun `M adjust sample value to refresh rate W doFrame() {R, refresh rate over 60hz}`(
         @LongForgery timestampNs: Long,
         @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean,
@@ -439,7 +439,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityStarted() {android framework throws an exception}`() {
+    fun `M do nothing W onActivityStarted() {android framework throws an exception}`() {
         // Given
         whenever(mockWindow.addOnFrameMetricsAvailableListener(any(), any())) doThrow IllegalStateException()
 
@@ -451,7 +451,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onActivityStarted() + onActivityDestroyed() {android framework throws an exception}`() {
+    fun `M do nothing W onActivityStarted() + onActivityDestroyed() {android framework throws an exception}`() {
         // Given
         whenever(mockWindow.removeOnFrameMetricsAvailableListener(any())) doThrow IllegalArgumentException()
 

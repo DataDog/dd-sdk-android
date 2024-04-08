@@ -103,7 +103,7 @@ internal class WindowCallbackWrapperTest {
     // region dispatchTouchEvent
 
     @Test
-    fun `𝕄 delegate event to wrapped callback 𝕎 dispatchTouchEvent()`(
+    fun `M delegate event to wrapped callback W dispatchTouchEvent()`(
         @BoolForgery wrappedResult: Boolean
     ) {
         // Given
@@ -118,7 +118,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 send copy of event to gesture detector 𝕎 dispatchTouchEvent()`() {
+    fun `M send copy of event to gesture detector W dispatchTouchEvent()`() {
         // When
         testedWrapper.dispatchTouchEvent(mockMotionEvent)
 
@@ -128,7 +128,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 not call gesture detector 𝕎 dispatchTouchEvent() {null event}`() {
+    fun `M not call gesture detector W dispatchTouchEvent() {null event}`() {
         // When
         testedWrapper.dispatchTouchEvent(null)
 
@@ -138,7 +138,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 prevent crash 𝕎 dispatchTouchEvent() {wrapped callback throws null parameter exception}`() {
+    fun `M prevent crash W dispatchTouchEvent() {wrapped callback throws null parameter exception}`() {
         // Given
         whenever(mockCallback.dispatchTouchEvent(mockMotionEvent)).thenAnswer {
             Intrinsics.checkNotNullParameter(null, "event")
@@ -153,7 +153,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 propagate exception 𝕎 dispatchTouchEvent() {wrapped callback throws exception}`(
+    fun `M propagate exception W dispatchTouchEvent() {wrapped callback throws exception}`(
         @Forgery exception: Exception
     ) {
         // Given
@@ -303,7 +303,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 delegate event to wrapped callback 𝕎 onMenuItemSelected()`(
+    fun `M delegate event to wrapped callback W onMenuItemSelected()`(
         @StringForgery itemTitle: String,
         @IntForgery itemId: Int,
         @IntForgery featureId: Int,
@@ -325,7 +325,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 propagate exception 𝕎 onMenuItemSelected() {wrapped callback throws exception}`(
+    fun `M propagate exception W onMenuItemSelected() {wrapped callback throws exception}`(
         @StringForgery itemTitle: String,
         @IntForgery itemId: Int,
         @IntForgery featureId: Int,
@@ -345,7 +345,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 prevent crash 𝕎 onMenuItemSelected() {wrapped callback throws null parameter exception}`(
+    fun `M prevent crash W onMenuItemSelected() {wrapped callback throws null parameter exception}`(
         @StringForgery itemTitle: String,
         @IntForgery itemId: Int,
         @IntForgery featureId: Int
@@ -375,7 +375,7 @@ internal class WindowCallbackWrapperTest {
     // region dispatchKeyEvent
 
     @Test
-    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() { DOWN-BACK}`() {
+    fun `M not trigger RUM action W dispatchKeyEvent() { DOWN-BACK}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)
 
@@ -387,7 +387,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() { DOWN-ANY}`(
+    fun `M not trigger RUM action W dispatchKeyEvent() { DOWN-ANY}`(
         @IntForgery(min = KeyEvent.KEYCODE_CALL) keyCode: Int
     ) {
         // Given
@@ -401,7 +401,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() { UP-ANY}`(
+    fun `M not trigger RUM action W dispatchKeyEvent() { UP-ANY}`(
         @IntForgery(min = KeyEvent.KEYCODE_CALL) keyCode: Int
     ) {
         // Given
@@ -415,7 +415,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() {keyEvent=null}`() {
+    fun `M not trigger RUM action W dispatchKeyEvent() {keyEvent=null}`() {
         // When
         testedWrapper.dispatchKeyEvent(null)
 
@@ -433,7 +433,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name null}`() {
+    fun `M trigger RUM action W dispatchKeyEvent() { UP-BACK, custom name null}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
         val mockInteractionPredicate: InteractionPredicate = mock {
@@ -461,7 +461,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name empty}`() {
+    fun `M trigger RUM action W dispatchKeyEvent() { UP-BACK, custom name empty}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
         val mockInteractionPredicate: InteractionPredicate = mock {
@@ -489,7 +489,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 trigger RUM action with custom name 𝕎 dispatchKeyEvent() { UP-BACK, custom name}`(
+    fun `M trigger RUM action with custom name W dispatchKeyEvent() { UP-BACK, custom name}`(
         @StringForgery customTargetName: String
     ) {
         // Given
@@ -518,7 +518,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 delegate event to wrapped callback 𝕎 dispatchKeyEvent()`(
+    fun `M delegate event to wrapped callback W dispatchKeyEvent()`(
         @IntForgery action: Int,
         @IntForgery keyCode: Int,
         @BoolForgery wrappedResult: Boolean
@@ -536,7 +536,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 delegate event to wrapped callback 𝕎 dispatchKeyEvent() {keyEvent=null}`(
+    fun `M delegate event to wrapped callback W dispatchKeyEvent() {keyEvent=null}`(
         @BoolForgery wrappedResult: Boolean
     ) {
         // Given
@@ -551,7 +551,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 prevent crash 𝕎 dispatchKeyEvent() {wrapped callback throws null parameter exception}`(
+    fun `M prevent crash W dispatchKeyEvent() {wrapped callback throws null parameter exception}`(
         @IntForgery action: Int,
         @IntForgery keyCode: Int
     ) {
@@ -570,7 +570,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 propagate exception 𝕎 dispatchKeyEvent() {wrapped callback throws exception}`(
+    fun `M propagate exception W dispatchKeyEvent() {wrapped callback throws exception}`(
         @IntForgery action: Int,
         @IntForgery keyCode: Int,
         @Forgery exception: Exception

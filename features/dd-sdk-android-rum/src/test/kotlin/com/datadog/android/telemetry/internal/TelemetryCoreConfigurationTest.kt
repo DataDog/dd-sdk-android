@@ -26,7 +26,7 @@ import org.mockito.kotlin.mock
 internal class TelemetryCoreConfigurationTest {
 
     @Test
-    fun `𝕄 create TelemetryCoreConfiguration 𝕎 fromEvent()`(
+    fun `M create TelemetryCoreConfiguration W fromEvent()`(
         @BoolForgery trackErrors: Boolean,
         @BoolForgery useProxy: Boolean,
         @BoolForgery useLocalEncryption: Boolean,
@@ -59,7 +59,7 @@ internal class TelemetryCoreConfigurationTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 fromEvent() { malformed message }`(
+    fun `M return null W fromEvent() { malformed message }`(
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])

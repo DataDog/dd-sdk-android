@@ -26,7 +26,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
     }
 
     @Test
-    fun `𝕄 log nothing 𝕎 schedule() { task completes normally }`() {
+    fun `M log nothing W schedule() { task completes normally }`() {
         // When
         val futureTask = testedExecutor.schedule({
             // no-op
@@ -40,7 +40,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
     }
 
     @Test
-    fun `𝕄 log nothing 𝕎 schedule() { worker thread was interrupted }`() {
+    fun `M log nothing W schedule() { worker thread was interrupted }`() {
         // When
         val futureTask = testedExecutor.submit {
             Thread.currentThread().interrupt()
@@ -54,7 +54,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
     }
 
     @Test
-    fun `𝕄 log error + exception 𝕎 schedule() { task throws an exception }`(
+    fun `M log error + exception W schedule() { task throws an exception }`(
         forge: Forge
     ) {
         // Given
@@ -78,7 +78,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
     }
 
     @Test
-    fun `𝕄 log error + exception 𝕎 schedule() { task is cancelled }`() {
+    fun `M log error + exception W schedule() { task is cancelled }`() {
         // When
         val futureTask = testedExecutor.schedule({
             Thread.sleep(500)

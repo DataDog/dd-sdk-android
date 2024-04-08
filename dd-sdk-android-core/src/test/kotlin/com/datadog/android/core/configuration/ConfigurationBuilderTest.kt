@@ -59,7 +59,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use sensible defaults 𝕎 build()`() {
+    fun `M use sensible defaults W build()`() {
         // When
         val config = testedBuilder.build()
 
@@ -83,7 +83,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config without crashReportConfig 𝕎 build() { crashReports disabled }`(
+    fun `M build config without crashReportConfig W build() { crashReports disabled }`(
         forge: Forge
     ) {
         // Given
@@ -104,7 +104,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with custom site 𝕎 useSite() and build()`(
+    fun `M build config with custom site W useSite() and build()`(
         @Forgery site: DatadogSite
     ) {
         // When
@@ -118,7 +118,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { ip addresses }`(
+    fun `M build config with first party hosts W setFirstPartyHosts() { ip addresses }`(
         @StringForgery(
             regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
@@ -145,7 +145,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { host names }`(
+    fun `M build config with first party hosts W setFirstPartyHosts() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
@@ -172,7 +172,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use url host name 𝕎 setFirstPartyHosts() { url }`(
+    fun `M use url host name W setFirstPartyHosts() { url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
         ) hosts: List<String>
@@ -199,7 +199,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 sanitize hosts 𝕎 setFirstPartyHosts()`(
+    fun `M sanitize hosts W setFirstPartyHosts()`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
@@ -221,7 +221,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHostsWithHeaderType() { host names }`(
+    fun `M build config with first party hosts and header types W setFirstPartyHostsWithHeaderType() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
@@ -246,7 +246,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use batch size 𝕎 setBatchSize()`(
+    fun `M use batch size W setBatchSize()`(
         @Forgery batchSize: BatchSize
     ) {
         // When
@@ -280,7 +280,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use upload frequency 𝕎 setUploadFrequency()`(
+    fun `M use upload frequency W setUploadFrequency()`(
         @Forgery uploadFrequency: UploadFrequency
     ) {
         // When
@@ -297,7 +297,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build with additionalConfig 𝕎 setAdditionalConfiguration()`(forge: Forge) {
+    fun `M build with additionalConfig W setAdditionalConfiguration()`(forge: Forge) {
         // Given
         val additionalConfig = forge.aMap {
             forge.anAsciiString() to forge.aString()
@@ -316,7 +316,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with Proxy and Auth configuration 𝕎 setProxy() and build()`() {
+    fun `M build config with Proxy and Auth configuration W setProxy() and build()`() {
         // Given
         val mockProxy: Proxy = mock()
         val mockAuthenticator: Authenticator = mock()
@@ -336,7 +336,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with Proxy configuration 𝕎 setProxy() and build()`() {
+    fun `M build config with Proxy configuration W setProxy() and build()`() {
         // Given
         val mockProxy: Proxy = mock()
 
@@ -355,7 +355,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with security configuration 𝕎 setEncryption() and build()`() {
+    fun `M build config with security configuration W setEncryption() and build()`() {
         // Given
         val mockEncryption = mock<Encryption>()
 
@@ -373,7 +373,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with persistence strategy 𝕎 setPersistenceStrategyFactory() and build()`() {
+    fun `M build config with persistence strategy W setPersistenceStrategyFactory() and build()`() {
         // Given
         val mockFactory = mock<PersistenceStrategy.Factory>()
 
@@ -391,7 +391,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with BackPressure strategy 𝕎 setBackpressureStrategy() and build()`(
+    fun `M build config with BackPressure strategy W setBackpressureStrategy() and build()`(
         @IntForgery capacity: Int,
         @Forgery mitigation: BackPressureMitigation
     ) {

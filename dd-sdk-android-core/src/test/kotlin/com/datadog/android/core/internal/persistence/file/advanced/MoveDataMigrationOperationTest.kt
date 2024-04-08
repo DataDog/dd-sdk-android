@@ -62,7 +62,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 run() {source dir is null}`() {
+    fun `M warn W run() {source dir is null}`() {
         // Given
         testedOperation = MoveDataMigrationOperation(
             null,
@@ -84,7 +84,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 run() {dest dir is null}`() {
+    fun `M warn W run() {dest dir is null}`() {
         // Given
         testedOperation = MoveDataMigrationOperation(
             fakeFromDirectory,
@@ -107,7 +107,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 move data 𝕎 run()`() {
+    fun `M move data W run()`() {
         // Given
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory)) doReturn true
 
@@ -119,7 +119,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 retry 𝕎 run() {move fails once}`() {
+    fun `M retry W run() {move fails once}`() {
         // Given
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false, true)
@@ -132,7 +132,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 retry with 500ms delay 𝕎 run() {move fails once}`() {
+    fun `M retry with 500ms delay W run() {move fails once}`() {
         // Given
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false, true)
@@ -148,7 +148,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 try 3 times maximum 𝕎 run() {move always fails}`() {
+    fun `M try 3 times maximum W run() {move always fails}`() {
         // Given
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false)
@@ -161,7 +161,7 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 retry with 500ms delay 𝕎 run() {move always fails}`() {
+    fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false)

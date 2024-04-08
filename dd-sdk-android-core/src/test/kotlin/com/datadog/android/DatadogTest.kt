@@ -97,7 +97,7 @@ internal class DatadogTest {
     // region initialize
 
     @Test
-    fun `𝕄 return sdk instance 𝕎 initialize() + getInstance()`() {
+    fun `M return sdk instance W initialize() + getInstance()`() {
         // When
         val initialized = Datadog.initialize(
             appContext.mockInstance,
@@ -111,7 +111,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return sdk instance 𝕎 initialize(name) + getInstance(name)`(
+    fun `M return sdk instance W initialize(name) + getInstance(name)`(
         @StringForgery name: String
     ) {
         // When
@@ -128,7 +128,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 initialize() + initialize()`() {
+    fun `M warn W initialize() + initialize()`() {
         // When
         val initialized1 = Datadog.initialize(
             appContext.mockInstance,
@@ -151,7 +151,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 initialize(name) + initialize(name)`(
+    fun `M warn W initialize(name) + initialize(name)`(
         @StringForgery name: String
     ) {
         // When
@@ -167,7 +167,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 create instance ID 𝕎 initialize()`(
+    fun `M create instance ID W initialize()`(
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
     ) {
@@ -193,7 +193,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 create instance ID 𝕎 initialize(name)`(
+    fun `M create instance ID W initialize(name)`(
         @StringForgery instanceName: String,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
@@ -221,7 +221,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 set tracking consent 𝕎 initialize()`(
+    fun `M set tracking consent W initialize()`(
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
     ) {
@@ -247,7 +247,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 set tracking consent 𝕎 initialize(name)`(
+    fun `M set tracking consent W initialize(name)`(
         @StringForgery instanceName: String,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
@@ -275,7 +275,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 initialize() {hash generator fails}`() {
+    fun `M warn W initialize() {hash generator fails}`() {
         // Given
         Datadog.hashGenerator = mock()
         whenever(Datadog.hashGenerator.generate(any())) doReturn null
@@ -297,7 +297,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 initialize(name) {hash generator fails}`(
+    fun `M warn W initialize(name) {hash generator fails}`(
         @StringForgery name: String
     ) {
         // Given
@@ -322,7 +322,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 stop specific instance 𝕎 stopInstance()`() {
+    fun `M stop specific instance W stopInstance()`() {
         // Given
         val sdk = Datadog.initialize(
             appContext.mockInstance,
@@ -341,7 +341,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 stop specific instance 𝕎 stopInstance(name)`(
+    fun `M stop specific instance W stopInstance(name)`(
         @StringForgery name: String
     ) {
         // Given
@@ -363,7 +363,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 not stop specific instance 𝕎 stopInstance(name) {different name}`(
+    fun `M not stop specific instance W stopInstance(name) {different name}`(
         @StringForgery name: String,
         @StringForgery name2: String
     ) {
@@ -386,7 +386,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getInstance() { instance is not initialized }`(
+    fun `M warn W getInstance() { instance is not initialized }`(
         forge: Forge
     ) {
         // Given
@@ -430,7 +430,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isInitialized() { instance is not initialized }`(
+    fun `M return false W isInitialized() { instance is not initialized }`(
         forge: Forge
     ) {
         // Given
@@ -445,7 +445,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isInitialized() { instance is initialized }`(
+    fun `M return true W isInitialized() { instance is initialized }`(
         forge: Forge
     ) {
         // Given
@@ -469,7 +469,7 @@ internal class DatadogTest {
     // endregion
 
     @Test
-    fun `𝕄 set and get lib verbosity 𝕎 setVerbosity() + getVerbosity()`(
+    fun `M set and get lib verbosity W setVerbosity() + getVerbosity()`(
         @IntForgery level: Int
     ) {
         // When
@@ -481,7 +481,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 stop() without initialize`() {
+    fun `M do nothing W stop() without initialize`() {
         // When
         Datadog.stopInstance()
 
@@ -490,7 +490,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 set tracking consent 𝕎 setTrackingConsent()`(
+    fun `M set tracking consent W setTrackingConsent()`(
         @Forgery fakeTrackingConsent: TrackingConsent
     ) {
         // Given
@@ -504,7 +504,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 set user info 𝕎 setUserInfo()`(
+    fun `M set user info W setUserInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
         @StringForgery(regex = "\\w+@\\w+") email: String,
@@ -524,7 +524,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 add user properties 𝕎 addUserProperties()`(
+    fun `M add user properties W addUserProperties()`(
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
@@ -541,7 +541,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 clear all data 𝕎 clearAllData()`() {
+    fun `M clear all data W clearAllData()`() {
         // Given
         val mockSdkCore = mock<SdkCore>()
 

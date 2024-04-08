@@ -84,7 +84,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write data 𝕎 write()`(
+    fun `M write data W write()`(
         forge: Forge
     ) {
         // Given
@@ -111,7 +111,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write data with event meta 𝕎 write() {View Event}`(
+    fun `M write data with event meta W write() {View Event}`(
         @Forgery fakeViewEvent: ViewEvent,
         @StringForgery fakeSerializedViewEventMeta: String
     ) {
@@ -137,7 +137,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write data with empty event meta 𝕎 write() {View Event, meta serialization fails}`(
+    fun `M write data with empty event meta W write() {View Event, meta serialization fails}`(
         @Forgery fakeViewEvent: ViewEvent,
         forge: Forge
     ) {
@@ -160,7 +160,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 not write data 𝕎 write() { exception during serialization }`(
+    fun `M not write data W write() { exception during serialization }`(
         forge: Forge
     ) {
         // Given
@@ -184,7 +184,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() { data was not written }`(
+    fun `M return false W write() { data was not written }`(
         forge: Forge
     ) {
         // Given
@@ -208,7 +208,7 @@ internal class RumDataWriterTest {
     // region onDataWritten
 
     @Test
-    fun `𝕄 do not notify the RumMonitor 𝕎 onDataWritten() { ViewEvent }`(
+    fun `M do not notify the RumMonitor W onDataWritten() { ViewEvent }`(
         @Forgery viewEvent: ViewEvent
     ) {
         // When
@@ -219,7 +219,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 persist the event into the NDK crash folder 𝕎 onDataWritten(){ViewEvent+dir exists}`(
+    fun `M persist the event into the NDK crash folder W onDataWritten(){ViewEvent+dir exists}`(
         @Forgery viewEvent: ViewEvent
     ) {
         // When

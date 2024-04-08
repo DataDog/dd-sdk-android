@@ -45,7 +45,7 @@ internal class RumViewEventFilterTest {
     }
 
     @Test
-    fun `𝕄 leave batch untouched 𝕎 filterOutRedundantViewEvents() { no events with metadata }`(
+    fun `M leave batch untouched W filterOutRedundantViewEvents() { no events with metadata }`(
         forge: Forge
     ) {
         // Given
@@ -60,7 +60,7 @@ internal class RumViewEventFilterTest {
     }
 
     @Test
-    fun `𝕄 keep view event with max version 𝕎 filterOutRedundantViewEvents() { batch of same view event }`(
+    fun `M keep view event with max version W filterOutRedundantViewEvents() { batch of same view event }`(
         @Forgery fakeViewId: UUID,
         forge: Forge
     ) {
@@ -87,7 +87,7 @@ internal class RumViewEventFilterTest {
     }
 
     @Test
-    fun `𝕄 keep only view event with max doc version 𝕎 filterOutRedundantViewEvents() { mixed batch }`(
+    fun `M keep only view event with max doc version W filterOutRedundantViewEvents() { mixed batch }`(
         forge: Forge
     ) {
         // Given

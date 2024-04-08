@@ -103,7 +103,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @RepeatedTest(4)
-    fun `𝕄 initialize requested features 𝕎 initialize()`(
+    fun `M initialize requested features W initialize()`(
         @BoolForgery crashReportsEnabled: Boolean
     ) {
         // When
@@ -131,7 +131,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 throw an error 𝕎 initialize() {envName not valid, isDebug=false}`(
+    fun `M throw an error W initialize() {envName not valid, isDebug=false}`(
         @IntForgery fakeFlags: Int,
         @StringForgery(regex = "[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}") invalidEnvName: String
     ) {
@@ -156,7 +156,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 throw an error 𝕎 initialize() {envName not valid, isDebug=true}`(
+    fun `M throw an error W initialize() {envName not valid, isDebug=true}`(
         @IntForgery fakeFlags: Int,
         @StringForgery(regex = "[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}") invalidEnvName: String
     ) {
@@ -181,7 +181,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 initialize the ConsentProvider with PENDING 𝕎 initializing()`() {
+    fun `M initialize the ConsentProvider with PENDING W initializing()`() {
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
@@ -198,7 +198,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 not set lib verbosity 𝕎 initializing() {dev mode when debug, debug=false}`(
+    fun `M not set lib verbosity W initializing() {dev mode when debug, debug=false}`(
         @IntForgery fakeFlags: Int
     ) {
         // Given
@@ -227,7 +227,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 set lib verbosity 𝕎 initializing() {dev mode when debug, debug=true}`(
+    fun `M set lib verbosity W initializing() {dev mode when debug, debug=true}`(
         @IntForgery fakeFlags: Int
     ) {
         // Given
@@ -255,7 +255,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 not set isDeveloperModeEnabled 𝕎 initializing() {dev mode when debug, debug=false}`(
+    fun `M not set isDeveloperModeEnabled W initializing() {dev mode when debug, debug=false}`(
         @IntForgery fakeFlags: Int
     ) {
         // Given
@@ -284,7 +284,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 set isDeveloperModeEnabled 𝕎 initializing() {dev mode when debug, debug=true}`(
+    fun `M set isDeveloperModeEnabled W initializing() {dev mode when debug, debug=true}`(
         @IntForgery fakeFlags: Int
     ) {
         // Given
@@ -312,7 +312,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 submit core config telemetry 𝕎 initializing()`(
+    fun `M submit core config telemetry W initializing()`(
         forge: Forge
     ) {
         // Given
@@ -388,7 +388,7 @@ internal class DatadogCoreInitializationTest {
     // region AdditionalConfig
 
     @Test
-    fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`(
+    fun `M apply source name W applyAdditionalConfig(config) { with source name }`(
         @StringForgery(type = StringForgeryType.ALPHABETICAL) source: String
     ) {
         // When
@@ -406,7 +406,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with empty source name }`(
+    fun `M use default source name W applyAdditionalConfig(config) { with empty source name }`(
         @StringForgery(type = StringForgeryType.WHITESPACE) source: String
     ) {
         // When
@@ -426,7 +426,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with source name !string }`(
+    fun `M use default source name W applyAdditionalConfig(config) { with source name !string }`(
         @IntForgery source: Int
     ) {
         // When
@@ -446,7 +446,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { without source name }`(
+    fun `M use default source name W applyAdditionalConfig(config) { without source name }`(
         @Forgery customAttributes: CustomAttributes
     ) {
         // When
@@ -464,7 +464,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 apply sdk version 𝕎 applyAdditionalConfig(config) { with sdk version }`(
+    fun `M apply sdk version W applyAdditionalConfig(config) { with sdk version }`(
         @StringForgery(regex = "[0-9]+(\\.[0-9]+)+") sdkVersion: String
     ) {
         // When
@@ -486,7 +486,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with empty sdk version }`(
+    fun `M use default sdk version W applyAdditionalConfig(config) { with empty sdk version }`(
         @StringForgery(type = StringForgeryType.WHITESPACE) sdkVersion: String
     ) {
         // When
@@ -508,7 +508,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with sdk version !string }`(
+    fun `M use default sdk version W applyAdditionalConfig(config) { with sdk version !string }`(
         @Forgery sdkVersion: URL
     ) {
         // When
@@ -530,7 +530,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { without sdk version }`(
+    fun `M use default sdk version W applyAdditionalConfig(config) { without sdk version }`(
         @Forgery customAttributes: CustomAttributes
     ) {
         // When
@@ -548,7 +548,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 apply app version 𝕎 applyAdditionalConfig(config) { with app version }`(
+    fun `M apply app version W applyAdditionalConfig(config) { with app version }`(
         @StringForgery appVersion: String
     ) {
         // When
@@ -570,7 +570,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with empty app version }`(
+    fun `M use default app version W applyAdditionalConfig(config) { with empty app version }`(
         forge: Forge
     ) {
         // When
@@ -594,7 +594,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with app version !string }`(
+    fun `M use default app version W applyAdditionalConfig(config) { with app version !string }`(
         forge: Forge
     ) {
         // When

@@ -165,7 +165,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {resourceCount != 0}`(
+    fun `M do nothing W handleEvent(any) {resourceCount != 0}`(
         @LongForgery(1) count: Long
     ) {
         // Given
@@ -181,7 +181,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {errorCount != 0}`(
+    fun `M do nothing W handleEvent(any) {errorCount != 0}`(
         @LongForgery(1) count: Long
     ) {
         // Given
@@ -197,7 +197,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {crashCount != 0}`(
+    fun `M do nothing W handleEvent(any) {crashCount != 0}`(
         @LongForgery(1) nonFatalCount: Long,
         @LongForgery(1) fatalCount: Long
     ) {
@@ -215,7 +215,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(any)`() {
+    fun `M send Action after timeout W handleEvent(any)`() {
         // Given
         Thread.sleep(TEST_MAX_DURATION_MS)
 
@@ -272,7 +272,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with updated data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`(
+    fun `M send Action with updated data W handleEvent(StopAction+any) {viewTreeChangeCount!=0}`(
         @StringForgery name: String,
         forge: Forge
     ) {
@@ -340,7 +340,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with original data 𝕎 handleEvent(StopAction) {viewTreeChangeCount!=0}`(
+    fun `M send Action with original data W handleEvent(StopAction) {viewTreeChangeCount!=0}`(
         forge: Forge
     ) {
         // Given
@@ -406,7 +406,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopAction+StopResource+any)`(
+    fun `M send Action after threshold W handleEvent(StartResource+StopAction+StopResource+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -477,7 +477,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
+    fun `M send Action W handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -560,7 +560,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithStackTrace+any)`(
+    fun `M send Action W handleEvent(StartResource+StopAction+StopResourceWithStackTrace+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -647,7 +647,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+any) missing resource key`(
+    fun `M send Action W handleEvent(StartResource+StopAction+any) missing resource key`(
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
@@ -716,7 +716,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(AddError+StopAction+any)`(
+    fun `M send Action after threshold W handleEvent(AddError+StopAction+any)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -793,7 +793,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(AddError) {isFatal=true}`(
+    fun `M send Action immediately W handleEvent(AddError) {isFatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -862,7 +862,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(AddError{isFatal=false}+AddError{isFatal=true})`(
+    fun `M send Action immediately W handleEvent(AddError{isFatal=false}+AddError{isFatal=true})`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -942,7 +942,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {viewTreeChangeCount != 0}`() {
+    fun `M send Action immediately W handleEvent(StopView) {viewTreeChangeCount != 0}`() {
         // When
         fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -995,7 +995,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {resourceCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {resourceCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1053,7 +1053,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {longTaskCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {longTaskCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1111,7 +1111,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {errorCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {errorCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1174,7 +1174,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {crashCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {crashCount != 0}`(
         @LongForgery(1, 1024) nonFatalCount: Long,
         @LongForgery(1, 1024) fatalCount: Long
     ) {
@@ -1239,7 +1239,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`() {
+    fun `M send Action after threshold W handleEvent(StopAction+any) {viewTreeChangeCount!=0}`() {
         // When
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1296,7 +1296,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with synthetics info 𝕎 handleEvent(StopAction+any)`(
+    fun `M send Action with synthetics info W handleEvent(StopAction+any)`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         forge: Forge
@@ -1386,7 +1386,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with initial global attributes 𝕎 handleEvent(StopAction+any)`(
+    fun `M send Action with initial global attributes W handleEvent(StopAction+any)`(
         forge: Forge
     ) {
         // Given
@@ -1469,7 +1469,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with global attributes after threshold 𝕎 handleEvent(StopAction+any)`(
+    fun `M send Action with global attributes after threshold W handleEvent(StopAction+any)`(
         forge: Forge
     ) {
         // Given
@@ -1537,7 +1537,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {resourceCount != 0}`(
+    fun `M send Action after threshold W handleEvent(StopAction+any) {resourceCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1599,7 +1599,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {errorCount != 0}`(
+    fun `M send Action after threshold W handleEvent(StopAction+any) {errorCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1665,7 +1665,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {crashCount != 0}`(
+    fun `M send Action after threshold W handleEvent(StopAction+any) {crashCount != 0}`(
         @LongForgery(1, 1024) nonFatalCount: Long,
         @LongForgery(1, 1024) fatalCount: Long
     ) {
@@ -1732,7 +1732,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action only once 𝕎 handleEvent(StopAction) + handleEvent(any) twice`() {
+    fun `M send Action only once W handleEvent(StopAction) + handleEvent(any) twice`() {
         // Given
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
@@ -1794,7 +1794,7 @@ internal class RumContinuousActionScopeTest {
 
     @ParameterizedTest
     @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send Action 𝕎 handleEvent(StopView) {no side effect}`(actionType: RumActionType) {
+    fun `M send Action W handleEvent(StopView) {no side effect}`(actionType: RumActionType) {
         testedScope.type = actionType
 
         // Given
@@ -1855,7 +1855,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send custom Action immediately 𝕎 handleEvent(StopView) {no side effect}`() {
+    fun `M send custom Action immediately W handleEvent(StopView) {no side effect}`() {
         // Given
         testedScope.type = RumActionType.CUSTOM
         testedScope.resourceCount = 0
@@ -1915,7 +1915,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing after threshold 𝕎 handleEvent(any) {no side effect}`() {
+    fun `M do nothing after threshold W handleEvent(any) {no side effect}`() {
         // Given
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
@@ -1932,7 +1932,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) before threshold`() {
+    fun `M do nothing W handleEvent(any) before threshold`() {
         // When
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
@@ -1942,7 +1942,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartResource+any)`(
+    fun `M do nothing W handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -1960,7 +1960,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartResource+StopAction+any)`(
+    fun `M do nothing W handleEvent(StartResource+StopAction+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -1982,7 +1982,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+any)`(
+    fun `M send Action after timeout W handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -2043,7 +2043,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+StopAction+any)`(
+    fun `M send Action after timeout W handleEvent(StartResource+StopAction+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -2108,7 +2108,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(SendCustomActionNow)`() {
+    fun `M send Action W handleEvent(SendCustomActionNow)`() {
         // When
         testedScope.type = RumActionType.CUSTOM
         val event = RumRawEvent.SendCustomActionNow()

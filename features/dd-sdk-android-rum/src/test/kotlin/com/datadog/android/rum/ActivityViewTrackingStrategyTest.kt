@@ -92,7 +92,7 @@ internal class ActivityViewTrackingStrategyTest :
     // region Track RUM View
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed()`() {
+    fun `M start a RUM View event W onActivityResumed()`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -110,7 +110,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {extra attributes}`(
+    fun `M start a RUM View event W onActivityResumed() {extra attributes}`(
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ASCII)])
@@ -145,7 +145,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() { getting intent extras throws }`(
+    fun `M start a RUM View event W onActivityResumed() { getting intent extras throws }`(
         @StringForgery action: String,
         @StringForgery uri: String,
         forge: Forge
@@ -172,7 +172,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {extra attributes not tracked}`(
+    fun `M start a RUM View event W onActivityResumed() {extra attributes not tracked}`(
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ASCII)])
@@ -199,7 +199,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {custom view name}`(
+    fun `M start a RUM View event W onActivityResumed() {custom view name}`(
         @StringForgery fakeName: String
     ) {
         // Given
@@ -220,7 +220,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {custom blank view name}`(
+    fun `M start a RUM View event W onActivityResumed() {custom blank view name}`(
         @StringForgery(StringForgeryType.WHITESPACE) fakeName: String
     ) {
         // Given
@@ -241,7 +241,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 not stop RUM View 𝕎 onActivityPaused() { first display }`() {
+    fun `M not stop RUM View W onActivityPaused() { first display }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -256,7 +256,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 not stop RUM View 𝕎 onActivityPaused() { redisplay }`() {
+    fun `M not stop RUM View W onActivityPaused() { redisplay }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -271,7 +271,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityStopped() { first display }`() {
+    fun `M stop RUM View W onActivityStopped() { first display }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -286,7 +286,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityStopped() { redisplay }`() {
+    fun `M stop RUM View W onActivityStopped() { redisplay }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -305,7 +305,7 @@ internal class ActivityViewTrackingStrategyTest :
     // region Track RUM View (not tracked)
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {activity not tracked}`() {
+    fun `M start a RUM View event W onActivityResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
@@ -318,7 +318,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 update RUM View 𝕎 onActivityPaused() {activity not tracked}`() {
+    fun `M update RUM View W onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)

@@ -49,7 +49,7 @@ internal class RumEventMetaDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize metadata 𝕎 deserialize()`(
+    fun `M deserialize metadata W deserialize()`(
         @Forgery fakeMeta: RumEventMeta
     ) {
         // Given
@@ -63,7 +63,7 @@ internal class RumEventMetaDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 deserialize() { not a json }`(
+    fun `M return null W deserialize() { not a json }`(
         @StringForgery metadata: String
     ) {
         // When
@@ -80,7 +80,7 @@ internal class RumEventMetaDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 deserialize() { not a json object }`() {
+    fun `M return null W deserialize() { not a json object }`() {
         // When
         val result = testedDeserializer.deserialize("[]".toByteArray())
 
@@ -95,7 +95,7 @@ internal class RumEventMetaDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 deserialize() { missing properties }`(
+    fun `M return null W deserialize() { missing properties }`(
         @Forgery fakeMeta: RumEventMeta,
         forge: Forge
     ) {
@@ -120,7 +120,7 @@ internal class RumEventMetaDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 deserialize() { unexpected type of property }`(
+    fun `M return null W deserialize() { unexpected type of property }`(
         @Forgery fakeMeta: RumEventMeta,
         forge: Forge
     ) {

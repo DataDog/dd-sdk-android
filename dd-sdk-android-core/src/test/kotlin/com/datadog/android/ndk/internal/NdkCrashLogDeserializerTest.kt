@@ -54,7 +54,7 @@ internal class NdkCrashLogDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null W deserialize { wrong Json format }`() {
+    fun `M return null W deserialize { wrong Json format }`() {
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize("{]}")
 

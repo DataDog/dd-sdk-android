@@ -40,7 +40,7 @@ internal class DatadogUserInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return default userInfo 𝕎 getUserInfo()`() {
+    fun `M return default userInfo W getUserInfo()`() {
         // When
         val result = testedProvider.getUserInfo()
 
@@ -49,7 +49,7 @@ internal class DatadogUserInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return saved userInfo 𝕎 setUserInfo() and getUserInfo()`(
+    fun `M return saved userInfo W setUserInfo() and getUserInfo()`(
         @Forgery userInfo: UserInfo
     ) {
         // When
@@ -70,7 +70,7 @@ internal class DatadogUserInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 keep existing properties 𝕎 setExtraProperties() is called`(
+    fun `M keep existing properties W setExtraProperties() is called`(
         @Forgery userInfo: UserInfo,
         @StringForgery forge: Forge
     ) {
@@ -91,7 +91,7 @@ internal class DatadogUserInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 keep new property key 𝕎 setExtraProperties() is called and the key already exists`(
+    fun `M keep new property key W setExtraProperties() is called and the key already exists`(
         @Forgery userInfo: UserInfo,
         @StringForgery key: String,
         @StringForgery value1: String,

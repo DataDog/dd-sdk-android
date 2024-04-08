@@ -215,7 +215,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject tracing header 𝕎 intercept() {global known host}`(
+    fun `M inject tracing header W intercept() {global known host}`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 600) statusCode: Int
@@ -237,7 +237,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing header 𝕎 intercept() {global known host + not sampled}`(
+    fun `M inject non-tracing header W intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -265,7 +265,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing b3multi header 𝕎 intercept() {global known host + not sampled}`(
+    fun `M inject non-tracing b3multi header W intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -293,7 +293,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing b3 header 𝕎 intercept() {global known host + not sampled}`(
+    fun `M inject non-tracing b3 header W intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -319,7 +319,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing tracecontext header 𝕎 intercept() {global known host + not sampled}`(
+    fun `M inject non-tracing tracecontext header W intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -354,7 +354,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject tracing header 𝕎 intercept() {local known host}`(
+    fun `M inject tracing header W intercept() {local known host}`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 600) statusCode: Int,
@@ -379,7 +379,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing header 𝕎 intercept() {local known host + not sampled}`(
+    fun `M inject non-tracing header W intercept() {local known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -405,7 +405,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing b3multi header 𝕎 intercept() {local known host + not sampled}`(
+    fun `M inject non-tracing b3multi header W intercept() {local known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -437,7 +437,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing b3 header 𝕎 intercept() {local known host + not sampled}`(
+    fun `M inject non-tracing b3 header W intercept() {local known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -467,7 +467,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing tracecontext header 𝕎 intercept() {local known host + not sampled}`(
+    fun `M inject non-tracing tracecontext header W intercept() {local known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -506,7 +506,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 inject tracing header 𝕎 intercept() for request with parent span`(
+    fun `M inject tracing header W intercept() for request with parent span`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
@@ -536,7 +536,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 update header with parent context 𝕎 intercept() for request with tracing headers`(
+    fun `M update header with parent context W intercept() for request with tracing headers`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
@@ -565,7 +565,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+    fun `M respect sampling decision W intercept() {sampled in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
@@ -601,7 +601,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect b3multi sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+    fun `M respect b3multi sampling decision W intercept() {sampled in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
@@ -634,7 +634,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect b3 sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+    fun `M respect b3 sampling decision W intercept() {sampled in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
@@ -667,7 +667,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect tracecontext sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+    fun `M respect tracecontext sampling decision W intercept() {sampled in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
@@ -700,7 +700,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+    fun `M respect sampling decision W intercept() {sampled out in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -739,7 +739,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect b3multi sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+    fun `M respect b3multi sampling decision W intercept() {sampled out in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -775,7 +775,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect b3 sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+    fun `M respect b3 sampling decision W intercept() {sampled out in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -812,7 +812,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 respect tracecontext sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+    fun `M respect tracecontext sampling decision W intercept() {sampled out in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
@@ -855,7 +855,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 not create a span 𝕎 intercept() { not sampled }`(
+    fun `M not create a span W intercept() { not sampled }`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -871,7 +871,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create a span with info 𝕎 intercept() for successful request`(
+    fun `M create a span with info W intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -887,7 +887,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create a span with info 𝕎 intercept() for failing request {4xx}`(
+    fun `M create a span with info W intercept() for failing request {4xx}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -903,7 +903,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create a span with info 𝕎 intercept() for failing request {5xx}`(
+    fun `M create a span with info W intercept() for failing request {5xx}`(
         @IntForgery(min = 500, max = 600) statusCode: Int
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -919,7 +919,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create a span with info 𝕎 intercept() for 404 request`() {
+    fun `M create a span with info W intercept() for 404 request`() {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, 404)
 
@@ -933,7 +933,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create a span with info 𝕎 intercept() for throwing request`(
+    fun `M create a span with info W intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -953,7 +953,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 warn the user 𝕎 intercept() no tracer registered and TracingFeature not initialized`(
+    fun `M warn the user W intercept() no tracer registered and TracingFeature not initialized`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
@@ -974,7 +974,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create a span with automatic tracer 𝕎 intercept() if no tracer registered`(
+    fun `M create a span with automatic tracer W intercept() if no tracer registered`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val localSpanBuilder: Tracer.SpanBuilder = mock()
@@ -1004,7 +1004,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 drop automatic tracer 𝕎 intercept() and global tracer registered`(
+    fun `M drop automatic tracer W intercept() and global tracer registered`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val localSpanBuilder: Tracer.SpanBuilder = mock()
@@ -1044,7 +1044,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 call the listener 𝕎 intercept() for successful request`(
+    fun `M call the listener W intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
@@ -1070,7 +1070,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 call the listener 𝕎 intercept() for failing request`(
+    fun `M call the listener W intercept() for failing request`(
         @IntForgery(min = 400, max = 600) statusCode: Int,
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
@@ -1096,7 +1096,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 not call the listener 𝕎 intercept() for completed request { not sampled }`(
+    fun `M not call the listener W intercept() for completed request { not sampled }`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -1113,7 +1113,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 call the listener 𝕎 intercept() for throwing request`(
+    fun `M call the listener W intercept() for throwing request`(
         @Forgery throwable: Throwable,
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
@@ -1143,7 +1143,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 not call the listener 𝕎 intercept() for throwing request { not sampled }`(
+    fun `M not call the listener W intercept() for throwing request { not sampled }`(
         @Forgery throwable: Throwable
     ) {
         // Given
@@ -1160,7 +1160,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
+    fun `M do nothing W intercept() for request with unknown host`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
@@ -1175,7 +1175,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 warn once 𝕎 intercept() with no known host`(
+    fun `M warn once W intercept() with no known host`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -1201,7 +1201,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 create only one local tracer 𝕎 intercept() called from multiple threads`(
+    fun `M create only one local tracer W intercept() called from multiple threads`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given

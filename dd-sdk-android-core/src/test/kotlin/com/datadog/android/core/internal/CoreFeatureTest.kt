@@ -170,7 +170,7 @@ internal class CoreFeatureTest {
     // region initialization
 
     @Test
-    fun `𝕄 initialize time sync 𝕎 initialize`() {
+    fun `M initialize time sync W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -184,7 +184,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize time provider 𝕎 initialize`() {
+    fun `M initialize time provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -199,7 +199,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize system info provider 𝕎 initialize`() {
+    fun `M initialize system info provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -214,7 +214,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize network info provider 𝕎 initialize`() {
+    fun `M initialize network info provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -236,7 +236,7 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
-    fun `𝕄 initialize network info provider 𝕎 initialize {N}`() {
+    fun `M initialize network info provider W initialize {N}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -260,7 +260,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize user info provider 𝕎 initialize`() {
+    fun `M initialize user info provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -275,7 +275,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise the consent provider 𝕎 initialize`() {
+    fun `M initialise the consent provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -292,7 +292,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise the datadog context provider 𝕎 initialize`() {
+    fun `M initialise the datadog context provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -307,7 +307,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes first party hosts resolver 𝕎 initialize`() {
+    fun `M initializes first party hosts resolver W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -328,7 +328,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize()`() {
+    fun `M initializes app info W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -351,7 +351,7 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
-    fun `𝕄 initializes app info 𝕎 initialize() { TIRAMISU }`() {
+    fun `M initializes app info W initialize() { TIRAMISU }`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -374,7 +374,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {null serviceName}`() {
+    fun `M initializes app info W initialize() {null serviceName}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -397,7 +397,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {null versionName}`() {
+    fun `M initializes app info W initialize() {null versionName}`() {
         // Given
         appContext.fakePackageInfo.versionName = null
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -425,7 +425,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name}`() {
+    fun `M initializes app info W initialize() {unknown package name}`() {
         // Given
         @Suppress("DEPRECATION")
         whenever(appContext.mockPackageManager.getPackageInfo(appContext.fakePackageName, 0))
@@ -456,7 +456,7 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, TIRAMISU}`() {
+    fun `M initializes app info W initialize() {unknown package name, TIRAMISU}`() {
         // Given
         whenever(
             appContext.mockPackageManager.getPackageInfo(
@@ -491,7 +491,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes build ID 𝕎 initialize()`() {
+    fun `M initializes build ID W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -505,7 +505,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes build ID 𝕎 initialize() { asset manager is closed }`() {
+    fun `M initializes build ID W initialize() { asset manager is closed }`() {
         // Given
         whenever(
             appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
@@ -530,7 +530,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes build ID 𝕎 initialize() { build ID file is missing }`() {
+    fun `M initializes build ID W initialize() { build ID file is missing }`() {
         // Given
         whenever(
             appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
@@ -554,7 +554,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes build ID 𝕎 initialize() { IOException during build ID read }`() {
+    fun `M initializes build ID W initialize() { IOException during build ID read }`() {
         // Given
         val mockBrokenStream = mock<InputStream>().apply {
             whenever(read(any())) doThrow IOException()
@@ -582,7 +582,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize()`() {
+    fun `M initialize okhttp with strict network policy W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -617,7 +617,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp with no network policy 𝕎 initialize() {needsClearText}`() {
+    fun `M initialize okhttp with no network policy W initialize() {needsClearText}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -637,7 +637,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp with proxy 𝕎 initialize() {proxy configured}`() {
+    fun `M initialize okhttp with proxy W initialize() {proxy configured}`() {
         // When
         val proxy: Proxy = mock()
         val proxyAuth: Authenticator = mock()
@@ -660,7 +660,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp without proxy 𝕎 initialize() {proxy not configured}`() {
+    fun `M initialize okhttp without proxy W initialize() {proxy not configured}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -676,7 +676,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize executors 𝕎 initialize()`() {
+    fun `M initialize executors W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -691,7 +691,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize only once 𝕎 initialize() twice`(
+    fun `M initialize only once W initialize() twice`(
         @Forgery otherConfig: Configuration
     ) {
         // Given
@@ -724,7 +724,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 detect current process 𝕎 initialize() {main process}`(
+    fun `M detect current process W initialize() {main process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -756,7 +756,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 detect current process 𝕎 initialize() {secondary process}`(
+    fun `M detect current process W initialize() {secondary process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -785,7 +785,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 detect current process 𝕎 initialize() {unknown process}`(
+    fun `M detect current process W initialize() {unknown process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -813,7 +813,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 build config 𝕎 buildFilePersistenceConfig()`() {
+    fun `M build config W buildFilePersistenceConfig()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -839,7 +839,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {main process}`(
+    fun `M initialize the NdkCrashHandler data W initialize() {main process}`(
         @TempDir tempDir: File,
         @StringForgery otherProcessName: String
     ) {
@@ -881,7 +881,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {source type override}`(
+    fun `M initialize the NdkCrashHandler data W initialize() {source type override}`(
         @TempDir tempDir: File,
         @StringForgery otherProcessName: String
     ) {
@@ -923,7 +923,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 not initialize the NdkCrashHandler data 𝕎 initialize() {not main process}`(
+    fun `M not initialize the NdkCrashHandler data W initialize() {not main process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -972,7 +972,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise encryption 𝕎 initialize`(
+    fun `M initialise encryption W initialize`(
         @IntForgery(-128, 128) fakeByte: Int
     ) {
         // Given
@@ -1002,7 +1002,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise persistence strategy 𝕎 initialize`() {
+    fun `M initialise persistence strategy W initialize`() {
         // Given
         val mockPersistenceStrategyFactory = mock<PersistenceStrategy.Factory>()
         fakeConfig = fakeConfig.copy(
@@ -1027,7 +1027,7 @@ internal class CoreFeatureTest {
     // endregion
 
     @Test
-    fun `𝕄 return last fatal ANR sent 𝕎 lastFatalAnrSent`(
+    fun `M return last fatal ANR sent W lastFatalAnrSent`(
         @TempDir tempDir: File,
         @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
     ) {
@@ -1044,7 +1044,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 lastFatalAnrSent { no file }`(
+    fun `M return null W lastFatalAnrSent { no file }`(
         @TempDir tempDir: File
     ) {
         // Given
@@ -1058,7 +1058,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 lastFatalAnrSent { file contains not a number }`(
+    fun `M return null W lastFatalAnrSent { file contains not a number }`(
         @TempDir tempDir: File,
         @StringForgery fakeBrokenLastFatalAnrSent: String
     ) {
@@ -1075,7 +1075,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 delete last fatal ANR sent 𝕎 deleteLastFatalAnrSent`(
+    fun `M delete last fatal ANR sent W deleteLastFatalAnrSent`(
         @TempDir tempDir: File,
         @LongForgery fakeLastFatalAnrSent: Long
     ) {
@@ -1092,7 +1092,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 write last view event 𝕎 writeLastViewEvent`(
+    fun `M write last view event W writeLastViewEvent`(
         @TempDir tempDir: File,
         @StringForgery viewEvent: String
     ) {
@@ -1119,7 +1119,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 delete last view event 𝕎 deleteLastViewEvent`(
+    fun `M delete last view event W deleteLastViewEvent`(
         @TempDir tempDir: File,
         @StringForgery fakeViewEvent: String
     ) {
@@ -1137,7 +1137,7 @@ internal class CoreFeatureTest {
 
     @Suppress("DEPRECATION")
     @Test
-    fun `𝕄 delete last view event 𝕎 deleteLastViewEvent { legacy NDK location }`(
+    fun `M delete last view event W deleteLastViewEvent { legacy NDK location }`(
         @TempDir tempDir: File,
         @StringForgery fakeViewEvent: String
     ) {
@@ -1157,7 +1157,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 lastViewEvent { no last view event written }`(
+    fun `M return null W lastViewEvent { no last view event written }`(
         @TempDir tempDir: File
     ) {
         // Given
@@ -1171,7 +1171,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 return last view event 𝕎 lastViewEvent`(
+    fun `M return last view event W lastViewEvent`(
         @TempDir tempDir: File,
         @Forgery fakeViewEvent: JsonObject
     ) {
@@ -1189,7 +1189,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 return last view event 𝕎 lastViewEvent { check old NDK location }`(
+    fun `M return last view event W lastViewEvent { check old NDK location }`(
         @TempDir tempDir: File,
         @Forgery fakeViewEvent: JsonObject
     ) {
@@ -1216,7 +1216,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 return app start time 𝕎 appStartTimeNs`(
+    fun `M return app start time W appStartTimeNs`(
         @LongForgery(min = 0L) fakeAppStartTimeNs: Long
     ) {
         // Given
@@ -1232,7 +1232,7 @@ internal class CoreFeatureTest {
     // region shutdown
 
     @Test
-    fun `𝕄 cleanup NdkCrashHandler 𝕎 stop()`() {
+    fun `M cleanup NdkCrashHandler W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -1249,7 +1249,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 cleanup app info 𝕎 stop()`() {
+    fun `M cleanup app info W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -1272,7 +1272,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 cleanup providers 𝕎 stop()`() {
+    fun `M cleanup providers W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -1302,7 +1302,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 shut down executors 𝕎 stop()`() {
+    fun `M shut down executors W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -1324,7 +1324,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
+    fun `M unregister tracking consent callbacks W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -1343,7 +1343,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 clean up feature context 𝕎 stop()`(
+    fun `M clean up feature context W stop()`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),

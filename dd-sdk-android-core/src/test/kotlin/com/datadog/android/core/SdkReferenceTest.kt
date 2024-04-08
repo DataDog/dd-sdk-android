@@ -41,7 +41,7 @@ internal class SdkReferenceTest {
     }
 
     @Test
-    fun `𝕄 return SDK instance 𝕎 get() {instance exists}`() {
+    fun `M return SDK instance W get() {instance exists}`() {
         // Given
         val testedReference = SdkReference(null)
 
@@ -53,7 +53,7 @@ internal class SdkReferenceTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 get() {instance doesn't exist}`(
+    fun `M return null W get() {instance doesn't exist}`(
         @StringForgery fakeInstanceName: String
     ) {
         // Given
@@ -67,7 +67,7 @@ internal class SdkReferenceTest {
     }
 
     @Test
-    fun `𝕄 release reference 𝕎 get() {instance is stopped}`() {
+    fun `M release reference W get() {instance is stopped}`() {
         // Given
         val testedReference = SdkReference(null)
         assertThat(testedReference.get()).isNotNull
@@ -81,7 +81,7 @@ internal class SdkReferenceTest {
     }
 
     @Test
-    fun `𝕄 call onSdkInstanceCaptured once 𝕎 get() { multiple threads }`(
+    fun `M call onSdkInstanceCaptured once W get() { multiple threads }`(
         @IntForgery(min = 2, max = 10) threadCount: Int
     ) {
         // Given

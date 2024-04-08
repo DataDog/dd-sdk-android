@@ -88,7 +88,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 not send batch_closed metric 𝕎 getWritableFile() {no prev file}`(
+    fun `M not send batch_closed metric W getWritableFile() {no prev file}`(
         forceNewFile: Boolean
     ) {
         // Given
@@ -170,7 +170,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 warn 𝕎 getWritableFile() {root is not a dir}`(
+    fun `M warn W getWritableFile() {root is not a dir}`(
         forceNewFile: Boolean,
         @StringForgery fileName: String
     ) {
@@ -199,7 +199,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 warn 𝕎 getWritableFile() {root can't be created}`(forceNewFile: Boolean) {
+    fun `M warn W getWritableFile() {root can't be created}`(forceNewFile: Boolean) {
         // Given
         val corruptedDir = mock<File>()
         whenever(corruptedDir.exists()).thenReturn(false)
@@ -227,7 +227,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 warn 𝕎 getWritableFile() {root is not writeable}`(forceNewFile: Boolean) {
+    fun `M warn W getWritableFile() {root is not writeable}`(forceNewFile: Boolean) {
         // Given
         val restrictedDir = mock<File>()
         whenever(restrictedDir.exists()).thenReturn(true)
@@ -256,7 +256,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 create the rootDirectory 𝕎 getWritableFile() {root does not exist}`(
+    fun `M create the rootDirectory W getWritableFile() {root does not exist}`(
         forceNewFile: Boolean
     ) {
         // Given
@@ -272,7 +272,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 delete obsolete files 𝕎 getWritableFile()`(
+    fun `M delete obsolete files W getWritableFile()`(
         forceNewFile: Boolean,
         @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
     ) {
@@ -311,7 +311,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 respect time threshold to delete obsolete files 𝕎 getWritableFile() { below threshold }`(
+    fun `M respect time threshold to delete obsolete files W getWritableFile() { below threshold }`(
         forceNewFile: Boolean,
         @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
     ) {
@@ -355,7 +355,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 respect time threshold to delete obsolete files 𝕎 getWritableFile() { above threshold }`(
+    fun `M respect time threshold to delete obsolete files W getWritableFile() { above threshold }`(
         forceNewFile: Boolean,
         @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
     ) {
@@ -409,7 +409,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 return new File 𝕎 getWritableFile() {no available file}`(forceNewFile: Boolean) {
+    fun `M return new File W getWritableFile() {no available file}`(forceNewFile: Boolean) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
@@ -429,7 +429,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return existing File 𝕎 getWritableFile() {recent file exist with spare space}`(
+    fun `M return existing File W getWritableFile() {recent file exist with spare space}`(
         @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
         // Given
@@ -451,7 +451,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is too old}`(
+    fun `M return new File W getWritableFile() {previous file is too old}`(
         forceNewFile: Boolean,
         @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
@@ -490,7 +490,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is unknown}`(
+    fun `M return new File W getWritableFile() {previous file is unknown}`(
         forceNewFile: Boolean,
         @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
@@ -518,7 +518,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is deleted}`(forceNewFile: Boolean) {
+    fun `M return new File W getWritableFile() {previous file is deleted}`(forceNewFile: Boolean) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val beforeFileCreateTimestamp = System.currentTimeMillis()
@@ -554,7 +554,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is too large}`(
+    fun `M return new File W getWritableFile() {previous file is too large}`(
         forceNewFile: Boolean,
         @StringForgery(size = MAX_BATCH_SIZE) previousData: String
     ) {
@@ -592,7 +592,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file has too many items}`(
+    fun `M return new File W getWritableFile() {previous file has too many items}`(
         forceNewFile: Boolean,
         forge: Forge
     ) {
@@ -646,7 +646,7 @@ internal class BatchFileOrchestratorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `𝕄 discard File 𝕎 getWritableFile() {previous files take too much disk space}`(
+    fun `M discard File W getWritableFile() {previous files take too much disk space}`(
         forceNewFile: Boolean,
         @StringForgery(size = MAX_BATCH_SIZE) previousData: String
     ) {
@@ -692,7 +692,7 @@ internal class BatchFileOrchestratorTest {
     // region getNewWritableFile
 
     @Test
-    fun `𝕄 return new File 𝕎 getWritableFile() {forceNewFile=true}`() {
+    fun `M return new File W getWritableFile() {forceNewFile=true}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val beforeFirstFileStart = System.currentTimeMillis()
@@ -730,7 +730,7 @@ internal class BatchFileOrchestratorTest {
     // region getReadableFile
 
     @Test
-    fun `𝕄 warn 𝕎 getReadableFile() {root is not a dir}`(
+    fun `M warn W getReadableFile() {root is not a dir}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -756,7 +756,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getReadableFile() {root can't be created}`() {
+    fun `M warn W getReadableFile() {root can't be created}`() {
         // Given
         val corruptedDir = mock<File>()
         whenever(corruptedDir.exists()).thenReturn(false)
@@ -782,7 +782,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getReadableFile() {root is not writeable}`() {
+    fun `M warn W getReadableFile() {root is not writeable}`() {
         // Given
         val restrictedDir = mock<File>()
         whenever(restrictedDir.exists()).thenReturn(true)
@@ -809,7 +809,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 delete obsolete files 𝕎 getReadableFile()`(
+    fun `M delete obsolete files W getReadableFile()`(
         @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
     ) {
         // Given
@@ -834,7 +834,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 create the rootDirectory 𝕎 getReadableFile() {root does not exist}`() {
+    fun `M create the rootDirectory W getReadableFile() {root does not exist}`() {
         // Given
         fakeRootDir.deleteRecursively()
 
@@ -846,7 +846,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 getReadableFile() {empty dir}`() {
+    fun `M return null W getReadableFile() {empty dir}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
@@ -858,7 +858,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return file 𝕎 getReadableFile() {existing old enough file}`() {
+    fun `M return file W getReadableFile() {existing old enough file}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
@@ -876,7 +876,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 getReadableFile() {file is too recent}`() {
+    fun `M return null W getReadableFile() {file is too recent}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
@@ -891,7 +891,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 getReadableFile() {file is in exclude list}`() {
+    fun `M return null W getReadableFile() {file is in exclude list}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
@@ -910,7 +910,7 @@ internal class BatchFileOrchestratorTest {
     // region getAllFiles
 
     @Test
-    fun `𝕄 warn 𝕎 getAllFiles() {root is not a dir}`(
+    fun `M warn W getAllFiles() {root is not a dir}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -936,7 +936,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getAllFiles() {root can't be created}`() {
+    fun `M warn W getAllFiles() {root can't be created}`() {
         // Given
         val corruptedDir = mock<File>()
         whenever(corruptedDir.exists()).thenReturn(false)
@@ -962,7 +962,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getAllFiles() {root is not writeable}`() {
+    fun `M warn W getAllFiles() {root is not writeable}`() {
         // Given
         val restrictedDir = mock<File>()
         whenever(restrictedDir.exists()).thenReturn(true)
@@ -989,7 +989,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 create the rootDirectory 𝕎 getAllFiles() {root does not exist}`() {
+    fun `M create the rootDirectory W getAllFiles() {root does not exist}`() {
         // Given
         fakeRootDir.deleteRecursively()
 
@@ -1002,7 +1002,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return empty list 𝕎 getAllFiles() {dir is empty}`() {
+    fun `M return empty list W getAllFiles() {dir is empty}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
@@ -1014,7 +1014,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return all files 𝕎 getAllFiles() {dir is not empty}`(
+    fun `M return all files W getAllFiles() {dir is not empty}`(
         @IntForgery(1, 32) count: Int
     ) {
         // Given
@@ -1040,7 +1040,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return empty list 𝕎 getAllFiles() {dir files don't match pattern}`(
+    fun `M return empty list W getAllFiles() {dir files don't match pattern}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -1060,7 +1060,7 @@ internal class BatchFileOrchestratorTest {
     // region getAllFlushableFiles
 
     @Test
-    fun `𝕄 return all files 𝕎 getAllFlushableFiles() {dir is not empty}`(
+    fun `M return all files W getAllFlushableFiles() {dir is not empty}`(
         @IntForgery(1, 32) count: Int
     ) {
         // Given
@@ -1086,7 +1086,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return empty list 𝕎 getAllFlushableFiles() {dir is empty}`() {
+    fun `M return empty list W getAllFlushableFiles() {dir is empty}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
@@ -1102,7 +1102,7 @@ internal class BatchFileOrchestratorTest {
     // region getRootDir
 
     @Test
-    fun `𝕄 warn 𝕎 getRootDir() {root is not a dir}`(
+    fun `M warn W getRootDir() {root is not a dir}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -1128,7 +1128,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getRootDir() {root can't be created}`() {
+    fun `M warn W getRootDir() {root can't be created}`() {
         // Given
         val corruptedDir = mock<File>()
         whenever(corruptedDir.exists()).thenReturn(false)
@@ -1154,7 +1154,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getRootDir() {root is not writeable}`() {
+    fun `M warn W getRootDir() {root is not writeable}`() {
         // Given
         val restrictedDir = mock<File>()
         whenever(restrictedDir.exists()).thenReturn(true)
@@ -1181,7 +1181,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return root dir`() {
+    fun `M return root dir`() {
         // When
         val result = testedOrchestrator.getRootDir()
 
@@ -1191,7 +1191,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return root dir { multithreaded }`(
+    fun `M return root dir { multithreaded }`(
         @IntForgery(4, 8) repeatCount: Int
     ) {
         // since getRootDir involves the creation of the directory structure,
@@ -1226,7 +1226,7 @@ internal class BatchFileOrchestratorTest {
     // region getMetadataFile
 
     @Test
-    fun `𝕄 return metadata file 𝕎 getMetadataFile()`() {
+    fun `M return metadata file W getMetadataFile()`() {
         // Given
         val fakeFileName = System.currentTimeMillis().toString()
         val fakeFile = File(fakeRootDir.path, fakeFileName)
@@ -1240,7 +1240,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 log debug file 𝕎 getMetadataFile() { file is from another folder }`(
+    fun `M log debug file W getMetadataFile() { file is from another folder }`(
         @StringForgery fakeSuffix: String
     ) {
         // Given
@@ -1261,7 +1261,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 log error file 𝕎 getMetadataFile() { not batch file argument }`(
+    fun `M log error file W getMetadataFile() { not batch file argument }`(
         @StringForgery fakeFileName: String
     ) {
         // Given
