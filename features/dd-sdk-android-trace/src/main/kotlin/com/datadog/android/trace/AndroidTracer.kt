@@ -302,10 +302,10 @@ class AndroidTracer internal constructor(
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +
-                "disabled in your Configuration. No tracing data will be sent."
+                "not registered/initialized. No tracing data will be sent."
         internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to bundle the traces with a RUM context, " +
-                "but the RUM feature was disabled in your Configuration. " +
+                "but the RUM feature was not registered/initialized. " +
                 "No RUM context will be attached to your traces in this case."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
