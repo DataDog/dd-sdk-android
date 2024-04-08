@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewStub
@@ -24,6 +25,7 @@ internal class ViewUtilsInternal {
         return !view.isShown || view.width <= 0 || view.height <= 0
     }
 
+    @SuppressLint("RestrictedApi") // ActionBarContextView is public, but has @RestrictTo(LIBRARY_GROUP_PREFIX)
     internal fun isSystemNoise(view: View): Boolean {
         return view.id in systemViewIds || view is ViewStub || view is ActionBarContextView
     }

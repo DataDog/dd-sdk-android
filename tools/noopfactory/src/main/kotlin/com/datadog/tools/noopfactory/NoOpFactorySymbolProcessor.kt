@@ -42,7 +42,6 @@ import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.UNIT
-import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
@@ -54,7 +53,6 @@ import java.io.OutputStreamWriter
  * @[NoOpImplementation].
  */
 @Suppress("TooManyFunctions")
-@OptIn(KotlinPoetKspPreview::class)
 class NoOpFactorySymbolProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger
@@ -155,11 +153,6 @@ class NoOpFactorySymbolProcessor(
 
         val typeSpecBuilder = TypeSpec.classBuilder(noOpName)
             .addModifiers(if (publicNoOpImplementation) KModifier.PUBLIC else KModifier.INTERNAL)
-            .addAnnotation(
-                AnnotationSpec.builder(Suppress::class)
-                    .addMember("%S", "RedundantUnitReturnType")
-                    .build()
-            )
 
         generateSuperTypeDeclaration(typeSpecBuilder, declaration, packageName, interfaceName)
 
