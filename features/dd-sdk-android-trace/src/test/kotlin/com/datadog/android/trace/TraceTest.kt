@@ -46,7 +46,7 @@ internal class TraceTest {
     }
 
     @Test
-    fun `𝕄 register traces feature 𝕎 enable()`(
+    fun `M register traces feature W enable()`(
         @StringForgery fakePackageName: String,
         @Forgery fakeTraceConfiguration: TraceConfiguration
     ) {

@@ -44,7 +44,7 @@ internal class TelemetryTest {
     }
 
     @Test
-    fun `𝕄 report error event 𝕎 error()`(
+    fun `M report error event W error()`(
         @StringForgery message: String,
         forge: Forge
     ) {
@@ -60,7 +60,7 @@ internal class TelemetryTest {
     }
 
     @Test
-    fun `𝕄 report debug event 𝕎 debug()`(
+    fun `M report debug event W debug()`(
         @StringForgery message: String,
         forge: Forge
     ) {
@@ -75,7 +75,7 @@ internal class TelemetryTest {
     }
 
     @Test
-    fun `𝕄 report metric event 𝕎 metric()`(
+    fun `M report metric event W metric()`(
         @StringForgery message: String,
         forge: Forge
     ) {

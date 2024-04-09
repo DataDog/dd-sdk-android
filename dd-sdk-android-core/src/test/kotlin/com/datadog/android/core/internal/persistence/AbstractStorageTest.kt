@@ -99,7 +99,7 @@ internal class AbstractStorageTest {
     // region Storage.writeCurrentBatch
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=granted, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=granted, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
@@ -127,7 +127,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=granted, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=granted, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
@@ -157,7 +157,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -183,7 +183,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @StringForgery fakeBatchMetadata: String
     ) {
@@ -211,7 +211,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=pending, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=pending, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
@@ -239,7 +239,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=pending, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=pending, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
@@ -269,7 +269,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -295,7 +295,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @StringForgery fakeBatchMetadata: String
     ) {
@@ -323,7 +323,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no op writer 𝕎 writeCurrentBatch()+write() {consent=not_granted}`(
+    fun `M provide no op writer W writeCurrentBatch()+write() {consent=not_granted}`(
         @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
         @StringForgery fakeBatchMetadata: String
@@ -350,7 +350,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no op writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=not_granted}`(
+    fun `M provide no op writer W writeCurrentBatch()+currentMetadata() {consent=not_granted}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -378,7 +378,7 @@ internal class AbstractStorageTest {
     // region Storage.readNextBatch
 
     @Test
-    fun `𝕄 provide null 𝕎 readNextBatch() {no batch}`() {
+    fun `M provide null W readNextBatch() {no batch}`() {
         // Given
         whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn null
 
@@ -392,7 +392,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide BatchData 𝕎 readNextBatch() {with batch}`(
+    fun `M provide BatchData W readNextBatch() {with batch}`(
         @Forgery fakeBatch: PersistenceStrategy.Batch
     ) {
         // Given
@@ -409,7 +409,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 readNextBatch() {no batch}`() {
+    fun `M return null W readNextBatch() {no batch}`() {
         // Given
         whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn null
 
@@ -422,7 +422,7 @@ internal class AbstractStorageTest {
     // region Storage.readNextBatch
 
     @Test
-    fun `𝕄 delete batch W confirmBatchRead() {delete=true}`(
+    fun `M delete batch W confirmBatchRead() {delete=true}`(
         @StringForgery fakeBatchId: String,
         @Forgery fakeRemovalReason: RemovalReason
     ) {
@@ -439,7 +439,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 keep batch W confirmBatchRead() {delete=false}`(
+    fun `M keep batch W confirmBatchRead() {delete=false}`(
         @StringForgery fakeBatchId: String,
         @Forgery fakeRemovalReason: RemovalReason
     ) {
@@ -460,7 +460,7 @@ internal class AbstractStorageTest {
     // region Storage.dropAll
 
     @Test
-    fun `𝕄 drop both granted and pending 𝕎 dropAll()`() {
+    fun `M drop both granted and pending W dropAll()`() {
         // When
         testedStorage.dropAll()
 
@@ -479,7 +479,7 @@ internal class AbstractStorageTest {
     // region TrackingConsentProviderCallback
 
     @Test
-    fun `𝕄 register as consent listener 𝕎 init()`() {
+    fun `M register as consent listener W init()`() {
         // Then
         verify(mockConsentProvider).registerCallback(testedStorage)
         verifyNoInteractions(
@@ -490,7 +490,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {not_granted to not_granted}`() {
+    fun `M do nothing W onConsentUpdated() {not_granted to not_granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.NOT_GRANTED)
 
@@ -503,7 +503,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {not_granted to pending}`() {
+    fun `M do nothing W onConsentUpdated() {not_granted to pending}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
 
@@ -516,7 +516,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {not_granted to granted}`() {
+    fun `M do nothing W onConsentUpdated() {not_granted to granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
 
@@ -529,7 +529,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 drop pending data 𝕎 onConsentUpdated() {pending to not_granted}`() {
+    fun `M drop pending data W onConsentUpdated() {pending to not_granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
 
@@ -543,7 +543,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {pending to pending}`() {
+    fun `M do nothing W onConsentUpdated() {pending to pending}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.PENDING)
 
@@ -556,7 +556,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {pending to granted}`() {
+    fun `M migrate data W onConsentUpdated() {pending to granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
 
@@ -570,7 +570,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {granted to not_granted}`() {
+    fun `M do nothing W onConsentUpdated() {granted to not_granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
 
@@ -583,7 +583,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {granted to pending}`() {
+    fun `M do nothing W onConsentUpdated() {granted to pending}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
 
@@ -596,7 +596,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {granted to granted}`() {
+    fun `M do nothing W onConsentUpdated() {granted to granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.GRANTED)
 

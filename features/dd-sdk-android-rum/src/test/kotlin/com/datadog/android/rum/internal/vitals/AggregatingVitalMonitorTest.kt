@@ -48,7 +48,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 return null by default 𝕎 getLastSample()`() {
+    fun `M return null by default W getLastSample()`() {
         // Given
 
         // When
@@ -59,7 +59,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 update last known value 𝕎 onNewSample()`(
+    fun `M update last known value W onNewSample()`(
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) value: Double
     ) {
         // Given
@@ -73,7 +73,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 not notify listener 𝕎 register() {no previous sample}`() {
+    fun `M not notify listener W register() {no previous sample}`() {
         // When
         testedMonitor.register(mockListener)
 
@@ -82,7 +82,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 register()`(
+    fun `M notify listener W register()`(
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) value: Double
     ) {
         // Given
@@ -102,7 +102,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 onNewSample() {multiple values, single thread}`(
+    fun `M notify listener W onNewSample() {multiple values, single thread}`(
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) values: List<Double>
     ) {
         // Given
@@ -132,7 +132,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 onNewSample() {multiple values, multiple threads}`(
+    fun `M notify listener W onNewSample() {multiple values, multiple threads}`(
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) values: List<Double>
     ) {
         // Given
@@ -163,7 +163,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 notify multiple listeners 𝕎 onNewSample() multiple values`(
+    fun `M notify multiple listeners W onNewSample() multiple values`(
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) value1: Double,
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) value2: Double,
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) value3: Double
@@ -223,7 +223,7 @@ internal class AggregatingVitalMonitorTest {
     }
 
     @Test
-    fun `𝕄 stop notifying listener 𝕎 unregister()`(
+    fun `M stop notifying listener W unregister()`(
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) trackedValue: Double,
         @DoubleForgery(-REASONABLE_DOUBLE, REASONABLE_DOUBLE) untrackedValue: Double
     ) {

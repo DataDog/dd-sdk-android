@@ -79,7 +79,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region init
 
     @Test
-    fun `𝕄 registers as listener 𝕎 init()`(
+    fun `M registers as listener W init()`(
         @Forgery consent: TrackingConsent
     ) {
         // When
@@ -90,7 +90,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 init() {GRANTED}`() {
+    fun `M migrate data W init() {GRANTED}`() {
         // When
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
 
@@ -108,7 +108,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 init() {PENDING}`() {
+    fun `M migrate data W init() {PENDING}`() {
         // When
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
 
@@ -126,7 +126,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 init() {NOT_GRANTED}`() {
+    fun `M migrate data W init() {NOT_GRANTED}`() {
         // When
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
 
@@ -148,7 +148,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region getWritableFile
 
     @Test
-    fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=PENDING}`(
+    fun `M return pending writable file W getWritableFile() {consent=PENDING}`(
         @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
@@ -164,7 +164,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=GRANTED then PENDING}`(
+    fun `M return pending writable file W getWritableFile() {consent=GRANTED then PENDING}`(
         @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
@@ -184,7 +184,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=NOT_GRANTED then PENDING}`(
+    fun `M return pending writable file W getWritableFile() {consent=NOT_GRANTED then PENDING}`(
         @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
@@ -204,7 +204,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=GRANTED}`(
+    fun `M return granted writable file W getWritableFile() {consent=GRANTED}`(
         @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
@@ -222,7 +222,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=NOT_GRANTED then GRANTED}`(
+    fun `M return granted writable file W getWritableFile() {consent=NOT_GRANTED then GRANTED}`(
         @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
@@ -242,7 +242,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=PENDING then GRANTED}`(
+    fun `M return granted writable file W getWritableFile() {consent=PENDING then GRANTED}`(
         @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
@@ -262,7 +262,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=NOT_GRANTED}`(
+    fun `M return null file W getWritableFile() {consent=NOT_GRANTED}`(
         @BoolForgery forceNewFile: Boolean
     ) {
         // Given
@@ -278,7 +278,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=GRANTED then NOT_GRANTED}`(
+    fun `M return null file W getWritableFile() {consent=GRANTED then NOT_GRANTED}`(
         @BoolForgery forceNewFile: Boolean
     ) {
         // Given
@@ -296,7 +296,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=PENDING then NOT_GRANTED}`(
+    fun `M return null file W getWritableFile() {consent=PENDING then NOT_GRANTED}`(
         @BoolForgery forceNewFile: Boolean
     ) {
         // Given
@@ -318,7 +318,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region getReadableFile
 
     @Test
-    fun `𝕄 return granted file 𝕎 getReadableFile() {initial consent}`(
+    fun `M return granted file W getReadableFile() {initial consent}`(
         @Forgery consent: TrackingConsent,
         @Forgery file: File
     ) {
@@ -335,7 +335,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted file 𝕎 getReadableFile() {updated consent}`(
+    fun `M return granted file W getReadableFile() {updated consent}`(
         @Forgery initialConsent: TrackingConsent,
         @Forgery updatedConsent: TrackingConsent,
         @Forgery file: File
@@ -358,7 +358,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region getAllFiles
 
     @Test
-    fun `𝕄 return all files 𝕎 getAllFiles() {initial consent}`(
+    fun `M return all files W getAllFiles() {initial consent}`(
         @Forgery consent: TrackingConsent,
         forge: Forge
     ) {
@@ -379,7 +379,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return all files 𝕎 getAllFiles() {updated consent}`(
+    fun `M return all files W getAllFiles() {updated consent}`(
         @Forgery initialConsent: TrackingConsent,
         @Forgery updatedConsent: TrackingConsent,
         forge: Forge
@@ -406,7 +406,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region getGrantedFiles
 
     @Test
-    fun `𝕄 return granted files 𝕎 getFlushableFiles()`(
+    fun `M return granted files W getFlushableFiles()`(
         @Forgery consent: TrackingConsent,
         forge: Forge
     ) {
@@ -430,7 +430,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region getRootDir
 
     @RepeatedTest(8)
-    fun `𝕄 return null 𝕎 getRootDir() {initial consent}`(
+    fun `M return null W getRootDir() {initial consent}`(
         @Forgery consent: TrackingConsent
     ) {
         // Given
@@ -445,7 +445,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @RepeatedTest(16)
-    fun `𝕄 return null 𝕎 getRootDir() {updated consent}`(
+    fun `M return null W getRootDir() {updated consent}`(
         @Forgery initialConsent: TrackingConsent,
         @Forgery updatedConsent: TrackingConsent
     ) {
@@ -466,7 +466,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region getMetadataFile
 
     @Test
-    fun `𝕄 return pending meta file 𝕎 getMetadataFile() {consent=PENDING}`(
+    fun `M return pending meta file W getMetadataFile() {consent=PENDING}`(
         @Forgery fakeFile: File,
         @Forgery metaFile: File
     ) {
@@ -482,7 +482,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return pending meta file 𝕎 getMetadataFile() {consent=GRANTED then PENDING}`(
+    fun `M return pending meta file W getMetadataFile() {consent=GRANTED then PENDING}`(
         @Forgery fakeFile: File,
         @Forgery metaFile: File
     ) {
@@ -502,7 +502,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return pending meta file 𝕎 getMetadataFile() {consent=NOT_GRANTED then PENDING}`(
+    fun `M return pending meta file W getMetadataFile() {consent=NOT_GRANTED then PENDING}`(
         @Forgery fakeFile: File,
         @Forgery metaFile: File
     ) {
@@ -522,7 +522,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted meta file 𝕎 getMetadataFile() {consent=GRANTED}`(
+    fun `M return granted meta file W getMetadataFile() {consent=GRANTED}`(
         @Forgery fakeFile: File,
         @Forgery metaFile: File
     ) {
@@ -540,7 +540,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted meta file 𝕎 getMetadataFile() {consent=NOT_GRANTED then GRANTED}`(
+    fun `M return granted meta file W getMetadataFile() {consent=NOT_GRANTED then GRANTED}`(
         @Forgery fakeFile: File,
         @Forgery metaFile: File
     ) {
@@ -560,7 +560,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return granted meta file 𝕎 getMetadataFile() {consent=PENDING then GRANTED}`(
+    fun `M return granted meta file W getMetadataFile() {consent=PENDING then GRANTED}`(
         @Forgery fakeFile: File,
         @Forgery metaFile: File
     ) {
@@ -580,7 +580,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getMetadataFile() {consent=NOT_GRANTED}`(
+    fun `M return null file W getMetadataFile() {consent=NOT_GRANTED}`(
         @Forgery fakeFile: File
     ) {
         // Given
@@ -596,7 +596,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getMetadataFile() {consent=GRANTED then NOT_GRANTED}`(
+    fun `M return null file W getMetadataFile() {consent=GRANTED then NOT_GRANTED}`(
         @Forgery fakeFile: File
     ) {
         // Given
@@ -614,7 +614,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getMetadataFile() {consent=PENDING then NOT_GRANTED}`(
+    fun `M return null file W getMetadataFile() {consent=PENDING then NOT_GRANTED}`(
         @Forgery fakeFile: File
     ) {
         // Given
@@ -636,7 +636,7 @@ internal class ConsentAwareFileOrchestratorTest {
     // region onConsentUpdated
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {GRANTED to GRANTED}`() {
+    fun `M migrate data W onConsentUpdated() {GRANTED to GRANTED}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.GRANTED)
 
@@ -654,7 +654,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {GRANTED to PENDING}`() {
+    fun `M migrate data W onConsentUpdated() {GRANTED to PENDING}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
 
@@ -672,7 +672,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {GRANTED to NOT_GRANTED}`() {
+    fun `M migrate data W onConsentUpdated() {GRANTED to NOT_GRANTED}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
 
@@ -690,7 +690,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {PENDING to GRANTED}`() {
+    fun `M migrate data W onConsentUpdated() {PENDING to GRANTED}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
 
@@ -708,7 +708,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {PENDING to PENDING}`() {
+    fun `M migrate data W onConsentUpdated() {PENDING to PENDING}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.PENDING)
 
@@ -726,7 +726,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {PENDING to NOT_GRANTED}`() {
+    fun `M migrate data W onConsentUpdated() {PENDING to NOT_GRANTED}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
 
@@ -744,7 +744,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {NOT_GRANTED to GRANTED}`() {
+    fun `M migrate data W onConsentUpdated() {NOT_GRANTED to GRANTED}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
 
@@ -762,7 +762,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {NOT_GRANTED to PENDING}`() {
+    fun `M migrate data W onConsentUpdated() {NOT_GRANTED to PENDING}`() {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
 
@@ -780,7 +780,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {NOT_GRANTED to NOT_GRANTED}`() {
+    fun `M migrate data W onConsentUpdated() {NOT_GRANTED to NOT_GRANTED}`() {
         // When
         testedOrchestrator.onConsentUpdated(
             TrackingConsent.NOT_GRANTED,
@@ -801,7 +801,7 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 onConsentUpdated() {submission rejected}`(
+    fun `M warn W onConsentUpdated() {submission rejected}`(
         @Forgery previousConsent: TrackingConsent,
         @Forgery newConsent: TrackingConsent,
         @StringForgery errorMessage: String

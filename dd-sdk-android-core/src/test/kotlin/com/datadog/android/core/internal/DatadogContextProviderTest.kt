@@ -89,7 +89,7 @@ internal class DatadogContextProviderTest {
     }
 
     @Test
-    fun `𝕄 create a context 𝕎 context`() {
+    fun `M create a context W context`() {
         // When
         val context = testedProvider.context
 
@@ -158,7 +158,7 @@ internal class DatadogContextProviderTest {
     }
 
     @Test
-    fun `𝕄 create a frozen feature context 𝕎 context {feature context is changed after context creation}`(
+    fun `M create a frozen feature context W context {feature context is changed after context creation}`(
         forge: Forge
     ) {
         // Given
@@ -201,7 +201,7 @@ internal class DatadogContextProviderTest {
     }
 
     @Test
-    fun `𝕄 set feature context 𝕎 setFeatureContext()`(
+    fun `M set feature context W setFeatureContext()`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),

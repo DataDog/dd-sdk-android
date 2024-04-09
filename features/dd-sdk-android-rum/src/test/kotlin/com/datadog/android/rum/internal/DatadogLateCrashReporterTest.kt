@@ -111,7 +111,7 @@ internal class DatadogLateCrashReporterTest {
     // region handleNdkCrashEvent
 
     @Test
-    fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent()`(
+    fun `M send RUM view+error W handleNdkCrashEvent()`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -211,7 +211,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent() {source_type set}`(
+    fun `M send RUM view+error W handleNdkCrashEvent() {source_type set}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -312,7 +312,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent() {invalid source_type set}`(
+    fun `M send RUM view+error W handleNdkCrashEvent() {invalid source_type set}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -371,7 +371,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent() {view without usr}`(
+    fun `M send RUM view+error W handleNdkCrashEvent() {view without usr}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -457,7 +457,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 send only RUM error 𝕎 handleNdkCrashEvent() {view is too old}`(
+    fun `M send only RUM error W handleNdkCrashEvent() {view is too old}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -556,7 +556,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrashEvent() { RUM feature is not registered }`(
+    fun `M not send RUM event W handleNdkCrashEvent() { RUM feature is not registered }`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -589,7 +589,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrashEvent() { corrupted event, view json deserialization fails }`(
+    fun `M not send RUM event W handleNdkCrashEvent() { corrupted event, view json deserialization fails }`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
         @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
@@ -622,7 +622,7 @@ internal class DatadogLateCrashReporterTest {
 
     @ParameterizedTest
     @EnumSource(ValueMissingType::class)
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrashEvent() { corrupted event }`(
+    fun `M not send RUM event W handleNdkCrashEvent() { corrupted event }`(
         missingType: ValueMissingType,
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
@@ -664,7 +664,7 @@ internal class DatadogLateCrashReporterTest {
     // region handleAnrCrash
 
     @Test
-    fun `𝕄 send RUM view+error 𝕎 handleAnrCrash()`(
+    fun `M send RUM view+error W handleAnrCrash()`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         @Forgery fakeUserInfo: UserInfo,
@@ -760,7 +760,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 send RUM view+error 𝕎 handleAnrCrash() { view without user }`(
+    fun `M send RUM view+error W handleAnrCrash() { view without user }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         forge: Forge
@@ -843,7 +843,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 send only RUM error 𝕎 handleAnrCrash() { view is too old }`(
+    fun `M send only RUM error W handleAnrCrash() { view is too old }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         @Forgery fakeUserInfo: UserInfo,
@@ -933,7 +933,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 log warning and not send anything 𝕎 handleAnrCrash() { RUM feature not registered }`(
+    fun `M log warning and not send anything W handleAnrCrash() { RUM feature not registered }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         forge: Forge
@@ -977,7 +977,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send anything 𝕎 handleAnrCrash() { view deserialization fails }`(
+    fun `M not send anything W handleAnrCrash() { view deserialization fails }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent
     ) {
@@ -999,7 +999,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send anything 𝕎 handleAnrCrash() { Crash timestamp is before last RUM view }`(
+    fun `M not send anything W handleAnrCrash() { Crash timestamp is before last RUM view }`(
         @Forgery viewEvent: ViewEvent,
         forge: Forge
     ) {
@@ -1027,7 +1027,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send anything 𝕎 handleAnrCrash() { last view event belongs to the current session }`(
+    fun `M not send anything W handleAnrCrash() { last view event belongs to the current session }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         forge: Forge
@@ -1067,7 +1067,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send anything 𝕎 handleAnrCrash() { ANR was already sent }`(
+    fun `M not send anything W handleAnrCrash() { ANR was already sent }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         forge: Forge
@@ -1105,7 +1105,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `𝕄 not send anything 𝕎 handleAnrCrash() { empty threads dump }`(
+    fun `M not send anything W handleAnrCrash() { empty threads dump }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         forge: Forge

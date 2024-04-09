@@ -134,7 +134,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     // region Track RUM View
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed()`() {
+    fun `M start a RUM View event W onFragmentResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -150,7 +150,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed() {custom view name}`(
+    fun `M start a RUM View event W onFragmentResumed() {custom view name}`(
         @StringForgery fakeName: String
     ) {
         // Given
@@ -169,7 +169,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed() {custom blank view name}`(
+    fun `M start a RUM View event W onFragmentResumed() {custom blank view name}`(
         @StringForgery(StringForgeryType.WHITESPACE) fakeName: String
     ) {
         // Given
@@ -188,7 +188,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { first display }`() {
+    fun `M start RUM View W onFragmentResumed() { first display }`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -204,7 +204,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { redisplay }`() {
+    fun `M start RUM View W onFragmentResumed() { redisplay }`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -220,7 +220,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 not stop RUM View 𝕎 onFragmentPaused()`() {
+    fun `M not stop RUM View W onFragmentPaused()`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -233,7 +233,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onFragmentStopped()`() {
+    fun `M stop RUM View W onFragmentStopped()`() {
         // Given
         testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
         whenever(mockPredicate.accept(mockFragment)) doReturn true
@@ -251,7 +251,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     // region Track RUM View (not tracked)
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed() {activity not tracked}`() {
+    fun `M start a RUM View event W onFragmentResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 
@@ -263,7 +263,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() {activity not tracked}`() {
+    fun `M start RUM View W onFragmentResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 
@@ -275,7 +275,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() {activity not tracked}`() {
+    fun `M stop RUM View W onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 

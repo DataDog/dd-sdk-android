@@ -148,7 +148,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
+    fun `M initialize persistence strategy W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -158,7 +158,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store sample rate 𝕎 initialize()`() {
+    fun `M store sample rate W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -167,7 +167,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 set sample rate to 100 𝕎 initialize() {developer mode enabled}`() {
+    fun `M set sample rate to 100 W initialize() {developer mode enabled}`() {
         // Given
         whenever(mockSdkCore.isDeveloperModeEnabled) doReturn true
 
@@ -184,7 +184,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store telemetry sample rate 𝕎 initialize()`() {
+    fun `M store telemetry sample rate W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -194,7 +194,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store background tracking 𝕎 initialize()`() {
+    fun `M store background tracking W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -204,7 +204,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`(
+    fun `M store and register viewTrackingStrategy W initialize()`(
         @Forgery fakeApplicationId: UUID
     ) {
         // Given
@@ -227,7 +227,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 set the NoOpUserActionTrackingStrategy W initialize() {userActionTracking = false}`() {
+    fun `M set the NoOpUserActionTrackingStrategy W initialize() {userActionTracking = false}`() {
         // Given
         fakeConfiguration =
             fakeConfiguration.copy(userActionTracking = false)
@@ -247,7 +247,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 bundle the custom attributes providers W initialize()`(
+    fun `M bundle the custom attributes providers W initialize()`(
         @IntForgery(0, 10) attributesCount: Int
     ) {
         // Given
@@ -275,7 +275,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 bundle only the default providers W initialize { providers not provided }`() {
+    fun `M bundle only the default providers W initialize { providers not provided }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             userActionTracking = true
@@ -297,7 +297,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the custom predicate 𝕎 initialize()`() {
+    fun `M use the custom predicate W initialize()`() {
         // Given
         val mockInteractionPredicate: InteractionPredicate = mock()
         fakeConfiguration = fakeConfiguration.copy(
@@ -321,7 +321,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the NoOpInteractionPredicate 𝕎 initialize() { predicate not provided }`() {
+    fun `M use the NoOpInteractionPredicate W initialize() { predicate not provided }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             userActionTracking = true,
@@ -345,7 +345,7 @@ internal class RumFeatureTest {
 
     @TestTargetApi(Build.VERSION_CODES.Q)
     @Test
-    fun `𝕄 build config with gestures enabled 𝕎 initialize() {Android Q}`(
+    fun `M build config with gestures enabled W initialize() {Android Q}`(
         @IntForgery(0, 10) attributesCount: Int
     ) {
         // Given
@@ -373,7 +373,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store longTaskTrackingStrategy 𝕎 initialize()`() {
+    fun `M store longTaskTrackingStrategy W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -385,7 +385,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop viewTrackingStrategy 𝕎 initialize()`() {
+    fun `M use noop viewTrackingStrategy W initialize()`() {
         // Given
         testedFeature = RumFeature(
             mockSdkCore,
@@ -403,7 +403,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop userActionTrackingStrategy 𝕎 initialize()`() {
+    fun `M use noop userActionTrackingStrategy W initialize()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(userActionTracking = false)
         testedFeature = RumFeature(
@@ -422,7 +422,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop longTaskTrackingStrategy 𝕎 initialize()`() {
+    fun `M use noop longTaskTrackingStrategy W initialize()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(longTaskTrackingStrategy = null)
         testedFeature = RumFeature(
@@ -441,7 +441,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store eventMapper 𝕎 initialize()`() {
+    fun `M store eventMapper W initialize()`() {
         // Given
         testedFeature = RumFeature(
             mockSdkCore,
@@ -477,7 +477,7 @@ internal class RumFeatureTest {
 
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 setup vital monitors 𝕎 initialize { frequency != NEVER }`(
+    fun `M setup vital monitors W initialize { frequency != NEVER }`(
         fakeFrequency: VitalsUpdateFrequency
     ) {
         // Given
@@ -536,7 +536,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop viewTrackingStrategy 𝕎 onStop()`() {
+    fun `M use noop viewTrackingStrategy W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -549,7 +549,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop userActionTrackingStrategy 𝕎 onStop()`() {
+    fun `M use noop userActionTrackingStrategy W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -562,7 +562,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 unregister strategies 𝕎 onStop()`() {
+    fun `M unregister strategies W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
@@ -582,7 +582,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset data writer 𝕎 onStop()`() {
+    fun `M reset data writer W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -594,7 +594,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 remove associated monitor 𝕎 onStop()`() {
+    fun `M remove associated monitor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
@@ -609,7 +609,7 @@ internal class RumFeatureTest {
 
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 initialize vital executor 𝕎 initialize { frequency != NEVER }()`(
+    fun `M initialize vital executor W initialize { frequency != NEVER }()`(
         fakeFrequency: VitalsUpdateFrequency
     ) {
         // Given
@@ -640,7 +640,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 not initialize vital executor 𝕎 initialize { frequency = NEVER }()`() {
+    fun `M not initialize vital executor W initialize { frequency = NEVER }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
@@ -661,7 +661,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize non-fatal ANR tracking  𝕎 initialize { trackNonFatalAnrs = true }()`() {
+    fun `M initialize non-fatal ANR tracking  W initialize { trackNonFatalAnrs = true }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             trackNonFatalAnrs = true
@@ -682,7 +682,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 not initialize non-fatal ANR tracking  𝕎 initialize { trackNonFatalAnrs = false }()`() {
+    fun `M not initialize non-fatal ANR tracking  W initialize { trackNonFatalAnrs = false }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             trackNonFatalAnrs = false
@@ -703,7 +703,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 shut down vital executor 𝕎 onStop()`() {
+    fun `M shut down vital executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
@@ -717,7 +717,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset vital executor 𝕎 onStop()`() {
+    fun `M reset vital executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -730,7 +730,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset vital monitors 𝕎 onStop()`() {
+    fun `M reset vital monitors W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -744,7 +744,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 enableDebugging()`() {
+    fun `M enable RUM debugging W enableDebugging()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -758,7 +758,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging only once 𝕎 enableDebugging()`() {
+    fun `M enable RUM debugging only once W enableDebugging()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -773,7 +773,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 enableDebugging(){RUM feature is not yet initialized}`() {
+    fun `M enable RUM debugging W enableDebugging(){RUM feature is not yet initialized}`() {
         // When
         testedFeature.enableDebugging(mockRumMonitor)
 
@@ -782,7 +782,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 disable RUM debugging 𝕎 disableDebugging()`() {
+    fun `M disable RUM debugging W disableDebugging()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.enableDebugging(mockRumMonitor)
@@ -800,7 +800,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive
 
     @Test
-    fun `𝕄 log dev warning and do nothing else 𝕎 onReceive() { unknown type }`() {
+    fun `M log dev warning and do nothing else W onReceive() { unknown type }`() {
         // When
         testedFeature.onReceive(Any())
 
@@ -818,7 +818,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log dev warning and do nothing else 𝕎 onReceive() { unknown type property value }`(
+    fun `M log dev warning and do nothing else W onReceive() { unknown type property value }`(
         forge: Forge
     ) {
         // Given
@@ -847,7 +847,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
-    fun `𝕄 add crash 𝕎 onReceive() { JVM crash event }`(
+    fun `M add crash W onReceive() { JVM crash event }`(
         @Forgery fakeThreads: List<ThreadDump>,
         forge: Forge
     ) {
@@ -877,7 +877,7 @@ internal class RumFeatureTest {
     // endregion
 
     @Test
-    fun `𝕄 forward to RUM NDK crash event handler 𝕎 onReceive() { NDK crash event }`(
+    fun `M forward to RUM NDK crash event handler W onReceive() { NDK crash event }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeMessage: String,
@@ -912,7 +912,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 consume last fatal ANR crash 𝕎 consumeLastFatalAnr()`(
+    fun `M consume last fatal ANR crash W consumeLastFatalAnr()`(
         @Forgery fakeViewEventJson: JsonObject,
         forge: Forge
     ) {
@@ -943,7 +943,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 not consume last fatal ANR crash 𝕎 consumeLastFatalAnr() { no last view event }`(
+    fun `M not consume last fatal ANR crash W consumeLastFatalAnr() { no last view event }`(
         forge: Forge
     ) {
         // Given
@@ -973,7 +973,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 not consume last fatal ANR crash 𝕎 consumeLastFatalAnr() { no known ANR exit }`(
+    fun `M not consume last fatal ANR crash W consumeLastFatalAnr() { no known ANR exit }`(
         @Forgery fakeViewEventJson: JsonObject,
         forge: Forge
     ) {
@@ -1000,7 +1000,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log error 𝕎 consumeLastFatalAnr() { error getting historical exit reasons }`(
+    fun `M log error W consumeLastFatalAnr() { error getting historical exit reasons }`(
         forge: Forge
     ) {
         // Given
@@ -1029,7 +1029,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isTrackNonFatalAnrsEnabledByDefault() { Android Q and below }`(
+    fun `M return true W isTrackNonFatalAnrsEnabledByDefault() { Android Q and below }`(
         @IntForgery(min = 1, max = Build.VERSION_CODES.R) fakeBuildSdkVersion: Int
     ) {
         // Given
@@ -1044,7 +1044,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isTrackNonFatalAnrsEnabledByDefault() { Android R and above }`(
+    fun `M return false W isTrackNonFatalAnrsEnabledByDefault() { Android R and above }`(
         @IntForgery(min = Build.VERSION_CODES.R) fakeBuildSdkVersion: Int
     ) {
         // Given
@@ -1061,7 +1061,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + logger error
 
     @Test
-    fun `𝕄 add error 𝕎 onReceive() { logger error event }`(
+    fun `M add error W onReceive() { logger error event }`(
         forge: Forge
     ) {
         // Given
@@ -1091,7 +1091,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log dev warning 𝕎 onReceive() { logger error event + missing message field }`(
+    fun `M log dev warning W onReceive() { logger error event + missing message field }`(
         forge: Forge
     ) {
         // Given
@@ -1117,7 +1117,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 add error with stacktrace 𝕎 onReceive() { logger error with stacktrace event }`(
+    fun `M add error with stacktrace W onReceive() { logger error with stacktrace event }`(
         forge: Forge
     ) {
         // Given
@@ -1147,7 +1147,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log dev warning 𝕎 onReceive() {logger error event with stacktrace + missing message field}`(
+    fun `M log dev warning W onReceive() {logger error event with stacktrace + missing message field}`(
         forge: Forge
     ) {
         // Given
@@ -1176,7 +1176,7 @@ internal class RumFeatureTest {
     // endregion
 
     @Test
-    fun `𝕄 notify webview event received 𝕎 onReceive() {webview event received}`() {
+    fun `M notify webview event received W onReceive() {webview event received}`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val event = mapOf(
@@ -1194,7 +1194,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + telemetry event
 
     @Test
-    fun `𝕄 handle telemetry debug event 𝕎 onReceive(){no additionalProperties}`(
+    fun `M handle telemetry debug event W onReceive(){no additionalProperties}`(
         @StringForgery fakeMessage: String
     ) {
         // Given
@@ -1214,7 +1214,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle telemetry debug event 𝕎 onReceive() {additionalProperties}`(
+    fun `M handle telemetry debug event W onReceive() {additionalProperties}`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1237,7 +1237,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle telemetry debug event 𝕎 onReceive {additionalProperties is null}`(
+    fun `M handle telemetry debug event W onReceive {additionalProperties is null}`(
         @StringForgery fakeMessage: String
     ) {
         // Given
@@ -1259,7 +1259,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning 𝕎 onReceive() { telemetry debug + message is missing }`() {
+    fun `M log warning W onReceive() { telemetry debug + message is missing }`() {
         // Given
         val event = mapOf(
             "type" to "telemetry_debug"
@@ -1279,7 +1279,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle telemetry error event 𝕎 onReceive() { with throwable }`(
+    fun `M handle telemetry error event W onReceive() { with throwable }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1303,7 +1303,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle telemetry error event 𝕎 onReceive() { with stack and kind }`(
+    fun `M handle telemetry error event W onReceive() { with stack and kind }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1331,7 +1331,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle metric event 𝕎 onReceive()`(
+    fun `M handle metric event W onReceive()`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1354,7 +1354,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle metric event 𝕎 onReceive(){no additionalProperties}`(
+    fun `M handle metric event W onReceive(){no additionalProperties}`(
         @StringForgery fakeMessage: String
     ) {
         // Given
@@ -1374,7 +1374,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 handle metric event 𝕎 onReceive(){no message}`() {
+    fun `M handle metric event W onReceive(){no message}`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val event = mapOf(
@@ -1394,7 +1394,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning 𝕎 onReceive() { telemetry error + message is missing }`() {
+    fun `M log warning W onReceive() { telemetry error + message is missing }`() {
         // Given
         val event = mapOf(
             "type" to "telemetry_error"
@@ -1414,7 +1414,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 submit configuration telemetry 𝕎 onReceive() { telemetry configuration }`(
+    fun `M submit configuration telemetry W onReceive() { telemetry configuration }`(
         @BoolForgery trackErrors: Boolean,
         @BoolForgery useProxy: Boolean,
         @BoolForgery useLocalEncryption: Boolean,

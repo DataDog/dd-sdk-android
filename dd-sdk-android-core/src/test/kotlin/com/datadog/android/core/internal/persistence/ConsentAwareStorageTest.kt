@@ -113,7 +113,7 @@ internal class ConsentAwareStorageTest {
     // region writeCurrentBatch
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch() {consent=granted}`(
+    fun `M provide writer W writeCurrentBatch() {consent=granted}`(
         @BoolForgery forceNewBatch: Boolean,
         @Forgery file: File,
         forge: Forge
@@ -145,7 +145,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no-op writer 𝕎 writeCurrentBatch(){granted, no file}`(
+    fun `M provide no-op writer W writeCurrentBatch(){granted, no file}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -172,7 +172,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch() {consent=pending}`(
+    fun `M provide writer W writeCurrentBatch() {consent=pending}`(
         @BoolForgery forceNewBatch: Boolean,
         @Forgery file: File,
         forge: Forge
@@ -204,7 +204,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no-op writer 𝕎 writeCurrentBatch() {pending, no file}`(
+    fun `M provide no-op writer W writeCurrentBatch() {pending, no file}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -231,7 +231,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no-op writer 𝕎 writeCurrentBatch() {not_granted}`(
+    fun `M provide no-op writer W writeCurrentBatch() {not_granted}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -257,7 +257,7 @@ internal class ConsentAwareStorageTest {
     // endregion
 
     @Test
-    fun `𝕄 log error 𝕎 writeCurrentBatch() { task was rejected }`(
+    fun `M log error W writeCurrentBatch() { task was rejected }`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -292,7 +292,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 do sequential metadata write 𝕎 writeCurrentBatch() { multithreaded }`(
+    fun `M do sequential metadata write W writeCurrentBatch() { multithreaded }`(
         @IntForgery(min = 2, max = 10) threadsCount: Int,
         @BoolForgery forceNewBatch: Boolean,
         @Forgery file: File,
@@ -358,7 +358,7 @@ internal class ConsentAwareStorageTest {
     // region readNextBatch
 
     @Test
-    fun `𝕄 provide batchData 𝕎 readNextBatch()`(
+    fun `M provide batchData W readNextBatch()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @StringForgery metadata: String,
         @Forgery batchFile: File
@@ -386,7 +386,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 provide batchData 𝕎 readNextBatch() { no metadata file provided }`(
+    fun `M provide batchData W readNextBatch() { no metadata file provided }`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery batchFile: File
     ) {
@@ -406,7 +406,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 provide batchData 𝕎 readNextBatch() { metadata file doesn't exist }`(
+    fun `M provide batchData W readNextBatch() { metadata file doesn't exist }`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery batchFile: File
     ) {
@@ -431,7 +431,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 return null no batch available 𝕎 readNextBatch() {no file}`() {
+    fun `M return null no batch available W readNextBatch() {no file}`() {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn null
 
@@ -447,7 +447,7 @@ internal class ConsentAwareStorageTest {
     // region confirmBatchRead
 
     @Test
-    fun `𝕄 read batch twice if released 𝕎 readNextBatch()+confirmBatchRead() {delete=false}`(
+    fun `M read batch twice if released W readNextBatch()+confirmBatchRead() {delete=false}`(
         @Forgery reason: RemovalReason,
         @Forgery file: File
     ) {
@@ -470,7 +470,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 delete batch files 𝕎 readNextBatch()+confirmBatchRead() {delete=true}`(
+    fun `M delete batch files W readNextBatch()+confirmBatchRead() {delete=true}`(
         @Forgery file: File,
         @Forgery reason: RemovalReason,
         @StringForgery fakeMetaFilePath: String
@@ -508,7 +508,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 keep batch file locked 𝕎 readNextBatch()+confirmBatchRead() {delete=true, != batchId}`(
+    fun `M keep batch file locked W readNextBatch()+confirmBatchRead() {delete=true, != batchId}`(
         @Forgery file: File,
         @Forgery reason: RemovalReason,
         @Forgery anotherFile: File
@@ -531,7 +531,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 readNextBatch() + confirmBatchRead() {delete batch fails}`(
+    fun `M warn W readNextBatch() + confirmBatchRead() {delete batch fails}`(
         @Forgery reason: RemovalReason,
         @Forgery file: File
     ) {
@@ -556,7 +556,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 readNextBatch() + confirmBatchRead() {delete batch meta fails}`(
+    fun `M warn W readNextBatch() + confirmBatchRead() {delete batch meta fails}`(
         @Forgery reason: RemovalReason,
         @Forgery file: File,
         @StringForgery fakeMetaFilePath: String
@@ -590,7 +590,7 @@ internal class ConsentAwareStorageTest {
     // region dropAll
 
     @Test
-    fun `𝕄 delete everything 𝕎 dropAll()`(
+    fun `M delete everything W dropAll()`(
         @Forgery pendingFile: File,
         @Forgery grantedFile: File,
         @StringForgery fakePendingMetaFilePath: String,
@@ -647,7 +647,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 delete everything 𝕎 dropAll() { there are locked batches }`(
+    fun `M delete everything W dropAll() { there are locked batches }`(
         @Forgery files: List<File>,
         forge: Forge
     ) {

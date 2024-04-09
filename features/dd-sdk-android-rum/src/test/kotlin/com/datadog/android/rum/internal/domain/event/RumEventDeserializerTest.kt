@@ -77,7 +77,7 @@ internal class RumEventDeserializerTest {
     // region UnitTests
 
     @Test
-    fun `𝕄 deserialize a serialized RUM ViewEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM ViewEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -93,7 +93,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize a serialized RUM ResourceEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM ResourceEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -109,7 +109,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize a serialized RUM ActionEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM ActionEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -125,7 +125,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize a serialized RUM ErrorEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM ErrorEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -141,7 +141,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize a serialized RUM LongTaskEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM LongTaskEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -157,7 +157,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize a serialized RUM TelemetryDebugEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM TelemetryDebugEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -176,7 +176,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 deserialize a serialized RUM TelemetryErrorEvent 𝕎 deserialize()`(
+    fun `M deserialize a serialized RUM TelemetryErrorEvent W deserialize()`(
         forge: Forge
     ) {
         // GIVEN
@@ -195,7 +195,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null W deserialize { wrong bundled RUM event type }`() {
+    fun `M return null W deserialize { wrong bundled RUM event type }`() {
         // GIVEN
         val fakeBadFormatEvent = Any()
         val serializedEvent = JsonParser.parseString(serializer.serialize(fakeBadFormatEvent))
@@ -209,7 +209,7 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null W deserialize { wrong status for telemetry type }`(
+    fun `M return null W deserialize { wrong status for telemetry type }`(
         forge: Forge
     ) {
         // GIVEN

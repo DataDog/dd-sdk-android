@@ -74,7 +74,7 @@ internal class RumResourceInputStreamTest {
     fun `set up`() {
         testedInputStream = RumResourceInputStream(mockInputStream, fakeUrl, rumMonitor.mockSdkCore)
 
-        // 𝕄 start resource 𝕎 init
+        // M start resource W init
         verify(rumMonitor.mockInstance).startResource(
             testedInputStream.key,
             RumResourceInputStream.METHOD,
@@ -88,7 +88,7 @@ internal class RumResourceInputStreamTest {
     // region Atomic Methods
 
     @Test
-    fun `𝕄 return byte 𝕎 read()`(
+    fun `M return byte W read()`(
         @IntForgery(-128, 127) byte: Int
     ) {
         // Given
@@ -103,7 +103,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 fill byte array 𝕎 read(array)`(
+    fun `M fill byte array W read(array)`(
         @StringForgery text: String
     ) {
         // Given
@@ -127,7 +127,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 fill byte array 𝕎 read(array, offset, length)`(
+    fun `M fill byte array W read(array, offset, length)`(
         @StringForgery text: String,
         @IntForgery(min = 4, max = 16) offset: Int
     ) {
@@ -155,7 +155,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 return available bytes 𝕎 available()`(
+    fun `M return available bytes W available()`(
         @IntForgery(min = 4, max = 16) available: Int
     ) {
         // Given
@@ -170,7 +170,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 skip bytes on delegate 𝕎 skip()`(
+    fun `M skip bytes on delegate W skip()`(
         @LongForgery(0, 1024) n: Long,
         @LongForgery(0, 1024) skipped: Long
     ) {
@@ -186,7 +186,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 return mark supported 𝕎 markSupported()`(
+    fun `M return mark supported W markSupported()`(
         @BoolForgery markSupported: Boolean
     ) {
         // Given
@@ -201,7 +201,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 mark position on delegate 𝕎 mark()`(
+    fun `M mark position on delegate W mark()`(
         @IntForgery(0, 1024) readlimit: Int
     ) {
         // When
@@ -213,7 +213,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 reset delegate 𝕎 reset()`() {
+    fun `M reset delegate W reset()`() {
         // When
         testedInputStream.reset()
 
@@ -223,7 +223,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 close delegate and stop Resource 𝕎 close()`() {
+    fun `M close delegate and stop Resource W close()`() {
         // When
         testedInputStream.close()
 
@@ -248,7 +248,7 @@ internal class RumResourceInputStreamTest {
     // region Failing Atomic Methods
 
     @Test
-    fun `𝕄 send error 𝕎 read() with throwable`() {
+    fun `M send error W read() with throwable`() {
         // Given
         whenever(mockInputStream.read()) doThrow IOException(fakeMessage)
 
@@ -269,7 +269,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 read(array) with throwable`(
+    fun `M send error W read(array) with throwable`(
         @IntForgery(32, 128) length: Int
     ) {
         // Given
@@ -293,7 +293,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 read(array, offset, length) with throwable`(
+    fun `M send error W read(array, offset, length) with throwable`(
         @IntForgery(min = 4, max = 16) offset: Int,
         @IntForgery(32, 128) length: Int
     ) {
@@ -318,7 +318,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error bytes 𝕎 available() with throwable`() {
+    fun `M send error bytes W available() with throwable`() {
         // Given
         whenever(mockInputStream.available()) doThrow IOException(fakeMessage)
 
@@ -339,7 +339,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 skip() with throwable`(
+    fun `M send error W skip() with throwable`(
         @LongForgery(0, 1024) n: Long
     ) {
         // Given
@@ -362,7 +362,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 markSupported() with throwable`() {
+    fun `M send error W markSupported() with throwable`() {
         // Given
         whenever(mockInputStream.markSupported()) doThrow RuntimeException(fakeMessage)
 
@@ -383,7 +383,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 mark() with throwable`(
+    fun `M send error W mark() with throwable`(
         @IntForgery(0, 1024) readlimit: Int
     ) {
         // Given
@@ -406,7 +406,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 reset() with throwable`() {
+    fun `M send error W reset() with throwable`() {
         // Given
         whenever(mockInputStream.reset()) doThrow IOException(fakeMessage)
 
@@ -427,7 +427,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 close() with throwable`() {
+    fun `M send error W close() with throwable`() {
         // Given
         whenever(mockInputStream.close()) doThrow IOException(fakeMessage)
 
@@ -448,7 +448,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error only once 𝕎 read() + close() with throwable`() {
+    fun `M send error only once W read() + close() with throwable`() {
         // Given
         val message2 = "again but not $fakeMessage"
         whenever(mockInputStream.read()) doThrow IOException(fakeMessage)
@@ -475,7 +475,7 @@ internal class RumResourceInputStreamTest {
     // region Scenarios
 
     @Test
-    fun `𝕄 register resource 𝕎 read() + close() {bufferedReader}`(
+    fun `M register resource W read() + close() {bufferedReader}`(
         @StringForgery content: String
     ) {
         // Given
@@ -511,7 +511,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 register resource 𝕎 read() + close() {manual}`(
+    fun `M register resource W read() + close() {manual}`(
         @StringForgery content: String
     ) {
         // Given
@@ -559,7 +559,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 register resource 𝕎 read() + mark() + reset() + close() {manual}`(
+    fun `M register resource W read() + mark() + reset() + close() {manual}`(
         forge: Forge
     ) {
         // Given
@@ -610,7 +610,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 register resource 𝕎 read() + skip() + close() {manual}`(
+    fun `M register resource W read() + skip() + close() {manual}`(
         forge: Forge
     ) {
         // Given
@@ -657,7 +657,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 register resource with timing 𝕎 read() + close() {bufferedReader}`(
+    fun `M register resource with timing W read() + close() {bufferedReader}`(
         @StringForgery content: String
     ) {
         // Given

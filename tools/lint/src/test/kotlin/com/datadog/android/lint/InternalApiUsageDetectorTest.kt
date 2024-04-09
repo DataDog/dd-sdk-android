@@ -29,7 +29,7 @@ internal class InternalApiUsageDetectorTest {
     lateinit var datadogPackage: String
 
     @Test
-    fun `𝕄 report issue 𝕎 internal class is used from non-Datadog package { java }`() {
+    fun `M report issue W internal class is used from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -64,7 +64,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal method is used from non-Datadog package { java }`() {
+    fun `M report issue W internal method is used from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -100,7 +100,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal property is used from non-Datadog package { java }`() {
+    fun `M report issue W internal property is used from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -136,7 +136,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 method of internal interface is used from non-Datadog package { java }`() {
+    fun `M report issue W method of internal interface is used from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -173,7 +173,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal extension method is used from non-Datadog package { java }`() {
+    fun `M report issue W internal extension method is used from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -208,7 +208,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal method in object class is used from non-Datadog package { java }`() {
+    fun `M report issue W internal method in object class is used from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -243,7 +243,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal class is used from non-Datadog package { kotlin }`() {
+    fun `M report issue W internal class is used from non-Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -278,7 +278,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal method is used from non-Datadog package { kotlin }`() {
+    fun `M report issue W internal method is used from non-Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -314,7 +314,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal property is used from non-Datadog package { kotlin }`() {
+    fun `M report issue W internal property is used from non-Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -350,7 +350,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal extension method is used from non-Datadog package { kotlin }`() {
+    fun `M report issue W internal extension method is used from non-Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -390,7 +390,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 report issue 𝕎 internal method in object class is used from non-Datadog package { kotlin }`() {
+    fun `M report issue W internal method in object class is used from non-Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -425,7 +425,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal method is used from non-Datadog package { kotlin + package-less file }`() {
+    fun `M not report issue W internal method is used from non-Datadog package { kotlin + package-less file }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -451,7 +451,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal class is used from Datadog package { java }`() {
+    fun `M not report issue W internal class is used from Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -478,7 +478,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal method is used from Datadog package { java }`() {
+    fun `M not report issue W internal method is used from Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -506,7 +506,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal property is used from Datadog package { java }`() {
+    fun `M not report issue W internal property is used from Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -534,7 +534,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal extension method is used from Datadog package { java }`() {
+    fun `M not report issue W internal extension method is used from Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -561,7 +561,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal method in object class is used from Datadog package { java }`() {
+    fun `M not report issue W internal method in object class is used from Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -588,7 +588,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 non-int method called from int interface impl from non-Datadog package { java }`() {
+    fun `M not report issue W non-int method called from int interface impl from non-Datadog package { java }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -617,7 +617,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal class is used from Datadog package { kotlin }`() {
+    fun `M not report issue W internal class is used from Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -644,7 +644,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal method is used from Datadog package { kotlin }`() {
+    fun `M not report issue W internal method is used from Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -672,7 +672,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal property is used from Datadog package { kotlin }`() {
+    fun `M not report issue W internal property is used from Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -700,7 +700,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal extension method is used from Datadog package { kotlin }`() {
+    fun `M not report issue W internal extension method is used from Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -727,7 +727,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 internal method in object class is used from Datadog package { kotlin }`() {
+    fun `M not report issue W internal method in object class is used from Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,
@@ -754,7 +754,7 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
-    fun `𝕄 not report issue 𝕎 non-int method called from int interface impl from non-Datadog package { kotlin }`() {
+    fun `M not report issue W non-int method called from int interface impl from non-Datadog package { kotlin }`() {
         lint()
             .files(
                 internalApiAnnotationStub,

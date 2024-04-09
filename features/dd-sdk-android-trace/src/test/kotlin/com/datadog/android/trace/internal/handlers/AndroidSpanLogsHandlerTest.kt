@@ -437,7 +437,7 @@ internal class AndroidSpanLogsHandlerTest {
     }
 
     @Test
-    fun `𝕄 log info 𝕎 log() { Logs feature is not registered }`(
+    fun `M log info W log() { Logs feature is not registered }`(
         @StringForgery event: String
     ) {
         // When

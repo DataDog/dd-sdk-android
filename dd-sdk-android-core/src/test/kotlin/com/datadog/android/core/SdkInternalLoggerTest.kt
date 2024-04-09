@@ -84,7 +84,7 @@ internal class SdkInternalLoggerTest {
     // region Target.USER
 
     @Test
-    fun `𝕄 send user log 𝕎 log { USER target }`(
+    fun `M send user log W log { USER target }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -113,7 +113,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send user log only once 𝕎 log { USER target, onlyOnce=true }`(
+    fun `M send user log only once W log { USER target, onlyOnce=true }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -145,7 +145,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send user log with condition 𝕎 log { USER target }`(
+    fun `M send user log with condition W log { USER target }`(
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) sdkVerbosity: Int
     ) {
         // Given
@@ -169,7 +169,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 not evaluate lambda 𝕎 log { USER target }`(
+    fun `M not evaluate lambda W log { USER target }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -196,7 +196,7 @@ internal class SdkInternalLoggerTest {
     // endregion
 
     @Test
-    fun `𝕄 send maintainer log 𝕎 log { MAINTAINER target }`(
+    fun `M send maintainer log W log { MAINTAINER target }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -224,7 +224,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send maintainer log only once 𝕎 log { MAINTAINER target, onlyOnce=true }`(
+    fun `M send maintainer log only once W log { MAINTAINER target, onlyOnce=true }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -255,7 +255,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, no throwable + info or debug }`(
+    fun `M send telemetry log W log { TELEMETRY target, no throwable + info or debug }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -285,7 +285,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, additional properties + info or debug }`(
+    fun `M send telemetry log W log { TELEMETRY target, additional properties + info or debug }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -320,7 +320,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, additional prop empty + info or debug }`(
+    fun `M send telemetry log W log { TELEMETRY target, additional prop empty + info or debug }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -351,7 +351,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, no throwable + warn or error }`(
+    fun `M send telemetry log W log { TELEMETRY target, no throwable + warn or error }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -382,7 +382,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, with throwable}`(
+    fun `M send telemetry log W log { TELEMETRY target, with throwable}`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -414,7 +414,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send telemetry log only once 𝕎 log { TELEMETRY target, onlyOnce=true}`(
+    fun `M send telemetry log only once W log { TELEMETRY target, onlyOnce=true}`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -447,7 +447,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send metric 𝕎 metric()`(
+    fun `M send metric W metric()`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -475,7 +475,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 do nothing metric 𝕎 metric { rum feature not initialized }`(
+    fun `M do nothing metric W metric { rum feature not initialized }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {

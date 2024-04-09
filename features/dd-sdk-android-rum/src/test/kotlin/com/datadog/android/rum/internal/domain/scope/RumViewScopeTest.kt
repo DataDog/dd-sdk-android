@@ -283,7 +283,7 @@ internal class RumViewScopeTest {
     // region Context
 
     @Test
-    fun `𝕄 return valid RumContext 𝕎 getRumContext()`() {
+    fun `M return valid RumContext W getRumContext()`() {
         // When
         val context = testedScope.getRumContext()
 
@@ -297,7 +297,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 return active actionId 𝕎 getRumContext() with child ActionScope`() {
+    fun `M return active actionId W getRumContext() with child ActionScope`() {
         // Given
         testedScope.activeActionScope = mockActionScope
 
@@ -314,7 +314,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update RUM feature context 𝕎 init()`() {
+    fun `M update RUM feature context W init()`() {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(rumMonitor.mockSdkCore)
                 .updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
@@ -328,7 +328,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the viewId 𝕎 getRumContext() with parent sessionId changed`(
+    fun `M update the viewId W getRumContext() with parent sessionId changed`(
         @Forgery newSessionId: UUID
     ) {
         // Given
@@ -396,7 +396,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the feature context with the view timestamp offset W initializing`() {
+    fun `M update the feature context with the view timestamp offset W initializing`() {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(rumMonitor.mockSdkCore).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
@@ -411,7 +411,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the feature context with the view timestamp W initializing`() {
+    fun `M update the feature context with the view timestamp W initializing`() {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(rumMonitor.mockSdkCore).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
@@ -426,7 +426,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 reset the hasReplay attribute in feature context with the view timestamp W initializing`() {
+    fun `M reset the hasReplay attribute in feature context with the view timestamp W initializing`() {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(rumMonitor.mockSdkCore).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
@@ -440,7 +440,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the context with viewType NONE W handleEvent(StopView)`(
+    fun `M update the context with viewType NONE W handleEvent(StopView)`(
         forge: Forge
     ) {
         // Given
@@ -469,7 +469,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 keep the resolved hasReplay value in the context W handleEvent(StopView)`(
+    fun `M keep the resolved hasReplay value in the context W handleEvent(StopView)`(
         forge: Forge
     ) {
         // Given
@@ -498,7 +498,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 keep the viewTimestamp value in the context W handleEvent(StopView)`(
+    fun `M keep the viewTimestamp value in the context W handleEvent(StopView)`(
         forge: Forge
     ) {
         // Given
@@ -528,7 +528,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the context with viewType NONE W handleEvent(StopView) { unknown key }`(
+    fun `M not update the context with viewType NONE W handleEvent(StopView) { unknown key }`(
         forge: Forge
     ) {
         // Given
@@ -553,7 +553,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the context W handleEvent(StopView) { cur vs glob view ids don't match }`(
+    fun `M not update the context W handleEvent(StopView) { cur vs glob view ids don't match }`(
         forge: Forge
     ) {
         // Given
@@ -612,7 +612,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the context W handleEvent(StopView) { new session }`(
+    fun `M update the context W handleEvent(StopView) { new session }`(
         forge: Forge
     ) {
         // Given
@@ -651,7 +651,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the context W handleEvent() { action completes after view stopped }`(
+    fun `M not update the context W handleEvent() { action completes after view stopped }`(
         @StringForgery actionName: String,
         @Forgery rumActionType: RumActionType
     ) {
@@ -736,7 +736,7 @@ internal class RumViewScopeTest {
         names = ["NONE"],
         mode = EnumSource.Mode.EXCLUDE
     )
-    fun `𝕄 not update the viewType to NONE W handleEvent(StartView) { on active view }`(
+    fun `M not update the viewType to NONE W handleEvent(StartView) { on active view }`(
         viewType: RumViewScope.RumViewType,
         @Forgery key: RumScopeKey
     ) {
@@ -790,7 +790,7 @@ internal class RumViewScopeTest {
         names = ["NONE"],
         mode = EnumSource.Mode.EXCLUDE
     )
-    fun `𝕄 not update the viewType to NONE W handleEvent(StopView) {already stopped, active view}`(
+    fun `M not update the viewType to NONE W handleEvent(StopView) {already stopped, active view}`(
         viewType: RumViewScope.RumViewType,
         @Forgery key: RumScopeKey
     ) {
@@ -839,7 +839,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartView) on stopped view`(
+    fun `M do nothing W handleEvent(StartView) on stopped view`(
         @Forgery key: RumScopeKey
     ) {
         // Given
@@ -857,7 +857,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StartView) on active view`(
+    fun `M send event W handleEvent(StartView) on active view`(
         @Forgery key: RumScopeKey
     ) {
         // When
@@ -924,7 +924,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event once 𝕎 handleEvent(StartView) twice on active view`(
+    fun `M send event once W handleEvent(StartView) twice on active view`(
         @Forgery key: RumScopeKey,
         @Forgery key2: RumScopeKey
     ) {
@@ -998,7 +998,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view`(
+    fun `M send event W handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
@@ -1072,7 +1072,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view { pending attributes are negative }`(
+    fun `M send event W handleEvent(StopView) on active view { pending attributes are negative }`(
         forge: Forge
     ) {
         // Given
@@ -1153,7 +1153,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view { pending attributes are positive }`(
+    fun `M send event W handleEvent(StopView) on active view { pending attributes are positive }`(
         forge: Forge
     ) {
         // Given
@@ -1231,7 +1231,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view { still has ongoing resources }`(
+    fun `M send event W handleEvent(StopView) on active view { still has ongoing resources }`(
         forge: Forge,
         @StringForgery key: String
     ) {
@@ -1309,7 +1309,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with user extra attributes 𝕎 handleEvent(StopView) on active view`() {
+    fun `M send event with user extra attributes W handleEvent(StopView) on active view`() {
         // When
         val result = testedScope.handleEvent(
             RumRawEvent.StopView(fakeKey, emptyMap()),
@@ -1374,7 +1374,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with updated global attributes 𝕎 handleEvent(StopView) on active view`(
+    fun `M send event with updated global attributes W handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
@@ -1469,7 +1469,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(StopView) on active view`(
+    fun `M send event with global attributes W handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
@@ -1562,7 +1562,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not take into account global attribute removal 𝕎 handleEvent(StopView) on active view`(
+    fun `M not take into account global attribute removal W handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
@@ -1657,7 +1657,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 take into account global attribute update 𝕎 handleEvent(StopView) on active view`(
+    fun `M take into account global attribute update W handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
@@ -1755,7 +1755,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event once 𝕎 handleEvent(StopView) twice on active view`(
+    fun `M send event once W handleEvent(StopView) twice on active view`(
         forge: Forge
     ) {
         // Given
@@ -1834,7 +1834,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 returns not null 𝕎 handleEvent(StopView) and a resource is still active`(
+    fun `M returns not null W handleEvent(StopView) and a resource is still active`(
         @StringForgery key: String,
         forge: Forge
     ) {
@@ -1910,7 +1910,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopView) on active view without matching key`(
+    fun `M do nothing W handleEvent(StopView) on active view without matching key`(
         @Forgery key: RumScopeKey,
         forge: Forge
     ) {
@@ -1932,7 +1932,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopView) on stopped view`(
+    fun `M do nothing W handleEvent(StopView) on stopped view`(
         forge: Forge
     ) {
         // Given
@@ -1954,7 +1954,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on active view`(
+    fun `M send event W handleEvent(ErrorSent) on active view`(
         @LongForgery(1) pending: Long
     ) {
         // Given
@@ -2024,7 +2024,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on active view {viewId changed}`(
+    fun `M send event W handleEvent(ErrorSent) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @Forgery fakeNewViewId: UUID
     ) {
@@ -2096,7 +2096,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ErrorSent) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ErrorSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
     ) {
@@ -2116,7 +2116,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ResourceSent) on active view`(
+    fun `M send event W handleEvent(ResourceSent) on active view`(
         @LongForgery(1) pending: Long
     ) {
         // Given
@@ -2186,7 +2186,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ResourceSent) on active view {viewId changed}`(
+    fun `M send event W handleEvent(ResourceSent) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @Forgery fakeNewViewId: UUID
     ) {
@@ -2258,7 +2258,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ResourceSent) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ResourceSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
     ) {
@@ -2278,7 +2278,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on active view`(
+    fun `M send event W handleEvent(ActionSent) on active view`(
         @LongForgery(1) pending: Long,
         @IntForgery(0) frustrationCount: Int
     ) {
@@ -2349,7 +2349,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on active view {viewId changed}`(
+    fun `M send event W handleEvent(ActionSent) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @IntForgery(0) frustrationCount: Int,
         @Forgery fakeNewViewId: UUID
@@ -2422,7 +2422,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ActionSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long,
         @IntForgery(0) frustrationCount: Int
@@ -2443,7 +2443,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {not frozen}`(
+    fun `M send event W handleEvent(LongTaskSent) on active view {not frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long
     ) {
@@ -2516,7 +2516,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {not frozen, viewId changed}`(
+    fun `M send event W handleEvent(LongTaskSent) on active view {not frozen, viewId changed}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long,
         @Forgery fakeNewViewId: UUID
@@ -2591,7 +2591,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {frozen}`(
+    fun `M send event W handleEvent(LongTaskSent) on active view {frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long
     ) {
@@ -2664,7 +2664,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {frozen, viewId changed}`(
+    fun `M send event W handleEvent(LongTaskSent) on active view {frozen, viewId changed}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long,
         @Forgery fakeNewViewId: UUID
@@ -2739,7 +2739,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskSent) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(LongTaskSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
     ) {
@@ -2759,7 +2759,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(ApplicationStarted) on active view`(
+    fun `M send event with global attributes W handleEvent(ApplicationStarted) on active view`(
         @LongForgery(0) duration: Long,
         forge: Forge
     ) {
@@ -2820,7 +2820,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with synthetics info 𝕎 handleEvent(ApplicationStarted) on active view`(
+    fun `M send event with synthetics info W handleEvent(ApplicationStarted) on active view`(
         @LongForgery(0) duration: Long,
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
@@ -2888,7 +2888,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on stopped view`() {
+    fun `M send event W handleEvent(ErrorSent) on stopped view`() {
         // Given
         testedScope.stopped = true
         testedScope.pendingErrorCount = 1
@@ -2957,7 +2957,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ErrorSent) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ErrorSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
     ) {
@@ -2978,7 +2978,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ResourceSent) on stopped view`() {
+    fun `M send event W handleEvent(ResourceSent) on stopped view`() {
         // Given
         testedScope.stopped = true
         testedScope.pendingResourceCount = 1
@@ -3047,7 +3047,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ResourceSent) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ResourceSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
     ) {
@@ -3068,7 +3068,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on stopped view`(
+    fun `M send event W handleEvent(ActionSent) on stopped view`(
         @IntForgery(0) frustrationCount: Int
     ) {
         // Given
@@ -3139,7 +3139,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ActionSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long,
         @IntForgery(0) frustrationCount: Int
@@ -3161,7 +3161,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on stopped view`() {
+    fun `M send event W handleEvent(LongTaskSent) on stopped view`() {
         // Given
         testedScope.stopped = true
         testedScope.pendingLongTaskCount = 1
@@ -3230,7 +3230,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskSent) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(LongTaskSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
     ) {
@@ -3251,7 +3251,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 close the scope 𝕎 handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
+    fun `M close the scope W handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
         @LongForgery(0) duration: Long,
         @IntForgery(0) frustrationCount: Int
     ) {
@@ -3311,7 +3311,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 close the scope 𝕎 handleEvent(ActionDropped) on stopped view { ApplicationStarted }`(
+    fun `M close the scope W handleEvent(ActionDropped) on stopped view { ApplicationStarted }`(
         @LongForgery(0) duration: Long
     ) {
         // Given
@@ -3371,7 +3371,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(KeepAlive) on stopped view`() {
+    fun `M do nothing W handleEvent(KeepAlive) on stopped view`() {
         // Given
         testedScope.stopped = true
 
@@ -3387,7 +3387,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(KeepAlive) on active view`() {
+    fun `M send event W handleEvent(KeepAlive) on active view`() {
         // When
         val result = testedScope.handleEvent(
             RumRawEvent.KeepAlive(),
@@ -3453,7 +3453,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 returns null 𝕎 handleEvent(any) on stopped view {no pending event}`() {
+    fun `M returns null W handleEvent(any) on stopped view {no pending event}`() {
         // Given
         testedScope.stopped = true
         fakeEvent = mock()
@@ -3467,7 +3467,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 remove the hasReplay entry W handleEvent(any) on stopped view {no pending event}`(
+    fun `M remove the hasReplay entry W handleEvent(any) on stopped view {no pending event}`(
         forge: Forge
     ) {
         // Given
@@ -3490,7 +3490,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending action event}`(
+    fun `M returns self W handleEvent(any) on stopped view {pending action event}`(
         @LongForgery(1, 32) pendingEvents: Long
     ) {
         // Given
@@ -3511,7 +3511,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending resource event}`(
+    fun `M returns self W handleEvent(any) on stopped view {pending resource event}`(
         @LongForgery(1, 32) pendingEvents: Long
     ) {
         // Given
@@ -3532,7 +3532,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending error event}`(
+    fun `M returns self W handleEvent(any) on stopped view {pending error event}`(
         @LongForgery(1, 32) pendingEvents: Long
     ) {
         // Given
@@ -3553,7 +3553,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending long task event}`(
+    fun `M returns self W handleEvent(any) on stopped view {pending long task event}`(
         @LongForgery(1, 32) pendingEvents: Long
     ) {
         // Given
@@ -3574,7 +3574,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with synthetics info 𝕎 handleEvent(StopView) on active view`(
+    fun `M send event with synthetics info W handleEvent(StopView) on active view`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         forge: Forge
@@ -3659,7 +3659,7 @@ internal class RumViewScopeTest {
     // region Action
 
     @Test
-    fun `𝕄 create ActionScope 𝕎 handleEvent(StartAction)`(
+    fun `M create ActionScope W handleEvent(StartAction)`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
@@ -3690,7 +3690,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the RumContext in GlobalRum W ActionScope created`(
+    fun `M update the RumContext in GlobalRum W ActionScope created`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
@@ -3724,7 +3724,7 @@ internal class RumViewScopeTest {
 
     @ParameterizedTest
     @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 do nothing + log warning 𝕎 handleEvent(StartAction+!CUSTOM)+active child ActionScope`(
+    fun `M do nothing + log warning W handleEvent(StartAction+!CUSTOM)+active child ActionScope`(
         actionType: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
@@ -3757,7 +3757,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing + log warning 𝕎 handleEvent(StartAction+CUSTOM+cont) + child ActionScope`(
+    fun `M do nothing + log warning W handleEvent(StartAction+CUSTOM+cont) + child ActionScope`(
         @StringForgery name: String,
         forge: Forge
     ) {
@@ -3789,7 +3789,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send action 𝕎 handleEvent(StartAction+CUSTOM+instant) + active child ActionScope`(
+    fun `M send action W handleEvent(StartAction+CUSTOM+instant) + active child ActionScope`(
         @StringForgery name: String,
         forge: Forge
     ) {
@@ -3852,7 +3852,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send action with synthetics 𝕎 handleEvent(StartAction+CUSTOM+instant) + active child ActionScope`(
+    fun `M send action with synthetics W handleEvent(StartAction+CUSTOM+instant) + active child ActionScope`(
         @StringForgery name: String,
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
@@ -3922,7 +3922,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartAction) on stopped view`(
+    fun `M do nothing W handleEvent(StartAction) on stopped view`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
@@ -3943,7 +3943,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event to child ActionScope 𝕎 handleEvent(StartView) on active view`() {
+    fun `M send event to child ActionScope W handleEvent(StartView) on active view`() {
         // Given
         testedScope.activeActionScope = mockChildScope
 
@@ -3957,7 +3957,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event to child ActionScope 𝕎 handleEvent() on stopped view`() {
+    fun `M send event to child ActionScope W handleEvent() on stopped view`() {
         // Given
         testedScope.stopped = true
         testedScope.activeActionScope = mockChildScope
@@ -3972,7 +3972,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 remove child ActionScope 𝕎 handleEvent() returns null`() {
+    fun `M remove child ActionScope W handleEvent() returns null`() {
         // Given
         testedScope.activeActionScope = mockChildScope
         whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
@@ -3988,7 +3988,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the RumContext in GlobalRum when removing the ActionScope`() {
+    fun `M update the RumContext in GlobalRum when removing the ActionScope`() {
         // Given
         testedScope.activeActionScope = mockChildScope
         whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
@@ -4012,7 +4012,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending 𝕎 handleEvent(StartAction) on active view`(
+    fun `M wait for pending W handleEvent(StartAction) on active view`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean
@@ -4029,7 +4029,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending 𝕎 handleEvent(ApplicationStarted) on active view`(
+    fun `M wait for pending W handleEvent(ApplicationStarted) on active view`(
         @LongForgery(0) duration: Long
     ) {
         // Given
@@ -4045,7 +4045,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on active view`(
+    fun `M decrease pending Action W handleEvent(ActionDropped) on active view`(
         @LongForgery(1) pending: Long
     ) {
         // Given
@@ -4059,7 +4059,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on active view {viewId changed}`(
+    fun `M decrease pending Action W handleEvent(ActionDropped) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @Forgery fakeNewViewId: UUID
     ) {
@@ -4075,7 +4075,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on stopped view`() {
+    fun `M decrease pending Action W handleEvent(ActionDropped) on stopped view`() {
         // Given
         testedScope.pendingActionCount = 1
         fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
@@ -4088,7 +4088,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on stopped view {viewId changed}`(
+    fun `M decrease pending Action W handleEvent(ActionDropped) on stopped view {viewId changed}`(
         @Forgery fakeNewViewId: UUID
     ) {
         // Given
@@ -4104,7 +4104,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ActionDropped) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ActionDropped) on active view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @Forgery viewUuid: UUID
     ) {
@@ -4121,7 +4121,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ActionDropped) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ActionDropped) on stopped view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @Forgery viewUuid: UUID
     ) {
@@ -4143,7 +4143,7 @@ internal class RumViewScopeTest {
     // region Resource
 
     @Test
-    fun `𝕄 create ResourceScope 𝕎 handleEvent(StartResource)`(
+    fun `M create ResourceScope W handleEvent(StartResource)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -4179,7 +4179,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 create ResourceScope with active actionId 𝕎 handleEvent(StartResource)`(
+    fun `M create ResourceScope with active actionId W handleEvent(StartResource)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -4213,7 +4213,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event to children ResourceScopes 𝕎 handleEvent(StartView) on active view`(
+    fun `M send event to children ResourceScopes W handleEvent(StartView) on active view`(
         @StringForgery key: String
     ) {
         // Given
@@ -4230,7 +4230,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event to children ResourceScopes 𝕎 handleEvent(StartView) on stopped view`(
+    fun `M send event to children ResourceScopes W handleEvent(StartView) on stopped view`(
         @StringForgery key: String
     ) {
         // Given
@@ -4248,7 +4248,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 remove child ResourceScope 𝕎 handleEvent() returns null`(
+    fun `M remove child ResourceScope W handleEvent() returns null`(
         @StringForgery key: String
     ) {
         // Given
@@ -4266,7 +4266,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending Resource 𝕎 handleEvent(StartResource) on active view`(
+    fun `M wait for pending Resource W handleEvent(StartResource) on active view`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -4284,7 +4284,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on active view`(
+    fun `M decrease pending Resource W handleEvent(ResourceDropped) on active view`(
         @LongForgery(1) pending: Long
     ) {
         // Given
@@ -4300,7 +4300,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on active view {viewId changed}`(
+    fun `M decrease pending Resource W handleEvent(ResourceDropped) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @Forgery fakeNewViewId: UUID
     ) {
@@ -4318,7 +4318,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on stopped view`() {
+    fun `M decrease pending Resource W handleEvent(ResourceDropped) on stopped view`() {
         // Given
         testedScope.pendingResourceCount = 1
         fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
@@ -4333,7 +4333,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on stopped view {viewId changed}`(
+    fun `M decrease pending Resource W handleEvent(ResourceDropped) on stopped view {viewId changed}`(
         @Forgery fakeNewViewId: UUID
     ) {
         // Given
@@ -4351,7 +4351,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ResourceDropped) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ResourceDropped) on active view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @Forgery viewUuid: UUID
     ) {
@@ -4370,7 +4370,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ResourceDropped) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ResourceDropped) on stopped view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @Forgery viewUuid: UUID
     ) {
@@ -4390,7 +4390,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 convert pending resource to error 𝕎 handleEvent() {resource stopped by error}`(
+    fun `M convert pending resource to error W handleEvent() {resource stopped by error}`(
         @LongForgery(1) pendingResources: Long,
         @LongForgery(min = 0, max = Long.MAX_VALUE - 1) pendingErrors: Long,
         forge: Forge
@@ -4410,7 +4410,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 convert pending resource to error 𝕎 handleEvent() {resource stopped by error with stacktrace}`(
+    fun `M convert pending resource to error W handleEvent() {resource stopped by error with stacktrace}`(
         @LongForgery(1) pendingResources: Long,
         @LongForgery(min = 0, max = Long.MAX_VALUE - 1) pendingErrors: Long,
         forge: Forge
@@ -4434,7 +4434,7 @@ internal class RumViewScopeTest {
     // region Error
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view`(
+    fun `M send event W handleEvent(AddError) on active view`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -4508,7 +4508,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with synthetics info 𝕎 handleEvent(AddError) on active view`(
+    fun `M send event with synthetics info W handleEvent(AddError) on active view`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         @StringForgery message: String,
@@ -4589,7 +4589,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {throwable_message == null}`(
+    fun `M send event W handleEvent(AddError) on active view {throwable_message == null}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -4662,7 +4662,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {throwable is ANR}`(
+    fun `M send event W handleEvent(AddError) on active view {throwable is ANR}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -4736,7 +4736,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {throwable_message == blank}`(
+    fun `M send event W handleEvent(AddError) on active view {throwable_message == blank}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery(StringForgeryType.WHITESPACE) blankMessage: String,
@@ -4811,7 +4811,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {message = throwable_message}`(
+    fun `M send event W handleEvent(AddError) on active view {message = throwable_message}`(
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @StringForgery stacktrace: String,
@@ -4888,7 +4888,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 AddError {throwable=null}`(
+    fun `M send event W AddError {throwable=null}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -4943,7 +4943,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 AddError {stacktrace=null}`(
+    fun `M send event W AddError {stacktrace=null}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5022,7 +5022,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null, fatal=false}`(
+    fun `M send event W handleEvent(AddError) {throwable=null, stacktrace=null, fatal=false}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery sourceType: RumErrorSourceType,
@@ -5100,7 +5100,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null, fatal=true}`(
+    fun `M send event W handleEvent(AddError) {throwable=null, stacktrace=null, fatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery sourceType: RumErrorSourceType,
@@ -5230,7 +5230,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view { error fingerprint attribute }`(
+    fun `M send event W handleEvent(AddError) on active view { error fingerprint attribute }`(
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @StringForgery stacktrace: String,
@@ -5309,7 +5309,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddError)`(
+    fun `M send event with global attributes W handleEvent(AddError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5390,7 +5390,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) {isFatal=true}`(
+    fun `M send event W handleEvent(AddError) {isFatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5522,7 +5522,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) {internal is_crash=true}`(
+    fun `M send event W handleEvent(AddError) {internal is_crash=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5668,7 +5668,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) {internal is_crash=false}`(
+    fun `M send event W handleEvent(AddError) {internal is_crash=false}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5748,7 +5748,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddError) {custom error type}`(
+    fun `M send event W handleEvent(AddError) {custom error type}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5830,7 +5830,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddError) {isFatal=true}`(
+    fun `M send event with global attributes W handleEvent(AddError) {isFatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5963,7 +5963,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(AddError) on stopped view {throwable}`(
+    fun `M do nothing W handleEvent(AddError) on stopped view {throwable}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -5993,7 +5993,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(AddError) on stopped view {stacktrace}`(
+    fun `M do nothing W handleEvent(AddError) on stopped view {stacktrace}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -6023,7 +6023,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending Error 𝕎 handleEvent(AddError) on active view {fatal=false}`(
+    fun `M wait for pending Error W handleEvent(AddError) on active view {fatal=false}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
@@ -6047,7 +6047,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not wait for pending Error 𝕎 handleEvent(AddError) on active view {fatal=true}`(
+    fun `M not wait for pending Error W handleEvent(AddError) on active view {fatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
@@ -6071,7 +6071,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on active view`(
+    fun `M decrease pending Error W handleEvent(ErrorDropped) on active view`(
         @LongForgery(1) pending: Long
     ) {
         // Given
@@ -6085,7 +6085,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on active view {viewId changed}`(
+    fun `M decrease pending Error W handleEvent(ErrorDropped) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @Forgery fakeNewViewId: UUID
     ) {
@@ -6101,7 +6101,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on stopped view`() {
+    fun `M decrease pending Error W handleEvent(ErrorDropped) on stopped view`() {
         // Given
         testedScope.pendingErrorCount = 1
         fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
@@ -6114,7 +6114,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on stopped view {viewId changed}`(
+    fun `M decrease pending Error W handleEvent(ErrorDropped) on stopped view {viewId changed}`(
         @Forgery fakeNewViewId: UUID
     ) {
         // Given
@@ -6130,7 +6130,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ErrorDropped) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ErrorDropped) on active view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @Forgery viewUuid: UUID
     ) {
@@ -6147,7 +6147,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(ErrorDropped) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(ErrorDropped) on stopped view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @Forgery viewUuid: UUID
     ) {
@@ -6169,7 +6169,7 @@ internal class RumViewScopeTest {
     // region Long Task
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
+    fun `M send event W handleEvent(AddLongTask) on active view {not frozen}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -6224,7 +6224,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
+    fun `M send event W handleEvent(AddLongTask) on active view {frozen}`(
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -6279,7 +6279,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event synthetics info 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
+    fun `M send event synthetics info W handleEvent(AddLongTask) on active view {not frozen}`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         @LongForgery(0L, 700_000_000L) durationNs: Long,
@@ -6343,7 +6343,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with synthetics info 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
+    fun `M send event with synthetics info W handleEvent(AddLongTask) on active view {frozen}`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
@@ -6407,7 +6407,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask) {not frozen}`(
+    fun `M send event with global attributes W handleEvent(AddLongTask) {not frozen}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
@@ -6472,7 +6472,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask) {frozen}`(
+    fun `M send event with global attributes W handleEvent(AddLongTask) {frozen}`(
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
@@ -6537,7 +6537,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(AddLongTask) on stopped view`(
+    fun `M do nothing W handleEvent(AddLongTask) on stopped view`(
         @LongForgery(0) durationNs: Long,
         @StringForgery target: String,
         @LongForgery(1) pending: Long
@@ -6558,7 +6558,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending Long Task 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
+    fun `M wait for pending Long Task W handleEvent(AddLongTask) on active view {not frozen}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -6574,7 +6574,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending LT and FF 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
+    fun `M wait for pending LT and FF W handleEvent(AddLongTask) on active view {frozen}`(
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -6590,7 +6590,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on active view {not frozen}`(
+    fun `M decrease pending Long Task W handleEvent(LongTaskDropped) on active view {not frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long
     ) {
@@ -6609,7 +6609,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on active view {not frozen, viewId changed}`(
+    fun `M decrease pending Long Task W handleEvent(LongTaskDropped) on active view {not frozen, viewId changed}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long,
         @Forgery fakeNewViewId: UUID
@@ -6630,7 +6630,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on active view {frozen}`(
+    fun `M decrease pending LT and FF W handleEvent(LongTaskDropped) on active view {frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long
     ) {
@@ -6649,7 +6649,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on active view {frozen, viewId changed}`(
+    fun `M decrease pending LT and FF W handleEvent(LongTaskDropped) on active view {frozen, viewId changed}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long,
         @Forgery fakeNewViewId: UUID
@@ -6670,7 +6670,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending LT 𝕎 handleEvent(LongTaskDropped) on stopped view {not frozen}`() {
+    fun `M decrease pending LT W handleEvent(LongTaskDropped) on stopped view {not frozen}`() {
         // Given
         testedScope.pendingLongTaskCount = 1
         testedScope.pendingFrozenFrameCount = 0
@@ -6687,7 +6687,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending LT 𝕎 handleEvent(LongTaskDropped) on stopped view {not frozen, viewId changed}`(
+    fun `M decrease pending LT W handleEvent(LongTaskDropped) on stopped view {not frozen, viewId changed}`(
         @Forgery fakeNewViewId: UUID
     ) {
         // Given
@@ -6707,7 +6707,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on stopped view {frozen}`() {
+    fun `M decrease pending LT and FF W handleEvent(LongTaskDropped) on stopped view {frozen}`() {
         // Given
         testedScope.pendingLongTaskCount = 1
         testedScope.pendingFrozenFrameCount = 1
@@ -6724,7 +6724,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on stopped view {frozen, viewId changed}`(
+    fun `M decrease pending LT and FF W handleEvent(LongTaskDropped) on stopped view {frozen, viewId changed}`(
         @Forgery fakeNewViewId: UUID
     ) {
         // Given
@@ -6744,7 +6744,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskDropped) on active view {unknown viewId}`(
+    fun `M do nothing W handleEvent(LongTaskDropped) on active view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @BoolForgery isFrozenFrame: Boolean,
         @Forgery viewUuid: UUID
@@ -6762,7 +6762,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskDropped) on stopped view {unknown viewId}`(
+    fun `M do nothing W handleEvent(LongTaskDropped) on stopped view {unknown viewId}`(
         @LongForgery(1) pending: Long,
         @BoolForgery isFrozenFrame: Boolean,
         @Forgery viewUuid: UUID
@@ -6785,7 +6785,7 @@ internal class RumViewScopeTest {
     // region Loading Time
 
     @Test
-    fun `𝕄 send event with custom timing 𝕎 handleEvent(AddCustomTiming) on active view`(
+    fun `M send event with custom timing W handleEvent(AddCustomTiming) on active view`(
         forge: Forge
     ) {
         // Given
@@ -6856,7 +6856,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with custom timings 𝕎 handleEvent(AddCustomTiming) called multiple times`(
+    fun `M send event with custom timings W handleEvent(AddCustomTiming) called multiple times`(
         forge: Forge
     ) {
         // Given
@@ -6989,7 +6989,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not add custom timing 𝕎 handleEvent(AddCustomTiming) on stopped view`(
+    fun `M not add custom timing W handleEvent(AddCustomTiming) on stopped view`(
         forge: Forge
     ) {
         // Given
@@ -7012,7 +7012,7 @@ internal class RumViewScopeTest {
     // region Vitals
 
     @Test
-    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {CPU}`(
+    fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {CPU}`(
         forge: Forge
     ) {
         // Given
@@ -7097,7 +7097,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {CPU short timespan}`(
+    fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {CPU short timespan}`(
         @DoubleForgery(1024.0, 65536.0) cpuTicks: Double
     ) {
         // Given
@@ -7174,7 +7174,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {Memory}`(
+    fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {Memory}`(
         forge: Forge
     ) {
         // Given
@@ -7250,7 +7250,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {high frameRate}`(
+    fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {high frameRate}`(
         forge: Forge
     ) {
         // Given
@@ -7336,7 +7336,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {low frameRate}`(
+    fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {low frameRate}`(
         forge: Forge
     ) {
         // Given
@@ -7426,7 +7426,7 @@ internal class RumViewScopeTest {
     // region Cross-platform performance metrics
 
     @Test
-    fun `𝕄 send update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterBuildTime }`(
+    fun `M send update W handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterBuildTime }`(
         forge: Forge
     ) {
         // GIVEN
@@ -7460,7 +7460,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterRasterTime }`(
+    fun `M send update W handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterRasterTime }`(
         forge: Forge
     ) {
         // GIVEN
@@ -7494,7 +7494,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send View update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { JsRefreshRate }`(
+    fun `M send View update W handleEvent(UpdatePerformanceMetric+KeepAlive) { JsRefreshRate }`(
         forge: Forge
     ) {
         // GIVEN
@@ -7536,7 +7536,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send View update with all values 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive)`(
+    fun `M send View update with all values W handleEvent(UpdatePerformanceMetric+KeepAlive)`(
         forge: Forge
     ) {
         // GIVEN
@@ -7942,7 +7942,7 @@ internal class RumViewScopeTest {
     // region write notification
 
     @Test
-    fun `𝕄 notify about success 𝕎 handleEvent(AddError+non-fatal) { write succeeded }`(
+    fun `M notify about success W handleEvent(AddError+non-fatal) { write succeeded }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -7971,7 +7971,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(AddError+non-fatal) { write failed }`(
+    fun `M notify about error W handleEvent(AddError+non-fatal) { write failed }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -8001,7 +8001,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(AddError+non-fatal) { write throws }`(
+    fun `M notify about error W handleEvent(AddError+non-fatal) { write throws }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -8033,7 +8033,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not notify about success 𝕎 handleEvent(AddError+fatal) { write succeeded }`(
+    fun `M not notify about success W handleEvent(AddError+fatal) { write succeeded }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -8062,7 +8062,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not notify about error 𝕎 handleEvent(AddError+fatal) { write failed }`(
+    fun `M not notify about error W handleEvent(AddError+fatal) { write failed }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -8092,7 +8092,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not notify about error 𝕎 handleEvent(AddError+fatal) { write throws }`(
+    fun `M not notify about error W handleEvent(AddError+fatal) { write throws }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -8124,7 +8124,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about success 𝕎 handleEvent(ApplicationStarted) { write succeeded }`(
+    fun `M notify about success W handleEvent(ApplicationStarted) { write succeeded }`(
         forge: Forge
     ) {
         // Given
@@ -8143,7 +8143,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(ApplicationStarted) { write failed }`(
+    fun `M notify about error W handleEvent(ApplicationStarted) { write failed }`(
         forge: Forge
     ) {
         // Given
@@ -8163,7 +8163,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(ApplicationStarted) { write throws }`(
+    fun `M notify about error W handleEvent(ApplicationStarted) { write throws }`(
         forge: Forge
     ) {
         // Given
@@ -8185,7 +8185,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about success 𝕎 handleEvent(AddLongTask) { write succeeded }`(
+    fun `M notify about success W handleEvent(AddLongTask) { write succeeded }`(
         @LongForgery(250_000_000L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -8202,7 +8202,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask) { write failed }`(
+    fun `M notify about error W handleEvent(AddLongTask) { write failed }`(
         @LongForgery(250_000_000L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -8220,7 +8220,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask) { write throws }`(
+    fun `M notify about error W handleEvent(AddLongTask) { write throws }`(
         @LongForgery(250_000_000L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
@@ -8241,7 +8241,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about success 𝕎 handleEvent(AddLongTask, is frozen frame) { write succeeded }`(
+    fun `M notify about success W handleEvent(AddLongTask, is frozen frame) { write succeeded }`(
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -8258,7 +8258,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask, is frozen frame) { write failed }`(
+    fun `M notify about error W handleEvent(AddLongTask, is frozen frame) { write failed }`(
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -8276,7 +8276,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask, is frozen frame) { write throws }`(
+    fun `M notify about error W handleEvent(AddLongTask, is frozen frame) { write throws }`(
         @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
@@ -8345,7 +8345,7 @@ internal class RumViewScopeTest {
     // region Global Attributes
 
     @Test
-    fun `𝕄 update the global attributes 𝕎 handleEvent(StopView)`(
+    fun `M update the global attributes W handleEvent(StopView)`(
         forge: Forge
     ) {
         // Given
@@ -8402,7 +8402,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the global attributes 𝕎 handleEvent(StartView)`(
+    fun `M not update the global attributes W handleEvent(StartView)`(
         forge: Forge
     ) {
         // Given
@@ -8453,7 +8453,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the global attributes 𝕎 handleEvent(Resource Sent) on new started view`(
+    fun `M not update the global attributes W handleEvent(Resource Sent) on new started view`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery url: String,
@@ -8518,7 +8518,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the global attributes 𝕎 handleEvent(Action Sent) on new started view`(
+    fun `M not update the global attributes W handleEvent(Action Sent) on new started view`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         forge: Forge
@@ -8581,7 +8581,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the global attributes 𝕎 handleEvent(Resource Sent) on stopped view`(
+    fun `M not update the global attributes W handleEvent(Resource Sent) on stopped view`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery url: String,
@@ -8657,7 +8657,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the global attributes 𝕎 handleEvent(Action Sent) on stopped view`(
+    fun `M not update the global attributes W handleEvent(Action Sent) on stopped view`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         forge: Forge
@@ -8730,7 +8730,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 use a copy of the global attributes 𝕎 handleEvent(StopView)`(
+    fun `M use a copy of the global attributes W handleEvent(StopView)`(
         forge: Forge
     ) {
         // Given
@@ -8783,7 +8783,7 @@ internal class RumViewScopeTest {
     // endregion
 
     @Test
-    fun `𝕄 produce event safe for serialization 𝕎 handleEvent()`(
+    fun `M produce event safe for serialization W handleEvent()`(
         forge: Forge
     ) {
         // Given

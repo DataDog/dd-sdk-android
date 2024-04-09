@@ -84,7 +84,7 @@ internal class VitalReaderRunnableTest {
     }
 
     @Test
-    fun `𝕄 read data, notify observer and schedule 𝕎 run { viewType == FOREGROUND }()`() {
+    fun `M read data, notify observer and schedule W run { viewType == FOREGROUND }()`() {
         // Given
         whenever(mockReader.readVitalData()) doReturn fakeValue
 
@@ -104,7 +104,7 @@ internal class VitalReaderRunnableTest {
         names = ["FOREGROUND"],
         mode = EnumSource.Mode.EXCLUDE
     )
-    fun `𝕄 not read data, not notify observer but schedule 𝕎 run { viewType != FOREGROUND }()`(
+    fun `M not read data, not notify observer but schedule W run { viewType != FOREGROUND }()`(
         viewType: RumViewScope.RumViewType,
         forge: Forge
     ) {
@@ -123,7 +123,7 @@ internal class VitalReaderRunnableTest {
     }
 
     @Test
-    fun `𝕄 not read data, not notify observer but schedule 𝕎 run { wrong type of viewType }()`() {
+    fun `M not read data, not notify observer but schedule W run { wrong type of viewType }()`() {
         // Given
         val rumContext = mapOf<String, Any?>(
             "view_type" to Any()
@@ -140,7 +140,7 @@ internal class VitalReaderRunnableTest {
     }
 
     @Test
-    fun `𝕄 read data and schedule 𝕎 run() {data is null}`() {
+    fun `M read data and schedule W run() {data is null}`() {
         // Given
         whenever(mockReader.readVitalData()) doReturn null
 
@@ -155,7 +155,7 @@ internal class VitalReaderRunnableTest {
     }
 
     @Test
-    fun `𝕄 log error 𝕎 run() { rejected by executor }`() {
+    fun `M log error W run() { rejected by executor }`() {
         // Given
         val exception = RejectedExecutionException()
         whenever(mockExecutor.schedule(eq(testedRunnable), any(), any())) doThrow exception

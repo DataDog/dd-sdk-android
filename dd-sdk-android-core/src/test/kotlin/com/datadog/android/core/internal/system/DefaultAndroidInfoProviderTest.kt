@@ -93,7 +93,7 @@ internal class DefaultAndroidInfoProviderTest {
     // region device type
 
     @Test
-    fun `𝕄 return TV type 𝕎 deviceType { UI_MODE_TYPE_TELEVISION }`() {
+    fun `M return TV type W deviceType { UI_MODE_TYPE_TELEVISION }`() {
         // Given
         whenever(mockUiModeManager.currentModeType) doReturn Configuration.UI_MODE_TYPE_TELEVISION
         testedProvider = createProvider()
@@ -106,7 +106,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return TV type 𝕎 deviceType { FEATURE_LEANBACK }`() {
+    fun `M return TV type W deviceType { FEATURE_LEANBACK }`() {
         // Given
         whenever(
             mockPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
@@ -121,7 +121,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return TV type 𝕎 deviceType { FEATURE_GOOGLE_ANDROID_TV }`() {
+    fun `M return TV type W deviceType { FEATURE_GOOGLE_ANDROID_TV }`() {
         // Given
         whenever(
             mockPackageManager.hasSystemFeature(
@@ -138,7 +138,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return Tablet type 𝕎 deviceType { Samsung SM-T series model }`(
+    fun `M return Tablet type W deviceType { Samsung SM-T series model }`(
         @IntForgery(1) tModelVersion: Int
     ) {
         // Given
@@ -153,7 +153,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return Tablet type 𝕎 deviceType { tablet word in model name }`(
+    fun `M return Tablet type W deviceType { tablet word in model name }`(
         @StringForgery(regex = "[a-zA-Z1-9 ]{0,9}Tablet[a-zA-Z1-9 ]{0,9}") fakeModel: String
     ) {
         // Given
@@ -168,7 +168,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return Tablet type 𝕎 deviceType { smallest screen width more than 800dp }`(
+    fun `M return Tablet type W deviceType { smallest screen width more than 800dp }`(
         @IntForgery(min = DefaultAndroidInfoProvider.MIN_TABLET_WIDTH_DP) fakeWidth: Int
     ) {
         // Given
@@ -189,7 +189,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return Mobile type 𝕎 deviceType { phone word in model name }`(
+    fun `M return Mobile type W deviceType { phone word in model name }`(
         @StringForgery(regex = "[a-zA-Z1-9 ]{0,9}Phone[a-zA-Z1-9 ]{0,9}") fakeModel: String
     ) {
         // Given
@@ -205,7 +205,7 @@ internal class DefaultAndroidInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("phoneTypesWithDescription")
-    fun `𝕄 return Mobile type 𝕎 deviceType {smallest screen width less than 800dp + telephony}`(
+    fun `M return Mobile type W deviceType {smallest screen width less than 800dp + telephony}`(
         phoneType: PhoneType,
         @IntForgery(min = 0, max = DefaultAndroidInfoProvider.MIN_TABLET_WIDTH_DP) fakeWidth: Int
     ) {
@@ -227,7 +227,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return Other type 𝕎 deviceType { no tv, table or mobile properties }`(
+    fun `M return Other type W deviceType { no tv, table or mobile properties }`(
         @IntForgery(
             min = 0,
             max = DefaultAndroidInfoProvider.MIN_TABLET_WIDTH_DP
@@ -257,7 +257,7 @@ internal class DefaultAndroidInfoProviderTest {
     // region os version + major version
 
     @Test
-    fun `𝕄 return full version 𝕎 osVersion`() {
+    fun `M return full version W osVersion`() {
         // Given
         testedProvider = createProvider()
 
@@ -269,7 +269,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return major version 𝕎 osMajorVersion { major - minor - patch format}`(
+    fun `M return major version W osMajorVersion { major - minor - patch format}`(
         @StringForgery(regex = "[1-9]{1,3}") fakeMajor: String,
         @StringForgery(regex = "[1-9]{1,3}") fakeMinor: String,
         @StringForgery(regex = "[1-9]{1,3}") fakeHotfix: String
@@ -286,7 +286,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return major version 𝕎 osMajorVersion { generic format }`(
+    fun `M return major version W osMajorVersion { generic format }`(
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeVersion: String
     ) {
         // Given
@@ -305,7 +305,7 @@ internal class DefaultAndroidInfoProviderTest {
     // region device name
 
     @Test
-    fun `𝕄 return device name 𝕎 deviceName { brand is blank }`() {
+    fun `M return device name W deviceName { brand is blank }`() {
         // Given
         fakeDeviceBrand = ""
         testedProvider = createProvider()
@@ -318,7 +318,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return device name 𝕎 deviceName { model contains brand }`(
+    fun `M return device name W deviceName { model contains brand }`(
         @StringForgery fakeBrand: String,
         @StringForgery modelPrefix: String,
         @StringForgery modelSuffix: String
@@ -337,7 +337,7 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return device name 𝕎 deviceName { model doesn't contain brand }`(
+    fun `M return device name W deviceName { model doesn't contain brand }`(
         @StringForgery fakeBrand: String,
         @StringForgery fakeModel: String
     ) {
@@ -357,7 +357,7 @@ internal class DefaultAndroidInfoProviderTest {
     // endregion
 
     @Test
-    fun `𝕄 return device brand 𝕎 deviceBrand { model doesn't contain brand }`(
+    fun `M return device brand W deviceBrand { model doesn't contain brand }`(
         @StringForgery fakeBrand: String
     ) {
         // Given

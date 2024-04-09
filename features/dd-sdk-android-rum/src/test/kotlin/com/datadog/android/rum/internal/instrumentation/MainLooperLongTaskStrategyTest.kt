@@ -90,7 +90,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
     }
 
     @Test
-    fun `𝕄 report long task 𝕎 print()`(
+    fun `M report long task W print()`(
         @LongForgery(min = MIN_LONG_TASK_DURATION_MS, max = 500) duration: Long,
         @StringForgery target: String,
         @StringForgery callback: String,
@@ -114,7 +114,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
     }
 
     @Test
-    fun `𝕄 do not report short task 𝕎 print()`(
+    fun `M do not report short task W print()`(
         @LongForgery(min = 0, max = MAX_SHORT_TASK_DURATION_MS) duration: Long,
         @StringForgery target: String,
         @StringForgery callback: String,
