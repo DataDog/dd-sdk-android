@@ -1201,6 +1201,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -1223,6 +1224,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1356,6 +1358,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -1377,6 +1380,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1448,6 +1452,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasLiteSessionPlan()
@@ -1470,6 +1475,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1543,6 +1549,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasLiteSessionPlan()
@@ -1564,6 +1571,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1633,6 +1641,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -1655,6 +1664,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1726,6 +1736,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -1747,6 +1758,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1803,6 +1815,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -1825,6 +1838,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1882,6 +1896,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -1903,6 +1918,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1957,6 +1973,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
@@ -1980,6 +1997,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2036,6 +2054,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
@@ -2058,6 +2077,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2118,6 +2138,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
@@ -2141,6 +2162,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2202,6 +2224,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
@@ -2224,6 +2247,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

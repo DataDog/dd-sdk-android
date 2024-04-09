@@ -108,7 +108,8 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time(),
         val type: String? = null,
         val sourceType: RumErrorSourceType = RumErrorSourceType.ANDROID,
-        val threads: List<ThreadDump>
+        val threads: List<ThreadDump>,
+        val timeSinceAppStartNs: Long? = null
     ) : RumRawEvent()
 
     internal data class ResourceSent(
@@ -225,7 +226,6 @@ internal sealed class RumRawEvent {
 
     internal data class SdkInit(
         val isAppInForeground: Boolean,
-        val appStartTimeNs: Long,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 }

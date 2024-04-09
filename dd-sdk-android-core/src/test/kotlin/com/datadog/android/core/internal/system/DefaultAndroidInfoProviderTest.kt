@@ -15,7 +15,6 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -23,7 +22,7 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -67,25 +66,28 @@ internal class DefaultAndroidInfoProviderTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @StringForgery
+    lateinit var fakeDeviceBrand: String
+
+    @StringForgery
+    lateinit var fakeDeviceModel: String
+
+    @StringForgery
+    lateinit var fakeDeviceId: String
+
+    @StringForgery(regex = "[1-9]{1,3}\\.[1-9]{1,3}\\.[1-9]{1,3}")
+    lateinit var fakeOsVersion: String
+
     @BeforeEach
     fun setUp(forge: Forge) {
-        whenever(mockContext.getSystemService(Context.UI_MODE_SERVICE)) doReturn
-            mockUiModeManager
-        whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE)) doReturn
-            mockTelephonyManager
-        whenever(mockSdkVersionProvider.version) doReturn
-            forge.anInt(min = Build.VERSION_CODES.BASE)
+        whenever(mockContext.getSystemService(Context.UI_MODE_SERVICE)) doReturn mockUiModeManager
+        whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE)) doReturn mockTelephonyManager
+        whenever(mockSdkVersionProvider.version) doReturn forge.anInt(min = Build.VERSION_CODES.BASE)
         whenever(mockContext.packageManager) doReturn mockPackageManager
         whenever(mockContext.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn Configuration()
 
-        Build::class.java.setStaticValue("MODEL", "")
-    }
-
-    @AfterEach
-    fun tearDown() {
-        Build::class.java.setStaticValue("MODEL", "")
-        Build.VERSION::class.java.setStaticValue("RELEASE", "")
+        fakeDeviceModel = ""
     }
 
     // region device type
@@ -137,10 +139,10 @@ internal class DefaultAndroidInfoProviderTest {
 
     @Test
     fun `𝕄 return Tablet type 𝕎 deviceType { Samsung SM-T series model }`(
-        forge: Forge
+        @IntForgery(1) tModelVersion: Int
     ) {
         // Given
-        Build::class.java.setStaticValue("MODEL", "SM-T${forge.aPositiveInt()}")
+        fakeDeviceModel = "SM-T$tModelVersion"
         testedProvider = createProvider()
 
         // When
@@ -155,7 +157,7 @@ internal class DefaultAndroidInfoProviderTest {
         @StringForgery(regex = "[a-zA-Z1-9 ]{0,9}Tablet[a-zA-Z1-9 ]{0,9}") fakeModel: String
     ) {
         // Given
-        Build::class.java.setStaticValue("MODEL", fakeModel)
+        fakeDeviceModel = fakeModel
         testedProvider = createProvider()
 
         // When
@@ -191,8 +193,7 @@ internal class DefaultAndroidInfoProviderTest {
         @StringForgery(regex = "[a-zA-Z1-9 ]{0,9}Phone[a-zA-Z1-9 ]{0,9}") fakeModel: String
     ) {
         // Given
-        Build::class.java.setStaticValue("MODEL", fakeModel)
-
+        fakeDeviceModel = fakeModel
         testedProvider = createProvider()
 
         // When
@@ -206,21 +207,16 @@ internal class DefaultAndroidInfoProviderTest {
     @MethodSource("phoneTypesWithDescription")
     fun `𝕄 return Mobile type 𝕎 deviceType {smallest screen width less than 800dp + telephony}`(
         phoneType: PhoneType,
-        @IntForgery(
-            min = 0,
-            max = DefaultAndroidInfoProvider.MIN_TABLET_WIDTH_DP
-        ) fakeWidth: Int
+        @IntForgery(min = 0, max = DefaultAndroidInfoProvider.MIN_TABLET_WIDTH_DP) fakeWidth: Int
     ) {
         // Given
         val mockResources = mock<Resources>()
         val fakeConfiguration = Configuration().apply {
             smallestScreenWidthDp = fakeWidth
         }
-
         whenever(mockContext.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn fakeConfiguration
         whenever(mockTelephonyManager.phoneType) doReturn phoneType.value
-
         testedProvider = createProvider()
 
         // When
@@ -261,33 +257,32 @@ internal class DefaultAndroidInfoProviderTest {
     // region os version + major version
 
     @Test
-    fun `𝕄 return full version 𝕎 osVersion`(
-        @StringForgery(regex = "[1-9]{1,3}\\.[1-9]{1,3}\\.[1-9]{1,3}") fakeVersion: String
-    ) {
+    fun `𝕄 return full version 𝕎 osVersion`() {
         // Given
-        Build.VERSION::class.java.setStaticValue("RELEASE", fakeVersion)
         testedProvider = createProvider()
 
         // When
         val osVersion = testedProvider.osVersion
 
         // Then
-        assertThat(osVersion).isEqualTo(fakeVersion)
+        assertThat(osVersion).isEqualTo(fakeOsVersion)
     }
 
     @Test
     fun `𝕄 return major version 𝕎 osMajorVersion { major - minor - patch format}`(
-        @StringForgery(regex = "[1-9]{1,3}\\.[1-9]{1,3}\\.[1-9]{1,3}") fakeVersion: String
+        @StringForgery(regex = "[1-9]{1,3}") fakeMajor: String,
+        @StringForgery(regex = "[1-9]{1,3}") fakeMinor: String,
+        @StringForgery(regex = "[1-9]{1,3}") fakeHotfix: String
     ) {
         // Given
-        Build.VERSION::class.java.setStaticValue("RELEASE", fakeVersion)
+        fakeOsVersion = "$fakeMajor.$fakeMinor.$fakeHotfix"
         testedProvider = createProvider()
 
         // When
         val osMajorVersion = testedProvider.osMajorVersion
 
         // Then
-        assertThat(osMajorVersion).isEqualTo(fakeVersion.split(".").first())
+        assertThat(osMajorVersion).isEqualTo(fakeMajor)
     }
 
     @Test
@@ -295,7 +290,7 @@ internal class DefaultAndroidInfoProviderTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeVersion: String
     ) {
         // Given
-        Build.VERSION::class.java.setStaticValue("RELEASE", fakeVersion)
+        fakeOsVersion = fakeVersion
         testedProvider = createProvider()
 
         // When
@@ -310,12 +305,28 @@ internal class DefaultAndroidInfoProviderTest {
     // region device name
 
     @Test
-    fun `𝕄 return device name 𝕎 deviceName { brand is blank }`(
-        @StringForgery fakeModel: String
+    fun `𝕄 return device name 𝕎 deviceName { brand is blank }`() {
+        // Given
+        fakeDeviceBrand = ""
+        testedProvider = createProvider()
+
+        // When
+        val deviceName = testedProvider.deviceName
+
+        // Then
+        assertThat(deviceName).isEqualTo(fakeDeviceModel)
+    }
+
+    @Test
+    fun `𝕄 return device name 𝕎 deviceName { model contains brand }`(
+        @StringForgery fakeBrand: String,
+        @StringForgery modelPrefix: String,
+        @StringForgery modelSuffix: String
     ) {
         // Given
-        Build::class.java.setStaticValue("BRAND", "")
-        Build::class.java.setStaticValue("MODEL", fakeModel)
+        val fakeModel = modelPrefix + fakeBrand.capitalize() + modelSuffix
+        fakeDeviceModel = fakeModel
+        fakeDeviceBrand = fakeBrand
         testedProvider = createProvider()
 
         // When
@@ -326,32 +337,14 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return device name 𝕎 deviceName { model contains brand }`(
-        @StringForgery fakeBrand: String,
-        @StringForgery modelPrefix: String,
-        @StringForgery modelSuffix: String
-    ) {
-        // Given
-        val deviceModel = modelPrefix + fakeBrand.capitalize() + modelSuffix
-        Build::class.java.setStaticValue("BRAND", fakeBrand)
-        Build::class.java.setStaticValue("MODEL", deviceModel)
-        testedProvider = createProvider()
-
-        // When
-        val deviceName = testedProvider.deviceName
-
-        // Then
-        assertThat(deviceName).isEqualTo(deviceModel)
-    }
-
-    @Test
     fun `𝕄 return device name 𝕎 deviceName { model doesn't contain brand }`(
         @StringForgery fakeBrand: String,
         @StringForgery fakeModel: String
     ) {
         // Given
-        Build::class.java.setStaticValue("BRAND", fakeBrand)
-        Build::class.java.setStaticValue("MODEL", fakeModel)
+        assumeFalse(fakeModel.contains(fakeBrand, ignoreCase = true))
+        fakeDeviceBrand = fakeBrand
+        fakeDeviceModel = fakeModel
         testedProvider = createProvider()
 
         // When
@@ -368,7 +361,7 @@ internal class DefaultAndroidInfoProviderTest {
         @StringForgery fakeBrand: String
     ) {
         // Given
-        Build::class.java.setStaticValue("BRAND", fakeBrand)
+        fakeDeviceBrand = fakeBrand
         testedProvider = createProvider()
 
         // When
@@ -380,10 +373,17 @@ internal class DefaultAndroidInfoProviderTest {
 
     // region private
 
-    private fun createProvider(): AndroidInfoProvider = DefaultAndroidInfoProvider(mockContext)
+    private fun createProvider(): AndroidInfoProvider = DefaultAndroidInfoProvider(
+        mockContext,
+        fakeDeviceBrand,
+        fakeDeviceModel,
+        fakeDeviceId,
+        fakeOsVersion
+    )
 
-    private fun String.capitalize() =
-        replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }
+    private fun String.capitalize() = replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
+    }
 
     companion object {
 

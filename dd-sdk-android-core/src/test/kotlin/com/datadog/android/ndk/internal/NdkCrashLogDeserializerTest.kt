@@ -29,7 +29,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class NdkCrashLogDeserializerTest {
 
-    lateinit var testedDeserializer: NdkCrashLogDeserializer
+    private lateinit var testedDeserializer: NdkCrashLogDeserializer
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger

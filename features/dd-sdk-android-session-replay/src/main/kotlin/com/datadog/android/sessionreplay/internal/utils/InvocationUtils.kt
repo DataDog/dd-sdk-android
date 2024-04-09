@@ -21,7 +21,7 @@ internal class InvocationUtils {
         try {
             return call()
         } catch (e: Exception) {
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            // TODO RUM-806 Add logs here once the sdkLogger is added
             logger.log(
                 level,
                 target,

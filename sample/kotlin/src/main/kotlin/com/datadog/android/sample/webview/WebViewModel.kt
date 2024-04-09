@@ -20,7 +20,7 @@ internal class WebViewModel(
             "https://datadoghq.dev/browser-sdk-test-playground/" +
                 "?client_token=${BuildConfig.DD_CLIENT_TOKEN}" +
                 "&application_id=${BuildConfig.DD_RUM_APPLICATION_ID}" +
-                "&site=datadoghq.com"
+                "&site=${BROWSER_SITE}"
         )
     }
 

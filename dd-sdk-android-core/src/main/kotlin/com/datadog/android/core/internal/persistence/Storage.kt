@@ -19,10 +19,6 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface Storage {
 
-    // TODO RUMM-0000 It seems only write part is useful to be async. Having upload part as async
-    //  brings more complexity and is not really needed, because there is a dedicated upload
-    //  thread anyway and upload part is not exposed as public API (except only data ->
-    //   request transformation).
     /**
      * Utility to write data, asynchronously.
      * @param datadogContext the context for the write operation

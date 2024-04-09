@@ -20,6 +20,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -33,6 +34,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -66,6 +68,8 @@ internal class DatadogCore(
 ) : InternalSdkCore {
 
     internal lateinit var coreFeature: CoreFeature
+
+    private lateinit var shutdownHook: Thread
 
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
@@ -178,6 +182,7 @@ internal class DatadogCore(
         features.values.forEach {
             it.clearAllData()
         }
+        // TODO RUM-1462 address Thread safety
         @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
         coreFeature.deleteLastViewEvent()
         @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
@@ -196,6 +201,11 @@ internal class DatadogCore(
                 val mutableContext = featureContext.toMutableMap()
                 updateCallback(mutableContext)
                 it.setFeatureContext(featureName, mutableContext)
+                // notify all the other features
+                features.filter { it.key != featureName }
+                    .forEach { (_, feature) ->
+                        feature.notifyContextUpdated(featureName, mutableContext.toMap())
+                    }
             }
         }
     }
@@ -224,6 +234,23 @@ internal class DatadogCore(
             }
             feature.eventReceiver.set(receiver)
         }
+    }
+
+    override fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
+        val feature = features[featureName]
+        if (feature == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, featureName) }
+            )
+        } else {
+            feature.setContextUpdateListener(listener)
+        }
+    }
+
+    override fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
+        features[featureName]?.removeContextUpdateListener(listener)
     }
 
     /** @inheritDoc */
@@ -261,6 +288,9 @@ internal class DatadogCore(
     @get:WorkerThread
     override val lastFatalAnrSent: Long?
         get() = coreFeature.lastFatalAnrSent
+
+    override val appStartTimeNs: Long
+        get() = coreFeature.appStartTimeNs
 
     @WorkerThread
     override fun writeLastViewEvent(data: ByteArray) {
@@ -325,6 +355,7 @@ internal class DatadogCore(
             executorServiceFactory ?: CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY
         coreFeature = CoreFeature(
             internalLogger,
+            DefaultAppStartTimeProvider(),
             flushableExecutorServiceFactory,
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )
@@ -416,9 +447,9 @@ internal class DatadogCore(
             val hookRunnable = Runnable { stop() }
 
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            val hook = Thread(hookRunnable, SHUTDOWN_THREAD_NAME)
+            shutdownHook = Thread(hookRunnable, SHUTDOWN_THREAD_NAME)
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            Runtime.getRuntime().addShutdownHook(hook)
+            Runtime.getRuntime().addShutdownHook(shutdownHook)
         } catch (e: IllegalStateException) {
             // Most probably Runtime is already shutting down
             internalLogger.log(
@@ -443,6 +474,29 @@ internal class DatadogCore(
                 { "Security Manager denied adding shutdown hook " },
                 e
             )
+        }
+    }
+
+    private fun removeShutdownHook() {
+        if (this::shutdownHook.isInitialized) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook)
+            } catch (e: IllegalStateException) {
+                // Most probably Runtime is already shutting down
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Unable to remove shutdown hook, Runtime is already shutting down" },
+                    e
+                )
+            } catch (e: SecurityException) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Security Manager denied removing shutdown hook " },
+                    e
+                )
+            }
         }
     }
 
@@ -486,6 +540,8 @@ internal class DatadogCore(
         }
 
         coreFeature.stop()
+
+        removeShutdownHook()
     }
 
     /**
@@ -514,6 +570,8 @@ internal class DatadogCore(
 
         internal const val MISSING_FEATURE_FOR_EVENT_RECEIVER =
             "Cannot add event receiver for feature \"%s\", it is not registered."
+        internal const val MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER =
+            "Cannot add event listener for feature \"%s\", it is not registered."
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
 
@@ -522,5 +580,8 @@ internal class DatadogCore(
                 " crash reports feature is not enabled and API is below 30."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
+
+        // fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
+        internal val startupTimeNs: Long = System.nanoTime()
     }
 }

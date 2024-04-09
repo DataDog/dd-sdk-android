@@ -12,6 +12,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -66,6 +67,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         get() = null
     override val lastFatalAnrSent: Long?
         get() = null
+    override val appStartTimeNs: Long
+        get() = 0
 
     // endregion
 
@@ -102,6 +105,16 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override fun setEventReceiver(featureName: String, `receiver`: FeatureEventReceiver) = Unit
 
     override fun removeEventReceiver(featureName: String) = Unit
+
+    override fun setContextUpdateReceiver(
+        featureName: String,
+        listener: FeatureContextUpdateReceiver
+    ) = Unit
+
+    override fun removeContextUpdateReceiver(
+        featureName: String,
+        listener: FeatureContextUpdateReceiver
+    ) = Unit
 
     override fun createSingleThreadExecutorService(): ExecutorService {
         return NoOpExecutorService()

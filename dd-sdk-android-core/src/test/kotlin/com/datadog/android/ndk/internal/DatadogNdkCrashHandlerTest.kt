@@ -65,7 +65,7 @@ import java.util.concurrent.ExecutorService
 @ForgeConfiguration(Configurator::class)
 internal class DatadogNdkCrashHandlerTest {
 
-    lateinit var testedHandler: DatadogNdkCrashHandler
+    private lateinit var testedHandler: DatadogNdkCrashHandler
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
@@ -527,6 +527,7 @@ internal class DatadogNdkCrashHandlerTest {
                 "type" to "ndk_crash",
                 "sourceType" to "ndk",
                 "timestamp" to ndkCrashLog.timestamp,
+                "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
                 "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
@@ -570,6 +571,7 @@ internal class DatadogNdkCrashHandlerTest {
                 "type" to "ndk_crash",
                 "sourceType" to "ndk+il2cpp",
                 "timestamp" to ndkCrashLog.timestamp,
+                "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
                 "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG

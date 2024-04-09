@@ -591,6 +591,26 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasTimeSinceAppStart(timeSinceAppStart: Long?): ErrorEventAssert {
+        assertThat(actual.error.timeSinceAppStart)
+            .overridingErrorMessage(
+                "Expected RUM event to have error.timeSinceAppStart: $timeSinceAppStart" +
+                    " but instead was: ${actual.error.timeSinceAppStart}"
+            )
+            .isEqualTo(timeSinceAppStart)
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): ErrorEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build ID: $buildId" +
+                    " but instead was ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =

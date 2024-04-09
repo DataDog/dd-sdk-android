@@ -26,7 +26,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -69,7 +68,6 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    private val appStartTimeProvider: AppStartTimeProvider,
     internal val executorService: ExecutorService
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -417,9 +415,8 @@ internal class DatadogRumMonitor(
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        val processStartTimeNs = appStartTimeProvider.appStartTimeNs
         handleEvent(
-            RumRawEvent.SdkInit(isAppInForeground, processStartTimeNs)
+            RumRawEvent.SdkInit(isAppInForeground)
         )
     }
 
@@ -441,6 +438,8 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
+        val now = Time()
+        val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -449,6 +448,8 @@ internal class DatadogRumMonitor(
                 stacktrace = null,
                 isFatal = true,
                 threads = threads,
+                timeSinceAppStartNs = timeSinceAppStartNs,
+                eventTime = now,
                 attributes = emptyMap()
             )
         )
@@ -634,7 +635,7 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)

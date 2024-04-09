@@ -21,6 +21,8 @@ TEST test_will_serialise_the_crash_log(void) {
     const char* fake_error_stacktrace = "an error stacktrace";
     const int fake_error_signal = 2;
     const uint64_t fake_timestamp = 100;
+    const uint64_t fake_app_start_timestamp = 10;
+    update_app_start_time_millis(fake_app_start_timestamp);
     const char* fake_signal_name = "a signal name";
     const string serialized_log = serialize_crash_report(fake_error_signal,
                                                          fake_timestamp,
@@ -31,6 +33,8 @@ TEST test_will_serialise_the_crash_log(void) {
             .append(to_string(fake_error_signal))
             .append(",\"timestamp\":")
             .append(to_string(fake_timestamp))
+            .append(",\"time_since_app_start_ms\":")
+            .append(to_string(fake_timestamp - fake_app_start_timestamp))
             .append(",\"signal_name\":")
             .append("\"")
             .append(fake_signal_name)

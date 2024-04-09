@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.os.Build
 import android.view.View
+import android.webkit.WebView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
@@ -18,9 +19,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
@@ -40,9 +39,9 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWirefra
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.tools.unit.setStaticValue
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -53,12 +52,10 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.runners.Parameterized
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
-import java.util.UUID
 import java.util.stream.Stream
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
@@ -76,15 +73,6 @@ internal class SessionReplayPrivacyTest {
         see: https://stackoverflow.com/questions/3301635/change-private-static-final-field-using-java-reflection/3301720#3301720
      */
     private val origApiLevel = Build.VERSION.SDK_INT
-
-    @Mock
-    lateinit var mockLogger: InternalLogger
-
-    @Forgery
-    lateinit var fakeApplicationId: UUID
-
-    @Mock
-    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @AfterEach
     fun teardown() {
@@ -136,11 +124,13 @@ internal class SessionReplayPrivacyTest {
         private val mockButtonMapper: ButtonMapper = mock()
         private val mockUnsupportedViewMapper: UnsupportedViewMapper = mock()
         private val mockImageViewMapper: ImageViewMapper = mock()
+        private val mockWebViewWireframeMapper: WebViewWireframeMapper = mock()
 
         private val baseMappers = listOf(
             MapperTypeWrapper(Button::class.java, mockButtonMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, mockImageViewMapper.toGenericMapper()),
-            MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
+            MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper()),
+            MapperTypeWrapper(WebView::class.java, mockWebViewWireframeMapper.toGenericMapper())
         )
 
         // ALLOW

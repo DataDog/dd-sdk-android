@@ -19,6 +19,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
@@ -28,7 +29,6 @@ import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.internal.storage.LogsDataWriter
-import com.datadog.android.log.internal.storage.NoOpDataWriter
 import com.datadog.android.log.model.LogEvent
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap

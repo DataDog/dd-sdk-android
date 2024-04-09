@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 
@@ -44,20 +45,29 @@ internal class WriteOperation(
     fun submit() {
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
-                try {
-                    val event = eventSource(datadogContext)
+                if (rumDataWriter is NoOpDataWriter) {
+                    sdkCore.internalLogger.log(
+                        level = InternalLogger.Level.INFO,
+                        target = InternalLogger.Target.USER,
+                        messageBuilder = { WRITE_OPERATION_IGNORED }
+                    )
+                    advancedRumMonitor?.let { onError(it) }
+                } else {
+                    try {
+                        val event = eventSource(datadogContext)
 
-                    @Suppress("ThreadSafety") // called in a worker thread context
-                    val isSuccess = rumDataWriter.write(eventBatchWriter, event)
-                    if (isSuccess) {
-                        advancedRumMonitor?.let {
-                            onSuccess(it)
+                        @Suppress("ThreadSafety") // called in a worker thread context
+                        val isSuccess = rumDataWriter.write(eventBatchWriter, event)
+                        if (isSuccess) {
+                            advancedRumMonitor?.let {
+                                onSuccess(it)
+                            }
+                        } else {
+                            notifyEventWriteFailure()
                         }
-                    } else {
-                        notifyEventWriteFailure()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        notifyEventWriteFailure(e)
                     }
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    notifyEventWriteFailure(e)
                 }
             }
     }
@@ -88,6 +98,7 @@ internal class WriteOperation(
     }
 
     internal companion object {
+        const val WRITE_OPERATION_IGNORED = "Write operation ignored, session is expired or RUM feature is disabled."
         const val WRITE_OPERATION_FAILED_ERROR = "Write operation failed."
         const val NO_ERROR_CALLBACK_PROVIDED_WARNING =
             "Write operation failed, but no onError callback was provided."
