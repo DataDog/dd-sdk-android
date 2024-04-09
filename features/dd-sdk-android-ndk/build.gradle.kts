@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.Dependencies
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.javadocConfig
@@ -46,6 +47,10 @@ android {
                 version = Dependencies.Versions.CMake
             }
         }
+    }
+
+    testOptions {
+        targetSdk = AndroidConfig.TARGET_SDK
     }
 
     namespace = "com.datadog.android.ndk"
