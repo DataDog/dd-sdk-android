@@ -30,10 +30,34 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="@string/button_start"
+        android:text="@string/start_async_operation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/async_operation"/>
+
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/chained_contexts_test"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:layout_margin="8dp"
+        android:text="@string/chained_contexts_test"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_async_operation"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/start_chained_contexts_test"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/start_chained_contexts_test"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chained_contexts_test"/>
 
     <ProgressBar
         android:id="@+id/spinner_async"
@@ -45,7 +69,7 @@
         style="?android:attr/progressBarStyleHorizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/start_async_operation"
+        app:layout_constraintTop_toBottomOf="@id/start_chained_contexts_test"
         android:visibility="invisible"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

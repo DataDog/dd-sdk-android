@@ -31,6 +31,7 @@ internal class OtelTracesFragment : Fragment(), View.OnClickListener {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_otel_traces, container, false)
         rootView.findViewById<Button>(R.id.start_async_operation).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.start_chained_contexts_test).setOnClickListener(this)
         progressBarAsync = rootView.findViewById(R.id.spinner_async)
         return rootView
     }
@@ -60,6 +61,14 @@ internal class OtelTracesFragment : Fragment(), View.OnClickListener {
                     onProgress = {
                         progressBarAsync.progress = it
                     },
+                    onDone = {
+                        progressBarAsync.visibility = View.INVISIBLE
+                    }
+                )
+            }
+            R.id.start_chained_contexts_test -> {
+                progressBarAsync.visibility = View.VISIBLE
+                viewModel.startChainedContexts(
                     onDone = {
                         progressBarAsync.visibility = View.INVISIBLE
                     }

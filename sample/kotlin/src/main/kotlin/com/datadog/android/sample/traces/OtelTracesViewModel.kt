@@ -14,12 +14,14 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
+import io.opentelemetry.context.ContextKey
 import io.opentelemetry.context.Scope
 
 @Suppress("DEPRECATION")
 internal class OtelTracesViewModel : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
+    private var chainedContextsTask: AsyncTask<Unit, Unit, Unit>? = null
 
     fun startAsyncOperation(
         onProgress: (Int) -> Unit = {},
@@ -31,6 +33,12 @@ internal class OtelTracesViewModel : ViewModel() {
 
     fun stopAsyncOperations() {
         asyncOperationTask?.cancel(true)
+        chainedContextsTask?.cancel(true)
+    }
+
+    fun startChainedContexts(onDone: () -> Unit = {}) {
+        chainedContextsTask = ChainedContextsTask(onDone)
+        chainedContextsTask?.execute()
     }
 
     // region AsyncOperationTask
@@ -47,7 +55,6 @@ internal class OtelTracesViewModel : ViewModel() {
             .startSpan()
         val scope: Scope = parentSpan.makeCurrent()
 
-        @Suppress("CheckInternal")
         private val logger: Logger by lazy {
             Logger.Builder()
                 .setName("async_task")
@@ -63,7 +70,6 @@ internal class OtelTracesViewModel : ViewModel() {
         override fun onPreExecute() {
             val span = tracer
                 .spanBuilder("OnPreExecute")
-                .setParent(Context.current())
                 .startSpan()
             super.onPreExecute()
             span.end()
@@ -90,10 +96,8 @@ internal class OtelTracesViewModel : ViewModel() {
 
         @Deprecated("Deprecated in Java")
         override fun onPostExecute(result: Unit?) {
-            val parentContext = Context.current()
             val span = tracer
                 .spanBuilder("OnPostExecute")
-                .setParent(parentContext)
                 .startSpan()
             if (!isCancelled) {
                 onDone()
@@ -103,6 +107,64 @@ internal class OtelTracesViewModel : ViewModel() {
             scope.close()
             // finish the parent span
             parentSpan.end()
+        }
+    }
+
+    private class ChainedContextsTask(
+        val onDone: () -> Unit
+    ) : AsyncTask<Unit, Unit, Unit>() {
+        private val tracer: Tracer = GlobalOpenTelemetry.get()
+            .getTracer("chainedContexts")
+        private val email = "john.doe@example.com"
+        private val username = "John Doe"
+        private val emailKey: ContextKey<String> = ContextKey.named("email")
+        private val usernameKey: ContextKey<String> = ContextKey.named("username")
+        private val context: Context =
+            Context.current().with(emailKey, email).with(usernameKey, username)
+        val startSpan: Span = tracer
+            .spanBuilder("submitForm")
+            .setParent(context)
+            .startSpan()
+        val scope: Scope = startSpan.makeCurrent()
+
+        private val logger: Logger by lazy {
+            Logger.Builder()
+                .setName("chained-contexts-task")
+                .setLogcatLogsEnabled(true)
+                .build()
+                .apply {
+                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
+                    addTag("build_type", BuildConfig.BUILD_TYPE)
+                }
+        }
+
+        @Suppress("MagicNumber")
+        @Deprecated("Deprecated in Java")
+        override fun doInBackground(vararg params: Unit?) {
+            val processingFormSpan = tracer
+                .spanBuilder("processingForm")
+                .setParent(Context.current().with(startSpan))
+                .startSpan()
+            val email = context.get(emailKey)
+            val username = context.get(usernameKey)
+            val formScope = processingFormSpan.makeCurrent()
+            val processingSanitization = tracer
+                .spanBuilder("formSanitization")
+                .startSpan()
+            logger.v("Sanitizing email: $email")
+            logger.v("Sanitizing username: $username")
+            Thread.sleep(2000)
+            processingSanitization.end()
+            Thread.sleep(5000)
+            formScope.close()
+            processingFormSpan.end()
+        }
+
+        @Deprecated("Deprecated in Java")
+        override fun onPostExecute(result: Unit?) {
+            scope.close()
+            startSpan.end()
+            onDone()
         }
     }
 

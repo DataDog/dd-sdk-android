@@ -6,7 +6,7 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.activateSpan;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyNamingConvention;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyReservedAttribute;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
@@ -15,8 +15,10 @@ import static io.opentelemetry.api.trace.StatusCode.UNSET;
 
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
-import com.datadog.trace.bootstrap.instrumentation.api.AttachableWrapper;
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 import com.datadog.trace.bootstrap.instrumentation.api.ErrorPriorities;
+import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
@@ -32,13 +34,13 @@ public class OtelSpan implements Span {
   private StatusCode statusCode;
   private boolean recording;
 
-  public OtelSpan(AgentSpan delegate) {
+  private final AgentTracer.TracerAPI agentTracer;
+
+  public OtelSpan(AgentSpan delegate, AgentTracer.TracerAPI agentTracer) {
     this.delegate = delegate;
-    if (delegate instanceof AttachableWrapper) {
-      ((AttachableWrapper) delegate).attachWrapper(this);
-    }
     this.statusCode = UNSET;
     this.recording = true;
+    this.agentTracer = agentTracer;
   }
 
   public static Span invalid() {
@@ -100,6 +102,10 @@ public class OtelSpan implements Span {
     return this;
   }
 
+  public StatusCode getStatusCode() {
+    return statusCode;
+  }
+
   @Override
   public Span recordException(Throwable exception, Attributes additionalAttributes) {
     if (this.recording) {
@@ -142,15 +148,15 @@ public class OtelSpan implements Span {
   }
 
   public AgentScope activate() {
-    return activateSpan(this.delegate);
+    return agentTracer.activateSpan(this.delegate, ScopeSource.INSTRUMENTATION, DEFAULT_ASYNC_PROPAGATING);
   }
 
   public AgentSpan.Context getAgentSpanContext() {
     return this.delegate.context();
   }
 
-  private static class NoopSpan implements Span {
-    private static final Span INSTANCE = new NoopSpan();
+  static class NoopSpan implements Span {
+    static final Span INSTANCE = new NoopSpan();
 
     @Override
     public <T> Span setAttribute(AttributeKey<T> key, T value) {

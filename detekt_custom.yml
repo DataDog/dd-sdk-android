@@ -1256,9 +1256,17 @@ datadog:
       - "io.opentracing.util.GlobalTracer.isRegistered()"
       # endregion
       # region Opentelemetry
+      - "io.opentelemetry.api.trace.Span.getInvalid()"
       - "io.opentelemetry.api.trace.TracerBuilder.build()"
       - "io.opentelemetry.api.trace.SpanBuilder.setAttribute(kotlin.String?, kotlin.String?)"
       - "io.opentelemetry.api.trace.TracerBuilder.setInstrumentationVersion(kotlin.String?)"
+      - "io.opentelemetry.context.Context.get(io.opentelemetry.context.ContextKey?)"
+      - "io.opentelemetry.context.Context.makeCurrent()"
+      - "io.opentelemetry.context.Context.root()"
+      - "io.opentelemetry.context.ContextStorage.addWrapper(java.util.function.Function?)"
+      - "io.opentelemetry.context.ContextStorage.attach(io.opentelemetry.context.Context?)"
+      - "io.opentelemetry.context.ContextStorage.current()"
+      - "io.opentelemetry.context.Scope.close()"
       # endregion
       # region RxJava
       - "io.reactivex.rxjava3.core.Completable.doOnError(io.reactivex.rxjava3.functions.Consumer?)"
