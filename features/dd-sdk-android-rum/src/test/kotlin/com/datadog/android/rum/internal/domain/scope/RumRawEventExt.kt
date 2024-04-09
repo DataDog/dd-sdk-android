@@ -107,6 +107,7 @@ internal fun Forge.addErrorEvent(): RumRawEvent.AddError {
         throwable = null,
         isFatal = isFatal,
         threads = if (isFatal) aList { getForgery() } else emptyList(),
+        timeSinceAppStartNs = if (isFatal) aPositiveLong() else null,
         attributes = exhaustiveAttributes()
     )
 }
@@ -130,7 +131,32 @@ internal fun Forge.sdkInitEvent(): RumRawEvent.SdkInit {
     val time = Time()
     return RumRawEvent.SdkInit(
         isAppInForeground = aBool(),
-        appStartTimeNs = aLong(min = 0L, max = time.nanoTime),
+        eventTime = time
+    )
+}
+
+internal fun Forge.updatePerformanceMetricEvent(): RumRawEvent.UpdatePerformanceMetric {
+    val time = Time()
+    return RumRawEvent.UpdatePerformanceMetric(
+        metric = getForgery(),
+        value = aDouble(),
+        eventTime = time
+    )
+}
+
+internal fun Forge.addFeatureFlagEvaluationEvent(): RumRawEvent.AddFeatureFlagEvaluation {
+    val time = Time()
+    return RumRawEvent.AddFeatureFlagEvaluation(
+        name = anAlphabeticalString(),
+        value = anElementFrom(aString(), anInt(), Any()),
+        eventTime = time
+    )
+}
+
+internal fun Forge.addCustomTimingEvent(): RumRawEvent.AddCustomTiming {
+    val time = Time()
+    return RumRawEvent.AddCustomTiming(
+        name = anAlphabeticalString(),
         eventTime = time
     )
 }
@@ -168,7 +194,10 @@ internal fun Forge.anyRumEvent(excluding: List<Type> = listOf()): RumRawEvent {
         stopResourceWithErrorEvent(),
         stopResourceWithStacktraceEvent(),
         addErrorEvent(),
-        addLongTaskEvent()
+        addLongTaskEvent(),
+        addFeatureFlagEvaluationEvent(),
+        addCustomTimingEvent(),
+        updatePerformanceMetricEvent()
     )
     return this.anElementFrom(
         allEvents.filter {

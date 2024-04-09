@@ -23,6 +23,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
@@ -51,7 +52,6 @@ import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGestures
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
-import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -633,15 +633,12 @@ internal class RumFeature(
             additionalConfig = emptyMap()
         )
 
-        internal val startupTimeNs: Long = System.nanoTime()
-
         internal const val EVENT_MESSAGE_PROPERTY = "message"
         internal const val EVENT_ADDITIONAL_PROPERTIES = "additionalProperties"
         internal const val EVENT_THROWABLE_PROPERTY = "throwable"
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
 
-        internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =

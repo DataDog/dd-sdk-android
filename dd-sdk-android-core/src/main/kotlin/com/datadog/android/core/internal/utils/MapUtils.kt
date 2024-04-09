@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-// TODO RUMM-3004 public as hack, no other solution for now. Any?.toJsonElement relies on this
+// TODO RUM-373 public as hack, no other solution for now. Any?.toJsonElement relies on this
 //  particular value. Maybe create something like (class NullMap) and check identity instead?
 /**
  * Special value for missing attribute.

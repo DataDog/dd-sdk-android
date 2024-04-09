@@ -96,7 +96,7 @@ class AndroidTracer internal constructor(
         private var bundleWithRumEnabled: Boolean = true
         private var sampleRate: Double = DEFAULT_SAMPLE_RATE
 
-        // TODO RUMM-0000 should have a nicer call chain
+        // TODO RUM-3786 should have a nicer call chain
         private var serviceName: String = ""
             get() {
                 return field.ifEmpty {

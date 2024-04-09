@@ -114,6 +114,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent()`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery viewEvent: ViewEvent,
@@ -148,6 +149,7 @@ internal class DatadogLateCrashReporterTest {
 
         val fakeEvent = mapOf(
             "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -169,6 +171,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(crashMessage)
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
@@ -185,6 +188,7 @@ internal class DatadogLateCrashReporterTest {
                 )
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
                 .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
@@ -210,6 +214,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent() {source_type set}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery viewEvent: ViewEvent,
@@ -245,6 +250,7 @@ internal class DatadogLateCrashReporterTest {
         val fakeEvent = mapOf(
             "sourceType" to "ndk+il2cpp",
             "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -266,6 +272,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(crashMessage)
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
@@ -282,6 +289,7 @@ internal class DatadogLateCrashReporterTest {
                 )
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
                 .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
@@ -307,6 +315,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent() {invalid source_type set}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery viewEvent: ViewEvent,
@@ -342,6 +351,7 @@ internal class DatadogLateCrashReporterTest {
         val fakeEvent = mapOf(
             "sourceType" to "invalid",
             "timestamp" to fakeTimestamp,
+            "fakeTimeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -364,6 +374,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 send RUM view+error 𝕎 handleNdkCrashEvent() {view without usr}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery viewEvent: ViewEvent,
@@ -388,6 +399,7 @@ internal class DatadogLateCrashReporterTest {
         val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
         val fakeEvent = mapOf(
             "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -412,6 +424,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(crashMessage)
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
@@ -421,6 +434,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasNoUserInfo()
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
                 .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
@@ -446,6 +460,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 send only RUM error 𝕎 handleNdkCrashEvent() {view is too old}`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery viewEvent: ViewEvent,
@@ -483,6 +498,7 @@ internal class DatadogLateCrashReporterTest {
         }
         val fakeEvent = mapOf(
             "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -499,6 +515,7 @@ internal class DatadogLateCrashReporterTest {
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasView(
                     fakeViewEvent.view.id,
                     fakeViewEvent.view.name,
@@ -520,6 +537,7 @@ internal class DatadogLateCrashReporterTest {
                 )
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
                 .hasLiteSessionPlan()
                 .hasSource(expectedErrorEventSource)
                 .hasDeviceInfo(
@@ -541,6 +559,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 not send RUM event 𝕎 handleNdkCrashEvent() { RUM feature is not registered }`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery viewEvent: ViewEvent
@@ -550,6 +569,7 @@ internal class DatadogLateCrashReporterTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
         val fakeEvent = mapOf(
             "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -572,6 +592,7 @@ internal class DatadogLateCrashReporterTest {
     fun `𝕄 not send RUM event 𝕎 handleNdkCrashEvent() { corrupted event, view json deserialization fails }`(
         @StringForgery crashMessage: String,
         @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
         @StringForgery fakeSignalName: String,
         @StringForgery fakeStacktrace: String,
         @Forgery fakeViewEventJson: JsonObject
@@ -579,6 +600,7 @@ internal class DatadogLateCrashReporterTest {
         // Given
         val fakeEvent = mutableMapOf(
             "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
             "signalName" to fakeSignalName,
             "stacktrace" to fakeStacktrace,
             "message" to crashMessage,
@@ -695,6 +717,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(ANRDetectorRunnable.ANR_MESSAGE)
                 .hasStackTrace(fakeThreadsDump.first { it.name == "main" }.stack)
                 .isCrash(true)
@@ -711,6 +734,7 @@ internal class DatadogLateCrashReporterTest {
                 )
                 .hasErrorType(ANRException::class.java.canonicalName)
                 .hasErrorCategory(ErrorEvent.Category.ANR)
+                .hasTimeSinceAppStart(null)
                 .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
@@ -783,6 +807,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(ANRDetectorRunnable.ANR_MESSAGE)
                 .hasStackTrace(fakeThreadsDump.first { it.name == "main" }.stack)
                 .isCrash(true)
@@ -792,6 +817,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasNoUserInfo()
                 .hasErrorType(ANRException::class.java.canonicalName)
                 .hasErrorCategory(ErrorEvent.Category.ANR)
+                .hasTimeSinceAppStart(null)
                 .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
@@ -869,6 +895,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(ANRDetectorRunnable.ANR_MESSAGE)
                 .hasStackTrace(fakeThreadsDump.first { it.name == "main" }.stack)
                 .isCrash(true)
@@ -885,6 +912,7 @@ internal class DatadogLateCrashReporterTest {
                 )
                 .hasErrorType(ANRException::class.java.canonicalName)
                 .hasErrorCategory(ErrorEvent.Category.ANR)
+                .hasTimeSinceAppStart(null)
                 .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,

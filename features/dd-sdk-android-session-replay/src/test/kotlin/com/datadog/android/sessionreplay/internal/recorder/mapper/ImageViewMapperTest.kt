@@ -148,8 +148,6 @@ internal class ImageViewMapperTest {
         whenever(mockDrawable.intrinsicWidth).thenReturn(forge.aPositiveInt())
         whenever(mockDrawable.intrinsicHeight).thenReturn(forge.aPositiveInt())
 
-        whenever(mockWebPImageCompression.getMimeType()).thenReturn(fakeMimeType)
-
         whenever(mockSystemInformation.screenDensity).thenReturn(forge.aFloat())
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockMappingContext.imageWireframeHelper).thenReturn(mockImageWireframeHelper)

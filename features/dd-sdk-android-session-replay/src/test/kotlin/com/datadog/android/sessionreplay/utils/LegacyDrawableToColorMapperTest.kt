@@ -28,7 +28,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(value = ForgeConfigurator::class, seed = 0x3f3a03ceae05aL)
+@ForgeConfiguration(value = ForgeConfigurator::class)
 open class LegacyDrawableToColorMapperTest {
 
     lateinit var testedMapper: DrawableToColorMapper

@@ -53,6 +53,7 @@ internal class PictureFragment :
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         val currentType = viewModel.getImageLoader()
         inflater.inflate(R.menu.image_loader, menu)
@@ -65,6 +66,7 @@ internal class PictureFragment :
         menu.findItem(disabled).isEnabled = false
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val type = when (item.itemId) {
             R.id.image_loader_coil -> ImageLoaderType.COIL

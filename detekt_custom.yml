@@ -90,6 +90,11 @@ datadog:
     - '**/reliability/**'
     - '**/sample/**'
     - '**/tools/**'
+  TodoWithoutTask:
+    active: true
+    deprecatedPrefixes:
+      - "RUMM"
+      - "REPLAY"
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'
@@ -100,6 +105,7 @@ datadog:
       - "android.app.ActivityManager.getHistoricalProcessExitReasons(kotlin.String?, kotlin.Int, kotlin.Int):java.lang.RuntimeException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
+      - "android.content.res.AssetManager.open(kotlin.String):java.io.IOException"
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
@@ -119,6 +125,8 @@ datadog:
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
       - "android.view.MotionEvent.obtain(android.view.MotionEvent):java.lang.IllegalArgumentException"
       - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
+      - "android.view.ViewTreeObserver.removeOnDrawListener(android.view.ViewTreeObserver.OnDrawListener?):java.lang.IllegalStateException"
+      - "android.view.ViewTreeObserver.addOnDrawListener(android.view.ViewTreeObserver.OnDrawListener?):java.lang.IllegalStateException"
       - "android.view.Window.addOnFrameMetricsAvailableListener(android.view.Window.OnFrameMetricsAvailableListener, android.os.Handler?):java.lang.IllegalStateException,java.lang.NullPointerException"
       - "android.view.Window.removeOnFrameMetricsAvailableListener(android.view.Window.OnFrameMetricsAvailableListener?):java.lang.IllegalArgumentException"
       - "android.widget.FrameLayout.addView(android.view.View, android.view.ViewGroup.LayoutParams):java.lang.IllegalArgumentException"
@@ -177,6 +185,8 @@ datadog:
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection?):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.concurrent.Callable.call():java.lang.Exception"
+      - "java.util.concurrent.ConcurrentHashMap.contains(kotlin.Any?):java.lang.NullPointerException"
+      - "java.util.concurrent.ConcurrentHashMap.remove(com.datadog.android.api.feature.FeatureContextUpdateReceiver):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentLinkedQueue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.NullPointerException"
       - "java.util.concurrent.CopyOnWriteArraySet.removeAll(kotlin.collections.Collection):java.lang.NullPointerException,java.lang.ClassCastException"
@@ -204,6 +214,7 @@ datadog:
       - "java.lang.Class.getMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.isAssignableFrom(java.lang.Class?):java.lang.NullPointerException"
       - "java.lang.Runtime.addShutdownHook(java.lang.Thread):java.lang.IllegalArgumentException,java.lang.IllegalStateException,java.lang.SecurityException"
+      - "java.lang.Runtime.removeShutdownHook(java.lang.Thread?):java.lang.IllegalStateException,java.lang.SecurityException"
       - "java.lang.StringBuilder.constructor(kotlin.Int):java.lang.NegativeArraySizeException"
       - "java.lang.System.arraycopy(kotlin.Any, kotlin.Int, kotlin.Any, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.ArrayStoreException,java.lang.NullPointerException"
       - "java.lang.System.loadLibrary(kotlin.String?):java.lang.SecurityException,java.lang.UnsatisfiedLinkError,java.lang.NullPointerException"
@@ -217,8 +228,10 @@ datadog:
       - "java.util.TimeZone.getTimeZone(kotlin.String):java.lang.NullPointerException"
       # endregion
       # region Java Collections
+      - "java.util.Collections.newSetFromMap(kotlin.collections.MutableMap?):java.lang.IllegalArgumentException"
       - "java.util.LinkedList.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.LinkedList.removeFirst():java.util.NoSuchElementException"
+      - "java.util.LinkedList.removeLast():java.util.NoSuchElementException"
       - "java.util.Queue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem?):java.lang.IllegalArgumentException,java.lang.ClassCastException,java.lang.NullPointerException"
       # endregion
       # region Java Zip
@@ -379,10 +392,8 @@ datadog:
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
       - "android.view.ViewGroup.getChildAt(kotlin.Int)"
       - "android.view.ViewTreeObserver.OnDrawListener.onDraw()"
-      - "android.view.ViewTreeObserver.addOnDrawListener(android.view.ViewTreeObserver.OnDrawListener?)"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener()"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener(android.view.ViewTreeObserver.OnGlobalLayoutListener)"
-      - "android.view.ViewTreeObserver.removeOnDrawListener(android.view.ViewTreeObserver.OnDrawListener?)"
       - "android.view.ViewTreeObserver.removeOnGlobalLayoutListener()"
       - "android.view.ViewTreeObserver.removeOnGlobalLayoutListener(android.view.ViewTreeObserver.OnGlobalLayoutListener)"
       - "android.view.Window.Callback.dispatchKeyEvent(android.view.KeyEvent?)"
@@ -526,6 +537,7 @@ datadog:
       - "com.google.gson.JsonArray.add(com.google.gson.JsonElement?)"
       - "com.google.gson.JsonArray.add(kotlin.String?)"
       - "com.google.gson.JsonArray.addAll(com.google.gson.JsonArray?)"
+      - "com.google.gson.JsonArray.any(kotlin.Function1)"
       - "com.google.gson.JsonArray.asSequence()"
       - "com.google.gson.JsonArray.constructor()"
       - "com.google.gson.JsonArray.constructor(kotlin.Int)"
@@ -672,6 +684,8 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.set(kotlin.String?)"
       # endregion
       # region Java I/O
+      - "java.io.BufferedReader.readText()"
+      - "java.io.BufferedReader.use(kotlin.Function1)"
       - "java.io.ByteArrayOutputStream.constructor()"
       - "java.io.ByteArrayOutputStream.constructor(kotlin.Int)"
       - "java.io.ByteArrayOutputStream.size()"
@@ -706,6 +720,7 @@ datadog:
       - "java.io.File.safeCall(kotlin.collections.List?, com.datadog.android.api.InternalLogger, kotlin.Function1)"
       - "java.io.File.safeCall(kotlin.Unit?, com.datadog.android.api.InternalLogger, kotlin.Function1)"
       - "java.io.File.writeTextSafe(kotlin.String, java.nio.charset.Charset, com.datadog.android.api.InternalLogger)"
+      - "java.io.InputStream.bufferedReader(java.nio.charset.Charset)"
       - "java.io.InputStream.mark(kotlin.Int)"
       - "java.io.InputStream.markSupported()"
       - "java.io.InputStream.reader(java.nio.charset.Charset)"
@@ -717,6 +732,7 @@ datadog:
       - "java.lang.Class.hashCode()"
       - "java.lang.IllegalArgumentException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String)"
+      - "java.lang.IllegalStateException.constructor(kotlin.String?)"
       - "java.lang.Object.constructor()"
       - "java.lang.Runtime.availableProcessors()"
       - "java.lang.Runtime.getRuntime()"
@@ -749,6 +765,10 @@ datadog:
       - "java.security.SecureRandom.nextInt()"
       - "java.security.SecureRandom.nextLong()"
       - "java.util.HashSet.find(kotlin.Function1)"
+      - "java.util.LinkedList.addFirst(com.datadog.android.webview.internal.rum.domain.WebViewNativeRumViewsCache.ViewEntry?)"
+      - "java.util.LinkedList.peekLast()"
+      - "java.util.LinkedList.remove(com.datadog.android.webview.internal.rum.domain.WebViewNativeRumViewsCache.ViewEntry)"
+      - "java.util.LinkedList.iterator()"
       - "java.util.Properties.constructor()"
       - "java.util.Properties.setProperty(kotlin.String?, kotlin.String?)"
       - "java.util.UUID.constructor(kotlin.Long, kotlin.Long)"
@@ -939,6 +959,7 @@ datadog:
       - "kotlin.collections.MutableMap.containsKey(com.datadog.android.api.storage.RawBatchEvent)"
       - "kotlin.collections.MutableMap.containsKey(kotlin.Long)"
       - "kotlin.collections.MutableMap.containsKey(kotlin.String)"
+      - "kotlin.collections.MutableMap.filter(kotlin.Function1)"
       - "kotlin.collections.MutableMap.filterKeys(kotlin.Function1)"
       - "kotlin.collections.MutableMap.filterValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
@@ -958,8 +979,10 @@ datadog:
       - "kotlin.collections.MutableMap.remove(kotlin.Long)"
       - "kotlin.collections.MutableMap.remove(kotlin.String)"
       - "kotlin.collections.MutableMap.safeMapValuesToJson(com.datadog.android.api.InternalLogger)"
+      - "kotlin.collections.MutableMap.toMap()"
       - "kotlin.collections.MutableMap.toMutableMap()"
       - "kotlin.collections.MutableMap?.forEach(kotlin.Function1)"
+      - "kotlin.collections.MutableSet.add(com.datadog.android.api.feature.FeatureContextUpdateReceiver?)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.core.internal.persistence.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventId)"
       - "kotlin.collections.MutableSet.add(java.io.File)"
@@ -997,10 +1020,11 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.MaterialOptionSelectorDetector)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord.ViewEndRecord)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.PlaceholderWireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe)"
-      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.WebviewWireframe)"
       - "kotlin.collections.listOf(java.io.File)"
       - "kotlin.collections.listOf(kotlin.Array)"
       - "kotlin.collections.listOf(kotlin.String)"
@@ -1017,6 +1041,7 @@ datadog:
       - "kotlin.collections.setOf(kotlin.Int)"
       - "kotlin.collections.setOf(kotlin.String)"
       - "kotlin.emptyArray()"
+      - "kotlin.sequences.Sequence.groupBy(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
       - "kotlin.sequences.Sequence.fold(com.google.gson.JsonArray, kotlin.Function2)"
       - "kotlin.sequences.Sequence.forEach(kotlin.Function1)"
@@ -1135,6 +1160,7 @@ datadog:
       - "kotlin.String.toMediaTypeOrNull()"
       - "kotlin.String.toMethod()"
       - "kotlin.String.toOperationType(com.datadog.android.api.InternalLogger)"
+      - "kotlin.String.trim()"
       - "kotlin.String.trimStart()"
       - "kotlin.String.uppercase(java.util.Locale)"
       - "kotlin.String.withSdkName()"

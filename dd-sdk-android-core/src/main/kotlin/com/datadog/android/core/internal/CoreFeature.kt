@@ -60,6 +60,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
+import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
@@ -90,6 +91,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.TlsVersion
 import java.io.File
+import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -102,8 +104,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("TooManyFunctions")
 internal class CoreFeature(
     private val internalLogger: InternalLogger,
-    val executorServiceFactory: FlushableExecutorService.Factory,
-    val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
+    private val appStartTimeProvider: AppStartTimeProvider,
+    private val executorServiceFactory: FlushableExecutorService.Factory,
+    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
     internal val initialized = AtomicBoolean(false)
@@ -135,6 +138,7 @@ internal class CoreFeature(
     internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
     internal var site: DatadogSite = DatadogSite.US1
+    internal var appBuildId: String? = null
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
@@ -147,9 +151,13 @@ internal class CoreFeature(
 
     internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
+    internal val appStartTimeNs: Long
+        get() = appStartTimeProvider.appStartTimeNs
+
     // lazy here on purpose: we need to read it only once, even if it is used in different features
     @get:WorkerThread
     internal val lastViewEvent: JsonObject? by lazy {
+        // TODO RUM-1462 address Thread safety
         @Suppress("ThreadSafety") // called in worker thread context
         val viewEvent = readLastViewEvent()
         if (viewEvent != null) {
@@ -319,7 +327,7 @@ internal class CoreFeature(
 
     @WorkerThread
     internal fun writeLastFatalAnrSent(anrTimestamp: Long) {
-        // TODO RUMM-0000 this is temporary solution for storing just a timestamp, later we will
+        // TODO RUM-3790 this is temporary solution for storing just a timestamp, later we will
         //  migrate to a dedicated data store solution (same applies to the last RUM view event)
         val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
         file.writeTextSafe(anrTimestamp.toString(), Charsets.UTF_8, internalLogger)
@@ -440,6 +448,8 @@ internal class CoreFeature(
         serviceName = configuration.service ?: appContext.packageName
         envName = configuration.env
         variant = configuration.variant
+        appBuildId = readBuildId(appContext)
+
         contextRef = WeakReference(appContext)
     }
 
@@ -449,7 +459,6 @@ internal class CoreFeature(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
                 } else {
-                    @Suppress("DEPRECATION")
                     getPackageInfo(packageName, 0)
                 }
             }
@@ -461,6 +470,31 @@ internal class CoreFeature(
                 e
             )
             null
+        }
+    }
+
+    private fun readBuildId(context: Context): String? {
+        return with(context.assets) {
+            try {
+                open(BUILD_ID_FILE_NAME).bufferedReader().use {
+                    it.readText().trim()
+                }
+            } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    { BUILD_ID_IS_MISSING_INFO_MESSAGE }
+                )
+                null
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { BUILD_ID_READ_ERROR },
+                    e
+                )
+                null
+            }
         }
     }
 
@@ -662,6 +696,15 @@ internal class CoreFeature(
         internal const val LAST_RUM_VIEW_EVENT_FILE_NAME = "last_view_event"
         internal const val LAST_FATAL_ANR_SENT_FILE_NAME = "last_fatal_anr_sent"
 
+        // should be the same as in dd-sdk-android-gradle-plugin
+        internal const val BUILD_ID_FILE_NAME = "datadog.buildId"
+        internal const val BUILD_ID_IS_MISSING_INFO_MESSAGE =
+            "Build ID is not found in the application" +
+                " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
+                " or above to be able to de-obfuscate stacktraces."
+        internal const val BUILD_ID_READ_ERROR =
+            "Failed to read Build ID information, de-obfuscation may not work properly."
+
         internal val RESTRICTED_CIPHER_SUITES = arrayOf(
             // TLS 1.3
 
@@ -690,7 +733,7 @@ internal class CoreFeature(
         // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests, otherwise
         // LoggingSyncListener can interact with internalLogger, breaking mockito
         // verification expectations.
-        // TODO RUMM-0000 isolate Kronos somehow for unit-tests
+        // TODO RUM-3791 isolate Kronos somehow for unit-tests
         internal var disableKronosBackgroundSync = false
 
         // endregion

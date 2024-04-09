@@ -161,7 +161,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -172,6 +172,8 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verifyNoInteractions(mockPreviousHandler)
@@ -194,7 +196,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -205,6 +207,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
@@ -228,7 +233,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(throwable)
             assertThat(logEvent.message)
@@ -240,6 +245,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
@@ -263,7 +271,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(currentThread.name)
             assertThat(logEvent.throwable).isSameAs(throwable)
             assertThat(logEvent.message)
@@ -275,6 +283,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
@@ -307,7 +318,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(thread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -318,6 +329,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(thread.name)
                 assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
@@ -348,7 +362,7 @@ internal class DatadogExceptionHandlerTest {
 
             val logEvent = lastValue as JvmCrash.Logs
 
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
             assertThat(logEvent.threadName).isEqualTo(crashedThread.name)
             assertThat(logEvent.throwable).isSameAs(fakeThrowable)
             assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
@@ -358,6 +372,9 @@ internal class DatadogExceptionHandlerTest {
                 assertThat(filter { it.crashed }).hasSize(1)
                 assertThat(first { it.crashed }.name).isEqualTo(crashedThread.name)
                 assertThat(first { it.crashed }.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(crashedThread, fakeThrowable)
@@ -488,6 +505,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
@@ -521,6 +541,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
@@ -552,6 +575,9 @@ internal class DatadogExceptionHandlerTest {
                 val crashedThread = first { it.crashed }
                 assertThat(crashedThread.name).isEqualTo(currentThread.name)
                 assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
+                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
+                assertThat(nonCrashedThreadNames).isNotEmpty
+                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)

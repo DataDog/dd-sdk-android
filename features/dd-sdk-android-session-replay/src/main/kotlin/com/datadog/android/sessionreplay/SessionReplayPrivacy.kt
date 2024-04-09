@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.os.Build
 import android.view.View
+import android.webkit.WebView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
@@ -38,6 +39,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWirefra
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
@@ -109,6 +111,12 @@ enum class SessionReplayPrivacy {
         val switchCompatMapper: SwitchCompatMapper
         val seekBarMapper: SeekBarWireframeMapper?
         val numberPickerMapper: BasePickerMapper?
+        val webViewWireframeMapper = WebViewWireframeMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
         when (this) {
             ALLOW -> {
                 textMapper = TextViewMapper(
@@ -239,7 +247,8 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, imageViewMapper.toGenericMapper()),
-            MapperTypeWrapper(AppCompatToolbar::class.java, unsupportedViewMapper.toGenericMapper())
+            MapperTypeWrapper(AppCompatToolbar::class.java, unsupportedViewMapper.toGenericMapper()),
+            MapperTypeWrapper(WebView::class.java, webViewWireframeMapper.toGenericMapper())
         )
 
         mappersList.add(

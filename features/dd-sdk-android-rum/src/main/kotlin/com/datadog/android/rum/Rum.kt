@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
@@ -88,7 +87,7 @@ object Rum {
             sdkCore
         )
 
-        // TODO RUM-0000 there is a small chance of application crashing between RUM monitor
+        // TODO RUM-3794 there is a small chance of application crashing between RUM monitor
         //  registration and the moment SDK init is processed, in this case we will miss this crash
         //  (it won't activate new session). Ideally we should start session when monitor is created
         //  and before it is registered, but with current code (internal RUM scopes using the
@@ -121,7 +120,6 @@ object Rum {
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
         sessionListener = rumFeature.sessionListener,
-        appStartTimeProvider = DefaultAppStartTimeProvider(),
         executorService = sdkCore.createSingleThreadExecutorService()
     )
 

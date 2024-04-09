@@ -33,7 +33,7 @@ interface ImageWireframeHelper {
      * @param border provides a custom border to the image wireframe
      * @param prefix a prefix identifying the drawable in the parent view's context
      */
-    // TODO RUM-0000 limit the number of params to this function
+    // TODO RUM-3666 limit the number of params to this function
     fun createImageWireframe(
         view: View,
         currentWireframeIndex: Int,

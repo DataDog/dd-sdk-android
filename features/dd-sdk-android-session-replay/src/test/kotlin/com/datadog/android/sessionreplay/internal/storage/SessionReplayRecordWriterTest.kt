@@ -72,10 +72,10 @@ internal class SessionReplayRecordWriterTest {
     }
 
     @Test
-    fun `M write the record in a new batch W write { first view in session }`(forge: Forge) {
+    fun `M write the record in a batch W write`(forge: Forge) {
         // Given
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(true), any())) doAnswer {
+        whenever(mockSessionReplayFeature.withWriteContext(eq(false), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
@@ -88,49 +88,6 @@ internal class SessionReplayRecordWriterTest {
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verify(mockRecordCallback).onRecordForViewSent(fakeRecord)
-        verifyNoMoreInteractions(mockRecordCallback)
-    }
-
-    @Test
-    fun `M write the record in the same batch W write { when same view }`(forge: Forge) {
-        // Given
-        val fakeRecord1 = forge.forgeEnrichedRecord()
-        val fakeRecord2 = fakeRecord1.copy()
-
-        testedWriter.write(fakeRecord1)
-
-        // When
-        testedWriter.write(fakeRecord2)
-
-        // Then
-        verify(mockSessionReplayFeature)
-            .withWriteContext(eq(true), any())
-        verify(mockSessionReplayFeature)
-            .withWriteContext(eq(false), any())
-        verifyNoMoreInteractions(mockSessionReplayFeature)
-    }
-
-    @Test
-    fun `M write the record in new batch W write { when different view }`(forge: Forge) {
-        // Given
-        val fakeRecord1 = forge.forgeEnrichedRecord()
-        val fakeRecord2 = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(true), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
-        }
-        testedWriter.write(fakeRecord1)
-
-        // When
-        testedWriter.write(fakeRecord2)
-
-        // Then
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord1.toJson().toByteArray()), null)
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord2.toJson().toByteArray()), null)
-        verifyNoMoreInteractions(mockEventBatchWriter)
-
-        verify(mockRecordCallback).onRecordForViewSent(fakeRecord1)
-        verify(mockRecordCallback).onRecordForViewSent(fakeRecord2)
         verifyNoMoreInteractions(mockRecordCallback)
     }
 
@@ -156,7 +113,7 @@ internal class SessionReplayRecordWriterTest {
             .thenReturn(false)
 
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(true), any())) doAnswer {
+        whenever(mockSessionReplayFeature.withWriteContext(eq(false), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }

@@ -28,7 +28,6 @@ import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -65,6 +64,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -92,6 +92,8 @@ import org.mockito.quality.Strictness
 import java.util.Arrays
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
@@ -403,8 +405,37 @@ internal class RumViewScopeTest {
 
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
-            assertThat(rumContext[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY])
+            assertThat(rumContext[RumContext.VIEW_TIMESTAMP_OFFSET])
                 .isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `𝕄 update the feature context with the view timestamp W initializing`() {
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+            assertThat(rumContext[RumContext.VIEW_TIMESTAMP])
+                .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `𝕄 reset the hasReplay attribute in feature context with the view timestamp W initializing`() {
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+            assertThat(rumContext[RumContext.HAS_REPLAY] as Boolean).isFalse()
         }
     }
 
@@ -423,7 +454,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -434,6 +465,65 @@ internal class RumViewScopeTest {
                 acc
             }
             assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+        }
+    }
+
+    @Test
+    fun `𝕄 keep the resolved hasReplay value in the context W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext[RumContext.HAS_REPLAY] as Boolean).isEqualTo(fakeHasReplay)
+        }
+    }
+
+    @Test
+    fun `𝕄 keep the viewTimestamp value in the context W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext[RumContext.VIEW_TIMESTAMP] as Long)
+                .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
         }
     }
 
@@ -496,7 +586,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + B scope init + A scope stop
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -541,7 +631,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -583,7 +673,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // scope init + stop view + stop action
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -681,7 +771,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + onStopView + B scope init
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -735,7 +825,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + A scope stop + B scope init
-            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(4)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -4378,6 +4468,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4409,6 +4500,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4457,6 +4549,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4488,6 +4581,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4528,6 +4622,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4600,6 +4695,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.ANR)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4632,6 +4728,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4673,6 +4770,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4705,6 +4803,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4748,6 +4847,7 @@ internal class RumViewScopeTest {
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasNoThreads()
@@ -4780,6 +4880,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4817,6 +4918,7 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     isCrash(false)
                     hasNoThreads()
                     hasUserInfo(fakeDatadogContext.userInfo)
@@ -4833,6 +4935,7 @@ internal class RumViewScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4874,6 +4977,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -4910,6 +5014,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4950,6 +5055,7 @@ internal class RumViewScopeTest {
                     hasMessage(message)
                     hasErrorSource(source)
                     hasErrorCategory(null)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(null)
                     isCrash(false)
                     hasNoThreads()
@@ -4986,6 +5092,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4998,6 +5105,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery sourceType: RumErrorSourceType,
         @Forgery threads: List<ThreadDump>,
+        @LongForgery timeSinceAppStart: Long,
         forge: Forge
     ) {
         // Given
@@ -5011,7 +5119,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = threads,
             attributes = attributes,
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = timeSinceAppStart
         )
 
         // When
@@ -5037,6 +5146,7 @@ internal class RumViewScopeTest {
                     hasErrorType(null)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(null)
+                    hasTimeSinceAppStart(TimeUnit.NANOSECONDS.toMillis(timeSinceAppStart))
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5061,6 +5171,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -5234,6 +5345,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5270,6 +5382,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5283,6 +5396,7 @@ internal class RumViewScopeTest {
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
         @Forgery threads: List<ThreadDump>,
+        @LongForgery timeSinceAppStart: Long,
         forge: Forge
     ) {
         // Given
@@ -5296,7 +5410,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = threads,
             attributes = attributes,
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = timeSinceAppStart
         )
 
         // When
@@ -5323,6 +5438,7 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(TimeUnit.NANOSECONDS.toMillis(timeSinceAppStart))
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5347,6 +5463,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -5438,7 +5555,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = emptyList(),
             attributes = attributes,
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = forge.aPositiveLong()
         )
 
         // When
@@ -5467,6 +5585,9 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    // since this crash is coming externally (from cross-platform), expectation is to have it provided
+                    // as an attribute from there as well
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5488,6 +5609,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -5593,6 +5715,7 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5617,6 +5740,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5661,6 +5785,7 @@ internal class RumViewScopeTest {
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasNoThreads()
@@ -5697,6 +5822,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5710,6 +5836,7 @@ internal class RumViewScopeTest {
         @Forgery throwable: Throwable,
         @Forgery sourceType: RumErrorSourceType,
         @Forgery threads: List<ThreadDump>,
+        @LongForgery timeSinceAppStart: Long,
         forge: Forge
     ) {
         // Given
@@ -5722,7 +5849,8 @@ internal class RumViewScopeTest {
             isFatal = true,
             threads = threads,
             attributes = emptyMap(),
-            sourceType = sourceType
+            sourceType = sourceType,
+            timeSinceAppStartNs = timeSinceAppStart
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
@@ -5751,6 +5879,7 @@ internal class RumViewScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(TimeUnit.NANOSECONDS.toMillis(timeSinceAppStart))
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasLiteSessionPlan()
@@ -5775,6 +5904,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -8651,6 +8781,79 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    @Test
+    fun `𝕄 produce event safe for serialization 𝕎 handleEvent()`(
+        forge: Forge
+    ) {
+        // Given
+        val writeWorker = Executors.newCachedThreadPool()
+        val tasks = mutableListOf<Future<*>>()
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+            tasks += writeWorker.submit {
+                callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            }
+        }
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doAnswer {
+            when (val event = it.getArgument<Any>(1)) {
+                is ViewEvent -> assertDoesNotThrow { event.toJson() }
+                is ErrorEvent -> assertDoesNotThrow { event.toJson() }
+                is ActionEvent -> assertDoesNotThrow { event.toJson() }
+                is LongTaskEvent -> assertDoesNotThrow { event.toJson() }
+                // error is on purpose here, because under the hood all the Exceptions are caught
+                else -> throw Error("unsupported event type ${event::class}")
+            }
+            true
+        }
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn forge.exhaustiveAttributes()
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
+        )
+
+        // When
+        repeat(1000) {
+            testedScope.handleEvent(forge.applicationStartedEvent(), mockWriter)
+            testedScope.handleEvent(
+                forge.anyRumEvent(
+                    excluding = listOf(
+                        RumRawEvent.StartView::class.java,
+                        RumRawEvent.StopView::class.java,
+                        RumRawEvent.StartAction::class.java,
+                        RumRawEvent.StopAction::class.java,
+                        RumRawEvent.StartResource::class.java,
+                        RumRawEvent.StopResource::class.java,
+                        RumRawEvent.StopResourceWithError::class.java,
+                        RumRawEvent.StopResourceWithStackTrace::class.java
+                    )
+                ),
+                mockWriter
+            )
+        }
+        testedScope.handleEvent(forge.stopViewEvent(), mockWriter)
+
+        writeWorker.shutdown()
+        writeWorker.awaitTermination(5, TimeUnit.SECONDS)
+
+        // Then
+        tasks.forEach {
+            // if there is any assertion error, it will be re-thrown
+            it.get()
+        }
+    }
 
     // region Internal
 

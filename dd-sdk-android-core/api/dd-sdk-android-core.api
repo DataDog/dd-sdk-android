@@ -122,14 +122,15 @@ public final class com/datadog/android/api/SdkCore$DefaultImpls {
 }
 
 public final class com/datadog/android/api/context/DatadogContext {
-	public fun <init> (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/util/Map;)V
+	public fun <init> (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/util/Map;)V
 	public final fun component1 ()Lcom/datadog/android/DatadogSite;
 	public final fun component10 ()Lcom/datadog/android/api/context/ProcessInfo;
 	public final fun component11 ()Lcom/datadog/android/api/context/NetworkInfo;
 	public final fun component12 ()Lcom/datadog/android/api/context/DeviceInfo;
 	public final fun component13 ()Lcom/datadog/android/api/context/UserInfo;
 	public final fun component14 ()Lcom/datadog/android/privacy/TrackingConsent;
-	public final fun component15 ()Ljava/util/Map;
+	public final fun component15 ()Ljava/lang/String;
+	public final fun component16 ()Ljava/util/Map;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
@@ -138,9 +139,10 @@ public final class com/datadog/android/api/context/DatadogContext {
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Lcom/datadog/android/api/context/TimeInfo;
-	public final fun copy (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/util/Map;)Lcom/datadog/android/api/context/DatadogContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/context/DatadogContext;Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
+	public final fun copy (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/api/context/DatadogContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/context/DatadogContext;Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAppBuildId ()Ljava/lang/String;
 	public final fun getClientToken ()Ljava/lang/String;
 	public final fun getDeviceInfo ()Lcom/datadog/android/api/context/DeviceInfo;
 	public final fun getEnv ()Ljava/lang/String;
@@ -311,6 +313,10 @@ public final class com/datadog/android/api/feature/Feature$Companion {
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/api/feature/FeatureContextUpdateReceiver {
+	public abstract fun onContextUpdate (Ljava/lang/String;Ljava/util/Map;)V
+}
+
 public abstract interface class com/datadog/android/api/feature/FeatureEventReceiver {
 	public abstract fun onReceive (Ljava/lang/Object;)V
 }
@@ -332,7 +338,9 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
+	public abstract fun removeContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun removeEventReceiver (Ljava/lang/String;)V
+	public abstract fun setContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureEventReceiver;)V
 	public abstract fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 }
@@ -419,6 +427,11 @@ public final class com/datadog/android/api/storage/FeatureStorageConfiguration$C
 	public final fun getDEFAULT ()Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 }
 
+public final class com/datadog/android/api/storage/NoOpDataWriter : com/datadog/android/api/storage/DataWriter {
+	public fun <init> ()V
+	public fun write (Lcom/datadog/android/api/storage/EventBatchWriter;Ljava/lang/Object;)Z
+}
+
 public final class com/datadog/android/api/storage/RawBatchEvent {
 	public fun <init> ([B[B)V
 	public synthetic fun <init> ([B[BILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -436,6 +449,7 @@ public final class com/datadog/android/api/storage/RawBatchEvent {
 public abstract interface class com/datadog/android/core/InternalSdkCore : com/datadog/android/api/feature/FeatureSdkCore {
 	public abstract fun deleteLastViewEvent ()V
 	public abstract fun getAllFeatures ()Ljava/util/List;
+	public abstract fun getAppStartTimeNs ()J
 	public abstract fun getDatadogContext ()Lcom/datadog/android/api/context/DatadogContext;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getLastFatalAnrSent ()Ljava/lang/Long;
@@ -867,5 +881,6 @@ public final class com/datadog/android/trace/TracingHeaderType : java/lang/Enum 
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
+	public abstract fun publicNoOpImplementation ()Z
 }
 

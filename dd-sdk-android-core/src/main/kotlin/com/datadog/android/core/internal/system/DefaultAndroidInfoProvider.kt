@@ -16,18 +16,30 @@ import com.datadog.android.api.context.DeviceType
 import java.util.Locale
 
 internal class DefaultAndroidInfoProvider(
-    appContext: Context
+    appContext: Context,
+    rawDeviceBrand: String,
+    rawDeviceModel: String,
+    rawDeviceId: String,
+    rawOsVersion: String
 ) : AndroidInfoProvider {
+
+    constructor(appContext: Context) : this(
+        appContext,
+        Build.BRAND.orEmpty(),
+        Build.MODEL.orEmpty(),
+        Build.ID.orEmpty(),
+        Build.VERSION.RELEASE.orEmpty()
+    )
 
     // lazy is just to avoid breaking the tests (because without lazy type is resolved at the
     // construction time and Build.MODEL is null in unit-tests) and also to have value resolved
     // once to avoid different values for foldables during the application lifecycle
     override val deviceType: DeviceType by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        resolveDeviceType(appContext)
+        resolveDeviceType(rawDeviceModel, appContext)
     }
 
     override val deviceName: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        if (deviceBrand.isEmpty()) {
+        if (deviceBrand.isBlank()) {
             deviceModel
         } else if (deviceModel.contains(deviceBrand)) {
             deviceModel
@@ -37,24 +49,18 @@ internal class DefaultAndroidInfoProvider(
     }
 
     override val deviceBrand: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.BRAND.replaceFirstChar {
+        rawDeviceBrand.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
         }
     }
 
-    override val deviceModel: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.MODEL
-    }
+    override val deviceModel: String = rawDeviceModel
 
-    override val deviceBuildId: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.ID
-    }
+    override val deviceBuildId: String = rawDeviceId
 
     override val osName: String = "Android"
 
-    override val osVersion: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.VERSION.RELEASE
-    }
+    override val osVersion: String = rawOsVersion
 
     override val osMajorVersion: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
         // result of split always have at least 1 element
@@ -71,12 +77,12 @@ internal class DefaultAndroidInfoProvider(
         const val FEATURE_GOOGLE_ANDROID_TV = "com.google.android.tv"
         const val MIN_TABLET_WIDTH_DP = 800
 
-        private fun resolveDeviceType(appContext: Context): DeviceType {
+        private fun resolveDeviceType(model: String, appContext: Context): DeviceType {
             return if (isTv(appContext)) {
                 DeviceType.TV
-            } else if (isTablet(appContext)) {
+            } else if (isTablet(model, appContext)) {
                 DeviceType.TABLET
-            } else if (isMobile(appContext)) {
+            } else if (isMobile(model, appContext)) {
                 DeviceType.MOBILE
             } else {
                 DeviceType.OTHER
@@ -104,18 +110,20 @@ internal class DefaultAndroidInfoProvider(
         }
 
         private fun isTablet(
+            model: String,
             appContext: Context
         ): Boolean {
-            with(Build.MODEL.lowercase(Locale.US)) {
+            with(model.lowercase(Locale.US)) {
                 if (contains("tablet") || contains("sm-t")) return true
             }
             return appContext.resources.configuration.smallestScreenWidthDp >= MIN_TABLET_WIDTH_DP
         }
 
         private fun isMobile(
+            model: String,
             appContext: Context
         ): Boolean {
-            if (Build.MODEL.lowercase(Locale.US).contains("phone")) return true
+            if (model.lowercase(Locale.US).contains("phone")) return true
 
             val telephonyManager =
                 appContext.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
