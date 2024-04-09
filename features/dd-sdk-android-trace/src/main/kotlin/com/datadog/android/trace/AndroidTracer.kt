@@ -47,27 +47,16 @@ class AndroidTracer internal constructor(
     init {
         addScopeListener(object : ScopeListener {
             override fun afterScopeActivated() {
-                // scope is thread-local and at the given time for the particular thread it can
-                // be only one active scope.
-                val threadName = Thread.currentThread().name
                 val activeContext = activeSpan()?.context()
                 if (activeContext != null) {
                     val activeSpanId = activeContext.toSpanId()
                     val activeTraceId = activeContext.toTraceId()
-                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                        it["context@$threadName"] = mapOf(
-                            "span_id" to activeSpanId,
-                            "trace_id" to activeTraceId
-                        )
-                    }
+                    sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
                 }
             }
 
             override fun afterScopeClosed() {
-                val threadName = Thread.currentThread().name
-                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                    it.remove("context@$threadName")
-                }
+                sdkCore.removeActiveTraceFromContext()
             }
         })
     }

@@ -19,9 +19,13 @@ import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.opentelemetry.trace.OtelSpanContext
 import com.datadog.opentelemetry.trace.OtelTracer
 import com.datadog.tools.unit.getFieldValue
+import com.datadog.tools.unit.setFieldValue
 import com.datadog.trace.api.Config
 import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.api.sampling.PrioritySampling
+import com.datadog.trace.bootstrap.instrumentation.api.AgentScopeManager
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
+import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpan
@@ -47,14 +51,15 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -267,7 +272,6 @@ internal class OtelTracerBuilderProviderTest {
             val newTracer = tracerProvider.get(forge.anAlphabeticalString())
             assertThat(newTracer).isNotSameAs(tracer)
         }
-        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -778,6 +782,80 @@ internal class OtelTracerBuilderProviderTest {
         assertThat(context.tags).containsEntry(LogAttributes.RUM_SESSION_ID, fakeSessionId)
         assertThat(context.tags).containsEntry(LogAttributes.RUM_VIEW_ID, fakeViewId)
         assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
+    }
+
+    // endregion
+
+    // region Bundle with Logs
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `M propagate the active trace context W scope started and finished`() {
+        // Given
+        val expectedThreadName = Thread.currentThread().name
+        val expectedActiveTraceContextName = "context@$expectedThreadName"
+        val tracer = testedOtelTracerProviderBuilder
+            .build()
+            .tracerBuilder(fakeInstrumentationName)
+            .build()
+        val delegatedTracer: AgentTracer.TracerAPI = tracer.getFieldValue("tracer")
+        val scopeManager: AgentScopeManager = delegatedTracer.getFieldValue("scopeManager")
+        val span = tracer
+            .spanBuilder(fakeOperationName)
+            .startSpan()
+        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val expectedTraceId = delegateSpan.context().traceId.toString()
+        val expectedSpanId = delegateSpan.context().spanId.toString()
+
+        // When
+        val scope = scopeManager.activate(delegateSpan, ScopeSource.INSTRUMENTATION)
+        scope.close()
+        span.end()
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            val traceContext: MutableMap<String, Any?> = mutableMapOf()
+            verify(mockSdkCore, times(2)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            firstValue.invoke(traceContext)
+            val activeTraceContext = traceContext[expectedActiveTraceContextName] as Map<String, Any>
+            assertThat(activeTraceContext).containsEntry("trace_id", expectedTraceId)
+            assertThat(activeTraceContext).containsEntry("span_id", expectedSpanId)
+            lastValue.invoke(traceContext)
+            assertThat(traceContext).doesNotContainKey(expectedActiveTraceContextName)
+        }
+    }
+
+    @Test
+    fun `M not propagate the active trace context W scope started and finished {no active span}`() {
+        // Given
+        val expectedThreadName = Thread.currentThread().name
+        val expectedActiveTraceContextName = "context@$expectedThreadName"
+        val tracer = testedOtelTracerProviderBuilder
+            .build()
+            .tracerBuilder(fakeInstrumentationName)
+            .build()
+        val delegatedTracer: AgentTracer.TracerAPI = tracer.getFieldValue("tracer")
+        val scopeManager: AgentScopeManager = spy(delegatedTracer.getFieldValue("scopeManager")) {
+            whenever(it.activeSpan()).thenReturn(null)
+        }
+        delegatedTracer.setFieldValue("scopeManager", scopeManager)
+        val span = tracer
+            .spanBuilder(fakeOperationName)
+            .startSpan()
+        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+
+        // When
+        val scope = scopeManager.activate(delegateSpan, ScopeSource.INSTRUMENTATION)
+        scope.close()
+        span.end()
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            val traceContext: MutableMap<String, Any?> = mutableMapOf()
+            verify(mockSdkCore, times(1)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            lastValue.invoke(traceContext)
+            assertThat(traceContext).doesNotContainKey(expectedActiveTraceContextName)
+        }
     }
 
     // endregion

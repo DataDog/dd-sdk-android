@@ -18,6 +18,7 @@ import com.datadog.android.trace.internal.data.NoOpOtelWriter
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
 import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.api.config.TracerConfig
+import com.datadog.trace.api.scopemanager.ScopeListener
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.core.CoreTracer
 import io.opentelemetry.api.trace.SpanBuilder
@@ -143,6 +144,20 @@ class OtelTracerProvider(
                 .partialFlushMinSpans(partialFlushThreshold)
                 .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
                 .build()
+            coreTracer.addScopeListener(object : ScopeListener {
+                override fun afterScopeActivated() {
+                    val activeSpanContext = coreTracer.activeSpan()?.context()
+                    if (activeSpanContext != null) {
+                        val activeSpanId = activeSpanContext.spanId.toString()
+                        val activeTraceId = activeSpanContext.traceId.toString()
+                        sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
+                    }
+                }
+
+                override fun afterScopeClosed() {
+                    sdkCore.removeActiveTraceFromContext()
+                }
+            })
             return OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
         }
 

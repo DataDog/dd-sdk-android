@@ -3,6 +3,8 @@ package com.datadog.trace.bootstrap.instrumentation.api;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
 import static java.util.Collections.emptyList;
 
+import androidx.annotation.Nullable;
+
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.EndpointCheckpointer;
@@ -233,6 +235,7 @@ public class AgentTracer {
 
     AgentScope activateNext(AgentSpan span);
 
+    @Nullable
     AgentSpan activeSpan();
 
     AgentScope activeScope();
