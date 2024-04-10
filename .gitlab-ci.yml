@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "7"
+  CURRENT_CI_IMAGE: "8"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -33,7 +33,7 @@ ci-image:
   when: manual
   except: [ tags, schedules ]
   tags: [ "arch:amd64" ]
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:20.10.13
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-gbi-focal
   script:
     - docker buildx build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab --push .
 
