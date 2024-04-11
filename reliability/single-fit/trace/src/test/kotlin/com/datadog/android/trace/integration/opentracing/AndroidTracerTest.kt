@@ -8,13 +8,11 @@ package com.datadog.android.trace.integration.opentracing
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
-import com.datadog.android.tests.ktx.getDouble
 import com.datadog.android.tests.ktx.getInt
-import com.datadog.android.tests.ktx.getLong
-import com.datadog.android.tests.ktx.getString
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.integration.tests.assertj.SpansPayloadAssert
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.setStaticValue
@@ -86,19 +84,21 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(fakeService)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(fakeService)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+            }
     }
 
     @RepeatedTest(16)
@@ -124,20 +124,22 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta.$fakeTagKey")).isEqualTo(fakeTagValue)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue(fakeTagKey, fakeTagValue)
+            }
     }
 
     @RepeatedTest(16)
@@ -164,20 +166,22 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta.$fakeTagKey")).isEqualTo(fakeTagValue)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue(fakeTagKey, fakeTagValue)
+            }
     }
 
     @RepeatedTest(16)
@@ -212,22 +216,24 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta._dd.application.id")).isNull()
-        assertThat(event0.getString("spans[0].meta._dd.session.id")).isNull()
-        assertThat(event0.getString("spans[0].meta._dd.view.id")).isNull()
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasApplicationId(null)
+                hasSessionId(null)
+                hasViewId(null)
+            }
     }
 
     @RepeatedTest(16)
@@ -262,22 +268,24 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta._dd.application.id")).isEqualTo(fakeRumApplicationId)
-        assertThat(event0.getString("spans[0].meta._dd.session.id")).isEqualTo(fakeRumSessionId)
-        assertThat(event0.getString("spans[0].meta._dd.view.id")).isEqualTo(fakeRumViewId)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasApplicationId(fakeRumApplicationId)
+                hasSessionId(fakeRumSessionId)
+                hasViewId(fakeRumViewId)
+            }
     }
 
     @RepeatedTest(16)
@@ -301,12 +309,11 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         val keptSpans = eventsWritten.count {
-            val asJson = JsonParser.parseString(it.eventData) as JsonObject
-            assertThat(asJson.getDouble("spans[0].metrics._dd.agent_psr")).isCloseTo(
-                fakeSampleRate / 100.0,
-                offset(0.01)
-            )
-            asJson.getInt("spans[0].metrics._sampling_priority_v1") == 1
+            val payload = JsonParser.parseString(it.eventData) as JsonObject
+            SpansPayloadAssert.assertThat(payload).hasSpanAtIndexWith(0) {
+                hasAgentPsrCloseTo(fakeSampleRate / 100.0, offset(0.01))
+            }
+            payload.getInt("spans[0].metrics._sampling_priority_v1") == 1
         }
         assertThat(keptSpans).isCloseTo(expectedCount, Offset.offset(offsetMargin))
     }
@@ -332,19 +339,21 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+            }
     }
 
     @RepeatedTest(16)
@@ -372,22 +381,24 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta.usr.id")).isEqualTo(fakeUserId)
-        assertThat(event0.getString("spans[0].meta.usr.name")).isEqualTo(fakeUserName)
-        assertThat(event0.getString("spans[0].meta.usr.email")).isEqualTo(fakeUserEmail)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasUserId(fakeUserId)
+                hasUserName(fakeUserName)
+                hasUserEmail(fakeUserEmail)
+            }
     }
 
     @RepeatedTest(16)
@@ -414,20 +425,22 @@ class AndroidTracerTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta.usr.$fakeUserKey")).isEqualTo(fakeUserValue)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue("usr.$fakeUserKey", fakeUserValue)
+            }
     }
 
     @RepeatedTest(16)
@@ -453,14 +466,20 @@ class AndroidTracerTest {
         assertThat(childSpanId).isNotEqualTo(spanId)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(2)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        val event1 = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event1.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event1.getString("spans[0].trace_id")).isEqualTo(childTraceId)
-        assertThat(event1.getString("spans[0].span_id")).isEqualTo(childSpanId)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        val payload1 = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(traceId)
+                hasSpanId(spanId)
+            }
+        SpansPayloadAssert.assertThat(payload1)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasTraceId(childTraceId)
+                hasSpanId(childSpanId)
+            }
     }
 
     companion object {
