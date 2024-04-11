@@ -178,9 +178,28 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `M log error W onActivityStopped() { jankStats stop tracking throws error }`() {
+    fun `M log error W onActivityStopped() { jankStats stop tracking throws IAE error }`() {
         // Given
         val exception = IllegalArgumentException()
+        whenever(mockJankStats::isTrackingEnabled.set(false)) doThrow exception
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.TELEMETRY,
+            message = JankStatsActivityLifecycleListener.JANK_STATS_TRACKING_DISABLE_ERROR,
+            throwable = exception
+        )
+    }
+
+    @Test
+    fun `M log error W onActivityStopped() { jankStats stop tracking throws NPE error }`() {
+        // Given
+        val exception = NullPointerException()
         whenever(mockJankStats::isTrackingEnabled.set(false)) doThrow exception
 
         // When
