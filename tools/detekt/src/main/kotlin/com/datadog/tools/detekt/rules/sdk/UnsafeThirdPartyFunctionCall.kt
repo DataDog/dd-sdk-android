@@ -43,7 +43,7 @@ class UnsafeThirdPartyFunctionCall(
             val splitColon = it.split(':')
             val key = splitColon.first()
             if (splitColon.size == 1) {
-                println("✘ ERROR WHITH KNOWN THROWING CALL: $it")
+                println("✘ ERROR WITH KNOWN THROWING CALL: $it")
             }
             val exceptions = splitColon[1].split(',').toList()
             key to exceptions
