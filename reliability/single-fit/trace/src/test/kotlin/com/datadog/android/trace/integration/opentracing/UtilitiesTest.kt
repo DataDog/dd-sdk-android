@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.integration
+package com.datadog.android.trace.integration.opentracing
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.utils.toHexString
