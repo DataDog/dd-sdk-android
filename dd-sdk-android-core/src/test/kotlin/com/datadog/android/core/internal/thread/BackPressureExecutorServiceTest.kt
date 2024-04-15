@@ -7,14 +7,27 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.core.configuration.BackPressureStrategy
+import fr.xgouchet.elmyr.Forge
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 
 internal class BackPressureExecutorServiceTest :
     AbstractExecutorServiceTest<BackPressureExecutorService>() {
 
-    override fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): BackPressureExecutorService {
+    override fun createTestedExecutorService(
+        forge: Forge,
+        backPressureStrategy: BackPressureStrategy
+    ): BackPressureExecutorService {
         return BackPressureExecutorService(
             mockInternalLogger,
+            forge.anAlphabeticalString(),
             backPressureStrategy
         )
+    }
+
+    @Test
+    fun `M use DatadogThreadFactory W constructor()`() {
+        // Then
+        assertThat(testedExecutor.threadFactory).isInstanceOf(DatadogThreadFactory::class.java)
     }
 }

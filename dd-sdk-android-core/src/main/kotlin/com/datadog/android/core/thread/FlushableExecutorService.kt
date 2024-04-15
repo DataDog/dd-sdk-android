@@ -34,11 +34,13 @@ interface FlushableExecutorService : ExecutorService {
         /**
          * Create an instance of [FlushableExecutorService].
          * @param internalLogger the internal logger
+         * @param executorContext Context to be used for logging and naming threads running on this executor.
          * @param backPressureStrategy the strategy to handle back-pressure
          * @return the instance
          */
         fun create(
             internalLogger: InternalLogger,
+            executorContext: String,
             backPressureStrategy: BackPressureStrategy
         ): FlushableExecutorService
     }

@@ -120,7 +120,7 @@ object Rum {
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
         sessionListener = rumFeature.sessionListener,
-        executorService = sdkCore.createSingleThreadExecutorService()
+        executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline")
     )
 
     // endregion

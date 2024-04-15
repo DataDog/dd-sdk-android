@@ -109,7 +109,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.BASE
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.createScheduledExecutorService()) doReturn mockScheduledExecutorService
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
         whenever(
             mockScheduledExecutorService.schedule(
                 any(),

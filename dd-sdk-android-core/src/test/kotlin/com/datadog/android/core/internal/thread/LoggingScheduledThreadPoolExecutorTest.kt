@@ -21,8 +21,16 @@ import java.util.concurrent.TimeUnit
 internal class LoggingScheduledThreadPoolExecutorTest :
     AbstractExecutorServiceTest<ScheduledThreadPoolExecutor>() {
 
-    override fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): ScheduledThreadPoolExecutor {
-        return LoggingScheduledThreadPoolExecutor(1, mockInternalLogger, backPressureStrategy)
+    override fun createTestedExecutorService(
+        forge: Forge,
+        backPressureStrategy: BackPressureStrategy
+    ): ScheduledThreadPoolExecutor {
+        return LoggingScheduledThreadPoolExecutor(
+            1,
+            forge.anAlphabeticalString(),
+            mockInternalLogger,
+            backPressureStrategy
+        )
     }
 
     @Test
@@ -95,5 +103,11 @@ internal class LoggingScheduledThreadPoolExecutorTest :
             ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
             CancellationException::class.java
         )
+    }
+
+    @Test
+    fun `M use DatadogThreadFactory W constructor()`() {
+        // Then
+        assertThat(testedExecutor.threadFactory).isInstanceOf(DatadogThreadFactory::class.java)
     }
 }

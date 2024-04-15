@@ -391,7 +391,7 @@ internal class RumFeature(
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = sdkCore.createScheduledExecutorService()
+        vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
 
         initializeVitalMonitor(
             CPUVitalReader(internalLogger = sdkCore.internalLogger),
@@ -436,7 +436,7 @@ internal class RumFeature(
 
     private fun initializeANRDetector() {
         val detectorRunnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
-        anrDetectorExecutorService = sdkCore.createSingleThreadExecutorService()
+        anrDetectorExecutorService = sdkCore.createSingleThreadExecutorService("rum-anr-detection")
         anrDetectorExecutorService?.executeSafe(
             "ANR detection",
             sdkCore.internalLogger,

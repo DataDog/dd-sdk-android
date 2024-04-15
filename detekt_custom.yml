@@ -177,7 +177,7 @@ datadog:
       - "java.nio.channels.FileLock.release():java.io.IOException"
       # endregion
       # region Java Concurrency
-      - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
+      - "java.lang.Thread.constructor(java.lang.Runnable?, kotlin.String?):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
       - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
       - "java.lang.Thread.getAllStackTraces():java.lang.SecurityException"
       - "java.lang.Thread.interrupt():java.lang.SecurityException"
@@ -661,6 +661,7 @@ datadog:
       - "java.util.concurrent.atomic.AtomicInteger.constructor(kotlin.Int)"
       - "java.util.concurrent.atomic.AtomicInteger.decrementAndGet()"
       - "java.util.concurrent.atomic.AtomicInteger.get()"
+      - "java.util.concurrent.atomic.AtomicInteger.getAndIncrement()"
       - "java.util.concurrent.atomic.AtomicInteger.incrementAndGet()"
       - "java.util.concurrent.atomic.AtomicLong.constructor(kotlin.Long)"
       - "java.util.concurrent.atomic.AtomicLong.get()"

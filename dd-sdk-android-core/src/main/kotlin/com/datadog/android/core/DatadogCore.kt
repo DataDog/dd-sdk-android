@@ -259,13 +259,13 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun createSingleThreadExecutorService(): ExecutorService {
-        return coreFeature.createExecutorService()
+    override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
+        return coreFeature.createExecutorService(executorContext)
     }
 
     /** @inheritDoc */
-    override fun createScheduledExecutorService(): ScheduledExecutorService {
-        return coreFeature.createScheduledExecutorService()
+    override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
+        return coreFeature.createScheduledExecutorService(executorContext)
     }
 
     // endregion

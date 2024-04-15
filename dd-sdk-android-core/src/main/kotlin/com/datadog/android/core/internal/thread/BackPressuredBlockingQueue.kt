@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 
 internal class BackPressuredBlockingQueue<E : Any>(
     private val logger: InternalLogger,
+    private val executorContext: String,
     private val backPressureStrategy: BackPressureStrategy
 ) : LinkedBlockingQueue<E>(
     backPressureStrategy.capacity
@@ -72,7 +73,10 @@ internal class BackPressuredBlockingQueue<E : Any>(
             messageBuilder = { "BackPressuredBlockingQueue reached capacity:${backPressureStrategy.capacity}" },
             throwable = null,
             onlyOnce = false,
-            additionalProperties = mapOf("backpressure.capacity" to backPressureStrategy.capacity)
+            additionalProperties = mapOf(
+                "backpressure.capacity" to backPressureStrategy.capacity,
+                "executor.context" to executorContext
+            )
         )
     }
 
@@ -86,7 +90,10 @@ internal class BackPressuredBlockingQueue<E : Any>(
             messageBuilder = { "Dropped item in BackPressuredBlockingQueue queue: $item" },
             throwable = null,
             onlyOnce = false,
-            additionalProperties = mapOf("backpressure.capacity" to backPressureStrategy.capacity)
+            additionalProperties = mapOf(
+                "backpressure.capacity" to backPressureStrategy.capacity,
+                "executor.context" to executorContext
+            )
         )
     }
 }

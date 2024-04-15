@@ -102,7 +102,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         whenever(mockRumFeature.actionTrackingStrategy) doReturn mockUserActionTrackingStrategy
         whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
-        whenever(mockSdkCore.createScheduledExecutorService()) doReturn mockScheduledExecutorService
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
         whenever(
             mockScheduledExecutorService.schedule(
                 any(),

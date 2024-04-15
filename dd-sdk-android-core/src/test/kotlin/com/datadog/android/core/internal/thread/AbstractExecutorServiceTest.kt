@@ -59,14 +59,14 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     lateinit var fakeBackpressureStrategy: BackPressureStrategy
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         fakeBackpressureStrategy = BackPressureStrategy(
             fakeBackPressureCapacity,
             mockOnThresholdReached,
             mockOnItemDropped,
             fakeBackPressureMitigation
         )
-        testedExecutor = createTestedExecutorService(fakeBackpressureStrategy)
+        testedExecutor = createTestedExecutorService(forge, fakeBackpressureStrategy)
     }
 
     @AfterEach
@@ -74,7 +74,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
         testedExecutor.shutdownNow()
     }
 
-    abstract fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): T
+    abstract fun createTestedExecutorService(forge: Forge, backPressureStrategy: BackPressureStrategy): T
 
     // region execute
 

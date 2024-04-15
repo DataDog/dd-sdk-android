@@ -145,8 +145,8 @@ internal class CoreFeatureTest {
         testedFeature = CoreFeature(
             mockInternalLogger,
             mockAppStartTimeProvider,
-            executorServiceFactory = { _, _ -> mockPersistenceExecutorService },
-            scheduledExecutorServiceFactory = { _, _ -> mockScheduledExecutorService }
+            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService }
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
