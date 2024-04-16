@@ -59,7 +59,6 @@ robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
 fuzzyWuzzy = "1.2.0"
-mavenModel = "3.6.3"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
@@ -183,7 +182,6 @@ androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "an
 androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
 
 fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
-mavenModel = { module = "org.apache.maven:maven-model", version.ref = "mavenModel" }
 nexusPublishGradlePlugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
