@@ -12,12 +12,16 @@ import org.gradle.api.Task
 fun Project.registerSubModuleAggregationTask(
     taskName: String,
     subModuleTaskName: String,
+    subModulePathPrefix: String = ":",
     subModuleNamePrefix: String = "dd-sdk-android-",
     additionalConfiguration: Task.() -> Unit = {}
 ) {
     tasks.register(taskName) {
         project.subprojects.forEach { subProject ->
-            if (subProject.name.startsWith(subModuleNamePrefix)) {
+            println("SubProject ${subProject.name} / ${subProject.path}")
+            if (subProject.name.startsWith(subModuleNamePrefix) &&
+                subProject.path.startsWith(subModulePathPrefix)
+            ) {
                 dependsOn("${subProject.path}:$subModuleTaskName")
             }
         }
