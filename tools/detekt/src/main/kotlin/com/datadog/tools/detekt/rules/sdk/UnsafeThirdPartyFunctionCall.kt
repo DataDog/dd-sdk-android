@@ -43,7 +43,7 @@ class UnsafeThirdPartyFunctionCall(
             val splitColon = it.split(':')
             val key = splitColon.first()
             if (splitColon.size == 1) {
-                println("✘ ERROR WHITH KNOWN THROWING CALL: $it")
+                println("✘ ERROR WITH KNOWN THROWING CALL: $it")
             }
             val exceptions = splitColon[1].split(',').toList()
             key to exceptions
@@ -82,12 +82,11 @@ class UnsafeThirdPartyFunctionCall(
         expression: KtCallExpression,
         resolvedCall: ResolvedFunCall
     ) {
-        if (internalPackagePrefix.isNotEmpty() &&
-            resolvedCall.containerFqName.startsWith(internalPackagePrefix)
-        ) {
-            return
+        if (internalPackagePrefix.isNotEmpty()) {
+            val belongsToInternalContainer = resolvedCall.containerFqName.startsWith(internalPackagePrefix) ||
+                resolvedCall.containingPackage.startsWith(internalPackagePrefix)
+            if (belongsToInternalContainer) return
         }
-
         if (resolvedCall.functionName in kotlinHelperMethods) {
             return
         }
