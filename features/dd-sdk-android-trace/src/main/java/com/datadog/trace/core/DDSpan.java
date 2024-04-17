@@ -780,6 +780,10 @@ public class DDSpan
     }
   }
 
+  public List<AgentSpanLink> getLinks() {
+    return links;
+  }
+
   public Map<String, String> getBaggage() {
     return Collections.unmodifiableMap(context.getBaggageItems());
   }
