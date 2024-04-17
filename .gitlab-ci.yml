@@ -267,9 +267,9 @@ test-pyramid:publish-webview-synthetics:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
     - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
