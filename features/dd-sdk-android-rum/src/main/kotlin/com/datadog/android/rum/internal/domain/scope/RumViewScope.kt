@@ -483,7 +483,6 @@ internal open class RumViewScope(
                 context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        plan = ErrorEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
@@ -853,7 +852,6 @@ internal open class RumViewScope(
                 dd = ViewEvent.Dd(
                     documentVersion = eventVersion,
                     session = ViewEvent.DdSession(
-                        plan = ViewEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
                     ),
                     replayStats = replayStats,
@@ -994,7 +992,6 @@ internal open class RumViewScope(
                 ),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
-                        plan = ActionEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
@@ -1096,7 +1093,6 @@ internal open class RumViewScope(
                 context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                 dd = LongTaskEvent.Dd(
                     session = LongTaskEvent.DdSession(
-                        plan = LongTaskEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
                     ),
                     configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
