@@ -83,6 +83,36 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
+    fun `ignore call on internal package extension function`() {
+        // Given
+        val config = TestConfig(
+            mapOf("internalPackagePrefix" to "com.datadog")
+        )
+
+        @Suppress("UnusedReceiverParameter")
+        val code =
+            """
+                package com.datadog.utils
+
+                import java.io.File
+
+                fun File.extensionFunction(): Any = "42"
+
+                fun test(f: File): Any {
+                    return f.extensionFunction()
+                }
+
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
     fun `detekt unsafe call on unknown third party function`() {
         // Given
         val code =
@@ -96,6 +126,31 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(TestConfig())
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `detekt unsafe call on unknown third party extension function`() {
+        // Given
+        val config = TestConfig(
+            mapOf("internalPackagePrefix" to "com.datadog")
+        )
+        val code =
+            """
+                package com.datadog
+
+                import java.io.File
+
+                fun test(f: File): Any {
+                    return f.readText()
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
@@ -200,6 +255,31 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `detekt call with catch on unknown third party function`() {
+        // Given
+        val code =
+            """
+                import java.io.File
+                import java.lang.ArrayIndexOutOfBoundsException
+                
+                fun test(f: File): Any {
+                    try {
+                        return f.inputStream()
+                    } catch (e: ArrayIndexOutOfBoundsException) {
+                        return null
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(TestConfig())
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
@@ -524,23 +604,26 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore kotlin helper calls { with + run + also + println }`() {
         // Given
+        val config = TestConfig(
+            mapOf("knownSafeCalls" to "java.io.File.readBytes()")
+        )
         val code =
             """
                 import java.io.File
                 
-                fun test(f: File?): Any {
-                    with(file) {
-                        this.run {
-                            this.readBytes().also { 
+                fun test(f: File?): Any? {
+                    return with(f) {
+                        this?.run {
+                            this.readBytes().also {
                                 println(it)
                             }
                         }
-                    } 
+                    }
                 }
             """.trimIndent()
 
         // When
-        val findings = UnsafeThirdPartyFunctionCall(Config.empty)
+        val findings = UnsafeThirdPartyFunctionCall(config)
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
