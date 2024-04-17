@@ -39,7 +39,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewRumEventMapperTest {
+internal class WebViewRumEventMapperWithoutSRTest {
 
     lateinit var testedWebViewRumEventMapper: WebViewRumEventMapper
 
@@ -82,7 +82,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -106,7 +106,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -130,7 +130,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -154,7 +154,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -178,7 +178,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -205,7 +205,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -239,7 +239,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -283,7 +283,7 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            true
+            false
         )
 
         // Then
@@ -325,6 +325,12 @@ internal class WebViewRumEventMapperTest {
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.applicationId)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
+            .doesNotHaveField(WebViewRumEventMapper.SESSION_HAS_REPLAY_NAME)
+        assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
+            .doesNotHaveField(WebViewRumEventMapper.SESSION_HAS_REPLAY_NAME)
+        assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME))
+            .doesNotHaveField(WebViewRumEventMapper.DD_REPLAY_STATS)
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate
