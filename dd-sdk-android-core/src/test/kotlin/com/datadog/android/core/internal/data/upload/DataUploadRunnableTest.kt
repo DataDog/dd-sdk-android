@@ -89,6 +89,9 @@ internal class DataUploadRunnableTest {
     @Forgery
     lateinit var fakeDataUploadConfiguration: DataUploadConfiguration
 
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
     private var expectedBatchesHandled: Int = 0
 
     private lateinit var testedRunnable: DataUploadRunnable
@@ -117,6 +120,7 @@ internal class DataUploadRunnableTest {
         whenever(mockContextProvider.context) doReturn fakeContext
 
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -650,6 +654,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -748,6 +753,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -820,6 +826,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -877,6 +884,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,

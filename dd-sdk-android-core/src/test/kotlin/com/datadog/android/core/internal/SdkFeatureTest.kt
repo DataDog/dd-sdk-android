@@ -21,6 +21,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
+import com.datadog.android.core.internal.data.upload.DataUploadRunnable
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
@@ -73,7 +74,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -186,10 +186,8 @@ internal class SdkFeatureTest {
         assertThat(dataUploadRunnable.maxBatchesPerJob)
             .isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
         argumentCaptor<Runnable> {
-            verify(coreFeature.mockUploadExecutor).schedule(
-                any(),
-                any(),
-                eq(TimeUnit.MILLISECONDS)
+            verify(coreFeature.mockUploadExecutor).execute(
+                argThat { this is DataUploadRunnable }
             )
         }
         assertThat(testedFeature.uploader).isInstanceOf(DataOkHttpUploader::class.java)

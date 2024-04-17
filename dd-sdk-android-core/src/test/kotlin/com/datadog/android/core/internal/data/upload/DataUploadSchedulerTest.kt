@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.data.upload
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -18,14 +19,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -35,7 +34,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class DataUploadSchedulerTest {
 
-    lateinit var testedScheduler: DataUploadScheduler
+    private lateinit var testedScheduler: DataUploadScheduler
 
     @Mock
     lateinit var mockExecutor: ScheduledThreadPoolExecutor
@@ -43,35 +42,37 @@ internal class DataUploadSchedulerTest {
     @Forgery
     lateinit var fakeUploadConfiguration: DataUploadConfiguration
 
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
     @BeforeEach
     fun `set up`() {
         testedScheduler = DataUploadScheduler(
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock(),
+            fakeFeatureName,
+            storage = mock(),
+            dataUploader = mock(),
+            contextProvider = mock(),
+            networkInfoProvider = mock(),
+            systemInfoProvider = mock(),
             fakeUploadConfiguration,
             mockExecutor,
-            mock()
+            internalLogger = mock()
         )
     }
 
     @Test
-    fun `when start it will schedule a runnable`() {
+    fun `when start it will execute a runnable`() {
         // When
         testedScheduler.startScheduling()
 
         // Then
-        verify(mockExecutor).schedule(
-            any(),
-            eq(fakeUploadConfiguration.defaultDelayMs),
-            eq(TimeUnit.MILLISECONDS)
+        verify(mockExecutor).execute(
+            argThat { this is DataUploadRunnable }
         )
     }
 
     @Test
-    fun `when stop it will try to remove the scheduled runnable`() {
+    fun `when stop it will try to remove the executed runnable`() {
         // Given
         testedScheduler.startScheduling()
 
@@ -80,10 +81,8 @@ internal class DataUploadSchedulerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<Runnable>()
-        verify(mockExecutor).schedule(
-            argumentCaptor.capture(),
-            eq(fakeUploadConfiguration.defaultDelayMs),
-            eq(TimeUnit.MILLISECONDS)
+        verify(mockExecutor).execute(
+            argumentCaptor.capture()
         )
         verify(mockExecutor).remove(argumentCaptor.firstValue)
     }
