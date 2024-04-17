@@ -189,7 +189,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                 .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
-                .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
@@ -290,7 +289,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                 .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
-                .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
@@ -435,7 +433,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                 .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
-                .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
@@ -538,7 +535,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(fakeSignalName)
                 .hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                 .hasTimeSinceAppStart(fakeTimeSinceAppStartMs)
-                .hasLiteSessionPlan()
                 .hasSource(expectedErrorEventSource)
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
@@ -735,7 +731,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(ANRException::class.java.canonicalName)
                 .hasErrorCategory(ErrorEvent.Category.ANR)
                 .hasTimeSinceAppStart(null)
-                .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
@@ -818,7 +813,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(ANRException::class.java.canonicalName)
                 .hasErrorCategory(ErrorEvent.Category.ANR)
                 .hasTimeSinceAppStart(null)
-                .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
@@ -913,7 +907,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorType(ANRException::class.java.canonicalName)
                 .hasErrorCategory(ErrorEvent.Category.ANR)
                 .hasTimeSinceAppStart(null)
-                .hasLiteSessionPlan()
                 .hasDeviceInfo(
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,

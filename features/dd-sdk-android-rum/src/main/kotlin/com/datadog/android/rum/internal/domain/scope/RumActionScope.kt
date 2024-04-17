@@ -292,7 +292,6 @@ internal class RumActionScope(
                 context = ActionEvent.Context(additionalProperties = eventAttributes),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
-                        plan = ActionEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
