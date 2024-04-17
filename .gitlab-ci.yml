@@ -254,6 +254,33 @@ test-pyramid:publish-e2e-synthetics:
     paths:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
 
+test-pyramid:publish-webview-synthetics:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  only:
+    - develop
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
+    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
+    - npm update -g @datadog/datadog-ci
+    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
+    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
+
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release-core:
