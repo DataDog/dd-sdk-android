@@ -11,6 +11,7 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
@@ -20,6 +21,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
+import com.datadog.android.core.internal.data.upload.DataUploadRunnable
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
@@ -72,7 +74,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -133,7 +134,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
+    fun `M mark itself as initialized W initialize()`() {
         // When
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
@@ -164,7 +165,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize uploader 𝕎 initialize()`() {
+    fun `M initialize uploader W initialize()`() {
         // Given
         val expectedUploadConfiguration = DataUploadConfiguration(
             fakeCoreUploadFrequency,
@@ -185,17 +186,15 @@ internal class SdkFeatureTest {
         assertThat(dataUploadRunnable.maxBatchesPerJob)
             .isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
         argumentCaptor<Runnable> {
-            verify(coreFeature.mockUploadExecutor).schedule(
-                any(),
-                any(),
-                eq(TimeUnit.MILLISECONDS)
+            verify(coreFeature.mockUploadExecutor).execute(
+                argThat { this is DataUploadRunnable }
             )
         }
         assertThat(testedFeature.uploader).isInstanceOf(DataOkHttpUploader::class.java)
     }
 
     @Test
-    fun `𝕄 initialize the storage 𝕎 initialize()`() {
+    fun `M initialize the storage W initialize()`() {
         // Given
         val fakeCorePersistenceConfig = FilePersistenceConfig()
         whenever(coreFeature.mockInstance.buildFilePersistenceConfig())
@@ -225,7 +224,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize the storage 𝕎 initialize() {custom persistence strategy}`() {
+    fun `M initialize the storage W initialize() {custom persistence strategy}`() {
         // Given
         val mockPersistenceStrategy = mock<PersistenceStrategy.Factory>()
         whenever(coreFeature.mockInstance.persistenceStrategyFactory) doReturn mockPersistenceStrategy
@@ -242,7 +241,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 register tracking consent callback 𝕎 initialize(){feature+TrackingConsentProviderCallback}`() {
+    fun `M register tracking consent callback W initialize(){feature+TrackingConsentProviderCallback}`() {
         // Given
         val mockFeature = mock<TrackingConsentFeature>()
         testedFeature = SdkFeature(
@@ -260,7 +259,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 not initialize storage and uploader 𝕎 initialize() { simple feature }`() {
+    fun `M not initialize storage and uploader W initialize() { simple feature }`() {
         // Given
         val mockSimpleFeature = mock<Feature>().apply {
             whenever(name) doReturn fakeFeatureName
@@ -288,7 +287,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 stop scheduler 𝕎 stop()`() {
+    fun `M stop scheduler W stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
         val mockUploadScheduler: UploadScheduler = mock()
@@ -302,7 +301,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 unregister ProcessLifecycleMonitor 𝕎 stop()`() {
+    fun `M unregister ProcessLifecycleMonitor W stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
@@ -316,7 +315,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 cleanup data 𝕎 stop()`() {
+    fun `M cleanup data W stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
@@ -337,7 +336,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
+    fun `M mark itself as not initialized W stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
@@ -349,7 +348,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 call wrapped feature onStop 𝕎 stop()`() {
+    fun `M call wrapped feature onStop W stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
@@ -361,7 +360,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 unregister tracking consent callback 𝕎 stop(){feature+TrackingConsentProviderCallback}`() {
+    fun `M unregister tracking consent callback W stop(){feature+TrackingConsentProviderCallback}`() {
         // Given
         val mockFeature = mock<TrackingConsentFeature>().apply {
             whenever(name) doReturn fakeFeatureName
@@ -381,7 +380,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize only once 𝕎 initialize() twice`() {
+    fun `M initialize only once W initialize() twice`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
         val uploadScheduler = testedFeature.uploadScheduler
@@ -400,7 +399,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 not setup uploader 𝕎 initialize() in secondary process`() {
+    fun `M not setup uploader W initialize() in secondary process`() {
         // Given
         whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
@@ -412,7 +411,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 clear local storage 𝕎 clearAllData()`() {
+    fun `M clear local storage W clearAllData()`() {
         // Given
         testedFeature.storage = mockStorage
 
@@ -426,7 +425,7 @@ internal class SdkFeatureTest {
     // region FeatureScope
 
     @Test
-    fun `𝕄 provide write context 𝕎 withWriteContext(callback)`(
+    fun `M provide write context W withWriteContext(callback)`(
         @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeContext: DatadogContext,
         @Mock mockBatchWriter: EventBatchWriter
@@ -458,7 +457,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 withWriteContext(callback) { no Datadog context }`(
+    fun `M do nothing W withWriteContext(callback) { no Datadog context }`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -476,7 +475,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 sendEvent(event)`() {
+    fun `M send event W sendEvent(event)`() {
         // Given
         val mockEventReceiver = mock<FeatureEventReceiver>()
         testedFeature.eventReceiver.set(mockEventReceiver)
@@ -490,7 +489,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 notify no receiver 𝕎 sendEvent(event)`() {
+    fun `M notify no receiver W sendEvent(event)`() {
         // Given
         val fakeEvent = Any()
 
@@ -506,7 +505,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 give wrapped feature 𝕎 unwrap()`(
+    fun `M give wrapped feature W unwrap()`(
         @StringForgery fakeFeatureName: String
     ) {
         // Given
@@ -526,7 +525,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 throw exception 𝕎 unwrap() { wrong class }`(
+    fun `M throw exception W unwrap() { wrong class }`(
         @StringForgery fakeFeatureName: String
     ) {
         // Given
@@ -544,6 +543,122 @@ internal class SdkFeatureTest {
             // Kotlin compiler removing/optimizing code unused?
             @Suppress("UNUSED_VARIABLE")
             val result = testedFeature.unwrap<AnotherFakeFeature>()
+        }
+    }
+
+    // endregion
+
+    // region Context Update Listener
+
+    @Test
+    fun `M register listeners W setContextUpdateListener()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+
+        // When
+        mockListeners.map {
+            Thread {
+                testedFeature.setContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+
+        // Then
+        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
+            .containsExactlyInAnyOrderElementsOf(mockListeners)
+    }
+
+    fun `M register listener only once W setContextUpdateListener()`(forge: Forge) {
+        // Given
+        val mockListener = mock<FeatureContextUpdateReceiver>()
+        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mockListener }
+
+        // When
+        mockListeners.map {
+            Thread {
+                testedFeature.setContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+
+        // Then
+        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
+            .containsExactlyInAnyOrderElementsOf(listOf(mockListener))
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SdkFeature.CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS.format(
+                Locale.US,
+                fakeFeatureName
+            )
+        )
+    }
+
+    @Test
+    fun `M not throw W concurrent access to FeatureContextUpdateListeners{()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+        val removeListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
+        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeFeatureName = forge.anAlphabeticalString()
+        val updateRepeats = forge.anInt(min = 1, max = 10)
+
+        // When
+        mockListeners.map {
+            Thread {
+                testedFeature.setContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+        removeListeners.map {
+            Thread {
+                testedFeature.removeContextUpdateListener(it)
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+        repeat(updateRepeats) {
+            Thread {
+                assertDoesNotThrow {
+                    testedFeature.notifyContextUpdated(fakeFeatureName, fakeContext)
+                }
+            }.apply { start() }.join(5000)
+        }
+
+        // Then
+    }
+
+    @Test
+    fun `M remove listeners W removeContextUpdateListener()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+        val removedListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
+        val remainingListeners = mockListeners - removedListeners.toSet()
+
+        // When
+        mockListeners.forEach {
+            testedFeature.setContextUpdateListener(it)
+        }
+        removedListeners.forEach {
+            testedFeature.removeContextUpdateListener(it)
+        }
+
+        // Then
+        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
+            .containsExactlyInAnyOrderElementsOf(remainingListeners)
+    }
+
+    @Test
+    fun `M update registered listeners W notifyContextUpdated()`(forge: Forge) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mock<FeatureContextUpdateReceiver>() }
+        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeFeatureName = forge.anAlphabeticalString()
+        mockListeners.forEach {
+            testedFeature.setContextUpdateListener(it)
+        }
+
+        // When
+        testedFeature.notifyContextUpdated(fakeFeatureName, fakeContext)
+
+        // Then
+        mockListeners.forEach {
+            verify(it).onContextUpdate(fakeFeatureName, fakeContext)
         }
     }
 

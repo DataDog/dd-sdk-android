@@ -116,7 +116,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor
 
         val drawableCopy = view.background?.constantState?.newDrawable(resources)
         return if (drawableCopy != null) {
-            @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
+            @Suppress("ThreadSafety") // TODO RUM-1462 caller thread of .map is unknown?
             mappingContext.imageWireframeHelper.createImageWireframe(
                 view = view,
                 currentWireframeIndex = 0,

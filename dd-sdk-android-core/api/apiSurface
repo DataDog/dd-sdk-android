@@ -56,7 +56,7 @@ interface com.datadog.android.api.SdkCore
   fun addUserProperties(Map<String, Any?>)
   fun clearAllData()
 data class com.datadog.android.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
   constructor(String, String, String, DeviceType, String, String, String, String, String)
 enum com.datadog.android.api.context.DeviceType
@@ -97,6 +97,8 @@ interface com.datadog.android.api.feature.Feature
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
+interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
+  fun onContextUpdate(String, Map<String, Any?>)
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
@@ -110,7 +112,11 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
+  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
+  fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
+  fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -148,6 +154,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   val lastViewEvent: com.google.gson.JsonObject?
   val lastFatalAnrSent: Long?
+  val appStartTimeNs: Long
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)
@@ -158,6 +165,11 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+enum com.datadog.android.core.configuration.BackPressureMitigation
+  - DROP_OLDEST
+  - IGNORE_NEWEST
+data class com.datadog.android.core.configuration.BackPressureStrategy
+  constructor(Int, () -> Unit, (Any) -> Unit, BackPressureMitigation)
 enum com.datadog.android.core.configuration.BatchProcessingLevel
   constructor(Int)
   - LOW
@@ -184,6 +196,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setEncryption(com.datadog.android.security.Encryption): Builder
     fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
     fun setCrashReportsEnabled(Boolean): Builder
+    fun setBackpressureStrategy(BackPressureStrategy): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -236,9 +249,6 @@ interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
   val version: Int
   companion object 
     val DEFAULT: BuildSdkVersionProvider
-class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
-  constructor(Int, com.datadog.android.api.InternalLogger)
-  override fun afterExecute(Runnable?, Throwable?)
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
@@ -279,6 +289,10 @@ class com.datadog.android.core.sampling.RateBasedSampler : Sampler
 interface com.datadog.android.core.sampling.Sampler
   fun sample(): Boolean
   fun getSampleRate(): Float?
+interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
+  fun drainTo(MutableCollection<Runnable>)
+  interface Factory
+    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
@@ -356,3 +370,4 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3MULTI
   - TRACECONTEXT
 annotation com.datadog.tools.annotation.NoOpImplementation
+  constructor(Boolean = false)

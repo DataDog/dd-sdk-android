@@ -7,7 +7,6 @@ import kotlin.ByteArray
 import kotlin.Int
 import kotlin.String
 import kotlin.Suppress
-import kotlin.Unit
 import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.Set
@@ -15,48 +14,47 @@ import kotlin.collections.emptyList
 import kotlin.collections.emptyMap
 import kotlin.collections.emptySet
 
-@Suppress("RedundantUnitReturnType")
 internal class NoOpSimpleInterface : SimpleInterface {
-    public override val dateProperty: Date = Date()
+    override val dateProperty: Date = Date()
 
-    public override var mutableStringProperty: String = ""
+    override var mutableStringProperty: String = ""
 
-    public override val nullableDateProperty: Date? = null
+    override val nullableDateProperty: Date? = null
 
-    public override var listProperty: List<String> = emptyList()
+    override var listProperty: List<String> = emptyList()
 
-    public override val mapProperty: Map<String, String> = emptyMap()
+    override val mapProperty: Map<String, String> = emptyMap()
 
-    public override var setProperty: Set<String> = emptySet()
+    override var setProperty: Set<String> = emptySet()
 
-    public override fun doSomething(): Unit {
+    override fun doSomething() {
     }
 
-    public override fun doSomethingWithParams(
+    override fun doSomethingWithParams(
         i: Int,
         s: String,
         d: Date,
         ba: ByteArray,
-    ): Unit {
+    ) {
     }
 
-    public override fun doSomethingWithNullableParams(
+    override fun doSomethingWithNullableParams(
         i: Int,
         s: String,
         d: Date,
         ba: ByteArray,
-    ): Unit {
+    ) {
     }
 
-    public override fun doSomethingWithReturn(): Date = Date()
+    override fun doSomethingWithReturn(): Date = Date()
 
-    public override fun doSomethingWithStringReturn(): String = ""
+    override fun doSomethingWithStringReturn(): String = ""
 
-    public override fun doSomethingWithNullableReturn(): Date? = null
+    override fun doSomethingWithNullableReturn(): Date? = null
 
-    public override fun doSomethingWithListReturn(): List<String> = emptyList()
+    override fun doSomethingWithListReturn(): List<String> = emptyList()
 
-    public override fun doSomethingWithMapReturn(): Map<String, String> = emptyMap()
+    override fun doSomethingWithMapReturn(): Map<String, String> = emptyMap()
 
-    public override fun doSomethingWithSetReturn(): Set<String> = emptySet()
+    override fun doSomethingWithSetReturn(): Set<String> = emptySet()
 }

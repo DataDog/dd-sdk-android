@@ -33,7 +33,7 @@ internal class BatchFileReaderWriterTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Test
-    fun `𝕄 create BatchFileReaderWriter 𝕎 create() { without encryption }`() {
+    fun `M create BatchFileReaderWriter W create() { without encryption }`() {
         // When
         val readerWriter = BatchFileReaderWriter.create(mockInternalLogger, null)
         // Then
@@ -42,7 +42,7 @@ internal class BatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 create BatchFileReaderWriter 𝕎 create() { with encryption }`() {
+    fun `M create BatchFileReaderWriter W create() { with encryption }`() {
         // When
         val mockEncryption = mock<Encryption>()
         val readerWriter = BatchFileReaderWriter.create(

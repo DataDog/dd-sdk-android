@@ -25,7 +25,7 @@ internal fun identifyRequest(request: Request): String {
             0
         }
         val contentType = body.contentType()
-        // TODO RUMM-3062 It is possible that if requests are say GZIPed (as an example), or maybe
+        // TODO RUM-648 It is possible that if requests are say GZIPed (as an example), or maybe
         //  streaming case (?), they all will have contentLength = -1, so if they target the same URL
         //  they are going to have same identifier, messing up reporting.
         //  -1 is valid return value for contentLength() call according to the docs and stands

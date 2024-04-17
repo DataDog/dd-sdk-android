@@ -16,19 +16,23 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.DatadogEventBridge
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
+import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
+import com.datadog.android.webview.internal.replay.WebViewReplayFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
-import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -81,13 +85,22 @@ internal class WebViewTrackingTest {
     lateinit var mockLogsFeature: StorageBackedFeature
 
     @Mock
+    lateinit var mockReplayFeature: StorageBackedFeature
+
+    @Mock
     lateinit var mockRumRequestFactory: RequestFactory
 
     @Mock
     lateinit var mockLogsRequestFactory: RequestFactory
 
     @Mock
+    lateinit var mockReplayRequestFactory: RequestFactory
+
+    @Mock
     lateinit var mockWebView: WebView
+
+    @Mock
+    lateinit var mockReplayFeatureScope: FeatureScope
 
     @BeforeEach
     fun `set up`() {
@@ -97,17 +110,23 @@ internal class WebViewTrackingTest {
         whenever(
             mockCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
-
+        whenever(
+            mockCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
+        ) doReturn mockReplayFeatureScope
         whenever(
             mockRumFeatureScope.unwrap<StorageBackedFeature>()
         ) doReturn mockRumFeature
         whenever(
             mockLogsFeatureScope.unwrap<StorageBackedFeature>()
         ) doReturn mockLogsFeature
+        whenever(
+            mockReplayFeatureScope.unwrap<StorageBackedFeature>()
+        ) doReturn mockReplayFeature
         whenever(mockCore.internalLogger) doReturn mockInternalLogger
 
         whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
         whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory
+        whenever(mockReplayFeature.requestFactory) doReturn mockReplayRequestFactory
 
         val mockWebViewSettings = mock<WebSettings>()
         whenever(mockWebViewSettings.javaScriptEnabled) doReturn true
@@ -133,6 +152,66 @@ internal class WebViewTrackingTest {
             argThat { this is DatadogEventBridge },
             eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
         )
+    }
+
+    @Test
+    fun `M extract and provide the SR privacy level W enable {privacy level provided}`(
+        @Forgery fakeUrls: List<URL>,
+        @StringForgery fakePrivacyLevel: String
+    ) {
+        // Given
+        val mockSrFeatureContext = mapOf<String, Any>(
+            WebViewTracking.SESSION_REPLAY_PRIVACY_KEY to fakePrivacyLevel
+        )
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            mockSrFeatureContext
+        val fakeHosts = fakeUrls.map { it.host }
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argumentCaptor.capture(),
+            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+        assertThat(argumentCaptor.firstValue.getPrivacyLevel()).isEqualTo(fakePrivacyLevel)
+    }
+
+    @Test
+    fun `M used the default SR privacy level W enable {privacy level not provided}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val mockSrFeatureContext = mapOf<String, Any>()
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            mockSrFeatureContext
+        val fakeHosts = fakeUrls.map { it.host }
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argumentCaptor.capture(),
+            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+        assertThat(argumentCaptor.firstValue.getPrivacyLevel())
+            .isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_ALL_PRIVACY)
     }
 
     @Test
@@ -190,18 +269,58 @@ internal class WebViewTrackingTest {
                 .isInstanceOf(WebViewLogEventConsumer::class.java)
             assertThat(mixedConsumer.rumEventConsumer)
                 .isInstanceOf(WebViewRumEventConsumer::class.java)
+            assertThat(mixedConsumer.replayEventConsumer)
+                .isInstanceOf(WebViewReplayEventConsumer::class.java)
 
             argumentCaptor<Feature> {
-                verify(mockCore, times(2)).registerFeature(capture())
+                verify(mockCore, times(3)).registerFeature(capture())
 
                 val webViewRumFeature = firstValue
                 val webViewLogsFeature = secondValue
+                val webViewReplayFeature = thirdValue
 
                 assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
                     .isSameAs(mockRumRequestFactory)
                 assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
                     .isSameAs(mockLogsRequestFactory)
+                assertThat((webViewReplayFeature as WebViewReplayFeature).requestFactory)
+                    .isSameAs(mockReplayRequestFactory)
             }
+        }
+    }
+
+    fun `M share the same TimestampOffsetProvider W enable()`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mock())
+        }
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            val consumer = lastValue.webViewEventConsumer
+            assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+            val mixedConsumer = consumer as MixedWebViewEventConsumer
+            assertThat(mixedConsumer.rumEventConsumer)
+                .isInstanceOf(WebViewRumEventConsumer::class.java)
+            assertThat(mixedConsumer.replayEventConsumer)
+                .isInstanceOf(WebViewReplayEventConsumer::class.java)
+            val webViewReplayEventConsumer = mixedConsumer.replayEventConsumer
+                as WebViewReplayEventConsumer
+            val webViewRumEventConsumer = mixedConsumer.rumEventConsumer
+                as WebViewRumEventConsumer
+            assertThat(webViewReplayEventConsumer.webViewReplayEventMapper.offsetProvider)
+                .isSameAs(webViewRumEventConsumer.offsetProvider)
         }
     }
 
@@ -239,12 +358,15 @@ internal class WebViewTrackingTest {
                 .isInstanceOf(NoOpDataWriter::class.java)
 
             argumentCaptor<Feature> {
-                verify(mockCore, times(1)).registerFeature(capture())
+                verify(mockCore, times(2)).registerFeature(capture())
 
                 val webViewLogsFeature = firstValue
+                val webViewReplayFeature = secondValue
 
                 assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
                     .isSameAs(mockLogsRequestFactory)
+                assertThat((webViewReplayFeature as WebViewReplayFeature).requestFactory)
+                    .isSameAs(mockReplayRequestFactory)
             }
 
             mockInternalLogger.verifyLog(
@@ -289,12 +411,15 @@ internal class WebViewTrackingTest {
                 .isNotInstanceOf(NoOpDataWriter::class.java)
 
             argumentCaptor<Feature> {
-                verify(mockCore, times(1)).registerFeature(capture())
+                verify(mockCore, times(2)).registerFeature(capture())
 
                 val webViewRumFeature = firstValue
+                val webViewReplayFeature = secondValue
 
                 assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
                     .isSameAs(mockRumRequestFactory)
+                assertThat((webViewReplayFeature as WebViewReplayFeature).requestFactory)
+                    .isSameAs(mockReplayRequestFactory)
             }
 
             mockInternalLogger.verifyLog(
@@ -302,6 +427,83 @@ internal class WebViewTrackingTest {
                 InternalLogger.Target.USER,
                 WebViewTracking.LOGS_FEATURE_MISSING_INFO
             )
+        }
+    }
+
+    @Test
+    fun `M create a default WebEventConsumer W init() { SR feature not registered }()`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mock())
+        }
+        whenever(mockCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn null
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            val consumer = lastValue.webViewEventConsumer
+            assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+            val mixedConsumer = consumer as MixedWebViewEventConsumer
+            assertThat(mixedConsumer.logsEventConsumer)
+                .isInstanceOf(WebViewLogEventConsumer::class.java)
+            assertThat(mixedConsumer.rumEventConsumer)
+                .isInstanceOf(WebViewRumEventConsumer::class.java)
+            assertThat((mixedConsumer.replayEventConsumer as WebViewReplayEventConsumer).dataWriter)
+                .isInstanceOf(NoOpDataWriter::class.java)
+
+            argumentCaptor<Feature> {
+                verify(mockCore, times(2)).registerFeature(capture())
+
+                val webViewRumFeature = firstValue
+                val webViewLogsFeature = secondValue
+                assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
+                    .isSameAs(mockRumRequestFactory)
+                assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
+                    .isSameAs(mockLogsRequestFactory)
+            }
+
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                WebViewTracking.SESSION_REPLAY_FEATURE_MISSING_INFO
+            )
+        }
+    }
+
+    @Test
+    fun `M create a default NoOpEventConsumer W init() {Logs and Rum feature is not registered}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mock())
+        }
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            val consumer = lastValue.webViewEventConsumer
+            assertThat(consumer).isInstanceOf(NoOpWebViewEventConsumer::class.java)
         }
     }
 
@@ -318,6 +520,7 @@ internal class WebViewTrackingTest {
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
+            add("container", JsonObject().apply { addProperty("source", "android") })
             add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
             add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
         }
@@ -343,7 +546,10 @@ internal class WebViewTrackingTest {
         val mockDatadogContext = mock<DatadogContext>()
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         val mockEventBatchWriter = mock<EventBatchWriter>()
-        val proxy = WebViewTracking._InternalWebViewProxy(mockCore)
+        val proxy = WebViewTracking._InternalWebViewProxy(
+            mockCore,
+            System.identityHashCode(mockWebView).toString()
+        )
 
         // When
         proxy.consumeWebviewEvent(fakeWebEvent.toString())
@@ -358,6 +564,16 @@ internal class WebViewTrackingTest {
             val capturedJson = String(firstValue.data, Charsets.UTF_8)
             assertThat(capturedJson).isEqualTo(expectedEvent.toString())
         }
+    }
+
+    @Test
+    fun `M use a NoOpWebViewReplayEventConsumer W consumeWebViewEvent{WebView id is missing}`() {
+        // When
+        val proxy = WebViewTracking._InternalWebViewProxy(mockCore)
+
+        // When
+        assertThat((proxy.consumer as MixedWebViewEventConsumer).replayEventConsumer)
+            .isInstanceOf(NoOpWebViewEventConsumer::class.java)
     }
 
     private fun bundleWebEvent(

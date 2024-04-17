@@ -48,7 +48,9 @@
     <string name="msg_network_request">Network Request (~1s)</string>
     <string name="msg_coroutine_operation">Coroutine operations (~5s)</string>
     <string name="msg_rum_use_cases">RUM use cases</string>
-    <string name="msg_clear_all_data">Are you sure you want to clear all unsent data. You’ll lose any data still on disk. Note that this won’t delete data already sent to Datadog servers.</string>
+    <string name="msg_clear_all_data">Are you sure you want to clear all unsent data. You’ll lose any data still on
+        disk. Note that this won’t delete data already sent to Datadog servers.
+    </string>
     <string name="msg_all_data_cleared">All unsent data has been cleared.</string>
 
     <string name="button_send">Send</string>
@@ -65,6 +67,7 @@
     <string name="button_slow_frame_rate">Slow frame rate</string>
     <string name="button_high_cpu_usage">High CPU usage</string>
     <string name="button_high_memory_usage">High RAM usage</string>
+    <string name="button_stress_test_events">Stress Test Events</string>
 
     <string name="group_image_loader">Image Loader</string>
     <string name="group_data_source">Data Source</string>
@@ -77,6 +80,9 @@
     <string name="choice_room">Room</string>
     <string name="choice_sqlite">SQLite</string>
     <string name="choice_sqldelight">SQLDelight</string>
+
+    <string name="webview_show">Show</string>
+    <string name="webview_hide">Hide</string>
 
     <string-array name="log_levels">
         <item>💬 Verbose</item>
@@ -112,7 +118,11 @@
     <string name="granted">GRANTED</string>
     <string name="not_granted">NOT GRANTED</string>
     <string name="text_view">Default Text View</string>
-    <string name="ellipsize_text_view">Default Text View with some super long text for ellipsis. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text. Default Text View with some super long text.</string>
+    <string name="ellipsize_text_view">Default Text View with some super long text for ellipsis. Default Text View with
+        some super long text. Default Text View with some super long text. Default Text View with some super long text.
+        Default Text View with some super long text. Default Text View with some super long text. Default Text View with
+        some super long text.
+    </string>
     <string name="material_text_view">Material Text View</string>
     <string name="app_compat_text_view">App Compat Text View</string>
     <string name="auto_complete_text_view">Default Auto Complete Text View</string>
@@ -142,7 +152,9 @@
     <string name="dropdowns_and_switchers_components">Dropdowns and Switchers Components</string>
     <string name="planet">Planet</string>
     <string name="sliders_and_steppers_components">Sliders and Steppers Components</string>
-    <string name="random_text_value">Pellentesque pretium non urna ut laoreet. Vestibulum finibus porttitor sem, id dictum elit.</string>
+    <string name="random_text_value">Pellentesque pretium non urna ut laoreet. Vestibulum finibus porttitor sem, id
+        dictum elit.
+    </string>
     <string name="different_fonts">Different Fonts</string>
     <string name="default_typeface_label">Default Typeface</string>
     <string name="sans_serif_typeface_label">Sans Serif Typeface</string>
@@ -160,4 +172,7 @@
     <string name="start_chained_contexts_test">Start Chained Contexts Test</string>
     <string name="start_async_operation">Start Async Operation</string>
     <string name="chained_contexts_test">Chained Otel Contexts Test</string>
+    <string name="web_view_recording">Web View Recording</string>
+    <string name="start_custom_rum_view">Start Custom Rum View</string>
+    <string name="webview_recording">WebView Recording</string>
 </resources>

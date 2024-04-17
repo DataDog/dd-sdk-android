@@ -176,7 +176,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for successful request`(
+    fun `M start and stop RUM Resource W intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -212,7 +212,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for successful request { unknown method }`(
+    fun `M start and stop RUM Resource W intercept() for successful request { unknown method }`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery fakeMethod: String,
         forge: Forge
@@ -259,7 +259,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for failing request`(
+    fun `M start and stop RUM Resource W intercept() for failing request`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         // Given
@@ -295,7 +295,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `𝕄 starts and stop RUM Resource 𝕎 intercept() for throwing request`(
+    fun `M starts and stop RUM Resource W intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
         // Given
@@ -330,7 +330,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `𝕄 create and drop a Span with info 𝕎 intercept() for successful request`(
+    fun `M create and drop a Span with info W intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -344,7 +344,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `𝕄 create and drop a span with info 𝕎 intercept() for failing request {4xx}`(
+    fun `M create and drop a span with info W intercept() for failing request {4xx}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)

@@ -16,6 +16,9 @@
     },
     {
       "$ref": "placeholder-wireframe-schema.json"
+    },
+    {
+      "$ref": "webview-wireframe-schema.json"
     }
   ]
 }

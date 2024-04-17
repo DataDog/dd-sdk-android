@@ -414,16 +414,6 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasLiteSessionPlan(): ErrorEventAssert {
-        assertThat(actual.dd.session?.plan)
-            .overridingErrorMessage(
-                "Expected event to have a session plan of 1 instead it was %s",
-                actual.dd.session?.plan ?: "null"
-            )
-            .isEqualTo(ErrorEvent.Plan.PLAN_1)
-        return this
-    }
-
     fun hasStartReason(reason: RumSessionScope.StartReason): ErrorEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
@@ -588,6 +578,26 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                     " but instead was: ${actual.error.category}"
             )
             .isEqualTo(category)
+        return this
+    }
+
+    fun hasTimeSinceAppStart(timeSinceAppStart: Long?): ErrorEventAssert {
+        assertThat(actual.error.timeSinceAppStart)
+            .overridingErrorMessage(
+                "Expected RUM event to have error.timeSinceAppStart: $timeSinceAppStart" +
+                    " but instead was: ${actual.error.timeSinceAppStart}"
+            )
+            .isEqualTo(timeSinceAppStart)
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): ErrorEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build ID: $buildId" +
+                    " but instead was ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
         return this
     }
 

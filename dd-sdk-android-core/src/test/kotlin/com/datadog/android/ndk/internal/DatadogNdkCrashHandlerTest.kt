@@ -65,7 +65,7 @@ import java.util.concurrent.ExecutorService
 @ForgeConfiguration(Configurator::class)
 internal class DatadogNdkCrashHandlerTest {
 
-    lateinit var testedHandler: DatadogNdkCrashHandler
+    private lateinit var testedHandler: DatadogNdkCrashHandler
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
@@ -135,7 +135,7 @@ internal class DatadogNdkCrashHandlerTest {
     // region prepareData
 
     @Test
-    fun `𝕄 read crash data 𝕎 prepareData()`(
+    fun `M read crash data W prepareData()`(
         @StringForgery crashDataStr: String,
         @Forgery fakeCrashData: NdkCrashLog
     ) {
@@ -156,7 +156,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read last RUM View event 𝕎 prepareData()`(
+    fun `M read last RUM View event W prepareData()`(
         forge: Forge
     ) {
         // Given
@@ -176,7 +176,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read network info 𝕎 prepareData()`(
+    fun `M read network info W prepareData()`(
         @StringForgery networkInfoStr: String,
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
@@ -198,7 +198,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read user info 𝕎 prepareData()`(
+    fun `M read user info W prepareData()`(
         @StringForgery userInfoStr: String,
         @Forgery fakeUserInfo: UserInfo
     ) {
@@ -219,7 +219,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 prepareData() {directory does not exist}`() {
+    fun `M do nothing W prepareData() {directory does not exist}`() {
         // When
         testedHandler.prepareData()
         whenever(mockNdkCrashLogDeserializer.deserialize(any())) doReturn mock()
@@ -236,7 +236,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 clear crash data 𝕎 prepareData()`(
+    fun `M clear crash data W prepareData()`(
         @StringForgery crashData: String,
         @StringForgery networkInfo: String,
         @StringForgery userInfo: String
@@ -264,7 +264,7 @@ internal class DatadogNdkCrashHandlerTest {
 
     @EnumSource(NdkCrashHandler.ReportTarget::class)
     @ParameterizedTest
-    fun `𝕄 do nothing 𝕎 handleNdkCrash() {no crash data}`(
+    fun `M do nothing W handleNdkCrash() {no crash data}`(
         reportTarget: NdkCrashHandler.ReportTarget
     ) {
         // When
@@ -277,7 +277,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 not send log 𝕎 handleNdkCrash() {logs feature is not registered}`(
+    fun `M not send log W handleNdkCrash() {logs feature is not registered}`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
@@ -303,7 +303,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, no user and network info}`(
+    fun `M send log W handleNdkCrash() {missing RUM last view, no user and network info}`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
@@ -322,7 +322,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, with user and network info}`(
+    fun `M send log W handleNdkCrash() {missing RUM last view, with user and network info}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         @Forgery networkInfo: NetworkInfo,
         @Forgery userInfo: UserInfo
@@ -345,7 +345,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with RUM last view}`(
+    fun `M send log + RUM view+error W handleNdkCrash() {with RUM last view}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -366,7 +366,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with RUM last view, override native source type}`(
+    fun `M send log + RUM view+error W handleNdkCrash() {with RUM last view, override native source type}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -407,7 +407,7 @@ internal class DatadogNdkCrashHandlerTest {
             "wrong_id_type"
         ]
     )
-    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with corrupted RUM last view}`(
+    fun `M send log + RUM view+error W handleNdkCrash() {with corrupted RUM last view}`(
         corruptionType: String,
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
@@ -464,7 +464,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrash() { RUM feature is not registered }`(
+    fun `M not send RUM event W handleNdkCrash() { RUM feature is not registered }`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -489,7 +489,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrash() { missing last RUM view event }`(
+    fun `M not send RUM event W handleNdkCrash() { missing last RUM view event }`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
@@ -506,7 +506,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send RUM event 𝕎 handleNdkCrash()`(
+    fun `M send RUM event W handleNdkCrash()`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -527,6 +527,7 @@ internal class DatadogNdkCrashHandlerTest {
                 "type" to "ndk_crash",
                 "sourceType" to "ndk",
                 "timestamp" to ndkCrashLog.timestamp,
+                "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
                 "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
@@ -537,7 +538,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send RUM event 𝕎 handleNdkCrash() { override native source type } `(
+    fun `M send RUM event W handleNdkCrash() { override native source type } `(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -570,6 +571,7 @@ internal class DatadogNdkCrashHandlerTest {
                 "type" to "ndk_crash",
                 "sourceType" to "ndk+il2cpp",
                 "timestamp" to ndkCrashLog.timestamp,
+                "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
                 "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
@@ -580,7 +582,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 clear the references 𝕎 handleNdkCrash() { both Logs and RUM are handled }`(
+    fun `M clear the references W handleNdkCrash() { both Logs and RUM are handled }`(
         @Forgery ndkCrashLog: NdkCrashLog,
         @Forgery fakeUserInfo: UserInfo,
         @Forgery fakeNetworkInfo: NetworkInfo,

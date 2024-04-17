@@ -20,6 +20,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.allowThreadDiskReads
+import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
@@ -56,8 +57,10 @@ import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
 import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
-import com.datadog.android.core.internal.thread.LoggingThreadPoolExecutor
+import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
+import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
@@ -70,6 +73,7 @@ import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
@@ -87,30 +91,22 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.TlsVersion
 import java.io.File
+import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
 internal class CoreFeature(
     private val internalLogger: InternalLogger,
-    // factory is needed to avoid flakiness in unit tests, we will provide same thread executor instead
-    private val persistenceExecutorServiceFactory: (InternalLogger) -> ExecutorService = {
-        LoggingThreadPoolExecutor(
-            CORE_DEFAULT_POOL_SIZE,
-            Runtime.getRuntime().availableProcessors(),
-            THREAD_POOL_MAX_KEEP_ALIVE_MS,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingDeque(),
-            it
-        )
-    }
+    private val appStartTimeProvider: AppStartTimeProvider,
+    private val executorServiceFactory: FlushableExecutorService.Factory,
+    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
     internal val initialized = AtomicBoolean(false)
@@ -142,9 +138,12 @@ internal class CoreFeature(
     internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
     internal var site: DatadogSite = DatadogSite.US1
+    internal var appBuildId: String? = null
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
-    internal lateinit var persistenceExecutorService: ExecutorService
+    internal lateinit var persistenceExecutorService: FlushableExecutorService
+    internal lateinit var backpressureStrategy: BackPressureStrategy
+
     internal var localDataEncryption: Encryption? = null
     internal var persistenceStrategyFactory: PersistenceStrategy.Factory? = null
     internal lateinit var storageDir: File
@@ -152,9 +151,13 @@ internal class CoreFeature(
 
     internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
+    internal val appStartTimeNs: Long
+        get() = appStartTimeProvider.appStartTimeNs
+
     // lazy here on purpose: we need to read it only once, even if it is used in different features
     @get:WorkerThread
     internal val lastViewEvent: JsonObject? by lazy {
+        // TODO RUM-1462 address Thread safety
         @Suppress("ThreadSafety") // called in worker thread context
         val viewEvent = readLastViewEvent()
         if (viewEvent != null) {
@@ -269,24 +272,34 @@ internal class CoreFeature(
         )
     }
 
+    fun createExecutorService(executorContext: String): ExecutorService {
+        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+    }
+
+    fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
+        return scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+    }
+
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
     @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
     fun drainAndShutdownExecutors() {
         val tasks = arrayListOf<Runnable>()
-        (persistenceExecutorService as? ThreadPoolExecutor)
-            ?.queue
-            ?.drainTo(tasks)
-        // we make sure we upload the currently locked files
+
+        persistenceExecutorService.drainTo(tasks)
+
         uploadExecutorService
             .queue
             .drainTo(tasks)
-        // we need to make sure we drain the runnables in both executors first
+
+        // we need to make sure we drain the runnable list in both executors first
         // then we shut them down by using the await termination method to make sure we block
         // the thread until the active task is finished.
         persistenceExecutorService.shutdown()
         uploadExecutorService.shutdown()
+
         persistenceExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         uploadExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+
         tasks.forEach {
             it.run()
         }
@@ -314,7 +327,7 @@ internal class CoreFeature(
 
     @WorkerThread
     internal fun writeLastFatalAnrSent(anrTimestamp: Long) {
-        // TODO RUMM-0000 this is temporary solution for storing just a timestamp, later we will
+        // TODO RUM-3790 this is temporary solution for storing just a timestamp, later we will
         //  migrate to a dedicated data store solution (same applies to the last RUM view event)
         val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
         file.writeTextSafe(anrTimestamp.toString(), Charsets.UTF_8, internalLogger)
@@ -435,6 +448,8 @@ internal class CoreFeature(
         serviceName = configuration.service ?: appContext.packageName
         envName = configuration.env
         variant = configuration.variant
+        appBuildId = readBuildId(appContext)
+
         contextRef = WeakReference(appContext)
     }
 
@@ -444,7 +459,6 @@ internal class CoreFeature(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
                 } else {
-                    @Suppress("DEPRECATION")
                     getPackageInfo(packageName, 0)
                 }
             }
@@ -459,12 +473,38 @@ internal class CoreFeature(
         }
     }
 
+    private fun readBuildId(context: Context): String? {
+        return with(context.assets) {
+            try {
+                open(BUILD_ID_FILE_NAME).bufferedReader().use {
+                    it.readText().trim()
+                }
+            } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    { BUILD_ID_IS_MISSING_INFO_MESSAGE }
+                )
+                null
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { BUILD_ID_READ_ERROR },
+                    e
+                )
+                null
+            }
+        }
+    }
+
     private fun readConfigurationSettings(configuration: Configuration.Core) {
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
         localDataEncryption = configuration.encryption
         persistenceStrategyFactory = configuration.persistenceStrategyFactory
         site = configuration.site
+        backpressureStrategy = configuration.backpressureStrategy
     }
 
     private fun setupInfoProviders(
@@ -560,10 +600,17 @@ internal class CoreFeature(
     }
 
     private fun setupExecutors() {
-        @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        uploadExecutorService = LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, internalLogger)
-        @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
-        persistenceExecutorService = persistenceExecutorServiceFactory(internalLogger)
+        uploadExecutorService = LoggingScheduledThreadPoolExecutor(
+            corePoolSize = CORE_DEFAULT_POOL_SIZE,
+            executorContext = "upload",
+            logger = internalLogger,
+            backPressureStrategy = backpressureStrategy
+        )
+        persistenceExecutorService = executorServiceFactory.create(
+            internalLogger = internalLogger,
+            executorContext = "storage",
+            backPressureStrategy = backpressureStrategy
+        )
     }
 
     private fun resolveProcessInfo(appContext: Context) {
@@ -572,10 +619,10 @@ internal class CoreFeature(
         val currentProcess = manager?.runningAppProcesses?.firstOrNull {
             it.pid == currentProcessId
         }
-        if (currentProcess == null) {
-            isMainProcess = true
+        isMainProcess = if (currentProcess == null) {
+            true
         } else {
-            isMainProcess = appContext.packageName == currentProcess.processName
+            appContext.packageName == currentProcess.processName
         }
     }
 
@@ -628,10 +675,19 @@ internal class CoreFeature(
 
     companion object {
 
+        internal val DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY =
+            FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy ->
+                BackPressureExecutorService(logger, executorContext, backPressureStrategy)
+            }
+
+        internal val DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY =
+            ScheduledExecutorServiceFactory { logger, executorContext, backPressureStrategy ->
+                LoggingScheduledThreadPoolExecutor(1, executorContext, logger, backPressureStrategy)
+            }
+
         // region Constants
 
         internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
-        private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
         private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
         internal const val DATADOG_STORAGE_DIR_NAME = "datadog-%s"
 
@@ -644,6 +700,15 @@ internal class CoreFeature(
 
         internal const val LAST_RUM_VIEW_EVENT_FILE_NAME = "last_view_event"
         internal const val LAST_FATAL_ANR_SENT_FILE_NAME = "last_fatal_anr_sent"
+
+        // should be the same as in dd-sdk-android-gradle-plugin
+        internal const val BUILD_ID_FILE_NAME = "datadog.buildId"
+        internal const val BUILD_ID_IS_MISSING_INFO_MESSAGE =
+            "Build ID is not found in the application" +
+                " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
+                " or above to be able to de-obfuscate stacktraces."
+        internal const val BUILD_ID_READ_ERROR =
+            "Failed to read Build ID information, de-obfuscation may not work properly."
 
         internal val RESTRICTED_CIPHER_SUITES = arrayOf(
             // TLS 1.3
@@ -673,7 +738,7 @@ internal class CoreFeature(
         // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests, otherwise
         // LoggingSyncListener can interact with internalLogger, breaking mockito
         // verification expectations.
-        // TODO RUMM-0000 isolate Kronos somehow for unit-tests
+        // TODO RUM-3791 isolate Kronos somehow for unit-tests
         internal var disableKronosBackgroundSync = false
 
         // endregion

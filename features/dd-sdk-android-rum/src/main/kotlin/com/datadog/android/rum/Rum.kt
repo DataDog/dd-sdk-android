@@ -87,7 +87,7 @@ object Rum {
             sdkCore
         )
 
-        // TODO RUM-0000 there is a small chance of application crashing between RUM monitor
+        // TODO RUM-3794 there is a small chance of application crashing between RUM monitor
         //  registration and the moment SDK init is processed, in this case we will miss this crash
         //  (it won't activate new session). Ideally we should start session when monitor is created
         //  and before it is registered, but with current code (internal RUM scopes using the
@@ -119,7 +119,8 @@ object Rum {
         frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
-        sessionListener = rumFeature.sessionListener
+        sessionListener = rumFeature.sessionListener,
+        executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline")
     )
 
     // endregion

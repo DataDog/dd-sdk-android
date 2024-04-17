@@ -15,7 +15,6 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -34,7 +33,9 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     protected lateinit var sdkCore: FeatureSdkCore
     private val executor: ScheduledExecutorService by lazy {
-        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+        sdkCore.createScheduledExecutorService(
+            "rum-fragmentx-lifecycle"
+        )
     }
 
     private val internalLogger: InternalLogger
@@ -57,8 +58,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     // endregion
 
-    // TODO: RUMM-0000 Update Androidx packages and handle deprecated APIs
-    @Suppress("DEPRECATION")
+    // TODO RUM-3793 Update Androidx packages and handle deprecated APIs
     @MainThread
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
@@ -114,6 +114,6 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     // endregion
 
     companion object {
-        private const val STOP_VIEW_DELAY_MS = 200L
+        internal const val STOP_VIEW_DELAY_MS = 200L
     }
 }

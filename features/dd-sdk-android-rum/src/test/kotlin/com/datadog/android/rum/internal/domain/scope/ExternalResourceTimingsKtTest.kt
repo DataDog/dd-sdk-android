@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource
 internal class ExternalResourceTimingsKtTest {
 
     @Test
-    fun `𝕄 create timings 𝕎 extractResourceTiming`(@Forgery reference: ResourceTiming) {
+    fun `M create timings W extractResourceTiming`(@Forgery reference: ResourceTiming) {
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -52,7 +52,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["ssl", "firstByte", "download", "connect", "dns"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { some timing is missing }`(
+    fun `M create timings W extractResourceTiming { some timing is missing }`(
         missingTiming: String,
         @Forgery timing: ResourceTiming
     ) {
@@ -82,7 +82,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { ssl timing info is incomplete }`(
+    fun `M create timings W extractResourceTiming { ssl timing info is incomplete }`(
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -122,7 +122,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { connect timing info is incomplete }`(
+    fun `M create timings W extractResourceTiming { connect timing info is incomplete }`(
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -162,7 +162,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { download timing info is incomplete }`(
+    fun `M create timings W extractResourceTiming { download timing info is incomplete }`(
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -202,7 +202,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { dns timing info is incomplete }`(
+    fun `M create timings W extractResourceTiming { dns timing info is incomplete }`(
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -242,7 +242,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { firstByte timing info is incomplete }`(
+    fun `M create timings W extractResourceTiming { firstByte timing info is incomplete }`(
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -282,7 +282,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { ssl timing info with wrong structure }`(
+    fun `M create timings W extractResourceTiming { ssl timing info with wrong structure }`(
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -321,7 +321,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { connect timing info with wrong structure }`(
+    fun `M create timings W extractResourceTiming { connect timing info with wrong structure }`(
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -360,7 +360,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { download timing info with wrong structure }`(
+    fun `M create timings W extractResourceTiming { download timing info with wrong structure }`(
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -399,7 +399,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { dns timing info with wrong structure }`(
+    fun `M create timings W extractResourceTiming { dns timing info with wrong structure }`(
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -438,7 +438,7 @@ internal class ExternalResourceTimingsKtTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["startTime", "duration"])
-    fun `𝕄 create timings 𝕎 extractResourceTiming { firstByte timing info with wrong structure }`(
+    fun `M create timings W extractResourceTiming { firstByte timing info with wrong structure }`(
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
@@ -476,7 +476,7 @@ internal class ExternalResourceTimingsKtTest {
     }
 
     @Test
-    fun `𝕄 not create timings 𝕎 extractResourceTiming { payload is null }`() {
+    fun `M not create timings W extractResourceTiming { payload is null }`() {
         // When
         val timings = extractResourceTiming(null)
 
@@ -485,7 +485,7 @@ internal class ExternalResourceTimingsKtTest {
     }
 
     @Test
-    fun `𝕄 not create timings 𝕎 extractResourceTiming { payload is empty }`() {
+    fun `M not create timings W extractResourceTiming { payload is empty }`() {
         // When
         val timings = extractResourceTiming(emptyMap())
 

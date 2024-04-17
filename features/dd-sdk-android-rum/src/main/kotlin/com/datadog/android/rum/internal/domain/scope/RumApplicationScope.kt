@@ -15,8 +15,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -33,8 +31,7 @@ internal class RumApplicationScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val sessionListener: RumSessionListener?,
-    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider()
+    private val sessionListener: RumSessionListener?
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)
@@ -172,7 +169,7 @@ internal class RumApplicationScope(
         val isForegroundProcess = processImportance ==
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         if (isForegroundProcess) {
-            val processStartTimeNs = appStartTimeProvider.appStartTimeNs
+            val processStartTimeNs = sdkCore.appStartTimeNs
             // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
             // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
             // To do so, we take the offset of those times in the event time, which should be consistent,

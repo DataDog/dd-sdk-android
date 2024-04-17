@@ -64,7 +64,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ResourceEvent`(@Forgery event: ResourceEvent) {
+    fun `M serialize RUM event W serialize() with ResourceEvent`(@Forgery event: ResourceEvent) {
         val serialized = testedSerializer.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -128,7 +128,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ActionEvent`(
+    fun `M serialize RUM event W serialize() with ActionEvent`(
         @Forgery event: ActionEvent
     ) {
         val serialized = testedSerializer.serialize(event)
@@ -213,7 +213,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ViewEvent`(@Forgery event: ViewEvent) {
+    fun `M serialize RUM event W serialize() with ViewEvent`(@Forgery event: ViewEvent) {
         val serialized = testedSerializer.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -281,7 +281,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ErrorEvent`(@Forgery event: ErrorEvent) {
+    fun `M serialize RUM event W serialize() with ErrorEvent`(@Forgery event: ErrorEvent) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertThat(jsonObject)
@@ -345,7 +345,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with LongTaskEvent`(
+    fun `M serialize RUM event W serialize() with LongTaskEvent`(
         @Forgery event: LongTaskEvent
     ) {
         val serialized = testedSerializer.serialize(event)
@@ -403,7 +403,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with TelemetryDebugEvent`(
+    fun `M serialize RUM event W serialize() with TelemetryDebugEvent`(
         @Forgery event: TelemetryDebugEvent
     ) {
         val serialized = testedSerializer.serialize(event)
@@ -464,7 +464,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with TelemetryErrorEvent`(
+    fun `M serialize RUM event W serialize() with TelemetryErrorEvent`(
         @Forgery event: TelemetryErrorEvent
     ) {
         val serialized = testedSerializer.serialize(event)
@@ -534,7 +534,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 serialize RUM event 𝕎 serialize() with TelemetryConfigurationEvent`(
+    fun `M serialize RUM event W serialize() with TelemetryConfigurationEvent`(
         @Forgery event: TelemetryConfigurationEvent
     ) {
         val serialized = testedSerializer.serialize(event)
@@ -749,7 +749,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 serialize RUM event 𝕎 serialize() with unknown event`(
+    fun `M serialize RUM event W serialize() with unknown event`(
         @Forgery unknownEvent: UserInfo
     ) {
         val serialized = testedSerializer.serialize(unknownEvent)
@@ -768,7 +768,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 do nothing and return the same object 𝕎 serialize() { already serialized event }`(
+    fun `M do nothing and return the same object W serialize() { already serialized event }`(
         @Forgery fakeJsonObject: JsonObject
     ) {
         val serialized = testedSerializer.serialize(fakeJsonObject)
@@ -776,7 +776,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 keep known custom attributes as is 𝕎 serialize()`(forge: Forge) {
+    fun `M keep known custom attributes as is W serialize()`(forge: Forge) {
         val key = forge.anElementFrom(RumEventSerializer.knownAttributes)
         val value = forge.anAlphabeticalString()
         val event = forge.forgeRumEvent(mutableMapOf(key to value))
@@ -1084,7 +1084,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ResourceEvent { bad usr#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ResourceEvent { bad usr#additionalProperties }`(
         @Forgery event: ResourceEvent,
         forge: Forge
     ) {
@@ -1121,7 +1121,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ResourceEvent { bad context#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ResourceEvent { bad context#additionalProperties }`(
         @Forgery event: ResourceEvent,
         forge: Forge
     ) {
@@ -1155,7 +1155,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ActionEvent { bad usr#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ActionEvent { bad usr#additionalProperties }`(
         @Forgery event: ActionEvent,
         forge: Forge
     ) {
@@ -1192,7 +1192,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ActionEvent { bad context#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ActionEvent { bad context#additionalProperties }`(
         @Forgery event: ActionEvent,
         forge: Forge
     ) {
@@ -1226,7 +1226,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ViewEvent { bad usr#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ViewEvent { bad usr#additionalProperties }`(
         @Forgery event: ViewEvent,
         forge: Forge
     ) {
@@ -1263,7 +1263,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ViewEvent { bad context#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ViewEvent { bad context#additionalProperties }`(
         @Forgery event: ViewEvent,
         forge: Forge
     ) {
@@ -1297,7 +1297,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ErrorEvent { bad usr#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ErrorEvent { bad usr#additionalProperties }`(
         @Forgery event: ErrorEvent,
         forge: Forge
     ) {
@@ -1334,7 +1334,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with ErrorEvent { bad context#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with ErrorEvent { bad context#additionalProperties }`(
         @Forgery event: ErrorEvent,
         forge: Forge
     ) {
@@ -1368,7 +1368,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with LongTaskEvent { bad usr#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with LongTaskEvent { bad usr#additionalProperties }`(
         @Forgery event: LongTaskEvent,
         forge: Forge
     ) {
@@ -1405,7 +1405,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 drop non-serializable attributes 𝕎 serialize() with LongTaskEvent { bad context#additionalProperties }`(
+    fun `M drop non-serializable attributes W serialize() with LongTaskEvent { bad context#additionalProperties }`(
         @Forgery event: LongTaskEvent,
         forge: Forge
     ) {

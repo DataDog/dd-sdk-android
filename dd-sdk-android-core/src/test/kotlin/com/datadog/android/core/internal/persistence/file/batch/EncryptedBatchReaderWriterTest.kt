@@ -81,7 +81,7 @@ internal class EncryptedBatchReaderWriterTest {
     // region BatchFileReaderWriter#writeData tests
 
     @Test
-    fun `𝕄 encrypt data and return true 𝕎 writeData()`(
+    fun `M encrypt data and return true W writeData()`(
         @Forgery batchEvent: RawBatchEvent,
         @BoolForgery append: Boolean
     ) {
@@ -107,7 +107,7 @@ internal class EncryptedBatchReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 log internal error and return false 𝕎 writeData() { bad encryption result }`(
+    fun `M log internal error and return false W writeData() { bad encryption result }`(
         @Forgery batchEvent: RawBatchEvent,
         @BoolForgery append: Boolean
     ) {
@@ -137,7 +137,7 @@ internal class EncryptedBatchReaderWriterTest {
     // region BatchFileReader#readData tests
 
     @Test
-    fun `𝕄 decrypt data 𝕎 readData()`(
+    fun `M decrypt data W readData()`(
         @Forgery events: List<RawBatchEvent>
     ) {
         // Given
@@ -157,7 +157,7 @@ internal class EncryptedBatchReaderWriterTest {
     // region writeData + readData
 
     @Test
-    fun `𝕄 return valid data 𝕎 writeData() + readData()`(
+    fun `M return valid data W writeData() + readData()`(
         @Forgery events: List<RawBatchEvent>
     ) {
         // Given

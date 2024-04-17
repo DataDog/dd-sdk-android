@@ -21,6 +21,7 @@ import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
+import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -34,7 +35,7 @@ import java.io.File
 import java.lang.ref.WeakReference
 import java.nio.file.Files
 import java.util.Locale
-import java.util.concurrent.ExecutorService
+import java.util.UUID
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 internal class CoreFeatureTestConfiguration<T : Context>(
@@ -52,10 +53,11 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeFeaturesContext: MutableMap<String, Map<String, Any?>>
     lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
     lateinit var fakeBatchSize: BatchSize
+    var fakeBuildId: String? = null
 
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
     lateinit var mockOkHttpClient: OkHttpClient
-    lateinit var mockPersistenceExecutor: ExecutorService
+    lateinit var mockPersistenceExecutor: FlushableExecutorService
     lateinit var mockKronosClock: KronosClock
     lateinit var mockContextRef: WeakReference<Context?>
     lateinit var mockFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver
@@ -102,6 +104,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         }.toMutableMap()
         fakeFilePersistenceConfig = forge.getForgery()
         fakeBatchSize = forge.aValueFrom(BatchSize::class.java)
+        fakeBuildId = forge.aNullable { getForgery<UUID>().toString() }
     }
 
     private fun createMocks() {
@@ -136,6 +139,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.storageDir) doReturn fakeStorageDir
         whenever(mockInstance.uploadFrequency) doReturn fakeUploadFrequency
         whenever(mockInstance.site) doReturn fakeSite
+        whenever(mockInstance.appBuildId) doReturn fakeBuildId
         whenever(mockInstance.featuresContext) doReturn fakeFeaturesContext
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor

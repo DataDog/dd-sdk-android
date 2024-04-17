@@ -70,7 +70,7 @@ internal class FeatureFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 initialise pending orchestrator in cache dir 𝕎 init()`() {
+    fun `M initialise pending orchestrator in cache dir W init()`() {
         // Given
 
         // When
@@ -92,7 +92,7 @@ internal class FeatureFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 initialise granted orchestrator in cache dir 𝕎 init()`() {
+    fun `M initialise granted orchestrator in cache dir W init()`() {
         // Given
 
         // When
@@ -114,7 +114,7 @@ internal class FeatureFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 use a consent aware migrator 𝕎 init()`() {
+    fun `M use a consent aware migrator W init()`() {
         // Given
 
         // When

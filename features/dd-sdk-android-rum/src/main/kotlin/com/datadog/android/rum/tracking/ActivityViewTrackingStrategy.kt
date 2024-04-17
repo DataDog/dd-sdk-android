@@ -8,7 +8,6 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import androidx.annotation.MainThread
-import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
@@ -36,7 +35,9 @@ constructor(
     ViewTrackingStrategy {
 
     private val executor: ScheduledExecutorService by lazy {
-        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+        sdkCore.createScheduledExecutorService(
+            "rum-activity-tracking"
+        )
     }
 
     // region ActivityLifecycleTrackingStrategy

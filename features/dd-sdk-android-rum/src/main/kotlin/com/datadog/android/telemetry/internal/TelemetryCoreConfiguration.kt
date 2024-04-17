@@ -32,7 +32,7 @@ internal data class TelemetryCoreConfiguration(
             if (trackErrors == null || batchSize == null || batchUploadFrequency == null ||
                 useProxy == null || useLocalEncryption == null || batchProcessingLevel == null
             ) {
-                // TODO RUMM-3088 Do an intelligent reporting when message values are missing/have
+                // TODO RUM-375 Do an intelligent reporting when message values are missing/have
                 //  wrong type, reporting the parameter name and what is exactly wrong
                 // this applies to all messages going through the message bus
                 internalLogger.log(

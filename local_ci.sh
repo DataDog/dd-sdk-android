@@ -127,14 +127,14 @@ if [[ $ANALYSIS == 1 ]]; then
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries"
-    ./gradlew assembleLibraries
+    ./gradlew assembleLibrariesDebug
     ./gradlew printSdkDebugRuntimeClasspath
     classpath=$(cat sdk_classpath)
 
     echo "------ Build Detekt custom rules"
     ./gradlew :tools:detekt:jar
 
-    # TODO RUMM-3263 Switch to Java 17 bytecode
+    # TODO RUM-628 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
     detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
@@ -171,7 +171,7 @@ if [[ $COMPILE == 1 ]]; then
   echo "-- COMPILATION"
 
   echo "---- Assemble Libraries"
-  ./gradlew assembleLibraries
+  ./gradlew assembleLibrariesDebug
 
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest

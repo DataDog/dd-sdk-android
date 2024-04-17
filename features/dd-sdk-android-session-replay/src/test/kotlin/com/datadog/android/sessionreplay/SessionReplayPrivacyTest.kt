@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.os.Build
 import android.view.View
+import android.webkit.WebView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
@@ -38,6 +39,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWirefra
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -122,11 +124,13 @@ internal class SessionReplayPrivacyTest {
         private val mockButtonMapper: ButtonMapper = mock()
         private val mockUnsupportedViewMapper: UnsupportedViewMapper = mock()
         private val mockImageViewMapper: ImageViewMapper = mock()
+        private val mockWebViewWireframeMapper: WebViewWireframeMapper = mock()
 
         private val baseMappers = listOf(
             MapperTypeWrapper(Button::class.java, mockButtonMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, mockImageViewMapper.toGenericMapper()),
-            MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
+            MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper()),
+            MapperTypeWrapper(WebView::class.java, mockWebViewWireframeMapper.toGenericMapper())
         )
 
         // ALLOW

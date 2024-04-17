@@ -26,19 +26,16 @@ internal class SegmentRequestFactory(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request? {
+    ): Request {
         val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
-        if (serializedSegmentPair == null) {
+        if (serializedSegmentPair.isEmpty()) {
             @Suppress("ThrowingInternalException")
             throw InvalidPayloadFormatException(
                 "The payload format was broken and an upload" +
                     " request could not be created"
             )
         }
-        val body = segmentRequestBodyFactory.create(
-            serializedSegmentPair.first,
-            serializedSegmentPair.second
-        )
+        val body = segmentRequestBodyFactory.create(serializedSegmentPair)
         return resolveRequest(context, body)
     }
 

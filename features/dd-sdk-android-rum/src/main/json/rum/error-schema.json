@@ -313,6 +313,11 @@
                 }
               },
               "readOnly": true
+            },
+            "time_since_app_start": {
+              "type": "integer",
+              "description": "Time since application start when error happened (in milliseconds)",
+              "readOnly": true
             }
           },
           "readOnly": true

@@ -60,7 +60,7 @@ internal class ScheduledWriterTest {
     }
 
     @Test
-    fun `𝕄 schedule write 𝕎 write(T)`(
+    fun `M schedule write W write(T)`(
         @StringForgery data: String
     ) {
         // Given
@@ -80,7 +80,7 @@ internal class ScheduledWriterTest {
     }
 
     @Test
-    fun `𝕄 drop data and warn 𝕎 write(T) {submit rejected}`(
+    fun `M drop data and warn W write(T) {submit rejected}`(
         @StringForgery data: String,
         @StringForgery errorMessage: String
     ) {
@@ -102,7 +102,7 @@ internal class ScheduledWriterTest {
     }
 
     @Test
-    fun `𝕄 schedule write 𝕎 write(List)`(
+    fun `M schedule write W write(List)`(
         @StringForgery data: List<String>
     ) {
         // Given
@@ -122,7 +122,7 @@ internal class ScheduledWriterTest {
     }
 
     @Test
-    fun `𝕄 drop data and warn 𝕎 write(List) {submit rejected}`(
+    fun `M drop data and warn W write(List) {submit rejected}`(
         @StringForgery data: List<String>,
         @StringForgery errorMessage: String
     ) {

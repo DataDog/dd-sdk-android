@@ -11,6 +11,7 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -42,7 +43,9 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsentProviderCallback
+import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -54,6 +57,10 @@ internal class SdkFeature(
 ) : FeatureScope {
 
     internal val initialized = AtomicBoolean(false)
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
+    internal val contextUpdateListeners =
+        Collections.newSetFromMap(ConcurrentHashMap<FeatureContextUpdateReceiver, Boolean>())
     internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
     internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -89,7 +96,7 @@ internal class SdkFeature(
         wrappedFeature.onInitialize(context)
 
         if (wrappedFeature is StorageBackedFeature && dataUploadConfiguration != null) {
-            setupUploader(wrappedFeature.requestFactory, dataUploadConfiguration)
+            setupUploader(wrappedFeature, dataUploadConfiguration)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
@@ -97,6 +104,8 @@ internal class SdkFeature(
         }
 
         initialized.set(true)
+
+        uploadScheduler.startScheduling()
     }
 
     fun isInitialized(): Boolean {
@@ -104,7 +113,7 @@ internal class SdkFeature(
     }
 
     fun clearAllData() {
-        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+        @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
         storage.dropAll()
     }
 
@@ -136,7 +145,7 @@ internal class SdkFeature(
         forceNewBatch: Boolean,
         callback: (DatadogContext, EventBatchWriter) -> Unit
     ) {
-        // TODO RUMM-0000 thread safety. Thread switch happens in Storage right now. Open questions:
+        // TODO RUM-1462 thread safety. Thread switch happens in Storage right now. Open questions:
         // * what if caller wants to have a sync operation, without thread switch
         // * should context read and write be on the dedicated thread? risk - time gap between
         // caller and context
@@ -166,6 +175,39 @@ internal class SdkFeature(
 
     // endregion
 
+    // region Context Update Listener
+
+    internal fun notifyContextUpdated(featureName: String, context: Map<String, Any?>) {
+        contextUpdateListeners.forEach {
+            it.onContextUpdate(featureName, context)
+        }
+    }
+
+    internal fun setContextUpdateListener(listener: FeatureContextUpdateReceiver) {
+        synchronized(contextUpdateListeners) {
+            // the argument is always non - null, so we can suppress the warning
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            if (contextUpdateListeners.contains(listener)) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS.format(Locale.US, wrappedFeature.name) }
+                )
+            }
+            contextUpdateListeners.add(listener)
+        }
+    }
+
+    internal fun removeContextUpdateListener(listener: FeatureContextUpdateReceiver) {
+        synchronized(contextUpdateListeners) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            // the argument is always non - null, so we can suppress the warning
+            contextUpdateListeners.remove(listener)
+        }
+    }
+
+    // endregion
+
     // region Internal
 
     private fun setupMetricsDispatcher(
@@ -190,12 +232,13 @@ internal class SdkFeature(
     }
 
     private fun setupUploader(
-        requestFactory: RequestFactory,
+        feature: StorageBackedFeature,
         uploadConfiguration: DataUploadConfiguration
     ) {
         uploadScheduler = if (coreFeature.isMainProcess) {
-            uploader = createUploader(requestFactory)
+            uploader = createUploader(feature.requestFactory)
             DataUploadScheduler(
+                feature.name,
                 storage,
                 uploader,
                 coreFeature.contextProvider,
@@ -208,7 +251,6 @@ internal class SdkFeature(
         } else {
             NoOpUploadScheduler()
         }
-        uploadScheduler.startScheduling()
     }
 
     // region Feature setup
@@ -303,7 +345,6 @@ internal class SdkFeature(
 
     // Used for nightly tests only
     internal fun flushStoredData() {
-        // TODO RUMM-0000 should it just accept storage?
         val flusher = DataFlusher(
             coreFeature.contextProvider,
             fileOrchestrator,
@@ -312,13 +353,15 @@ internal class SdkFeature(
             FileMover(internalLogger),
             internalLogger
         )
-        @Suppress("ThreadSafety")
+        @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
         flusher.flush(uploader)
     }
 
     // endregion
 
     companion object {
+        internal const val CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS =
+            "Feature \"%s\" already has this listener registered."
         const val NO_EVENT_RECEIVER =
             "Feature \"%s\" has no event receiver registered, ignoring event."
     }

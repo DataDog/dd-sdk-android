@@ -281,7 +281,6 @@ internal class RumResourceScope(
                     spanId = spanId,
                     rulePsr = rulePsr,
                     session = ResourceEvent.DdSession(
-                        plan = ResourceEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toResourceSessionPrecondition()
                     ),
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
@@ -365,6 +364,7 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = eventTimestamp,
                 error = ErrorEvent.Error(
                     message = message,
@@ -425,7 +425,6 @@ internal class RumResourceScope(
                 context = ErrorEvent.Context(additionalProperties = eventAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        plan = ErrorEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)

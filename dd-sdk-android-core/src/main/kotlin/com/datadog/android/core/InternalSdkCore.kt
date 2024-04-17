@@ -70,6 +70,15 @@ interface InternalSdkCore : FeatureSdkCore {
     val lastFatalAnrSent: Long?
 
     /**
+     * Provide the time the application started in nanoseconds from device boot, or our best guess
+     * if the actual start time is not available. Note: since the implementation may rely on [System.nanoTime],
+     * this property can only be used to measure elapsed time and is not related to any other notion of system
+     * or wall-clock time. The value is the time since VM start.
+     */
+    @InternalApi
+    val appStartTimeNs: Long
+
+    /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.
      *
      * @param data Serialized RUM view event.

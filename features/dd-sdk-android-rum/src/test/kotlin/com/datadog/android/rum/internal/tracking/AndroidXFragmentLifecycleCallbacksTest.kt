@@ -18,7 +18,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewUrl
 import fr.xgouchet.elmyr.Forge
@@ -29,9 +28,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -39,6 +41,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(ForgeExtension::class),
@@ -83,7 +87,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
+    lateinit var mockScheduledExecutorService: ScheduledExecutorService
 
     @Mock
     lateinit var mockPredicate: ComponentPredicate<Fragment>
@@ -97,8 +101,19 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         val mockRumFeature = mock<RumFeature>()
         whenever(mockRumFeature.actionTrackingStrategy) doReturn mockUserActionTrackingStrategy
         whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
-
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
+        whenever(
+            mockScheduledExecutorService.schedule(
+                any(),
+                ArgumentMatchers.eq(AndroidXFragmentLifecycleCallbacks.STOP_VIEW_DELAY_MS),
+                ArgumentMatchers.eq(TimeUnit.MILLISECONDS)
+            )
+        ) doAnswer { invocationOnMock ->
+            (invocationOnMock.arguments[0] as Runnable).run()
+            null
+        }
+
         fakeAttributes = forge.aMap { forge.aString() to forge.aString() }
         testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
             { fakeAttributes },
@@ -111,7 +126,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     // region Track RUM View
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed()`() {
+    fun `M start a RUM View event W onFragmentResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -127,7 +142,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed() {custom view name}`(
+    fun `M start a RUM View event W onFragmentResumed() {custom view name}`(
         @StringForgery fakeName: String
     ) {
         // Given
@@ -146,7 +161,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed() {custom blank view name}`(
+    fun `M start a RUM View event W onFragmentResumed() {custom blank view name}`(
         @StringForgery(StringForgeryType.WHITESPACE) fakeName: String
     ) {
         // Given
@@ -165,7 +180,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { first display }`() {
+    fun `M start RUM View W onFragmentResumed() { first display }`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -181,7 +196,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { redisplay }`() {
+    fun `M start RUM View W onFragmentResumed() { redisplay }`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -197,7 +212,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 not stop RUM View 𝕎 onFragmentPaused()`() {
+    fun `M not stop RUM View W onFragmentPaused()`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -210,7 +225,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onFragmentStopped()`() {
+    fun `M stop RUM View W onFragmentStopped()`() {
         // Given
         testedLifecycleCallbacks.register(mockFragmentActivity, mockSdkCore)
         whenever(mockPredicate.accept(mockFragment)) doReturn true
@@ -228,7 +243,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     // region Track RUM View (not tracked)
 
     @Test
-    fun `𝕄 start a RUM View event 𝕎 onFragmentResumed() {activity not tracked}`() {
+    fun `M start a RUM View event W onFragmentResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 
@@ -240,7 +255,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() {activity not tracked}`() {
+    fun `M start RUM View W onFragmentResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 
@@ -252,7 +267,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() {activity not tracked}`() {
+    fun `M stop RUM View W onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 

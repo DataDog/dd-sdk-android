@@ -19,7 +19,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -92,7 +91,7 @@ internal open class RumViewScope(
     private var longTaskCount: Long = 0
     private var frozenFrameCount: Long = 0
 
-    // TODO RUMM-0000 We have now access to the event write result through the closure,
+    // TODO RUM-3792 We have now access to the event write result through the closure,
     // we probably can drop AdvancedRumMonitor#eventSent/eventDropped usage
     internal var pendingResourceCount: Long = 0
     internal var pendingActionCount: Long = 0
@@ -142,7 +141,6 @@ internal open class RumViewScope(
     init {
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
-            it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
@@ -180,7 +178,9 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
@@ -216,7 +216,10 @@ internal open class RumViewScope(
                 viewName = key.name,
                 viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId,
-                viewType = type
+                viewType = type,
+                viewTimestamp = eventTimestamp,
+                viewTimestampOffset = serverTimeOffsetInMs,
+                hasReplay = false
             )
     }
 
@@ -252,6 +255,9 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
+            // we should not reset the timestamp offset here as due to async nature of feature context update
+            // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
+            // correction
             val newRumContext = getRumContext().copy(
                 viewType = RumViewType.NONE,
                 viewId = null,
@@ -412,6 +418,7 @@ internal open class RumViewScope(
                 ErrorEvent.ErrorEventSessionType.SYNTHETICS
             }
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
                 featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(
@@ -430,7 +437,8 @@ internal open class RumViewScope(
                             stack = it.stack,
                             state = it.state
                         )
-                    }.ifEmpty { null }
+                    }.ifEmpty { null },
+                    timeSinceAppStart = event.timeSinceAppStartNs?.let { TimeUnit.NANOSECONDS.toMillis(it) }
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
                 view = ErrorEvent.ErrorEventView(
@@ -475,7 +483,6 @@ internal open class RumViewScope(
                 context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        plan = ErrorEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
@@ -750,6 +757,9 @@ internal open class RumViewScope(
                 datadogContext,
                 currentViewId
             )
+            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
+                currentRumContext[RumContext.HAS_REPLAY] = hasReplay
+            }
             val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
                 datadogContext,
                 currentViewId
@@ -842,7 +852,6 @@ internal open class RumViewScope(
                 dd = ViewEvent.Dd(
                     documentVersion = eventVersion,
                     session = ViewEvent.DdSession(
-                        plan = ViewEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
                     ),
                     replayStats = replayStats,
@@ -852,8 +861,7 @@ internal open class RumViewScope(
                 service = datadogContext.service,
                 version = datadogContext.version
             )
-        }
-            .submit()
+        }.submit()
     }
 
     private fun updateGlobalAttributes(sdkCore: InternalSdkCore, event: RumRawEvent) {
@@ -984,7 +992,6 @@ internal open class RumViewScope(
                 ),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
-                        plan = ActionEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
@@ -1086,7 +1093,6 @@ internal open class RumViewScope(
                 context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                 dd = LongTaskEvent.Dd(
                     session = LongTaskEvent.DdSession(
-                        plan = LongTaskEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
                     ),
                     configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
@@ -1113,9 +1119,31 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
-        featureFlags[event.name] = event.value
-        sendViewUpdate(event, writer)
-        sendViewChanged()
+        if (event.value != featureFlags[event.name]) {
+            featureFlags[event.name] = event.value
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
+    }
+
+    private fun onAddFeatureFlagEvaluations(
+        event: RumRawEvent.AddFeatureFlagEvaluations,
+        writer: DataWriter<Any>
+    ) {
+        if (stopped) return
+
+        var modified = false
+        event.featureFlags.forEach { (k, v) ->
+            if (v != featureFlags[k]) {
+                featureFlags[k] = v
+                modified = true
+            }
+        }
+
+        if (modified) {
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
     }
 
     private fun sendViewChanged() {

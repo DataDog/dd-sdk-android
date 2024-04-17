@@ -46,7 +46,7 @@ internal class SessionReplayTest {
     }
 
     @Test
-    fun `𝕄 register session replay feature 𝕎 enable()`(
+    fun `M register session replay feature W enable()`(
         @StringForgery fakePackageName: String,
         @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration
     ) {

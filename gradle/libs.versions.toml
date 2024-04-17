@@ -1,13 +1,13 @@
 [versions]
 # Commons
-kotlin = "1.8.10"
-kotlinSP = "1.8.10-1.0.9"
+kotlin = "1.8.22"
+kotlinSP = "1.8.22-1.0.11"
 gson = "2.10.1"
 okHttp = "4.11.0"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
-androidToolsPlugin = "8.1.1"
+androidToolsPlugin = "8.2.2"
 androidXAnnotations = "1.1.0"
 androidXAppCompat = "1.3.0"
 androidXCore = "1.3.1"
@@ -16,10 +16,11 @@ androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
 androidXWorkManager = "2.8.1"
 androidXConstraintLayout = "2.0.4"
-androidXComposeRuntime = "1.4.2"
+androidXComposeCompiler = "1.4.8"
+androidXComposeRuntime = "1.4.3"
 androidXComposeNavigation = "2.6.0"
-androidXComposeUi = "1.4.2"
-androidXComposeMaterial = "1.4.2"
+androidXComposeUi = "1.4.3"
+androidXComposeMaterial = "1.4.3"
 androidXMetrics = "1.0.0-alpha04"
 androidXCollection = "1.1.0"
 googleAccompanist = "0.20.2"
@@ -47,24 +48,23 @@ espresso = "3.5.1"
 # Tests Tools
 assertJ = "3.18.1"
 elmyr = "1.3.1"
-mockitoKotlin = "5.0.0"
-kover = "0.7.1"
+mockitoKotlin = "5.1.0"
+kover = "0.7.6"
 kspTesting = "1.5.0"
 
 # Tools
 detekt = "1.22.0"
-dokka = "1.6.10"
+dokka = "1.8.20"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
 fuzzyWuzzy = "1.2.0"
-mavenModel = "3.6.3"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
 
-kotlinPoet = "1.11.0"
+kotlinPoet = "1.14.2"
 kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.13.2"
@@ -193,7 +193,6 @@ androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "an
 androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
 
 fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
-mavenModel = { module = "org.apache.maven:maven-model", version.ref = "mavenModel" }
 nexusPublishGradlePlugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }

@@ -185,12 +185,12 @@ internal class TrackingConsentProviderTest {
             countDownLatch.countDown()
         }.start()
         Thread {
-            Thread.sleep(2) // just to callback register thread to take the lock
+            Thread.sleep(10) // just to callback register thread to take the lock
             testedConsentProvider.setConsent(fakeConsent1)
             countDownLatch.countDown()
         }.start()
         Thread {
-            Thread.sleep(2)
+            Thread.sleep(10)
             testedConsentProvider.setConsent(fakeConsent2)
             countDownLatch.countDown()
         }.start()

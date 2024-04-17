@@ -7,11 +7,13 @@
 package com.datadog.android.api.storage
 
 import androidx.annotation.WorkerThread
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * Interface to be implemented by the class which wants to write arbitrary data with the
  * given [EventBatchWriter].
  */
+@NoOpImplementation(publicNoOpImplementation = true)
 interface DataWriter<T> {
     /**
      * Writes the element with a given [EventBatchWriter].

@@ -153,5 +153,14 @@ Java_com_datadog_android_ndk_NdkTests_updateTrackingConsent(
     update_tracking_consent(consent);
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_datadog_android_ndk_NdkTests_updateAppStartTime(
+        JNIEnv *env,
+        jobject /* this */,
+        jlong app_start_time_ms) {
+    update_app_start_time_millis(app_start_time_ms);
+}
+
 
 

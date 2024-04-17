@@ -59,14 +59,17 @@ class NdkTests {
         val fakeErrorStack = forge.anAlphabeticalString()
         initNdkErrorHandler(temporaryFolder.root.absolutePath)
         updateTrackingConsent(1)
+        val fakeAppStartTimeMs = forge.aLong(min = 0L, max = System.currentTimeMillis())
+        updateAppStartTime(fakeAppStartTimeMs)
+
+        val expectedTimestamp = System.currentTimeMillis()
+        val expectedTimeSinceAppStartMs = expectedTimestamp - fakeAppStartTimeMs
         simulateSignalInterception(
             fakeSignal,
             fakeSignalName,
             fakeErrorMessage,
             fakeErrorStack
         )
-
-        val expectedTimestamp = System.currentTimeMillis()
 
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
@@ -84,7 +87,12 @@ class NdkTests {
                 assertThat(jsonObject).hasField(
                     "timestamp",
                     expectedTimestamp,
-                    Offset.offset(TimeUnit.SECONDS.toMillis(10))
+                    Offset.offset(TimeUnit.SECONDS.toMillis(2))
+                )
+                assertThat(jsonObject).hasField(
+                    "time_since_app_start_ms",
+                    expectedTimeSinceAppStartMs,
+                    Offset.offset(TimeUnit.SECONDS.toMillis(2))
                 )
             }
             true
@@ -220,6 +228,10 @@ class NdkTests {
      */
     private external fun updateTrackingConsent(
         consent: Int
+    )
+
+    private external fun updateAppStartTime(
+        appStartTimeMs: Long
     )
 
     // endregion

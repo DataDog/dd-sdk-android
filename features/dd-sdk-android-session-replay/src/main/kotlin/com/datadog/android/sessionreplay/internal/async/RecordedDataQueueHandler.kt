@@ -52,7 +52,7 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         internalLogger = internalLogger,
 
         /**
-         * TODO: RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
+         * TODO RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
          * if we ever decide to make the poolsize greater than 1, we need to ensure
          * synchronization works correctly in the triggerProcessingLoop method below
          */

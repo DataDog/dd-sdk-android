@@ -53,7 +53,7 @@ internal class RotatingDnsResolverTest {
     }
 
     @Test
-    fun `𝕄 return delegate result 𝕎 lookup {unknown hostname}`() {
+    fun `M return delegate result W lookup {unknown hostname}`() {
         // Given
         whenever(mockDelegate.lookup(fakeHostname)) doReturn fakeInetAddresses
 
@@ -65,7 +65,7 @@ internal class RotatingDnsResolverTest {
     }
 
     @Test
-    fun `𝕄 rotate known result 𝕎 lookup {known hostname}`() {
+    fun `M rotate known result W lookup {known hostname}`() {
         // Given
         whenever(mockDelegate.lookup(fakeHostname)) doReturn fakeInetAddresses
         val result = mutableListOf<InetAddress>()
@@ -80,7 +80,7 @@ internal class RotatingDnsResolverTest {
     }
 
     @Test
-    fun `𝕄 renew result 𝕎 lookup {expired hostname}`(
+    fun `M renew result W lookup {expired hostname}`(
         forge: Forge
     ) {
         // Given
@@ -98,7 +98,7 @@ internal class RotatingDnsResolverTest {
     }
 
     @Test
-    fun `𝕄 renew result 𝕎 lookup {empty hostname}`() {
+    fun `M renew result W lookup {empty hostname}`() {
         // Given
         whenever(mockDelegate.lookup(fakeHostname)).doReturn(emptyList(), fakeInetAddresses)
 

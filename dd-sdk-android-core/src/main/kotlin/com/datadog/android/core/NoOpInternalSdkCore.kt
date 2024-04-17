@@ -12,6 +12,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -20,8 +21,12 @@ import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.concurrent.Callable
+import java.util.concurrent.Delayed
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 /**
@@ -62,6 +67,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         get() = null
     override val lastFatalAnrSent: Long?
         get() = null
+    override val appStartTimeNs: Long
+        get() = 0
 
     // endregion
 
@@ -98,6 +105,24 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override fun setEventReceiver(featureName: String, `receiver`: FeatureEventReceiver) = Unit
 
     override fun removeEventReceiver(featureName: String) = Unit
+
+    override fun setContextUpdateReceiver(
+        featureName: String,
+        listener: FeatureContextUpdateReceiver
+    ) = Unit
+
+    override fun removeContextUpdateReceiver(
+        featureName: String,
+        listener: FeatureContextUpdateReceiver
+    ) = Unit
+
+    override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
+        return NoOpExecutorService()
+    }
+
+    override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
+        return NoOpScheduledExecutorService()
+    }
 
     // endregion
 
@@ -153,5 +178,99 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
             timeout: Long,
             unit: TimeUnit?
         ): T? = null
+    }
+
+    class NoOpScheduledExecutorService : ScheduledExecutorService {
+        override fun execute(command: Runnable?) = Unit
+
+        override fun shutdown() = Unit
+
+        override fun shutdownNow(): MutableList<Runnable> = mutableListOf()
+
+        override fun isShutdown(): Boolean = true
+
+        override fun isTerminated(): Boolean = true
+
+        override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean = true
+
+        override fun <T : Any?> submit(task: Callable<T>?): Future<T>? = null
+
+        override fun <T : Any?> submit(task: Runnable?, result: T): Future<T>? = null
+
+        override fun submit(task: Runnable?): Future<*>? = null
+
+        override fun <T : Any?> invokeAll(
+            tasks: MutableCollection<out Callable<T>>?
+        ): MutableList<Future<T>> = mutableListOf()
+
+        override fun <T : Any?> invokeAll(
+            tasks: MutableCollection<out Callable<T>>?,
+            timeout: Long,
+            unit: TimeUnit?
+        ): MutableList<Future<T>> = mutableListOf()
+
+        override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? = null
+
+        override fun <T : Any?> invokeAny(
+            tasks: MutableCollection<out Callable<T>>?,
+            timeout: Long,
+            unit: TimeUnit?
+        ): T? = null
+
+        override fun <V : Any?> schedule(callable: Callable<V>?, delay: Long, unit: TimeUnit?): ScheduledFuture<V> {
+            return NoOpScheduledFuture()
+        }
+
+        override fun schedule(command: Runnable?, delay: Long, unit: TimeUnit?): ScheduledFuture<*> {
+            return NoOpScheduledFuture<Unit>()
+        }
+
+        override fun scheduleAtFixedRate(
+            command: Runnable?,
+            initialDelay: Long,
+            period: Long,
+            unit: TimeUnit?
+        ): ScheduledFuture<*> {
+            return NoOpScheduledFuture<Unit>()
+        }
+
+        override fun scheduleWithFixedDelay(
+            command: Runnable?,
+            initialDelay: Long,
+            delay: Long,
+            unit: TimeUnit?
+        ): ScheduledFuture<*> {
+            return NoOpScheduledFuture<Unit>()
+        }
+    }
+
+    class NoOpScheduledFuture<O> : ScheduledFuture<O> {
+        override fun compareTo(other: Delayed?): Int {
+            return 0
+        }
+
+        override fun getDelay(unit: TimeUnit?): Long {
+            return 0L
+        }
+
+        override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
+            return false
+        }
+
+        override fun isCancelled(): Boolean {
+            return false
+        }
+
+        override fun isDone(): Boolean {
+            return false
+        }
+
+        override fun get(): O {
+            throw ExecutionException("Unsupported", UnsupportedOperationException())
+        }
+
+        override fun get(timeout: Long, unit: TimeUnit?): O {
+            throw ExecutionException("Unsupported", UnsupportedOperationException())
+        }
     }
 }

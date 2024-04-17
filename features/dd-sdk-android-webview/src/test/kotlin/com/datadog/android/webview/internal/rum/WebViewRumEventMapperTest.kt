@@ -13,20 +13,24 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
+import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -45,6 +49,12 @@ internal class WebViewRumEventMapperTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Mock
+    lateinit var mockNativeRumViewsCache: NativeRumViewsCache
+
+    @StringForgery
+    lateinit var fakeResolvedNativeViewId: String
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -56,20 +66,23 @@ internal class WebViewRumEventMapperTest {
         } else {
             emptyMap()
         }
-        testedWebViewRumEventMapper = WebViewRumEventMapper()
+        testedWebViewRumEventMapper = WebViewRumEventMapper(mockNativeRumViewsCache)
     }
 
     @Test
-    fun `M map the event W mapEvent { ViewEvent }()`(forge: Forge) {
+    fun `M map the event W mapEvent { ViewEvent }`(forge: Forge) {
         // Given
         val fakeViewEvent = forge.getForgery<ViewEvent>()
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
         val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -85,12 +98,15 @@ internal class WebViewRumEventMapperTest {
         // Given
         val fakeActionEvent = forge.getForgery<ActionEvent>()
         val fakeRumJsonObject = fakeActionEvent.toJson().asJsonObject
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeActionEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -106,12 +122,15 @@ internal class WebViewRumEventMapperTest {
         // Given
         val fakeErrorEvent = forge.getForgery<ErrorEvent>()
         val fakeRumJsonObject = fakeErrorEvent.toJson().asJsonObject
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeErrorEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -127,12 +146,15 @@ internal class WebViewRumEventMapperTest {
         // Given
         val fakeResourceEvent = forge.getForgery<ResourceEvent>()
         val fakeRumJsonObject = fakeResourceEvent.toJson().asJsonObject
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeResourceEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -144,16 +166,19 @@ internal class WebViewRumEventMapperTest {
     }
 
     @Test
-    fun `M map the event W mapEvent { LongTaskEvent }()`(forge: Forge) {
+    fun `M map the event W mapEvent { LongTaskEvent }`(forge: Forge) {
         // Given
         val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
         val fakeRumJsonObject = fakeLongTaskEvent.toJson().asJsonObject
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeLongTaskEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -165,19 +190,22 @@ internal class WebViewRumEventMapperTest {
     }
 
     @Test
-    fun `M map the event W mapEvent { missing application and session fields  }()`(forge: Forge) {
+    fun `M map the event W mapEvent { missing application and session fields  }`(forge: Forge) {
         // Given
         val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
         val fakeRumJsonObject = fakeLongTaskEvent.toJson().asJsonObject.apply {
             remove(WebViewRumEventMapper.APPLICATION_KEY_NAME)
             remove(WebViewRumEventMapper.SESSION_KEY_NAME)
         }
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeLongTaskEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -192,7 +220,8 @@ internal class WebViewRumEventMapperTest {
     fun `M map the event W mapEvent { RumContext is missing }`(forge: Forge) {
         // Given
         val fakeRumJsonObject = forge.aRumEventAsJson()
-        val expectedDate = fakeRumJsonObject.get(WebViewRumEventMapper.DATE_KEY_NAME).asLong +
+        val fakeEventDate = fakeRumJsonObject.get(WebViewRumEventMapper.DATE_KEY_NAME).asLong
+        val expectedDate = fakeEventDate +
             fakeServerTimeOffset
         val expectedApplicationId = fakeRumJsonObject
             .getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME)
@@ -202,12 +231,15 @@ internal class WebViewRumEventMapperTest {
             .getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME)
             .getAsJsonPrimitive(WebViewRumEventMapper.ID_KEY_NAME)
             .asString
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeEventDate))
+            .thenReturn(fakeResolvedNativeViewId)
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             null,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -217,7 +249,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.APPLICATION_KEY_NAME,
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
-                WebViewRumEventMapper.DD_KEY_NAME
+                WebViewRumEventMapper.DD_KEY_NAME,
+                WebViewRumEventMapper.CONTAINER_KEY_NAME
             )
             .isEqualTo(fakeRumJsonObject)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
@@ -228,13 +261,49 @@ internal class WebViewRumEventMapperTest {
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate
         )
-        val ddSession = mappedEvent
-            .getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
-            .get(WebViewRumEventMapper.DD_SESSION_KEY_NAME).asJsonObject
-        assertThat(ddSession).hasField(
-            WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
-            ViewEvent.Plan.PLAN_1.toJson().asLong
+        val container = mappedEvent.getAsJsonObject(WebViewRumEventMapper.CONTAINER_KEY_NAME)
+        assertThat(container).hasField(
+            WebViewRumEventMapper.SOURCE_KEY_NAME,
+            WebViewRumEventMapper.SOURCE_VALUE
         )
+        assertThat(container.getAsJsonObject(WebViewRumEventMapper.VIEW_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeResolvedNativeViewId)
+    }
+
+    @Test
+    fun `M map the event W mapEvent { parent native id could not be resolved }`(forge: Forge) {
+        // Given
+        val fakeRumJsonObject = forge.aRumEventAsJson()
+        val fakeEventDate = fakeRumJsonObject.get(WebViewRumEventMapper.DATE_KEY_NAME).asLong
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeEventDate))
+            .thenReturn(null)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            null,
+            fakeServerTimeOffset,
+            true
+        )
+
+        // Then
+        assertThat(mappedEvent)
+            .usingRecursiveComparison()
+            .ignoringFields(
+                WebViewRumEventMapper.APPLICATION_KEY_NAME,
+                WebViewRumEventMapper.SESSION_KEY_NAME,
+                WebViewRumEventMapper.DATE_KEY_NAME,
+                WebViewRumEventMapper.DD_KEY_NAME,
+                WebViewRumEventMapper.CONTAINER_KEY_NAME
+            )
+            .isEqualTo(fakeRumJsonObject)
+        val container = mappedEvent
+            .getAsJsonObject(WebViewRumEventMapper.CONTAINER_KEY_NAME)
+        assertThat(container).hasField(
+            WebViewRumEventMapper.SOURCE_KEY_NAME,
+            WebViewRumEventMapper.SOURCE_VALUE
+        )
+        assertThat(container).doesNotHaveField(WebViewRumEventMapper.VIEW_KEY_NAME)
     }
 
     private fun assertMappedEvent(
@@ -260,12 +329,12 @@ internal class WebViewRumEventMapperTest {
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate
         )
-        val ddSession = mappedEvent
-            .getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
-            .get(WebViewRumEventMapper.DD_SESSION_KEY_NAME).asJsonObject
-        assertThat(ddSession).hasField(
-            WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
-            ViewEvent.Plan.PLAN_1.toJson().asLong
+        val container = mappedEvent.getAsJsonObject(WebViewRumEventMapper.CONTAINER_KEY_NAME)
+        assertThat(container).hasField(
+            WebViewRumEventMapper.SOURCE_KEY_NAME,
+            WebViewRumEventMapper.SOURCE_VALUE
         )
+        assertThat(container.getAsJsonObject(WebViewRumEventMapper.VIEW_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeResolvedNativeViewId)
     }
 }

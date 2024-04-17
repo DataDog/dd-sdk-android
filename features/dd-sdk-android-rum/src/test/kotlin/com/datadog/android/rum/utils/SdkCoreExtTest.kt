@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.android.rum.utils
 
 import com.datadog.android.api.InternalLogger
@@ -6,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -22,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -73,7 +81,7 @@ internal class SdkCoreExtTest {
     }
 
     @Test
-    fun `𝕄 write data 𝕎 submit()`() {
+    fun `M write data W submit()`() {
         // Given
         val fakeEvent = Any()
 
@@ -89,7 +97,7 @@ internal class SdkCoreExtTest {
     }
 
     @Test
-    fun `𝕄 call onSuccess 𝕎 submit() { write succeeded } `() {
+    fun `M call onSuccess W submit() { write succeeded } `() {
         // Given
         val fakeEvent = Any()
         var invoked = false
@@ -111,7 +119,7 @@ internal class SdkCoreExtTest {
     }
 
     @Test
-    fun `𝕄 call onError 𝕎 submit() { write was not successful }`() {
+    fun `M call onError W submit() { write was not successful }`() {
         // Given
         val fakeEvent = Any()
         whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn false
@@ -138,7 +146,7 @@ internal class SdkCoreExtTest {
     }
 
     @Test
-    fun `𝕄 call onError 𝕎 submit() { write throws }`(
+    fun `M call onError W submit() { write throws }`(
         forge: Forge
     ) {
         // Given
@@ -169,7 +177,7 @@ internal class SdkCoreExtTest {
     }
 
     @Test
-    fun `𝕄 call onError 𝕎 submit() { event creation throws }`(
+    fun `M call onError W submit() { event creation throws }`(
         forge: Forge
     ) {
         // Given
@@ -198,7 +206,7 @@ internal class SdkCoreExtTest {
     }
 
     @Test
-    fun `𝕄 notify no onError provided 𝕎 submit() { write failed }`(
+    fun `M notify no onError provided W submit() { write failed }`(
         forge: Forge
     ) {
         // Given
@@ -216,6 +224,31 @@ internal class SdkCoreExtTest {
             target = InternalLogger.Target.MAINTAINER,
             message = WriteOperation.NO_ERROR_CALLBACK_PROVIDED_WARNING
         )
+    }
+
+    @Test
+    fun `M do nothing W submit() { noop writer}`() {
+        // Given
+        var errorInvoked = false
+        var successInvoked = false
+        val fakeEvent = Any()
+        mockWriter = mock<NoOpDataWriter<Any>>()
+
+        // When
+        mockSdkCore.newRumEventWriteOperation(mockWriter) { fakeEvent }
+            .onError { errorInvoked = true }
+            .onSuccess { successInvoked = true }
+            .submit()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.USER,
+            message = WriteOperation.WRITE_OPERATION_IGNORED
+        )
+        assertThat(errorInvoked).isTrue()
+        assertThat(successInvoked).isFalse()
+        verifyNoInteractions(mockWriter)
     }
 
     companion object {
