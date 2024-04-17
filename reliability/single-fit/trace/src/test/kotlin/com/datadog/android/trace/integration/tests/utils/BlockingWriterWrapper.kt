@@ -14,11 +14,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class BlockingWriterWrapper(wrapped: Writer) : Writer {
+internal class BlockingWriterWrapper(private val wrappedWriter: Writer) : Writer {
     private val latches: LinkedList<CountDownLatch> = LinkedList()
     private val currentTraceCount: AtomicInteger = AtomicInteger(0)
-
-    private val wrappedWriter = wrapped
 
     override fun write(trace: MutableList<DDSpan>?) {
         wrappedWriter.write(trace)

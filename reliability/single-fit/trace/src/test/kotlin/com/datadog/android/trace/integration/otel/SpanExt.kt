@@ -10,7 +10,7 @@ import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import io.opentelemetry.api.trace.Span
 
-internal fun Span.lessSignificantTraceIdAsHexString(): String {
+internal fun Span.leastSignificantTraceIdAsHexString(): String {
     return spanContext.traceId.takeLast(16)
 }
 

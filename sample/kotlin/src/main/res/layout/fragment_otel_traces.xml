@@ -59,6 +59,29 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/chained_contexts_test"/>
 
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/linked_spans_test"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:layout_margin="8dp"
+        android:text="@string/linked_spans_test"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_chained_contexts_test"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/start_linked_spans_test"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/start_linked_spans_test"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/linked_spans_test"/>
+
     <ProgressBar
         android:id="@+id/spinner_async"
         android:layout_width="0dp"
@@ -67,9 +90,10 @@
         android:max="100"
         android:min="0"
         style="?android:attr/progressBarStyleHorizontal"
+        android:layout_marginTop="@dimen/default_padding"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/start_chained_contexts_test"
+        app:layout_constraintTop_toBottomOf="@id/start_linked_spans_test"
         android:visibility="invisible"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

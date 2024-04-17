@@ -283,8 +283,8 @@ internal class SpansPayloadAssert(actual: JsonObject) :
         }
 
         fun hasGenericLinkedAttribute(key: String, value: List<String>): SpanAssert {
-            value.forEachIndexed { index, it ->
-                hasGenericLinkedAttribute("$key.$index", it)
+            value.forEachIndexed { index, valueAtIndex ->
+                hasGenericLinkedAttribute("$key.$index", valueAtIndex)
             }
             return this
         }

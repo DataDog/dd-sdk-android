@@ -60,12 +60,12 @@ internal class OtelTracerProviderTest {
     fun `set up`(forge: Forge) {
         val datadogContextStorageClass =
             Class.forName("com.datadog.android.trace.opentelemetry.DatadogContextStorage")
-        val constructor = datadogContextStorageClass.constructors.first { it.parameterCount == 1 }
+        val constructorRef = datadogContextStorageClass.constructors.first { it.parameterCount == 1 }
         ContextStorage.addWrapper {
             if (it::class.java.isAssignableFrom(datadogContextStorageClass)) {
                 it
             } else {
-                constructor.newInstance(it) as ContextStorage
+                constructorRef.newInstance(it) as ContextStorage
             }
         }
         stubSdkCore = StubSDKCore(forge)
@@ -91,7 +91,7 @@ internal class OtelTracerProviderTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -137,7 +137,7 @@ internal class OtelTracerProviderTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -194,7 +194,7 @@ internal class OtelTracerProviderTest {
                 .setAttribute(fakeStringAttributeKey, fakeStringAttributeValue)
                 .setAttribute(fakeBooleanAttributeKey, fakeBooleanAttributeValue)
                 .startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -254,7 +254,7 @@ internal class OtelTracerProviderTest {
                 .setAttribute(AttributeKey.stringKey(fakeStringAttributeKey), fakeStringAttributeValue)
                 .setAttribute(AttributeKey.booleanKey(fakeBooleanAttributeKey), fakeBooleanAttributeValue)
                 .startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -307,7 +307,7 @@ internal class OtelTracerProviderTest {
         // When
         val fullParentSpanDuration = measureNanoTime {
             val parenSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
-            parentSpanTraceId = parenSpan.lessSignificantTraceIdAsHexString()
+            parentSpanTraceId = parenSpan.leastSignificantTraceIdAsHexString()
             parentSpanId = parenSpan.spanIdAsHexString()
             fullChildDuration = measureNanoTime {
                 val span = tracer
@@ -383,7 +383,7 @@ internal class OtelTracerProviderTest {
             span = tracer.spanBuilder(fakeOperationName)
                 .setSpanKind(spanKind)
                 .startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -439,7 +439,7 @@ internal class OtelTracerProviderTest {
             span = tracer.spanBuilder(fakeOperationName)
                 .setStartTimestamp(Instant.ofEpochMilli(fakeStartTimestamp))
                 .startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -502,7 +502,7 @@ internal class OtelTracerProviderTest {
         val span = tracer.spanBuilder(fakeOperationName)
             .addLink(linkedSpan.spanContext, attributes)
             .startSpan()
-        val traceId = span.lessSignificantTraceIdAsHexString()
+        val traceId = span.leastSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         Thread.sleep(OP_DURATION_MS)
         span.end()
@@ -549,7 +549,7 @@ internal class OtelTracerProviderTest {
         // When
         val parentSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
         val scope = parentSpan.makeCurrent()
-        val parentSpanTraceId = parentSpan.lessSignificantTraceIdAsHexString()
+        val parentSpanTraceId = parentSpan.leastSignificantTraceIdAsHexString()
         val parentSpanId = parentSpan.spanIdAsHexString()
         val childSpan = tracer.spanBuilder(fakeSpanName).startSpan()
         val childSpanId = childSpan.spanIdAsHexString()
@@ -606,7 +606,7 @@ internal class OtelTracerProviderTest {
         // When
         val parentSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
         val scope = parentSpan.makeCurrent()
-        val parentSpanTraceId = parentSpan.lessSignificantTraceIdAsHexString()
+        val parentSpanTraceId = parentSpan.leastSignificantTraceIdAsHexString()
         val parentSpanId = parentSpan.spanIdAsHexString()
         var childSpanId = ""
         Thread {
@@ -674,7 +674,7 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val traceId = span.lessSignificantTraceIdAsHexString()
+        val traceId = span.leastSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         span.end()
 
@@ -714,7 +714,7 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val traceId = span.lessSignificantTraceIdAsHexString()
+        val traceId = span.leastSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         span.end()
 
@@ -754,7 +754,7 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val traceId = span.lessSignificantTraceIdAsHexString()
+        val traceId = span.leastSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         span.end()
 
@@ -848,7 +848,7 @@ internal class OtelTracerProviderTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
             span.end()
@@ -899,7 +899,7 @@ internal class OtelTracerProviderTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
             span.end()
@@ -945,7 +945,7 @@ internal class OtelTracerProviderTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperation).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
             span.end()

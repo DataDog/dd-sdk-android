@@ -68,7 +68,7 @@ class OtelTraceConfigurationTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperation).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -117,7 +117,7 @@ class OtelTraceConfigurationTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperation).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -175,7 +175,7 @@ class OtelTraceConfigurationTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperation).startSpan()
-            traceId = span.lessSignificantTraceIdAsHexString()
+            traceId = span.leastSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
