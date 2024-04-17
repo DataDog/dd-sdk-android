@@ -34,7 +34,11 @@ constructor(
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
 
-    private val executor: ScheduledExecutorService by lazy { sdkCore.createScheduledExecutorService() }
+    private val executor: ScheduledExecutorService by lazy {
+        sdkCore.createScheduledExecutorService(
+            "rum-activity-tracking"
+        )
+    }
 
     // region ActivityLifecycleTrackingStrategy
 

@@ -124,7 +124,7 @@ internal class DatadogCoreTest {
             fakeInstanceId,
             fakeInstanceName,
             internalLoggerProvider = { mockInternalLogger },
-            executorServiceFactory = { _, _ -> mockPersistenceExecutorService },
+            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         ).apply {
             initialize(fakeConfiguration)

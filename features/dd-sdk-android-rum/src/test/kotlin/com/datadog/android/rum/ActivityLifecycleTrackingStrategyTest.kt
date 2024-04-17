@@ -81,7 +81,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
-        whenever(rumMonitor.mockSdkCore.createScheduledExecutorService()) doReturn mockScheduledExecutorService
+        whenever(rumMonitor.mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
         whenever(
             mockScheduledExecutorService.schedule(any(), eq(STOP_VIEW_DELAY_MS), eq(TimeUnit.MILLISECONDS))
         ) doAnswer { invocationOnMock ->

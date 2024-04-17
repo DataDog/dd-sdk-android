@@ -17,13 +17,15 @@ import java.util.concurrent.TimeUnit
  */
 internal class BackPressureExecutorService(
     val logger: InternalLogger,
+    executorContext: String,
     backpressureStrategy: BackPressureStrategy
 ) : ThreadPoolExecutor(
     CORE_POOL_SIZE,
     CORE_POOL_SIZE,
     THREAD_POOL_MAX_KEEP_ALIVE_MS,
     TimeUnit.MILLISECONDS,
-    BackPressuredBlockingQueue(logger, backpressureStrategy)
+    BackPressuredBlockingQueue(logger, executorContext, backpressureStrategy),
+    DatadogThreadFactory(executorContext)
 ),
     FlushableExecutorService {
 

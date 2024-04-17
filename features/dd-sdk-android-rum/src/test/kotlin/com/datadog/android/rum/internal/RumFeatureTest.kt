@@ -131,7 +131,7 @@ internal class RumFeatureTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.createScheduledExecutorService()) doReturn mockScheduledExecutorService
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
         testedFeature = RumFeature(
             mockSdkCore,

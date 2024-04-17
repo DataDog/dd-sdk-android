@@ -16,16 +16,19 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
  * which will log any unhandled exception raised.
  *
  * @param corePoolSize see [ScheduledThreadPoolExecutor] docs.
+ * @param executorContext Context to be used for logging and naming threads running on this executor.
  * @param logger [InternalLogger] instance.
  * @param backPressureStrategy the back pressure strategy to notify dropped items
  */
 // TODO RUM-3704 create an implementation that uses the backpressure strategy
 internal class LoggingScheduledThreadPoolExecutor(
     corePoolSize: Int,
+    executorContext: String,
     private val logger: InternalLogger,
     private val backPressureStrategy: BackPressureStrategy
 ) : ScheduledThreadPoolExecutor(
     corePoolSize,
+    DatadogThreadFactory(executorContext),
     RejectedExecutionHandler { r, _ ->
         if (r != null) {
             logger.log(
@@ -33,7 +36,8 @@ internal class LoggingScheduledThreadPoolExecutor(
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 messageBuilder = { "Dropped scheduled item in LoggingScheduledThreadPoolExecutor queue: $r" },
                 throwable = null,
-                onlyOnce = false
+                onlyOnce = false,
+                additionalProperties = mapOf("executor.context" to executorContext)
             )
             backPressureStrategy.onItemDropped(r)
         }

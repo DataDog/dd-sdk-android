@@ -4,6 +4,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -48,9 +49,10 @@ class IgnoreNewestBackPressuredBlockingQueueTest {
     var fakeBackPressureThreshold: Int = 0
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedQueue = BackPressuredBlockingQueue(
             mockLogger,
+            forge.anAlphabeticalString(),
             BackPressureStrategy(
                 fakeBackPressureThreshold,
                 mockOnThresholdReached,
