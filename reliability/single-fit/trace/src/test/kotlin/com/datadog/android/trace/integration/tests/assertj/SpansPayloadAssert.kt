@@ -11,6 +11,7 @@ import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.tests.ktx.getLong
 import com.datadog.android.tests.ktx.getString
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -49,6 +50,14 @@ internal class SpansPayloadAssert(actual: JsonObject) :
             assertThat(actualSpanId).overridingErrorMessage(
                 "Expected spanId to be $spanId but was $actualSpanId for index $index"
             ).isEqualTo(spanId)
+            return this
+        }
+
+        fun hasParentId(parentId: String): SpanAssert {
+            val actualParentId = actualSpan.getString(PARENT_ID_KEY)
+            assertThat(actualParentId).overridingErrorMessage(
+                "Expected parentId to be $parentId but was $actualParentId for index $index"
+            ).isEqualTo(parentId)
             return this
         }
 
@@ -212,8 +221,119 @@ internal class SpansPayloadAssert(actual: JsonObject) :
             val formattedKey = GENERIC_META_KEY_FORMAT.format(Locale.US, key)
             val actualKeyValue = actualSpan.getString(formattedKey)
             assertThat(actualKeyValue).overridingErrorMessage(
-                "Expected $formattedKey to be $value but was $actualKeyValue for index $index"
+                "Expected meta $formattedKey to be $value but was $actualKeyValue for index $index"
             ).isEqualTo(value)
+            return this
+        }
+
+        fun hasGenericMetricValue(key: String, value: Long): SpanAssert {
+            val formattedKey = GENERIC_METRICS_KEY_FORMAT.format(Locale.US, key)
+            val actualKeyValue = actualSpan.getLong(formattedKey)
+            assertThat(actualKeyValue).overridingErrorMessage(
+                "Expected metrics $formattedKey to be $value but was $actualKeyValue for index $index"
+            ).isEqualTo(value)
+            return this
+        }
+
+        fun hasGenericMetricValue(key: String, value: Double): SpanAssert {
+            val formattedKey = GENERIC_METRICS_KEY_FORMAT.format(Locale.US, key)
+            val actualKeyValue = actualSpan.getDouble(formattedKey)
+            assertThat(actualKeyValue).overridingErrorMessage(
+                "Expected metrics $formattedKey to be $value but was $actualKeyValue for index $index"
+            ).isEqualTo(value)
+            return this
+        }
+
+        fun hasLinkedSpanId(linkedSpanId: String): SpanAssert {
+            val linkedSpanObject = JsonParser.parseString(actualSpan.getString(LINKED_SPAN_KEY)).asJsonArray
+            val actualLinkedSpanId = linkedSpanObject.get(0).asJsonObject.getString(SPAN_ID_KEY)
+            assertThat(actualLinkedSpanId).overridingErrorMessage(
+                "Expected linked span id to be $linkedSpanId but was $actualLinkedSpanId for index $index"
+            ).isEqualTo(linkedSpanId)
+            return this
+        }
+
+        fun hasLinkedTraceId(linkedTraceId: String): SpanAssert {
+            val linkedSpanObject = JsonParser.parseString(actualSpan.getString(LINKED_SPAN_KEY)).asJsonArray
+            val actualLinkedTraceId = linkedSpanObject.get(0).asJsonObject.getString(TRACE_ID_KEY)
+            assertThat(actualLinkedTraceId).overridingErrorMessage(
+                "Expected linked trace id to be $linkedTraceId but was $actualLinkedTraceId for index $index"
+            ).isEqualTo(linkedTraceId)
+            return this
+        }
+
+        fun hasGenericLinkedAttribute(key: String, value: String): SpanAssert {
+            val linkedSpanObject = JsonParser.parseString(actualSpan.getString(LINKED_SPAN_KEY)).asJsonArray
+            val formattedKey = LINKED_ATTRIBUTE_KEY_FORMAT.format(Locale.US, key)
+            val actualKeyValue = linkedSpanObject.get(0).asJsonObject.getString(formattedKey)
+            assertThat(actualKeyValue).overridingErrorMessage(
+                "Expected linked attribute $key to be $value but was $actualKeyValue for index $index"
+            ).isEqualTo(value)
+            return this
+        }
+
+        fun hasGenericLinkedAttribute(key: String, value: Long): SpanAssert {
+            val linkedSpanObject = JsonParser.parseString(actualSpan.getString(LINKED_SPAN_KEY)).asJsonArray
+            val formattedKey = LINKED_ATTRIBUTE_KEY_FORMAT.format(Locale.US, key)
+            val actualKeyValue = linkedSpanObject.get(0).asJsonObject.getLong(formattedKey)
+            assertThat(actualKeyValue).overridingErrorMessage(
+                "Expected linked attribute $key to be $value but was $actualKeyValue for index $index"
+            ).isEqualTo(value)
+            return this
+        }
+
+        fun hasGenericLinkedAttribute(key: String, value: List<String>): SpanAssert {
+            value.forEachIndexed { index, it ->
+                hasGenericLinkedAttribute("$key.$index", it)
+            }
+            return this
+        }
+
+        fun hasConnectivity(connectivity: String): SpanAssert {
+            val actualConnectivity = actualSpan.getString(CONNECTIVITY_KEY)
+            assertThat(actualConnectivity).overridingErrorMessage(
+                "Expected connectivity to be $connectivity but was $actualConnectivity for index $index"
+            ).isEqualTo(connectivity)
+            return this
+        }
+
+        fun doesNotHaveConnectivity(): SpanAssert {
+            val actualConnectivity = actualSpan.getString(CONNECTIVITY_KEY)
+            assertThat(actualConnectivity).overridingErrorMessage(
+                "Expected connectivity to be null but was $actualConnectivity for index $index"
+            ).isNull()
+            return this
+        }
+
+        fun hasSimCarrierName(simCarrierName: String?): SpanAssert {
+            val actualSimCarrierName = actualSpan.getString(SIM_CARRIER_NAME_KEY)
+            assertThat(actualSimCarrierName).overridingErrorMessage(
+                "Expected simCarrierName to be $simCarrierName but was $actualSimCarrierName for index $index"
+            ).isEqualTo(simCarrierName)
+            return this
+        }
+
+        fun doesNotHaveSimCarrierName(): SpanAssert {
+            val actualSimCarrierName = actualSpan.getString(SIM_CARRIER_NAME_KEY)
+            assertThat(actualSimCarrierName).overridingErrorMessage(
+                "Expected simCarrierName to be null but was $actualSimCarrierName for index $index"
+            ).isNull()
+            return this
+        }
+
+        fun hasSimCarrierId(simCarrierId: Long?): SpanAssert {
+            val actualSimCarrierId = actualSpan.getLong(SIM_CARRIER_ID_KEY)
+            assertThat(actualSimCarrierId).overridingErrorMessage(
+                "Expected simCarrierId to be $simCarrierId but was $actualSimCarrierId for index $index"
+            ).isEqualTo(simCarrierId)
+            return this
+        }
+
+        fun doesNotHaveSimCarrierId(): SpanAssert {
+            val actualSimCarrierId = actualSpan.getString(SIM_CARRIER_ID_KEY)
+            assertThat(actualSimCarrierId).overridingErrorMessage(
+                "Expected simCarrierId to be null but was $actualSimCarrierId for index $index"
+            ).isNull()
             return this
         }
     }
@@ -223,6 +343,7 @@ internal class SpansPayloadAssert(actual: JsonObject) :
         private const val ENV_KEY = "env"
         private const val TRACE_ID_KEY = "trace_id"
         private const val SPAN_ID_KEY = "span_id"
+        private const val PARENT_ID_KEY = "parent_id"
         private const val SERVICE_KEY = "service"
         private const val ERROR_KEY = "error"
         private const val NAME_KEY = "name"
@@ -241,6 +362,12 @@ internal class SpansPayloadAssert(actual: JsonObject) :
         private const val SESSION_ID_KEY = "meta._dd.session.id"
         private const val VIEW_ID_KEY = "meta._dd.view.id"
         private const val GENERIC_META_KEY_FORMAT = "meta.%s"
+        private const val GENERIC_METRICS_KEY_FORMAT = "metrics.%s"
+        private const val LINKED_SPAN_KEY = "meta._dd.span_links"
+        private const val LINKED_ATTRIBUTE_KEY_FORMAT = "attributes.%s"
+        private const val CONNECTIVITY_KEY = "meta.network.client.connectivity"
+        private const val SIM_CARRIER_NAME_KEY = "meta.network.client.sim_carrier.name"
+        private const val SIM_CARRIER_ID_KEY = "meta.network.client.sim_carrier.id"
 
         fun assertThat(actual: JsonObject): SpansPayloadAssert {
             return SpansPayloadAssert(actual)
