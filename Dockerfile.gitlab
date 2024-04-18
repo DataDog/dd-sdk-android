@@ -5,6 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Set timezone to UTC by default
 RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
+# keep in sync with JAVA_HOME path below
 RUN apt-get update \
     && apt-get -y install openjdk-17-jdk \
     && rm -rf /var/lib/apt/lists/*
@@ -31,6 +32,9 @@ ENV ANDROID_SDK_TOOLS 10406996
 ENV NDK_VERSION 25.1.8937393
 ENV CMAKE_VERSION 3.22.1
 ENV DD_TRACER_VERSION 1.26.1
+# requires build with BuildKit to be available https://docs.docker.com/build/building/variables/#multi-platform-build-arguments
+ARG TARGETARCH
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-${TARGETARCH}
 
 RUN apt update && apt install -y python3
 

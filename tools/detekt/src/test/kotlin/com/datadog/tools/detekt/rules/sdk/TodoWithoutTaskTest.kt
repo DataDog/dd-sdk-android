@@ -279,7 +279,7 @@ class TodoWithoutTaskTest {
         @StringForgery(regex = "[A-Z]+") deprecatedProject: String,
         @IntForgery(min = 1) taskNumber: Int
     ) {
-        config = TestConfig(mapOf("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT")))
+        config = TestConfig("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT"))
         val code =
             """
             class Foo {
@@ -299,7 +299,7 @@ class TodoWithoutTaskTest {
         @StringForgery(regex = "[A-Z]+") deprecatedProject: String,
         @IntForgery(min = 1) taskNumber: Int
     ) {
-        config = TestConfig(mapOf("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT")))
+        config = TestConfig("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT"))
         val code =
             """
             class Foo {
@@ -321,7 +321,7 @@ class TodoWithoutTaskTest {
         @StringForgery(regex = "[A-Z]+") deprecatedProject: String,
         @IntForgery(min = 1) taskNumber: Int
     ) {
-        config = TestConfig(mapOf("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT")))
+        config = TestConfig("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT"))
         val code =
             """
             class Foo {
@@ -344,7 +344,7 @@ class TodoWithoutTaskTest {
         @StringForgery(regex = "[A-Z]+") deprecatedProject: String,
         @IntForgery(min = 1) taskNumber: Int
     ) {
-        config = TestConfig(mapOf("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT")))
+        config = TestConfig("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT"))
         val code = """
             class Foo {
             
@@ -367,7 +367,7 @@ class TodoWithoutTaskTest {
         @StringForgery(regex = "[A-Z]+") deprecatedProject: String,
         @IntForgery(min = 1) taskNumber: Int
     ) {
-        config = TestConfig(mapOf("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT")))
+        config = TestConfig("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT"))
         val code = """
             /**
              * TODO $deprecatedProject-$taskNumber $commentText
@@ -388,7 +388,7 @@ class TodoWithoutTaskTest {
         @StringForgery(regex = "[A-Z]+") deprecatedProject: String,
         @IntForgery(min = 1) taskNumber: Int
     ) {
-        config = TestConfig(mapOf("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT")))
+        config = TestConfig("deprecatedPrefixes" to listOf("FOOPROJECT", deprecatedProject, "BARPROJECT"))
         val code =
             """
             /**

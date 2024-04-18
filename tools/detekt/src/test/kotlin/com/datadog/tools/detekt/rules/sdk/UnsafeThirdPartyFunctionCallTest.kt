@@ -36,9 +36,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore call on internal type`() {
         // Given
-        val config = TestConfig(
-            mapOf("internalPackagePrefix" to "java.io")
-        )
+        val config = TestConfig("internalPackagePrefix" to "java.io")
         val code =
             """
                 import java.io.File
@@ -62,9 +60,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -205,10 +201,8 @@ internal class UnsafeThirdPartyFunctionCallTest {
             "java.io.File.listFiles(java.io.FileFilter?):java.io.FileNotFoundException"
         )
         val config = TestConfig(
-            mapOf(
-                "knownThrowingCalls" to knownThrowingCalls,
-                "treatUnknownFunctionAsThrowing" to false
-            )
+            "knownThrowingCalls" to knownThrowingCalls,
+            "treatUnknownFunctionAsThrowing" to false
         )
         val code =
             """
@@ -236,9 +230,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -292,9 +284,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -326,9 +316,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -358,9 +346,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -390,9 +376,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -424,9 +408,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownThrowingCalls = listOf(
             "java.io.File.inputStream():java.io.FileNotFoundException"
         )
-        val config = TestConfig(
-            mapOf("knownThrowingCalls" to knownThrowingCalls)
-        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
         val code =
             """
                 import java.io.File
@@ -465,9 +447,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownSafeCalls = listOf(
             "java.io.File.inputStream()"
         )
-        val config = TestConfig(
-            mapOf("knownSafeCalls" to knownSafeCalls)
-        )
+        val config = TestConfig("knownSafeCalls" to knownSafeCalls)
         val code =
             """
                 import java.io.File
@@ -488,9 +468,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `detekt unsafe call on unknown function {treatUnknownFunctionAsThrowing=true}`() {
         // Given
-        val config = TestConfig(
-            mapOf("treatUnknownFunctionAsThrowing" to true)
-        )
+        val config = TestConfig("treatUnknownFunctionAsThrowing" to true)
         val code =
             """
                 import java.io.File
@@ -511,9 +489,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore calls on unknown function {treatUnknownFunctionAsThrowing=false}`() {
         // Given
-        val config = TestConfig(
-            mapOf("treatUnknownFunctionAsThrowing" to false)
-        )
+        val config = TestConfig("treatUnknownFunctionAsThrowing" to false)
         val code =
             """
                 import java.io.File
@@ -534,9 +510,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `detekt unsafe call on unknown constructor {treatUnknownFunctionAsThrowing=true}`() {
         // Given
-        val config = TestConfig(
-            mapOf("treatUnknownFunctionAsThrowing" to true)
-        )
+        val config = TestConfig("treatUnknownFunctionAsThrowing" to true)
         val code =
             """
                 import java.io.File
@@ -557,9 +531,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore calls on unknown constructor {treatUnknownFunctionAsThrowing=false}`() {
         // Given
-        val config = TestConfig(
-            mapOf("treatUnknownFunctionAsThrowing" to false)
-        )
+        val config = TestConfig("treatUnknownFunctionAsThrowing" to false)
         val code =
             """
                 import java.io.File
