@@ -115,12 +115,6 @@ public final class StatusLogger extends JsonAdapter<Config>
     writer.value(config.isProfilingEnabled());
     writer.name("remote_config_enabled");
     writer.value(config.isRemoteConfigEnabled());
-    writer.name("debugger_enabled");
-    writer.value(config.isDebuggerEnabled());
-    writer.name("appsec_enabled");
-    writer.value(config.getAppSecActivation().toString());
-    writer.name("appsec_rules_file_path");
-    writer.value(config.getAppSecRulesFile());
     writer.name("telemetry_enabled");
     writer.value(config.isTelemetryEnabled());
     writer.name("telemetry_dependency_collection_enabled");
@@ -137,20 +131,12 @@ public final class StatusLogger extends JsonAdapter<Config>
     writer.value(config.getRuntimeId());
     writer.name("logging_settings");
     writeObjectMap(writer, LoggingSettingsDescription.getDescription());
-    writer.name("cws_enabled");
-    writer.value(config.isCwsEnabled());
-    writer.name("cws_tls_refresh");
-    writer.value(config.getCwsTlsRefresh());
     writer.name("datadog_profiler_enabled");
     writer.value(config.isDatadogProfilerEnabled());
     writer.name("datadog_profiler_safe");
     writer.value(isDatadogProfilerSafeInCurrentEnvironment());
     writer.name("datadog_profiler_enabled_overridden");
     writer.value(isDatadogProfilerEnablementOverridden());
-    if (config.getIastActivation() != ProductActivation.FULLY_DISABLED) {
-      writer.name("iast_enabled");
-      writer.value(config.getIastActivation().toString());
-    }
     writer.name("data_streams_enabled");
     writer.value(config.isDataStreamsEnabled());
     writer.endObject();
