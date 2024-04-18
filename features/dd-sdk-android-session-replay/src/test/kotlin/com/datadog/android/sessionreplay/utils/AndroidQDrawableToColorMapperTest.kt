@@ -19,6 +19,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -59,6 +60,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         }
         val baseColor = fillPaintColor and 0xFFFFFF
         val baseAlpha = (fillPaintColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
         val mockFillPaint = mock<Paint>().apply {
             whenever(this.color) doReturn baseColor
             whenever(this.alpha) doReturn baseAlpha.toInt()
@@ -77,6 +79,38 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.Q)
+    fun `M map GradientDrawable to fill paint's color blend color W mapDrawableToColor() {fully transparent}`(
+        @IntForgery fillPaintColor: Int,
+        @IntForgery blendFilterColor: Int,
+        forge: Forge
+    ) {
+        // Given
+        val blendColor = blendFilterColor and 0xFFFFFF
+        val blendMode = forge.anElementFrom(AndroidQDrawableToColorMapper.blendModesReturningBlendColor)
+        val mockColorFilter = mock<BlendModeColorFilter>().apply {
+            whenever(this.color) doReturn blendColor
+            whenever(this.mode) doReturn blendMode
+        }
+        val baseColor = fillPaintColor and 0xFFFFFF
+        val baseAlpha = 0L
+        val mockFillPaint = mock<Paint>().apply {
+            whenever(this.color) doReturn baseColor
+            whenever(this.alpha) doReturn baseAlpha.toInt()
+            whenever(this.colorFilter) doReturn mockColorFilter
+        }
+        val gradientDrawable = GradientDrawable().apply {
+            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+        }
+
+        // When
+        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
         @IntForgery fillPaintColor: Int,
         @IntForgery blendFilterColor: Int,
@@ -91,6 +125,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         }
         val baseColor = fillPaintColor and 0xFFFFFF
         val baseAlpha = (fillPaintColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
         val mockFillPaint = mock<Paint>().apply {
             whenever(this.color) doReturn baseColor
             whenever(this.alpha) doReturn baseAlpha.toInt()
@@ -105,5 +140,37 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
 
         // Then
         assertThat(result).isEqualTo(fillPaintColor)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.Q)
+    fun `M map GradientDrawable to fill paint's color W mapDrawableToColor() {fully transparent}`(
+        @IntForgery fillPaintColor: Int,
+        @IntForgery blendFilterColor: Int,
+        forge: Forge
+    ) {
+        // Given
+        val blendColor = blendFilterColor and 0xFFFFFF
+        val blendMode = forge.anElementFrom(AndroidQDrawableToColorMapper.blendModesReturningOriginalColor)
+        val mockColorFilter = mock<BlendModeColorFilter>().apply {
+            whenever(this.color) doReturn blendColor
+            whenever(this.mode) doReturn blendMode
+        }
+        val baseColor = fillPaintColor and 0xFFFFFF
+        val baseAlpha = 0L
+        val mockFillPaint = mock<Paint>().apply {
+            whenever(this.color) doReturn baseColor
+            whenever(this.alpha) doReturn baseAlpha.toInt()
+            whenever(this.colorFilter) doReturn mockColorFilter
+        }
+        val gradientDrawable = GradientDrawable().apply {
+            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+        }
+
+        // When
+        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+
+        // Then
+        assertThat(result).isNull()
     }
 }
