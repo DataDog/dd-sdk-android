@@ -1777,12 +1777,24 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
       fun fromJson(kotlin.String): Action
       fun fromJsonObject(com.google.gson.JsonObject): Action
   data class Telemetry
-    constructor(Configuration)
+    constructor(Device? = null, Os? = null, Configuration, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     val type: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Telemetry
       fun fromJsonObject(com.google.gson.JsonObject): Telemetry
+  data class Device
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Configuration
     constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<SelectedTracingPropagator>? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -1853,13 +1865,25 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
       fun fromJson(kotlin.String): Action
       fun fromJsonObject(com.google.gson.JsonObject): Action
   data class Telemetry
-    constructor(kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(Device? = null, Os? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     val type: kotlin.String
     val status: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Telemetry
       fun fromJsonObject(com.google.gson.JsonObject): Telemetry
+  data class Device
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
   enum Source
     constructor(kotlin.String)
     - ANDROID
@@ -1906,13 +1930,25 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
       fun fromJson(kotlin.String): Action
       fun fromJsonObject(com.google.gson.JsonObject): Action
   data class Telemetry
-    constructor(kotlin.String, Error? = null)
+    constructor(Device? = null, Os? = null, kotlin.String, Error? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     val type: kotlin.String
     val status: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Telemetry
       fun fromJsonObject(com.google.gson.JsonObject): Telemetry
+  data class Device
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Error
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement

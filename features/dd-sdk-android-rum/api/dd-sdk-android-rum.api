@@ -5515,6 +5515,58 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 }
 
+public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public final fun getArchitecture ()Ljava/lang/String;
+	public final fun getBrand ()Ljava/lang/String;
+	public final fun getModel ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+}
+
 public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator : java/lang/Enum {
 	public static final field B3 Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
 	public static final field B3MULTI Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
@@ -5571,14 +5623,21 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 
 public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry$Companion;
-	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;)V
-	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
-	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;
+	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public final fun component2 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
+	public final fun component3 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
+	public final fun component4 ()Ljava/util/Map;
+	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;Ljava/util/Map;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Telemetry;
+	public final fun getAdditionalProperties ()Ljava/util/Map;
 	public final fun getConfiguration ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
+	public final fun getDevice ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Device;
+	public final fun getOs ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Os;
 	public final fun getType ()Ljava/lang/String;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -5714,6 +5773,58 @@ public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Dd {
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 }
 
+public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Device {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+	public final fun getArchitecture ()Ljava/lang/String;
+	public final fun getBrand ()Ljava/lang/String;
+	public final fun getModel ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Device$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Os {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Os$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+}
+
 public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Session {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Session$Companion;
 	public fun <init> (Ljava/lang/String;)V
@@ -5754,17 +5865,21 @@ public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Sourc
 
 public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;
+	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
+	public final fun component2 ()Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/Map;
+	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Telemetry;
 	public final fun getAdditionalProperties ()Ljava/util/Map;
+	public final fun getDevice ()Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Device;
 	public final fun getMessage ()Ljava/lang/String;
+	public final fun getOs ()Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Os;
 	public final fun getStatus ()Ljava/lang/String;
 	public final fun getType ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -5885,6 +6000,32 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Dd {
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 }
 
+public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Device {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+	public final fun getArchitecture ()Ljava/lang/String;
+	public final fun getBrand ()Ljava/lang/String;
+	public final fun getModel ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Device$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+}
+
 public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Error {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error$Companion;
 	public fun <init> ()V
@@ -5907,6 +6048,32 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Error
 public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Error$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Os {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Os$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
 }
 
 public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Session {
@@ -5949,17 +6116,23 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Sourc
 
 public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;
+	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
+	public final fun component2 ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;Ljava/util/Map;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Telemetry;
+	public final fun getAdditionalProperties ()Ljava/util/Map;
+	public final fun getDevice ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Device;
 	public final fun getError ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Error;
 	public final fun getMessage ()Ljava/lang/String;
+	public final fun getOs ()Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Os;
 	public final fun getStatus ()Ljava/lang/String;
 	public final fun getType ()Ljava/lang/String;
 	public fun hashCode ()I

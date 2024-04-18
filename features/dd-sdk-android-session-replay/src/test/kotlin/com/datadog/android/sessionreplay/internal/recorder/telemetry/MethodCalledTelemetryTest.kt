@@ -11,20 +11,12 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.CALLER_CLASS
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.DEVICE_ARCHITECTURE
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.DEVICE_BRAND
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.DEVICE_KEY
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.DEVICE_MODEL
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.EXECUTION_TIME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OPERATION_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_BUILD
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_KEY
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OS_VERSION
 import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase.Companion.METRIC_TYPE
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -109,8 +101,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry = MethodCalledTelemetry(
             callerClass = fakeCallerClass,
             logger = mockInternalLogger,
-            startTime = fakeStartTime,
-            internalSdkCore = mockInternalSdkCore
+            startTime = fakeStartTime
         )
     }
 
@@ -185,83 +176,5 @@ internal class MethodCalledTelemetryTest {
         val metricTypeValue = mapCaptor.firstValue[METRIC_TYPE] as String
 
         assertThat(metricTypeValue).isEqualTo(METRIC_TYPE_VALUE)
-    }
-
-    @Test
-    fun `M call logger with correct device model W sendMetric()`() {
-        // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
-        val deviceMap = mapCaptor.firstValue[DEVICE_KEY] as Map<*, *>
-        val deviceModel = deviceMap[DEVICE_MODEL]
-
-        assertThat(deviceModel).isEqualTo(fakeDeviceModel)
-    }
-
-    @Test
-    fun `M call logger with correct device brand W sendMetric()`() {
-        // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
-        val deviceMap = mapCaptor.firstValue[DEVICE_KEY] as Map<*, *>
-        val deviceBrand = deviceMap[DEVICE_BRAND]
-
-        assertThat(deviceBrand).isEqualTo(fakeDeviceBrand)
-    }
-
-    @Test
-    fun `M call logger with correct device architecture W sendMetric()`() {
-        // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
-        val deviceMap = mapCaptor.firstValue[DEVICE_KEY] as Map<*, *>
-        val deviceArchitecture = deviceMap[DEVICE_ARCHITECTURE]
-
-        assertThat(deviceArchitecture).isEqualTo(fakeDeviceArchitecture)
-    }
-
-    @Test
-    fun `M call logger with correct os name W sendMetric()`() {
-        // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
-        val deviceMap = mapCaptor.firstValue[OS_KEY] as Map<*, *>
-        val osName = deviceMap[OS_NAME]
-
-        assertThat(osName).isEqualTo(fakeOsName)
-    }
-
-    @Test
-    fun `M call logger with correct os version W sendMetric()`() {
-        // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
-        val deviceMap = mapCaptor.firstValue[OS_KEY] as Map<*, *>
-        val osVersion = deviceMap[OS_VERSION]
-
-        assertThat(osVersion).isEqualTo(fakeOsVersion)
-    }
-
-    @Test
-    fun `M call logger with correct os build W sendMetric()`() {
-        // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
-        val deviceMap = mapCaptor.firstValue[OS_KEY] as Map<*, *>
-        val osBuild = deviceMap[OS_BUILD]
-
-        assertThat(osBuild).isEqualTo(fakeOsBuild)
     }
 }

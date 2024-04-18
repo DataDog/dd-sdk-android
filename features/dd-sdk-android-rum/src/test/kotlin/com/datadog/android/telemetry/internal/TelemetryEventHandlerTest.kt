@@ -8,6 +8,7 @@ package com.datadog.android.telemetry.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -36,6 +37,7 @@ import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
@@ -99,16 +101,45 @@ internal class TelemetryEventHandlerTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockDeviceInfo: DeviceInfo
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @StringForgery
+    lateinit var fakeDeviceArchitecture: String
+
+    @StringForgery
+    lateinit var fakeDeviceBrand: String
+
+    @StringForgery
+    lateinit var fakeDeviceModel: String
+
+    @StringForgery
+    lateinit var fakeOsBuildId: String
+
+    @StringForgery
+    lateinit var fakeOsVersion: String
+
+    @StringForgery
+    lateinit var fakeOsName: String
+
     private var fakeServerOffset: Long = 0L
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockDeviceInfo.architecture).thenReturn(fakeDeviceArchitecture)
+        whenever(mockDeviceInfo.deviceBrand).thenReturn(fakeDeviceBrand)
+        whenever(mockDeviceInfo.deviceModel).thenReturn(fakeDeviceModel)
+        whenever(mockDeviceInfo.deviceBuildId).thenReturn(fakeOsBuildId)
+        whenever(mockDeviceInfo.osVersion).thenReturn(fakeOsVersion)
+        whenever(mockDeviceInfo.osName).thenReturn(fakeOsName)
+        whenever(mockDeviceInfo.architecture).thenReturn(fakeDeviceArchitecture)
+
         fakeServerOffset = forge.aLong(-50000, 50000)
 
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -146,7 +177,8 @@ internal class TelemetryEventHandlerTest {
                 mockSdkCore,
                 mockSampler,
                 mockConfigurationSampler,
-                MAX_EVENTS_PER_SESSION_TEST
+                MAX_EVENTS_PER_SESSION_TEST,
+                deviceInfo = mockDeviceInfo
             )
     }
 
@@ -845,6 +877,12 @@ internal class TelemetryEventHandlerTest {
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
             .hasAdditionalProperties(rawEvent.additionalProperties ?: emptyMap())
+            .hasDeviceArchitecture(fakeDeviceArchitecture)
+            .hasDeviceBrand(fakeDeviceBrand)
+            .hasDeviceModel(fakeDeviceModel)
+            .hasOsBuild(fakeOsBuildId)
+            .hasOsName(fakeOsName)
+            .hasOsVersion(fakeOsVersion)
     }
 
     private fun assertErrorEventMatchesRawEvent(
@@ -864,6 +902,12 @@ internal class TelemetryEventHandlerTest {
             .hasActionId(rumContext.actionId)
             .hasErrorStack(rawEvent.stack)
             .hasErrorKind(rawEvent.kind)
+            .hasDeviceArchitecture(fakeDeviceArchitecture)
+            .hasDeviceBrand(fakeDeviceBrand)
+            .hasDeviceModel(fakeDeviceModel)
+            .hasOsBuild(fakeOsBuildId)
+            .hasOsName(fakeOsName)
+            .hasOsVersion(fakeOsVersion)
     }
 
     private fun assertConfigEventMatchesRawEvent(
