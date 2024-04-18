@@ -81,9 +81,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore call on internal package extension function`() {
         // Given
-        val config = TestConfig(
-            mapOf("internalPackagePrefix" to "com.datadog")
-        )
+        val config = TestConfig("internalPackagePrefix" to "com.datadog")
 
         @Suppress("UnusedReceiverParameter")
         val code =
@@ -131,9 +129,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `detekt unsafe call on unknown third party extension function`() {
         // Given
-        val config = TestConfig(
-            mapOf("internalPackagePrefix" to "com.datadog")
-        )
+        val config = TestConfig("internalPackagePrefix" to "com.datadog")
         val code =
             """
                 package com.datadog
@@ -576,9 +572,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore kotlin helper calls { with + run + also + println }`() {
         // Given
-        val config = TestConfig(
-            mapOf("knownSafeCalls" to "java.io.File.readBytes()")
-        )
+        val config = TestConfig("knownSafeCalls" to "java.io.File.readBytes()")
         val code =
             """
                 import java.io.File
