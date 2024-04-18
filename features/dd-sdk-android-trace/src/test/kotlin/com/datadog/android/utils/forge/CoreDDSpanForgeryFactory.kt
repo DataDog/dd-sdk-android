@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
@@ -35,6 +36,8 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
             whenever(it.baggageItems).thenReturn(baggageItems)
             whenever(it.tags).thenReturn(tagsAndMetrics)
         }
+        val spanLinks = forge.aList(size = forge.anInt(min = 0, max = 10)) { getForgery<AgentSpanLink>() }
+
         val mockDDSpan: DDSpan = mock {
             whenever(it.context()).thenReturn(mockSpanContext)
             whenever(it.serviceName).thenReturn(serviceName)
@@ -50,6 +53,7 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
             whenever(it.baggage).thenReturn(baggageItems)
             whenever(it.tags).thenReturn(tagsAndMetrics)
             whenever(it.samplingPriority()).thenReturn(samplingPriority)
+            whenever(it.links).thenReturn(spanLinks)
         }
         return mockDDSpan
     }

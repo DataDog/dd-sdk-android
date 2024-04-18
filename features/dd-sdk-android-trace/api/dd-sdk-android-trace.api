@@ -6079,6 +6079,7 @@ public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/Tra
 	public fun getEndpointTracker ()Lcom/datadog/trace/api/EndpointTracker;
 	public fun getError ()I
 	public fun getHttpStatusCode ()S
+	public fun getLinks ()Ljava/util/List;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/api/interceptor/MutableSpan;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/core/CoreSpan;

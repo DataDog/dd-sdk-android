@@ -8,12 +8,16 @@ package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.trace.api.DDSpanId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 
+@Suppress("TooManyFunctions")
 internal class OtelDdSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean
 ) : ContextAwareMapper<DDSpan, SpanEvent> {
@@ -28,9 +32,9 @@ internal class OtelDdSpanToSpanEventMapper(
             // we remove the first part as we specifically set an IdGeneratorStrategy with
             // 64bits length. Our current endpoint does not accept trace ids longer than 64bits
             traceId = resolveTraceId(model),
-            spanId = model.spanId.toHexString(),
-            parentId = model.parentId.toHexString(),
-            resource = model.resourceName.toString(), //
+            spanId = resolveSpanId(model),
+            parentId = resolveParentId(model),
+            resource = model.resourceName.toString(),
             name = model.operationName.toString(), // GET, POST, etc
             service = model.serviceName,
             duration = model.durationNano,
@@ -46,9 +50,19 @@ internal class OtelDdSpanToSpanEventMapper(
     // region internal
 
     private fun resolveTraceId(model: DDSpan): String {
-        // the argument will never be negative
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        return model.traceId.toHexString().takeLast(RUM_ENDPOINT_REQUIRED_TRACE_ID_LENGTH)
+        // because the backend endpoint does not support 32 hex characters trace ids we are going to take only the
+        // least significant 64 bits of the trace id. Later on when we will introduce the 128 bits support
+        // the most significant bits will be reported in a separated dedicated meta tag.
+        return model.traceId.toHexString().takeLeastSignificant64Bits()
+    }
+
+    private fun resolveSpanId(model: DDSpan): String {
+        // the span id is always 64 bits long so we can pad it with zeros
+        return DDSpanId.toHexStringPadded(model.spanId)
+    }
+
+    private fun resolveParentId(model: DDSpan): String {
+        return DDSpanId.toHexStringPadded(model.parentId)
     }
 
     private fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
@@ -90,7 +104,10 @@ internal class OtelDdSpanToSpanEventMapper(
             view = event.tags[LogAttributes.RUM_VIEW_ID]?.let { SpanEvent.View(it as? String) }
         )
         val tags = event.tags.mapValues { it.value.toString() }
-        val meta = (event.baggage + tags).toMutableMap()
+        val meta = mutableMapOf<String, String>()
+        meta.putAll(event.baggage)
+        meta.putAll(tags)
+        resolveSpanLinks(event)?.let { meta[SPAN_LINKS_KEY] = it }
         return SpanEvent.Meta(
             version = datadogContext.version,
             dd = dd,
@@ -102,6 +119,35 @@ internal class OtelDdSpanToSpanEventMapper(
             network = networkInfoMeta,
             additionalProperties = meta
         )
+    }
+
+    private fun resolveSpanLinks(model: DDSpan): String? {
+        if (model.links.isEmpty()) return null
+        return model.links.map { resolveSpanLink(it) }.fold(JsonArray()) { acc, link ->
+            acc.add(link)
+            acc
+        }.toString()
+    }
+
+    private fun resolveSpanLink(link: AgentSpanLink): JsonObject {
+        // The SpanLinks support the full 128 bits trace so we can use the full hex string
+        val linkedTraceId = link.traceId().toHexString()
+        val linkedSpanId = DDSpanId.toHexStringPadded(link.spanId())
+        val attributes = toJson(link.attributes().asMap())
+        val flags = link.traceFlags()
+        val traceState = link.traceState()
+        val spanLink = JsonObject().apply {
+            addProperty(TRACE_ID_KEY, linkedTraceId)
+            addProperty(SPAN_ID_KEY, linkedSpanId)
+            add(ATTRIBUTES_KEY, attributes)
+            if (flags.toInt() != 0) {
+                addProperty(FLAGS_KEY, flags)
+            }
+            if (traceState.isNotEmpty()) {
+                addProperty(TRACE_STATE_KEY, traceState)
+            }
+        }
+        return spanLink
     }
 
     private fun resolveSimCarrier(networkInfo: NetworkInfo): SpanEvent.SimCarrier? {
@@ -122,9 +168,29 @@ internal class OtelDdSpanToSpanEventMapper(
             .toMutableMap()
     }
 
+    private fun String.takeLeastSignificant64Bits(): String {
+        // n is always positive so we can suppress the warning
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return this.takeLast(LEAST_SIGNIFICANT_64_BITS_AS_HEX_LENGTH)
+    }
+
+    private fun toJson(map: Map<String, String>): JsonObject {
+        val jsonObject = JsonObject()
+        map.forEach { (key, value) ->
+            jsonObject.addProperty(key, value)
+        }
+        return jsonObject
+    }
+
     // endregion
 
     companion object {
-        internal const val RUM_ENDPOINT_REQUIRED_TRACE_ID_LENGTH = 16
+        private const val LEAST_SIGNIFICANT_64_BITS_AS_HEX_LENGTH = 16
+        private const val ATTRIBUTES_KEY = "attributes"
+        private const val SPAN_ID_KEY = "span_id"
+        private const val TRACE_ID_KEY = "trace_id"
+        private const val TRACE_STATE_KEY = "tracestate"
+        private const val FLAGS_KEY = "flags"
+        internal const val SPAN_LINKS_KEY = "_dd.span_links"
     }
 }
