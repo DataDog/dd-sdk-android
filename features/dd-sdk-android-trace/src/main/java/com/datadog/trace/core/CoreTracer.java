@@ -25,7 +25,6 @@ import com.datadog.trace.api.StatsDClient;
 import com.datadog.trace.api.TracePropagationStyle;
 import com.datadog.trace.api.config.GeneralConfig;
 import com.datadog.trace.api.experimental.DataStreamsCheckpointer;
-import com.datadog.trace.api.flare.TracerFlare;
 import com.datadog.trace.api.gateway.CallbackProvider;
 import com.datadog.trace.api.gateway.InstrumentationGateway;
 import com.datadog.trace.api.gateway.RequestContext;
@@ -54,7 +53,6 @@ import com.datadog.trace.bootstrap.instrumentation.api.ProfilingContextIntegrati
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeState;
 import com.datadog.trace.bootstrap.instrumentation.api.TagContext;
-import com.datadog.trace.civisibility.interceptor.CiVisibilityTraceInterceptor;
 import com.datadog.trace.common.metrics.MetricsAggregator;
 import com.datadog.trace.common.metrics.NoOpMetricsAggregator;
 import com.datadog.trace.common.sampling.Sampler;
@@ -554,11 +552,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         this.propagation = new NoOpCorePropagation(builtExtractor);
         this.tagInterceptor =
                 null == tagInterceptor ? new TagInterceptor(new RuleFlags(config)) : tagInterceptor;
-        if (config.isCiVisibilityEnabled()) {
-            if (config.isCiVisibilityTraceSanitationEnabled()) {
-                addTraceInterceptor(CiVisibilityTraceInterceptor.INSTANCE);
-            }
-        }
         this.instrumentationGateway = instrumentationGateway;
         callbackProviderAppSec = instrumentationGateway.getCallbackProvider(RequestContextSlot.APPSEC);
         callbackProviderIast = instrumentationGateway.getCallbackProvider(RequestContextSlot.IAST);
@@ -999,11 +992,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             return ((DDSpanContext) ctx).getTraceSegment();
         }
         return null;
-    }
-
-    public void addTracerReportToFlare(ZipOutputStream zip) throws IOException {
-        TracerFlare.addText(zip, "tracer_health.txt", healthMetrics.summary());
-        TracerFlare.addText(zip, "span_metrics.txt", SpanMetricRegistry.getInstance().summary());
     }
 
     private static String[] generateConstantTags(final Config config) {

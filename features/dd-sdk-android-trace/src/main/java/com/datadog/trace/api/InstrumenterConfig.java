@@ -1,8 +1,5 @@
 package com.datadog.trace.api;
 
-import static com.datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_ENABLED;
-import static com.datadog.trace.api.ConfigDefaults.DEFAULT_CIVISIBILITY_ENABLED;
-import static com.datadog.trace.api.ConfigDefaults.DEFAULT_IAST_ENABLED;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_INTEGRATIONS_ENABLED;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_MEASURE_METHODS;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_RESOLVER_RESET_INTERVAL;
@@ -17,11 +14,8 @@ import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_EXECUTORS_ALL;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_METHODS;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_OTEL_ENABLED;
 import static com.datadog.trace.api.ConfigDefaults.DEFAULT_USM_ENABLED;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_ENABLED;
 import static com.datadog.trace.api.config.GeneralConfig.INTERNAL_EXIT_ON_FAILURE;
 import static com.datadog.trace.api.config.GeneralConfig.TELEMETRY_ENABLED;
-import static com.datadog.trace.api.config.IastConfig.IAST_ENABLED;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_DIRECT_ALLOCATION_ENABLED;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_DIRECT_ALLOCATION_ENABLED_DEFAULT;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_ENABLED;
@@ -89,9 +83,6 @@ public class InstrumenterConfig {
   private final boolean traceOtelEnabled;
   private final boolean logs128bTraceIdEnabled;
   private final boolean profilingEnabled;
-  private final boolean ciVisibilityEnabled;
-  private final ProductActivation appSecActivation;
-  private final ProductActivation iastActivation;
   private final boolean usmEnabled;
   private final boolean telemetryEnabled;
 
@@ -148,21 +139,10 @@ public class InstrumenterConfig {
     profilingEnabled = configProvider.getBoolean(PROFILING_ENABLED, PROFILING_ENABLED_DEFAULT);
 
     if (!Platform.isNativeImageBuilder()) {
-      ciVisibilityEnabled =
-          configProvider.getBoolean(CIVISIBILITY_ENABLED, DEFAULT_CIVISIBILITY_ENABLED);
-      appSecActivation =
-          ProductActivation.fromString(
-              configProvider.getStringNotEmpty(APPSEC_ENABLED, DEFAULT_APPSEC_ENABLED));
-      iastActivation =
-          ProductActivation.fromString(
-              configProvider.getStringNotEmpty(IAST_ENABLED, DEFAULT_IAST_ENABLED));
       usmEnabled = configProvider.getBoolean(USM_ENABLED, DEFAULT_USM_ENABLED);
       telemetryEnabled = configProvider.getBoolean(TELEMETRY_ENABLED, DEFAULT_TELEMETRY_ENABLED);
     } else {
       // disable these features in native-image
-      ciVisibilityEnabled = false;
-      appSecActivation = ProductActivation.FULLY_DISABLED;
-      iastActivation = ProductActivation.FULLY_DISABLED;
       telemetryEnabled = false;
       usmEnabled = false;
     }
@@ -249,18 +229,6 @@ public class InstrumenterConfig {
 
   public boolean isProfilingEnabled() {
     return profilingEnabled;
-  }
-
-  public boolean isCiVisibilityEnabled() {
-    return ciVisibilityEnabled;
-  }
-
-  public ProductActivation getAppSecActivation() {
-    return appSecActivation;
-  }
-
-  public ProductActivation getIastActivation() {
-    return iastActivation;
   }
 
   public boolean isUsmEnabled() {
@@ -431,12 +399,6 @@ public class InstrumenterConfig {
         + logs128bTraceIdEnabled
         + ", profilingEnabled="
         + profilingEnabled
-        + ", ciVisibilityEnabled="
-        + ciVisibilityEnabled
-        + ", appSecActivation="
-        + appSecActivation
-        + ", iastActivation="
-        + iastActivation
         + ", usmEnabled="
         + usmEnabled
         + ", telemetryEnabled="
