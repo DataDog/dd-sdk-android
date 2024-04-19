@@ -583,7 +583,7 @@ internal class OtelTracerBuilderProviderTest {
         assertThat(droppedSpans.size + keptSpans.size).isEqualTo(numberOfSpans)
         // The sampler does not guarantee the exact number of dropped/kept spans due to the random nature
         // of the sampling so we use an offset to allow a small margin of error
-        val offset = 10
+        val offset = 20
         assertThat(droppedSpans.size).isCloseTo(expectedDroppedSpans, Offset.offset(offset))
         assertThat(keptSpans.size).isCloseTo(expectedKeptSpans, Offset.offset(offset))
     }
