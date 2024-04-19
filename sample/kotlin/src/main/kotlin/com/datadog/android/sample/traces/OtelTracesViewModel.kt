@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
@@ -22,6 +23,7 @@ internal class OtelTracesViewModel : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var chainedContextsTask: AsyncTask<Unit, Unit, Unit>? = null
+    private var linkedSpansTask: AsyncTask<Unit, Unit, Unit>? = null
 
     fun startAsyncOperation(
         onProgress: (Int) -> Unit = {},
@@ -31,14 +33,20 @@ internal class OtelTracesViewModel : ViewModel() {
         asyncOperationTask?.execute()
     }
 
-    fun stopAsyncOperations() {
-        asyncOperationTask?.cancel(true)
-        chainedContextsTask?.cancel(true)
-    }
-
     fun startChainedContexts(onDone: () -> Unit = {}) {
         chainedContextsTask = ChainedContextsTask(onDone)
         chainedContextsTask?.execute()
+    }
+
+    fun startLinkedSpans(onDone: () -> Unit = {}) {
+        linkedSpansTask = LinkedSpansTask(onDone)
+        linkedSpansTask?.execute()
+    }
+
+    fun stopAsyncOperations() {
+        asyncOperationTask?.cancel(true)
+        chainedContextsTask?.cancel(true)
+        linkedSpansTask?.cancel(true)
     }
 
     // region AsyncOperationTask
@@ -62,7 +70,7 @@ internal class OtelTracesViewModel : ViewModel() {
                 .build()
                 .apply {
                     addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                    addTag("build_type", BuildConfig.BUILD_TYPE)
+                    addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
                 }
         }
 
@@ -110,6 +118,10 @@ internal class OtelTracesViewModel : ViewModel() {
         }
     }
 
+    // endregion
+
+    // region ChainedContextsTask
+
     private class ChainedContextsTask(
         val onDone: () -> Unit
     ) : AsyncTask<Unit, Unit, Unit>() {
@@ -122,7 +134,7 @@ internal class OtelTracesViewModel : ViewModel() {
         private val context: Context =
             Context.current().with(emailKey, email).with(usernameKey, username)
         val startSpan: Span = tracer
-            .spanBuilder("submitForm")
+            .spanBuilder("submitForm with chained contexts")
             .setParent(context)
             .startSpan()
         val scope: Scope = startSpan.makeCurrent()
@@ -134,7 +146,7 @@ internal class OtelTracesViewModel : ViewModel() {
                 .build()
                 .apply {
                     addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                    addTag("build_type", BuildConfig.BUILD_TYPE)
+                    addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
                 }
         }
 
@@ -170,7 +182,69 @@ internal class OtelTracesViewModel : ViewModel() {
 
     // endregion
 
+    // region LinkedSpansTask
+
+    private class LinkedSpansTask(
+        val onDone: () -> Unit
+    ) : AsyncTask<Unit, Unit, Unit>() {
+        private val email = "john.doe@example.com"
+        private val username = "John Doe"
+        private val tracer: Tracer = GlobalOpenTelemetry.get()
+            .getTracer("spanLinks")
+        val startSpan: Span = tracer
+            .spanBuilder("submitForm with linked spans")
+            .startSpan()
+        val scope: Scope = startSpan.makeCurrent()
+
+        private val logger: Logger by lazy {
+            Logger.Builder()
+                .setName("chained-contexts-task")
+                .setLogcatLogsEnabled(true)
+                .build()
+                .apply {
+                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
+                    addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
+                }
+        }
+
+        @Suppress("MagicNumber")
+        @Deprecated("Deprecated in Java")
+        override fun doInBackground(vararg params: Unit?) {
+            val processingFormSpan = tracer
+                .spanBuilder("processingForm")
+                .setParent(Context.current().with(startSpan))
+                .startSpan()
+            val formScope = processingFormSpan.makeCurrent()
+            val attributes = Attributes
+                .builder()
+                .put("email", email)
+                .put("username", username)
+                .build()
+            val processingSanitization = tracer
+                .spanBuilder("formSanitization")
+                .addLink(processingFormSpan.spanContext, attributes)
+                .startSpan()
+            logger.v("Sanitizing email")
+            logger.v("Sanitizing username")
+            Thread.sleep(2000)
+            processingSanitization.end()
+            Thread.sleep(5000)
+            formScope.close()
+            processingFormSpan.end()
+        }
+
+        @Deprecated("Deprecated in Java")
+        override fun onPostExecute(result: Unit?) {
+            scope.close()
+            startSpan.end()
+            onDone()
+        }
+    }
+
+    // endregion
+
     companion object {
-        const val ATTR_FLAVOR = "flavor"
+        private const val BUILD_TYPE = "build_type"
+        private const val ATTR_FLAVOR = "flavor"
     }
 }
