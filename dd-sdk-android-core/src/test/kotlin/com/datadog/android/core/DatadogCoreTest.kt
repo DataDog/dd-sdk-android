@@ -48,6 +48,7 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -85,7 +86,7 @@ import java.util.concurrent.atomic.AtomicReference
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(value = Configurator::class)
 internal class DatadogCoreTest {
 
     private lateinit var testedCore: DatadogCore
@@ -501,9 +502,12 @@ internal class DatadogCoreTest {
         val time = testedCore.time
 
         // Then
-        assertThat(time.deviceTimeNs).isEqualTo(time.serverTimeNs)
-        assertThat(time.serverTimeOffsetMs).isEqualTo(0)
-        assertThat(time.serverTimeOffsetNs).isEqualTo(0)
+        // We do keep a margin of 1ms delay as this test can sometimes be flaky.
+        // the DatadogCore.time implementation computes server and device time independently and it can sometimes
+        // happen that those computations land on successive ms, leading to a 1second offset
+        assertThat(time.deviceTimeNs).isCloseTo(time.serverTimeNs, Offset.offset(msToNs))
+        assertThat(time.serverTimeOffsetMs).isLessThanOrEqualTo(1)
+        assertThat(time.serverTimeOffsetNs).isLessThanOrEqualTo(msToNs)
     }
 
     @Test
@@ -800,6 +804,9 @@ internal class DatadogCoreTest {
     }
 
     companion object {
+
+        val msToNs = TimeUnit.MILLISECONDS.toNanos(1)
+
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
         @TestConfigurationsProvider
