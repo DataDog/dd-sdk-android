@@ -775,6 +775,52 @@ val Country = TypeDefinition.Class(
     )
 )
 
+// both items have additionalProperties explicitly defined
+val AdditionalPropsMerged = TypeDefinition.Class(
+    name = "AdditionalPropsMerged",
+    properties = listOf(
+        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty(
+            "info",
+            TypeDefinition.Class(
+                name = "Info",
+                properties = listOf(
+                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
+                ),
+                additionalProperties = TypeDefinition.Class("?", emptyList())
+            ),
+            true
+        ),
+        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+    )
+)
+
+// only one item has additionalProperties explicitly defined
+val AdditionalPropsSingleMerge = TypeDefinition.Class(
+    name = "AdditionalPropsSingleMerge",
+    properties = listOf(
+        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty(
+            "info",
+            TypeDefinition.Class(
+                name = "Info",
+                properties = listOf(
+                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
+                ),
+                additionalProperties = TypeDefinition.Class("?", emptyList())
+            ),
+            true
+        ),
+        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+    )
+)
+
 val UserMerged = TypeDefinition.Class(
     name = "UserMerged",
     properties = listOf(
