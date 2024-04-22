@@ -24,24 +24,29 @@ class RumEventAssert(actual: JsonObject) :
         return this
     }
 
-    fun hasSessionType(sessionType: String) {
+    fun hasSessionType(sessionType: String): RumEventAssert {
         hasField("session.type", sessionType)
+        return this
     }
 
-    fun hasSource(source: String) {
+    fun hasSource(source: String): RumEventAssert {
         hasField("source", source)
+        return this
     }
 
-    fun hasType(type: String) {
+    fun hasType(type: String): RumEventAssert {
         hasField("type", type)
+        return this
     }
 
-    fun hasViewUrl(viewUrl: String) {
+    fun hasViewUrl(viewUrl: String): RumEventAssert {
         hasField("view.url", viewUrl)
+        return this
     }
 
-    fun hasViewName(viewName: String) {
+    fun hasViewName(viewName: String): RumEventAssert {
         hasField("view.name", viewName)
+        return this
     }
 
     fun hasFeatureFlag(key: String, value: String): RumEventAssert {

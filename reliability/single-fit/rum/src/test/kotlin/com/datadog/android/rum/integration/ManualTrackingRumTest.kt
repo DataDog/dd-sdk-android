@@ -73,7 +73,7 @@ class ManualTrackingRumTest {
         val result = GlobalRumMonitor.get(stubSdkCore)
 
         // Then
-        // We use reflexion because that class is marked internal
+        // We use reflection because that class is marked internal
         val classDatadogRum = Class.forName("com.datadog.android.rum.internal.monitor.DatadogRumMonitor")
         assertThat(result).isInstanceOf(classDatadogRum)
     }
@@ -94,7 +94,7 @@ class ManualTrackingRumTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
             .hasSize(1)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -121,7 +121,7 @@ class ManualTrackingRumTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
             .hasSize(2)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -132,7 +132,7 @@ class ManualTrackingRumTest {
                 hasViewIsActive(true)
                 hasDocumentVersion(1)
             }
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -164,7 +164,7 @@ class ManualTrackingRumTest {
         print(eventsWritten[1].eventData)
         StubEventsAssert.assertThat(eventsWritten)
             .hasSize(2)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -175,7 +175,7 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
                 hasDocumentVersion(1)
             }
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -208,7 +208,7 @@ class ManualTrackingRumTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
             .hasSize(4)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -220,7 +220,7 @@ class ManualTrackingRumTest {
                 hasActionCount(0)
                 hasDocumentVersion(1)
             }
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -231,7 +231,7 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionName(actionName)
             }
-            .hasRumEvent(2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -244,7 +244,7 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
                 hasDocumentVersion(2)
             }
-            .hasRumEvent(3) {
+            .hasRumEvent(index = 3) {
                 // View updated with FF
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -278,7 +278,7 @@ class ManualTrackingRumTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
             .hasSize(4)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -290,7 +290,7 @@ class ManualTrackingRumTest {
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
             }
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -300,7 +300,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
             }
-            .hasRumEvent(2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -312,7 +312,7 @@ class ManualTrackingRumTest {
                 hasErrorCount(1)
                 doesNotHaveField("feature_flag")
             }
-            .hasRumEvent(3) {
+            .hasRumEvent(index = 3) {
                 // View updated with FF
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -347,7 +347,7 @@ class ManualTrackingRumTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
             .hasSize(4)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -359,7 +359,7 @@ class ManualTrackingRumTest {
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
             }
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -369,7 +369,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(key)
                 hasViewName(name)
             }
-            .hasRumEvent(2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -381,7 +381,7 @@ class ManualTrackingRumTest {
                 hasResourceCount(1)
                 doesNotHaveField("feature_flag")
             }
-            .hasRumEvent(3) {
+            .hasRumEvent(index = 3) {
                 // View updated with FF
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)

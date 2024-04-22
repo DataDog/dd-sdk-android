@@ -171,7 +171,7 @@ class RumConfigurationTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 hasResourceUrl(mappedResourceUrl)
             }
     }
@@ -206,7 +206,7 @@ class RumConfigurationTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 hasErrorMessage(mappedErrorMessage)
                 hasErrorFingerprint(mappedErrorFingerprint)
             }
@@ -243,7 +243,7 @@ class RumConfigurationTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
-            .hasRumEvent(1) {
+            .hasRumEvent(index = 1) {
                 hasActionTargetName(mappedTargetName)
             }
     }
@@ -273,7 +273,7 @@ class RumConfigurationTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         StubEventsAssert.assertThat(eventsWritten)
-            .hasRumEvent(0) {
+            .hasRumEvent(index = 0) {
                 hasViewName(mappedViewName)
                 hasViewUrl(mappedViewUrl)
             }
