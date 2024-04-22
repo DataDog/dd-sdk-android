@@ -79,14 +79,6 @@ analysis:licenses:
   script:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
 
-analysis:nightly-tests-coverage:
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
-
 # TODO RUM-1622 cleanup this section
 # TESTS
 

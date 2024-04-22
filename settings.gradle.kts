@@ -39,7 +39,6 @@ include(":reliability:single-fit:trace")
 
 // LEGACY TESTS
 include(":instrumented:integration")
-include(":instrumented:nightly-tests")
 
 // SAMPLE PROJECTS
 include(":sample:kotlin")
