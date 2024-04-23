@@ -158,6 +158,9 @@ class OtelTracerProvider(
                     sdkCore.removeActiveTraceFromContext()
                 }
             })
+            sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+                it[TracingFeature.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
+            }
             return OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
         }
 

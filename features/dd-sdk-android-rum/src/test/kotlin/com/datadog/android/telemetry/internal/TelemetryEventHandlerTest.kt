@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.rum.BuildConfig
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -34,7 +35,6 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -47,6 +47,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -353,19 +355,28 @@ internal class TelemetryEventHandlerTest {
         }
     }
 
-    @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with tracing settings }`(
+    @ParameterizedTest
+    @MethodSource("tracingConfigurationParameters")
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { tracing configuration with tracing settings }`(
+        configuration: Triple<Boolean, TelemetryEventHandler.TracerApi?, String?>,
         @Forgery fakeConfiguration: TelemetryCoreConfiguration,
-        @BoolForgery useTracing: Boolean,
         forge: Forge
     ) {
         // Given
-        if (useTracing || forge.aBool()) {
+        val useTracer = configuration.first
+        val tracerApi = configuration.second
+        val tracerApiVersion = configuration.third
+        if (useTracer || forge.aBool()) {
             whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         }
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(fakeConfiguration)
-        if (useTracing) {
-            GlobalTracer.registerIfAbsent(mock<Tracer>())
+        if (useTracer) {
+            if (tracerApi == TelemetryEventHandler.TracerApi.OpenTracing) {
+                GlobalTracer.registerIfAbsent(mock<Tracer>())
+            } else if (tracerApi == TelemetryEventHandler.TracerApi.OpenTelemetry) {
+                whenever(mockSdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)) doReturn
+                    mapOf(TelemetryEventHandler.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY to true)
+            }
         }
 
         // When
@@ -376,7 +387,9 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
-                .hasUseTracing(useTracing)
+                .hasUseTracing(useTracer)
+                .hasTracerApi(tracerApi?.name)
+                .hasTracerApiVersion(tracerApiVersion)
         }
     }
 
@@ -947,6 +960,22 @@ internal class TelemetryEventHandlerTest {
     // endregion
 
     companion object {
+
+        @JvmStatic
+        fun tracingConfigurationParameters() = listOf(
+            // hasTracer, tracerApiName, tracerApiVersion
+            Triple<Boolean, TelemetryEventHandler.TracerApi?, String?>(
+                true,
+                TelemetryEventHandler.TracerApi.OpenTracing,
+                null
+            ),
+            Triple<Boolean, TelemetryEventHandler.TracerApi?, String?>(
+                true,
+                TelemetryEventHandler.TracerApi.OpenTelemetry,
+                BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+            ),
+            Triple<Boolean, TelemetryEventHandler.TracerApi?, String?>(false, null, null)
+        )
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
     }

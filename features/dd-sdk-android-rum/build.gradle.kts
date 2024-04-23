@@ -40,6 +40,14 @@ plugins {
 
 android {
     defaultConfig {
+        buildFeatures {
+            buildConfig = true
+        }
+        buildConfigField(
+            "String",
+            "OPENTELEMETRY_API_VERSION_NAME",
+            "\"${libs.versions.openTelemetry.get()}\""
+        )
         consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
     }
 

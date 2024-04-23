@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.rum.BuildConfig
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -228,7 +229,9 @@ internal class TelemetryEventHandler(
         }
 
         val rumContext = datadogContext.rumContext()
-
+        val tracerApi = resolveTracerApi(sdkCore)
+        val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi)
+        val useTracing = (traceFeature != null && tracerApi != null)
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
@@ -258,7 +261,9 @@ internal class TelemetryEventHandler(
                     batchSize = coreConfiguration.batchSize,
                     batchUploadFrequency = coreConfiguration.batchUploadFrequency,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
-                    useTracing = traceFeature != null && isGlobalTracerRegistered(),
+                    useTracing = useTracing,
+                    tracerApi = tracerApi?.name,
+                    tracerApiVersion = openTelemetryApiVersion,
                     trackNetworkRequests = trackNetworkRequests,
                     sessionReplaySampleRate = sessionReplaySampleRate,
                     defaultPrivacyLevel = sessionReplayPrivacy,
@@ -299,12 +304,38 @@ internal class TelemetryEventHandler(
         }
     }
 
+    private fun isOpenTelemetryRegistered(sdkCore: FeatureSdkCore): Boolean {
+        val traceConfig = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)
+        return traceConfig[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] as? Boolean ?: false
+    }
+
+    private fun resolveTracerApi(sdkCore: FeatureSdkCore): TracerApi? {
+        return when {
+            isOpenTelemetryRegistered(sdkCore) -> TracerApi.OpenTelemetry
+            isGlobalTracerRegistered() -> TracerApi.OpenTracing
+            else -> null
+        }
+    }
+
+    private fun resolveOpenTelemetryApiVersion(tracerApi: TracerApi?): String? {
+        return if (tracerApi == TracerApi.OpenTelemetry) {
+            BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+        } else {
+            null
+        }
+    }
+
     private fun DatadogContext.rumContext(): RumContext {
         val rumContext = featuresContext[Feature.RUM_FEATURE_NAME].orEmpty()
         return RumContext.fromFeatureContext(rumContext)
     }
 
     // endregion
+
+    internal enum class TracerApi {
+        OpenTelemetry,
+        OpenTracing
+    }
 
     companion object {
         const val MAX_EVENTS_PER_SESSION = 100
@@ -314,6 +345,7 @@ internal class TelemetryEventHandler(
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =
             "Max number of telemetry events per session reached, rejecting."
         const val TELEMETRY_SERVICE_NAME = "dd-sdk-android"
+        internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
         internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
         internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =

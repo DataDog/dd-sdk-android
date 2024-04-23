@@ -94,4 +94,8 @@ internal class TracingFeature constructor(
             internalLogger = internalLogger
         )
     }
+
+    companion object {
+        internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
+    }
 }
