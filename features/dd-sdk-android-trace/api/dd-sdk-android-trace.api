@@ -4418,6 +4418,7 @@ public class com/datadog/trace/common/sampling/SpanSamplingRules {
 }
 
 public final class com/datadog/trace/common/sampling/SpanSamplingRules$Rule : com/datadog/trace/api/sampling/SamplingRule$SpanSamplingRule {
+	public fun asStringJsonRule ()Ljava/lang/String;
 	public static fun create (Lcom/datadog/trace/common/sampling/SpanSamplingRules$JsonRule;)Lcom/datadog/trace/common/sampling/SpanSamplingRules$Rule;
 	public fun getMaxPerSecond ()I
 	public fun getName ()Ljava/lang/String;
@@ -4436,6 +4437,7 @@ public class com/datadog/trace/common/sampling/TraceSamplingRules {
 }
 
 public final class com/datadog/trace/common/sampling/TraceSamplingRules$Rule : com/datadog/trace/api/sampling/SamplingRule$TraceSamplingRule {
+	public fun asStringJsonRule ()Ljava/lang/String;
 	public static fun create (Lcom/datadog/trace/common/sampling/TraceSamplingRules$JsonRule;)Lcom/datadog/trace/common/sampling/TraceSamplingRules$Rule;
 	public fun getName ()Ljava/lang/String;
 	public fun getResource ()Ljava/lang/String;
@@ -4475,16 +4477,6 @@ public abstract interface class com/datadog/trace/common/writer/ListWriter$Filte
 	public abstract fun accept (Ljava/util/List;)Z
 }
 
-public class com/datadog/trace/common/writer/LoggingWriter : com/datadog/trace/common/writer/Writer {
-	public fun <init> ()V
-	public fun close ()V
-	public fun flush ()Z
-	public fun incrementDropCounts (I)V
-	public fun start ()V
-	public fun toString ()Ljava/lang/String;
-	public fun write (Ljava/util/List;)V
-}
-
 public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/common/writer/Writer {
 	public fun <init> ()V
 	public fun close ()V
@@ -4497,15 +4489,6 @@ public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/comm
 public abstract class com/datadog/trace/common/writer/Payload {
 	protected field body Ljava/nio/ByteBuffer;
 	public fun <init> ()V
-}
-
-public class com/datadog/trace/common/writer/PrintingWriter : com/datadog/trace/common/writer/Writer {
-	public fun <init> (Ljava/io/OutputStream;Z)V
-	public fun close ()V
-	public fun flush ()Z
-	public fun incrementDropCounts (I)V
-	public fun start ()V
-	public fun write (Ljava/util/List;)V
 }
 
 public abstract class com/datadog/trace/common/writer/RemoteApi {
@@ -5169,18 +5152,6 @@ public abstract interface class com/datadog/trace/core/PendingTraceBuffer$Elemen
 	public abstract fun writeOnBufferFull ()Z
 }
 
-public final class com/datadog/trace/core/StatusLogger : com/squareup/moshi/JsonAdapter, com/datadog/trace/util/AgentTaskScheduler$Task, com/squareup/moshi/JsonAdapter$Factory {
-	public fun <init> ()V
-	public fun create (Ljava/lang/reflect/Type;Ljava/util/Set;Lcom/squareup/moshi/Moshi;)Lcom/squareup/moshi/JsonAdapter;
-	public fun fromJson (Lcom/squareup/moshi/JsonReader;)Lcom/datadog/trace/api/Config;
-	public synthetic fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/lang/Object;
-	public static fun logStatus (Lcom/datadog/trace/api/Config;)V
-	public fun run (Lcom/datadog/trace/api/Config;)V
-	public synthetic fun run (Ljava/lang/Object;)V
-	public fun toJson (Lcom/squareup/moshi/JsonWriter;Lcom/datadog/trace/api/Config;)V
-	public synthetic fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/lang/Object;)V
-}
-
 public class com/datadog/trace/core/datastreams/DataStreamContextExtractor : com/datadog/trace/core/propagation/HttpCodec$Extractor {
 	public fun <init> (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;Lcom/datadog/trace/api/time/TimeSource;Ljava/util/function/Supplier;Lcom/datadog/trace/api/WellKnownTags;)V
 	public fun extract (Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor;)Lcom/datadog/trace/bootstrap/instrumentation/api/TagContext;
@@ -5592,6 +5563,12 @@ public final class com/datadog/trace/core/util/GlobPattern {
 	public static fun globToRegexPattern (Ljava/lang/String;)Ljava/util/regex/Pattern;
 }
 
+public class com/datadog/trace/core/util/JsonObjectUtils {
+	public fun <init> ()V
+	public static fun getAsString (Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+	public static fun safeGetAsMap (Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/util/Map;
+}
+
 public final class com/datadog/trace/core/util/LRUCache : java/util/LinkedHashMap {
 	public fun <init> (I)V
 	public fun <init> (IFI)V
@@ -5601,6 +5578,11 @@ public final class com/datadog/trace/core/util/LRUCache : java/util/LinkedHashMa
 
 public abstract interface class com/datadog/trace/core/util/LRUCache$ExpiryListener {
 	public abstract fun accept (Ljava/util/Map$Entry;)V
+}
+
+public class com/datadog/trace/core/util/MapUtils {
+	public fun <init> ()V
+	public static fun getAsJsonObject (Ljava/util/Map;)Lcom/google/gson/JsonObject;
 }
 
 public abstract interface class com/datadog/trace/core/util/Matcher {

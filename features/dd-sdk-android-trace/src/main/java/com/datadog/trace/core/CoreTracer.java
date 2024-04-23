@@ -565,9 +565,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         }
 
         registerClassLoader(ClassLoader.getSystemClassLoader());
-
-        StatusLogger.logStatus(config);
-
         propagationTagsFactory = PropagationTags.factory(config);
         this.profilingContextIntegration = profilingContextIntegration;
         this.injectBaggageAsTags = injectBaggageAsTags;
