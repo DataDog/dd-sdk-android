@@ -176,8 +176,8 @@ if [[ $COMPILE == 1 ]]; then
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest
 
-  echo "---- Assemble Android tests"
-  ./gradlew :instrumented:nightly-tests:assembleDebugAndroidTest :instrumented:integration:assembleDebugAndroidTest
+  echo "---- Assemble Android Instrumentation APKs"
+  ./gradlew :instrumented:integration:assembleDebugAndroidTest
 fi
 
 if [[ $TEST == 1 ]]; then
