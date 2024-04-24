@@ -108,7 +108,7 @@ internal open class RumViewScope(
     // region Vitals Fields
 
     private var cpuTicks: Double? = null
-    private var cpuVitalListener: VitalListener = object : VitalListener {
+    internal var cpuVitalListener: VitalListener = object : VitalListener {
         private var initialTickCount: Double = Double.NaN
         override fun onVitalUpdate(info: VitalInfo) {
             // The CPU Ticks will always grow, as it's the total ticks since the app started
@@ -121,14 +121,14 @@ internal open class RumViewScope(
     }
 
     private var lastMemoryInfo: VitalInfo? = null
-    private var memoryVitalListener: VitalListener = object : VitalListener {
+    internal var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastMemoryInfo = info
         }
     }
 
     private var lastFrameRateInfo: VitalInfo? = null
-    private var frameRateVitalListener: VitalListener = object : VitalListener {
+    internal var frameRateVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastFrameRateInfo = info
         }
@@ -142,9 +142,11 @@ internal open class RumViewScope(
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
         }
+
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
+
         val rumContext = parentScope.getRumContext()
         if (rumContext.syntheticsTestId != null) {
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
@@ -291,6 +293,10 @@ internal open class RumViewScope(
             stopped = true
             sendViewUpdate(event, writer)
             sendViewChanged()
+
+            cpuVitalMonitor.unregister(cpuVitalListener)
+            memoryVitalMonitor.unregister(memoryVitalListener)
+            frameRateVitalMonitor.unregister(frameRateVitalListener)
         }
     }
 

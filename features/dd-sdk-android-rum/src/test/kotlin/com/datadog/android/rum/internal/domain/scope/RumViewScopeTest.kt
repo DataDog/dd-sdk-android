@@ -61,6 +61,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -149,6 +150,7 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeKey: RumScopeKey
+
     lateinit var fakeAttributes: Map<String, Any?>
 
     @Forgery
@@ -7349,6 +7351,35 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M unregister vital monitors W handleEvent(StopView)`() {
+        // Given
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M not unregister vital monitors W handleEvent(StopView) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopView(fakeOtherKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor, never()).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor, never()).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor, never()).unregister(testedScope.frameRateVitalListener)
     }
 
     // endregion
