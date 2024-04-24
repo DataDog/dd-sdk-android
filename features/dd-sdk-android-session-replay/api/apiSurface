@@ -15,7 +15,7 @@ enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - MASK
   - MASK_USER_INPUT
 data class com.datadog.android.sessionreplay.internal.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, Boolean = false)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean = false)
 interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation

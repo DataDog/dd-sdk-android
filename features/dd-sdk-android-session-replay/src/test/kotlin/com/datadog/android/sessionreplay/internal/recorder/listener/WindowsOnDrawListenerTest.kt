@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -94,6 +95,9 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Forgery
+    lateinit var fakePrivacy: SessionReplayPrivacy
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
@@ -108,6 +112,7 @@ internal class WindowsOnDrawListenerTest {
                 mockSnapshotProducer.produce(
                     eq(decorView),
                     eq(fakeSystemInformation),
+                    eq(fakePrivacy),
                     any()
                 )
             )
@@ -130,6 +135,7 @@ internal class WindowsOnDrawListenerTest {
             fakeMockedDecorViews,
             mockRecordedDataQueueHandler,
             mockSnapshotProducer,
+            fakePrivacy,
             mockDebouncer,
             mockMiscUtils
         )
@@ -165,7 +171,12 @@ internal class WindowsOnDrawListenerTest {
 
         // Then
         val argCaptor = argumentCaptor<RecordedDataQueueRefs>()
-        verify(mockSnapshotProducer, times(fakeWindowsSnapshots.size)).produce(any(), any(), argCaptor.capture())
+        verify(mockSnapshotProducer, times(fakeWindowsSnapshots.size)).produce(
+            rootView = any(),
+            systemInformation = any(),
+            privacy = eq(fakePrivacy),
+            recordedDataQueueRefs = argCaptor.capture()
+        )
         assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
     }
@@ -178,6 +189,7 @@ internal class WindowsOnDrawListenerTest {
             emptyList(),
             mockRecordedDataQueueHandler,
             mockSnapshotProducer,
+            fakePrivacy,
             mockDebouncer
         )
 

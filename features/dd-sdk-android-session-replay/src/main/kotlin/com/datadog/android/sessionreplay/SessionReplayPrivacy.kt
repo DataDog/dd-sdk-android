@@ -87,6 +87,7 @@ enum class SessionReplayPrivacy {
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
 
     @Suppress("LongMethod")
+    @Deprecated("Do not use this anymore !")
     internal fun mappers(): List<MapperTypeWrapper> {
         val unsupportedViewMapper =
             UnsupportedViewMapper(
