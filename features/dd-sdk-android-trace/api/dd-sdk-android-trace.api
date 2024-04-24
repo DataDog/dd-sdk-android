@@ -26,6 +26,14 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
+public final class com/datadog/android/trace/BuildConfig {
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
+	public static final field OPENTELEMETRY_API_VERSION_NAME Ljava/lang/String;
+	public fun <init> ()V
+}
+
 public final class com/datadog/android/trace/OtelTracerProvider : io/opentelemetry/api/trace/TracerProvider {
 	public static final field Companion Lcom/datadog/android/trace/OtelTracerProvider$Companion;
 	public fun <init> (Lcom/datadog/android/api/feature/FeatureSdkCore;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Z)V

@@ -14,7 +14,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.rum.BuildConfig
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -229,8 +228,9 @@ internal class TelemetryEventHandler(
         }
 
         val rumContext = datadogContext.rumContext()
-        val tracerApi = resolveTracerApi(sdkCore)
-        val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi)
+        val traceContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)
+        val tracerApi = resolveTracerApi(traceContext)
+        val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
@@ -304,22 +304,21 @@ internal class TelemetryEventHandler(
         }
     }
 
-    private fun isOpenTelemetryRegistered(sdkCore: FeatureSdkCore): Boolean {
-        val traceConfig = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)
-        return traceConfig[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] as? Boolean ?: false
+    private fun isOpenTelemetryRegistered(traceContext: Map<String, Any?>): Boolean {
+        return traceContext[IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY] as? Boolean ?: false
     }
 
-    private fun resolveTracerApi(sdkCore: FeatureSdkCore): TracerApi? {
+    private fun resolveTracerApi(traceContext: Map<String, Any?>): TracerApi? {
         return when {
-            isOpenTelemetryRegistered(sdkCore) -> TracerApi.OpenTelemetry
+            isOpenTelemetryRegistered(traceContext) -> TracerApi.OpenTelemetry
             isGlobalTracerRegistered() -> TracerApi.OpenTracing
             else -> null
         }
     }
 
-    private fun resolveOpenTelemetryApiVersion(tracerApi: TracerApi?): String? {
+    private fun resolveOpenTelemetryApiVersion(tracerApi: TracerApi?, traceContext: Map<String, Any?>): String? {
         return if (tracerApi == TracerApi.OpenTelemetry) {
-            BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+            traceContext[OPENTELEMETRY_API_VERSION_CONTEXT_KEY] as? String
         } else {
             null
         }
@@ -345,7 +344,8 @@ internal class TelemetryEventHandler(
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =
             "Max number of telemetry events per session reached, rejecting."
         const val TELEMETRY_SERVICE_NAME = "dd-sdk-android"
-        internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
+        internal const val IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY = "is_opentelemetry_enabled"
+        internal const val OPENTELEMETRY_API_VERSION_CONTEXT_KEY = "opentelemetry_api_version"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
         internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
         internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =

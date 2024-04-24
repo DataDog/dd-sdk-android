@@ -39,6 +39,14 @@ plugins {
 
 android {
     defaultConfig {
+        buildFeatures {
+            buildConfig = true
+        }
+        buildConfigField(
+            "String",
+            "OPENTELEMETRY_API_VERSION_NAME",
+            "\"${libs.versions.openTelemetry.get()}\""
+        )
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {
