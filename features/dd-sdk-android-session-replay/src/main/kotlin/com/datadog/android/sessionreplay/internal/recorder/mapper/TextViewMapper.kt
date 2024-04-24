@@ -29,7 +29,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  */
 @Suppress("TooManyFunctions")
 open class TextViewMapper internal constructor(
-    internal var textValueObfuscationRule: TextValueObfuscationRule,
+    @Deprecated("") internal var textValueObfuscationRule: TextValueObfuscationRule,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,

@@ -98,20 +98,20 @@ internal class SessionReplayRecorderTest {
             true
         }
         testedSessionReplayRecorder = SessionReplayRecorder(
-            appContext.mockInstance,
-            mockRumContextProvider,
-            fakePrivacy,
-            mockRecordWriter,
-            mockTimeProvider,
-            mock(),
-            mock(),
-            mockWindowInspector,
-            mockWindowCallbackInterceptor,
-            mockLifecycleCallback,
-            mockViewOnDrawInterceptor,
-            mockRecordedDataQueueHandler,
-            mockUiHandler,
-            mockInternalLogger
+            appContext = appContext.mockInstance,
+            rumContextProvider = mockRumContextProvider,
+            privacy = fakePrivacy,
+            recordWriter = mockRecordWriter,
+            timeProvider = mockTimeProvider,
+            mappers = mock(),
+            customOptionSelectorDetectors = mock(),
+            windowInspector = mockWindowInspector,
+            windowCallbackInterceptor = mockWindowCallbackInterceptor,
+            sessionReplayLifecycleCallback = mockLifecycleCallback,
+            viewOnDrawInterceptor = mockViewOnDrawInterceptor,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            uiHandler = mockUiHandler,
+            internalLogger = mockInternalLogger
         )
     }
 

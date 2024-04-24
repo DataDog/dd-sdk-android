@@ -89,21 +89,19 @@ enum class SessionReplayPrivacy {
     @Suppress("LongMethod")
     @Deprecated("Do not use this anymore !")
     internal fun mappers(): List<MapperTypeWrapper> {
-        val unsupportedViewMapper =
-            UnsupportedViewMapper(
-                viewIdentifierResolver,
-                colorStringFormatter,
-                viewBoundsResolver,
-                drawableToColorMapper
-            )
-        val imageViewMapper =
-            ImageViewMapper(
-                ImageViewUtils,
-                viewIdentifierResolver,
-                colorStringFormatter,
-                viewBoundsResolver,
-                drawableToColorMapper
-            )
+        val unsupportedViewMapper = UnsupportedViewMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
+        val imageViewMapper = ImageViewMapper(
+            ImageViewUtils,
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
         val checkedTextViewMapper: CheckedTextViewMapper

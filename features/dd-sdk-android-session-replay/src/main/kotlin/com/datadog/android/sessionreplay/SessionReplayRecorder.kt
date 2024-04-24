@@ -60,7 +60,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val privacy: SessionReplayPrivacy
     private val recordWriter: RecordWriter
     private val timeProvider: TimeProvider
-    private val customMappers: List<MapperTypeWrapper>
+    private val mappers: List<MapperTypeWrapper>
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>
     private val windowInspector: WindowInspector
     private val windowCallbackInterceptor: WindowCallbackInterceptor
@@ -79,7 +79,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         privacy: SessionReplayPrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
-        customMappers: List<MapperTypeWrapper> = emptyList(),
+        mappers: List<MapperTypeWrapper> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
         internalLogger: InternalLogger
@@ -103,7 +103,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.privacy = privacy
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
-        this.customMappers = customMappers
+        this.mappers = mappers
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = RecordedDataQueueHandler(
@@ -152,7 +152,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                     imageTypeResolver = ImageTypeResolver()
                 ),
                 TreeViewTraversal(
-                    mappers = customMappers + privacy.mappers(),
+                    mappers = mappers,
                     viewMapper = defaultVWM,
                     decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
                     viewUtilsInternal = ViewUtilsInternal()
@@ -183,7 +183,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         privacy: SessionReplayPrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
-        customMappers: List<MapperTypeWrapper> = emptyList(),
+        mappers: List<MapperTypeWrapper> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         windowInspector: WindowInspector = WindowInspector,
         windowCallbackInterceptor: WindowCallbackInterceptor,
@@ -198,7 +198,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.privacy = privacy
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
-        this.customMappers = customMappers
+        this.mappers = mappers
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = recordedDataQueueHandler

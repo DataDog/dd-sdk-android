@@ -21,16 +21,13 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
-import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
-import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -43,7 +40,7 @@ internal class SessionReplayFeature(
     private val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
     private val rateBasedSampler: Sampler,
-    private val sessionReplayRecorderProvider: (ResourcesWriter, RecordWriter, Application) -> Recorder
+    private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
@@ -60,19 +57,12 @@ internal class SessionReplayFeature(
         customEndpointUrl,
         privacy,
         RateBasedSampler(sampleRate),
-        { resourceWriter, recordWriter, application ->
-            SessionReplayRecorder(
-                application,
-                resourcesWriter = resourceWriter,
-                rumContextProvider = SessionReplayRumContextProvider(sdkCore),
-                privacy = privacy,
-                recordWriter = recordWriter,
-                timeProvider = SessionReplayTimeProvider(sdkCore),
-                customMappers = customMappers,
-                customOptionSelectorDetectors = customOptionSelectorDetectors,
-                internalLogger = sdkCore.internalLogger
-            )
-        }
+        DefaultRecorderProvider(
+            sdkCore,
+            privacy,
+            customMappers,
+            customOptionSelectorDetectors
+        )
     )
 
     private lateinit var appContext: Context
@@ -101,7 +91,8 @@ internal class SessionReplayFeature(
         val resourcesFeature = registerResourceFeature(sdkCore)
 
         dataWriter = createDataWriter()
-        sessionReplayRecorder = sessionReplayRecorderProvider(resourcesFeature.dataWriter, dataWriter, appContext)
+        sessionReplayRecorder =
+            recorderProvider.provideSessionReplayRecorder(resourcesFeature.dataWriter, dataWriter, appContext)
         @Suppress("ThreadSafety") // TODO RUM-1462 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
