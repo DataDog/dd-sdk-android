@@ -582,7 +582,28 @@ publish:release-rum:
 
 # SLACK NOTIFICATIONS
 
-notify:release:
+notify:publish-develop-success:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_success
+  only:
+    - develop
+  script:
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME develop $CI_COMMIT_TAG: Snapshot published on :maven:, Sample app published on :synthetics:"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+
+notify:publish-develop-failure:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_failure
+  only:
+    - develop
+  script:
+    - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
+    - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG develop pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+
+notify:publish-release-success:
   extends: .slack-notifier-base
   stage: notify
   when: on_success
@@ -590,10 +611,10 @@ notify:release:
     - tags
   script:
     - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android-core/$CI_COMMIT_TAG/aar"
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
-    - postmessage "#mobile-rum" "$MESSAGE_TEXT"
+    - 'MESSAGE_TEXT=":rocket: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
-notify:failure:
+notify:publish-release-failure:
   extends: .slack-notifier-base
   stage: notify
   when: on_failure
@@ -602,7 +623,7 @@ notify:failure:
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
     - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
-    - postmessage "#mobile-rum" "$MESSAGE_TEXT"
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
   tags: [ "arch:amd64" ]
