@@ -556,9 +556,15 @@ internal open class RumViewScope(
 
     @WorkerThread
     private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
-        stopped = true
+        if (!stopped) {
+            stopped = true
 
-        sendViewUpdate(event, writer)
+            sendViewUpdate(event, writer)
+
+            cpuVitalMonitor.unregister(cpuVitalListener)
+            memoryVitalMonitor.unregister(memoryVitalListener)
+            frameRateVitalMonitor.unregister(frameRateVitalListener)
+        }
     }
 
     @WorkerThread

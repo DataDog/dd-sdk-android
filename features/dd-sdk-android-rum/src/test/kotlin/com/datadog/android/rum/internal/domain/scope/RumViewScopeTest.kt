@@ -7398,6 +7398,64 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M unregister vital monitors W handleEvent(StopSession)`() {
+        // Given
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StopView + StopView) {different key}`() {
+        // Given
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StopView + StartView) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StopView + StopSession) {different key}`() {
+        // Given
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
     fun `M unregister vital monitors only once W handleEvent(StartView + StopView) {different key}`(
         @Forgery fakeOtherKey: RumScopeKey
     ) {
@@ -7427,6 +7485,74 @@ internal class RumViewScopeTest {
         // When
         testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey1, emptyMap()), mockWriter)
         testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey2, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StartView + StopSession) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey, emptyMap()), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StopSession + StopView) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StopSession + StartView) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StopSession + StopSession) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
 
         // Then
         verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
