@@ -7382,6 +7382,58 @@ internal class RumViewScopeTest {
         verify(mockFrameRateVitalMonitor, never()).unregister(testedScope.frameRateVitalListener)
     }
 
+    @Test
+    fun `M unregister vital monitors W handleEvent(StartView)`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StartView + StopView) {different key}`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey, emptyMap()), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
+    @Test
+    fun `M unregister vital monitors only once W handleEvent(StartView + StartView) {different key}`(
+        @Forgery fakeOtherKey1: RumScopeKey,
+        @Forgery fakeOtherKey2: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey1 == fakeKey)
+        assumeFalse(fakeOtherKey2 == fakeKey)
+        assumeFalse(fakeOtherKey1 == fakeOtherKey2)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey1, emptyMap()), mockWriter)
+        testedScope.handleEvent(RumRawEvent.StartView(fakeOtherKey2, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
+        verify(mockMemoryVitalMonitor).unregister(testedScope.memoryVitalListener)
+        verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
+    }
+
     // endregion
 
     // region Cross-platform performance metrics

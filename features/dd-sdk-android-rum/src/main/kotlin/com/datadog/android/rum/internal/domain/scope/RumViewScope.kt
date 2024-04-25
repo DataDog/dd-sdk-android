@@ -246,6 +246,10 @@ internal open class RumViewScope(
             sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
             sendViewChanged()
+
+            cpuVitalMonitor.unregister(cpuVitalListener)
+            memoryVitalMonitor.unregister(memoryVitalListener)
+            frameRateVitalMonitor.unregister(frameRateVitalListener)
         }
     }
 
