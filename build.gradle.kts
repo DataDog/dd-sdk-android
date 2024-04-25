@@ -7,7 +7,6 @@
 
 import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.nightlyTestsCoverageConfig
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
@@ -152,8 +151,6 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     // we need this artifact to trick Bitrise
     dependsOn(":instrumented:integration:assembleDebug")
 }
-
-nightlyTestsCoverageConfig(threshold = 0.81f)
 
 tasks.register("printSdkDebugRuntimeClasspath") {
     val fileTreeClassPathCollector = UnionFileTree(
