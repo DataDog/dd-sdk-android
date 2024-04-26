@@ -238,19 +238,7 @@ internal open class RumViewScope(
         event: RumRawEvent.StartView,
         writer: DataWriter<Any>
     ) {
-        if (!stopped) {
-            // no need to update RUM Context here erasing current view, because this is called
-            // only with event starting a new view, which itself will update a context
-            // at the construction time
-            stopped = true
-            sendViewUpdate(event, writer)
-            delegateEventToChildren(event, writer)
-            sendViewChanged()
-
-            cpuVitalMonitor.unregister(cpuVitalListener)
-            memoryVitalMonitor.unregister(memoryVitalListener)
-            frameRateVitalMonitor.unregister(frameRateVitalListener)
-        }
+        stopScope(event, writer)
     }
 
     @WorkerThread
@@ -261,46 +249,41 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
-            // we should not reset the timestamp offset here as due to async nature of feature context update
-            // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
-            // correction
-            val newRumContext = getRumContext().copy(
-                viewType = RumViewType.NONE,
-                viewId = null,
-                viewName = null,
-                viewUrl = null,
-                actionId = null
-            )
-            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
-                val canUpdate = when {
-                    currentRumContext["session_id"] != this.sessionId -> {
-                        // we have a new session, so whatever is in the Global context is
-                        // not valid anyway
-                        true
+            stopScope(event, writer) {
+                // we should not reset the timestamp offset here as due to async nature of feature context update
+                // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
+                // correction
+                val newRumContext = getRumContext().copy(
+                    viewType = RumViewType.NONE,
+                    viewId = null,
+                    viewName = null,
+                    viewUrl = null,
+                    actionId = null
+                )
+                sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
+                    val canUpdate = when {
+                        currentRumContext["session_id"] != this.sessionId -> {
+                            // we have a new session, so whatever is in the Global context is
+                            // not valid anyway
+                            true
+                        }
+
+                        currentRumContext["view_id"] == this.viewId -> true
+                        else -> false
                     }
-
-                    currentRumContext["view_id"] == this.viewId -> true
-                    else -> false
+                    if (canUpdate) {
+                        currentRumContext.clear()
+                        currentRumContext.putAll(newRumContext.toMap())
+                    } else {
+                        sdkCore.internalLogger.log(
+                            InternalLogger.Level.DEBUG,
+                            InternalLogger.Target.MAINTAINER,
+                            { RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE }
+                        )
+                    }
                 }
-                if (canUpdate) {
-                    currentRumContext.clear()
-                    currentRumContext.putAll(newRumContext.toMap())
-                } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.DEBUG,
-                        InternalLogger.Target.MAINTAINER,
-                        { RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE }
-                    )
-                }
+                eventAttributes.putAll(event.attributes)
             }
-            eventAttributes.putAll(event.attributes)
-            stopped = true
-            sendViewUpdate(event, writer)
-            sendViewChanged()
-
-            cpuVitalMonitor.unregister(cpuVitalListener)
-            memoryVitalMonitor.unregister(memoryVitalListener)
-            frameRateVitalMonitor.unregister(frameRateVitalListener)
         }
     }
 
@@ -556,15 +539,8 @@ internal open class RumViewScope(
 
     @WorkerThread
     private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
-        if (!stopped) {
-            stopped = true
+        stopScope(event, writer)
 
-            sendViewUpdate(event, writer)
-
-            cpuVitalMonitor.unregister(cpuVitalListener)
-            memoryVitalMonitor.unregister(memoryVitalListener)
-            frameRateVitalMonitor.unregister(frameRateVitalListener)
-        }
     }
 
     @WorkerThread
@@ -726,6 +702,33 @@ internal open class RumViewScope(
             if (event.isFrozenFrame) {
                 pendingFrozenFrameCount--
             }
+        }
+    }
+
+    /**
+     * Marks this scope as stopped, and clean up every thing that needs to.
+     * This action and the side effect are only performed if the scope has not already been marked as stopped.
+     * @param event the event triggering the stopping
+     * @param writer the writer to send the view update
+     * @param sideEffect additional side effect to be performed alongside regular cleanup.
+     */
+    @WorkerThread
+    private fun stopScope(
+        event: RumRawEvent,
+        writer: DataWriter<Any>,
+        sideEffect: () -> Unit = {}
+    ) {
+        if (!stopped) {
+            sideEffect()
+
+            stopped = true
+            sendViewUpdate(event, writer)
+            delegateEventToChildren(event, writer)
+            sendViewChanged()
+
+            cpuVitalMonitor.unregister(cpuVitalListener)
+            memoryVitalMonitor.unregister(memoryVitalListener)
+            frameRateVitalMonitor.unregister(frameRateVitalListener)
         }
     }
 
