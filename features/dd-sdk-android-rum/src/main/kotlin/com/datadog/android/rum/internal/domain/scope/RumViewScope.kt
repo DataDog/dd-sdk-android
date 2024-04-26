@@ -540,7 +540,6 @@ internal open class RumViewScope(
     @WorkerThread
     private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
         stopScope(event, writer)
-
     }
 
     @WorkerThread
