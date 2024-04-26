@@ -13,7 +13,7 @@ package com.datadog.android
  * instance ID (because this value is used there) in case if enum values are renamed.
  * @param intakeHostName the host name for the given site.
  */
-enum class DatadogSite(internal val siteName: String, private val intakeHostName: String) {
+enum class DatadogSite private constructor(internal val siteName: String, private val intakeHostName: String) {
 
     /**
      *  The US1 site: [app.datadoghq.com](https://app.datadoghq.com).
@@ -55,7 +55,7 @@ enum class DatadogSite(internal val siteName: String, private val intakeHostName
      * @param siteName Explicit site name property introduced in order to have a consistent SDK
      * instance ID (because this value is used there) in case if enum values are renamed.
      */
-    constructor(siteName: String) : this(
+    private constructor(siteName: String) : this(
         siteName,
         "browser-intake-$siteName-datadoghq.com"
     )
