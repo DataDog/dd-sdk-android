@@ -11,7 +11,9 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
-import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -21,8 +23,6 @@ import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -101,9 +101,6 @@ internal class WindowsOnDrawListenerTest {
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
 
-    @Mock
-    lateinit var mockLogger: InternalLogger
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
@@ -144,7 +141,7 @@ internal class WindowsOnDrawListenerTest {
             privacy = fakePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            logger = mockLogger
+            methodCallTelemetrySamplingRate = 100f
         )
     }
 
@@ -197,8 +194,7 @@ internal class WindowsOnDrawListenerTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             privacy = fakePrivacy,
-            debouncer = mockDebouncer,
-            logger = mockLogger
+            debouncer = mockDebouncer
         )
 
         // When
@@ -236,15 +232,24 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
-    fun `M call methodCall telemetry with true W onDraw() { has nodes }`() {
+    fun `M call methodCall telemetry with true W onDraw() { has nodes }`(
+        @Mock mockSdkCore: SdkCore,
+        @Mock mockSessionReplayFeature: FeatureScope,
+        @Mock mockPerformanceMetric: PerformanceMetric
+    ) {
         // Given
+        whenever(mockSessionReplayFeature.startPerformanceMeasure(any(), any(), any()))
+            .thenReturn(mockPerformanceMetric)
+
         testedListener = WindowsOnDrawListener(
             zOrderedDecorViews = fakeMockedDecorViews,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
+            privacy = fakePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            logger = mockLogger,
+            sdkCore = mockSdkCore,
+            sessionReplayFeature = mockSessionReplayFeature,
             methodCallTelemetrySamplingRate = 100f
         )
 
@@ -259,26 +264,30 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        val metricTitleCaptor = argumentCaptor<() -> String>()
-        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any>>()
-        verify(mockLogger).logMetric(metricTitleCaptor.capture(), additionalPropertiesCaptor.capture())
-        metricTitleCaptor.firstValue.run {
-            assertThat(this()).isEqualTo(METHOD_CALLED_METRIC_NAME)
-        }
-        val isSuccessful = additionalPropertiesCaptor.firstValue[IS_SUCCESSFUL] as Boolean
-        assertThat(isSuccessful).isTrue()
+        val booleanCaptor = argumentCaptor<Boolean>()
+        verify(mockPerformanceMetric).stopAndSend(booleanCaptor.capture())
+        assertThat(booleanCaptor.firstValue).isTrue()
     }
 
     @Test
-    fun `M send methodCall telemetry with false W onDraw() { no nodes }`() {
+    fun `M send methodCall telemetry with false W onDraw() { no nodes }`(
+        @Mock mockSdkCore: SdkCore,
+        @Mock mockSessionReplayFeature: FeatureScope,
+        @Mock mockPerformanceMetric: PerformanceMetric
+    ) {
         // Given
+        whenever(mockSessionReplayFeature.startPerformanceMeasure(any(), any(), any()))
+            .thenReturn(mockPerformanceMetric)
+
         testedListener = WindowsOnDrawListener(
             zOrderedDecorViews = fakeMockedDecorViews,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
+            privacy = fakePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            logger = mockLogger,
+            sdkCore = mockSdkCore,
+            sessionReplayFeature = mockSessionReplayFeature,
             methodCallTelemetrySamplingRate = 100f
         )
 
@@ -295,14 +304,9 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        val metricTitleCaptor = argumentCaptor<() -> String>()
-        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any>>()
-        verify(mockLogger).logMetric(metricTitleCaptor.capture(), additionalPropertiesCaptor.capture())
-        metricTitleCaptor.firstValue.run {
-            assertThat(this()).isEqualTo(METHOD_CALLED_METRIC_NAME)
-        }
-        val isSuccessful = additionalPropertiesCaptor.firstValue[IS_SUCCESSFUL] as Boolean
-        assertThat(isSuccessful).isFalse()
+        val booleanCaptor = argumentCaptor<Boolean>()
+        verify(mockPerformanceMetric).stopAndSend(booleanCaptor.capture())
+        assertThat(booleanCaptor.firstValue).isFalse()
     }
 
     // region Internal

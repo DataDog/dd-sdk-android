@@ -10,14 +10,17 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
-import com.datadog.android.api.InternalLogger
+import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.TelemetryMetricType
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
@@ -28,7 +31,10 @@ internal class WindowsOnDrawListener(
     private val privacy: SessionReplayPrivacy,
     private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
-    private val logger: InternalLogger,
+    private val sdkCore: SdkCore = Datadog.getInstance(),
+    private val sessionReplayFeature: FeatureScope? = (sdkCore as FeatureSdkCore).getFeature(
+        Feature.SESSION_REPLAY_FEATURE_NAME
+    ),
     private val methodCallTelemetrySamplingRate: Float = METHOD_CALL_SAMPLING_RATE
 ) : ViewTreeObserver.OnDrawListener {
 
@@ -65,10 +71,9 @@ internal class WindowsOnDrawListener(
             RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
-        val methodCallTelemetry = MetricBase.startMetric(
-            logger = logger,
-            metric = TelemetryMetricType.MethodCalled,
+        val performanceMetric = sessionReplayFeature?.startPerformanceMeasure(
             callerClass = this.javaClass.name,
+            metric = TelemetryMetricType.MethodCalled,
             samplingRate = methodCallTelemetrySamplingRate
         )
 
@@ -77,7 +82,8 @@ internal class WindowsOnDrawListener(
                 snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
             }
 
-        methodCallTelemetry?.sendMetric(isSuccessful = nodes.isNotEmpty())
+        val isSuccessful = nodes.isNotEmpty()
+        performanceMetric?.stopAndSend(isSuccessful)
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes

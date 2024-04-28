@@ -4,20 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.telemetry
+package com.datadog.android.core.metrics
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.CALLER_CLASS
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.EXECUTION_TIME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MethodCalledTelemetry.Companion.OPERATION_NAME
-import com.datadog.android.sessionreplay.internal.recorder.telemetry.MetricBase.Companion.METRIC_TYPE
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.CALLER_CLASS
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.EXECUTION_TIME
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
+import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.OPERATION_NAME
+import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -108,7 +108,7 @@ internal class MethodCalledTelemetryTest {
     @Test
     fun `M call logger with correct title W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.sendMetric(false)
+        testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
         verify(mockInternalLogger).logMetric(lambdaCaptor.capture(), any())
@@ -121,7 +121,7 @@ internal class MethodCalledTelemetryTest {
     @Test
     fun `M call logger with correct execution time W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.sendMetric(false)
+        testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -133,7 +133,7 @@ internal class MethodCalledTelemetryTest {
     @Test
     fun `M call logger with correct operation name W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.sendMetric(false)
+        testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -145,7 +145,7 @@ internal class MethodCalledTelemetryTest {
     @Test
     fun `M call logger with correct caller class W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.sendMetric(false)
+        testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -157,7 +157,7 @@ internal class MethodCalledTelemetryTest {
     @Test
     fun `M call logger with correct isSuccessful value W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
+        testedMethodCalledTelemetry.stopAndSend(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
@@ -169,7 +169,7 @@ internal class MethodCalledTelemetryTest {
     @Test
     fun `M call logger with correct metric type value W sendMetric()`() {
         // When
-        testedMethodCalledTelemetry.sendMetric(fakeStatus)
+        testedMethodCalledTelemetry.stopAndSend(fakeStatus)
 
         // Then
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
