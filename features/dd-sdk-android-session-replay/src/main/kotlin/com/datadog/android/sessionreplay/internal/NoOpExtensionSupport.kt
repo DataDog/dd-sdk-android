@@ -8,12 +8,12 @@ package com.datadog.android.sessionreplay.internal
 
 import android.view.View
 import com.datadog.android.sessionreplay.ExtensionSupport
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 
 internal class NoOpExtensionSupport : ExtensionSupport {
-    override fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
+
+    override fun getCustomViewMappers(): Map<Class<*>, WireframeMapper<View, *>> {
         return emptyMap()
     }
 

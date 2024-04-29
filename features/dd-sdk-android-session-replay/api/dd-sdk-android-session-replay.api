@@ -96,14 +96,6 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion {
 }
 
-public class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskInputTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
-	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
-}
-
-public class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
-	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
-}
-
 public class com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper {
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
 	public synthetic fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)Ljava/util/List;

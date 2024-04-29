@@ -75,6 +75,7 @@ internal class DefaultRecorderProvider(
         )
     }
 
+    @Suppress("LongMethod")
     private fun builtInMappers(): List<MapperTypeWrapper> {
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
