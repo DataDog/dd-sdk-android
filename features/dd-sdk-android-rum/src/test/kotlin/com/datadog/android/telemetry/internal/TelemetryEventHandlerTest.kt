@@ -34,7 +34,6 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -47,6 +46,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -353,19 +355,27 @@ internal class TelemetryEventHandlerTest {
         }
     }
 
-    @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with tracing settings }`(
-        @Forgery fakeConfiguration: TelemetryCoreConfiguration,
-        @BoolForgery useTracing: Boolean,
-        forge: Forge
+    @ParameterizedTest
+    @MethodSource("tracingConfigurationParameters")
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { tracing configuration with tracing settings }`(
+        useTracer: Boolean,
+        tracerApi: TelemetryEventHandler.TracerApi?,
+        tracerApiVersion: String?,
+        @Forgery fakeConfiguration: TelemetryCoreConfiguration
     ) {
         // Given
-        if (useTracing || forge.aBool()) {
-            whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        }
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(fakeConfiguration)
-        if (useTracing) {
-            GlobalTracer.registerIfAbsent(mock<Tracer>())
+        if (useTracer) {
+            whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+            if (tracerApi == TelemetryEventHandler.TracerApi.OpenTracing) {
+                GlobalTracer.registerIfAbsent(mock<Tracer>())
+            } else if (tracerApi == TelemetryEventHandler.TracerApi.OpenTelemetry) {
+                whenever(mockSdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)) doReturn
+                    mapOf(
+                        TelemetryEventHandler.IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY to true,
+                        TelemetryEventHandler.OPENTELEMETRY_API_VERSION_CONTEXT_KEY to tracerApiVersion
+                    )
+            }
         }
 
         // When
@@ -376,7 +386,9 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
-                .hasUseTracing(useTracing)
+                .hasUseTracing(useTracer)
+                .hasTracerApi(tracerApi?.name)
+                .hasTracerApiVersion(tracerApiVersion)
         }
     }
 
@@ -947,6 +959,22 @@ internal class TelemetryEventHandlerTest {
     // endregion
 
     companion object {
+
+        private val forge = Forge().apply {
+            Configurator().configure(this)
+        }
+
+        @JvmStatic
+        fun tracingConfigurationParameters() = listOf(
+            // hasTracer, tracerApiName, tracerApiVersion
+            Arguments.of(true, TelemetryEventHandler.TracerApi.OpenTracing, null),
+            Arguments.of(
+                true,
+                TelemetryEventHandler.TracerApi.OpenTelemetry,
+                forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
+            ),
+            Arguments.of(false, null, null)
+        )
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
     }

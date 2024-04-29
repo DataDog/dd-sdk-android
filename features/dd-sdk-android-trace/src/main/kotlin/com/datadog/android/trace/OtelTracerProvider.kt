@@ -136,6 +136,11 @@ class OtelTracerProvider(
                     InternalLogger.Target.USER,
                     { TRACING_NOT_ENABLED_ERROR_MESSAGE }
                 )
+            } else {
+                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+                    it[TracingFeature.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
+                    it[TracingFeature.OPENTELEMETRY_API_VERSION_CONFIG_KEY] = BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+                }
             }
             val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
                 .withProperties(properties())

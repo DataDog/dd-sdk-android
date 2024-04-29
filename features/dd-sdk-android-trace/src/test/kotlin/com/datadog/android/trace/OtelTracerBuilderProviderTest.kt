@@ -815,8 +815,8 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(2)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
-            firstValue.invoke(traceContext)
+            verify(mockSdkCore, times(3)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            secondValue.invoke(traceContext)
             val activeTraceContext = traceContext[expectedActiveTraceContextName] as Map<String, Any>
             assertThat(activeTraceContext).containsEntry("trace_id", expectedTraceId)
             assertThat(activeTraceContext).containsEntry("span_id", expectedSpanId)
@@ -852,10 +852,40 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(1)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(2)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
             lastValue.invoke(traceContext)
             assertThat(traceContext).doesNotContainKey(expectedActiveTraceContextName)
         }
+    }
+
+    // endregion
+
+    // region Tracing context
+
+    @Test
+    fun `M set OpenTelemetry as enabled in Context W build { TracingFeature enabled }`() {
+        // WHEN
+        testedOtelTracerProviderBuilder.build()
+
+        // THEN
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            val traceContext: MutableMap<String, Any?> = mutableMapOf()
+            verify(mockSdkCore, times(1)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            lastValue.invoke(traceContext)
+            assertThat(traceContext[TracingFeature.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY]).isEqualTo(true)
+            assertThat(traceContext[TracingFeature.OPENTELEMETRY_API_VERSION_CONFIG_KEY])
+                .isEqualTo(BuildConfig.OPENTELEMETRY_API_VERSION_NAME)
+        }
+    }
+
+    @Test
+    fun `M not update the Context W build { TracingFeature not enabled }`() {
+        // WHEN
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        testedOtelTracerProviderBuilder.build()
+
+        // THEN
+        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())
     }
 
     // endregion

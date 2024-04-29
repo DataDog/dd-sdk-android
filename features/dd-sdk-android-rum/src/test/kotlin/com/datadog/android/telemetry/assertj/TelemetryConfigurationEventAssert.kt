@@ -230,6 +230,26 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasTracerApi(tracerApi: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.tracerApi)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.tracerApi $tracerApi " +
+                    "but was ${actual.telemetry.configuration.tracerApi}"
+            )
+            .isEqualTo(tracerApi)
+        return this
+    }
+
+    fun hasTracerApiVersion(tracerApiVersion: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.tracerApiVersion)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.tracerApiVersion $tracerApiVersion " +
+                    "but was ${actual.telemetry.configuration.tracerApiVersion}"
+            )
+            .isEqualTo(tracerApiVersion)
+        return this
+    }
+
     fun hasBatchSize(expected: Long?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.batchSize)
             .overridingErrorMessage(
