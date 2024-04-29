@@ -56,6 +56,7 @@ data class SessionReplayConfiguration internal constructor(
          * If not specified all the elements will be masked by default (MASK).
          * @see SessionReplayPrivacy.ALLOW
          * @see SessionReplayPrivacy.MASK
+         * @see SessionReplayPrivacy.MASK_USER_INPUT
          */
         fun setPrivacy(privacy: SessionReplayPrivacy): Builder {
             this.privacy = privacy

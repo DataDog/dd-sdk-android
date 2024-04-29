@@ -38,7 +38,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
@@ -96,7 +95,6 @@ internal class DefaultRecorderProvider(
             drawableToColorMapper
         )
         val textViewMapper = TextViewMapper(
-            AllowObfuscationRule(),
             viewIdentifierResolver,
             colorStringFormatter,
             viewBoundsResolver,

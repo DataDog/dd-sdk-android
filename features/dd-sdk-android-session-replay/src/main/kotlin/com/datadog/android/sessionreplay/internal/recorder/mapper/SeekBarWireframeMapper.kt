@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -123,19 +124,15 @@ internal open class SeekBarWireframeMapper(
             )
         )
 
-        return resolveViewAsWireframesList(
-            trackNonActiveWireframe,
-            trackActiveWireframe,
-            thumbWireframe
-        )
-    }
-
-    protected open fun resolveViewAsWireframesList(
-        nonActiveTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,
-        activeTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,
-        thumbWireframe: MobileSegment.Wireframe.ShapeWireframe
-    ): List<MobileSegment.Wireframe> {
-        return listOf(nonActiveTrackWireframe, activeTrackWireframe, thumbWireframe)
+        return if (mappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            listOf(
+                trackNonActiveWireframe,
+                trackActiveWireframe,
+                thumbWireframe
+            )
+        } else {
+            listOf(trackNonActiveWireframe)
+        }
     }
 
     private fun SeekBar.trackLeftPadding(screenDensity: Float): Long {

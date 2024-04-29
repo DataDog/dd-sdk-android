@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -62,6 +63,7 @@ internal open class NumberPickerMapper(
             return map(
                 view,
                 mappingContext.systemInformation,
+                mappingContext.privacy,
                 prevIndexLabelId,
                 topDividerId,
                 selectedIndexLabelId,
@@ -77,6 +79,7 @@ internal open class NumberPickerMapper(
     private fun map(
         view: NumberPicker,
         systemInformation: SystemInformation,
+        privacy: SessionReplayPrivacy,
         prevIndexLabelId: Long,
         topDividerId: Long,
         selectedIndexLabelId: Long,
@@ -153,13 +156,24 @@ internal open class NumberPickerMapper(
             textSize,
             nextPrevLabelTextColor
         )
-        return listOf(
-            prevValueLabelWireframe,
-            topDividerWireframe,
-            selectedValueLabelWireframe,
-            bottomDividerWireframe,
-            nextValueLabelWireframe
-        )
+
+        return if (privacy == SessionReplayPrivacy.ALLOW) {
+            listOf(
+                prevValueLabelWireframe,
+                topDividerWireframe,
+                selectedValueLabelWireframe,
+                bottomDividerWireframe,
+                nextValueLabelWireframe
+            )
+        } else {
+            listOf(
+                topDividerWireframe,
+                selectedValueLabelWireframe.copy(
+                    text = DEFAULT_MASKED_TEXT_VALUE
+                ),
+                bottomDividerWireframe
+            )
+        }
     }
 
     private fun resolvePrevLabelValue(view: NumberPicker): String {
@@ -198,5 +212,9 @@ internal open class NumberPickerMapper(
             return numberPicker.displayedValues[normalizedIndex]
         }
         return index.toString()
+    }
+
+    companion object {
+        internal const val DEFAULT_MASKED_TEXT_VALUE = "xxx"
     }
 }

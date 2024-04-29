@@ -96,6 +96,10 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
+    override fun resolveMaskedCheckable(view: T, mappingContext: MappingContext): List<MobileSegment.Wireframe>? {
+        return resolveNotCheckedCheckable(view, mappingContext)
+    }
+
     // endregion
 
     // region CheckableTextViewMapper

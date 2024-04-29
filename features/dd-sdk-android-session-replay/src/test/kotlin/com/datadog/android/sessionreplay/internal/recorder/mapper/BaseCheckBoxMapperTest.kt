@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.CheckBox
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -108,10 +109,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     internal abstract fun setupTestedMapper(): CheckBoxMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
-            opacity = mockCheckBox.alpha
-        )
+        return if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            MobileSegment.ShapeStyle(
+                backgroundColor = checkBoxColor,
+                opacity = mockCheckBox.alpha
+            )
+        } else {
+            null
+        }
     }
 
     // region Unit Tests
