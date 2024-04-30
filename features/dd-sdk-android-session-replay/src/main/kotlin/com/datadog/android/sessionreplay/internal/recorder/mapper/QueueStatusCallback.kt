@@ -6,19 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.view.View
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 
-internal class QueueableViewMapper(
-    private val mapper: WireframeMapper<View, *>,
+internal class QueueStatusCallback(
     private val recordedDataQueueRefs: RecordedDataQueueRefs
 ) : AsyncJobStatusCallback {
-    fun map(view: View, mappingContext: MappingContext): List<MobileSegment.Wireframe> {
-        return mapper.map(view, mappingContext, this)
-    }
 
     override fun jobStarted() {
         recordedDataQueueRefs.incrementPendingJobs()

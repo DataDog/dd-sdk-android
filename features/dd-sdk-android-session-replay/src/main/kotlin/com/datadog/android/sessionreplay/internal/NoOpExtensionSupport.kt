@@ -6,15 +6,14 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import android.view.View
 import com.datadog.android.sessionreplay.ExtensionSupport
+import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 
 internal class NoOpExtensionSupport : ExtensionSupport {
 
-    override fun getCustomViewMappers(): Map<Class<*>, WireframeMapper<View, *>> {
-        return emptyMap()
+    override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
+        return emptyList()
     }
 
     override fun getOptionSelectorDetectors(): List<OptionSelectorDetector> {

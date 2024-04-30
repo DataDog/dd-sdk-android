@@ -23,7 +23,7 @@ internal abstract class BasePickerMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<NumberPicker, MobileSegment.Wireframe>(
+) : BaseWireframeMapper<NumberPicker>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,

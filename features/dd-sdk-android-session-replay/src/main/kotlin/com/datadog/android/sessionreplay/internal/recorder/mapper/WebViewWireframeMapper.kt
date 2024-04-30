@@ -21,7 +21,7 @@ internal class WebViewWireframeMapper(
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
 ) :
-    BaseWireframeMapper<WebView, MobileSegment.Wireframe.WebviewWireframe>(
+    BaseWireframeMapper<WebView>(
         viewIdentifierResolver,
         colorStringFormatter,
         viewBoundsResolver,
@@ -32,7 +32,7 @@ internal class WebViewWireframeMapper(
         view: WebView,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe.WebviewWireframe> {
+    ): List<MobileSegment.Wireframe> {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity

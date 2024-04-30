@@ -25,7 +25,12 @@ internal open class NumberPickerMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BasePickerMapper(viewIdentifierResolver, colorStringFormatter, viewBoundsResolver, drawableToColorMapper) {
+) : BasePickerMapper(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     override fun map(
         view: NumberPicker,

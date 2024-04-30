@@ -6,11 +6,10 @@
 
 package com.datadog.android.sessionreplay.material
 
-import android.view.View
 import com.datadog.android.sessionreplay.ExtensionSupport
+import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -32,13 +31,12 @@ class MaterialExtensionSupport : ExtensionSupport {
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
 
-    @Suppress("UNCHECKED_CAST")
-    override fun getCustomViewMappers(): Map<Class<*>, WireframeMapper<View, *>> {
+    override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
         val sliderWireframeMapper = SliderWireframeMapper(
             viewIdentifierResolver,
             colorStringFormatter,
             viewBoundsResolver
-        ) as WireframeMapper<View, *>
+        )
 
         val tabWireframeMapper = TabWireframeMapper(
             viewIdentifierResolver,
@@ -49,11 +47,11 @@ class MaterialExtensionSupport : ExtensionSupport {
                 viewBoundsResolver,
                 drawableToColorMapper
             )
-        ) as WireframeMapper<View, *>
+        )
 
-        return mapOf(
-            Slider::class.java to sliderWireframeMapper,
-            TabLayout.TabView::class.java to tabWireframeMapper
+        return listOf(
+            MapperTypeWrapper(Slider::class.java, sliderWireframeMapper),
+            MapperTypeWrapper(TabLayout.TabView::class.java, tabWireframeMapper)
         )
     }
 

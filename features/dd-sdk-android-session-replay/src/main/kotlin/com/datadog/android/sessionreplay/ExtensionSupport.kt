@@ -20,9 +20,9 @@ interface ExtensionSupport {
 
     /**
      * Use this method if you want to apply a custom [WireframeMapper] for a specific [View].
-     * @return the [View] type to custom [WireframeMapper] map
+     * @return the list of [MapperTypeWrapper]
      */
-    fun getCustomViewMappers(): Map<Class<*>, WireframeMapper<View, *>>
+    fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
 
     /**
      * Implement this method if you need to return some specific implementations for the

@@ -17,7 +17,7 @@ import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
  * This is mainly used internally by the SDK but if you want to provide a different
  * Session Replay representation for a specific View type you can implement this on your end.
  */
-interface WireframeMapper<in T : View, out S : MobileSegment.Wireframe> {
+interface WireframeMapper<in T : View> {
 
     /**
      * Maps a [View] to a [List<Wireframe>] in order to be rendered in the Session Replay player.
@@ -37,5 +37,5 @@ interface WireframeMapper<in T : View, out S : MobileSegment.Wireframe> {
         view: T,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<S>
+    ): List<MobileSegment.Wireframe>
 }

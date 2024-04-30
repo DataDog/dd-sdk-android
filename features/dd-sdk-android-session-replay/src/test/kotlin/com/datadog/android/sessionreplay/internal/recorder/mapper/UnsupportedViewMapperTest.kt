@@ -204,7 +204,7 @@ internal class UnsupportedViewMapperTest : BaseWireframeMapperTest() {
 
     // region Internal
 
-    private fun getWireframe(view: View): MobileSegment.Wireframe.PlaceholderWireframe {
+    private fun getWireframe(view: View): MobileSegment.Wireframe {
         return testedUnsupportedViewMapper.map(
             view,
             fakeMappingContext,

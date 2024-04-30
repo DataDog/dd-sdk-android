@@ -14,13 +14,25 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-@Suppress("UndocumentedPublicClass")
-abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
+/**
+ * A basic abstract [WireframeMapper] that provides some helpful utilities.
+ *
+ * It provides functions to:
+ *  - resolve a stable id for any [View]
+ *  - converts a [Drawable] into a [MobileSegment.ShapeStyle]
+ *
+ *  @param T the type of the [View] to map
+ *  @property viewIdentifierResolver the [ViewIdentifierResolver] (to resolve a view or children stable id)
+ *  @property colorStringFormatter the [ColorStringFormatter] to transform Color into HTML hex strings
+ *  @property viewBoundsResolver the [ViewBoundsResolver] to get a view boundaries in density independent units
+ *  @property drawableToColorMapper the [DrawableToColorMapper] to convert a background drawable into a solid color
+ */
+abstract class BaseWireframeMapper<in T : View>(
     protected val viewIdentifierResolver: ViewIdentifierResolver,
     protected val colorStringFormatter: ColorStringFormatter,
     protected val viewBoundsResolver: ViewBoundsResolver,
     protected val drawableToColorMapper: DrawableToColorMapper
-) : WireframeMapper<T, S> {
+) : WireframeMapper<T> {
 
     /**
      * Resolves the [View] unique id to be used in the mapped [MobileSegment.Wireframe].

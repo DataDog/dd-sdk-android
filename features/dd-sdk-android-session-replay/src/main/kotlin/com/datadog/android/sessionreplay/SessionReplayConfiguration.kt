@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay
 import androidx.annotation.FloatRange
 import com.datadog.android.sessionreplay.internal.NoOpExtensionSupport
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 
 /**
  * Describes configuration to be used for the Session Replay feature.
@@ -17,7 +16,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrap
 data class SessionReplayConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
-    internal val customMappers: List<MapperTypeWrapper>,
+    internal val customMappers: List<MapperTypeWrapper<*>>,
     internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     internal val sampleRate: Float
 ) {
@@ -76,11 +75,8 @@ data class SessionReplayConfiguration internal constructor(
             )
         }
 
-        private fun customMappers(): List<MapperTypeWrapper> {
+        private fun customMappers(): List<MapperTypeWrapper<*>> {
             return extensionSupport.getCustomViewMappers()
-                .map { typeMapperPair ->
-                    MapperTypeWrapper(typeMapperPair.key, typeMapperPair.value)
-                }
         }
     }
 }

@@ -11,12 +11,15 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckedTextView
 import android.widget.CompoundButton
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.TextView
+import androidx.drawerlayout.widget.DrawerLayout
+import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
@@ -89,11 +92,9 @@ internal class TreeViewTraversalTest {
             forge.aMockView<Button>(),
             forge.aMockView<TextView>()
         )
-        val fakeTypes: List<Class<*>> = mockViews.map { it::class.java }
-        val fakeTypeToMapperMap: Map<Class<*>, WireframeMapper<View, *>> = fakeTypes
-            .associateWith {
-                mock()
-            }
+        val fakeTypes: List<Class<out View>> = mockViews.map { it::class.java }
+        val fakeTypeToMapperMap: Map<Class<out View>, WireframeMapper<View>> = fakeTypes
+            .associateWith { mock() }
         val fakeTypeMapperWrappers = fakeTypes.map {
             val mapper = fakeTypeToMapperMap[it]!!
             MapperTypeWrapper(it, mapper)
@@ -173,18 +174,14 @@ internal class TreeViewTraversalTest {
     ) {
         // Given
         val fakeViewMappedWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
-        val mockViews: List<View> = listOf(
-            forge.aMockView<RadioButton>(),
-            forge.aMockView<CompoundButton>(),
-            forge.aMockView<CheckedTextView>(),
-            forge.aMockView<Button>(),
-            forge.aMockView<TextView>()
+        val mockViews: List<ViewGroup> = listOf(
+            forge.aMockView<FrameLayout>(),
+            forge.aMockView<LinearLayout>(),
+            forge.aMockView<DrawerLayout>()
         )
-        val fakeTypes: List<Class<*>> = mockViews.map { it::class.java }
-        val fakeTypeToMapperMap: Map<Class<*>, TraverseAllChildrenMapper<View, *>> = fakeTypes
-            .associateWith {
-                mock()
-            }
+        val fakeTypes: List<Class<out ViewGroup>> = mockViews.map { it::class.java }
+        val fakeTypeToMapperMap: Map<Class<out ViewGroup>, TraverseAllChildrenMapper<ViewGroup>> = fakeTypes
+            .associateWith { mock() }
         val fakeTypeMapperWrappers = fakeTypes.map {
             val mapper = fakeTypeToMapperMap[it]!!
             MapperTypeWrapper(it, mapper)

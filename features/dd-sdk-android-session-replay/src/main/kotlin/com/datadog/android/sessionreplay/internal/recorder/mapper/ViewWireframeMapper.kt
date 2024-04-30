@@ -20,7 +20,7 @@ internal class ViewWireframeMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>(
+) : BaseWireframeMapper<View>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
@@ -31,7 +31,7 @@ internal class ViewWireframeMapper(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe.ShapeWireframe> {
+    ): List<MobileSegment.Wireframe> {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity

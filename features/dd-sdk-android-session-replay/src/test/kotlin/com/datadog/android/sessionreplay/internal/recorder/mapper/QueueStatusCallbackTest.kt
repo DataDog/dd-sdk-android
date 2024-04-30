@@ -28,11 +28,11 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class QueueableViewMapperTest {
-    private lateinit var testedMapper: QueueableViewMapper
+internal class QueueStatusCallbackTest {
+    private lateinit var testedMapper: QueueStatusCallback
 
     @Mock
-    lateinit var mockMapper: BaseWireframeMapper<View, *>
+    lateinit var mockMapper: BaseWireframeMapper<View>
 
     @Mock
     lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
@@ -45,7 +45,7 @@ internal class QueueableViewMapperTest {
 
     @BeforeEach
     fun setup() {
-        testedMapper = QueueableViewMapper(mockMapper, mockRecordedDataQueueRefs)
+        testedMapper = QueueStatusCallback(mockRecordedDataQueueRefs)
     }
 
     @Test
@@ -73,14 +73,5 @@ internal class QueueableViewMapperTest {
 
         // Then
         verify(mockRecordedDataQueueRefs).tryToConsumeItem()
-    }
-
-    @Test
-    fun `M call mapper map W map()`() {
-        // When
-        testedMapper.map(mockView, mockMappingContext)
-
-        // Then
-        verify(mockMapper).map(mockView, mockMappingContext, testedMapper)
     }
 }

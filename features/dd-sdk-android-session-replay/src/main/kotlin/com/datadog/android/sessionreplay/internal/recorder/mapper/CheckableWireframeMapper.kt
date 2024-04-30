@@ -22,7 +22,7 @@ internal abstract class CheckableWireframeMapper<T>(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<T, MobileSegment.Wireframe>(
+) : BaseWireframeMapper<T>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,

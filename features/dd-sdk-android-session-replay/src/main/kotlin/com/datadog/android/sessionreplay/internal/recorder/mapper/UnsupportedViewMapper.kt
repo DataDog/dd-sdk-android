@@ -21,15 +21,18 @@ internal class UnsupportedViewMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<View, MobileSegment.Wireframe.PlaceholderWireframe>(
+) : BaseWireframeMapper<View>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
     drawableToColorMapper
 ) {
 
-    override fun map(view: View, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
-        List<MobileSegment.Wireframe.PlaceholderWireframe> {
+    override fun map(
+        view: View,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
         val pixelsDensity = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
 

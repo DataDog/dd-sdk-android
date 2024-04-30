@@ -1,6 +1,17 @@
 public abstract interface class com/datadog/android/sessionreplay/ExtensionSupport {
-	public abstract fun getCustomViewMappers ()Ljava/util/Map;
+	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
+	public fun <init> (Ljava/lang/Class;Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;)V
+	public final fun copy (Ljava/lang/Class;Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;)Lcom/datadog/android/sessionreplay/MapperTypeWrapper;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/MapperTypeWrapper;Ljava/lang/Class;Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/MapperTypeWrapper;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUnsafeMapper ()Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;
+	public fun hashCode ()I
+	public final fun supportsView (Landroid/view/View;)Z
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplay {

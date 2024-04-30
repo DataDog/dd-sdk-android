@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -30,22 +31,28 @@ class MaterialExtensionSupportTest {
 
     @Test
     fun `M return a SliderMapper W getCustomViewMappers()`() {
+        // Given
+        val mockView: Slider = mock()
+
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
-        assertThat(customMappers[Slider::class.java])
-            .isInstanceOf(SliderWireframeMapper::class.java)
+        val sliderMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
+        assertThat(sliderMapper).isInstanceOf(SliderWireframeMapper::class.java)
     }
 
     @Test
     fun `M return a TabMapper W getCustomViewMappers()`() {
+        // Given
+        val mockView: TabView = mock()
+
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
-        assertThat(customMappers[TabView::class.java])
-            .isInstanceOf(TabWireframeMapper::class.java)
+        val sliderMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
+        assertThat(sliderMapper).isInstanceOf(TabWireframeMapper::class.java)
     }
 
     @Test

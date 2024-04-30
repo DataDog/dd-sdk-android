@@ -22,11 +22,14 @@ internal open class SliderWireframeMapper(
     private val viewIdentifierResolver: ViewIdentifierResolver,
     private val colorStringFormatter: ColorStringFormatter,
     private val viewBoundsResolver: ViewBoundsResolver
-) : WireframeMapper<Slider, MobileSegment.Wireframe> {
+) : WireframeMapper<Slider> {
 
     @Suppress("LongMethod")
-    override fun map(view: Slider, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
-        List<MobileSegment.Wireframe> {
+    override fun map(
+        view: Slider,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
         val activeTrackId = viewIdentifierResolver
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)
         val nonActiveTrackId = viewIdentifierResolver
