@@ -50,8 +50,10 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AssertionFailureBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -72,7 +74,9 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -800,6 +804,70 @@ internal class DatadogCoreTest {
             verify(appContext.mockInstance, times(expectedInvocations))
                 .unregisterActivityLifecycleCallbacks(capture())
             assertThat(lastValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+        }
+    }
+
+    @Test
+    fun `M allow concurrent access to features W access features when modifying their collection`(
+        @StringForgery fakeFeature: String,
+        forge: Forge
+    ) {
+        // Given
+        testedCore.features += fakeFeature to mock()
+
+        // When
+        val errorCollector = Collections.synchronizedList(mutableListOf<Throwable>())
+        val latch = CountDownLatch(2)
+        val threadA = Thread(
+            ErrorRecordingRunnable(errorCollector) {
+                latch.countDown()
+                latch.await()
+                assertDoesNotThrow {
+                    repeat(100) {
+                        testedCore.features += forge.anAlphabeticalString() to mock()
+                    }
+                }
+            }
+        ).apply { start() }
+        val threadB = Thread(
+            ErrorRecordingRunnable(errorCollector) {
+                latch.countDown()
+                latch.await()
+                assertDoesNotThrow {
+                    repeat(100) {
+                        testedCore.updateFeatureContext(fakeFeature) {
+                            // no-op
+                        }
+                    }
+                }
+            }
+        ).apply { start() }
+
+        listOf(threadA, threadB).forEach { it.join() }
+
+        // Then
+        if (errorCollector.isNotEmpty()) {
+            AssertionFailureBuilder
+                .assertionFailure()
+                .message(
+                    "Expected no errors to be thrown during the concurrent" +
+                        " access to features, but there were errors recorded. See first seen error below."
+                )
+                .cause(errorCollector.first())
+                .buildAndThrow()
+        }
+    }
+
+    class ErrorRecordingRunnable(
+        private val collector: MutableList<Throwable>,
+        private val delegate: Runnable
+    ) : Runnable {
+        override fun run() {
+            try {
+                delegate.run()
+            } catch (t: Throwable) {
+                collector += t
+            }
         }
     }
 
