@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
@@ -21,6 +22,7 @@ internal class WindowsOnDrawListener(
     zOrderedDecorViews: List<View>,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
+    private val privacy: SessionReplayPrivacy,
     private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils
 ) : ViewTreeObserver.OnDrawListener {
@@ -60,7 +62,7 @@ internal class WindowsOnDrawListener(
 
         val nodes = views
             .mapNotNull {
-                snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
+                snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
             }
 
         if (nodes.isNotEmpty()) {

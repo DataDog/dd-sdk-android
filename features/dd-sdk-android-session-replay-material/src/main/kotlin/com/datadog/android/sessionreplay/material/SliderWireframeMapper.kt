@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
@@ -113,19 +114,11 @@ internal open class SliderWireframeMapper(
             )
         )
 
-        return resolveViewAsWireframesList(
-            trackNonActiveWireframe,
-            trackActiveWireframe,
-            thumbWireframe
-        )
-    }
-
-    protected open fun resolveViewAsWireframesList(
-        nonActiveTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,
-        activeTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,
-        thumbWireframe: MobileSegment.Wireframe.ShapeWireframe
-    ): List<MobileSegment.Wireframe> {
-        return listOf(nonActiveTrackWireframe, activeTrackWireframe, thumbWireframe)
+        return if (mappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            listOf(trackNonActiveWireframe, trackActiveWireframe, thumbWireframe)
+        } else {
+            listOf(trackNonActiveWireframe)
+        }
     }
 
     private fun ColorStateList.getColor(state: IntArray): Int {

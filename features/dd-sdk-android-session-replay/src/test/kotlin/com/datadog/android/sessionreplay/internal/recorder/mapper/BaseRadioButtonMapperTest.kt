@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.RadioButton
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -106,8 +107,13 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
     internal abstract fun setupTestedMapper(): RadioButtonMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
+        val backgroundColor = if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            checkBoxColor
+        } else {
+            null
+        }
         return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
+            backgroundColor = backgroundColor,
             opacity = mockRadioButton.alpha,
             cornerRadius = RadioButtonMapper.CORNER_RADIUS
         )

@@ -16,7 +16,8 @@ internal class MappingContextForgeryFactory : ForgeryFactory<MappingContext> {
         return MappingContext(
             systemInformation = forge.getForgery(),
             imageWireframeHelper = mock(),
-            hasOptionSelectorParent = forge.aBool()
+            hasOptionSelectorParent = forge.aBool(),
+            privacy = forge.getForgery()
         )
     }
 }

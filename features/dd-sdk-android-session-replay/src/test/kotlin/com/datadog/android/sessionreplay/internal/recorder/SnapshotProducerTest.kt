@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -44,23 +45,26 @@ internal class SnapshotProducerTest {
 
     lateinit var testedSnapshotProducer: SnapshotProducer
 
-    @Forgery
-    lateinit var fakeSystemInformation: SystemInformation
-
     @Mock
     lateinit var mockTreeViewTraversal: TreeViewTraversal
 
     @Mock
     lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
 
-    @Forgery
-    lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
-
     @Mock
     lateinit var mockOptionSelectorDetector: DefaultOptionSelectorDetector
 
     @Mock
     lateinit var mockImageWireframeHelper: ImageWireframeHelper
+
+    @Forgery
+    lateinit var fakeSystemInformation: SystemInformation
+
+    @Forgery
+    lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
+
+    @Forgery
+    lateinit var fakePrivacy: SessionReplayPrivacy
 
     @BeforeEach
     fun `set up`() {
@@ -86,6 +90,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -111,6 +116,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -136,6 +142,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -161,6 +168,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -182,12 +190,15 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(
+            fakeTraversedTreeView
+        )
 
         // When
         testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -197,6 +208,8 @@ internal class SnapshotProducerTest {
             .traverse(any(), argumentCaptor.capture(), any())
         argumentCaptor.allValues.forEach {
             assertThat(it.systemInformation).isEqualTo(fakeSystemInformation)
+            assertThat(it.imageWireframeHelper).isEqualTo(mockImageWireframeHelper)
+            assertThat(it.privacy).isEqualTo(fakePrivacy)
         }
     }
 
@@ -221,6 +234,7 @@ internal class SnapshotProducerTest {
         testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -254,6 +268,7 @@ internal class SnapshotProducerTest {
         testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -296,6 +311,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -327,6 +343,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
+            fakePrivacy,
             mockRecordedDataQueueRefs
         )
 

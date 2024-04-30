@@ -27,7 +27,7 @@ data class SessionReplayConfiguration internal constructor(
      * @param sampleRate must be a value between 0 and 100. A value of 0
      * means no session will be recorded, 100 means all sessions will be recorded.
      */
-    class Builder(@FloatRange(from = 0.0, to = 100.0)private val sampleRate: Float) {
+    class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float) {
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
@@ -36,7 +36,7 @@ data class SessionReplayConfiguration internal constructor(
          * Adds an extension support implementation. This is mostly used when you want to provide
          * different behaviour of the Session Replay when using other Android UI frameworks
          * than the default ones.
-         * @see [ExtensionSupport.getCustomViewMappers]
+         * @see [ExtensionSupport.getLegacyCustomViewMappers]
          */
         fun addExtensionSupport(extensionSupport: ExtensionSupport): Builder {
             this.extensionSupport = extensionSupport
@@ -56,6 +56,7 @@ data class SessionReplayConfiguration internal constructor(
          * If not specified all the elements will be masked by default (MASK).
          * @see SessionReplayPrivacy.ALLOW
          * @see SessionReplayPrivacy.MASK
+         * @see SessionReplayPrivacy.MASK_USER_INPUT
          */
         fun setPrivacy(privacy: SessionReplayPrivacy): Builder {
             this.privacy = privacy
@@ -76,15 +77,10 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         private fun customMappers(): List<MapperTypeWrapper> {
-            extensionSupport.getCustomViewMappers().entries.forEach {
-                if (it.key == privacy) {
-                    return it.value
-                        .map { typeMapperPair ->
-                            MapperTypeWrapper(typeMapperPair.key, typeMapperPair.value)
-                        }
+            return extensionSupport.getCustomViewMappers()
+                .map { typeMapperPair ->
+                    MapperTypeWrapper(typeMapperPair.key, typeMapperPair.value)
                 }
-            }
-            return emptyList()
         }
     }
 }

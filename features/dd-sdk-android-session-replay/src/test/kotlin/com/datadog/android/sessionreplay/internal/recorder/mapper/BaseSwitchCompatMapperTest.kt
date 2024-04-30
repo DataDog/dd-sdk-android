@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -19,6 +20,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.kotlin.any
@@ -177,7 +179,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
     }
 
-    @Test
+    @RepeatedTest(8)
     fun `M resolve the switch as wireframes W map() { can't generate id for trackWireframe }`(
         forge: Forge
     ) {
@@ -188,7 +190,29 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
                 SwitchCompatMapper.TRACK_KEY_NAME
             )
         ).thenReturn(null)
-        whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
+        val isChecked = forge.aBool()
+        whenever(mockSwitch.isChecked).thenReturn(isChecked)
+        val expectedThumbWidth =
+            normalizedThumbWidth - normalizedThumbRightPadding - normalizedThumbLeftPadding
+        val expectedTrackWidth = expectedThumbWidth * 2
+        val expectedX = if (isChecked) {
+            fakeViewGlobalBounds.x + fakeViewGlobalBounds.width - expectedThumbWidth
+        } else {
+            fakeViewGlobalBounds.x + fakeViewGlobalBounds.width - expectedTrackWidth
+        }
+        val expectedThumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeThumbIdentifier,
+            x = expectedX,
+            y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - expectedThumbWidth) / 2,
+            width = expectedThumbWidth,
+            height = expectedThumbWidth,
+            border = null,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = fakeCurrentTextColorString,
+                mockSwitch.alpha,
+                cornerRadius = SwitchCompatMapper.THUMB_CORNER_RADIUS
+            )
+        )
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
@@ -198,6 +222,12 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         )
 
         // Then
-        assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
+        if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedThumbWireframe)
+        } else {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes)
+        }
     }
 }

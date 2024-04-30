@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 
 /**
@@ -14,11 +15,13 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
  * expected by Datadog.
  * @param systemInformation as [SystemInformation]
  * @param imageWireframeHelper a helper tool to capture images within a View
+ * @param privacy the masking configuration to use when building the wireframes
  * @param hasOptionSelectorParent tells if one of the parents of the current [android.view.View]
  * is an option selector type (e.g. time picker, date picker, drop - down list)
  */
 data class MappingContext(
     val systemInformation: SystemInformation,
     val imageWireframeHelper: ImageWireframeHelper,
+    val privacy: SessionReplayPrivacy,
     val hasOptionSelectorParent: Boolean = false
 )

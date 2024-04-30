@@ -9,9 +9,12 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskInputObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -28,8 +31,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  * All the other text fields will not be masked.
  */
 @Suppress("TooManyFunctions")
-open class TextViewMapper internal constructor(
-    internal var textValueObfuscationRule: TextValueObfuscationRule,
+open class TextViewMapper(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
@@ -40,19 +42,6 @@ open class TextViewMapper internal constructor(
     viewBoundsResolver,
     drawableToColorMapper
 ) {
-
-    constructor(
-        viewIdentifierResolver: ViewIdentifierResolver,
-        colorStringFormatter: ColorStringFormatter,
-        viewBoundsResolver: ViewBoundsResolver,
-        drawableToColorMapper: DrawableToColorMapper
-    ) : this(
-        AllowObfuscationRule(),
-        viewIdentifierResolver,
-        colorStringFormatter,
-        viewBoundsResolver,
-        drawableToColorMapper
-    )
 
     override fun map(
         view: TextView,
@@ -69,10 +58,17 @@ open class TextViewMapper internal constructor(
             density
         )
 
+        val textValueObfuscationRule = when (mappingContext.privacy) {
+            SessionReplayPrivacy.ALLOW -> AllowObfuscationRule()
+            SessionReplayPrivacy.MASK -> MaskObfuscationRule()
+            SessionReplayPrivacy.MASK_USER_INPUT -> MaskInputObfuscationRule()
+        }
+
         resolveTextElements(
             view,
             mappingContext,
-            viewGlobalBounds
+            viewGlobalBounds,
+            textValueObfuscationRule
         ).let(wireframes::addAll)
 
         resolveImages(
@@ -104,7 +100,8 @@ open class TextViewMapper internal constructor(
     private fun resolveTextElements(
         view: TextView,
         mappingContext: MappingContext,
-        viewGlobalBounds: GlobalBounds
+        viewGlobalBounds: GlobalBounds,
+        textValueObfuscationRule: TextValueObfuscationRule
     ): List<MobileSegment.Wireframe> {
         return listOf(
             MobileSegment.Wireframe.TextWireframe(

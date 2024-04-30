@@ -35,16 +35,18 @@ public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/MappingContext {
-	public fun <init> (Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Z)V
-	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Z)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;
 	public final fun component2 ()Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;
-	public final fun component3 ()Z
-	public final fun copy (Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Z)Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;
+	public final fun component3 ()Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+	public final fun component4 ()Z
+	public final fun copy (Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Z)Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHasOptionSelectorParent ()Z
 	public final fun getImageWireframeHelper ()Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;
+	public final fun getPrivacy ()Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public final fun getSystemInformation ()Lcom/datadog/android/sessionreplay/internal/recorder/SystemInformation;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -92,14 +94,6 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion {
-}
-
-public class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskInputTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
-	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
-}
-
-public class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
-	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
 }
 
 public class com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper {

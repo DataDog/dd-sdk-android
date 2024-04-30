@@ -1,5 +1,5 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
-  fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>
+  fun getCustomViewMappers(): Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector>
 object com.datadog.android.sessionreplay.SessionReplay
   fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
@@ -15,7 +15,7 @@ enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - MASK
   - MASK_USER_INPUT
 data class com.datadog.android.sessionreplay.internal.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, Boolean = false)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean = false)
 interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
@@ -28,10 +28,6 @@ abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWi
   protected fun resolveViewId(android.view.View): Long
   protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
   companion object 
-open class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper : TextViewMapper
-  constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
-open class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper : TextViewMapper
-  constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
 open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseAsyncBackgroundWireframeMapper<android.widget.TextView>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>

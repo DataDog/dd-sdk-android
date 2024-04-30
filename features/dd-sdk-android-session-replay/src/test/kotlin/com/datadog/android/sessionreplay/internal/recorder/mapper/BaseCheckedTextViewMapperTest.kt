@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.widget.CheckedTextView
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -135,10 +136,14 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
     internal abstract fun setupTestedMapper(): CheckedTextViewMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
-            opacity = mockCheckedTextView.alpha
-        )
+        return if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            MobileSegment.ShapeStyle(
+                backgroundColor = checkBoxColor,
+                opacity = mockCheckedTextView.alpha
+            )
+        } else {
+            null
+        }
     }
 
     // region Unit Tests
