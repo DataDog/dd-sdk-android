@@ -38,16 +38,20 @@ internal class ViewWireframeMapper(
         )
         val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
 
-        return listOf(
-            MobileSegment.Wireframe.ShapeWireframe(
-                resolveViewId(view),
-                viewGlobalBounds.x,
-                viewGlobalBounds.y,
-                viewGlobalBounds.width,
-                viewGlobalBounds.height,
-                shapeStyle = shapeStyle,
-                border = null
+        if (shapeStyle != null) {
+            return listOf(
+                MobileSegment.Wireframe.ShapeWireframe(
+                    resolveViewId(view),
+                    viewGlobalBounds.x,
+                    viewGlobalBounds.y,
+                    viewGlobalBounds.width,
+                    viewGlobalBounds.height,
+                    shapeStyle = shapeStyle,
+                    border = null
+                )
             )
-        )
+        } else {
+            return emptyList()
+        }
     }
 }
