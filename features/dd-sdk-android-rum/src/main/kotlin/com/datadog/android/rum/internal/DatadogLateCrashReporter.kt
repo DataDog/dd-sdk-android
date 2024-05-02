@@ -237,7 +237,7 @@ internal class DatadogLateCrashReporter(
                 architecture = deviceInfo.architecture
             ),
             dd = ErrorEvent.Dd(
-                session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                session = ErrorEvent.DdSession(),
                 configuration = ErrorEvent.Configuration(sessionSampleRate = viewEvent.sampleRate)
             ),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),

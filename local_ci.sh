@@ -127,7 +127,7 @@ if [[ $ANALYSIS == 1 ]]; then
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries"
-    ./gradlew assembleLibraries
+    ./gradlew assembleLibrariesDebug
     ./gradlew printSdkDebugRuntimeClasspath
     classpath=$(cat sdk_classpath)
 
@@ -171,13 +171,13 @@ if [[ $COMPILE == 1 ]]; then
   echo "-- COMPILATION"
 
   echo "---- Assemble Libraries"
-  ./gradlew assembleLibraries
+  ./gradlew assembleLibrariesDebug
 
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest
 
-  echo "---- Assemble Android tests"
-  ./gradlew :instrumented:nightly-tests:assembleDebugAndroidTest :instrumented:integration:assembleDebugAndroidTest
+  echo "---- Assemble Android Instrumentation APKs"
+  ./gradlew :instrumented:integration:assembleDebugAndroidTest
 fi
 
 if [[ $TEST == 1 ]]; then

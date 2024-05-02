@@ -86,7 +86,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 call waitForTiming() 𝕎 callStart()`() {
+    fun `M call waitForTiming() W callStart()`() {
         // When
         testedListener.callStart(mockCall)
 
@@ -96,7 +96,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 responseHeadersEnd() for failing request`(
+    fun `M send timing info W responseHeadersEnd() for failing request`(
         @IntForgery(400, 600) statusCode: Int
     ) {
         // Given
@@ -162,7 +162,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 callEnd() for successful request`() {
+    fun `M send timing info W callEnd() for successful request`() {
         // When
         testedListener.callStart(mockCall)
         Thread.sleep(SHORT_SLEEP_MS)
@@ -225,7 +225,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 callEnd() for successful request with reused pool`() {
+    fun `M send timing info W callEnd() for successful request with reused pool`() {
         // When
         testedListener.callStart(mockCall)
         Thread.sleep(SHORT_SLEEP_MS)
@@ -260,7 +260,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 callFailed() for throwing request`(
+    fun `M send timing info W callFailed() for throwing request`(
         @StringForgery error: String
     ) {
         // When
@@ -325,7 +325,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 doNothing 𝕎 call without RumMonitor`() {
+    fun `M doNothing W call without RumMonitor`() {
         // Given
         GlobalRumMonitor.reset()
 

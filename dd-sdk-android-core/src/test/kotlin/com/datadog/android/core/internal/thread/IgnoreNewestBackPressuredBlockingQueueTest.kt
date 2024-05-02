@@ -1,9 +1,16 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -48,9 +55,10 @@ class IgnoreNewestBackPressuredBlockingQueueTest {
     var fakeBackPressureThreshold: Int = 0
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedQueue = BackPressuredBlockingQueue(
             mockLogger,
+            forge.anAlphabeticalString(),
             BackPressureStrategy(
                 fakeBackPressureThreshold,
                 mockOnThresholdReached,

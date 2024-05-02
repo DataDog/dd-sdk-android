@@ -13,6 +13,10 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockingDetails
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.whenever
 
 @Suppress("CheckInternal", "UnsafeThirdPartyFunctionCall")
 internal class StubFeatureScope(
@@ -21,7 +25,9 @@ internal class StubFeatureScope(
     private val mockFeatureScope: FeatureScope = mock()
 ) : FeatureScope by mockFeatureScope {
 
-    private val eventBatchWriter: EventBatchWriter = mock()
+    private val eventBatchWriter: EventBatchWriter = mock<EventBatchWriter>().also {
+        whenever(it.write(any(), anyOrNull())) doReturn true
+    }
 
     private val eventsReceived = mutableListOf<Any>()
 

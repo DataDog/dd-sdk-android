@@ -40,9 +40,7 @@ internal class ApiSurfaceTest {
     @Test
     fun `generateApiSurface`() {
         // Given
-        val config = TestConfig(
-            mapOf("outputFileName" to fileName)
-        )
+        val config = TestConfig("outputFileName" to fileName)
         val code =
             """
                 package com.example.foo
@@ -68,9 +66,7 @@ internal class ApiSurfaceTest {
     @Test
     fun `generateApiSurface {ignore internal fun}`() {
         // Given
-        val config = TestConfig(
-            mapOf("outputFileName" to fileName)
-        )
+        val config = TestConfig("outputFileName" to fileName)
         val code =
             """
                 package com.example.foo
@@ -100,9 +96,7 @@ internal class ApiSurfaceTest {
     @Test
     fun `generateApiSurface {ignore private fun}`() {
         // Given
-        val config = TestConfig(
-            mapOf("outputFileName" to fileName)
-        )
+        val config = TestConfig("outputFileName" to fileName)
         val code =
             """
                 package com.example.foo

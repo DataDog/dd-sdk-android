@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.android.sessionreplay.utils
 
 //noinspection SuspiciousImport
@@ -12,6 +18,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -142,6 +149,7 @@ open class LegacyDrawableToColorMapperTest {
         // Given
         val baseColor = drawableColor and 0xFFFFFF
         val baseAlpha = (drawableColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
         val mockFillPaint = mock<Paint>().apply {
             whenever(this.color) doReturn baseColor
             whenever(this.alpha) doReturn baseAlpha.toInt()
@@ -155,5 +163,27 @@ open class LegacyDrawableToColorMapperTest {
 
         // Then
         assertThat(result).isEqualTo(drawableColor)
+    }
+
+    @Test
+    fun `M map GradientDrawable to fill paint's color W mapDrawableToColor() {fully transparent}`(
+        @IntForgery drawableColor: Int
+    ) {
+        // Given
+        val baseColor = drawableColor and 0xFFFFFF
+        val baseAlpha = 0L
+        val mockFillPaint = mock<Paint>().apply {
+            whenever(this.color) doReturn baseColor
+            whenever(this.alpha) doReturn baseAlpha.toInt()
+        }
+        val gradientDrawable = GradientDrawable().apply {
+            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+        }
+
+        // When
+        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+
+        // Then
+        assertThat(result).isNull()
     }
 }

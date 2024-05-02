@@ -38,7 +38,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(RumResourceMethod::class)
-    fun `𝕄 return method 𝕎 toMethod()`(
+    fun `M return method W toMethod()`(
         method: RumResourceMethod
     ) {
         // When
@@ -50,7 +50,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(RumResourceMethod::class)
-    fun `𝕄 return method 𝕎 toErrorMethod()`(
+    fun `M return method W toErrorMethod()`(
         method: RumResourceMethod
     ) {
         // When
@@ -62,7 +62,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(RumResourceKind::class)
-    fun `𝕄 return resource type 𝕎 toSchemaType()`(
+    fun `M return resource type W toSchemaType()`(
         kind: RumResourceKind
     ) {
         // When
@@ -78,7 +78,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(RumErrorSource::class)
-    fun `𝕄 return error source 𝕎 toSchemaSource()`(
+    fun `M return error source W toSchemaSource()`(
         kind: RumErrorSource
     ) {
         // When
@@ -90,7 +90,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(RumErrorSourceType::class)
-    fun `𝕄 return error source type 𝕎 toSchemaSourceType()`(
+    fun `M return error source type W toSchemaSourceType()`(
         kind: RumErrorSourceType
     ) {
         // When
@@ -102,7 +102,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(RumActionType::class)
-    fun `𝕄 return action type 𝕎 toSchemaType()`(
+    fun `M return action type W toSchemaType()`(
         type: RumActionType
     ) {
         // When
@@ -115,7 +115,7 @@ internal class RumEventExtTest {
     // region network info
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {not connected}`() {
+    fun `M return connectivity W toResourceConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
@@ -141,7 +141,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi}`(
+    fun `M return connectivity W toResourceConnectivity() {Wifi}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -166,7 +166,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax}`(
+    fun `M return connectivity W toResourceConnectivity() {Wimax}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -191,7 +191,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet}`(
+    fun `M return connectivity W toResourceConnectivity() {Ethernet}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -216,7 +216,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth}`(
+    fun `M return connectivity W toResourceConnectivity() {Bluetooth}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -248,7 +248,7 @@ internal class RumEventExtTest {
             "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
         ]
     )
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Cellular}`(
+    fun `M return connectivity W toResourceConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
         @Forgery fakeNetworkInfo: NetworkInfo,
         @StringForgery fakeCarrierName: String,
@@ -275,7 +275,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other}`(
+    fun `M return connectivity W toResourceConnectivity() {Other}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -300,7 +300,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {not connected}`() {
+    fun `M return connectivity W toErrorConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
@@ -326,7 +326,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi}`(
+    fun `M return connectivity W toErrorConnectivity() {Wifi}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -351,7 +351,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax}`(
+    fun `M return connectivity W toErrorConnectivity() {Wimax}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -376,7 +376,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet}`(
+    fun `M return connectivity W toErrorConnectivity() {Ethernet}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -401,7 +401,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth}`(
+    fun `M return connectivity W toErrorConnectivity() {Bluetooth}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -433,7 +433,7 @@ internal class RumEventExtTest {
             "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
         ]
     )
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Cellular}`(
+    fun `M return connectivity W toErrorConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
         @Forgery fakeNetworkInfo: NetworkInfo,
         @StringForgery fakeCarrierName: String,
@@ -460,7 +460,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other}`(
+    fun `M return connectivity W toErrorConnectivity() {Other}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -485,7 +485,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {not connected}`() {
+    fun `M return connectivity W toLongTaskConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
@@ -511,7 +511,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi}`(
+    fun `M return connectivity W toLongTaskConnectivity() {Wifi}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -536,7 +536,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax}`(
+    fun `M return connectivity W toLongTaskConnectivity() {Wimax}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -561,7 +561,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet}`(
+    fun `M return connectivity W toLongTaskConnectivity() {Ethernet}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -586,7 +586,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth}`(
+    fun `M return connectivity W toLongTaskConnectivity() {Bluetooth}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -618,7 +618,7 @@ internal class RumEventExtTest {
             "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
         ]
     )
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Cellular}`(
+    fun `M return connectivity W toLongTaskConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
         @Forgery fakeNetworkInfo: NetworkInfo,
         @StringForgery fakeCarrierName: String,
@@ -645,7 +645,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other}`(
+    fun `M return connectivity W toLongTaskConnectivity() {Other}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -670,7 +670,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {not connected}`() {
+    fun `M return connectivity W toActionConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
@@ -696,7 +696,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Wifi}`(
+    fun `M return connectivity W toActionConnectivity() {Wifi}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -721,7 +721,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Wimax}`(
+    fun `M return connectivity W toActionConnectivity() {Wimax}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -746,7 +746,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Ethernet}`(
+    fun `M return connectivity W toActionConnectivity() {Ethernet}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -771,7 +771,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Bluetooth}`(
+    fun `M return connectivity W toActionConnectivity() {Bluetooth}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -803,7 +803,7 @@ internal class RumEventExtTest {
             "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
         ]
     )
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Cellular}`(
+    fun `M return connectivity W toActionConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
         @Forgery fakeNetworkInfo: NetworkInfo,
         @StringForgery fakeCarrierName: String,
@@ -830,7 +830,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Other}`(
+    fun `M return connectivity W toActionConnectivity() {Other}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -855,7 +855,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {not connected}`() {
+    fun `M return connectivity W toViewConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
@@ -881,7 +881,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Wifi}`(
+    fun `M return connectivity W toViewConnectivity() {Wifi}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -906,7 +906,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Wimax}`(
+    fun `M return connectivity W toViewConnectivity() {Wimax}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -931,7 +931,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Ethernet}`(
+    fun `M return connectivity W toViewConnectivity() {Ethernet}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -956,7 +956,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Bluetooth}`(
+    fun `M return connectivity W toViewConnectivity() {Bluetooth}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -988,7 +988,7 @@ internal class RumEventExtTest {
             "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
         ]
     )
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Cellular}`(
+    fun `M return connectivity W toViewConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
         @Forgery fakeNetworkInfo: NetworkInfo,
         @StringForgery fakeCarrierName: String,
@@ -1015,7 +1015,7 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Other}`(
+    fun `M return connectivity W toViewConnectivity() {Other}`(
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
@@ -1045,7 +1045,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(DeviceType::class)
-    fun `𝕄 return schema device type 𝕎 toViewSchemaType()`(
+    fun `M return schema device type W toViewSchemaType()`(
         deviceType: DeviceType
     ) {
         // When
@@ -1057,7 +1057,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(DeviceType::class)
-    fun `𝕄 return schema device type 𝕎 toActionSchemaType()`(
+    fun `M return schema device type W toActionSchemaType()`(
         deviceType: DeviceType
     ) {
         // When
@@ -1069,7 +1069,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(DeviceType::class)
-    fun `𝕄 return schema device type 𝕎 toLongTaskSchemaType()`(
+    fun `M return schema device type W toLongTaskSchemaType()`(
         deviceType: DeviceType
     ) {
         // When
@@ -1081,7 +1081,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(DeviceType::class)
-    fun `𝕄 return schema device type 𝕎 toResourceSchemaType()`(
+    fun `M return schema device type W toResourceSchemaType()`(
         deviceType: DeviceType
     ) {
         // When
@@ -1093,7 +1093,7 @@ internal class RumEventExtTest {
 
     @ParameterizedTest
     @EnumSource(DeviceType::class)
-    fun `𝕄 return schema device type 𝕎 toErrorSchemaType()`(
+    fun `M return schema device type W toErrorSchemaType()`(
         deviceType: DeviceType
     ) {
         // When

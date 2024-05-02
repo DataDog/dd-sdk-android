@@ -30,7 +30,7 @@ internal class RumEventMetaSerializerTest {
     private val testedSerializer = RumEventMetaSerializer()
 
     @Test
-    fun `𝕄 serialize RUM View Event meta 𝕎 serialize()`(
+    fun `M serialize RUM View Event meta W serialize()`(
         @Forgery eventMeta: RumEventMeta.View
     ) {
         // When

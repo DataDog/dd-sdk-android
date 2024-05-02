@@ -53,7 +53,7 @@ jobs:
 
     # Manually build the java bytecode
     - name: Execute Gradle build
-      run: ./gradlew assembleLibraries
+      run: ./gradlew assembleLibrariesRelease
 
     # Perform the analysis
     - name: Perform CodeQL Analysis

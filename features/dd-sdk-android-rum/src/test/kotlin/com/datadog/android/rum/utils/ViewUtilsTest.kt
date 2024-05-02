@@ -34,7 +34,7 @@ import org.mockito.quality.Strictness
 internal class ViewUtilsTest {
 
     @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {FragmentNavigator}`(
+    fun `M return class name W resolveViewUrl() {FragmentNavigator}`(
         @StringForgery name: String
     ) {
         // Given
@@ -50,7 +50,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {DialogFragmentNavigator}`(
+    fun `M return class name W resolveViewUrl() {DialogFragmentNavigator}`(
         @StringForgery name: String
     ) {
         // Given
@@ -66,7 +66,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator}`(
+    fun `M return class name W resolveViewUrl() {ActivityNavigator}`(
         @StringForgery packageName: String,
         @StringForgery name: String
     ) {
@@ -83,7 +83,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator redundant package}`(
+    fun `M return class name W resolveViewUrl() {ActivityNavigator redundant package}`(
         @StringForgery packageName: String,
         @StringForgery name: String
     ) {
@@ -101,7 +101,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator conflicting package}`(
+    fun `M return class name W resolveViewUrl() {ActivityNavigator conflicting package}`(
         @StringForgery packageName: String,
         @StringForgery(regex = "\\w+\\.\\w+") name: String
     ) {
@@ -118,7 +118,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return unknown name 𝕎 resolveViewUrl() {ActivityNavigator no component}`() {
+    fun `M return unknown name W resolveViewUrl() {ActivityNavigator no component}`() {
         // Given
         val destination = mock<ActivityNavigator.Destination>().apply {
             whenever(component) doReturn null
@@ -132,7 +132,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return the key value 𝕎 resolveViewUrl() { destination of type String }`(
+    fun `M return the key value W resolveViewUrl() { destination of type String }`(
         @StringForgery destination: String
     ) {
         // When

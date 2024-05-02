@@ -89,6 +89,9 @@ internal class DataUploadRunnableTest {
     @Forgery
     lateinit var fakeDataUploadConfiguration: DataUploadConfiguration
 
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
     private var expectedBatchesHandled: Int = 0
 
     private lateinit var testedRunnable: DataUploadRunnable
@@ -117,6 +120,7 @@ internal class DataUploadRunnableTest {
         whenever(mockContextProvider.context) doReturn fakeContext
 
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -386,7 +390,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 no batch to send`() {
+    fun `M do nothing W no batch to send`() {
         // Given
         whenever(mockStorage.readNextBatch()).thenReturn(null)
 
@@ -598,7 +602,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `𝕄 reduce delay between runs 𝕎 upload is successful`(
+    fun `M reduce delay between runs W upload is successful`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @IntForgery(16, 64) runCount: Int,
@@ -642,7 +646,7 @@ internal class DataUploadRunnableTest {
 
     @ParameterizedTest
     @MethodSource("dropBatchStatusValues")
-    fun `𝕄 reduce delay between runs 𝕎 batch fails and should be dropped`(
+    fun `M reduce delay between runs W batch fails and should be dropped`(
         uploadStatus: UploadStatus,
         @IntForgery(16, 64) runCount: Int,
         forge: Forge,
@@ -650,6 +654,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -711,7 +716,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `𝕄 increase delay between runs 𝕎 no batch available`(
+    fun `M increase delay between runs W no batch available`(
         @IntForgery(16, 64) runCount: Int
     ) {
         // When
@@ -740,7 +745,7 @@ internal class DataUploadRunnableTest {
 
     @ParameterizedTest
     @MethodSource("retryBatchStatusValues")
-    fun `𝕄 increase delay between runs 𝕎 batch fails and should be retried`(
+    fun `M increase delay between runs W batch fails and should be retried`(
         status: UploadStatus,
         @IntForgery(1, 10) runCount: Int,
         forge: Forge,
@@ -748,6 +753,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -814,12 +820,13 @@ internal class DataUploadRunnableTest {
     // region maxBatchesPerJob
 
     @Test
-    fun `𝕄 handle the maxBatchesPerJob W run{maxBatchesPerJob smaller availableBatches}`(
+    fun `M handle the maxBatchesPerJob W run{maxBatchesPerJob smaller availableBatches}`(
         forge: Forge,
         @Forgery fakeConfiguration: DataUploadConfiguration
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,
@@ -871,12 +878,13 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `𝕄 exhaust the available batches W run {maxBatchesPerJob higher or equal availableBatches}`(
+    fun `M exhaust the available batches W run {maxBatchesPerJob higher or equal availableBatches}`(
         forge: Forge,
         @Forgery fakeConfiguration: DataUploadConfiguration
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
             mockThreadPoolExecutor,
             mockStorage,
             mockDataUploader,

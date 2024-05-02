@@ -45,7 +45,7 @@ internal class MapperSerializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 serialize() {mapper returns null}`(
+    fun `M return null W serialize() {mapper returns null}`(
         @StringForgery input: String
     ) {
         // Given
@@ -59,7 +59,7 @@ internal class MapperSerializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 serialize() {serializer returns null}`(
+    fun `M return null W serialize() {serializer returns null}`(
         @StringForgery input: String,
         @StringForgery mapped: String
     ) {
@@ -75,7 +75,7 @@ internal class MapperSerializerTest {
     }
 
     @Test
-    fun `𝕄 return mapped then serialized data 𝕎 serialize()`(
+    fun `M return mapped then serialized data W serialize()`(
         @StringForgery input: String,
         @StringForgery mapped: String,
         @StringForgery serialized: String

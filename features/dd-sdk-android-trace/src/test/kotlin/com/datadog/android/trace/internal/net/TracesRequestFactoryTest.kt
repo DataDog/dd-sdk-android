@@ -49,7 +49,7 @@ internal class TracesRequestFactoryTest {
 
     @Suppress("NAME_SHADOWING")
     @Test
-    fun `𝕄 create a proper request 𝕎 create()`(
+    fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         forge: Forge
@@ -84,7 +84,7 @@ internal class TracesRequestFactoryTest {
 
     @Suppress("NAME_SHADOWING")
     @Test
-    fun `𝕄 create a proper request 𝕎 create() { custom endpoint }`(
+    fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,

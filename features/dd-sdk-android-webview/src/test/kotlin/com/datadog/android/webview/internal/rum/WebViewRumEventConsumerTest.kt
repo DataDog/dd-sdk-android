@@ -22,10 +22,12 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -106,6 +108,9 @@ internal class WebViewRumEventConsumerTest {
     @Mock
     lateinit var mockOffsetProvider: TimestampOffsetProvider
 
+    @BoolForgery
+    var fakeSessionReplayEnabled = false
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeRumContext = fakeRumContext.copy(sessionState = "TRACKED")
@@ -117,10 +122,16 @@ internal class WebViewRumEventConsumerTest {
             emptyMap()
         }
 
+        val fakeFeaturesContext = mapOf(
+            Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
+                WebViewReplayEventConsumer.SESSION_REPLAY_ENABLED_KEY to fakeSessionReplayEnabled
+            )
+        )
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = fakeServerTimeOffsetInMillis
-            )
+            ),
+            featuresContext = fakeFeaturesContext
         )
 
         whenever(
@@ -171,7 +182,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeViewEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedViewEvent)
 
@@ -196,7 +208,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeViewEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedViewEvent)
 
@@ -217,7 +230,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeViewEventAsJson,
                 null,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedViewEvent)
 
@@ -245,7 +259,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeActionEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedActionEvent)
 
@@ -269,7 +284,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeActionEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedActionEvent)
 
@@ -290,7 +306,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeActionEventAsJson,
                 null,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedActionEvent)
 
@@ -318,7 +335,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeResourceEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedResourceEvent)
 
@@ -342,7 +360,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeResourceEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedResourceEvent)
 
@@ -363,7 +382,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeResourceEventAsJson,
                 null,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedResourceEvent)
 
@@ -391,7 +411,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeErrorEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedErrorEvent)
 
@@ -415,7 +436,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeErrorEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedErrorEvent)
 
@@ -436,7 +458,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeErrorEventAsJson,
                 null,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedErrorEvent)
 
@@ -464,7 +487,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeLongTaskEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedLongTaskEvent)
 
@@ -488,7 +512,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeLongTaskEventAsJson,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         )
             .thenReturn(fakeMappedLongTaskEvent)
@@ -510,7 +535,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeLongTaskEventAsJson,
                 null,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedLongTaskEvent)
 
@@ -537,7 +563,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeRumEvent,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenThrow(fakeException)
 
@@ -557,7 +584,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeRumEvent,
                 fakeRumContext,
-                fakeServerTimeOffsetInMillis
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled
             )
         ).thenThrow(fakeException)
 
@@ -583,7 +611,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeRumEvent,
                 fakeRumContext,
-                0
+                0,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedRumEvent)
 
@@ -605,7 +634,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeRumEvent,
                 fakeRumContext,
-                0
+                0,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedRumEvent)
 
@@ -627,7 +657,8 @@ internal class WebViewRumEventConsumerTest {
             mockWebViewRumEventMapper.mapEvent(
                 fakeRumEvent,
                 fakeRumContext,
-                0
+                0,
+                fakeSessionReplayEnabled
             )
         ).thenReturn(fakeMappedRumEvent)
 

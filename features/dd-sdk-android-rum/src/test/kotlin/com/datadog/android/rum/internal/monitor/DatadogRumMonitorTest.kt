@@ -2032,7 +2032,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 debug = true`() {
+    fun `M enable RUM debugging W debug = true`() {
         // Given
         val mockRumScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
@@ -2047,7 +2047,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `𝕄 disable RUM debugging 𝕎 debug = false`() {
+    fun `M disable RUM debugging W debug = false`() {
         // Given
         val mockRumScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
@@ -2063,7 +2063,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `𝕄 log warn message 𝕎 debug = true() { no RUM feature registered }`() {
+    fun `M log warn message W debug = true() { no RUM feature registered }`() {
         // Given
         val mockInternalLogger = mock<InternalLogger>()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger

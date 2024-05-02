@@ -71,7 +71,7 @@ internal class JankStatsActivityLifecycleListener(
     override fun onActivityPaused(activity: Activity) {
     }
 
-    @Suppress("NestedBlockDepth")
+    @Suppress("NestedBlockDepth", "TooGenericExceptionCaught")
     @MainThread
     override fun onActivityStopped(activity: Activity) {
         val window = activity.window
@@ -106,7 +106,8 @@ internal class JankStatsActivityLifecycleListener(
                     }
                 }
             } catch (iae: IllegalArgumentException) {
-                // android.view.View.removeFrameMetricsListener may throw it (attempt to remove
+                // Android N+:
+                // android.view.View.removeFrameMetricsListener() may throw it (attempt to remove
                 // OnFrameMetricsAvailableListener that was never added). Unclear why, because
                 // JankStats registers listener in the constructor, so if we have the instance,
                 // listener should be there.
@@ -115,6 +116,18 @@ internal class JankStatsActivityLifecycleListener(
                     InternalLogger.Target.TELEMETRY,
                     { JANK_STATS_TRACKING_DISABLE_ERROR },
                     iae
+                )
+            } catch (npe: NullPointerException) {
+                // Between Android N and Android P (included):
+                // android.view.View.removeFrameMetricsListener() may throw an NPE(attempt to remove
+                // OnFrameMetricsAvailableListener that was never added). Unclear why, because
+                // JankStats registers listener in the constructor, so if we have the instance,
+                // listener should be there.
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.TELEMETRY,
+                    { JANK_STATS_TRACKING_DISABLE_ERROR },
+                    npe
                 )
             }
         }

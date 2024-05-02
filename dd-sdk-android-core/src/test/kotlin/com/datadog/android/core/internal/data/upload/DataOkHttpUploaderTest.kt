@@ -175,7 +175,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 redact invalid user agent header 𝕎 upload()`(
+    fun `M redact invalid user agent header W upload()`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery(regex = "[a-z]+") validValue: String,
@@ -199,7 +199,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 replace fully invalid user agent header 𝕎 upload()`(
+    fun `M replace fully invalid user agent header W upload()`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String
@@ -222,7 +222,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client token error 𝕎 upload() { bad api key format }`(
+    fun `M return client token error W upload() { bad api key format }`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String,
@@ -250,7 +250,7 @@ internal class DataOkHttpUploaderTest {
     // region Expected status codes
 
     @Test
-    fun `𝕄 return success 𝕎 upload() {202 accepted status} `(
+    fun `M return success W upload() {202 accepted status} `(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -270,7 +270,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {400 bad request status}`(
+    fun `M return client error W upload() {400 bad request status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -290,7 +290,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client token error 𝕎 upload() {401 unauthorized status}`(
+    fun `M return client token error W upload() {401 unauthorized status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -310,7 +310,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {403 forbidden status}`(
+    fun `M return client error W upload() {403 forbidden status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -330,7 +330,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error with retry 𝕎 upload() {408 timeout status}`(
+    fun `M return client error with retry W upload() {408 timeout status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -350,7 +350,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {413 too large status}`(
+    fun `M return client error W upload() {413 too large status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -370,7 +370,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error with retry 𝕎 upload() {429 too many requests status}`(
+    fun `M return client error with retry W upload() {429 too many requests status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -390,7 +390,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {500 internal error status}`(
+    fun `M return server error W upload() {500 internal error status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -410,7 +410,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {502 bad gateway status}`(
+    fun `M return server error W upload() {502 bad gateway status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -430,7 +430,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {503 unavailable status}`(
+    fun `M return server error W upload() {503 unavailable status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -450,7 +450,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {504 gateway timeout status}`(
+    fun `M return server error W upload() {504 gateway timeout status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -470,7 +470,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {507 insufficient storage status}`(
+    fun `M return server error W upload() {507 insufficient storage status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -494,7 +494,7 @@ internal class DataOkHttpUploaderTest {
     // region Unknown cases
 
     @RepeatedTest(32)
-    fun `𝕄 return unknown error 𝕎 upload() {xxx status}`(
+    fun `M return unknown error W upload() {xxx status}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         forge: Forge,
@@ -520,7 +520,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return error 𝕎 upload() {IOException}`(
+    fun `M return error W upload() {IOException}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -539,7 +539,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return error 𝕎 upload() {any Throwable}`(
+    fun `M return error W upload() {any Throwable}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @Forgery throwable: Throwable
@@ -604,7 +604,7 @@ internal class DataOkHttpUploaderTest {
     // endregion
 
     @Test
-    fun `𝕄 log warning 𝕎 upload() { feature request has user-agent header }`(
+    fun `M log warning W upload() { feature request has user-agent header }`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String,
