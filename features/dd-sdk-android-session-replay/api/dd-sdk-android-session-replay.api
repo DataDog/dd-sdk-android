@@ -93,6 +93,10 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper$Companion {
 }
 
+public class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseViewGroupMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper, com/datadog/android/sessionreplay/internal/recorder/mapper/TraverseAllChildrenMapper {
+	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
+}
+
 public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion;
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V

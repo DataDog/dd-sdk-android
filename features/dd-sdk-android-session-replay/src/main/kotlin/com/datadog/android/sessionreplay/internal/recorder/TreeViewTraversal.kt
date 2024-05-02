@@ -74,9 +74,3 @@ internal class TreeViewTraversal(
         val nextActionStrategy: TraversalStrategy
     )
 }
-
-internal enum class TraversalStrategy {
-    TRAVERSE_ALL_CHILDREN,
-    STOP_AND_RETURN_NODE,
-    STOP_AND_DROP_NODE
-}

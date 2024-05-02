@@ -17,14 +17,15 @@ import android.widget.NumberPicker
 import android.widget.RadioButton
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
-import androidx.appcompat.widget.Toolbar
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
@@ -34,7 +35,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMap
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -80,13 +80,6 @@ internal class DefaultRecorderProvider(
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
         val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
         val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
-
-        val unsupportedViewMapper = UnsupportedViewMapper(
-            viewIdentifierResolver,
-            colorStringFormatter,
-            viewBoundsResolver,
-            drawableToColorMapper
-        )
         val imageViewMapper = ImageViewMapper(
             ImageViewUtils,
             viewIdentifierResolver,
@@ -155,8 +148,13 @@ internal class DefaultRecorderProvider(
                 imageViewMapper
             ),
             MapperTypeWrapper(
-                Toolbar::class.java,
-                unsupportedViewMapper
+                ActionBarContainer::class.java,
+                ActionBarContainerMapper(
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
             ),
             MapperTypeWrapper(
                 WebView::class.java,
@@ -166,14 +164,6 @@ internal class DefaultRecorderProvider(
                     viewBoundsResolver,
                     drawableToColorMapper
                 )
-            )
-        )
-
-        mappersList.add(
-            0,
-            MapperTypeWrapper(
-                android.widget.Toolbar::class.java,
-                unsupportedViewMapper
             )
         )
 
