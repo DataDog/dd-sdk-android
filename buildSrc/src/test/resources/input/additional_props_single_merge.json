@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "#/definitions/contact"
+    },
+    {
+      "$ref": "#/definitions/identity"
+    }
+  ],
+  "definitions": {
+    "contact": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "info": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "firstname": {
+          "type": "string"
+        },
+        "lastname": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "info": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "lastname"
+      ]
+    }
+  }
+}

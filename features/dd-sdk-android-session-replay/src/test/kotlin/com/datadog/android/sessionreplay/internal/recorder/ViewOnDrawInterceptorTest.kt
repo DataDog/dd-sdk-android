@@ -43,7 +43,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ViewOnDrawInterceptorTest {
 
-    lateinit var testedInterceptor: ViewOnDrawInterceptor
+    private lateinit var testedInterceptor: ViewOnDrawInterceptor
 
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler

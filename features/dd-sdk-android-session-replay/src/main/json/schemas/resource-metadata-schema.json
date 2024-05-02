@@ -3,7 +3,7 @@
   "$id": "resource-metadata-schema.json",
   "title": "ResourceMetadata",
   "type": "object",
-  "description": "Schema of the resource metadata. The metadata to idenfify the asset's content uploaded to the backend",
+  "description": "Schema of the resource metadata. The metadata to identify the asset's content uploaded to the backend",
   "required": ["type", "application"],
   "properties": {
     "type": {

@@ -24,7 +24,7 @@
         },
         "isVisible": {
           "type": "boolean",
-          "description": "Whether this web-view is visible or not.",
+          "description": "Whether this webview is visible or not.",
           "readOnly": true
         }
       }
