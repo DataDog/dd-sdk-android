@@ -67,7 +67,7 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use sensible defaults 𝕎 build()`() {
+    fun `M use sensible defaults W build()`() {
         // When
         val sessionReplayConfiguration = testedBuilder.build()
 
@@ -80,7 +80,7 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with custom site 𝕎 useCustomEndpoint() and build()`(
+    fun `M build config with custom site W useCustomEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com") sessionReplayUrl: String
     ) {
         // When
@@ -98,7 +98,7 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use the given privacy rule 𝕎 setSessionReplayPrivacy`(
+    fun `M use the given privacy rule W setSessionReplayPrivacy`(
         @Forgery fakePrivacy: SessionReplayPrivacy
     ) {
         // When

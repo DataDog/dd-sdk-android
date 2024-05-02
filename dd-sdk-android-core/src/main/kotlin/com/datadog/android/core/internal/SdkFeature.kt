@@ -96,7 +96,7 @@ internal class SdkFeature(
         wrappedFeature.onInitialize(context)
 
         if (wrappedFeature is StorageBackedFeature && dataUploadConfiguration != null) {
-            setupUploader(wrappedFeature.requestFactory, dataUploadConfiguration)
+            setupUploader(wrappedFeature, dataUploadConfiguration)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
@@ -104,6 +104,8 @@ internal class SdkFeature(
         }
 
         initialized.set(true)
+
+        uploadScheduler.startScheduling()
     }
 
     fun isInitialized(): Boolean {
@@ -230,12 +232,13 @@ internal class SdkFeature(
     }
 
     private fun setupUploader(
-        requestFactory: RequestFactory,
+        feature: StorageBackedFeature,
         uploadConfiguration: DataUploadConfiguration
     ) {
         uploadScheduler = if (coreFeature.isMainProcess) {
-            uploader = createUploader(requestFactory)
+            uploader = createUploader(feature.requestFactory)
             DataUploadScheduler(
+                feature.name,
                 storage,
                 uploader,
                 coreFeature.contextProvider,
@@ -248,7 +251,6 @@ internal class SdkFeature(
         } else {
             NoOpUploadScheduler()
         }
-        uploadScheduler.startScheduling()
     }
 
     // region Feature setup

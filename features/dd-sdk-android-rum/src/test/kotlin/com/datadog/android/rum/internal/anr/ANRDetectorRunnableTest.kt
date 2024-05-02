@@ -77,7 +77,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 report RUM error 𝕎 run() {ANR detected}`() {
+    fun `M report RUM error W run() {ANR detected}`() {
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
@@ -114,7 +114,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not report RUM error 𝕎 run() {no ANR}`() {
+    fun `M not report RUM error W run() {no ANR}`() {
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
@@ -130,7 +130,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 wait ANR resolution before scheduling next runnable 𝕎 run()`() {
+    fun `M wait ANR resolution before scheduling next runnable W run()`() {
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
@@ -153,7 +153,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not report RUM error 𝕎 stop() + run()`() {
+    fun `M not report RUM error W stop() + run()`() {
         // When
         testedRunnable.stop()
         Thread(testedRunnable).start()
@@ -164,7 +164,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not do anything 𝕎 run() {handler returns false}`() {
+    fun `M not do anything W run() {handler returns false}`() {
         // Given
         whenever(mockHandler.post(any())) doReturn false
 
@@ -181,7 +181,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 schedule runnable regularly 𝕎 run()`(
+    fun `M schedule runnable regularly W run()`(
         @IntForgery(1, 10) repeatCount: Int
     ) {
         // Given

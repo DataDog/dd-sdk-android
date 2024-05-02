@@ -59,7 +59,7 @@ internal class LogsDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write data 𝕎 write()`(
+    fun `M write data W write()`(
         @Forgery fakeLogEvent: LogEvent
     ) {
         // Given
@@ -82,7 +82,7 @@ internal class LogsDataWriterTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() { bytes were not written }`(
+    fun `M return false W write() { bytes were not written }`(
         @Forgery fakeLogEvent: LogEvent
     ) {
         // Given
@@ -105,7 +105,7 @@ internal class LogsDataWriterTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() { serialization returns null }`(
+    fun `M return false W write() { serialization returns null }`(
         @Forgery fakeLogEvent: LogEvent
     ) {
         // Given
@@ -121,7 +121,7 @@ internal class LogsDataWriterTest {
     }
 
     @Test
-    fun `𝕄 return false and log error 𝕎 write() { serialization failed with exception }`(
+    fun `M return false and log error W write() { serialization failed with exception }`(
         @Forgery fakeLogEvent: LogEvent,
         forge: Forge
     ) {

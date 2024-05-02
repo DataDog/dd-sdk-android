@@ -27,8 +27,8 @@ plugins {
     id("com.github.ben-manes.versions")
 
     // Tests
-    id("org.jetbrains.kotlinx.kover")
     id("de.mobilej.unmock")
+    id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
     id("thirdPartyLicences")

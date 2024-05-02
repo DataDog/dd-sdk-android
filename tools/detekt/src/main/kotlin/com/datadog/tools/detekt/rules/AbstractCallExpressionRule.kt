@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.containingPackage
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.util.getCall
 import org.jetbrains.kotlin.resolve.calls.util.getImplicitReceiverValue
 import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.util.getType
@@ -46,12 +47,14 @@ abstract class AbstractCallExpressionRule(
      * @param call the call signature
      * @param containerFqName the fully qualified named of the container (class or package)
      * @param functionName the function name without prefix
+     * @param containingPackage the package where the function is declared
      * @param arguments the list of argument types
      */
     data class ResolvedFunCall(
         val call: String,
         val containerFqName: String,
         val functionName: String,
+        val containingPackage: String,
         val arguments: List<String?>
     )
 
@@ -64,7 +67,11 @@ abstract class AbstractCallExpressionRule(
             return
         }
 
-        val resolvedCall = expression.getResolvedCall(bindingContext) ?: return
+        val resolvedCall = expression.getResolvedCall(bindingContext)
+        if (resolvedCall == null) {
+            println("Cannot resolve call for ${expression.getCall(bindingContext)}. Is classpath complete?")
+            return
+        }
         val call = resolvedCall.call
         val returnType = expression.getType(bindingContext)
             ?.fqTypeName(treatGenericAsSuper, includeTypeArguments)
@@ -86,7 +93,7 @@ abstract class AbstractCallExpressionRule(
             val calleeName = call.calleeExpression?.node?.text ?: "UNKNOWNFUN"
             val callContainingPackage = callDescriptor.containingPackage()?.toString().orEmpty()
             if (receiverType == null) {
-                "$callContainingPackage" to calleeName
+                callContainingPackage to calleeName
             } else {
                 "$receiverType" to calleeName
             }
@@ -94,10 +101,11 @@ abstract class AbstractCallExpressionRule(
 
         val arguments = resolveParameterTypes(resolvedCall, containerFqName)
         val resolvedFunctionCall = ResolvedFunCall(
-            "$containerFqName.$functionName(${arguments.joinToString(", ")})",
-            containerFqName,
-            functionName,
-            arguments
+            call = "$containerFqName.$functionName(${arguments.joinToString(", ")})",
+            containerFqName = containerFqName,
+            functionName = functionName,
+            containingPackage = callDescriptor.containingPackage()?.toString().orEmpty(),
+            arguments = arguments
         )
 
         visitResolvedFunctionCall(expression, resolvedFunctionCall)

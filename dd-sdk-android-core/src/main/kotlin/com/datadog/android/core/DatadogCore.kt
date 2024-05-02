@@ -43,6 +43,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -71,7 +72,7 @@ internal class DatadogCore(
 
     private lateinit var shutdownHook: Thread
 
-    internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
+    internal val features: MutableMap<String, SdkFeature> = ConcurrentHashMap()
 
     internal val context: Context = context.applicationContext
 
@@ -259,13 +260,13 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun createSingleThreadExecutorService(): ExecutorService {
-        return coreFeature.createExecutorService()
+    override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
+        return coreFeature.createExecutorService(executorContext)
     }
 
     /** @inheritDoc */
-    override fun createScheduledExecutorService(): ScheduledExecutorService {
-        return coreFeature.createScheduledExecutorService()
+    override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
+        return coreFeature.createScheduledExecutorService(executorContext)
     }
 
     // endregion

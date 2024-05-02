@@ -116,11 +116,11 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         listener: FeatureContextUpdateReceiver
     ) = Unit
 
-    override fun createSingleThreadExecutorService(): ExecutorService {
+    override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
         return NoOpExecutorService()
     }
 
-    override fun createScheduledExecutorService(): ScheduledExecutorService {
+    override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return NoOpScheduledExecutorService()
     }
 

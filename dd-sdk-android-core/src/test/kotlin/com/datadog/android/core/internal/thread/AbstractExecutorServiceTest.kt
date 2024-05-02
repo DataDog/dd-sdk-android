@@ -59,14 +59,14 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     lateinit var fakeBackpressureStrategy: BackPressureStrategy
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         fakeBackpressureStrategy = BackPressureStrategy(
             fakeBackPressureCapacity,
             mockOnThresholdReached,
             mockOnItemDropped,
             fakeBackPressureMitigation
         )
-        testedExecutor = createTestedExecutorService(fakeBackpressureStrategy)
+        testedExecutor = createTestedExecutorService(forge, fakeBackpressureStrategy)
     }
 
     @AfterEach
@@ -74,12 +74,12 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
         testedExecutor.shutdownNow()
     }
 
-    abstract fun createTestedExecutorService(backPressureStrategy: BackPressureStrategy): T
+    abstract fun createTestedExecutorService(forge: Forge, backPressureStrategy: BackPressureStrategy): T
 
     // region execute
 
     @Test
-    fun `𝕄 log nothing 𝕎 execute() { task completes normally }`() {
+    fun `M log nothing W execute() { task completes normally }`() {
         // When
         testedExecutor.execute {
             // no-op
@@ -91,7 +91,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     }
 
     @Test
-    fun `𝕄 log nothing 𝕎 execute() { worker thread was interrupted }`() {
+    fun `M log nothing W execute() { worker thread was interrupted }`() {
         // When
         testedExecutor.execute {
             Thread.currentThread().interrupt()
@@ -103,7 +103,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     }
 
     @Test
-    fun `𝕄 log error + exception 𝕎 execute() { task throws an exception }`(
+    fun `M log error + exception W execute() { task throws an exception }`(
         forge: Forge
     ) {
         // Given
@@ -129,7 +129,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     // region submit
 
     @Test
-    fun `𝕄 log nothing 𝕎 submit() { task completes normally }`() {
+    fun `M log nothing W submit() { task completes normally }`() {
         // When
         val futureTask = testedExecutor.submit {
             // no-op
@@ -143,7 +143,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     }
 
     @Test
-    fun `𝕄 log nothing 𝕎 submit() { worker thread was interrupted }`() {
+    fun `M log nothing W submit() { worker thread was interrupted }`() {
         // When
         val futureTask = testedExecutor.submit {
             Thread.currentThread().interrupt()
@@ -157,7 +157,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     }
 
     @Test
-    fun `𝕄 log error + exception 𝕎 submit() { task throws an exception }`(
+    fun `M log error + exception W submit() { task throws an exception }`(
         forge: Forge
     ) {
         // Given
@@ -181,7 +181,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     }
 
     @Test
-    fun `𝕄 log error + exception 𝕎 submit() { task was cancelled }`() {
+    fun `M log error + exception W submit() { task was cancelled }`() {
         // When
         val futureTask = testedExecutor.submit {
             Thread.sleep(500)

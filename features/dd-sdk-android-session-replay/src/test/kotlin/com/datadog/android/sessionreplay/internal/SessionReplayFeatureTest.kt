@@ -97,7 +97,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize writer 𝕎 initialize()`() {
+    fun `M initialize writer W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -107,7 +107,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize session replay recorder 𝕎 initialize()`() {
+    fun `M initialize session replay recorder W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -127,7 +127,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 update feature context for telemetry 𝕎 initialize()`() {
+    fun `M update feature context for telemetry W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -159,7 +159,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 set the feature event receiver 𝕎 initialize()`() {
+    fun `M set the feature event receiver W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -789,7 +789,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
+    fun `M log warning and do nothing W onReceive() { unknown event type }`() {
         // When
         testedFeature.onReceive(Any())
 
@@ -807,7 +807,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown type property value }`(
+    fun `M log warning and do nothing W onReceive() { unknown type property value }`(
         forge: Forge
     ) {
         // Given
@@ -832,7 +832,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing mandatory fields }`() {
+    fun `M log warning and do nothing W onReceive() { missing mandatory fields }`() {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -853,7 +853,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing keep  state field }`() {
+    fun `M log warning and do nothing W onReceive() { missing keep  state field }`() {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -875,7 +875,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing session id field }`(
+    fun `M log warning and do nothing W onReceive() { missing session id field }`(
         @BoolForgery fakeKeep: Boolean
     ) {
         // Given
@@ -899,7 +899,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { mandatory fields have wrong format }`(
+    fun `M log warning and do nothing W onReceive() { mandatory fields have wrong format }`(
         forge: Forge
     ) {
         // Given
@@ -926,21 +926,21 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide session replay feature name 𝕎 name()`() {
+    fun `M provide session replay feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
             .isEqualTo(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
     }
 
     @Test
-    fun `𝕄 provide Session Replay request factory 𝕎 requestFactory()`() {
+    fun `M provide Session Replay request factory W requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
             .isInstanceOf(SegmentRequestFactory::class.java)
     }
 
     @Test
-    fun `𝕄 provide custom storage configuration 𝕎 storageConfiguration()`() {
+    fun `M provide custom storage configuration W storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(SessionReplayFeature.STORAGE_CONFIGURATION)

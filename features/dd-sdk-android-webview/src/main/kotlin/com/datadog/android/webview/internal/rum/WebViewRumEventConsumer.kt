@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
@@ -41,7 +42,13 @@ internal class WebViewRumEventConsumer(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
                 if (rumContext != null && rumContext.sessionState == "TRACKED") {
-                    val mappedEvent = map(event, datadogContext, rumContext)
+                    val sessionReplayFeatureContext = datadogContext.featuresContext[
+                        Feature.SESSION_REPLAY_FEATURE_NAME
+                    ]
+                    val sessionReplayEnabled = sessionReplayFeatureContext?.get(
+                        WebViewReplayEventConsumer.SESSION_REPLAY_ENABLED_KEY
+                    ) as? Boolean ?: false
+                    val mappedEvent = map(event, datadogContext, rumContext, sessionReplayEnabled)
                     @Suppress("ThreadSafety") // inside worker thread context
                     dataWriter.write(eventBatchWriter, mappedEvent)
                 }
@@ -51,12 +58,13 @@ internal class WebViewRumEventConsumer(
     private fun map(
         event: JsonObject,
         datadogContext: DatadogContext,
-        rumContext: RumContext?
+        rumContext: RumContext?,
+        sessionReplayEnabled: Boolean
     ): JsonObject {
         try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
                 ?.asString?.let { offsetProvider.getOffset(it, datadogContext) } ?: 0L
-            return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
+            return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset, sessionReplayEnabled)
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,

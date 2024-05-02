@@ -272,12 +272,12 @@ internal class CoreFeature(
         )
     }
 
-    fun createExecutorService(): ExecutorService {
-        return executorServiceFactory.create(internalLogger, backpressureStrategy)
+    fun createExecutorService(executorContext: String): ExecutorService {
+        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
     }
 
-    fun createScheduledExecutorService(): ScheduledExecutorService {
-        return scheduledExecutorServiceFactory.create(internalLogger, backpressureStrategy)
+    fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
+        return scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
     }
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
@@ -601,11 +601,16 @@ internal class CoreFeature(
 
     private fun setupExecutors() {
         uploadExecutorService = LoggingScheduledThreadPoolExecutor(
-            CORE_DEFAULT_POOL_SIZE,
-            internalLogger,
-            backpressureStrategy
+            corePoolSize = CORE_DEFAULT_POOL_SIZE,
+            executorContext = "upload",
+            logger = internalLogger,
+            backPressureStrategy = backpressureStrategy
         )
-        persistenceExecutorService = executorServiceFactory.create(internalLogger, backpressureStrategy)
+        persistenceExecutorService = executorServiceFactory.create(
+            internalLogger = internalLogger,
+            executorContext = "storage",
+            backPressureStrategy = backpressureStrategy
+        )
     }
 
     private fun resolveProcessInfo(appContext: Context) {
@@ -671,13 +676,13 @@ internal class CoreFeature(
     companion object {
 
         internal val DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY =
-            FlushableExecutorService.Factory { logger, backPressureStrategy ->
-                BackPressureExecutorService(logger, backPressureStrategy)
+            FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy ->
+                BackPressureExecutorService(logger, executorContext, backPressureStrategy)
             }
 
         internal val DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY =
-            ScheduledExecutorServiceFactory { logger, backPressureStrategy ->
-                LoggingScheduledThreadPoolExecutor(1, logger, backPressureStrategy)
+            ScheduledExecutorServiceFactory { logger, executorContext, backPressureStrategy ->
+                LoggingScheduledThreadPoolExecutor(1, executorContext, logger, backPressureStrategy)
             }
 
         // region Constants

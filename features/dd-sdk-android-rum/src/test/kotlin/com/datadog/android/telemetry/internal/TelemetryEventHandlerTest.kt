@@ -158,7 +158,7 @@ internal class TelemetryEventHandlerTest {
     // region Debug Event
 
     @Test
-    fun `𝕄 create debug event 𝕎 handleEvent(SendTelemetry) { debug event status }`(forge: Forge) {
+    fun `M create debug event W handleEvent(SendTelemetry) { debug event status }`(forge: Forge) {
         // Given
         val debugRawEvent = forge.createRumRawTelemetryDebugEvent()
 
@@ -173,7 +173,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create debug event 𝕎 handleEvent(SendTelemetry) { debug event status, no RUM }`(forge: Forge) {
+    fun `M create debug event W handleEvent(SendTelemetry) { debug event status, no RUM }`(forge: Forge) {
         // Given
         val debugRawEvent = forge.createRumRawTelemetryDebugEvent()
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -203,7 +203,7 @@ internal class TelemetryEventHandlerTest {
     // region Error Event
 
     @Test
-    fun `𝕄 create error event 𝕎 handleEvent(SendTelemetry) { error event status }`(forge: Forge) {
+    fun `M create error event W handleEvent(SendTelemetry) { error event status }`(forge: Forge) {
         // Given
         val errorRawEvent = forge.createRumRawTelemetryErrorEvent()
 
@@ -218,7 +218,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create error event 𝕎 handleEvent(SendTelemetry) { error event status, no RUM }`(forge: Forge) {
+    fun `M create error event W handleEvent(SendTelemetry) { error event status, no RUM }`(forge: Forge) {
         // Given
         val errorRawEvent = forge.createRumRawTelemetryErrorEvent()
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -248,7 +248,7 @@ internal class TelemetryEventHandlerTest {
     // region Configuration Event
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration }`(forge: Forge) {
+    fun `M create config event W handleEvent(SendTelemetry) { configuration }`(forge: Forge) {
         // Given
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
 
@@ -263,7 +263,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration, no RUM }`(forge: Forge) {
+    fun `M create config event W handleEvent(SendTelemetry) { configuration, no RUM }`(forge: Forge) {
         // Given
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -289,7 +289,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { with RUM config }`(
+    fun `M create config event W handleEvent(SendTelemetry) { with RUM config }`(
         @Forgery fakeRumConfiguration: RumFeature.Configuration,
         forge: Forge
     ) {
@@ -329,7 +329,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { with Core config }`(
+    fun `M create config event W handleEvent(SendTelemetry) { with Core config }`(
         @Forgery fakeCoreConfiguration: TelemetryCoreConfiguration,
         forge: Forge
     ) {
@@ -354,7 +354,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with tracing settings }`(
+    fun `M create config event W handleEvent(SendTelemetry) { configuration with tracing settings }`(
         @Forgery fakeConfiguration: TelemetryCoreConfiguration,
         @BoolForgery useTracing: Boolean,
         forge: Forge
@@ -381,7 +381,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with interceptor }`(
+    fun `M create config event W handleEvent(SendTelemetry) { configuration with interceptor }`(
         @Forgery fakeConfiguration: TelemetryCoreConfiguration,
         forge: Forge
     ) {
@@ -415,7 +415,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration, no SessionReplay }`(
+    fun `M create config event W handleEvent(SendTelemetry) { configuration, no SessionReplay }`(
         forge: Forge
     ) {
         // Given
@@ -435,7 +435,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration, with SessionReplay }`(
+    fun `M create config event W handleEvent(SendTelemetry) { configuration, with SessionReplay }`(
         forge: Forge
     ) {
         // Given
@@ -466,7 +466,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { with SessionReplay, bad format }`(
+    fun `M create config event W handleEvent(SendTelemetry) { with SessionReplay, bad format }`(
         forge: Forge
     ) {
         // Given
@@ -501,7 +501,7 @@ internal class TelemetryEventHandlerTest {
     // region Sampling
 
     @Test
-    fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry) { event is not sampled }`(forge: Forge) {
+    fun `M not write event W handleEvent(SendTelemetry) { event is not sampled }`(forge: Forge) {
         // Given
         val rawEvent = forge.createRumRawTelemetryEvent()
         whenever(mockSampler.sample()) doReturn false
@@ -514,7 +514,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 write debug&error event 𝕎 handleEvent(SendTelemetry) { configuration sampler returns false }`(
+    fun `M write debug&error event W handleEvent(SendTelemetry) { configuration sampler returns false }`(
         forge: Forge
     ) {
         // Given
@@ -540,7 +540,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 not write configuration event 𝕎 handleEvent(SendTelemetry) { event is not sampled }`(
+    fun `M not write configuration event W handleEvent(SendTelemetry) { event is not sampled }`(
         forge: Forge
     ) {
         // Given
@@ -556,7 +556,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry){seen in the session, not metric}`(
+    fun `M not write event W handleEvent(SendTelemetry){seen in the session, not metric}`(
         forge: Forge
     ) {
         // Given
@@ -605,7 +605,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 write event 𝕎 handleEvent(SendTelemetry){seen in the session, is metric}`(
+    fun `M write event W handleEvent(SendTelemetry){seen in the session, is metric}`(
         forge: Forge
     ) {
         // Given
@@ -654,7 +654,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 not write events over the limit 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
+    fun `M not write events over the limit W handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
         val events = forge.aList(
             size = MAX_EVENTS_PER_SESSION_TEST * 5
@@ -716,7 +716,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 continue writing events after new session 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
+    fun `M continue writing events after new session W handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
         val eventMap = mutableMapOf<TelemetryEventId, RumRawEvent.SendTelemetry>()
         while (eventMap.size <= MAX_EVENTS_PER_SESSION_TEST) {
@@ -792,7 +792,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 count the limit only after the sampling 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
+    fun `M count the limit only after the sampling W handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
         // sample out 50%
         whenever(mockSampler.sample()) doAnswer object : Answer<Boolean> {

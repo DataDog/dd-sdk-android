@@ -35,7 +35,8 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    { "tag \"$it\" was modified to \"$tag\" to match our constraints." }
+                    { "tag \"$it\" was modified to \"$tag\" to match our constraints." },
+                    onlyOnce = true
                 )
             }
             tag

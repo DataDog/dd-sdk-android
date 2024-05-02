@@ -70,7 +70,7 @@ internal class WebViewRumEventMapperTest {
     }
 
     @Test
-    fun `M map the event W mapEvent { ViewEvent }()`(forge: Forge) {
+    fun `M map the event W mapEvent { ViewEvent }`(forge: Forge) {
         // Given
         val fakeViewEvent = forge.getForgery<ViewEvent>()
         whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
@@ -81,7 +81,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -104,7 +105,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -127,7 +129,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -150,7 +153,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -162,7 +166,7 @@ internal class WebViewRumEventMapperTest {
     }
 
     @Test
-    fun `M map the event W mapEvent { LongTaskEvent }()`(forge: Forge) {
+    fun `M map the event W mapEvent { LongTaskEvent }`(forge: Forge) {
         // Given
         val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
         val fakeRumJsonObject = fakeLongTaskEvent.toJson().asJsonObject
@@ -173,7 +177,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -185,7 +190,7 @@ internal class WebViewRumEventMapperTest {
     }
 
     @Test
-    fun `M map the event W mapEvent { missing application and session fields  }()`(forge: Forge) {
+    fun `M map the event W mapEvent { missing application and session fields  }`(forge: Forge) {
         // Given
         val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
         val fakeRumJsonObject = fakeLongTaskEvent.toJson().asJsonObject.apply {
@@ -199,7 +204,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             fakeRumContext,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -232,7 +238,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             null,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -253,13 +260,6 @@ internal class WebViewRumEventMapperTest {
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate
-        )
-        val ddSession = mappedEvent
-            .getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
-            .get(WebViewRumEventMapper.DD_SESSION_KEY_NAME).asJsonObject
-        assertThat(ddSession).hasField(
-            WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
-            ViewEvent.Plan.PLAN_1.toJson().asLong
         )
         val container = mappedEvent.getAsJsonObject(WebViewRumEventMapper.CONTAINER_KEY_NAME)
         assertThat(container).hasField(
@@ -282,7 +282,8 @@ internal class WebViewRumEventMapperTest {
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
             null,
-            fakeServerTimeOffset
+            fakeServerTimeOffset,
+            true
         )
 
         // Then
@@ -327,13 +328,6 @@ internal class WebViewRumEventMapperTest {
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate
-        )
-        val ddSession = mappedEvent
-            .getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
-            .get(WebViewRumEventMapper.DD_SESSION_KEY_NAME).asJsonObject
-        assertThat(ddSession).hasField(
-            WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
-            ViewEvent.Plan.PLAN_1.toJson().asLong
         )
         val container = mappedEvent.getAsJsonObject(WebViewRumEventMapper.CONTAINER_KEY_NAME)
         assertThat(container).hasField(

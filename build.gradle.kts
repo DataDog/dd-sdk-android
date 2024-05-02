@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("StringLiteralDuplication")
 
 import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
@@ -66,20 +67,32 @@ tasks.register("checkAll") {
     dependsOn(
         "lintCheckAll",
         "unitTestAll",
-        "koverReportAll",
         "instrumentTestAll"
     )
 }
 
 registerSubModuleAggregationTask("assembleLibraries", "assemble")
-registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest")
-registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest")
+registerSubModuleAggregationTask("assembleLibrariesDebug", "assembleDebug")
+registerSubModuleAggregationTask("assembleLibrariesRelease", "assembleRelease")
 
-tasks.register("unitTestTools") {
+registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest")
+registerSubModuleAggregationTask("unitTestReleaseFeatures", "testReleaseUnitTest", ":features:")
+registerSubModuleAggregationTask("unitTestReleaseIntegrations", "testReleaseUnitTest", ":integrations:")
+
+registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest")
+registerSubModuleAggregationTask("unitTestDebugFeatures", "testDebugUnitTest", ":features:")
+registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
+
+tasks.register("assembleSampleRelease") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
         ":sample:wear:assembleUs1Release",
-        ":sample:vendor-lib:assembleRelease",
+        ":sample:vendor-lib:assembleRelease"
+    )
+}
+
+tasks.register("unitTestTools") {
+    dependsOn(
         ":tools:unit:testJvmReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:lint:test",
@@ -110,6 +123,8 @@ tasks.register("checkGeneratedFiles") {
 }
 
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
+registerSubModuleAggregationTask("koverReportFeatures", "koverXmlReportRelease", ":features:")
+registerSubModuleAggregationTask("koverReportIntegrations", "koverXmlReportRelease", ":integrations:")
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
@@ -118,11 +133,6 @@ tasks.register("instrumentTestAll") {
 tasks.register("buildIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebugAndroidTest")
     dependsOn(":instrumented:integration:assembleDebug")
-}
-
-tasks.register("buildNightlyTestsArtifacts") {
-    dependsOn(":instrumented:nightly-tests:assembleDebugAndroidTest")
-    dependsOn(":instrumented:nightly-tests:assembleDebug")
 }
 
 tasks.register("buildNdkIntegrationTestsArtifacts") {

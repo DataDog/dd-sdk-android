@@ -32,7 +32,11 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     protected lateinit var sdkCore: FeatureSdkCore
-    private val executor: ScheduledExecutorService by lazy { sdkCore.createScheduledExecutorService() }
+    private val executor: ScheduledExecutorService by lazy {
+        sdkCore.createScheduledExecutorService(
+            "rum-fragmentx-lifecycle"
+        )
+    }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
@@ -55,7 +59,6 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     // endregion
 
     // TODO RUM-3793 Update Androidx packages and handle deprecated APIs
-    @Suppress("DEPRECATION")
     @MainThread
     override fun onFragmentActivityCreated(
         fm: FragmentManager,

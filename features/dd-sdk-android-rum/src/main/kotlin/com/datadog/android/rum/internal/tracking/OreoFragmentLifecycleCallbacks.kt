@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 @file:Suppress("DEPRECATION")
 
 package com.datadog.android.rum.internal.tracking
@@ -33,7 +39,11 @@ internal class OreoFragmentLifecycleCallbacks(
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     private lateinit var sdkCore: FeatureSdkCore
-    private val executor: ScheduledExecutorService by lazy { sdkCore.createScheduledExecutorService() }
+    private val executor: ScheduledExecutorService by lazy {
+        sdkCore.createScheduledExecutorService(
+            "rum-fragment-lifecycle"
+        )
+    }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
@@ -61,6 +71,7 @@ internal class OreoFragmentLifecycleCallbacks(
 
     // region FragmentManager.FragmentLifecycleCallbacks
 
+    @Deprecated("Deprecated in Java")
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
         f: Fragment,
@@ -77,6 +88,7 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         if (isNotAViewFragment(f)) return
@@ -88,6 +100,7 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
         super.onFragmentStopped(fm, f)
         if (isNotAViewFragment(f)) return

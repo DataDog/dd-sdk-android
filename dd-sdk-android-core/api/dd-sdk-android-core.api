@@ -332,8 +332,8 @@ public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureSdkCore : com/datadog/android/api/SdkCore {
-	public abstract fun createScheduledExecutorService ()Ljava/util/concurrent/ScheduledExecutorService;
-	public abstract fun createSingleThreadExecutorService ()Ljava/util/concurrent/ExecutorService;
+	public abstract fun createScheduledExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ScheduledExecutorService;
+	public abstract fun createSingleThreadExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ExecutorService;
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
 	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
@@ -777,7 +777,7 @@ public abstract interface class com/datadog/android/core/thread/FlushableExecuto
 }
 
 public abstract interface class com/datadog/android/core/thread/FlushableExecutorService$Factory {
-	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/thread/FlushableExecutorService;
+	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Ljava/lang/String;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/thread/FlushableExecutorService;
 }
 
 public abstract interface class com/datadog/android/event/EventMapper {

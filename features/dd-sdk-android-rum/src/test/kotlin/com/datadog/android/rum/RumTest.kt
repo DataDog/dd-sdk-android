@@ -62,12 +62,12 @@ internal class RumTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mock()
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
-        whenever(mockSdkCore.createSingleThreadExecutorService()) doReturn mock()
-        whenever(mockSdkCore.createScheduledExecutorService()) doReturn mock()
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mock()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mock()
     }
 
     @Test
-    fun `𝕄 register RUM feature 𝕎 enable()`(
+    fun `M register RUM feature W enable()`(
         @StringForgery fakePackageName: String,
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
@@ -111,7 +111,7 @@ internal class RumTest {
     }
 
     @Test
-    fun `𝕄 register RUM monitor 𝕎 enable()`(
+    fun `M register RUM monitor W enable()`(
         @StringForgery fakePackageName: String,
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
@@ -154,7 +154,7 @@ internal class RumTest {
     }
 
     @Test
-    fun `𝕄 register nothing 𝕎 enable() { SDK instance doesn't implement InternalSdkCore }`(
+    fun `M register nothing W enable() { SDK instance doesn't implement InternalSdkCore }`(
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
         // Given
@@ -176,7 +176,7 @@ internal class RumTest {
     }
 
     @Test
-    fun `𝕄 register nothing 𝕎 build() { rumApplicationId is missing }`(
+    fun `M register nothing W build() { rumApplicationId is missing }`(
         @Forgery fakeRumConfiguration: RumConfiguration,
         @StringForgery(regex = "\\s*") fakeApplicationId: String
     ) {
@@ -201,7 +201,7 @@ internal class RumTest {
     }
 
     @Test
-    fun `𝕄 register nothing 𝕎 build() { RUM feature already registered }`(
+    fun `M register nothing W build() { RUM feature already registered }`(
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
         // Given

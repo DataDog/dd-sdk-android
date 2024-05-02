@@ -26,6 +26,7 @@ import kotlin.math.min
 import kotlin.math.roundToLong
 
 internal class DataUploadRunnable(
+    private val featureName: String,
     private val threadPoolExecutor: ScheduledThreadPoolExecutor,
     private val storage: Storage,
     private val dataUploader: DataUploader,
@@ -111,7 +112,7 @@ internal class DataUploadRunnable(
     private fun scheduleNextUpload() {
         threadPoolExecutor.remove(this)
         threadPoolExecutor.scheduleSafe(
-            "Data upload",
+            "$featureName: data upload",
             currentDelayIntervalMs,
             TimeUnit.MILLISECONDS,
             internalLogger,

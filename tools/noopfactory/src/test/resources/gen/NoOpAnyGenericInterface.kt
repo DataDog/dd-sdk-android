@@ -9,15 +9,14 @@ import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.emptyList
 
-@Suppress("RedundantUnitReturnType")
 internal class NoOpAnyGenericInterface<T : Any> : AnyGenericInterface<T> {
-    public override val immutableProperty: T? = null
+    override val immutableProperty: T? = null
 
-    public override var mutableProperty: T? = null
+    override var mutableProperty: T? = null
 
-    public override fun doSomethingWithListReturn(models: List<T>): List<T> = emptyList()
+    override fun doSomethingWithListReturn(models: List<T>): List<T> = emptyList()
 
-    public override fun map(event: T): T = event
+    override fun map(event: T): T = event
 
-    public override fun map(event: T, additionalParameters: Map<String, Any?>): T = event
+    override fun map(event: T, additionalParameters: Map<String, Any?>): T = event
 }

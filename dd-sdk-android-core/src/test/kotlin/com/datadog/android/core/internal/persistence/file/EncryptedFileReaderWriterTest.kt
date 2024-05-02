@@ -78,7 +78,7 @@ internal class EncryptedFileReaderWriterTest {
     // region EncryptedFileReaderWriter#writeData tests
 
     @Test
-    fun `𝕄 encrypt data and return true 𝕎 writeData()`(
+    fun `M encrypt data and return true W writeData()`(
         @StringForgery data: String
     ) {
         // When
@@ -102,7 +102,7 @@ internal class EncryptedFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 log internal error and return false 𝕎 writeData() { bad encryption result }`(
+    fun `M log internal error and return false W writeData() { bad encryption result }`(
         @StringForgery data: String
     ) {
         // Given
@@ -128,7 +128,7 @@ internal class EncryptedFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 log internal error and return false 𝕎 writeData() { append = true }`(
+    fun `M log internal error and return false W writeData() { append = true }`(
         @StringForgery data: String
     ) {
         // When
@@ -155,7 +155,7 @@ internal class EncryptedFileReaderWriterTest {
     // region FileReader#readData tests
 
     @Test
-    fun `𝕄 decrypt data 𝕎 readData()`(
+    fun `M decrypt data W readData()`(
         @StringForgery data: String
     ) {
         // Given
@@ -175,7 +175,7 @@ internal class EncryptedFileReaderWriterTest {
     // region writeData + readData
 
     @Test
-    fun `𝕄 return valid data 𝕎 writeData() + readData()`(
+    fun `M return valid data W writeData() + readData()`(
         @StringForgery data: String
     ) {
         // Given

@@ -59,7 +59,7 @@ internal class WipeDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 run() {dir is null}`() {
+    fun `M warn W run() {dir is null}`() {
         // Given
         testedOperation = WipeDataMigrationOperation(
             null,
@@ -80,7 +80,7 @@ internal class WipeDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 delete dir recursively 𝕎 run()`() {
+    fun `M delete dir recursively W run()`() {
         // Given
         whenever(mockFileMover.delete(fakeTargetDirectory)) doReturn true
 
@@ -92,7 +92,7 @@ internal class WipeDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 retry 𝕎 run() {delete fails once}`() {
+    fun `M retry W run() {delete fails once}`() {
         // Given
         whenever(mockFileMover.delete(fakeTargetDirectory)).doReturn(false, true)
 
@@ -104,7 +104,7 @@ internal class WipeDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 try 3 times maximum 𝕎 run() {move always fails}`() {
+    fun `M try 3 times maximum W run() {move always fails}`() {
         // Given
         whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)
@@ -117,7 +117,7 @@ internal class WipeDataMigrationOperationTest {
     }
 
     @Test
-    fun `𝕄 retry with 500ms delay 𝕎 run() {move always fails}`() {
+    fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
         whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)

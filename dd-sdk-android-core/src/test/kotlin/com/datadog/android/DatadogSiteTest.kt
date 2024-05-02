@@ -26,37 +26,37 @@ import org.mockito.quality.Strictness
 internal class DatadogSiteTest {
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US1}`() {
+    fun `M return intake endpoint W intakeEndpoint {US1}`() {
         assertThat(DatadogSite.US1.intakeEndpoint).isEqualTo("https://browser-intake-datadoghq.com")
     }
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US3}`() {
+    fun `M return intake endpoint W intakeEndpoint {US3}`() {
         assertThat(DatadogSite.US3.intakeEndpoint).isEqualTo("https://browser-intake-us3-datadoghq.com")
     }
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US5}`() {
+    fun `M return intake endpoint W intakeEndpoint {US5}`() {
         assertThat(DatadogSite.US5.intakeEndpoint).isEqualTo("https://browser-intake-us5-datadoghq.com")
     }
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US1-FED}`() {
+    fun `M return intake endpoint W intakeEndpoint {US1-FED}`() {
         assertThat(DatadogSite.US1_FED.intakeEndpoint).isEqualTo("https://browser-intake-ddog-gov.com")
     }
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {EU1}`() {
+    fun `M return intake endpoint W intakeEndpoint {EU1}`() {
         assertThat(DatadogSite.EU1.intakeEndpoint).isEqualTo("https://browser-intake-datadoghq.eu")
     }
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {AP1}`() {
+    fun `M return intake endpoint W intakeEndpoint {AP1}`() {
         assertThat(DatadogSite.AP1.intakeEndpoint).isEqualTo("https://browser-intake-ap1-datadoghq.com")
     }
 
     @Test
-    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {STAGING}`() {
+    fun `M return intake endpoint W intakeEndpoint {STAGING}`() {
         assertThat(DatadogSite.STAGING.intakeEndpoint).isEqualTo("https://browser-intake-datad0g.com")
     }
 }

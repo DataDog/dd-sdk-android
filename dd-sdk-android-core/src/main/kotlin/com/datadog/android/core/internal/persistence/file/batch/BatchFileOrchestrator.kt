@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
-import androidx.collection.LruCache
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
@@ -17,7 +16,6 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.isFileSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
@@ -35,7 +33,7 @@ internal class BatchFileOrchestrator(
     private val metricsDispatcher: MetricsDispatcher
 ) : FileOrchestrator {
 
-    private val fileFilter = BatchFileFilter(internalLogger)
+    private val fileFilter = BatchFileFilter()
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
@@ -49,9 +47,6 @@ internal class BatchFileOrchestrator(
     private var previousFile: File? = null
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // argument is not negative
-    private val knownBatchFiles = LruCache<File, Unit>(KNOWN_FILES_MAX_CACHE_SIZE)
     private var lastCleanupTimestamp: Long = 0L
 
     // region FileOrchestrator
@@ -63,8 +58,9 @@ internal class BatchFileOrchestrator(
         }
 
         if (canDoCleanup()) {
-            deleteObsoleteFiles()
-            freeSpaceIfNeeded()
+            var files = listBatchFiles()
+            files = deleteObsoleteFiles(files)
+            freeSpaceIfNeeded(files)
             lastCleanupTimestamp = System.currentTimeMillis()
         }
 
@@ -81,10 +77,10 @@ internal class BatchFileOrchestrator(
             return null
         }
 
-        deleteObsoleteFiles()
+        val files = listSortedBatchFiles().let {
+            deleteObsoleteFiles(it)
+        }
         lastCleanupTimestamp = System.currentTimeMillis()
-
-        val files = listSortedBatchFiles()
 
         return files.firstOrNull {
             (it !in excludeFiles) && !isFileRecent(it, recentReadDelayMs)
@@ -128,7 +124,7 @@ internal class BatchFileOrchestrator(
             )
         }
 
-        return if (file.name.matches(batchFileNameRegex)) {
+        return if (file.isBatchFile) {
             file.metadata
         } else {
             internalLogger.log(
@@ -215,15 +211,13 @@ internal class BatchFileOrchestrator(
         previousFile = newFile
         previousFileItemCount = 1
         lastFileAccessTimestamp = System.currentTimeMillis()
-        @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-        knownBatchFiles.put(newFile, Unit)
         return newFile
     }
 
     @Suppress("ReturnCount")
     private fun getReusableWritableFile(): File? {
-        val files = listSortedBatchFiles()
-        val lastFile = files.lastOrNull() ?: return null
+        val files = listBatchFiles()
+        val lastFile = files.latestBatchFile ?: return null
 
         val lastKnownFile = previousFile
         val lastKnownFileItemCount = previousFileItemCount
@@ -255,27 +249,27 @@ internal class BatchFileOrchestrator(
         return fileTimestamp >= (now - delayMs)
     }
 
-    private fun deleteObsoleteFiles() {
-        val files = listSortedBatchFiles()
+    private fun deleteObsoleteFiles(files: List<File>): List<File> {
         val threshold = System.currentTimeMillis() - config.oldFileThreshold
-        files
-            .asSequence()
-            .filter { (it.name.toLongOrNull() ?: 0) < threshold }
-            .forEach {
-                if (it.deleteSafe(internalLogger)) {
-                    metricsDispatcher.sendBatchDeletedMetric(it, RemovalReason.Obsolete)
-                }
-                @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-                knownBatchFiles.remove(it)
-                if (it.metadata.existsSafe(internalLogger)) {
-                    it.metadata.deleteSafe(internalLogger)
+        return files
+            .mapNotNull {
+                val isOldFile = (it.name.toLongOrNull() ?: 0) < threshold
+                if (isOldFile) {
+                    if (it.deleteSafe(internalLogger)) {
+                        metricsDispatcher.sendBatchDeletedMetric(it, RemovalReason.Obsolete)
+                    }
+                    if (it.metadata.existsSafe(internalLogger)) {
+                        it.metadata.deleteSafe(internalLogger)
+                    }
+                    null
+                } else {
+                    it
                 }
             }
     }
 
-    private fun freeSpaceIfNeeded() {
-        val files = listSortedBatchFiles()
-        val sizeOnDisk = files.sumOf { f: File -> f.lengthSafe(internalLogger) }
+    private fun freeSpaceIfNeeded(files: List<File>) {
+        val sizeOnDisk = files.sumOf { it.lengthSafe(internalLogger) }
         val maxDiskSpace = config.maxDiskSpace
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {
@@ -284,7 +278,7 @@ internal class BatchFileOrchestrator(
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree) }
             )
-            files.fold(sizeToFree) { remainingSizeToFree, file ->
+            files.sorted().fold(sizeToFree) { remainingSizeToFree, file ->
                 if (remainingSizeToFree > 0) {
                     val deletedFileSize = deleteFile(file, true)
                     val deletedMetaFileSize = deleteFile(file.metadata)
@@ -300,8 +294,6 @@ internal class BatchFileOrchestrator(
         if (!file.existsSafe(internalLogger)) return 0
 
         val size = file.lengthSafe(internalLogger)
-        @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-        knownBatchFiles.remove(file)
         val wasDeleted = file.deleteSafe(internalLogger)
         return if (wasDeleted) {
             if (sendMetric) {
@@ -313,40 +305,39 @@ internal class BatchFileOrchestrator(
         }
     }
 
-    private fun listSortedBatchFiles(): List<File> {
-        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().sorted()
+    private fun listBatchFiles(): List<File> {
+        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().toList()
     }
 
-    private val File.metadata: File
-        get() = File("${this.path}_metadata")
+    private fun listSortedBatchFiles(): List<File> {
+        // note: since it is using File#compareTo, lexicographical sorting will be used, meaning "10" comes before "9".
+        // but for our needs it is fine, because the moment when Unix timestamp adds one more digit will be in 2286.
+        return listBatchFiles().sorted()
+    }
 
     private fun canDoCleanup(): Boolean {
         return System.currentTimeMillis() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
     }
 
+    private val File.metadata: File
+        get() = File("${this.path}_metadata")
+
+    private val File.isBatchFile: Boolean
+        get() = name.toLongOrNull() != null
+
+    private val List<File>.latestBatchFile: File?
+        get() = maxOrNull()
+
     // endregion
 
     // region FileFilter
 
-    internal inner class BatchFileFilter(private val internalLogger: InternalLogger) : FileFilter {
+    internal inner class BatchFileFilter : FileFilter {
         @Suppress("ReturnCount")
         override fun accept(file: File?): Boolean {
             if (file == null) return false
 
-            @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
-            if (knownBatchFiles.get(file) != null) {
-                return true
-            }
-
-            return if (file.isFileSafe(internalLogger) &&
-                file.name.matches(batchFileNameRegex)
-            ) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // both values are not null
-                knownBatchFiles.put(file, Unit)
-                true
-            } else {
-                false
-            }
+            return file.isBatchFile
         }
     }
 
@@ -357,11 +348,6 @@ internal class BatchFileOrchestrator(
         const val DECREASE_PERCENT = 0.95
         const val INCREASE_PERCENT = 1.05
 
-        // File class contains only few simple fields, so retained size usually is way below even 1Kb.
-        // Holding 400 items at max will be below 400 Kb of retained size.
-        private const val KNOWN_FILES_MAX_CACHE_SIZE = 400
-
-        private val batchFileNameRegex = Regex("\\d+")
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
         internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"
         internal const val ERROR_CANT_CREATE_ROOT = "The provided root dir can't be created: %s"

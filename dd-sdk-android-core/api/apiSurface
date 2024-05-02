@@ -12,7 +12,6 @@ object com.datadog.android.Datadog
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
-  constructor(String, String)
   - US1
   - US3
   - US5
@@ -20,7 +19,6 @@ enum com.datadog.android.DatadogSite
   - AP1
   - US1_FED
   - STAGING
-  constructor(String)
   val intakeEndpoint: String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
@@ -115,8 +113,8 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
-  fun createSingleThreadExecutorService(): java.util.concurrent.ExecutorService
-  fun createScheduledExecutorService(): java.util.concurrent.ScheduledExecutorService
+  fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
+  fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -292,7 +290,7 @@ interface com.datadog.android.core.sampling.Sampler
 interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
   fun drainTo(MutableCollection<Runnable>)
   interface Factory
-    fun create(com.datadog.android.api.InternalLogger, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
+    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>

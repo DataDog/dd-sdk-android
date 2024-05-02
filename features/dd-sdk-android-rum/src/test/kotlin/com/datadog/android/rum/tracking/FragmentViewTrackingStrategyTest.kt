@@ -112,7 +112,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         ) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.LOLLIPOP
-        whenever(rumMonitor.mockSdkCore.createScheduledExecutorService()) doReturn mockScheduledExecutorService
+        whenever(rumMonitor.mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
         whenever(
             mockScheduledExecutorService.schedule(
                 any(),

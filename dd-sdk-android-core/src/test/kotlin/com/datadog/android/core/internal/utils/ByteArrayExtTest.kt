@@ -149,7 +149,7 @@ internal class ByteArrayExtTest {
     // region join
 
     @Test
-    fun `𝕄 join items 𝕎 join() { no prefix }`(
+    fun `M join items W join() { no prefix }`(
         @StringForgery separator: String,
         @StringForgery suffix: String,
         forge: Forge
@@ -178,7 +178,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join() { no suffix }`(
+    fun `M join items W join() { no suffix }`(
         @StringForgery separator: String,
         @StringForgery prefix: String,
         forge: Forge
@@ -207,7 +207,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join() { no suffix and prefix }`(
+    fun `M join items W join() { no suffix and prefix }`(
         @StringForgery separator: String,
         forge: Forge
     ) {
@@ -230,7 +230,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join() { empty separator }`(
+    fun `M join items W join() { empty separator }`(
         @StringForgery prefix: String,
         @StringForgery suffix: String,
         forge: Forge
@@ -260,7 +260,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join()`(
+    fun `M join items W join()`(
         @StringForgery separator: String,
         @StringForgery prefix: String,
         @StringForgery suffix: String,
@@ -293,7 +293,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join() { no items }`(
+    fun `M join items W join() { no items }`(
         @StringForgery separator: String,
         @StringForgery prefix: String,
         @StringForgery suffix: String
@@ -321,7 +321,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join() { single item }`(
+    fun `M join items W join() { single item }`(
         @StringForgery separator: String,
         @StringForgery prefix: String,
         @StringForgery suffix: String,
@@ -350,7 +350,7 @@ internal class ByteArrayExtTest {
     }
 
     @Test
-    fun `𝕄 join items 𝕎 join() { no prefix, no suffix, no data }`(
+    fun `M join items W join() { no prefix, no suffix, no data }`(
         @StringForgery separator: String
     ) {
         // Given
