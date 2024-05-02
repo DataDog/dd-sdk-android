@@ -1,3 +1,33 @@
+# 2.9.0 / 2024-05-02
+
+* [BUGFIX] RUM: Prevent crash in `JankStats` listener. See [#1981](https://github.com/DataDog/dd-sdk-android/pull/1981)
+* [BUGFIX] RUM: Unregister vital listeners when view is stopped. See [#2009](https://github.com/DataDog/dd-sdk-android/pull/2009)
+* [BUGFIX] Core: Fix `ConcurrentModificationException` during features iteration. See [#2012](https://github.com/DataDog/dd-sdk-android/pull/2012)
+* [IMPROVEMENT] RUM: Optimise `BatchFileOrchestator` performance. See [#1968](https://github.com/DataDog/dd-sdk-android/pull/1968)
+* [IMPROVEMENT] Use custom naming for threads created inside SDK. See [#1987](https://github.com/DataDog/dd-sdk-android/pull/1987)
+* [IMPROVEMENT] Synchronize SR info with webviews. See [#1990](https://github.com/DataDog/dd-sdk-android/pull/1990)
+* [IMPROVEMENT] Core: Start sending batches immediately after feature is initialized. See [#1991](https://github.com/DataDog/dd-sdk-android/pull/1991)
+* [IMRPOVEMENT] Create RUM Feature Integration Tests. See [#2004](https://github.com/DataDog/dd-sdk-android/pull/2004)
+* [IMRROVEMENT] Make constructors of `DatadogSite` private. See [#2010](https://github.com/DataDog/dd-sdk-android/pull/2010)
+* [IMRROVEMENT] Log warning about tag modification only once. See [#2017](https://github.com/DataDog/dd-sdk-android/pull/2017)
+* [IMRROVEMENT] Add status code in user-facing message in case of `UnknownError` during batch upload. See [#2018](https://github.com/DataDog/dd-sdk-android/pull/2018)
+* [MAINTENANCE] Next dev iteration. See [#1972](https://github.com/DataDog/dd-sdk-android/pull/1972)
+* [MAINTENANCE] Remove non-ASCII characters from test names. See [#1973](https://github.com/DataDog/dd-sdk-android/pull/1973)
+* [MAINTENANCE] Update Kotlin to 1.8.22, Gradle to 8.2.1, update related tooling. See [#1974](https://github.com/DataDog/dd-sdk-android/pull/1974)
+* [MAINTENANCE] Merge `release/2.8.0` branch into `develop` branch. See [#1977](https://github.com/DataDog/dd-sdk-android/pull/1977)
+* [MAINTENANCE] Switch to the Golden Base Image for Docker. See [#1982](https://github.com/DataDog/dd-sdk-android/pull/1982)
+* [MAINTENANCE] Remove unused Maven Model dependency. See [#1989](https://github.com/DataDog/dd-sdk-android/pull/1989)
+* [MAINTENANCE] Update testing ci steps to limit OOM and memory usage. See [#1986](https://github.com/DataDog/dd-sdk-android/pull/1986)
+* [MAINTENANCE] Upload sample app to rum playground. See [#1994](https://github.com/DataDog/dd-sdk-android/pull/1994)
+* [MAINTENANCE] Update copyright. See [#1992](https://github.com/DataDog/dd-sdk-android/pull/1992)
+* [MAINTENANCE] Don't mark internal extension functions for 3rd party types as 3rd party. See [#1996](https://github.com/DataDog/dd-sdk-android/pull/1996)
+* [MAINTENANCE] Use credentials for the right org. See [#1997](https://github.com/DataDog/dd-sdk-android/pull/1997)
+* [MAINTENANCE] Update Detekt API version used to 1.23.0. See [#1988](https://github.com/DataDog/dd-sdk-android/pull/1988)
+* [MAINTENANCE] Remove the usage of deprecated `TestConfig` constructor. See [#1999](https://github.com/DataDog/dd-sdk-android/pull/1999)
+* [MAINTENANCE] Fix flakyness in SR unit tests. See [#2001](https://github.com/DataDog/dd-sdk-android/pull/2001)
+* [MAINTENANCE] Remove legacy nightly tests. See [#2005](https://github.com/DataDog/dd-sdk-android/pull/2005)
+* [MAINTENANCE] Redirect slack notif to mobile-sdk-ops channel. See [#2007](https://github.com/DataDog/dd-sdk-android/pull/2007)
+
 # 2.8.0 / 2024-04-09
 
 * [FEATURE] Add `buildId` to the RUM error and Log events. See [#1756](https://github.com/DataDog/dd-sdk-android/pull/1756)

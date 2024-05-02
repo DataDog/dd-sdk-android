@@ -86,7 +86,7 @@ internal sealed class UploadStatus(val shouldRetry: Boolean = false, val code: I
             is UnknownError -> logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                { "$batchInfo failed because of an unknown error; the batch was dropped." }
+                { "$batchInfo failed because of an unknown error (status code = $code); the batch was dropped." }
             )
 
             is RequestCreationError -> logger.log(
