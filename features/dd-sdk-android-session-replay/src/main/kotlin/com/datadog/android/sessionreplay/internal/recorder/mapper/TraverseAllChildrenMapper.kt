@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.view.View
+import android.view.ViewGroup
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 /**
@@ -17,5 +17,4 @@ import com.datadog.android.sessionreplay.model.MobileSegment
  * instead of just the immediate one. This means that you will need to have mappers
  * for all child views of the view the mapper is traversing.
  */
-interface TraverseAllChildrenMapper<in T : View, out S : MobileSegment.Wireframe> :
-    WireframeMapper<T, S>
+interface TraverseAllChildrenMapper<in T : ViewGroup> : WireframeMapper<T>

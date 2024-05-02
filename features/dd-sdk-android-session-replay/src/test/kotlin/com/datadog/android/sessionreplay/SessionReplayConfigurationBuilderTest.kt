@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay
 
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -39,19 +38,16 @@ internal class SessionReplayConfigurationBuilderTest {
 
     @Mock
     lateinit var mockExtensionSupport: ExtensionSupport
-    lateinit var fakeCustomViewMappers: Map<Class<*>, WireframeMapper<View, *>>
-    lateinit var fakeExpectedCustomMappers: List<MapperTypeWrapper>
+    lateinit var fakeCustomViewMappers: Map<Class<*>, WireframeMapper<*>>
+    lateinit var fakeExpectedCustomMappers: List<MapperTypeWrapper<*>>
 
     @FloatForgery
     var fakeSampleRate: Float = 0f
 
     @BeforeEach
     fun `set up`() {
-        fakeExpectedCustomMappers = listOf(MapperTypeWrapper(Any::class.java, mock()))
-        fakeCustomViewMappers = fakeExpectedCustomMappers.associate {
-            it.type to it.mapper
-        }
-        whenever(mockExtensionSupport.getCustomViewMappers()).thenReturn(fakeCustomViewMappers)
+        fakeExpectedCustomMappers = listOf(MapperTypeWrapper(View::class.java, mock()))
+        whenever(mockExtensionSupport.getCustomViewMappers()).thenReturn(fakeExpectedCustomMappers)
         testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)
     }
 
@@ -118,7 +114,7 @@ internal class SessionReplayConfigurationBuilderTest {
     @Test
     fun `M return empty map W addExtensionSupport { no mappers provided }`() {
         // Given
-        whenever(mockExtensionSupport.getCustomViewMappers()).thenReturn(emptyMap())
+        whenever(mockExtensionSupport.getCustomViewMappers()).thenReturn(emptyList())
         val sessionReplayConfiguration = testedBuilder
             .addExtensionSupport(mockExtensionSupport)
             .build()

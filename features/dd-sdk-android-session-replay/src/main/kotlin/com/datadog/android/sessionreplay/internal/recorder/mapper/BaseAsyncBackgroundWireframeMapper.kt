@@ -18,13 +18,23 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-@Suppress("UndocumentedPublicClass")
+/**
+ * A basic abstract [WireframeMapper] that provides some helpful utilities to
+ * resolve the background drawable of the [View] on a background thread, allowing tracking
+ * actual images.
+ *
+ *  @param T the type of the [View] to map
+ *  @param viewIdentifierResolver the [ViewIdentifierResolver] (to resolve a view or children stable id)
+ *  @param colorStringFormatter the [ColorStringFormatter] to transform Color into HTML hex strings
+ *  @param viewBoundsResolver the [ViewBoundsResolver] to get a view boundaries in density independent units
+ *  @param drawableToColorMapper the [DrawableToColorMapper] to convert a background drawable into a solid color
+ */
 abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<T, MobileSegment.Wireframe>(
+) : BaseWireframeMapper<T>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
@@ -33,9 +43,6 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor
 
     private var uniqueIdentifierGenerator = DefaultViewIdentifierResolver
 
-    /**
-     * Maps the [View] into a list of [MobileSegment.Wireframe].
-     */
     override fun map(
         view: T,
         mappingContext: MappingContext,

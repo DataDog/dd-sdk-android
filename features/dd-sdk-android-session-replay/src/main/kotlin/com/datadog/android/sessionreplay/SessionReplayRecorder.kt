@@ -30,7 +30,6 @@ import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterce
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
@@ -60,7 +59,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val privacy: SessionReplayPrivacy
     private val recordWriter: RecordWriter
     private val timeProvider: TimeProvider
-    private val mappers: List<MapperTypeWrapper>
+    private val mappers: List<MapperTypeWrapper<*>>
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>
     private val windowInspector: WindowInspector
     private val windowCallbackInterceptor: WindowCallbackInterceptor
@@ -79,7 +78,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         privacy: SessionReplayPrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
-        mappers: List<MapperTypeWrapper> = emptyList(),
+        mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
         internalLogger: InternalLogger
@@ -153,7 +152,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 ),
                 TreeViewTraversal(
                     mappers = mappers,
-                    viewMapper = defaultVWM,
+                    defaultViewMapper = defaultVWM,
                     decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
                     viewUtilsInternal = ViewUtilsInternal()
                 ),
@@ -183,7 +182,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         privacy: SessionReplayPrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
-        mappers: List<MapperTypeWrapper> = emptyList(),
+        mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         windowInspector: WindowInspector = WindowInspector,
         windowCallbackInterceptor: WindowCallbackInterceptor,

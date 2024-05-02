@@ -18,13 +18,13 @@ import java.util.Locale
 internal class DecorViewMapper(
     private val viewWireframeMapper: ViewWireframeMapper,
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
-) : WireframeMapper<View, MobileSegment.Wireframe> {
+) : WireframeMapper<View> {
 
     override fun map(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe.ShapeWireframe> {
+    ): List<MobileSegment.Wireframe> {
         val wireframes = viewWireframeMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
             .toMutableList()
         if (mappingContext.systemInformation.themeColor != null) {
@@ -71,18 +71,24 @@ internal class DecorViewMapper(
 
     private fun addShapeStyleFromThemeIfNeeded(
         themeColor: String,
-        wireframes: MutableList<MobileSegment.Wireframe.ShapeWireframe>,
+        wireframes: MutableList<MobileSegment.Wireframe>,
         view: View
     ) {
+        val rootNonEmptyWireframe = wireframes.filterIsInstance<MobileSegment.Wireframe.ShapeWireframe>()
+            .firstOrNull { it.shapeStyle != null }
+
         // we add a shapeStyle based on the Theme color in case the
         // root wireframe does not have a ShapeStyle
-        if (wireframes.firstOrNull { it.shapeStyle != null } == null) {
+        if (rootNonEmptyWireframe == null) {
             val shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = themeColor,
                 opacity = view.alpha
             )
             for (i in 0 until wireframes.size) {
-                wireframes[i] = wireframes[i].copy(shapeStyle = shapeStyle)
+                val oldWireframe = wireframes[i]
+                if (oldWireframe is MobileSegment.Wireframe.ShapeWireframe) {
+                    wireframes[i] = oldWireframe.copy(shapeStyle = shapeStyle)
+                }
             }
         }
     }

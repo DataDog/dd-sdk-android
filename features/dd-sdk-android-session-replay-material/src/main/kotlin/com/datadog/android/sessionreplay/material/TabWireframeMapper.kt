@@ -21,11 +21,11 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.TabView
 
-internal open class TabWireframeMapper internal constructor(
+internal open class TabWireframeMapper(
     private val viewIdentifierResolver: ViewIdentifierResolver,
     private val viewBoundsResolver: ViewBoundsResolver,
-    internal val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe>
-) : WireframeMapper<TabLayout.TabView, MobileSegment.Wireframe> {
+    internal val textViewMapper: WireframeMapper<TextView>
+) : WireframeMapper<TabLayout.TabView> {
 
     constructor(
         viewIdentifierResolver: ViewIdentifierResolver,

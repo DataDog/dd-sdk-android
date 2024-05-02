@@ -77,6 +77,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         // Then
         assertThat(wireframes.size).isEqualTo(1)
         val wireframe = wireframes.first()
+        check(wireframe is MobileSegment.Wireframe.ShapeWireframe)
 
         assertThat(wireframe.id).isEqualTo(fakeWireframeId)
         assertThat(wireframe.x).isEqualTo(fakeBounds.x)

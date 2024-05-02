@@ -27,7 +27,7 @@ internal open class SeekBarWireframeMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<SeekBar, MobileSegment.Wireframe>(
+) : BaseWireframeMapper<SeekBar>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
@@ -35,8 +35,11 @@ internal open class SeekBarWireframeMapper(
 ) {
 
     @Suppress("LongMethod")
-    override fun map(view: SeekBar, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
-        List<MobileSegment.Wireframe> {
+    override fun map(
+        view: SeekBar,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
         val activeTrackId = viewIdentifierResolver
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)
         val nonActiveTrackId = viewIdentifierResolver

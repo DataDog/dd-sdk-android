@@ -13,7 +13,8 @@ import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 
 internal class ButtonMapper(
     private val textWireframeMapper: TextViewMapper
-) : WireframeMapper<Button, MobileSegment.Wireframe> {
+) : WireframeMapper<Button> {
+
     override fun map(
         view: Button,
         mappingContext: MappingContext,
