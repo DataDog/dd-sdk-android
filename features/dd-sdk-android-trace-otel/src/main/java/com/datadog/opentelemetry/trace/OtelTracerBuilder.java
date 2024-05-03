@@ -10,9 +10,8 @@ package com.datadog.opentelemetry.trace;
 import androidx.annotation.NonNull;
 
 import com.datadog.android.api.InternalLogger;
+import com.datadog.opentelemetry.compat.function.Function;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
-
-import java.util.function.Function;
 
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;

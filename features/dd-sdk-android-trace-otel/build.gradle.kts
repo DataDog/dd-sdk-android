@@ -9,6 +9,7 @@ import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -17,17 +18,38 @@ plugins {
     kotlin("android")
     id("com.google.devtools.ksp")
 
+    // Publish
+    `maven-publish`
+    signing
+    id("org.jetbrains.dokka")
+
     // Analysis tools
     id("com.github.ben-manes.versions")
 
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+
+    // Internal Generation
+    id("thirdPartyLicences")
+    id("apiSurface")
+    id("transitiveDependencies")
+    id("binary-compatibility-validator")
 }
 
 android {
-    namespace = "com.datadog.android.trace.integration"
-
+    defaultConfig {
+        buildFeatures {
+            buildConfig = true
+        }
+        buildConfigField(
+            "String",
+            "OPENTELEMETRY_API_VERSION_NAME",
+            "\"${libs.versions.openTelemetry.get()}\""
+        )
+        consumerProguardFiles("consumer-rules.pro")
+    }
+    namespace = "com.datadog.android.trace.opentelemetry"
     sourceSets.named("test") {
         // Required because AGP doesn't support kotlin test fixtures :/
         java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
@@ -35,12 +57,15 @@ android {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-android-core"))
-    implementation(project(":features:dd-sdk-android-trace"))
-    implementation(project(":features:dd-sdk-android-trace-otel"))
+    api(project(":dd-sdk-android-core"))
+    api(project(":features:dd-sdk-android-trace"))
+    api(libs.openTelemetryApi)
     implementation(libs.kotlin)
+    implementation(libs.androidXAnnotation)
 
-    // Testing
+    // Generate NoOp implementations
+    ksp(project(":tools:noopfactory"))
+
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -50,25 +75,22 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttp)
-    testImplementation(libs.gson)
+    testImplementation(libs.systemStubsJupiter)
+
     unmock(libs.robolectric)
 }
 
 unMock {
-    keep("android.util.Singleton")
-    keep("com.android.internal.util.FastPrintWriter")
-    keep("dalvik.system.BlockGuard")
-    keep("dalvik.system.CloseGuard")
-    keepStartingWith("android.os")
     keepStartingWith("org.json")
 }
 
-androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+androidLibraryConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
+publishingConfig(
+    "The tracing library for Android, providing OpenTelemetry compatibility."
+)

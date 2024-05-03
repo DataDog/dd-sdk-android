@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace
+package com.datadog.android.trace.opentelemetry
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
@@ -13,8 +13,13 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.trace.internal.TracingFeature
-import com.datadog.android.trace.internal.data.NoOpOtelWriter
+import com.datadog.android.trace.InternalCoreWriterProvider
+import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
+import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
+import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
+import com.datadog.android.trace.opentelemetry.internal.executeSafelyOnAndroid23AndBelow
+import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
 import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.api.config.TracerConfig
@@ -25,6 +30,7 @@ import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
 import io.opentelemetry.api.trace.TracerProvider
+import io.opentelemetry.context.ContextStorage
 import java.util.Locale
 import java.util.Properties
 
@@ -95,6 +101,7 @@ class OtelTracerProvider(
     class Builder internal constructor(
         private val sdkCore: FeatureSdkCore
     ) {
+
         private var tracingHeaderTypes: Set<TracingHeaderType> =
             setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
         private var sampleRate: Double? = null
@@ -127,43 +134,51 @@ class OtelTracerProvider(
         /**
          * Builds a [TracerProvider] based on the current state of this Builder.
          */
-        fun build(): OtelTracerProvider {
-            val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                ?.unwrap<TracingFeature>()
-            if (tracingFeature == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { TRACING_NOT_ENABLED_ERROR_MESSAGE }
-                )
-            } else {
-                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                    it[TracingFeature.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
-                    it[TracingFeature.OPENTELEMETRY_API_VERSION_CONFIG_KEY] = BuildConfig.OPENTELEMETRY_API_VERSION_NAME
-                }
-            }
-            val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
-                .withProperties(properties())
-                .serviceName(serviceName)
-                .writer(tracingFeature?.otelDataWriter ?: NoOpOtelWriter())
-                .partialFlushMinSpans(partialFlushThreshold)
-                .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
-                .build()
-            coreTracer.addScopeListener(object : ScopeListener {
-                override fun afterScopeActivated() {
-                    val activeSpanContext = coreTracer.activeSpan()?.context()
-                    if (activeSpanContext != null) {
-                        val activeSpanId = activeSpanContext.spanId.toString()
-                        val activeTraceId = activeSpanContext.traceId.toString()
-                        sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
+        fun build(): TracerProvider {
+            return executeSafelyOnAndroid23AndBelow(
+                {
+                    val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+                        ?.unwrap<Feature>()
+                    val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
+                    if (tracingFeature == null || internalCoreWriterProvider == null) {
+                        sdkCore.internalLogger.log(
+                            InternalLogger.Level.ERROR,
+                            InternalLogger.Target.USER,
+                            { TRACING_NOT_ENABLED_ERROR_MESSAGE }
+                        )
+                    } else {
+                        sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+                            it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
+                            it[OPENTELEMETRY_API_VERSION_CONFIG_KEY] =
+                                BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+                        }
                     }
-                }
+                    val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
+                        .withProperties(properties())
+                        .serviceName(serviceName)
+                        .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpCoreTracerWriter())
+                        .partialFlushMinSpans(partialFlushThreshold)
+                        .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
+                        .build()
+                    coreTracer.addScopeListener(object : ScopeListener {
+                        override fun afterScopeActivated() {
+                            val activeSpanContext = coreTracer.activeSpan()?.context()
+                            if (activeSpanContext != null) {
+                                val activeSpanId = activeSpanContext.spanId.toString()
+                                val activeTraceId = activeSpanContext.traceId.toString()
+                                sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
+                            }
+                        }
 
-                override fun afterScopeClosed() {
-                    sdkCore.removeActiveTraceFromContext()
-                }
-            })
-            return OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
+                        override fun afterScopeClosed() {
+                            sdkCore.removeActiveTraceFromContext()
+                        }
+                    })
+                    OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
+                },
+                TracerProvider.noop(),
+                sdkCore.internalLogger
+            )
         }
 
         /**
@@ -309,6 +324,25 @@ class OtelTracerProvider(
 // endregion
 
     companion object {
+        init {
+            // We need to add the DatadogContextStorageWrapper and this should be executed before
+            // before io.opentelemetry.context.LazyStorage is loaded in the class loader to take effect.
+            // For now we should assume that our users are using `OtelTracerProvider` first in their code.
+            // Later on maybe we should consider a method DatdogOpenTelemetry.initialize() to be called
+            // in the Application#onCreate class.
+            executeSafelyOnAndroid23AndBelow(
+                {
+                    // suppressing the lint warning as we call this safely on Android 23 and below
+                    @Suppress("NewApi")
+                    ContextStorage.addWrapper(DatadogContextStorageWrapper())
+                },
+                null,
+                null
+            )
+        }
+
+        internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
+        internal const val OPENTELEMETRY_API_VERSION_CONFIG_KEY = "opentelemetry_api_version"
         internal const val RUM_APPLICATION_ID_KEY = "application_id"
         internal const val RUM_SESSION_ID_KEY = "session_id"
         internal const val RUM_VIEW_ID_KEY = "view_id"

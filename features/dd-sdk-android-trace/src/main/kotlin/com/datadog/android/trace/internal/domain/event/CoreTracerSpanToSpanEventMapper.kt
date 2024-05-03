@@ -18,7 +18,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 @Suppress("TooManyFunctions")
-internal class OtelDdSpanToSpanEventMapper(
+internal class CoreTracerSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean
 ) : ContextAwareMapper<DDSpan, SpanEvent> {
 

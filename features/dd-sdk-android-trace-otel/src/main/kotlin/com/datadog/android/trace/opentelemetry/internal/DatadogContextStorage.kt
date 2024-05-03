@@ -3,8 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.opentelemetry
+package com.datadog.android.trace.opentelemetry.internal
 
+import com.datadog.android.trace.opentelemetry.OtelContext
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.context.Scope

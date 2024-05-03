@@ -8,7 +8,7 @@ package com.datadog.android.trace.internal.data
 
 import com.datadog.trace.common.writer.Writer
 
-internal class NoOpOtelWriter : Writer {
+internal class NoOpCoreTracerWriter : Writer {
     override fun close() {
     }
 

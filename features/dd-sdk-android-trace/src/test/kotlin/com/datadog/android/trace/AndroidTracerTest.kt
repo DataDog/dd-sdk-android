@@ -119,7 +119,7 @@ internal class AndroidTracerTest {
         whenever(mockSdkCore.service) doReturn fakeServiceName
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
-        whenever(mockTracingFeature.dataWriter) doReturn mockTraceWriter
+        whenever(mockTracingFeature.legacyTracerWriter) doReturn mockTraceWriter
 
         testedTracerBuilder = AndroidTracer.Builder(mockSdkCore, mockLogsHandler)
     }

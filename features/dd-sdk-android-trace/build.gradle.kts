@@ -42,15 +42,7 @@ android {
         buildFeatures {
             buildConfig = true
         }
-        buildConfigField(
-            "String",
-            "OPENTELEMETRY_API_VERSION_NAME",
-            "\"${libs.versions.openTelemetry.get()}\""
-        )
         consumerProguardFiles("consumer-rules.pro")
-    }
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
     }
     namespace = "com.datadog.android.trace"
     sourceSets.named("test") {
@@ -60,9 +52,7 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring(libs.desugarJdk)
     api(project(":dd-sdk-android-core"))
-    api(libs.openTelemetryApi)
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)

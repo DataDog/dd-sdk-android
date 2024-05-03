@@ -35,9 +35,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class OtelDdSpanToSpanEventMapperTest {
+internal class CoreTracerSpanToSpanEventMapperTest {
 
-    private lateinit var testedMapper: OtelDdSpanToSpanEventMapper
+    private lateinit var testedMapper: CoreTracerSpanToSpanEventMapper
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -49,7 +49,7 @@ internal class OtelDdSpanToSpanEventMapperTest {
 
     @BeforeEach
     fun `set up`() {
-        testedMapper = OtelDdSpanToSpanEventMapper(fakeNetworkInfoEnabled)
+        testedMapper = CoreTracerSpanToSpanEventMapper(fakeNetworkInfoEnabled)
     }
 
     @Test

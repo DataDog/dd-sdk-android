@@ -8,7 +8,7 @@ package com.datadog.android.trace.assertj
 
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.trace.internal.domain.event.OtelDdSpanToSpanEventMapper
+import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.api.DDSpanId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
@@ -310,10 +310,10 @@ internal class SpanEventAssert(actual: SpanEvent) :
                     "Expected SpanEvent to not have span links but " +
                         "instead was: ${actual.meta.additionalProperties}"
                 )
-                .doesNotContainKey(OtelDdSpanToSpanEventMapper.SPAN_LINKS_KEY)
+                .doesNotContainKey(CoreTracerSpanToSpanEventMapper.SPAN_LINKS_KEY)
             return this
         }
-        val serializedLinks = actual.meta.additionalProperties[OtelDdSpanToSpanEventMapper.SPAN_LINKS_KEY]
+        val serializedLinks = actual.meta.additionalProperties[CoreTracerSpanToSpanEventMapper.SPAN_LINKS_KEY]
         val deserializedLinks = JsonParser.parseString(serializedLinks).asJsonArray
         assertThat(deserializedLinks.size())
             .overridingErrorMessage(
