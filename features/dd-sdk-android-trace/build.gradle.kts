@@ -97,3 +97,8 @@ publishingConfig(
     "The Tracing feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
+android {
+    lint {
+        lintConfig = file("lint-baseline.xml")
+    }
+}

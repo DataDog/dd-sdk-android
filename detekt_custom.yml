@@ -1261,6 +1261,7 @@ datadog:
       - "io.opentelemetry.api.trace.TracerBuilder.build()"
       - "io.opentelemetry.api.trace.SpanBuilder.setAttribute(kotlin.String?, kotlin.String?)"
       - "io.opentelemetry.api.trace.TracerBuilder.setInstrumentationVersion(kotlin.String?)"
+      - "io.opentelemetry.api.trace.TracerProvider.noop()"
       - "io.opentelemetry.context.Context.get(io.opentelemetry.context.ContextKey?)"
       - "io.opentelemetry.context.Context.makeCurrent()"
       - "io.opentelemetry.context.Context.root()"

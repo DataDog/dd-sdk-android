@@ -5922,10 +5922,6 @@ public final class com/datadog/trace/util/PidHelper {
 	public static fun getPidAsLong ()J
 }
 
-public abstract class com/datadog/trace/util/ProcessUtils {
-	public static fun getCurrentJvmPath ()Ljava/lang/String;
-}
-
 public final class com/datadog/trace/util/Strings {
 	public fun <init> ()V
 	public static fun escapeToJson (Ljava/lang/String;)Ljava/lang/String;
@@ -5967,36 +5963,6 @@ public class com/datadog/trace/util/TraceUtils {
 	public static fun normalizeServiceName (Ljava/lang/String;)Ljava/lang/String;
 	public static fun normalizeSpanType (Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
 	public static fun normalizeTag (Ljava/lang/String;)Ljava/lang/String;
-}
-
-public abstract class com/datadog/trace/util/stacktrace/AbstractStackWalker : com/datadog/trace/util/stacktrace/StackWalker {
-	public fun <init> ()V
-	public fun walk (Ljava/util/function/Function;)Ljava/lang/Object;
-}
-
-public class com/datadog/trace/util/stacktrace/DefaultStackWalker : com/datadog/trace/util/stacktrace/AbstractStackWalker {
-	public fun isEnabled ()Z
-}
-
-public abstract class com/datadog/trace/util/stacktrace/StackUtils {
-	public fun <init> ()V
-	public static fun filter (Ljava/lang/Throwable;Ljava/util/function/Predicate;)Ljava/lang/Throwable;
-	public static fun filterDatadog (Ljava/lang/Throwable;)Ljava/lang/Throwable;
-	public static fun filterFirst (Ljava/lang/Throwable;Ljava/util/function/Predicate;)Ljava/lang/Throwable;
-	public static fun filterFirstDatadog (Ljava/lang/Throwable;)Ljava/lang/Throwable;
-	public static fun filterPackagesIn (Ljava/lang/Throwable;[Ljava/lang/String;)Ljava/lang/Throwable;
-	public static fun filterUntil (Ljava/lang/Throwable;Ljava/util/function/Predicate;)Ljava/lang/Throwable;
-	public static fun update (Ljava/lang/Throwable;Ljava/util/function/Function;)Ljava/lang/Throwable;
-}
-
-public abstract interface class com/datadog/trace/util/stacktrace/StackWalker {
-	public abstract fun isEnabled ()Z
-	public abstract fun walk (Ljava/util/function/Function;)Ljava/lang/Object;
-}
-
-public class com/datadog/trace/util/stacktrace/StackWalkerFactory {
-	public static final field INSTANCE Lcom/datadog/trace/util/stacktrace/StackWalker;
-	public fun <init> ()V
 }
 
 public class com/datadog/trace/util/throwable/FatalAgentMisconfigurationError : java/lang/Error {

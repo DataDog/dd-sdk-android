@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.opentelemetry.intenal
+package com.datadog.android.trace.opentelemetry.internal
 
 import com.datadog.android.trace.opentelemetry.OtelContext
-import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorage
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.context.Scope

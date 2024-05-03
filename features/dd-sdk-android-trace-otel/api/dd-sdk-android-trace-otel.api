@@ -7,8 +7,6 @@ public final class com/datadog/android/trace/opentelemetry/BuildConfig {
 }
 
 public final class com/datadog/android/trace/opentelemetry/OtelTracerProvider : io/opentelemetry/api/trace/TracerProvider {
-	public static final field Companion Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Companion;
-	public fun <init> (Lcom/datadog/android/api/feature/FeatureSdkCore;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Z)V
 	public fun get (Ljava/lang/String;)Lio/opentelemetry/api/trace/Tracer;
 	public fun get (Ljava/lang/String;Ljava/lang/String;)Lio/opentelemetry/api/trace/Tracer;
 	public fun toString ()Ljava/lang/String;
@@ -28,7 +26,8 @@ public final class com/datadog/android/trace/opentelemetry/OtelTracerProvider$Bu
 	public final fun setTracingHeaderTypes (Ljava/util/Set;)Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Builder;
 }
 
-public final class com/datadog/android/trace/opentelemetry/OtelTracerProvider$Companion {
+public abstract interface class com/datadog/opentelemetry/compat/function/Function {
+	public abstract fun apply (Ljava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/datadog/opentelemetry/context/propagation/TraceStateHelper {
@@ -107,12 +106,12 @@ public class com/datadog/opentelemetry/trace/OtelSpanLink : com/datadog/trace/bo
 
 public class com/datadog/opentelemetry/trace/OtelTracer : io/opentelemetry/api/trace/Tracer {
 	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;)V
-	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Ljava/util/function/Function;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Lcom/datadog/opentelemetry/compat/function/Function;)V
 	public fun spanBuilder (Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanBuilder;
 }
 
 public class com/datadog/opentelemetry/trace/OtelTracerBuilder : io/opentelemetry/api/trace/TracerBuilder {
-	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Ljava/util/function/Function;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Lcom/datadog/opentelemetry/compat/function/Function;)V
 	public fun build ()Lio/opentelemetry/api/trace/Tracer;
 	public fun setInstrumentationVersion (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;
 	public fun setSchemaUrl (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;

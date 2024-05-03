@@ -14,7 +14,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorage
 import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
@@ -40,7 +39,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentelemetry.context.ContextStorage
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.offset
 import org.assertj.core.data.Offset
@@ -83,7 +81,7 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var mockTracingFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockTracingFeature: TracingFeature
+    lateinit var mockTracingFeature: StubTracingFeature
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -116,9 +114,6 @@ internal class OtelTracerBuilderProviderTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        // making sure the OtelTraceBuilderProvider class is loaded earlier than the ContextStorage class
-        // to make sure the wrapper is applied
-        Class.forName("com.datadog.android.trace.opentelemetry.OtelTracerProvider")
         fakeServiceName = forge.anAlphabeticalString()
         whenever(
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
@@ -158,7 +153,7 @@ internal class OtelTracerBuilderProviderTest {
     }
 
     @Test
-    fun `M log a user error W build { TracingFeature not implementing InternalCoreTracerWriterProvider }`() {
+    fun `M log a maintainer error W build { TracingFeature not implementing InternalCoreTracerWriterProvider }`() {
         // GIVEN
         whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mock()
 
@@ -169,8 +164,8 @@ internal class OtelTracerBuilderProviderTest {
         assertThat(tracer).isNotNull
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            OtelTracerProvider.TRACING_NOT_ENABLED_ERROR_MESSAGE
+            InternalLogger.Target.MAINTAINER,
+            OtelTracerProvider.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
         )
     }
 
@@ -258,48 +253,6 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         assertThat(traceId.substring(0, 16)).isEqualTo("0000000000000000")
         assertThat(span.spanContext.traceIdBytes.size).isEqualTo(16)
-    }
-
-    // endregion
-
-    // region ContextStorage
-
-    @Test
-    fun `M wrap the ContextStorage only once W build { multiple times called }`(forge: Forge) {
-        // Given
-        val times = forge.aTinyInt()
-
-        // When
-        repeat(times) {
-            OtelTracerProvider.Builder(mockSdkCore).build()
-        }
-
-        // Then
-        val contextStorage = ContextStorage.get()
-        assertThat(contextStorage).isInstanceOf(DatadogContextStorage::class.java)
-        val wrappedStorage = contextStorage.getFieldValue<Any, ContextStorage>("wrapped")
-        assertThat(wrappedStorage::class.java).isNotSameAs(DatadogContextStorage::class.java)
-    }
-
-    @Test
-    fun `M wrap the ContextStorage only once W build { multiple times called different threads }`(forge: Forge) {
-        // Given
-        val times = forge.aTinyInt()
-
-        // When
-        repeat(times) {
-            val thread = Thread {
-                OtelTracerProvider.Builder(mockSdkCore).build()
-            }
-            thread.start()
-            thread.join()
-        }
-
-        // Then
-        val contextStorage = ContextStorage.get()
-        assertThat(contextStorage).isInstanceOf(DatadogContextStorage::class.java)
-        val wrappedStorage = contextStorage.getFieldValue<Any, ContextStorage>("wrapped")
-        assertThat(wrappedStorage::class.java).isNotSameAs(DatadogContextStorage::class.java)
     }
 
     // endregion
@@ -956,20 +909,18 @@ internal class OtelTracerBuilderProviderTest {
 
     // endregion
 
-    class TracingFeature : Feature, InternalCoreWriterProvider {
+    class StubTracingFeature : Feature, InternalCoreWriterProvider {
         override val name: String
-            get() = TODO("Not yet implemented")
+            get() = ""
 
         override fun onInitialize(appContext: Context) {
-            TODO("Not yet implemented")
         }
 
         override fun onStop() {
-            TODO("Not yet implemented")
         }
 
         override fun getCoreTracerWriter(): Writer {
-            TODO("Not yet implemented")
+            return mock()
         }
     }
 

@@ -14,19 +14,20 @@ internal const val NEEDS_DESUGARING_ERROR_MESSAGE =
         "In order for this to properly work you will need to enable coreDesugaring " +
         "in your compileOptions"
 
-internal fun <T : Any?> executeSafelyOnAndroid23AndBelow(
-    action: () -> T,
-    default: T,
-    internalLogger: InternalLogger? = null
+internal fun <T : Any?> executeIfJavaFunctionPackageExists(
+    internalLogger: InternalLogger? = null,
+    defaultActionReturnValue: T,
+    action: () -> T
 ): T {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         return action()
     } else {
         return try {
             // we are forcing here the checkup as it could be triggered only at runtime and will be too late
+            @Suppress("UnsafeThirdPartyFunctionCall")
             Class.forName("java.util.function.Function")
             action()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             // generic catch to avoid any crash
             internalLogger?.log(
                 InternalLogger.Level.ERROR,
@@ -34,7 +35,7 @@ internal fun <T : Any?> executeSafelyOnAndroid23AndBelow(
                 { NEEDS_DESUGARING_ERROR_MESSAGE },
                 e
             )
-            default
+            defaultActionReturnValue
         }
     }
 }

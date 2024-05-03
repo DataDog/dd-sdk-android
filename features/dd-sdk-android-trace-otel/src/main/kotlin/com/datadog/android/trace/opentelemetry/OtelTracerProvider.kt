@@ -18,7 +18,7 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
 import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
 import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
-import com.datadog.android.trace.opentelemetry.internal.executeSafelyOnAndroid23AndBelow
+import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
 import com.datadog.trace.api.IdGenerationStrategy
@@ -42,7 +42,7 @@ import java.util.Properties
  * You can have multiple [TracerProvider]s configured in your application, each with their own settings.
  *
  */
-class OtelTracerProvider(
+class OtelTracerProvider internal constructor(
     private val sdkCore: FeatureSdkCore,
     private val coreTracer: AgentTracer.TracerAPI,
     private val internalLogger: InternalLogger,
@@ -135,50 +135,55 @@ class OtelTracerProvider(
          * Builds a [TracerProvider] based on the current state of this Builder.
          */
         fun build(): TracerProvider {
-            return executeSafelyOnAndroid23AndBelow(
-                {
-                    val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                        ?.unwrap<Feature>()
-                    val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
-                    if (tracingFeature == null || internalCoreWriterProvider == null) {
-                        sdkCore.internalLogger.log(
-                            InternalLogger.Level.ERROR,
-                            InternalLogger.Target.USER,
-                            { TRACING_NOT_ENABLED_ERROR_MESSAGE }
-                        )
-                    } else {
-                        sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                            it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
-                            it[OPENTELEMETRY_API_VERSION_CONFIG_KEY] =
-                                BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+            return executeIfJavaFunctionPackageExists(
+                sdkCore.internalLogger,
+                TracerProvider.noop()
+            ) {
+                val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+                    ?.unwrap<Feature>()
+                val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
+                if (tracingFeature == null) {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.USER,
+                        { TRACING_NOT_ENABLED_ERROR_MESSAGE }
+                    )
+                } else if (internalCoreWriterProvider == null) {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
+                    )
+                } else {
+                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+                        it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
+                        it[OPENTELEMETRY_API_VERSION_CONFIG_KEY] =
+                            BuildConfig.OPENTELEMETRY_API_VERSION_NAME
+                    }
+                }
+                val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
+                    .withProperties(properties())
+                    .serviceName(serviceName)
+                    .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpCoreTracerWriter())
+                    .partialFlushMinSpans(partialFlushThreshold)
+                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
+                    .build()
+                coreTracer.addScopeListener(object : ScopeListener {
+                    override fun afterScopeActivated() {
+                        val activeSpanContext = coreTracer.activeSpan()?.context()
+                        if (activeSpanContext != null) {
+                            val activeSpanId = activeSpanContext.spanId.toString()
+                            val activeTraceId = activeSpanContext.traceId.toString()
+                            sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
                         }
                     }
-                    val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
-                        .withProperties(properties())
-                        .serviceName(serviceName)
-                        .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpCoreTracerWriter())
-                        .partialFlushMinSpans(partialFlushThreshold)
-                        .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
-                        .build()
-                    coreTracer.addScopeListener(object : ScopeListener {
-                        override fun afterScopeActivated() {
-                            val activeSpanContext = coreTracer.activeSpan()?.context()
-                            if (activeSpanContext != null) {
-                                val activeSpanId = activeSpanContext.spanId.toString()
-                                val activeTraceId = activeSpanContext.traceId.toString()
-                                sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
-                            }
-                        }
 
-                        override fun afterScopeClosed() {
-                            sdkCore.removeActiveTraceFromContext()
-                        }
-                    })
-                    OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
-                },
-                TracerProvider.noop(),
-                sdkCore.internalLogger
-            )
+                    override fun afterScopeClosed() {
+                        sdkCore.removeActiveTraceFromContext()
+                    }
+                })
+                OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
+            }
         }
 
         /**
@@ -323,22 +328,21 @@ class OtelTracerProvider(
 
 // endregion
 
-    companion object {
+    internal companion object {
         init {
             // We need to add the DatadogContextStorageWrapper and this should be executed before
             // before io.opentelemetry.context.LazyStorage is loaded in the class loader to take effect.
             // For now we should assume that our users are using `OtelTracerProvider` first in their code.
-            // Later on maybe we should consider a method DatdogOpenTelemetry.initialize() to be called
-            // in the Application#onCreate class.
-            executeSafelyOnAndroid23AndBelow(
-                {
-                    // suppressing the lint warning as we call this safely on Android 23 and below
-                    @Suppress("NewApi")
-                    ContextStorage.addWrapper(DatadogContextStorageWrapper())
-                },
+            // Later on maybe we should consider a method
+            // DatdogOpenTelemetry.initialize() to be called in the Application#onCreate class.
+            executeIfJavaFunctionPackageExists(
                 null,
                 null
-            )
+            ) {
+                // suppressing the lint warning as we call this safely on Android 23 and below
+                @Suppress("NewApi")
+                ContextStorage.addWrapper(DatadogContextStorageWrapper())
+            }
         }
 
         internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
@@ -357,6 +361,10 @@ class OtelTracerProvider(
             "You're trying to create an OtelTracerProvider instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +
                 "not registered. No tracing data will be sent."
+
+        internal const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
+            "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
+                " No tracing data will be sent."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
                 " OtelTracerProvider creation, did you initialize SDK?"

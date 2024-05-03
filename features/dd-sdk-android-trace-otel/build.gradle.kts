@@ -16,7 +16,6 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -42,12 +41,12 @@ android {
         buildFeatures {
             buildConfig = true
         }
+        consumerProguardFiles("consumer-rules.pro")
         buildConfigField(
             "String",
             "OPENTELEMETRY_API_VERSION_NAME",
             "\"${libs.versions.openTelemetry.get()}\""
         )
-        consumerProguardFiles("consumer-rules.pro")
     }
     namespace = "com.datadog.android.trace.opentelemetry"
     sourceSets.named("test") {
@@ -62,9 +61,6 @@ dependencies {
     api(libs.openTelemetryApi)
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
-
-    // Generate NoOp implementations
-    ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit")) {
         attributes {

@@ -67,7 +67,8 @@ internal class TracingFeature(
 
     // endregion
 
-    // region _InternalCoreWriterProvider
+    // region InternalCoreWriterProvider
+
     override fun getCoreTracerWriter(): com.datadog.trace.common.writer.Writer {
         return coreTracerDataWriter
     }

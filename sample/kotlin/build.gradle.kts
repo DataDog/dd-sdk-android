@@ -143,10 +143,6 @@ android {
     }
 }
 
-repositories {
-    mavenLocal()
-}
-
 dependencies {
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))

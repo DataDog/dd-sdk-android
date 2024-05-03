@@ -4,11 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.opentelemetry.intenal
+package com.datadog.android.trace.opentelemetry.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.trace.opentelemetry.internal.NEEDS_DESUGARING_ERROR_MESSAGE
-import com.datadog.android.trace.opentelemetry.internal.executeSafelyOnAndroid23AndBelow
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -38,15 +36,15 @@ internal class MiscUtilsTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Test
-    fun `M return defaultValue and log exception W executeSafelyOnAndroid23AndBelow{action throws exception, below 24}`(
+    fun `M return defaultValue and log exception W executeIfJavaFunctionPackageExists{action throws, below 24}`(
         @StringForgery defaultValue: String
     ) {
         // Given
-        val exception = Exception()
-        val action: () -> String = { throw exception }
+        val throwble = Throwable()
+        val action: () -> String = { throw throwble }
 
         // When
-        val result = executeSafelyOnAndroid23AndBelow(action, defaultValue, mockInternalLogger)
+        val result = executeIfJavaFunctionPackageExists(mockInternalLogger, defaultValue, action)
 
         // Then
         assertThat(result).isEqualTo(defaultValue)
@@ -54,12 +52,12 @@ internal class MiscUtilsTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             NEEDS_DESUGARING_ERROR_MESSAGE,
-            exception
+            throwble
         )
     }
 
     @Test
-    fun `M return action result W executeSafelyOnAndroid23AndBelow{action does not throw exception, below 24}`(
+    fun `M return action result W executeIfJavaFunctionPackageExists{action does not throw, below 24}`(
         @StringForgery actionResult: String,
         @StringForgery defaultValue: String
     ) {
@@ -67,7 +65,7 @@ internal class MiscUtilsTest {
         val action: () -> String = { actionResult }
 
         // When
-        val result = executeSafelyOnAndroid23AndBelow(action, defaultValue, mockInternalLogger)
+        val result = executeIfJavaFunctionPackageExists(mockInternalLogger, defaultValue, action)
 
         // Then
         assertThat(result).isEqualTo(actionResult)
@@ -75,7 +73,7 @@ internal class MiscUtilsTest {
 
     @TestTargetApi(24)
     @Test
-    fun `M return action result W executeSafelyOnAndroid23AndBelow{action does not throw exception, above 23}`(
+    fun `M return action result W executeIfJavaFunctionPackageExists{action does not throw, above 23}`(
         @StringForgery actionResult: String,
         @StringForgery defaultValue: String
     ) {
@@ -83,7 +81,7 @@ internal class MiscUtilsTest {
         val action: () -> String = { actionResult }
 
         // When
-        val result = executeSafelyOnAndroid23AndBelow(action, defaultValue, mockInternalLogger)
+        val result = executeIfJavaFunctionPackageExists(mockInternalLogger, defaultValue, action)
 
         // Then
         assertThat(result).isEqualTo(actionResult)
