@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.Drawable
 import androidx.appcompat.widget.ActionBarContainer
-import androidx.appcompat.widget.ActionBarContainerDrawableAccessor
+import androidx.appcompat.widget.DatadogActionBarContainerAccessor
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -87,7 +87,7 @@ internal class ActionBarContainerMapperTest : BaseWireframeMapperTest() {
             )
         ) doReturn GlobalBounds(fakeViewX, fakeViewY, fakeViewWidth, fakeViewHeight)
 
-        ActionBarContainerDrawableAccessor(mockActionBarContainer).setBackgroundDrawabal(mockBackgroundDrawable)
+        DatadogActionBarContainerAccessor(mockActionBarContainer).setBackgroundDrawable(mockBackgroundDrawable)
         whenever(mockActionBarContainer.alpha) doReturn fakeViewAlpha
 
         testedMapper = ActionBarContainerMapper(

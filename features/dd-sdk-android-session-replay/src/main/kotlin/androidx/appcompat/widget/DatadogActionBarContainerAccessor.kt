@@ -10,7 +10,7 @@ package androidx.appcompat.widget
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 
-internal class ActionBarContainerDrawableAccessor(
+internal class DatadogActionBarContainerAccessor(
     val container: ActionBarContainer
 ) {
 
@@ -20,7 +20,7 @@ internal class ActionBarContainerDrawableAccessor(
     }
 
     @SuppressLint("RestrictedApi")
-    fun setBackgroundDrawabal(drawable: Drawable) {
+    fun setBackgroundDrawable(drawable: Drawable) {
         container.mBackground = drawable
     }
 }

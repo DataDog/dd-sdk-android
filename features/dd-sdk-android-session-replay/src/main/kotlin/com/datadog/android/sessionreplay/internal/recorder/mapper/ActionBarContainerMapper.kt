@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import androidx.appcompat.widget.ActionBarContainer
-import androidx.appcompat.widget.ActionBarContainerDrawableAccessor
+import androidx.appcompat.widget.DatadogActionBarContainerAccessor
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -34,11 +34,11 @@ internal class ActionBarContainerMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
         // The ActionBarContainer uses an internal Drawable implementation that redirects to some fields in the
-        // ActionBarContainer class.
-        // Fortunately, the mBackground field we're interested in is package private,
-        // which allows us to access it.
-//        val background = backgroundField?.get(view) as? Drawable
-        val background = ActionBarContainerDrawableAccessor(view).getBackgroundDrawable()
+        // ActionBarContainer class. It uses an ActionBarContainer.mBackground field (not to be confused with the
+        // View.mBackground field which has a getBackground() accessor.
+        // Fortunately, the ActionBarContainer.mBackground field we're interested in is package private,
+        // which allows us to access it via the DatadogActionBarContainerAccessor.
+        val background = DatadogActionBarContainerAccessor(view).getBackgroundDrawable()
         val shapeStyle = background?.let { resolveShapeStyle(it, view.alpha) }
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, PREFIX_BACKGROUND_DRAWABLE)
 
