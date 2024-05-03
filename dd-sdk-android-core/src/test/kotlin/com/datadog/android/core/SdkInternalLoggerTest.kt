@@ -356,6 +356,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
@@ -367,7 +368,8 @@ internal class SdkInternalLoggerTest {
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
             mockLambda,
-            null
+            null,
+            additionalProperties = fakeAdditionalProperties
         )
 
         // Then
@@ -376,7 +378,8 @@ internal class SdkInternalLoggerTest {
                 mapOf(
                     "type" to "telemetry_error",
                     "message" to fakeMessage,
-                    "throwable" to null
+                    "throwable" to null,
+                    "additionalProperties" to fakeAdditionalProperties
                 )
             )
     }
@@ -387,6 +390,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
@@ -399,7 +403,8 @@ internal class SdkInternalLoggerTest {
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
             mockLambda,
-            fakeThrowable
+            fakeThrowable,
+            additionalProperties = fakeAdditionalProperties
         )
 
         // Then
@@ -408,7 +413,8 @@ internal class SdkInternalLoggerTest {
                 mapOf(
                     "type" to "telemetry_error",
                     "message" to fakeMessage,
-                    "throwable" to fakeThrowable
+                    "throwable" to fakeThrowable,
+                    "additionalProperties" to fakeAdditionalProperties
                 )
             )
     }

@@ -515,10 +515,13 @@ internal class RumFeature(
         val throwable = telemetryEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
         val stack = telemetryEvent[EVENT_STACKTRACE_PROPERTY] as? String
         val kind = telemetryEvent["kind"] as? String
+
+        @Suppress("UNCHECKED_CAST")
+        val additionalProperties = telemetryEvent[EVENT_ADDITIONAL_PROPERTIES] as? Map<String, Any?>
         if (throwable != null) {
-            telemetry.error(message, throwable)
+            telemetry.error(message, throwable, additionalProperties)
         } else {
-            telemetry.error(message, stack, kind)
+            telemetry.error(message, stack, kind, additionalProperties)
         }
     }
 

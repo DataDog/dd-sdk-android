@@ -535,7 +535,8 @@ internal class DatadogRumMonitor(
 
     override fun sendErrorTelemetryEvent(
         message: String,
-        throwable: Throwable?
+        throwable: Throwable?,
+        additionalProperties: Map<String, Any?>?
     ) {
         val stack: String? = throwable?.loggableStackTrace()
         val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
@@ -546,7 +547,7 @@ internal class DatadogRumMonitor(
                 stack = stack,
                 kind = kind,
                 coreConfiguration = null,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
         )
     }
@@ -554,7 +555,8 @@ internal class DatadogRumMonitor(
     override fun sendErrorTelemetryEvent(
         message: String,
         stack: String?,
-        kind: String?
+        kind: String?,
+        additionalProperties: Map<String, Any?>?
     ) {
         handleEvent(
             RumRawEvent.SendTelemetry(
@@ -563,7 +565,7 @@ internal class DatadogRumMonitor(
                 stack = stack,
                 kind = kind,
                 coreConfiguration = null,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
         )
     }
