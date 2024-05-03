@@ -496,6 +496,8 @@ datadog:
       - "androidx.work.WorkManager.cancelAllWorkByTag(kotlin.String)"
       - "androidx.work.WorkManager.getInstance(android.content.Context)"
       - "androidx.work.WorkManager.isInitialized()"
+      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.constructor(androidx.appcompat.widget.ActionBarContainer)"
+      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.getBackgroundDrawable()"
       # endregion
       # region Google Material
       - "com.google.android.material.tabs.TabLayout.TabView.getChildAt(kotlin.Int)"

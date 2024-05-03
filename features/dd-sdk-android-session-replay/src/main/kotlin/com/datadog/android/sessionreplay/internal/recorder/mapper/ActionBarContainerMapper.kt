@@ -6,7 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.view.View
+import androidx.appcompat.widget.ActionBarContainer
+import androidx.appcompat.widget.DatadogActionBarContainerAccessor
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -15,12 +16,12 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class ViewWireframeMapper(
+internal class ActionBarContainerMapper(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<View>(
+) : BaseViewGroupMapper<ActionBarContainer>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
@@ -28,24 +29,30 @@ internal class ViewWireframeMapper(
 ) {
 
     override fun map(
-        view: View,
+        view: ActionBarContainer,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
-        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
-            view,
-            mappingContext.systemInformation.screenDensity
-        )
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
+        // The ActionBarContainer uses an internal Drawable implementation that redirects to some fields in the
+        // ActionBarContainer class. It uses an ActionBarContainer.mBackground field (not to be confused with the
+        // View.mBackground field which has a getBackground() accessor.
+        // Fortunately, the ActionBarContainer.mBackground field we're interested in is package private,
+        // which allows us to access it via the DatadogActionBarContainerAccessor.
+        val background = DatadogActionBarContainerAccessor(view).getBackgroundDrawable()
+        val shapeStyle = background?.let { resolveShapeStyle(it, view.alpha) }
+        val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, PREFIX_BACKGROUND_DRAWABLE)
 
-        if (shapeStyle != null) {
+        if ((shapeStyle != null) && (id != null)) {
+            val density = mappingContext.systemInformation.screenDensity
+            val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+
             return listOf(
                 MobileSegment.Wireframe.ShapeWireframe(
-                    resolveViewId(view),
-                    viewGlobalBounds.x,
-                    viewGlobalBounds.y,
-                    viewGlobalBounds.width,
-                    viewGlobalBounds.height,
+                    id,
+                    x = bounds.x,
+                    y = bounds.y,
+                    width = bounds.width,
+                    height = bounds.height,
                     shapeStyle = shapeStyle,
                     border = null
                 )
