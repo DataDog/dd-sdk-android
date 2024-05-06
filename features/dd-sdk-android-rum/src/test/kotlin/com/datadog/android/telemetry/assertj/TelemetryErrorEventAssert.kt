@@ -179,6 +179,16 @@ internal class TelemetryErrorEventAssert(actual: TelemetryErrorEvent) :
         return this
     }
 
+    fun hasAdditionalProperties(additionalProperties: Map<String, Any?>): TelemetryErrorEventAssert {
+        assertThat(actual.telemetry.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.additionalProperties $additionalProperties" +
+                    " but was ${actual.telemetry.additionalProperties}"
+            )
+            .isEqualTo(additionalProperties)
+        return this
+    }
+
     companion object {
         fun assertThat(actual: TelemetryErrorEvent) = TelemetryErrorEventAssert(actual)
     }

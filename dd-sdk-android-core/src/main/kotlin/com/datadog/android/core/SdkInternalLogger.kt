@@ -181,22 +181,24 @@ internal class SdkInternalLogger(
             level == InternalLogger.Level.WARN ||
             error != null
         ) {
-            mapOf(
+            mutableMapOf<String, Any?>(
                 TYPE_KEY to "telemetry_error",
                 MESSAGE_KEY to message,
                 THROWABLE_KEY to error
-            )
-        } else if (!additionalProperties.isNullOrEmpty()) {
-            mapOf(
-                TYPE_KEY to "telemetry_debug",
-                MESSAGE_KEY to message,
-                ADDITIONAL_PROPERTIES_KEY to additionalProperties
-            )
+            ).apply {
+                if (!additionalProperties.isNullOrEmpty()) {
+                    put(ADDITIONAL_PROPERTIES_KEY, additionalProperties)
+                }
+            }
         } else {
-            mapOf(
+            mutableMapOf<String, Any?>(
                 TYPE_KEY to "telemetry_debug",
                 MESSAGE_KEY to message
-            )
+            ).apply {
+                if (!additionalProperties.isNullOrEmpty()) {
+                    put(ADDITIONAL_PROPERTIES_KEY, additionalProperties)
+                }
+            }
         }
         rumFeature.sendEvent(telemetryEvent)
     }

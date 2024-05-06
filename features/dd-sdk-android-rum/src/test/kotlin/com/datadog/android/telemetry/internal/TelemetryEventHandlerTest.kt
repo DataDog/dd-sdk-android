@@ -908,6 +908,7 @@ internal class TelemetryEventHandlerTest {
             .hasOsBuild(fakeOsBuildId)
             .hasOsName(fakeOsName)
             .hasOsVersion(fakeOsVersion)
+            .hasAdditionalProperties(rawEvent.additionalProperties ?: emptyMap())
     }
 
     private fun assertConfigEventMatchesRawEvent(
@@ -969,7 +970,7 @@ internal class TelemetryEventHandlerTest {
             throwable?.loggableStackTrace(),
             throwable?.javaClass?.canonicalName,
             coreConfiguration = null,
-            additionalProperties = null,
+            additionalProperties = aNullable { exhaustiveAttributes() },
             isMetric = aBool()
         )
     }

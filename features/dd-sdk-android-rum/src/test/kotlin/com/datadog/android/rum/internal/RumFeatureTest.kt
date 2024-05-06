@@ -1279,7 +1279,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M handle telemetry error event W onReceive() { with throwable }`(
+    fun `M handle telemetry error event W onReceive() { with throwable, no additional properties }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1303,7 +1303,33 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M handle telemetry error event W onReceive() { with stack and kind }`(
+    fun `M handle telemetry error event W onReceive() { with throwable, with additional properties }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeThrowable = forge.aThrowable()
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val event = mapOf(
+            "type" to "telemetry_error",
+            "message" to fakeMessage,
+            "throwable" to fakeThrowable,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor)
+            .sendErrorTelemetryEvent(fakeMessage, fakeThrowable, fakeAdditionalProperties)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M handle telemetry error event W onReceive() { with stack and kind, no additional properties }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1324,6 +1350,36 @@ internal class RumFeatureTest {
         // Then
         verify(mockRumMonitor)
             .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind)
+
+        verifyNoMoreInteractions(mockRumMonitor)
+
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M handle telemetry error event W onReceive() { with stack and kind, with additional properties }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeStack = forge.aNullable { aString() }
+        val fakeKind = forge.aNullable { aString() }
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val event = mapOf(
+            "type" to "telemetry_error",
+            "message" to fakeMessage,
+            "stacktrace" to fakeStack,
+            "kind" to fakeKind,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor)
+            .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind, fakeAdditionalProperties)
 
         verifyNoMoreInteractions(mockRumMonitor)
 

@@ -63,8 +63,8 @@ internal class TelemetryEventHandler(
                             datadogContext,
                             timestamp,
                             event.message,
-                            event.additionalProperties,
-                            deviceInfo
+                            deviceInfo,
+                            event.additionalProperties
                         )
                     }
 
@@ -75,7 +75,8 @@ internal class TelemetryEventHandler(
                             event.message,
                             event.stack,
                             event.kind,
-                            deviceInfo
+                            deviceInfo,
+                            event.additionalProperties
                         )
                     }
 
@@ -86,9 +87,10 @@ internal class TelemetryEventHandler(
                                 datadogContext,
                                 timestamp,
                                 "Trying to send configuration event with null config",
-                                null,
-                                null,
-                                deviceInfo
+                                stack = null,
+                                kind = null,
+                                deviceInfo,
+                                additionalProperties = null
                             )
                         } else {
                             createConfigurationEvent(
@@ -152,8 +154,8 @@ internal class TelemetryEventHandler(
         datadogContext: DatadogContext,
         timestamp: Long,
         message: String,
-        additionalProperties: Map<String, Any?>?,
-        deviceInfo: DeviceInfo?
+        deviceInfo: DeviceInfo?,
+        additionalProperties: Map<String, Any?>?
     ): TelemetryDebugEvent {
         val rumContext = datadogContext.rumContext()
         val resolvedAdditionalProperties = additionalProperties?.toMutableMap() ?: mutableMapOf()
@@ -199,9 +201,12 @@ internal class TelemetryEventHandler(
         message: String,
         stack: String?,
         kind: String?,
-        deviceInfo: DeviceInfo?
+        deviceInfo: DeviceInfo?,
+        additionalProperties: Map<String, Any?>?
     ): TelemetryErrorEvent {
         val rumContext = datadogContext.rumContext()
+        val resolvedAdditionalProperties = additionalProperties?.toMutableMap() ?: mutableMapOf()
+
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,
@@ -217,6 +222,7 @@ internal class TelemetryEventHandler(
             action = rumContext.actionId?.let { TelemetryErrorEvent.Action(it) },
             telemetry = TelemetryErrorEvent.Telemetry(
                 message = message,
+                additionalProperties = resolvedAdditionalProperties,
                 error = if (stack != null || kind != null) {
                     TelemetryErrorEvent.Error(
                         stack = stack,
