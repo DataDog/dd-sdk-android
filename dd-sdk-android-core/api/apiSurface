@@ -94,6 +94,7 @@ interface com.datadog.android.api.feature.Feature
     const val RUM_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
+    const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
 interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
   fun onContextUpdate(String, Map<String, Any?>)
