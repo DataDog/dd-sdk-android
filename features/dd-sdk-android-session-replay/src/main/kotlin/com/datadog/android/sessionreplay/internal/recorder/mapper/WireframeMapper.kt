@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -30,12 +31,14 @@ interface WireframeMapper<in T : View> {
      * are updated by the async jobs. It can be used to
      * offload heavy work from the calling thread (main) to a background thread while mapping
      * some view properties.
+     * @param internalLogger the logger to log internal warnings
      * @see MobileSegment.Wireframe
      * @see SystemInformation
      */
     fun map(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe>
 }

@@ -101,11 +101,17 @@ internal class ActionBarContainerMapperTest : BaseWireframeMapperTest() {
     @Test
     fun `M return a shape wireframe with the background W map()`() {
         // Given
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockBackgroundDrawable)) doReturn fakeBackgroundColor
+        whenever(
+            mockDrawableToColorMapper.mapDrawableToColor(
+                mockBackgroundDrawable,
+                mockInternalLogger
+            )
+        ) doReturn fakeBackgroundColor
         whenever(mockColorStringFormatter.formatColorAsHexString(fakeBackgroundColor)) doReturn fakeBackgroundHexColor
 
         // When
-        val result = testedMapper.map(mockActionBarContainer, fakeMappingContext, mockAsyncJobStatusCallback)
+        val result =
+            testedMapper.map(mockActionBarContainer, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
 
         // Then
         assertThat(result).hasSize(1)
@@ -131,10 +137,15 @@ internal class ActionBarContainerMapperTest : BaseWireframeMapperTest() {
     @Test
     fun `M return nothing W map() {unsupported background drawable}`() {
         // Given
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockBackgroundDrawable)) doReturn null
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockBackgroundDrawable, mockInternalLogger)) doReturn null
 
         // When
-        val result = testedMapper.map(mockActionBarContainer, fakeMappingContext, mockAsyncJobStatusCallback)
+        val result = testedMapper.map(
+            mockActionBarContainer,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(result).isEmpty()

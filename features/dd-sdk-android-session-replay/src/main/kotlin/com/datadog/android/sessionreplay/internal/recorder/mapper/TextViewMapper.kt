@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -46,11 +47,12 @@ open class TextViewMapper(
     override fun map(
         view: TextView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
-        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback, internalLogger))
 
         val density = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(

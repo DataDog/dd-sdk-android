@@ -82,7 +82,8 @@ internal class WebViewWireframeMapperTest : BaseWireframeMapperTest() {
         val mappedWireframes = testedWebViewWireframeMapper.map(
             mockWebView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

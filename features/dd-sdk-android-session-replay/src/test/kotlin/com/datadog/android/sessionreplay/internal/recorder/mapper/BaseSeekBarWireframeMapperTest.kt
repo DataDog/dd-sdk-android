@@ -10,6 +10,7 @@ import android.content.res.ColorStateList
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.widget.SeekBar
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -147,6 +148,9 @@ internal abstract class BaseSeekBarWireframeMapperTest {
 
     lateinit var mockSeekBar: SeekBar
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeViewGlobalBounds = GlobalBounds(
@@ -251,7 +255,12 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         ).thenReturn(null)
 
         // When
-        val map = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext, mockAsyncJobStatusCallback)
+        val map = testedSeekBarWireframeMapper.map(
+            mockSeekBar,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(map).isEmpty()
@@ -268,7 +277,12 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         ).thenReturn(null)
 
         // When
-        val map = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext, mockAsyncJobStatusCallback)
+        val map = testedSeekBarWireframeMapper.map(
+            mockSeekBar,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(map).isEmpty()
@@ -285,7 +299,12 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         ).thenReturn(null)
 
         // When
-        val map = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext, mockAsyncJobStatusCallback)
+        val map = testedSeekBarWireframeMapper.map(
+            mockSeekBar,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(map).isEmpty()

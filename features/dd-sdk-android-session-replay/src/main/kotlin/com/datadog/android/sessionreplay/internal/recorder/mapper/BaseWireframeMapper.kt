@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.Drawable
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -44,8 +45,12 @@ abstract class BaseWireframeMapper<in T : View>(
     /**
      * Resolves the [MobileSegment.ShapeStyle] based on the [View] drawables.
      */
-    protected fun resolveShapeStyle(drawable: Drawable, viewAlpha: Float): MobileSegment.ShapeStyle? {
-        val color = drawableToColorMapper.mapDrawableToColor(drawable)
+    protected fun resolveShapeStyle(
+        drawable: Drawable,
+        viewAlpha: Float,
+        internalLogger: InternalLogger
+    ): MobileSegment.ShapeStyle? {
+        val color = drawableToColorMapper.mapDrawableToColor(drawable, internalLogger)
         return if (color != null) {
             MobileSegment.ShapeStyle(colorStringFormatter.formatColorAsHexString(color), viewAlpha)
         } else {

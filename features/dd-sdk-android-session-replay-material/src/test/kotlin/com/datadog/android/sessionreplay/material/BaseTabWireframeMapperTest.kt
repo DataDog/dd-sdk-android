@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
@@ -75,6 +76,9 @@ internal abstract class BaseTabWireframeMapperTest {
     @Mock
     lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTextWireframes = forge.aList(size = 1) { getForgery() }
@@ -92,7 +96,14 @@ internal abstract class BaseTabWireframeMapperTest {
             )
         )
             .thenReturn(fakeTabIndicatorUniqueId)
-        whenever(mockTextWireframeMapper.map(eq(mockTabLabelView), eq(fakeMappingContext), any()))
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockTabLabelView),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        )
             .thenReturn(fakeTextWireframes)
         testedTabWireframeMapper = provideTestInstance()
     }
@@ -128,7 +139,12 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = fakeTextWireframes + expectedTabIndicatorWireframe
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -141,7 +157,12 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = fakeTextWireframes
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -179,7 +200,12 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = listOf(expectedTabIndicatorWireframe)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -194,7 +220,12 @@ internal abstract class BaseTabWireframeMapperTest {
         whenever(mockTabView.isSelected).thenReturn(false)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEmpty()
@@ -230,7 +261,12 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = listOf(expectedTabIndicatorWireframe)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -243,7 +279,12 @@ internal abstract class BaseTabWireframeMapperTest {
         whenever(mockTabView.isSelected).thenReturn(false)
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEmpty()
@@ -258,7 +299,12 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = fakeTextWireframes
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
@@ -273,7 +319,12 @@ internal abstract class BaseTabWireframeMapperTest {
         val expectedMappedWireframes = fakeTextWireframes
 
         // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedTabWireframeMapper.map(
+            mockTabView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)

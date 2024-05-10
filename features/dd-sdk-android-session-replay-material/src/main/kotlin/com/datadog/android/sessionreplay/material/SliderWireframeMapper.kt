@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
@@ -28,7 +29,8 @@ internal open class SliderWireframeMapper(
     override fun map(
         view: Slider,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val activeTrackId = viewIdentifierResolver
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)

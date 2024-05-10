@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -46,9 +47,10 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor
     override fun map(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val backgroundWireframe = resolveViewBackground(view, mappingContext, asyncJobStatusCallback)
+        val backgroundWireframe = resolveViewBackground(view, mappingContext, asyncJobStatusCallback, internalLogger)
 
         return backgroundWireframe?.let { listOf(it) } ?: emptyList()
     }
@@ -56,9 +58,10 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor
     private fun resolveViewBackground(
         view: View,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): MobileSegment.Wireframe? {
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
 
         val resources = view.resources
         val density = resources.displayMetrics.density

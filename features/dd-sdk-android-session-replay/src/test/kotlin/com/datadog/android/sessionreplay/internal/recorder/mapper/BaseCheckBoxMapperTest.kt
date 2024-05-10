@@ -89,7 +89,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
 
-        whenever(mockTextWireframeMapper.map(eq(mockCheckBox), eq(fakeMappingContext), any()))
+        whenever(mockTextWireframeMapper.map(eq(mockCheckBox), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeTextWireframes)
 
         whenever(
@@ -149,7 +149,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -185,7 +186,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -216,7 +218,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -247,7 +250,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -268,7 +272,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

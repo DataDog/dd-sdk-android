@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -46,6 +47,9 @@ internal abstract class BaseWireframeMapperTest {
 
     @Mock
     lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     protected fun mockNonDecorView(): View {
         return mock {

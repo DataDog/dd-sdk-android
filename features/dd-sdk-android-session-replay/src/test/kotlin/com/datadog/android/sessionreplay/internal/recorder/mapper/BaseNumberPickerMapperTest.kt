@@ -205,7 +205,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             .thenReturn(null)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()
@@ -224,7 +229,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             .thenReturn(null)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()
@@ -243,7 +253,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             .thenReturn(null)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()

@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
+import android.view.ViewGroup
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
@@ -19,7 +21,8 @@ internal class TreeViewTraversal(
     private val mappers: List<MapperTypeWrapper<*>>,
     private val defaultViewMapper: WireframeMapper<View>,
     private val decorViewMapper: WireframeMapper<View>,
-    private val viewUtilsInternal: ViewUtilsInternal
+    private val viewUtilsInternal: ViewUtilsInternal,
+    private val internalLogger: InternalLogger
 ) {
 
     @Suppress("ReturnCount")
@@ -36,6 +39,7 @@ internal class TreeViewTraversal(
 
         val traversalStrategy: TraversalStrategy
         val resolvedWireframes: List<MobileSegment.Wireframe>
+        val noOpCallback = NoOpAsyncJobStatusCallback()
 
         // try to resolve from the exhaustive type mappers
         val mapper = findMapperForView(view)
@@ -47,13 +51,28 @@ internal class TreeViewTraversal(
             } else {
                 TraversalStrategy.STOP_AND_RETURN_NODE
             }
-            resolvedWireframes = mapper.map(view, mappingContext, queueStatusCallback)
+            resolvedWireframes = mapper.map(view, mappingContext, queueStatusCallback, internalLogger)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = decorViewMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
-        } else {
+            resolvedWireframes = decorViewMapper.map(view, mappingContext, noOpCallback, internalLogger)
+        } else if (view is ViewGroup) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = defaultViewMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
+            resolvedWireframes = defaultViewMapper.map(view, mappingContext, noOpCallback, internalLogger)
+        } else {
+            traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
+            resolvedWireframes = defaultViewMapper.map(view, mappingContext, noOpCallback, internalLogger)
+            val viewType = view.javaClass.canonicalName ?: view.javaClass.name
+
+            internalLogger.log(
+                level = InternalLogger.Level.INFO,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { "No mapper found for view $viewType" },
+                throwable = null,
+                onlyOnce = true,
+                additionalProperties = mapOf(
+                    "replay.widget.type" to viewType
+                )
+            )
         }
 
         return TraversedTreeView(resolvedWireframes, traversalStrategy)

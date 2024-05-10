@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.utils
 
 import android.graphics.drawable.Drawable
 import android.os.Build
+import com.datadog.android.api.InternalLogger
 
 /**
  * A utility interface to convert a [Drawable] to a meaningful color.
@@ -18,9 +19,10 @@ fun interface DrawableToColorMapper {
     /**
      * Maps the drawable to its meaningful color, or null if the drawable is mostly invisible.
      * @param drawable the drawable to convert
+     * @param internalLogger the internalLogger to report warnings
      * @return the color as an Int (in 0xAARRGGBB order), or null if the drawable is mostly invisible
      */
-    fun mapDrawableToColor(drawable: Drawable): Int?
+    fun mapDrawableToColor(drawable: Drawable, internalLogger: InternalLogger): Int?
 
     companion object {
         /**

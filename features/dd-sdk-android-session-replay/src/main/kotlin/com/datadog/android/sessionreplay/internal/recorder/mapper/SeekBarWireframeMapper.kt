@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -38,7 +39,8 @@ internal open class SeekBarWireframeMapper(
     override fun map(
         view: SeekBar,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val activeTrackId = viewIdentifierResolver
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)

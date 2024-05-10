@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -30,13 +31,14 @@ internal class ViewWireframeMapper(
     override fun map(
         view: View,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
 
         if (shapeStyle != null) {
             return listOf(

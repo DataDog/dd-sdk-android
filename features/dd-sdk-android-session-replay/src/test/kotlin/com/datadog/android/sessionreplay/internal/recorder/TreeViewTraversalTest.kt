@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.TextView
 import androidx.drawerlayout.widget.DrawerLayout
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -37,6 +38,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -56,7 +58,7 @@ internal class TreeViewTraversalTest {
     lateinit var fakeMappingContext: MappingContext
 
     @Mock
-    lateinit var mockViewMapper: ViewWireframeMapper
+    lateinit var mockDefaultViewMapper: ViewWireframeMapper
 
     @Mock
     lateinit var mockDecorViewMapper: DecorViewMapper
@@ -67,15 +69,19 @@ internal class TreeViewTraversalTest {
     @Mock
     lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         whenever(mockViewUtilsInternal.isNotVisible(any())).thenReturn(false)
         whenever(mockViewUtilsInternal.isSystemNoise(any())).thenReturn(false)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
-            mockViewMapper,
+            mockDefaultViewMapper,
             mockDecorViewMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            mockInternalLogger
         )
     }
 
@@ -104,15 +110,17 @@ internal class TreeViewTraversalTest {
             fakeTypeToMapperMap[mockView::class.java]!!.map(
                 eq(mockView),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         )
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             fakeTypeMapperWrappers,
-            mockViewMapper,
+            mockDefaultViewMapper,
             mockDecorViewMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            mockInternalLogger
         )
 
         // When
@@ -129,30 +137,57 @@ internal class TreeViewTraversalTest {
     }
 
     @Test
-    fun `M default to view mapper and continue W traverse { mapper for view type not provided }`(
+    fun `M default to view mapper and stop W traverse { mapper for view type not provided }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewMappedWireframes: List<MobileSegment.Wireframe.ShapeWireframe> = forge.aList { getForgery() }
+        val mockView = mock<View> {
+            // Ensures the view is not treated as a decor view
+            whenever(it.parent) doReturn mock<ViewGroup>()
+        }
+        whenever(mockDefaultViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
+            .thenReturn(fakeViewMappedWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            emptyList(),
+            mockDefaultViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal,
+            mockInternalLogger
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
+    }
+
+    @Test
+    fun `M default to view mapper and continue W traverse { mapper for ViewGroup type not provided }`(
         forge: Forge
     ) {
         // Given
         val fakeViewMappedWireframes: List<MobileSegment.Wireframe.ShapeWireframe> =
             forge.aList { getForgery() }
-        val mockViews: List<View> = listOf(
-            forge.aMockView<RadioButton>(),
-            forge.aMockView<CheckedTextView>(),
-            forge.aMockView<Button>(),
-            forge.aMockView<CompoundButton>(),
-            forge.aMockView<TextView>()
-        )
-        val mockView = forge.anElementFrom(mockViews).apply {
-            whenever(this.parent)
-                .thenReturn(mock<ViewGroup>())
+        val mockView = mock<ViewGroup> {
+            // Ensures the view is not treated as a decor view
+            whenever(it.parent) doReturn mock<ViewGroup>()
         }
-        whenever(mockViewMapper.map(eq(mockView), eq(fakeMappingContext), any()))
+        whenever(mockDefaultViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
-            mockViewMapper,
+            mockDefaultViewMapper,
             mockDecorViewMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            mockInternalLogger
         )
 
         // When
@@ -191,15 +226,17 @@ internal class TreeViewTraversalTest {
             fakeTypeToMapperMap[mockView::class.java]!!.map(
                 eq(mockView),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         )
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             fakeTypeMapperWrappers,
-            mockViewMapper,
+            mockDefaultViewMapper,
             mockDecorViewMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            mockInternalLogger
         )
 
         // When
@@ -225,13 +262,14 @@ internal class TreeViewTraversalTest {
         val mockView = forge.aMockView<View>().apply {
             whenever(this.parent).thenReturn(mock())
         }
-        whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any()))
+        whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
-            mockViewMapper,
+            mockDefaultViewMapper,
             mockDecorViewMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            mockInternalLogger
         )
 
         // When
@@ -258,13 +296,14 @@ internal class TreeViewTraversalTest {
             whenever(this.parent).thenReturn(null)
         }
 
-        whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any()))
+        whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
-            mockViewMapper,
+            mockDefaultViewMapper,
             mockDecorViewMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            mockInternalLogger
         )
 
         // When

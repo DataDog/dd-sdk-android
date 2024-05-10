@@ -25,28 +25,28 @@ interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDete
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
   constructor(com.datadog.android.sessionreplay.utils.GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
 abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T>
-  override fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  override fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   companion object 
 open class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseViewGroupMapper<T: android.view.ViewGroup> : BaseAsyncBackgroundWireframeMapper<T>, TraverseAllChildrenMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
 abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View> : WireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   protected fun resolveViewId(android.view.View): Long
-  protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
+  protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float, com.datadog.android.api.InternalLogger): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
   companion object 
 open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseAsyncBackgroundWireframeMapper<android.widget.TextView>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
-  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper<T: android.view.ViewGroup> : WireframeMapper<T>
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View>
-  fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 class com.datadog.android.sessionreplay.internal.recorder.obfuscator.AndroidNStringObfuscator : StringObfuscator
   override fun obfuscate(String): String
 open class com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper
-  override fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable): Int?
-  override fun resolveInsetDrawable(android.graphics.drawable.InsetDrawable): Int?
+  override fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
+  override fun resolveInsetDrawable(android.graphics.drawable.InsetDrawable, com.datadog.android.api.InternalLogger): Int?
 open class com.datadog.android.sessionreplay.utils.AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper
-  override fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable): Int?
+  override fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable, com.datadog.android.api.InternalLogger): Int?
   companion object 
 interface com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
   fun jobStarted()
@@ -63,7 +63,7 @@ object com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver : V
   override fun resolveViewId(android.view.View): Long
   override fun resolveChildUniqueIdentifier(android.view.View, String): Long?
 interface com.datadog.android.sessionreplay.utils.DrawableToColorMapper
-  fun mapDrawableToColor(android.graphics.drawable.Drawable): Int?
+  fun mapDrawableToColor(android.graphics.drawable.Drawable, com.datadog.android.api.InternalLogger): Int?
   companion object 
     fun getDefault(): DrawableToColorMapper
 data class com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -73,12 +73,12 @@ interface com.datadog.android.sessionreplay.utils.ImageWireframeHelper
   fun createCompoundDrawableWireframes(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, Int, AsyncJobStatusCallback): MutableList<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   companion object 
 open class com.datadog.android.sessionreplay.utils.LegacyDrawableToColorMapper : DrawableToColorMapper
-  override fun mapDrawableToColor(android.graphics.drawable.Drawable): Int?
+  override fun mapDrawableToColor(android.graphics.drawable.Drawable, com.datadog.android.api.InternalLogger): Int?
   protected open fun resolveColorDrawable(android.graphics.drawable.ColorDrawable): Int?
-  protected open fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable): Int?
-  protected open fun resolveLayerDrawable(android.graphics.drawable.LayerDrawable, (Int, android.graphics.drawable.Drawable) -> Boolean = { _, _ -> true }): Int?
-  protected open fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable): Int?
-  protected open fun resolveInsetDrawable(android.graphics.drawable.InsetDrawable): Int?
+  protected open fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
+  protected open fun resolveLayerDrawable(android.graphics.drawable.LayerDrawable, com.datadog.android.api.InternalLogger, (Int, android.graphics.drawable.Drawable) -> Boolean = { _, _ -> true }): Int?
+  protected open fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable, com.datadog.android.api.InternalLogger): Int?
+  protected open fun resolveInsetDrawable(android.graphics.drawable.InsetDrawable, com.datadog.android.api.InternalLogger): Int?
   protected fun mergeColorAndAlpha(Int, Int): Int
   companion object 
 interface com.datadog.android.sessionreplay.utils.ViewBoundsResolver

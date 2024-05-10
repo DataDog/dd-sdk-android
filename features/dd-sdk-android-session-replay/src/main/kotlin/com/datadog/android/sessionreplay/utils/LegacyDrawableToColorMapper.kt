@@ -14,9 +14,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
@@ -24,14 +22,25 @@ import com.datadog.android.api.feature.FeatureSdkCore
  */
 open class LegacyDrawableToColorMapper : DrawableToColorMapper {
 
-    override fun mapDrawableToColor(drawable: Drawable): Int? {
+    override fun mapDrawableToColor(drawable: Drawable, internalLogger: InternalLogger): Int? {
         val result = when (drawable) {
             is ColorDrawable -> resolveColorDrawable(drawable)
-            is RippleDrawable -> resolveRippleDrawable(drawable)
-            is LayerDrawable -> resolveLayerDrawable(drawable)
-            is InsetDrawable -> resolveInsetDrawable(drawable)
-            is GradientDrawable -> resolveGradientDrawable(drawable)
+            is RippleDrawable -> resolveRippleDrawable(drawable, internalLogger)
+            is LayerDrawable -> resolveLayerDrawable(drawable, internalLogger)
+            is InsetDrawable -> resolveInsetDrawable(drawable, internalLogger)
+            is GradientDrawable -> resolveGradientDrawable(drawable, internalLogger)
             else -> {
+                val drawableType = drawable.javaClass.canonicalName ?: drawable.javaClass.name
+                internalLogger.log(
+                    level = InternalLogger.Level.INFO,
+                    target = InternalLogger.Target.TELEMETRY,
+                    messageBuilder = { "No mapper found for drawable $drawableType" },
+                    throwable = null,
+                    onlyOnce = true,
+                    additionalProperties = mapOf(
+                        "replay.drawable.type" to drawableType
+                    )
+                )
                 null
             }
         }
@@ -51,27 +60,30 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
     /**
      * Resolves the color from a [RippleDrawable].
      * @param drawable the color drawable
+     * @param internalLogger the internalLogger to report warnings
      * @return the color to map to or null if not applicable
      */
-    protected open fun resolveRippleDrawable(drawable: RippleDrawable): Int? {
-        return resolveLayerDrawable(drawable)
+    protected open fun resolveRippleDrawable(drawable: RippleDrawable, internalLogger: InternalLogger): Int? {
+        return resolveLayerDrawable(drawable, internalLogger)
     }
 
     /**
      * Resolves the color from a [LayerDrawable].
      * @param drawable the color drawable
+     * @param internalLogger the internalLogger to report warnings
      * @param predicate a predicate to filter which ayers should be taken into account (default: accept all layers)
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveLayerDrawable(
         drawable: LayerDrawable,
+        internalLogger: InternalLogger,
         predicate: (Int, Drawable) -> Boolean = { _, _ -> true }
     ): Int? {
         return (0 until drawable.numberOfLayers).map { idx ->
             @Suppress("UnsafeThirdPartyFunctionCall") // layer index can't be out of bounds here
             val childDrawable = drawable.getDrawable(idx)
             if (childDrawable != null && predicate(idx, childDrawable)) {
-                mapDrawableToColor(childDrawable)
+                mapDrawableToColor(childDrawable, internalLogger)
             } else {
                 null
             }
@@ -81,13 +93,14 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
     /**
      * Resolves the color from a [GradientDrawable].
      * @param drawable the color drawable
+     * @param internalLogger the internalLogger to report warnings
      * @return the color to map to or null if not applicable
      */
-    protected open fun resolveGradientDrawable(drawable: GradientDrawable): Int? {
+    protected open fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
         val fillPaint = try {
             fillPaintField?.get(drawable) as? Paint
         } catch (e: IllegalArgumentException) {
-            (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
                 { "Unable to read GradientDrawable.mFillPaint field through reflection" },
@@ -95,7 +108,7 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
             )
             null
         } catch (e: IllegalAccessException) {
-            (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
                 { "Unable to read GradientDrawable.mFillPaint field through reflection" },
@@ -120,9 +133,10 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
     /**
      * Resolves the color from an [InsetDrawable].
      * @param drawable the color drawable
+     * @param internalLogger the internalLogger to report warnings
      * @return the color to map to or null if not applicable
      */
-    protected open fun resolveInsetDrawable(drawable: InsetDrawable): Int? {
+    protected open fun resolveInsetDrawable(drawable: InsetDrawable, internalLogger: InternalLogger): Int? {
         return null
     }
 

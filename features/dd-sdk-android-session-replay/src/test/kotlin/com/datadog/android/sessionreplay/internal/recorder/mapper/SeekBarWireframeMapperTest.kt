@@ -87,7 +87,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -171,7 +172,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -255,7 +257,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -331,7 +334,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -407,7 +411,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -444,7 +449,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -496,7 +502,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -544,7 +551,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -575,7 +583,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -627,7 +636,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -677,7 +687,8 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         val mappedWireframes = testedSeekBarWireframeMapper.map(
             mockSeekBar,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

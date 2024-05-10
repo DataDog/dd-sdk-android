@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Checkable
 import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -35,9 +36,10 @@ internal abstract class CheckableTextViewMapper<T>(
     override fun resolveMainWireframes(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback)
+        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 
     override fun resolveCheckedCheckable(
