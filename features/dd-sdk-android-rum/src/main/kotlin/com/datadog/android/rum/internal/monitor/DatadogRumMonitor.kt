@@ -68,7 +68,8 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    internal val executorService: ExecutorService
+    internal val executorService: ExecutorService,
+    private val rumEventCallMonitor: RumEventCallMonitor
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -378,6 +379,9 @@ internal class DatadogRumMonitor(
     // region RumMonitor/Attributes
 
     override fun addAttribute(key: String, value: Any?) {
+        val updateViewEvent = RumRawEvent.UpdateView()
+        rumEventCallMonitor.trackCallsAndWarnIfNecessary(updateViewEvent.javaClass.simpleName)
+
         if (value == null) {
             globalAttributes.remove(key)
         } else {
@@ -385,10 +389,13 @@ internal class DatadogRumMonitor(
         }
 
         // update the attributes in the view
-        handleEvent(RumRawEvent.UpdateView())
+        handleEvent(updateViewEvent)
     }
 
     override fun addAttributes(attributes: Map<String, Any?>) {
+        val updateViewEvent = RumRawEvent.UpdateView()
+        rumEventCallMonitor.trackCallsAndWarnIfNecessary(updateViewEvent.javaClass.simpleName)
+
         attributes.forEach {
             if (it.value == null) {
                 globalAttributes.remove(it.key)
@@ -398,23 +405,29 @@ internal class DatadogRumMonitor(
         }
 
         // update the attributes in the view
-        handleEvent(RumRawEvent.UpdateView())
+        handleEvent(updateViewEvent)
     }
 
     override fun removeAttribute(key: String) {
+        val updateViewEvent = RumRawEvent.UpdateView()
+        rumEventCallMonitor.trackCallsAndWarnIfNecessary(updateViewEvent.javaClass.simpleName)
+
         globalAttributes.remove(key)
 
         // update the attributes in the view
-        handleEvent(RumRawEvent.UpdateView())
+        handleEvent(updateViewEvent)
     }
 
     override fun removeAttributes(keys: Set<String>) {
+        val updateViewEvent = RumRawEvent.UpdateView()
+        rumEventCallMonitor.trackCallsAndWarnIfNecessary(updateViewEvent.javaClass.simpleName)
+
         keys.forEach { key ->
             globalAttributes.remove(key)
         }
 
         // update the attributes in the view
-        handleEvent(RumRawEvent.UpdateView())
+        handleEvent(updateViewEvent)
     }
 
     override fun getAttributes(): Map<String, Any?> {

@@ -140,6 +140,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockRumEventCallMonitor: RumEventCallMonitor
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -185,7 +188,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockRumEventCallMonitor
         )
         testedMonitor.rootScope = mockScope
     }
@@ -206,7 +210,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockRumEventCallMonitor
         )
 
         val rootScope = testedMonitor.rootScope
@@ -264,7 +269,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockRumEventCallMonitor
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -300,7 +306,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockRumEventCallMonitor
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -1459,7 +1466,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutor
+            mockExecutor,
+            mockRumEventCallMonitor
         )
 
         // When
@@ -1503,7 +1511,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockRumEventCallMonitor
         )
 
         // When
@@ -1534,7 +1543,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockRumEventCallMonitor
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 

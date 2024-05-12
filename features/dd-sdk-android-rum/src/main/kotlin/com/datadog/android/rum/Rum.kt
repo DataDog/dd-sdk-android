@@ -18,6 +18,9 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.internal.monitor.RumEventCallMonitor
+import com.datadog.android.rum.internal.monitor.RumEventCallMonitor.Companion.DEFAULT_RUM_CALLS_TIMESPAN_MS
+import com.datadog.android.rum.internal.monitor.RumEventCallMonitor.Companion.DEFAULT_RUM_NUM_CALLS_WARNING_THRESHOLD
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 
 /**
@@ -120,7 +123,13 @@ object Rum {
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
         sessionListener = rumFeature.sessionListener,
-        executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline")
+        executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline"),
+        rumEventCallMonitor = RumEventCallMonitor(
+            internalLogger = sdkCore.internalLogger,
+            rumCallMonitorMap = HashMap(),
+            timePeriodMs = DEFAULT_RUM_CALLS_TIMESPAN_MS,
+            maxCallsThreshold = DEFAULT_RUM_NUM_CALLS_WARNING_THRESHOLD
+        )
     )
 
     // endregion
