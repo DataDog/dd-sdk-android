@@ -187,6 +187,7 @@ internal open class RumViewScope(
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
+            is RumRawEvent.UpdateView -> onUpdateView(event, writer)
 
             is RumRawEvent.StopSession -> onStopSession(event, writer)
 
@@ -545,6 +546,17 @@ internal open class RumViewScope(
     @WorkerThread
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
+        writer: DataWriter<Any>
+    ) {
+        delegateEventToChildren(event, writer)
+        if (stopped) return
+
+        sendViewUpdate(event, writer)
+    }
+
+    @WorkerThread
+    private fun onUpdateView(
+        event: RumRawEvent.UpdateView,
         writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)

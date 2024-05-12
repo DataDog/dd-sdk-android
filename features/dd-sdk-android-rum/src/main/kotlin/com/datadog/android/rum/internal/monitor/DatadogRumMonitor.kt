@@ -383,10 +383,16 @@ internal class DatadogRumMonitor(
         } else {
             globalAttributes[key] = value
         }
+
+        // update the attributes in the view
+        handleEvent(RumRawEvent.UpdateView())
     }
 
     override fun removeAttribute(key: String) {
         globalAttributes.remove(key)
+
+        // update the attributes in the view
+        handleEvent(RumRawEvent.UpdateView())
     }
 
     override fun getAttributes(): Map<String, Any?> {

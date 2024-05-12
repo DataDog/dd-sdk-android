@@ -3625,6 +3625,39 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Update
+
+    @Test
+    fun `M update attributes list W handleEvent(UpdateView)`(
+        forge: Forge
+    ) {
+        // When
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        expectedAttributes.putAll(fakeGlobalAttributes)
+
+        val fakeUpdateViewEvent = RumRawEvent.UpdateView()
+        testedScope.handleEvent(
+            fakeUpdateViewEvent,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(firstValue)
+                .apply {
+                    containsExactlyContextAttributes(expectedAttributes)
+                }
+        }
+    }
+
+    //endregion
+
     // region Action
 
     @Test
