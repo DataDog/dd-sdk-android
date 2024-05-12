@@ -48,12 +48,14 @@ import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -1975,6 +1977,23 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M return map with attributes W addAttributes() + getAttributes()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeAttributes: Map<String, String>
+    ) {
+        // Given
+        testedMonitor.addAttributes(fakeAttributes)
+
+        // When
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).containsAllEntriesOf(fakeAttributes)
+    }
+
+    @Test
     fun `M return map with updated attribute W addAttribute() twice + getAttributes()`(
         @StringForgery key: String,
         @StringForgery value: String,
@@ -2008,7 +2027,27 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M return empty map W addAttribute() + removeAttribtue() + getAttributes()`(
+    fun `M return empty map W addAttributes() + addAttributes() {null value} + getAttributes()`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAttributes = mutableMapOf<String, String?>()
+        // initialize the fake data this way to be sure of the map size
+        repeat(3) {
+            val key = forge.anAlphaNumericalString()
+            fakeAttributes[key] = null
+        }
+
+        // When
+        testedMonitor.addAttributes(fakeAttributes)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M return empty map W addAttribute() + removeAttribute() + getAttributes()`(
         @StringForgery key: String,
         @StringForgery value: String
     ) {
@@ -2021,6 +2060,81 @@ internal class DatadogRumMonitorTest {
 
         // Then
         assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M return empty map W addAttributes() + removeAttributes() + getAttributes()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeAttributes: Map<String, String>
+    ) {
+        // Given
+        testedMonitor.addAttributes(fakeAttributes)
+
+        // When
+        testedMonitor.removeAttributes(fakeAttributes.keys)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M return partial map W addAttributes() + removeAttribute() + getAttributes()`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAttributes = mutableMapOf<String, String>()
+        // initialize the fake data this way to be sure of the map size
+        repeat(3) {
+            val key = forge.anAlphaNumericalString()
+            val value = forge.anAlphaNumericalString()
+            fakeAttributes[key] = value
+        }
+
+        val firstKey = fakeAttributes.keys.first()
+        val expectedAttributes = fakeAttributes
+        expectedAttributes.remove(firstKey)
+
+        // When
+        testedMonitor.addAttributes(fakeAttributes)
+        testedMonitor.removeAttribute(firstKey)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEqualTo(expectedAttributes)
+    }
+
+    @Test
+    fun `M return partial map W addAttributes() + removeAttributes() for some + getAttributes()`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAttributes = mutableMapOf<String, String>()
+        // initialize the fake data this way to be sure of the map size
+        repeat(3) {
+            val key = forge.anAlphaNumericalString()
+            val value = forge.anAlphaNumericalString()
+            fakeAttributes[key] = value
+        }
+
+        testedMonitor.addAttributes(fakeAttributes)
+
+        val firstKey = fakeAttributes.keys.elementAt(0)
+        val secondKey = fakeAttributes.keys.elementAt(1)
+
+        val removedKeys = setOf(firstKey, secondKey)
+        val expectedAttributes = fakeAttributes.filter {
+            !removedKeys.contains(it.key)
+        }
+
+        // When
+        testedMonitor.removeAttributes(removedKeys)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEqualTo(expectedAttributes)
     }
 
     @Test

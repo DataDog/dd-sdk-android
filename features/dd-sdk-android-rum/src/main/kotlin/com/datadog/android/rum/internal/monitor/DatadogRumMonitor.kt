@@ -53,7 +53,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 internal class DatadogRumMonitor(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
@@ -388,8 +388,30 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.UpdateView())
     }
 
+    override fun addAttributes(attributes: Map<String, Any?>) {
+        attributes.forEach {
+            if (it.value == null) {
+                globalAttributes.remove(it.key)
+            } else {
+                globalAttributes[it.key] = it.value
+            }
+        }
+
+        // update the attributes in the view
+        handleEvent(RumRawEvent.UpdateView())
+    }
+
     override fun removeAttribute(key: String) {
         globalAttributes.remove(key)
+
+        // update the attributes in the view
+        handleEvent(RumRawEvent.UpdateView())
+    }
+
+    override fun removeAttributes(keys: Set<String>) {
+        keys.forEach { key ->
+            globalAttributes.remove(key)
+        }
 
         // update the attributes in the view
         handleEvent(RumRawEvent.UpdateView())

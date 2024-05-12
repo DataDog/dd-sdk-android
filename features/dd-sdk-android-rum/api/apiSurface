@@ -108,6 +108,8 @@ interface com.datadog.android.rum.RumMonitor
   fun addFeatureFlagEvaluations(Map<String, Any>)
   fun addAttribute(String, Any?)
   fun removeAttribute(String)
+  fun addAttributes(Map<String, Any?>)
+  fun removeAttributes(Set<String>)
   fun getAttributes(): Map<String, Any?>
   fun clearAttributes()
   fun stopSession()

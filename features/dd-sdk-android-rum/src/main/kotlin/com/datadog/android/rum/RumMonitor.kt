@@ -306,6 +306,18 @@ interface RumMonitor {
     fun removeAttribute(key: String)
 
     /**
+     * Adds multiple global attributes to all future RUM events.
+     * @param attributes a map of attribute keys (non null) to values (nullable)
+     */
+    fun addAttributes(attributes: Map<String, Any?>)
+
+    /**
+     * Remove multiple global attributes from all future RUM events.
+     * @param keys the attribute keys to remove (non null)
+     */
+    fun removeAttributes(keys: Set<String>)
+
+    /**
      * @return the global attributes added to this monitor
      */
     fun getAttributes(): Map<String, Any?>
