@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -149,6 +150,9 @@ internal abstract class BaseSliderWireframeMapperTest {
     @Mock
     lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     lateinit var testedSliderWireframeMapper: SliderWireframeMapper
 
     lateinit var mockSlider: Slider
@@ -264,7 +268,8 @@ internal abstract class BaseSliderWireframeMapperTest {
             testedSliderWireframeMapper.map(
                 mockSlider,
                 fakeMappingContext,
-                mockAsyncJobStatusCallback
+                mockAsyncJobStatusCallback,
+                mockInternalLogger
             )
         ).isEmpty()
     }
@@ -284,7 +289,8 @@ internal abstract class BaseSliderWireframeMapperTest {
             testedSliderWireframeMapper.map(
                 mockSlider,
                 fakeMappingContext,
-                mockAsyncJobStatusCallback
+                mockAsyncJobStatusCallback,
+                mockInternalLogger
             )
         ).isEmpty()
     }
@@ -304,7 +310,8 @@ internal abstract class BaseSliderWireframeMapperTest {
             testedSliderWireframeMapper.map(
                 mockSlider,
                 fakeMappingContext,
-                mockAsyncJobStatusCallback
+                mockAsyncJobStatusCallback,
+                mockInternalLogger
             )
         ).isEmpty()
     }

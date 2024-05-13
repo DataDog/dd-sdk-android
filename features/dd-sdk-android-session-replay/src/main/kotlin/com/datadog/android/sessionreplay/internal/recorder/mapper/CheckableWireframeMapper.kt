@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Checkable
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -32,9 +33,10 @@ internal abstract class CheckableWireframeMapper<T>(
     override fun map(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback)
+        val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback, internalLogger)
         val checkableWireframes = if (mappingContext.privacy != SessionReplayPrivacy.ALLOW) {
             resolveMaskedCheckable(view, mappingContext)
         } else if (view.isChecked) {
@@ -51,7 +53,8 @@ internal abstract class CheckableWireframeMapper<T>(
     abstract fun resolveMainWireframes(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe>
 
     abstract fun resolveMaskedCheckable(

@@ -71,8 +71,12 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes =
-            testedSliderWireframeMapper.map(mockSlider, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedSliderWireframeMapper.map(
+            mockSlider,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -101,8 +105,12 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes =
-            testedSliderWireframeMapper.map(mockSlider, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedSliderWireframeMapper.map(
+            mockSlider,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -129,8 +137,12 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes =
-            testedSliderWireframeMapper.map(mockSlider, fakeMappingContext, mockAsyncJobStatusCallback)
+        val mappedWireframes = testedSliderWireframeMapper.map(
+            mockSlider,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(

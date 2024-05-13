@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
@@ -46,12 +47,14 @@ internal open class TabWireframeMapper(
     override fun map(
         view: TabView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val labelWireframes = findAndResolveLabelWireframes(
             view,
             mappingContext,
-            asyncJobStatusCallback
+            asyncJobStatusCallback,
+            internalLogger
         )
         if (view.isSelected) {
             val selectedTabIndicatorWireframe = resolveTabIndicatorWireframe(
@@ -106,7 +109,8 @@ internal open class TabWireframeMapper(
     private fun findAndResolveLabelWireframes(
         view: TabView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         for (i in 0 until view.childCount) {
             val viewChild = view.getChildAt(i) ?: continue
@@ -117,7 +121,8 @@ internal open class TabWireframeMapper(
                 return textViewMapper.map(
                     viewChild as TextView,
                     mappingContext,
-                    asyncJobStatusCallback
+                    asyncJobStatusCallback,
+                    internalLogger
                 )
             }
         }

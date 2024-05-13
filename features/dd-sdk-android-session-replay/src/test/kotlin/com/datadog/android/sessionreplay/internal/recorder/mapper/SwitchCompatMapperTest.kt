@@ -78,7 +78,8 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -130,7 +131,8 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -175,7 +177,8 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

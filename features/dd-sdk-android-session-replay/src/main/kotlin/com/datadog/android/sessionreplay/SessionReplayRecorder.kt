@@ -155,7 +155,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                     mappers = mappers,
                     defaultViewMapper = defaultVWM,
                     decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
-                    viewUtilsInternal = ViewUtilsInternal()
+                    viewUtilsInternal = ViewUtilsInternal(),
+                    internalLogger = internalLogger
                 ),
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()

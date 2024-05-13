@@ -127,7 +127,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
         ).thenReturn(fakeThumbIdentifier)
-        whenever(mockTextWireframeMapper.map(eq(mockSwitch), eq(fakeMappingContext), any()))
+        whenever(mockTextWireframeMapper.map(eq(mockSwitch), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewBoundsResolver.resolveViewGlobalBounds(
@@ -155,7 +155,8 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -172,7 +173,8 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -218,7 +220,8 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

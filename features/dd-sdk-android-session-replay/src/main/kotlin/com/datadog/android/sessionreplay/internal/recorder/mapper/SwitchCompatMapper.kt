@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Rect
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -36,9 +37,10 @@ internal open class SwitchCompatMapper(
     override fun resolveMainWireframes(
         view: SwitchCompat,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback)
+        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 
     @Suppress("ReturnCount")

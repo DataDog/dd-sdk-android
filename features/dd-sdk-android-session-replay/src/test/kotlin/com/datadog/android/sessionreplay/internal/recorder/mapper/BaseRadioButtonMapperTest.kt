@@ -88,7 +88,14 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
 
-        whenever(mockTextWireframeMapper.map(eq(mockRadioButton), eq(fakeMappingContext), any()))
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockRadioButton),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        )
             .thenReturn(fakeTextWireframes)
 
         whenever(
@@ -158,7 +165,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -194,7 +202,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -225,7 +234,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -256,7 +266,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -277,7 +288,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

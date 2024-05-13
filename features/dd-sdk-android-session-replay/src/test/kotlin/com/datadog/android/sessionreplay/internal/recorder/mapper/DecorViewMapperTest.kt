@@ -61,7 +61,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         mockViewWireframes = forge.aList(forge.anInt(min = 1, max = 10)) {
             getForgery()
         }
-        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(mockViewWireframes)
         testedDecorViewMapper = DecorViewMapper(
             mockViewWireframeMapper,
@@ -88,7 +88,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
         }
-        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(mockViewWireframes)
         val viewWireframesIds = mockViewWireframes.map { it.id }.toSet()
         val expectedDecorViewWireframes = mockViewWireframes.map {
@@ -97,7 +97,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
 
         // When
         val mappedDecorViewWireframes = testedDecorViewMapper
-            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
+            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
             .filter { (it as MobileSegment.Wireframe.ShapeWireframe).id in viewWireframesIds }
 
         // Then
@@ -122,14 +122,14 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
                 wireframe.copy(shapeStyle = null)
             }
         }
-        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(mockViewWireframes)
         val viewWireframesIds = mockViewWireframes.map { it.id }.toSet()
         val expectedDecorViewWireframes = mockViewWireframes
 
         // When
         val mappedDecorViewWireframes = testedDecorViewMapper
-            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
+            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
             .filter { (it as MobileSegment.Wireframe.ShapeWireframe).id in viewWireframesIds }
 
         // Then
@@ -146,14 +146,14 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
         }
-        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(mockViewWireframes)
         val viewWireframesIds = mockViewWireframes.map { it.id }.toSet()
         val expectedDecorViewWireframes = mockViewWireframes
 
         // When
         val mappedDecorViewWireframes = testedDecorViewMapper
-            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
+            .map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
             .filter { (it as MobileSegment.Wireframe.ShapeWireframe).id in viewWireframesIds }
 
         // Then
@@ -180,7 +180,12 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedDecorViewMapper.map(
+            mockDecorView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size + 1)
@@ -209,7 +214,12 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedDecorViewMapper.map(
+            mockDecorView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)
@@ -226,7 +236,14 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
                 DecorViewMapper.WINDOW_KEY_NAME
             )
         ).thenReturn(fakeUniqueIdentifier)
-        whenever(mockViewWireframeMapper.map(eq(mockPopUpDecorView), eq(fakeMappingContext), any()))
+        whenever(
+            mockViewWireframeMapper.map(
+                eq(mockPopUpDecorView),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        )
             .thenReturn(mockViewWireframes)
         val expectedWindowWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeUniqueIdentifier,
@@ -241,7 +258,12 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val wireframes = testedDecorViewMapper.map(mockPopUpDecorView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedDecorViewMapper.map(
+            mockPopUpDecorView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)

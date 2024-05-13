@@ -73,7 +73,12 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         whenever(mockViewIdentifierResolver.resolveViewId(mockView)) doReturn fakeWireframeId
 
         // When
-        val wireframes = testedWireframeMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedWireframeMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()
@@ -98,13 +103,19 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
                 fakeMappingContext.systemInformation.screenDensity
             )
         ) doReturn fakeBounds
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable)) doReturn fakeBackgroundColor
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger))
+            .doReturn(fakeBackgroundColor)
         whenever(mockColorStringFormatter.formatColorAsHexString(fakeBackgroundColor))
             .doReturn(fakeBackgroundColorString)
         whenever(mockViewIdentifierResolver.resolveViewId(mockView)) doReturn fakeWireframeId
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val shapeWireframes = testedWireframeMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframe = MobileSegment.Wireframe.ShapeWireframe(

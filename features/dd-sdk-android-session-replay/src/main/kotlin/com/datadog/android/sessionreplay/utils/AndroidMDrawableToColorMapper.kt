@@ -12,6 +12,7 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.datadog.android.api.InternalLogger
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
@@ -20,14 +21,14 @@ import androidx.annotation.RequiresApi
 @RequiresApi(Build.VERSION_CODES.M)
 open class AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper() {
 
-    override fun resolveRippleDrawable(drawable: RippleDrawable): Int? {
+    override fun resolveRippleDrawable(drawable: RippleDrawable, internalLogger: InternalLogger): Int? {
         // A ripple drawable can have a layer marked as mask, and which is not drawn
         // We can reuse the LayerDrawable by passing a way to filter the mask layer
         val maskLayerIndex = drawable.findIndexByLayerId(R.id.mask)
-        return resolveLayerDrawable(drawable) { idx, _ -> idx != maskLayerIndex }
+        return resolveLayerDrawable(drawable, internalLogger) { idx, _ -> idx != maskLayerIndex }
     }
 
-    override fun resolveInsetDrawable(drawable: InsetDrawable): Int? {
-        return drawable.drawable?.let { mapDrawableToColor(it) }
+    override fun resolveInsetDrawable(drawable: InsetDrawable, internalLogger: InternalLogger): Int? {
+        return drawable.drawable?.let { mapDrawableToColor(it, internalLogger) }
     }
 }

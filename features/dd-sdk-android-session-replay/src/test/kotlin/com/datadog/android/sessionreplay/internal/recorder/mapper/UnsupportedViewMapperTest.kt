@@ -208,7 +208,8 @@ internal class UnsupportedViewMapperTest : BaseWireframeMapperTest() {
         return testedUnsupportedViewMapper.map(
             view,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )[0]
     }
     // endregion

@@ -161,7 +161,12 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val textWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -194,7 +199,12 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val textWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -227,7 +237,12 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val textWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -269,7 +284,12 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val textWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -305,7 +325,9 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
             whenever(this.resources).thenReturn(mockResources)
             whenever(this.currentTextColor).thenReturn(fakeCurrentTextColor)
         }
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable)).thenReturn(fakeBackgroundColor)
+        whenever(
+            mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger)
+        ).thenReturn(fakeBackgroundColor)
         whenever(mockColorStringFormatter.formatColorAsHexString(fakeBackgroundColor))
             .thenReturn(fakeBackgroundColorString)
 
@@ -313,7 +335,8 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         val actualWireframes = testedTextWireframeMapper.map(
             mockTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -367,7 +390,7 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
             }
             whenever(mockDrawable.constantState) doReturn mockConstantState
         }
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable)) doReturn null
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger)) doReturn null
         val mockTextView = forge.aMockTextView().apply {
             whenever(this.background).thenReturn(mockDrawable)
             whenever(this.text).thenReturn(fakeText)
@@ -399,7 +422,8 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         val actualWireframes = testedTextWireframeMapper.map(
             mockTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -459,7 +483,12 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
             .doReturn(fakeHintColorString)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val textWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframes = mockTextView
@@ -494,7 +523,12 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val textWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframes = mockTextView
@@ -548,7 +582,8 @@ internal class TextViewMapperTest : BaseWireframeMapperTest() {
         val wireframes = testedTextWireframeMapper.map(
             mockTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
         val imageWireframes = wireframes.filterIsInstance<MobileSegment.Wireframe.ImageWireframe>()
 

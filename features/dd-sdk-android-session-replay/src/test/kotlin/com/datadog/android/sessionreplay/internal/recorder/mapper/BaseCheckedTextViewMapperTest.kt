@@ -116,7 +116,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             mockTextWireframeMapper.map(
                 eq(mockCheckedTextView),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         ).thenReturn(fakeTextWireframes)
 
@@ -171,7 +172,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -201,7 +203,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -231,7 +234,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -264,7 +268,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -293,7 +298,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -321,7 +327,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -342,7 +349,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
