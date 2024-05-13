@@ -160,6 +160,8 @@ internal class BatchMetricsDispatcher(
             Feature.LOGS_FEATURE_NAME -> LOGS_TRACK_NAME
             Feature.TRACING_FEATURE_NAME -> TRACE_TRACK_NAME
             Feature.SESSION_REPLAY_FEATURE_NAME -> SR_TRACK_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME -> SR_RESOURCES_TRACK_NAME
+
             else -> null
         }
     }
@@ -183,6 +185,7 @@ internal class BatchMetricsDispatcher(
         internal const val LOGS_TRACK_NAME = "logs"
         internal const val TRACE_TRACK_NAME = "trace"
         internal const val SR_TRACK_NAME = "sr"
+        internal const val SR_RESOURCES_TRACK_NAME = "sr-resources"
 
         private const val METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE = 15f
 
