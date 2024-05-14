@@ -7,10 +7,9 @@
 package com.datadog.android.core.constraints
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.constraints.StringTransform
 import com.datadog.android.core.internal.utils.toMutableMap
 import java.util.Locale
-
-internal typealias StringTransform = (String) -> String?
 
 /**
  * Data constraints validator per Datadog requirements.

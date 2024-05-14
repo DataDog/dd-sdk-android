@@ -8,9 +8,8 @@ package com.datadog.android.rum
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.internal.utils.handleClosableError
 import java.io.Closeable
-
-internal const val CLOSABLE_ERROR_MESSAGE = "Error while using the closeable"
 
 /**
  * Executes the given [block] function on this [Closeable] instance
@@ -29,17 +28,13 @@ fun <T : Closeable, R> T.useMonitored(sdkCore: SdkCore = Datadog.getInstance(), 
     try {
         return block(this)
     } catch (e: Throwable) {
-        handleError(e, sdkCore)
+        handleClosableError(e, sdkCore)
         throw e
     } finally {
         try {
             close()
         } catch (closeException: Throwable) {
-            handleError(closeException, sdkCore)
+            handleClosableError(closeException, sdkCore)
         }
     }
-}
-
-private fun handleError(throwable: Throwable, sdkCore: SdkCore) {
-    GlobalRumMonitor.get(sdkCore).addError(CLOSABLE_ERROR_MESSAGE, RumErrorSource.SOURCE, throwable, emptyMap())
 }

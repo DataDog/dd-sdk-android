@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
+import com.datadog.android.sessionreplay.recorder.MappingContext
 
 internal class AllowObfuscationRule(
     private val fixedLengthStringObfuscator: FixedLengthStringObfuscator =

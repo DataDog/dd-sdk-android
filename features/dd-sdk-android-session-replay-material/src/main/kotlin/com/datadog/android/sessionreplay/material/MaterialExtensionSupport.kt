@@ -8,8 +8,11 @@ package com.datadog.android.sessionreplay.material
 
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
+import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
+import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver

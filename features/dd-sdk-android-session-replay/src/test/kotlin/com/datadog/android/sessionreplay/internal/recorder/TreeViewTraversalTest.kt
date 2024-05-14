@@ -21,10 +21,11 @@ import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

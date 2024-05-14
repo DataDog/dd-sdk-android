@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.MappingContext
 
 internal class TextTypeResolver {
 

@@ -7,9 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.LegacyStringObfuscator
+import com.datadog.android.sessionreplay.recorder.MappingContext
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import org.mockito.Mock

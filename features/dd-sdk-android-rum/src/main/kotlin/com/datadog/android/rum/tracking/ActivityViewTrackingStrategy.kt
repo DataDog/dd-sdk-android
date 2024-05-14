@@ -11,8 +11,8 @@ import androidx.annotation.MainThread
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.utils.resolveViewName
-import com.datadog.android.rum.utils.runIfValid
+import com.datadog.android.rum.internal.utils.resolveViewName
+import com.datadog.android.rum.internal.utils.runIfValid
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 

@@ -12,7 +12,7 @@ import java.math.BigInteger
 /**
  * Radix used to convert numbers to hexadecimal strings.
  */
-const val HEX_RADIX: Int = 16
+internal const val HEX_RADIX: Int = 16
 
 /**
  * Converts [Int] into hexadecimal representation.

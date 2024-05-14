@@ -10,6 +10,8 @@ package androidx.appcompat.widget
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 
+// We need to stay in the `androidx.appcompat.widget` package to access package private fields
+@Suppress("PackageNameVisibility")
 internal class DatadogActionBarContainerAccessor(
     val container: ActionBarContainer
 ) {

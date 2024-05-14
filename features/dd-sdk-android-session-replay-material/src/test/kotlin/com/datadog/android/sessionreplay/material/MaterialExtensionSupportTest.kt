@@ -6,6 +6,9 @@
 
 package com.datadog.android.sessionreplay.material
 
+import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
+import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
+import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
 import com.google.android.material.slider.Slider
 import com.google.android.material.tabs.TabLayout.TabView
 import org.assertj.core.api.Assertions.assertThat

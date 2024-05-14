@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
-import com.datadog.android.sessionreplay.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 

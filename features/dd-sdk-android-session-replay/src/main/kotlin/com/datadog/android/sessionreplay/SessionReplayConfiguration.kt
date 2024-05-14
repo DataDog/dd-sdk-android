@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay
 
 import androidx.annotation.FloatRange
 import com.datadog.android.sessionreplay.internal.NoOpExtensionSupport
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 
 /**
  * Describes configuration to be used for the Session Replay feature.

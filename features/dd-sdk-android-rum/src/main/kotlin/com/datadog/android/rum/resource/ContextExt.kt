@@ -12,9 +12,8 @@ import android.content.res.Resources
 import androidx.annotation.RawRes
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.internal.utils.toHexString
 import java.io.InputStream
-
-internal const val HEX_RADIX = 16
 
 /**
  * Open an asset, returning an InputStream to read its contents, tracked as a RUM Resource.
@@ -66,7 +65,7 @@ fun Context.getRawResAsRumResource(
     val resName = try {
         resources.getResourceName(id)
     } catch (e: Resources.NotFoundException) {
-        "res/0x${id.toString(HEX_RADIX)}"
+        "res/0x${id.toHexString()}"
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller

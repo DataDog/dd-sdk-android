@@ -704,7 +704,6 @@ public final class com/datadog/android/core/internal/utils/MapUtilsKt {
 }
 
 public final class com/datadog/android/core/internal/utils/NumberExtKt {
-	public static final field HEX_RADIX I
 	public static final fun toHexString (I)Ljava/lang/String;
 	public static final fun toHexString (J)Ljava/lang/String;
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;

@@ -11,6 +11,8 @@ import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.DatadogActionBarContainerAccessor
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery

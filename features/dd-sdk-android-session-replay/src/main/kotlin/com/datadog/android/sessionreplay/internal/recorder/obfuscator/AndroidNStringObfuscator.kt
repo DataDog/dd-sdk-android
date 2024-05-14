@@ -14,7 +14,7 @@ import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfu
  * String obfuscator relying on Android N APIs to properly handle strings with emojis.
  */
 @RequiresApi(Build.VERSION_CODES.N)
-class AndroidNStringObfuscator : StringObfuscator {
+internal class AndroidNStringObfuscator : StringObfuscator {
 
     override fun obfuscate(stringValue: String): String {
         return buildString(stringValue.length) {

@@ -12,9 +12,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
 
 internal class TreeViewTraversal(
