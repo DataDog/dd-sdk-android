@@ -40,7 +40,7 @@ import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class UnsupportedViewMapperTest : BaseWireframeMapperTest() {
+internal class UnsupportedViewMapperTest : LegacyBaseWireframeMapperTest() {
 
     private lateinit var testedUnsupportedViewMapper: UnsupportedViewMapper
 

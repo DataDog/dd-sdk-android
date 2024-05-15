@@ -12,6 +12,7 @@ import android.webkit.WebView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.NumberPicker
 import android.widget.RadioButton
@@ -39,6 +40,7 @@ import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -87,7 +89,7 @@ internal class DefaultRecorderProvider(
             viewBoundsResolver,
             drawableToColorMapper
         )
-        val textViewMapper = TextViewMapper(
+        val textViewMapper = TextViewMapper<TextView>(
             viewIdentifierResolver,
             colorStringFormatter,
             viewBoundsResolver,
@@ -98,7 +100,7 @@ internal class DefaultRecorderProvider(
             MapperTypeWrapper(
                 SwitchCompat::class.java,
                 SwitchCompatMapper(
-                    textViewMapper,
+                    textViewMapper as TextViewMapper<SwitchCompat>,
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
@@ -108,7 +110,7 @@ internal class DefaultRecorderProvider(
             MapperTypeWrapper(
                 RadioButton::class.java,
                 RadioButtonMapper(
-                    textViewMapper,
+                    textViewMapper as TextViewMapper<RadioButton>,
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
@@ -118,7 +120,7 @@ internal class DefaultRecorderProvider(
             MapperTypeWrapper(
                 CheckBox::class.java,
                 CheckBoxMapper(
-                    textViewMapper,
+                    textViewMapper as TextViewMapper<CheckBox>,
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
@@ -128,7 +130,16 @@ internal class DefaultRecorderProvider(
             MapperTypeWrapper(
                 CheckedTextView::class.java,
                 CheckedTextViewMapper(
-                    textViewMapper,
+                    textViewMapper as TextViewMapper<CheckedTextView>,
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+            ),
+            MapperTypeWrapper(
+                EditText::class.java,
+                EditTextMapper(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
@@ -137,7 +148,7 @@ internal class DefaultRecorderProvider(
             ),
             MapperTypeWrapper(
                 Button::class.java,
-                ButtonMapper(textViewMapper)
+                ButtonMapper(textViewMapper as TextViewMapper<Button>)
             ),
             MapperTypeWrapper(
                 TextView::class.java,

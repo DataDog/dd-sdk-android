@@ -12,10 +12,7 @@ import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskInputObfuscationRule
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -27,17 +24,13 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
- * In this case any [TextView] for which the input type is considered sensible (password, email
- * address, postal address, numeric password) will be masked with the static mask: [***].
- * All the other text fields will not be masked.
  */
-@Suppress("TooManyFunctions")
-open class TextViewMapper(
+open class TextViewMapper<in T : TextView>(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseAsyncBackgroundWireframeMapper<TextView>(
+) : BaseAsyncBackgroundWireframeMapper<T>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
@@ -45,13 +38,14 @@ open class TextViewMapper(
 ) {
 
     override fun map(
-        view: TextView,
+        view: T,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
+        // add background if needed
         wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback, internalLogger))
 
         val density = mappingContext.systemInformation.screenDensity
@@ -60,71 +54,80 @@ open class TextViewMapper(
             density
         )
 
-        val textValueObfuscationRule = when (mappingContext.privacy) {
-            SessionReplayPrivacy.ALLOW -> AllowObfuscationRule()
-            SessionReplayPrivacy.MASK -> MaskObfuscationRule()
-            SessionReplayPrivacy.MASK_USER_INPUT -> MaskInputObfuscationRule()
-        }
+        wireframes.add(
+            createTextWireframe(
+                view,
+                mappingContext,
+                viewGlobalBounds
+            )
+        )
 
-        resolveTextElements(
-            view,
-            mappingContext,
-            viewGlobalBounds,
-            textValueObfuscationRule
-        ).let(wireframes::addAll)
-
-        resolveImages(
-            view,
-            mappingContext,
-            wireframes.size,
-            asyncJobStatusCallback
-        ).let(wireframes::addAll)
+        wireframes.addAll(
+            mappingContext.imageWireframeHelper.createCompoundDrawableWireframes(
+                view,
+                mappingContext,
+                wireframes.size,
+                asyncJobStatusCallback
+            )
+        )
 
         return wireframes
     }
 
-    // region Internal
+    // region Abstract
 
-    private fun resolveImages(
-        textView: TextView,
-        mappingContext: MappingContext,
-        currentIndex: Int,
-        asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe> {
-        return mappingContext.imageWireframeHelper.createCompoundDrawableWireframes(
-            textView,
-            mappingContext,
-            currentIndex,
-            asyncJobStatusCallback
-        )
+    /**
+     * Resolves the text to record for this TextView.
+     * @param textView the textView being mapped
+     * @param privacy the current privacy setting
+     * @param isOption whether the textview is part of an option menu
+     */
+    protected open fun resolveCapturedText(
+        textView: T,
+        privacy: SessionReplayPrivacy,
+        isOption: Boolean
+    ): String {
+        val originalText = textView.text?.toString().orEmpty()
+        return when (privacy) {
+            SessionReplayPrivacy.ALLOW -> originalText
+            SessionReplayPrivacy.MASK -> if (isOption) {
+                FIXED_INPUT_MASK
+            } else {
+                StringObfuscator.getStringObfuscator().obfuscate(originalText)
+            }
+
+            SessionReplayPrivacy.MASK_USER_INPUT -> if (isOption) FIXED_INPUT_MASK else originalText
+        }
     }
 
-    private fun resolveTextElements(
-        view: TextView,
+    // endregion
+
+    // region Internal
+
+    private fun createTextWireframe(
+        textView: T,
         mappingContext: MappingContext,
-        viewGlobalBounds: GlobalBounds,
-        textValueObfuscationRule: TextValueObfuscationRule
-    ): List<MobileSegment.Wireframe> {
-        return listOf(
-            MobileSegment.Wireframe.TextWireframe(
-                id = resolveViewId(view),
-                x = viewGlobalBounds.x,
-                y = viewGlobalBounds.y,
-                width = viewGlobalBounds.width,
-                height = viewGlobalBounds.height,
-                shapeStyle = null,
-                border = null,
-                text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
-                textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
-                textPosition = resolveTextPosition(
-                    view,
-                    mappingContext.systemInformation.screenDensity
-                )
+        viewGlobalBounds: GlobalBounds
+    ): MobileSegment.Wireframe.TextWireframe {
+        val capturedText = resolveCapturedText(textView, mappingContext.privacy, mappingContext.hasOptionSelectorParent)
+        return MobileSegment.Wireframe.TextWireframe(
+            id = resolveViewId(textView),
+            x = viewGlobalBounds.x,
+            y = viewGlobalBounds.y,
+            width = viewGlobalBounds.width,
+            height = viewGlobalBounds.height,
+            shapeStyle = null,
+            border = null,
+            text = capturedText,
+            textStyle = resolveTextStyle(textView, mappingContext.systemInformation.screenDensity),
+            textPosition = resolveTextPosition(
+                textView,
+                mappingContext.systemInformation.screenDensity
             )
         )
     }
 
-    private fun resolveTextStyle(textView: TextView, pixelsDensity: Float): MobileSegment.TextStyle {
+    private fun resolveTextStyle(textView: T, pixelsDensity: Float): MobileSegment.TextStyle {
         return MobileSegment.TextStyle(
             resolveFontFamily(textView.typeface),
             textView.textSize.toLong().densityNormalized(pixelsDensity),
@@ -132,7 +135,7 @@ open class TextViewMapper(
         )
     }
 
-    private fun resolveTextColor(textView: TextView): String {
+    private fun resolveTextColor(textView: T): String {
         return if (textView.text.isNullOrEmpty()) {
             resolveHintTextColor(textView)
         } else {
@@ -140,7 +143,7 @@ open class TextViewMapper(
         }
     }
 
-    private fun resolveHintTextColor(textView: TextView): String {
+    private fun resolveHintTextColor(textView: T): String {
         val hintTextColors = textView.hintTextColors
         return if (hintTextColors != null) {
             colorStringFormatter.formatColorAndAlphaAsHexString(hintTextColors.defaultColor, OPAQUE_ALPHA_VALUE)
@@ -150,10 +153,10 @@ open class TextViewMapper(
     }
 
     private fun resolveFontFamily(typeface: Typeface?): String {
-        return when {
-            typeface === Typeface.SANS_SERIF -> SANS_SERIF_FAMILY_NAME
-            typeface === Typeface.MONOSPACE -> MONOSPACE_FAMILY_NAME
-            typeface === Typeface.SERIF -> SERIF_FAMILY_NAME
+        return when (typeface) {
+            Typeface.SANS_SERIF -> SANS_SERIF_FAMILY_NAME
+            Typeface.MONOSPACE -> MONOSPACE_FAMILY_NAME
+            Typeface.SERIF -> SERIF_FAMILY_NAME
             else -> SANS_SERIF_FAMILY_NAME
         }
     }
@@ -227,7 +230,7 @@ open class TextViewMapper(
     // endregion
 
     internal companion object {
-        internal const val STATIC_MASK = "***"
+        internal const val FIXED_INPUT_MASK = "***"
         internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         internal const val SERIF_FAMILY_NAME = "serif"
         internal const val MONOSPACE_FAMILY_NAME = "monospace"

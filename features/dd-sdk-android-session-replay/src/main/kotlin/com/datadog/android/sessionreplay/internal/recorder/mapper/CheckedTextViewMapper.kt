@@ -16,7 +16,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class CheckedTextViewMapper(
-    textWireframeMapper: TextViewMapper,
+    textWireframeMapper: TextViewMapper<CheckedTextView>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,

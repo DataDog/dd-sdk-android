@@ -34,9 +34,14 @@ abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMa
   protected fun resolveViewId(android.view.View): Long
   protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float, com.datadog.android.api.InternalLogger): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
   companion object 
-open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper : BaseAsyncBackgroundWireframeMapper<android.widget.TextView>
+class com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper : TextViewMapper<android.widget.EditText>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
-  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  override fun resolveCapturedText(android.widget.EditText, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean): String
+  companion object 
+open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper<T: android.widget.TextView> : BaseAsyncBackgroundWireframeMapper<T>
+  constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
+  override fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  protected open fun resolveCapturedText(T, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean): String
 interface com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper<T: android.view.ViewGroup> : WireframeMapper<T>
 interface com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T: android.view.View>
   fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>

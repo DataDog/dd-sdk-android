@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseNumberPickerMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedNumberPickerMapper: BasePickerMapper
 

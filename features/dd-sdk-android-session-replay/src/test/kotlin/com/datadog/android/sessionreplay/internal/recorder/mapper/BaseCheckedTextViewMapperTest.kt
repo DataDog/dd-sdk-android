@@ -46,12 +46,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseCheckedTextViewMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedCheckedTextWireframeMapper: CheckedTextViewMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<CheckedTextView>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>

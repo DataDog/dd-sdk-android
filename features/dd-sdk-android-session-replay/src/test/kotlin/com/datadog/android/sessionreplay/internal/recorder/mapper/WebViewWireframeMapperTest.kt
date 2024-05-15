@@ -32,7 +32,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class WebViewWireframeMapperTest : BaseWireframeMapperTest() {
+internal class WebViewWireframeMapperTest : LegacyBaseWireframeMapperTest() {
 
     private lateinit var testedWebViewWireframeMapper: WebViewWireframeMapper
 

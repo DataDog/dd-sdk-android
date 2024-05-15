@@ -33,12 +33,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ButtonMapperTest : BaseWireframeMapperTest() {
+internal class ButtonMapperTest : LegacyBaseWireframeMapperTest() {
 
     private lateinit var testedButtonMapper: ButtonMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<Button>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>

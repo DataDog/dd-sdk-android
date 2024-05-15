@@ -21,7 +21,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class SwitchCompatMapper(
-    private val textWireframeMapper: TextViewMapper,
+    private val textWireframeMapper: TextViewMapper<SwitchCompat>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,

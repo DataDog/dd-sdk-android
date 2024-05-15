@@ -29,12 +29,12 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedSwitchCompatMapper: SwitchCompatMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<SwitchCompat>
 
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
 

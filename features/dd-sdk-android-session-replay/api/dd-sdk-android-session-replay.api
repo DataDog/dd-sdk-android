@@ -1371,10 +1371,20 @@ public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseWire
 public final class com/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper$Companion {
 }
 
+public final class com/datadog/android/sessionreplay/recorder/mapper/EditTextMapper : com/datadog/android/sessionreplay/recorder/mapper/TextViewMapper {
+	public static final field Companion Lcom/datadog/android/sessionreplay/recorder/mapper/EditTextMapper$Companion;
+	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
+	public synthetic fun resolveCapturedText (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Z)Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/recorder/mapper/EditTextMapper$Companion {
+}
+
 public class com/datadog/android/sessionreplay/recorder/mapper/TextViewMapper : com/datadog/android/sessionreplay/recorder/mapper/BaseAsyncBackgroundWireframeMapper {
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
 	public synthetic fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
 	public fun map (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
+	protected fun resolveCapturedText (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Z)Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/sessionreplay/recorder/mapper/TraverseAllChildrenMapper : com/datadog/android/sessionreplay/recorder/mapper/WireframeMapper {

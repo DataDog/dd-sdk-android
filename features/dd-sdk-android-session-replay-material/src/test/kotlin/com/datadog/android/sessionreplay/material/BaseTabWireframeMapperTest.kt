@@ -42,7 +42,7 @@ internal abstract class BaseTabWireframeMapperTest {
     lateinit var fakeGlobalBounds: GlobalBounds
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<TextView>
 
     lateinit var testedTabWireframeMapper: TabWireframeMapper
 

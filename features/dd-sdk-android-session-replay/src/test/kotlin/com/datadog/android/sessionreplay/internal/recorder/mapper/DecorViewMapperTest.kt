@@ -34,7 +34,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class DecorViewMapperTest : BaseWireframeMapperTest() {
+internal class DecorViewMapperTest : LegacyBaseWireframeMapperTest() {
 
     @Mock
     lateinit var mockViewWireframeMapper: ViewWireframeMapper

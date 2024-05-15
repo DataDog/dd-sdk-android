@@ -46,12 +46,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseRadioButtonMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedRadioButtonMapper: RadioButtonMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<RadioButton>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>

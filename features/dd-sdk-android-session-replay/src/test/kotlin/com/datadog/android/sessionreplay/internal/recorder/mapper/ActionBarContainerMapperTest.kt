@@ -40,7 +40,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ActionBarContainerMapperTest : BaseWireframeMapperTest() {
+internal class ActionBarContainerMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedMapper: WireframeMapper<ActionBarContainer>
 

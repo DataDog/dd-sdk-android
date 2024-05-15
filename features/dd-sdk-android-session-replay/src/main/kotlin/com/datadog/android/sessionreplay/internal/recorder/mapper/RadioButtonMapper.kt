@@ -15,7 +15,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class RadioButtonMapper(
-    textWireframeMapper: TextViewMapper,
+    textWireframeMapper: TextViewMapper<RadioButton>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
