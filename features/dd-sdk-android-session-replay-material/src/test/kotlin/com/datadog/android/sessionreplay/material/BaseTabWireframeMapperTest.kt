@@ -8,10 +8,11 @@ package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper

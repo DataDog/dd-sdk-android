@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.NumberPicker
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery

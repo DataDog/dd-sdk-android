@@ -11,7 +11,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.MappingContext
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

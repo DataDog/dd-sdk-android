@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.Mask
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
 import com.datadog.android.sessionreplay.internal.utils.shapeStyle
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.tools.unit.extensions.ApiLevelExtension

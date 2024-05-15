@@ -8,8 +8,9 @@ package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
+import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds

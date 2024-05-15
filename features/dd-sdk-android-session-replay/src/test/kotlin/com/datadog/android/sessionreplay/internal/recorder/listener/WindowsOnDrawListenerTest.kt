@@ -22,8 +22,8 @@ import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery

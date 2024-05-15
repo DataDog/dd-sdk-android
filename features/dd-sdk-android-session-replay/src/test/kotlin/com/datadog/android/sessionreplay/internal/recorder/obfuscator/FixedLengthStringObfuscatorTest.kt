@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

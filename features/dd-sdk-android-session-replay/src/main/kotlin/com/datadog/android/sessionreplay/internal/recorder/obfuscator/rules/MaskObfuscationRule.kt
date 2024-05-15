@@ -7,9 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
+import com.datadog.android.sessionreplay.recorder.MappingContext
 
 internal class MaskObfuscationRule(
     private val defaultStringObfuscator: StringObfuscator = StringObfuscator.getStringObfuscator(),

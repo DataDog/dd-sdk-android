@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 
 internal class NoOpExtensionSupport : ExtensionSupport {
 

@@ -12,6 +12,8 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

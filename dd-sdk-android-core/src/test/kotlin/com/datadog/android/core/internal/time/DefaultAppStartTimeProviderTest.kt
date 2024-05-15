@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.time
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.core.DatadogCore
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension

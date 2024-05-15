@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.MappingContext
 
 /**
  * Will be used to apply the masking strategy for a [TextView] following the rules defined

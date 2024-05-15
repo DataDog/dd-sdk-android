@@ -8,8 +8,10 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Button
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 
 internal class ButtonMapper(

@@ -10,8 +10,9 @@ import android.view.View
 import android.widget.Checkable
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper

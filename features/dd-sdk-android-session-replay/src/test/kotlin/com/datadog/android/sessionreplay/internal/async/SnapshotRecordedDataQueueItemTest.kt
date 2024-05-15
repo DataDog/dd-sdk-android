@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

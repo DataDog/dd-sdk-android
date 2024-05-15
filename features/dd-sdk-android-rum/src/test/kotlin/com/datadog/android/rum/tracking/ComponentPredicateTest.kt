@@ -8,10 +8,10 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.utils.resolveViewName
+import com.datadog.android.rum.internal.utils.resolveViewUrl
+import com.datadog.android.rum.internal.utils.runIfValid
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.resolveViewName
-import com.datadog.android.rum.utils.resolveViewUrl
-import com.datadog.android.rum.utils.runIfValid
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

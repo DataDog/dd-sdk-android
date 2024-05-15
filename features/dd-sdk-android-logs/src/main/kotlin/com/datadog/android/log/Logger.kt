@@ -230,6 +230,7 @@ internal constructor(internal var handler: LogHandler) {
                         buildLogcatHandler(sdkCore)
                     )
                 }
+
                 datadogLogsEnabled -> buildDatadogHandler(sdkCore, logsFeature)
                 logcatLogsEnabled -> buildLogcatHandler(sdkCore)
                 else -> NoOpLogHandler()

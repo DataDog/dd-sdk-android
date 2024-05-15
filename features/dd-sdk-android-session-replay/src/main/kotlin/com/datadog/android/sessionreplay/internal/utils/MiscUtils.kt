@@ -13,8 +13,8 @@ import android.os.Build
 import android.util.TypedValue
 import android.view.WindowManager
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.google.gson.JsonObject

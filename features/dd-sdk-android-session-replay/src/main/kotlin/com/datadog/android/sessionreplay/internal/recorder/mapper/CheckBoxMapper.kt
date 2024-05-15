@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.CheckBox
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver

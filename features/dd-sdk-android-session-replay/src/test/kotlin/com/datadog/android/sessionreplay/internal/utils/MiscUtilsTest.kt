@@ -20,9 +20,9 @@ import android.view.WindowManager
 import android.view.WindowMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils.DESERIALIZE_JSON_ERROR
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.verifyLog

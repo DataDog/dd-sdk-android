@@ -54,6 +54,7 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -72,7 +73,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy

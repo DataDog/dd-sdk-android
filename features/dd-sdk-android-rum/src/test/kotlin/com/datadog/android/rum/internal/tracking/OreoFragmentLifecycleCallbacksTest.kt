@@ -21,8 +21,8 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
+import com.datadog.android.rum.internal.utils.resolveViewUrl
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.android.rum.utils.resolveViewUrl
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType

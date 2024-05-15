@@ -11,6 +11,7 @@ import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds

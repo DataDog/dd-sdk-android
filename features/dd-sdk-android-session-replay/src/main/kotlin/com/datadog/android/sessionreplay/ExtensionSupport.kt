@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 
 /**
  * In case you need to provide different configuration for a specific Android UI framework that

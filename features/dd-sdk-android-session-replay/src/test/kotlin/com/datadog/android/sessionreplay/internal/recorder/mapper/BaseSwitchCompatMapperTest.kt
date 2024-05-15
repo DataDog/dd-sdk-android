@@ -12,6 +12,7 @@ import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

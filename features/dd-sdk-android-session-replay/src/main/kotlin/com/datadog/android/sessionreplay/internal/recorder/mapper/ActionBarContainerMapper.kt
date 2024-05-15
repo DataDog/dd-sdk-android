@@ -9,8 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.DatadogActionBarContainerAccessor
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseViewGroupMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper

@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 
 /**
  * A wrapper holding a a [WireframeMapper] and the type it's associated with.

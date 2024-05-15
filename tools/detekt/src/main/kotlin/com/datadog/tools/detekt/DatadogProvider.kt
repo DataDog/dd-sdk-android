@@ -8,6 +8,7 @@ package com.datadog.tools.detekt
 
 import com.datadog.tools.detekt.rules.sdk.CheckInternal
 import com.datadog.tools.detekt.rules.sdk.InvalidStringFormat
+import com.datadog.tools.detekt.rules.sdk.PackageNameVisibility
 import com.datadog.tools.detekt.rules.sdk.RequireInternal
 import com.datadog.tools.detekt.rules.sdk.ThreadSafety
 import com.datadog.tools.detekt.rules.sdk.ThrowingInternalException
@@ -31,6 +32,7 @@ class DatadogProvider : RuleSetProvider {
             listOf(
                 CheckInternal(),
                 InvalidStringFormat(),
+                PackageNameVisibility(config),
                 RequireInternal(),
                 ThreadSafety(),
                 ThrowingInternalException(),

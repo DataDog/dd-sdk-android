@@ -10,11 +10,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.utils.identifyRequest
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
