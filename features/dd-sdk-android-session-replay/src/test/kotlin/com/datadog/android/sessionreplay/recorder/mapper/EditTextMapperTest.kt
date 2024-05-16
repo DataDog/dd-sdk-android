@@ -9,6 +9,7 @@ import android.widget.TextView
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapperTest.Companion.parametersMatrix
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -49,7 +50,7 @@ internal abstract class EditTextMapperTest :
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
-                BaseWireframeMapper.OPAQUE_ALPHA_VALUE
+                OPAQUE_ALPHA_VALUE
             )
         ) doReturn fakeTextColorHexString
 

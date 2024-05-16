@@ -15,6 +15,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
@@ -114,7 +115,6 @@ internal abstract class BasePickerMapper(
         )
 
     companion object {
-        internal const val PARTIALLY_OPAQUE_ALPHA_VALUE: Int = 0x44
         internal const val PREV_INDEX_KEY_NAME = "numeric_picker_prev_index"
         internal const val SELECTED_INDEX_KEY_NAME = "numeric_picker_selected_index"
         internal const val NEXT_INDEX_KEY_NAME = "numeric_picker_next_index"

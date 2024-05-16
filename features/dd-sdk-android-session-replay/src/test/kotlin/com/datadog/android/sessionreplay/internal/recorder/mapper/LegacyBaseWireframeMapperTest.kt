@@ -73,8 +73,6 @@ internal abstract class LegacyBaseWireframeMapperTest {
     }
 
     companion object {
-        const val OPAQUE_ALPHA_VALUE: Int = 255
-        const val ALPHA_MASK: Long = 0x000000FF
 
         @JvmStatic
         fun textTypefaces(): Stream<Arguments> {

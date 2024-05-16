@@ -13,18 +13,27 @@ import android.view.View
  * the screen's density.
  * This interface is meant for internal usage, please use it carefully.
  */
-fun interface ViewBoundsResolver {
+interface ViewBoundsResolver {
     /**
      * Resolves the View bounds in device space, and normalizes them based on the screen density.
-     * These dimensions are then normalized according with the current device screen density.
      * Example: if a device has a DPI = 2, the value of the dimension or position is divided by
      * 2 to get a normalized value.
      * @param view the [View]
-     * @param pixelsDensity the current device screen density
+     * @param screenDensity the current device screen density
      * @return the computed view bounds
      */
     // TODO RUM-3667 return an array of primitives here instead of creating an object.
     // This method is being called too often every time we take a screen snapshot
     // and we might want to avoid creating too many instances.
-    fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds
+    fun resolveViewGlobalBounds(view: View, screenDensity: Float): GlobalBounds
+
+    /**
+     * Resolves the View bounds in device space excluding the padding, and normalizes them based on the screen density.
+     * Example: if a device has a DPI = 2, the value of the padding is divided by
+     * 2 to get a normalized value.
+     * @param view the [View]
+     * @param screenDensity the current device screen density
+     * @return the computed view padding
+     */
+    fun resolveViewPaddedBounds(view: View, screenDensity: Float): GlobalBounds
 }

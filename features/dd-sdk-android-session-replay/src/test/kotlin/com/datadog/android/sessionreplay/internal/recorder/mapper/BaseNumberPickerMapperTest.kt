@@ -9,8 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.NumberPicker
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -135,14 +136,14 @@ internal abstract class BaseNumberPickerMapperTest : LegacyBaseWireframeMapperTe
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
-                BaseWireframeMapper.OPAQUE_ALPHA_VALUE
+                OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedSelectedLabelHtmlColor)
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
-                BasePickerMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
+                PARTIALLY_OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedNextPrevLabelHtmlColor)

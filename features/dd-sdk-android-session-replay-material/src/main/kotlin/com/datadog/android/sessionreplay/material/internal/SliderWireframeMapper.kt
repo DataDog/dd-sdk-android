@@ -14,6 +14,8 @@ import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.slider.Slider
@@ -147,8 +149,6 @@ internal open class SliderWireframeMapper(
         internal const val TRACK_ACTIVE_KEY_NAME = "slider_active_track"
         internal const val TRACK_NON_ACTIVE_KEY_NAME = "slider_non_active_track"
         internal const val THUMB_KEY_NAME = "slider_thumb"
-        internal const val OPAQUE_ALPHA_VALUE: Int = 0xff
-        internal const val PARTIALLY_OPAQUE_ALPHA_VALUE: Int = 0x44
         internal const val THUMB_SHAPE_CORNER_RADIUS = 10
     }
 }

@@ -33,7 +33,6 @@ abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMa
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   protected fun resolveViewId(android.view.View): Long
   protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float, com.datadog.android.api.InternalLogger): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
-  companion object 
 class com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper : TextViewMapper<android.widget.EditText>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun resolveCapturedText(android.widget.EditText, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean): String
@@ -54,6 +53,8 @@ open class com.datadog.android.sessionreplay.utils.AndroidQDrawableToColorMapper
 interface com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
   fun jobStarted()
   fun jobFinished()
+const val OPAQUE_ALPHA_VALUE: Int
+const val PARTIALLY_OPAQUE_ALPHA_VALUE: Int
 interface com.datadog.android.sessionreplay.utils.ColorStringFormatter
   fun formatColorAsHexString(Int): String
   fun formatColorAndAlphaAsHexString(Int, Int): String
@@ -62,6 +63,7 @@ object com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter : Col
   override fun formatColorAndAlphaAsHexString(Int, Int): String
 object com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver : ViewBoundsResolver
   override fun resolveViewGlobalBounds(android.view.View, Float): GlobalBounds
+  override fun resolveViewPaddedBounds(android.view.View, Float): GlobalBounds
 object com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver : ViewIdentifierResolver
   override fun resolveViewId(android.view.View): Long
   override fun resolveChildUniqueIdentifier(android.view.View, String): Long?
@@ -86,6 +88,7 @@ open class com.datadog.android.sessionreplay.utils.LegacyDrawableToColorMapper :
   companion object 
 interface com.datadog.android.sessionreplay.utils.ViewBoundsResolver
   fun resolveViewGlobalBounds(android.view.View, Float): GlobalBounds
+  fun resolveViewPaddedBounds(android.view.View, Float): GlobalBounds
 interface com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
   fun resolveViewId(android.view.View): Long
   fun resolveChildUniqueIdentifier(android.view.View, String): Long?
