@@ -72,8 +72,8 @@ tasks.register("checkAll") {
 }
 
 registerSubModuleAggregationTask("assembleLibraries", "assemble")
-registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest", exceptions = setOf("dd-sdk-android-trace"))
-registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest", exceptions = setOf("dd-sdk-android-trace"))
+registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest")
+registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest")
 
 tasks.register("unitTestTools") {
     dependsOn(
