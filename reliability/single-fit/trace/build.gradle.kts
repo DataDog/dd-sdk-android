@@ -32,6 +32,10 @@ android {
         // Required because AGP doesn't support kotlin test fixtures :/
         java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
     }
+
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
 }
 
 dependencies {
@@ -39,6 +43,9 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(libs.kotlin)
+
+    // Desugaring SDK
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
 
     // Testing
     testImplementation(project(":tools:unit")) {

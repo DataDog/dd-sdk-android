@@ -7,6 +7,7 @@ okHttp = "4.11.0"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
+androidDesugaringSdk = "2.0.4"
 androidToolsPlugin = "8.1.1"
 androidXAnnotations = "1.1.0"
 androidXAppCompat = "1.3.0"
@@ -120,6 +121,7 @@ kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNT
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 
 # Android libs
+androidDesugaringSdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugaringSdk" }
 androidXMultidex = { module = "androidx.multidex:multidex", version.ref = "androidXMultidex" }
 androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidXAnnotations" }
 androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
