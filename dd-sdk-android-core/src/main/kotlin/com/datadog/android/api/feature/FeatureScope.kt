@@ -9,6 +9,8 @@ package com.datadog.android.api.feature
 import androidx.annotation.AnyThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.persistence.Serializer
 
 /**
  * Represents a Datadog feature.
@@ -29,6 +31,41 @@ interface FeatureScope {
         forceNewBatch: Boolean = false,
         callback: (DatadogContext, EventBatchWriter) -> Unit
     )
+
+    /**
+     * Write data to the datastore.
+     *
+     * @param dataStoreFileName name of the datastore file as there could be multiple such files per feature.
+     * @param featureName of the calling feature, to determine the path to the datastore file.
+     * @param serializer to use to serialize the data.
+     * @param data to write.
+     */
+    fun <T : Any> writeToDataStore(
+        dataStoreFileName: String,
+        featureName: String,
+        serializer: Serializer<T>,
+        data: T
+    )
+
+    /**
+     * Read data from the datastore.
+     *
+     * @param dataStoreFileName name of the datastore file as there could be multiple such files per feature.
+     * @param featureName of the calling feature, to determine the path to the datastore file.
+     * @param deserializer to use to deserialize the data.
+     * @param version to use when reading from the datastore (to support migrations).
+     */
+    fun <T : Any> readFromDataStore(
+        dataStoreFileName: String,
+        featureName: String,
+        deserializer: Deserializer<String, T>,
+        version: Int
+    ): T?
+
+    /**
+     * Return the current version of the datastore.
+     */
+    fun getDataStoreCurrentVersion(): Int
 
     /**
      * Send event to a given feature. It will be sent in a synchronous way.

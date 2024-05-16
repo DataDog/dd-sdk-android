@@ -21,6 +21,8 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
+import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
+import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -90,7 +92,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
-import java.lang.RuntimeException
 import java.net.Proxy
 import java.util.Locale
 import java.util.UUID
@@ -839,6 +840,22 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M initialize the DataStoreHandler W initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.dataStoreHandler)
+            .isInstanceOf(DataStoreHandler::class.java)
+            .isNotInstanceOf(NoOpDataStoreHandler::class.java)
+    }
+
+    @Test
     fun `M initialize the NdkCrashHandler data W initialize() {main process}`(
         @TempDir tempDir: File,
         @StringForgery otherProcessName: String
@@ -1246,6 +1263,23 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+    }
+
+    @Test
+    fun `M cleanup DataStoreHandler W stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataStoreHandler).isInstanceOf(NoOpDataStoreHandler::class.java)
     }
 
     @Test

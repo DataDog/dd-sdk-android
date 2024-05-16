@@ -103,6 +103,9 @@ interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
+  fun <T: Any> writeToDataStore(String, String, com.datadog.android.core.persistence.Serializer<T>, T)
+  fun <T: Any> readFromDataStore(String, String, com.datadog.android.core.internal.persistence.Deserializer<String, T>, Int): T?
+  fun getDataStoreCurrentVersion(): Int
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
 fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R

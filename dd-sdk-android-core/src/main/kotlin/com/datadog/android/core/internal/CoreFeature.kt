@@ -35,6 +35,10 @@ import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
+import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
+import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
+import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler
+import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -45,6 +49,7 @@ import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.persistence.file.writeTextSafe
+import com.datadog.android.core.internal.persistence.tlvformat.FileTLVBlockReader
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -137,6 +142,7 @@ internal class CoreFeature(
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
+    internal var dataStoreHandler: DataStoreHandler = NoOpDataStoreHandler()
     internal var site: DatadogSite = DatadogSite.US1
     internal var appBuildId: String? = null
 
@@ -225,6 +231,10 @@ internal class CoreFeature(
         val nativeSourceOverride = configuration.additionalConfig[Datadog.DD_NATIVE_SOURCE_TYPE] as? String
         prepareNdkCrashData(nativeSourceOverride)
         setupInfoProviders(appContext, consent)
+        prepareDataStoreHandler(
+            sdkInstanceId = sdkInstanceId,
+            configuration = configuration.coreConfig
+        )
         initialized.set(true)
         contextProvider = DatadogContextProvider(this)
     }
@@ -260,6 +270,7 @@ internal class CoreFeature(
 
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
+            dataStoreHandler = NoOpDataStoreHandler()
             trackingConsentProvider = NoOpConsentProvider()
             contextProvider = NoOpContextProvider()
         }
@@ -367,6 +378,28 @@ internal class CoreFeature(
                 JsonObjectDeserializer(internalLogger).deserialize(this)
             }
         }
+    }
+
+    private fun prepareDataStoreHandler(
+        sdkInstanceId: String,
+        configuration: Configuration.Core
+    ) {
+        val fileReaderWriter = FileReaderWriter.create(
+            internalLogger,
+            configuration.encryption
+        )
+
+        dataStoreHandler = FileDataStoreHandler(
+            sdkInstanceId = sdkInstanceId,
+            storageDir = storageDir,
+            internalLogger = internalLogger,
+            fileReaderWriter = fileReaderWriter,
+            fileTLVBlockReader = FileTLVBlockReader(
+                internalLogger = internalLogger,
+                fileReaderWriter = fileReaderWriter
+            ),
+            dataStoreFileHelper = DataStoreFileHelper()
+        )
     }
 
     private fun prepareNdkCrashData(nativeSourceType: String?) {

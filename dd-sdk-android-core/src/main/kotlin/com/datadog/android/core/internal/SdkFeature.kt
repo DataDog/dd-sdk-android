@@ -34,8 +34,10 @@ import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
 import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
+import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
+import com.datadog.android.core.internal.persistence.datastore.CURRENT_DATASTORE_VERSION
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -44,6 +46,7 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.util.Collections
 import java.util.Locale
@@ -142,6 +145,36 @@ internal class SdkFeature(
     // endregion
 
     // region FeatureScope
+
+    override fun <T : Any> writeToDataStore(
+        dataStoreFileName: String,
+        featureName: String,
+        serializer: Serializer<T>,
+        data: T
+    ) {
+        coreFeature.dataStoreHandler.write(
+            dataStoreFileName = dataStoreFileName,
+            featureName = featureName,
+            serializer = serializer,
+            data = data
+        )
+    }
+
+    override fun <T : Any> readFromDataStore(
+        dataStoreFileName: String,
+        featureName: String,
+        deserializer: Deserializer<String, T>,
+        version: Int
+    ): T? =
+        coreFeature.dataStoreHandler.read(
+            dataStoreFileName = dataStoreFileName,
+            featureName = featureName,
+            deserializer = deserializer,
+            version = version
+        )
+
+    override fun getDataStoreCurrentVersion(): Int =
+        CURRENT_DATASTORE_VERSION
 
     override fun withWriteContext(
         forceNewBatch: Boolean,

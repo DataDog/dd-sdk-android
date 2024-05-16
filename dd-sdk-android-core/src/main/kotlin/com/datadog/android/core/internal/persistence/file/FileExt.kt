@@ -79,6 +79,13 @@ internal fun File.deleteSafe(internalLogger: InternalLogger): Boolean {
     }
 }
 
+internal fun File.createNewFileSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        createNewFile()
+    }
+}
+
 /**
  * Non-throwing version of [File.exists]. If exception happens, false is returned.
  */
