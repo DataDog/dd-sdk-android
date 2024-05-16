@@ -43,7 +43,7 @@ internal class FixedLengthStringObfuscatorTest {
         val obfuscatedString = testedObfuscator.obfuscate(fakeInputString)
 
         // Then
-        assertThat(obfuscatedString).isEqualTo(TextViewMapper.STATIC_MASK)
+        assertThat(obfuscatedString).isEqualTo(TextViewMapper.FIXED_INPUT_MASK)
     }
 
     @Test
@@ -52,6 +52,6 @@ internal class FixedLengthStringObfuscatorTest {
         val obfuscatedString = testedObfuscator.obfuscate("")
 
         // Then
-        assertThat(obfuscatedString).isEqualTo(TextViewMapper.STATIC_MASK)
+        assertThat(obfuscatedString).isEqualTo(TextViewMapper.FIXED_INPUT_MASK)
     }
 }

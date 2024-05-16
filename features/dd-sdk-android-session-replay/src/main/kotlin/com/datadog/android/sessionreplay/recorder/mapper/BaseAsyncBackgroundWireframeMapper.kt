@@ -30,7 +30,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *  @param viewBoundsResolver the [ViewBoundsResolver] to get a view boundaries in density independent units
  *  @param drawableToColorMapper the [DrawableToColorMapper] to convert a background drawable into a solid color
  */
-abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor(
+abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal constructor(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
@@ -63,9 +63,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View> internal constructor
     ): MobileSegment.Wireframe? {
         val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
 
-        val resources = view.resources
-        val density = resources.displayMetrics.density
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.systemInformation.screenDensity)
         val width = view.width
         val height = view.height
 

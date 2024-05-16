@@ -20,7 +20,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal abstract class CheckableTextViewMapper<T>(
-    private val textWireframeMapper: TextViewMapper,
+    private val textWireframeMapper: TextViewMapper<T>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,

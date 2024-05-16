@@ -29,7 +29,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.stream.Stream
 
-internal abstract class BaseWireframeMapperTest {
+internal abstract class LegacyBaseWireframeMapperTest {
 
     @Forgery
     lateinit var fakeMappingContext: MappingContext

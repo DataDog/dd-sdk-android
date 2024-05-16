@@ -14,7 +14,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class CheckBoxMapper(
-    textWireframeMapper: TextViewMapper,
+    textWireframeMapper: TextViewMapper<CheckBox>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
