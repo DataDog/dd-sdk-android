@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
@@ -98,7 +99,7 @@ internal class TelemetryEventHandler(
             }
 
             if (telemetryEvent != null) {
-                writer.write(eventBatchWriter, telemetryEvent)
+                writer.write(eventBatchWriter, telemetryEvent, EventType.TELEMETRY)
             }
         }
     }

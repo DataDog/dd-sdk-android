@@ -13,6 +13,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
@@ -89,11 +90,11 @@ internal class DatadogLateCrashReporter(
                 lastViewEvent
             )
             @Suppress("ThreadSafety") // called in a worker thread context
-            rumWriter.write(eventBatchWriter, toSendErrorEvent)
+            rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
             if (lastViewEvent.isWithinSessionAvailability) {
                 val updatedViewEvent = updateViewEvent(lastViewEvent)
                 @Suppress("ThreadSafety") // called in a worker thread context
-                rumWriter.write(eventBatchWriter, updatedViewEvent)
+                rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
             }
         }
     }
@@ -144,11 +145,11 @@ internal class DatadogLateCrashReporter(
                     lastViewEvent
                 )
                 @Suppress("ThreadSafety") // called in a worker thread context
-                rumWriter.write(eventBatchWriter, toSendErrorEvent)
+                rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
                 if (lastViewEvent.isWithinSessionAvailability) {
                     val updatedViewEvent = updateViewEvent(lastViewEvent)
                     @Suppress("ThreadSafety") // called in a worker thread context
-                    rumWriter.write(eventBatchWriter, updatedViewEvent)
+                    rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
                 }
                 @Suppress("ThreadSafety") // called in a worker thread context
                 sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)

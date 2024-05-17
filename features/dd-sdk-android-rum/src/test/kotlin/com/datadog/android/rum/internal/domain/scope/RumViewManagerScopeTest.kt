@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
@@ -673,7 +674,7 @@ internal class RumViewManagerScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue.action.type)
                 .isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
             // Application start event occurs at the start time
