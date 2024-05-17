@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
@@ -377,7 +378,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -450,7 +451,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -502,7 +503,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -670,7 +671,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -720,7 +721,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -770,7 +771,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -877,7 +878,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             val log = lastValue
 
