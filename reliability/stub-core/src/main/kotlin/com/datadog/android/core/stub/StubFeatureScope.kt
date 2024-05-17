@@ -26,7 +26,7 @@ internal class StubFeatureScope(
 ) : FeatureScope by mockFeatureScope {
 
     private val eventBatchWriter: EventBatchWriter = mock<EventBatchWriter>().also {
-        whenever(it.write(any(), anyOrNull())) doReturn true
+        whenever(it.write(any(), anyOrNull(), any())) doReturn true
     }
 
     private val eventsReceived = mutableListOf<Any>()

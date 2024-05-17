@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
@@ -67,9 +68,6 @@ internal class ConsentAwareStorageTest {
 
     private lateinit var testedStorage: Storage
 
-    @Forgery
-    lateinit var fakeDatadogContext: DatadogContext
-
     @Mock
     lateinit var mockPendingOrchestrator: FileOrchestrator
 
@@ -93,6 +91,12 @@ internal class ConsentAwareStorageTest {
 
     @Mock
     lateinit var mockMetricsDispatcher: MetricsDispatcher
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
+    @Forgery
+    lateinit var fakeEventType: EventType
 
     @BeforeEach
     fun `set up`() {
@@ -322,7 +326,8 @@ internal class ConsentAwareStorageTest {
             val value = it.currentMetadata()?.first() ?: 0
             it.write(
                 event = RawBatchEvent(data = event),
-                batchMetadata = byteArrayOf((value + 1).toByte())
+                batchMetadata = byteArrayOf((value + 1).toByte()),
+                eventType = fakeEventType
             )
         }
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)

@@ -405,12 +405,20 @@ public final class com/datadog/android/api/net/RequestFactory$Companion {
 }
 
 public abstract interface class com/datadog/android/api/storage/DataWriter {
-	public abstract fun write (Lcom/datadog/android/api/storage/EventBatchWriter;Ljava/lang/Object;)Z
+	public abstract fun write (Lcom/datadog/android/api/storage/EventBatchWriter;Ljava/lang/Object;Lcom/datadog/android/api/storage/EventType;)Z
 }
 
 public abstract interface class com/datadog/android/api/storage/EventBatchWriter {
 	public abstract fun currentMetadata ()[B
-	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[B)Z
+	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[BLcom/datadog/android/api/storage/EventType;)Z
+}
+
+public final class com/datadog/android/api/storage/EventType : java/lang/Enum {
+	public static final field CRASH Lcom/datadog/android/api/storage/EventType;
+	public static final field DEFAULT Lcom/datadog/android/api/storage/EventType;
+	public static final field TELEMETRY Lcom/datadog/android/api/storage/EventType;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/storage/EventType;
+	public static fun values ()[Lcom/datadog/android/api/storage/EventType;
 }
 
 public final class com/datadog/android/api/storage/FeatureStorageConfiguration {
@@ -437,7 +445,7 @@ public final class com/datadog/android/api/storage/FeatureStorageConfiguration$C
 
 public final class com/datadog/android/api/storage/NoOpDataWriter : com/datadog/android/api/storage/DataWriter {
 	public fun <init> ()V
-	public fun write (Lcom/datadog/android/api/storage/EventBatchWriter;Ljava/lang/Object;)Z
+	public fun write (Lcom/datadog/android/api/storage/EventBatchWriter;Ljava/lang/Object;Lcom/datadog/android/api/storage/EventType;)Z
 }
 
 public final class com/datadog/android/api/storage/RawBatchEvent {
@@ -746,7 +754,7 @@ public abstract interface class com/datadog/android/core/persistence/Persistence
 	public abstract fun migrateData (Lcom/datadog/android/core/persistence/PersistenceStrategy;)V
 	public abstract fun unlockAndDelete (Ljava/lang/String;)V
 	public abstract fun unlockAndKeep (Ljava/lang/String;)V
-	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[B)Z
+	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[BLcom/datadog/android/api/storage/EventType;)Z
 }
 
 public final class com/datadog/android/core/persistence/PersistenceStrategy$Batch {

@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -36,7 +37,8 @@ internal class FileEventBatchWriter(
     @WorkerThread
     override fun write(
         event: RawBatchEvent,
-        batchMetadata: ByteArray?
+        batchMetadata: ByteArray?,
+        eventType: EventType
     ): Boolean {
         // prevent useless operation for empty event
         return if (event.data.isEmpty()) {
