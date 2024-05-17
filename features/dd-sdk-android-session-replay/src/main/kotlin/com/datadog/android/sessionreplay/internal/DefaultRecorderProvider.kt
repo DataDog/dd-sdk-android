@@ -175,17 +175,18 @@ internal class DefaultRecorderProvider(
                     viewBoundsResolver,
                     drawableToColorMapper
                 )
+            ),
+            MapperTypeWrapper(
+                SeekBar::class.java,
+                SeekBarWireframeMapper(
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
             )
         )
 
-        getSeekBarMapper(
-            viewIdentifierResolver,
-            colorStringFormatter,
-            viewBoundsResolver,
-            drawableToColorMapper
-        )?.let {
-            mappersList.add(0, MapperTypeWrapper(SeekBar::class.java, it))
-        }
         getNumberPickerMapper(
             viewIdentifierResolver,
             colorStringFormatter,
@@ -195,24 +196,6 @@ internal class DefaultRecorderProvider(
             mappersList.add(0, MapperTypeWrapper(NumberPicker::class.java, it))
         }
         return mappersList
-    }
-
-    private fun getSeekBarMapper(
-        viewIdentifierResolver: ViewIdentifierResolver,
-        colorStringFormatter: ColorStringFormatter,
-        viewBoundsResolver: ViewBoundsResolver,
-        drawableToColorMapper: DrawableToColorMapper
-    ): WireframeMapper<SeekBar>? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            SeekBarWireframeMapper(
-                viewIdentifierResolver,
-                colorStringFormatter,
-                viewBoundsResolver,
-                drawableToColorMapper
-            )
-        } else {
-            null
-        }
     }
 
     private fun getNumberPickerMapper(

@@ -86,7 +86,7 @@ open class AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper() {
                 throwable = null,
                 onlyOnce = true,
                 additionalProperties = mapOf(
-                    "replay.gradient.filter_type" to colorFilter.javaClass
+                    "replay.gradient.filter_type" to colorFilter.javaClass.canonicalName
                 )
             )
             fillColor

@@ -1358,7 +1358,6 @@ public class com/datadog/android/sessionreplay/recorder/mapper/BaseViewGroupMapp
 }
 
 public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper : com/datadog/android/sessionreplay/recorder/mapper/WireframeMapper {
-	public static final field Companion Lcom/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper$Companion;
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
 	protected final fun getColorStringFormatter ()Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;
 	protected final fun getDrawableToColorMapper ()Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
@@ -1366,9 +1365,6 @@ public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseWire
 	protected final fun getViewIdentifierResolver ()Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;
 	protected final fun resolveShapeStyle (Landroid/graphics/drawable/Drawable;FLcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	protected final fun resolveViewId (Landroid/view/View;)J
-}
-
-public final class com/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper$Companion {
 }
 
 public final class com/datadog/android/sessionreplay/recorder/mapper/EditTextMapper : com/datadog/android/sessionreplay/recorder/mapper/TextViewMapper {
@@ -1414,6 +1410,11 @@ public abstract interface class com/datadog/android/sessionreplay/utils/AsyncJob
 	public abstract fun jobStarted ()V
 }
 
+public final class com/datadog/android/sessionreplay/utils/ColorConstantsKt {
+	public static final field OPAQUE_ALPHA_VALUE I
+	public static final field PARTIALLY_OPAQUE_ALPHA_VALUE I
+}
+
 public abstract interface class com/datadog/android/sessionreplay/utils/ColorStringFormatter {
 	public abstract fun formatColorAndAlphaAsHexString (II)Ljava/lang/String;
 	public abstract fun formatColorAsHexString (I)Ljava/lang/String;
@@ -1428,6 +1429,7 @@ public final class com/datadog/android/sessionreplay/utils/DefaultColorStringFor
 public final class com/datadog/android/sessionreplay/utils/DefaultViewBoundsResolver : com/datadog/android/sessionreplay/utils/ViewBoundsResolver {
 	public static final field INSTANCE Lcom/datadog/android/sessionreplay/utils/DefaultViewBoundsResolver;
 	public fun resolveViewGlobalBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/utils/GlobalBounds;
+	public fun resolveViewPaddedBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/utils/GlobalBounds;
 }
 
 public final class com/datadog/android/sessionreplay/utils/DefaultViewIdentifierResolver : com/datadog/android/sessionreplay/utils/ViewIdentifierResolver {
@@ -1493,6 +1495,7 @@ public final class com/datadog/android/sessionreplay/utils/LegacyDrawableToColor
 
 public abstract interface class com/datadog/android/sessionreplay/utils/ViewBoundsResolver {
 	public abstract fun resolveViewGlobalBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/utils/GlobalBounds;
+	public abstract fun resolveViewPaddedBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/utils/GlobalBounds;
 }
 
 public abstract interface class com/datadog/android/sessionreplay/utils/ViewIdentifierResolver {
