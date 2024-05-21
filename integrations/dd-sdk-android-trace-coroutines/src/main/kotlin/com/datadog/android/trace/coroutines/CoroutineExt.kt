@@ -6,14 +6,13 @@
 
 package com.datadog.android.trace.coroutines
 
+import com.datadog.android.trace.internal.coroutines.withinCoroutineSpan
 import com.datadog.android.trace.withinSpan
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -21,8 +20,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-
-private const val TAG_DISPATCHER: String = "coroutine.dispatcher"
 
 /**
  * Launches a new coroutine without blocking the current thread and returns a reference to the
@@ -140,20 +137,5 @@ suspend fun <T : Any?> withContextTraced(
     @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
     return withContext(context) {
         withinCoroutineSpan(operationName, parentSpan, context, block)
-    }
-}
-
-private suspend fun <T : Any?> CoroutineScope.withinCoroutineSpan(
-    operationName: String,
-    parentSpan: Span? = null,
-    context: CoroutineContext,
-    block: suspend CoroutineScopeSpan.() -> T
-): T {
-    return withinSpan(operationName, parentSpan, context != Dispatchers.Unconfined) {
-        if (context is CoroutineDispatcher) {
-            setTag(TAG_DISPATCHER, context.toString())
-        }
-        @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
-        block(CoroutineScopeSpanImpl(this@withinCoroutineSpan, this))
     }
 }

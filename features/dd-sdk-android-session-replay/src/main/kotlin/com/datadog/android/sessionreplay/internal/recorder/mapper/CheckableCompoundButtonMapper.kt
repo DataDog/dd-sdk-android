@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.CompoundButton
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -16,7 +17,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
-    textWireframeMapper: TextViewMapper,
+    textWireframeMapper: TextViewMapper<T>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,

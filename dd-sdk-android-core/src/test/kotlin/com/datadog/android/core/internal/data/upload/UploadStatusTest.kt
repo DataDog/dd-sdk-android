@@ -209,7 +209,7 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error; the batch was dropped."
+                "because of an unknown error (status code = ${status.code}); the batch was dropped."
         )
     }
 

@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "8"
+  CURRENT_CI_IMAGE: "9"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -78,14 +78,6 @@ analysis:licenses:
   timeout: 30m
   script:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
-
-analysis:nightly-tests-coverage:
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
 
 # TODO RUM-1622 cleanup this section
 # TESTS
@@ -310,9 +302,9 @@ test-pyramid:publish-webview-synthetics:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
     - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -649,7 +641,28 @@ publish:release-rum:
 
 # SLACK NOTIFICATIONS
 
-notify:release:
+notify:publish-develop-success:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_success
+  only:
+    - develop
+  script:
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME develop $CI_COMMIT_TAG: Snapshot published on :maven:, Sample app published on :synthetics:"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+
+notify:publish-develop-failure:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_failure
+  only:
+    - develop
+  script:
+    - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
+    - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG develop pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+
+notify:publish-release-success:
   extends: .slack-notifier-base
   stage: notify
   when: on_success
@@ -657,10 +670,10 @@ notify:release:
     - tags
   script:
     - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android-core/$CI_COMMIT_TAG/aar"
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
-    - postmessage "#mobile-rum" "$MESSAGE_TEXT"
+    - 'MESSAGE_TEXT=":rocket: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
-notify:failure:
+notify:publish-release-failure:
   extends: .slack-notifier-base
   stage: notify
   when: on_failure
@@ -669,7 +682,7 @@ notify:failure:
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
     - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
-    - postmessage "#mobile-rum" "$MESSAGE_TEXT"
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
   tags: [ "arch:amd64" ]

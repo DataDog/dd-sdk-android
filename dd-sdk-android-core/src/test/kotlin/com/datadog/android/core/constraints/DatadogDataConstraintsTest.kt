@@ -94,7 +94,8 @@ internal class DatadogDataConstraintsTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints.",
+            onlyOnce = true
         )
     }
 
@@ -112,7 +113,8 @@ internal class DatadogDataConstraintsTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints.",
+            onlyOnce = true
         )
     }
 
@@ -128,7 +130,8 @@ internal class DatadogDataConstraintsTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints.",
+            onlyOnce = true
         )
     }
 
@@ -144,7 +147,8 @@ internal class DatadogDataConstraintsTest {
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "tag \"$expectedCorrectedTag:\" was modified to " +
-                "\"$expectedCorrectedTag\" to match our constraints."
+                "\"$expectedCorrectedTag\" to match our constraints.",
+            onlyOnce = true
         )
     }
 

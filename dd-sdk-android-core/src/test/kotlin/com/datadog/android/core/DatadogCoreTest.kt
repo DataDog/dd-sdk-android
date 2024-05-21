@@ -18,6 +18,7 @@ import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -48,9 +49,12 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AssertionFailureBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -71,7 +75,9 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -85,7 +91,7 @@ import java.util.concurrent.atomic.AtomicReference
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(value = Configurator::class)
 internal class DatadogCoreTest {
 
     private lateinit var testedCore: DatadogCore
@@ -501,9 +507,12 @@ internal class DatadogCoreTest {
         val time = testedCore.time
 
         // Then
-        assertThat(time.deviceTimeNs).isEqualTo(time.serverTimeNs)
-        assertThat(time.serverTimeOffsetMs).isEqualTo(0)
-        assertThat(time.serverTimeOffsetNs).isEqualTo(0)
+        // We do keep a margin of 1ms delay as this test can sometimes be flaky.
+        // the DatadogCore.time implementation computes server and device time independently and it can sometimes
+        // happen that those computations land on successive ms, leading to a 1second offset
+        assertThat(time.deviceTimeNs).isCloseTo(time.serverTimeNs, Offset.offset(msToNs))
+        assertThat(time.serverTimeOffsetMs).isLessThanOrEqualTo(1)
+        assertThat(time.serverTimeOffsetNs).isLessThanOrEqualTo(msToNs)
     }
 
     @Test
@@ -799,7 +808,74 @@ internal class DatadogCoreTest {
         }
     }
 
+    @Test
+    fun `M allow concurrent access to features W access features when modifying their collection`(
+        @StringForgery fakeFeature: String,
+        forge: Forge
+    ) {
+        // Given
+        testedCore.features += fakeFeature to mock()
+
+        // When
+        val errorCollector = Collections.synchronizedList(mutableListOf<Throwable>())
+        val latch = CountDownLatch(2)
+        val threadA = Thread(
+            ErrorRecordingRunnable(errorCollector) {
+                latch.countDown()
+                latch.await()
+                assertDoesNotThrow {
+                    repeat(100) {
+                        testedCore.features += forge.anAlphabeticalString() to mock()
+                    }
+                }
+            }
+        ).apply { start() }
+        val threadB = Thread(
+            ErrorRecordingRunnable(errorCollector) {
+                latch.countDown()
+                latch.await()
+                assertDoesNotThrow {
+                    repeat(100) {
+                        testedCore.updateFeatureContext(fakeFeature) {
+                            // no-op
+                        }
+                    }
+                }
+            }
+        ).apply { start() }
+
+        listOf(threadA, threadB).forEach { it.join() }
+
+        // Then
+        if (errorCollector.isNotEmpty()) {
+            AssertionFailureBuilder
+                .assertionFailure()
+                .message(
+                    "Expected no errors to be thrown during the concurrent" +
+                        " access to features, but there were errors recorded. See first seen error below."
+                )
+                .cause(errorCollector.first())
+                .buildAndThrow()
+        }
+    }
+
+    class ErrorRecordingRunnable(
+        private val collector: MutableList<Throwable>,
+        private val delegate: Runnable
+    ) : Runnable {
+        override fun run() {
+            try {
+                delegate.run()
+            } catch (t: Throwable) {
+                collector += t
+            }
+        }
+    }
+
     companion object {
+
+        val msToNs = TimeUnit.MILLISECONDS.toNanos(1)
+
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
         @TestConfigurationsProvider

@@ -54,7 +54,7 @@ kover = "0.7.6"
 kspTesting = "1.5.0"
 
 # Tools
-detekt = "1.22.0"
+detekt = "1.23.0"
 dokka = "1.8.20"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"

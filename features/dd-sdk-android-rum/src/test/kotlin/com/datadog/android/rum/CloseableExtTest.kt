@@ -7,6 +7,7 @@
 package com.datadog.android.rum
 
 import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.internal.utils.CLOSABLE_ERROR_MESSAGE
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery

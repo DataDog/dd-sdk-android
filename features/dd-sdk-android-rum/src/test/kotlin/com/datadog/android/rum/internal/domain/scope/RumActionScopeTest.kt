@@ -1377,6 +1377,250 @@ internal class RumActionScopeTest {
     }
 
     @Test
+    fun `M send Action immediately W handleEvent(StopSession) {resourceCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.resourceCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {longTaskCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.longTaskCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(count)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {errorCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.errorCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(count)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {crashCount != 0}`(
+        @LongForgery(1, 1024) nonFatalCount: Long,
+        @LongForgery(1, 1024) fatalCount: Long
+    ) {
+        // Given
+        testedScope.errorCount = nonFatalCount + fatalCount
+        testedScope.crashCount = fatalCount
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(nonFatalCount + fatalCount)
+                    hasCrashCount(fatalCount)
+                    hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `M send Action with synthetics info after threshold W init()+handleEvent(any) `(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
@@ -2082,13 +2326,13 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `M send Action event W handleEvent(StopView) {no side effect}`() {
+    fun `M send Action W handleEvent(StopSession) {no side effect}`() {
         // Given
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopSession()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)

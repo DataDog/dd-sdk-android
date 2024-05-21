@@ -14,11 +14,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.utils.identifyRequest
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
-import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource

@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.webkit.WebView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -20,19 +22,19 @@ internal class WebViewWireframeMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) :
-    BaseWireframeMapper<WebView, MobileSegment.Wireframe.WebviewWireframe>(
-        viewIdentifierResolver,
-        colorStringFormatter,
-        viewBoundsResolver,
-        drawableToColorMapper
-    ) {
+) : BaseWireframeMapper<WebView>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     override fun map(
         view: WebView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe.WebviewWireframe> {
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
+    ): List<MobileSegment.Wireframe> {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity

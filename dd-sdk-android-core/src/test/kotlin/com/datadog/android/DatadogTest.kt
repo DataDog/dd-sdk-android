@@ -11,11 +11,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.core.DatadogCore
-import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.HashGenerator
+import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
 import com.datadog.android.core.internal.utils.loggableStackTrace

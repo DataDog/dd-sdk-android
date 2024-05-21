@@ -95,6 +95,11 @@ datadog:
     deprecatedPrefixes:
       - "RUMM"
       - "REPLAY"
+  PackageNameVisibility:
+    active: true
+    withBreakingChanges: true
+    ignoredAnnotations:
+      - "com.datadog.android.lint.InternalApi"
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'
@@ -495,6 +500,8 @@ datadog:
       - "androidx.work.WorkManager.cancelAllWorkByTag(kotlin.String)"
       - "androidx.work.WorkManager.getInstance(android.content.Context)"
       - "androidx.work.WorkManager.isInitialized()"
+      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.constructor(androidx.appcompat.widget.ActionBarContainer)"
+      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.getBackgroundDrawable()"
       # endregion
       # region Google Material
       - "com.google.android.material.tabs.TabLayout.TabView.getChildAt(kotlin.Int)"
@@ -858,7 +865,9 @@ datadog:
       - "kotlin.collections.MutableList.add(java.lang.ref.WeakReference)"
       - "kotlin.collections.MutableList.add(java.net.InetAddress)"
       - "kotlin.collections.MutableList.add(kotlin.ByteArray)"
+      - "kotlin.collections.MutableList.add(kotlin.Int, com.datadog.android.sessionreplay.MapperTypeWrapper)"
       - "kotlin.collections.MutableList.add(kotlin.Int, com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper)"
+      - "kotlin.collections.MutableList.add(kotlin.Int, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.MutableList.add(kotlin.Int, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe)"
       - "kotlin.collections.MutableList.add(kotlin.String)"
       - "kotlin.collections.MutableList.addAll(kotlin.collections.Collection)"
@@ -949,7 +958,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ResourceEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ViewEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector)"
-      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.MaterialOptionSelectorDetector)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord.ViewEndRecord)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.PlaceholderWireframe)"
@@ -1093,6 +1102,7 @@ datadog:
       - "kotlin.text.String(kotlin.CharArray)"
       - "kotlin.text.StringBuilder()"
       - "kotlin.text.buildString(kotlin.Function1)"
+      - "kotlin.text.buildString(kotlin.Int, kotlin.Function1)"
       # endregion
       # region Kotlin Misc
       - "kotlin.IllegalArgumentException(kotlin.String?)"

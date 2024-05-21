@@ -59,7 +59,7 @@ if [[ $SETUP == 1 ]]; then
   if [[ -x "$(command -v ktlint)" ]]; then
       echo "  KtLint already installed; version $(ktlint --version)"
   else
-    curl -SLO https://github.com/pinterest/ktlint/releases/download/0.47.1/ktlint && chmod a+x ktlint
+    curl -SLO https://github.com/pinterest/ktlint/releases/download/0.50.0/ktlint && chmod a+x ktlint
     sudo mv ktlint /usr/local/bin/
     echo "  KtLint installed; version $(ktlint --version)"
   fi
@@ -176,8 +176,8 @@ if [[ $COMPILE == 1 ]]; then
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest
 
-  echo "---- Assemble Android tests"
-  ./gradlew :instrumented:nightly-tests:assembleDebugAndroidTest :instrumented:integration:assembleDebugAndroidTest
+  echo "---- Assemble Android Instrumentation APKs"
+  ./gradlew :instrumented:integration:assembleDebugAndroidTest
 fi
 
 if [[ $TEST == 1 ]]; then

@@ -28,6 +28,7 @@ import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -35,7 +36,6 @@ import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListene
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -1279,7 +1279,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M handle telemetry error event W onReceive() { with throwable }`(
+    fun `M handle telemetry error event W onReceive() { with throwable, no additional properties }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1303,7 +1303,33 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M handle telemetry error event W onReceive() { with stack and kind }`(
+    fun `M handle telemetry error event W onReceive() { with throwable, with additional properties }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeThrowable = forge.aThrowable()
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val event = mapOf(
+            "type" to "telemetry_error",
+            "message" to fakeMessage,
+            "throwable" to fakeThrowable,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor)
+            .sendErrorTelemetryEvent(fakeMessage, fakeThrowable, fakeAdditionalProperties)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M handle telemetry error event W onReceive() { with stack and kind, no additional properties }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -1324,6 +1350,36 @@ internal class RumFeatureTest {
         // Then
         verify(mockRumMonitor)
             .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind)
+
+        verifyNoMoreInteractions(mockRumMonitor)
+
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M handle telemetry error event W onReceive() { with stack and kind, with additional properties }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeStack = forge.aNullable { aString() }
+        val fakeKind = forge.aNullable { aString() }
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val event = mapOf(
+            "type" to "telemetry_error",
+            "message" to fakeMessage,
+            "stacktrace" to fakeStack,
+            "kind" to fakeKind,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor)
+            .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind, fakeAdditionalProperties)
 
         verifyNoMoreInteractions(mockRumMonitor)
 

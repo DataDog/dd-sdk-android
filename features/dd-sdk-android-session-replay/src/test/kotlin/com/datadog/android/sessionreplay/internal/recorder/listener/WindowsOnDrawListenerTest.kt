@@ -11,6 +11,10 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -18,8 +22,8 @@ import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -94,6 +98,9 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Forgery
+    lateinit var fakePrivacy: SessionReplayPrivacy
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
@@ -108,6 +115,7 @@ internal class WindowsOnDrawListenerTest {
                 mockSnapshotProducer.produce(
                     eq(decorView),
                     eq(fakeSystemInformation),
+                    eq(fakePrivacy),
                     any()
                 )
             )
@@ -127,11 +135,13 @@ internal class WindowsOnDrawListenerTest {
         }
         whenever(mockContext.resources).thenReturn(mockResources)
         testedListener = WindowsOnDrawListener(
-            fakeMockedDecorViews,
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer,
-            mockDebouncer,
-            mockMiscUtils
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            privacy = fakePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            methodCallTelemetrySamplingRate = 100f
         )
     }
 
@@ -165,7 +175,12 @@ internal class WindowsOnDrawListenerTest {
 
         // Then
         val argCaptor = argumentCaptor<RecordedDataQueueRefs>()
-        verify(mockSnapshotProducer, times(fakeWindowsSnapshots.size)).produce(any(), any(), argCaptor.capture())
+        verify(mockSnapshotProducer, times(fakeWindowsSnapshots.size)).produce(
+            rootView = any(),
+            systemInformation = any(),
+            privacy = eq(fakePrivacy),
+            recordedDataQueueRefs = argCaptor.capture()
+        )
         assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
     }
@@ -175,10 +190,11 @@ internal class WindowsOnDrawListenerTest {
         // Given
         stubDebouncer()
         testedListener = WindowsOnDrawListener(
-            emptyList(),
-            mockRecordedDataQueueHandler,
-            mockSnapshotProducer,
-            mockDebouncer
+            zOrderedDecorViews = emptyList(),
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            privacy = fakePrivacy,
+            debouncer = mockDebouncer
         )
 
         // When
@@ -213,6 +229,84 @@ internal class WindowsOnDrawListenerTest {
 
         // Then
         verify(mockRecordedDataQueueHandler, never()).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M call methodCall telemetry with true W onDraw() { has nodes }`(
+        @Mock mockSdkCore: SdkCore,
+        @Mock mockSessionReplayFeature: FeatureScope,
+        @Mock mockPerformanceMetric: PerformanceMetric
+    ) {
+        // Given
+        whenever(mockSessionReplayFeature.startPerformanceMeasure(any(), any(), any()))
+            .thenReturn(mockPerformanceMetric)
+
+        testedListener = WindowsOnDrawListener(
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            privacy = fakePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            sessionReplayFeature = mockSessionReplayFeature,
+            methodCallTelemetrySamplingRate = 100f
+        )
+
+        stubDebouncer()
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        val booleanCaptor = argumentCaptor<Boolean>()
+        verify(mockPerformanceMetric).stopAndSend(booleanCaptor.capture())
+        assertThat(booleanCaptor.firstValue).isTrue()
+    }
+
+    @Test
+    fun `M send methodCall telemetry with false W onDraw() { no nodes }`(
+        @Mock mockSdkCore: SdkCore,
+        @Mock mockSessionReplayFeature: FeatureScope,
+        @Mock mockPerformanceMetric: PerformanceMetric
+    ) {
+        // Given
+        whenever(mockSessionReplayFeature.startPerformanceMeasure(any(), any(), any()))
+            .thenReturn(mockPerformanceMetric)
+
+        testedListener = WindowsOnDrawListener(
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            privacy = fakePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            sessionReplayFeature = mockSessionReplayFeature,
+            methodCallTelemetrySamplingRate = 100f
+        )
+
+        stubDebouncer()
+
+        whenever(mockSnapshotProducer.produce(any(), any(), any(), any())).thenReturn(null)
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        val booleanCaptor = argumentCaptor<Boolean>()
+        verify(mockPerformanceMetric).stopAndSend(booleanCaptor.capture())
+        assertThat(booleanCaptor.firstValue).isFalse()
     }
 
     // region Internal

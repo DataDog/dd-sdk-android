@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.utils
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 
 /**
  * View utility methods needed in the Session Replay Wireframe Mappers.
@@ -15,15 +14,31 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
  */
 object DefaultViewBoundsResolver : ViewBoundsResolver {
 
-    override fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds {
+    override fun resolveViewGlobalBounds(view: View, screenDensity: Float): GlobalBounds {
+        val inverseDensity = if (screenDensity == 0f) 1f else 1f / screenDensity
         val coordinates = IntArray(2)
         // this will always have size >= 2
         @Suppress("UnsafeThirdPartyFunctionCall")
         view.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(pixelsDensity).toLong()
-        val y = coordinates[1].densityNormalized(pixelsDensity).toLong()
-        val height = view.height.densityNormalized(pixelsDensity).toLong()
-        val width = view.width.densityNormalized(pixelsDensity).toLong()
-        return GlobalBounds(x = x, y = y, height = height, width = width)
+        val x = (coordinates[0] * inverseDensity).toLong()
+        val y = (coordinates[1] * inverseDensity).toLong()
+        val width = (view.width * inverseDensity).toLong()
+        val height = (view.height * inverseDensity).toLong()
+        return GlobalBounds(x = x, y = y, width = width, height = height)
+    }
+
+    override fun resolveViewPaddedBounds(view: View, screenDensity: Float): GlobalBounds {
+        val inverseDensity = if (screenDensity == 0f) 1f else 1f / screenDensity
+
+        val coordinates = IntArray(2)
+        // this will always have size >= 2
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        view.getLocationOnScreen(coordinates)
+        val x = ((coordinates[0] + view.paddingLeft) * inverseDensity).toLong()
+        val y = ((coordinates[1] + view.paddingTop) * inverseDensity).toLong()
+        val width = ((view.width - view.paddingLeft - view.paddingRight) * inverseDensity).toLong()
+        val height = ((view.height - view.paddingTop - view.paddingBottom) * inverseDensity).toLong()
+
+        return GlobalBounds(x = x, y = y, width = width, height = height)
     }
 }
