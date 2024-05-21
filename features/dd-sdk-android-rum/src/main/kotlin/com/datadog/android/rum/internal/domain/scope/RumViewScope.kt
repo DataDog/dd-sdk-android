@@ -19,11 +19,12 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.utils.hasUserData
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -31,8 +32,6 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.utils.hasUserData
-import com.datadog.android.rum.utils.newRumEventWriteOperation
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -92,7 +91,7 @@ internal open class RumViewScope(
     private var longTaskCount: Long = 0
     private var frozenFrameCount: Long = 0
 
-    // TODO RUMM-0000 We have now access to the event write result through the closure,
+    // TODO RUM-3792 We have now access to the event write result through the closure,
     // we probably can drop AdvancedRumMonitor#eventSent/eventDropped usage
     internal var pendingResourceCount: Long = 0
     internal var pendingActionCount: Long = 0
@@ -109,7 +108,7 @@ internal open class RumViewScope(
     // region Vitals Fields
 
     private var cpuTicks: Double? = null
-    private var cpuVitalListener: VitalListener = object : VitalListener {
+    internal var cpuVitalListener: VitalListener = object : VitalListener {
         private var initialTickCount: Double = Double.NaN
         override fun onVitalUpdate(info: VitalInfo) {
             // The CPU Ticks will always grow, as it's the total ticks since the app started
@@ -122,14 +121,14 @@ internal open class RumViewScope(
     }
 
     private var lastMemoryInfo: VitalInfo? = null
-    private var memoryVitalListener: VitalListener = object : VitalListener {
+    internal var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastMemoryInfo = info
         }
     }
 
     private var lastFrameRateInfo: VitalInfo? = null
-    private var frameRateVitalListener: VitalListener = object : VitalListener {
+    internal var frameRateVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastFrameRateInfo = info
         }
@@ -142,11 +141,12 @@ internal open class RumViewScope(
     init {
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
-            it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
+
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
+
         val rumContext = parentScope.getRumContext()
         if (rumContext.syntheticsTestId != null) {
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
@@ -180,7 +180,9 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
@@ -216,7 +218,10 @@ internal open class RumViewScope(
                 viewName = key.name,
                 viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId,
-                viewType = type
+                viewType = type,
+                viewTimestamp = eventTimestamp,
+                viewTimestampOffset = serverTimeOffsetInMs,
+                hasReplay = false
             )
     }
 
@@ -233,15 +238,7 @@ internal open class RumViewScope(
         event: RumRawEvent.StartView,
         writer: DataWriter<Any>
     ) {
-        if (!stopped) {
-            // no need to update RUM Context here erasing current view, because this is called
-            // only with event starting a new view, which itself will update a context
-            // at the construction time
-            stopped = true
-            sendViewUpdate(event, writer)
-            delegateEventToChildren(event, writer)
-            sendViewChanged()
-        }
+        stopScope(event, writer)
     }
 
     @WorkerThread
@@ -252,39 +249,41 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
-            val newRumContext = getRumContext().copy(
-                viewType = RumViewType.NONE,
-                viewId = null,
-                viewName = null,
-                viewUrl = null,
-                actionId = null
-            )
-            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
-                val canUpdate = when {
-                    currentRumContext["session_id"] != this.sessionId -> {
-                        // we have a new session, so whatever is in the Global context is
-                        // not valid anyway
-                        true
-                    }
+            stopScope(event, writer) {
+                // we should not reset the timestamp offset here as due to async nature of feature context update
+                // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
+                // correction
+                val newRumContext = getRumContext().copy(
+                    viewType = RumViewType.NONE,
+                    viewId = null,
+                    viewName = null,
+                    viewUrl = null,
+                    actionId = null
+                )
+                sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
+                    val canUpdate = when {
+                        currentRumContext["session_id"] != this.sessionId -> {
+                            // we have a new session, so whatever is in the Global context is
+                            // not valid anyway
+                            true
+                        }
 
-                    currentRumContext["view_id"] == this.viewId -> true
-                    else -> false
+                        currentRumContext["view_id"] == this.viewId -> true
+                        else -> false
+                    }
+                    if (canUpdate) {
+                        currentRumContext.clear()
+                        currentRumContext.putAll(newRumContext.toMap())
+                    } else {
+                        sdkCore.internalLogger.log(
+                            InternalLogger.Level.DEBUG,
+                            InternalLogger.Target.MAINTAINER,
+                            { RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE }
+                        )
+                    }
                 }
-                if (canUpdate) {
-                    currentRumContext.clear()
-                    currentRumContext.putAll(newRumContext.toMap())
-                } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.DEBUG,
-                        InternalLogger.Target.MAINTAINER,
-                        { RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE }
-                    )
-                }
+                eventAttributes.putAll(event.attributes)
             }
-            eventAttributes.putAll(event.attributes)
-            stopped = true
-            sendViewUpdate(event, writer)
-            sendViewChanged()
         }
     }
 
@@ -412,6 +411,7 @@ internal open class RumViewScope(
                 ErrorEvent.ErrorEventSessionType.SYNTHETICS
             }
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
                 featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(
@@ -430,7 +430,8 @@ internal open class RumViewScope(
                             stack = it.stack,
                             state = it.state
                         )
-                    }.ifEmpty { null }
+                    }.ifEmpty { null },
+                    timeSinceAppStart = event.timeSinceAppStartNs?.let { TimeUnit.NANOSECONDS.toMillis(it) }
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
                 view = ErrorEvent.ErrorEventView(
@@ -475,7 +476,6 @@ internal open class RumViewScope(
                 context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        plan = ErrorEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
@@ -539,9 +539,7 @@ internal open class RumViewScope(
 
     @WorkerThread
     private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
-        stopped = true
-
-        sendViewUpdate(event, writer)
+        stopScope(event, writer)
     }
 
     @WorkerThread
@@ -706,6 +704,33 @@ internal open class RumViewScope(
         }
     }
 
+    /**
+     * Marks this scope as stopped, and clean up every thing that needs to.
+     * This action and the side effect are only performed if the scope has not already been marked as stopped.
+     * @param event the event triggering the stopping
+     * @param writer the writer to send the view update
+     * @param sideEffect additional side effect to be performed alongside regular cleanup.
+     */
+    @WorkerThread
+    private fun stopScope(
+        event: RumRawEvent,
+        writer: DataWriter<Any>,
+        sideEffect: () -> Unit = {}
+    ) {
+        if (!stopped) {
+            sideEffect()
+
+            stopped = true
+            sendViewUpdate(event, writer)
+            delegateEventToChildren(event, writer)
+            sendViewChanged()
+
+            cpuVitalMonitor.unregister(cpuVitalListener)
+            memoryVitalMonitor.unregister(memoryVitalListener)
+            frameRateVitalMonitor.unregister(frameRateVitalListener)
+        }
+    }
+
     @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
@@ -750,6 +775,9 @@ internal open class RumViewScope(
                 datadogContext,
                 currentViewId
             )
+            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
+                currentRumContext[RumContext.HAS_REPLAY] = hasReplay
+            }
             val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
                 datadogContext,
                 currentViewId
@@ -842,7 +870,6 @@ internal open class RumViewScope(
                 dd = ViewEvent.Dd(
                     documentVersion = eventVersion,
                     session = ViewEvent.DdSession(
-                        plan = ViewEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
                     ),
                     replayStats = replayStats,
@@ -852,8 +879,7 @@ internal open class RumViewScope(
                 service = datadogContext.service,
                 version = datadogContext.version
             )
-        }
-            .submit()
+        }.submit()
     }
 
     private fun updateGlobalAttributes(sdkCore: InternalSdkCore, event: RumRawEvent) {
@@ -984,7 +1010,6 @@ internal open class RumViewScope(
                 ),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
-                        plan = ActionEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
@@ -1086,7 +1111,6 @@ internal open class RumViewScope(
                 context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                 dd = LongTaskEvent.Dd(
                     session = LongTaskEvent.DdSession(
-                        plan = LongTaskEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
                     ),
                     configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
@@ -1113,9 +1137,31 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
-        featureFlags[event.name] = event.value
-        sendViewUpdate(event, writer)
-        sendViewChanged()
+        if (event.value != featureFlags[event.name]) {
+            featureFlags[event.name] = event.value
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
+    }
+
+    private fun onAddFeatureFlagEvaluations(
+        event: RumRawEvent.AddFeatureFlagEvaluations,
+        writer: DataWriter<Any>
+    ) {
+        if (stopped) return
+
+        var modified = false
+        event.featureFlags.forEach { (k, v) ->
+            if (v != featureFlags[k]) {
+                featureFlags[k] = v
+                modified = true
+            }
+        }
+
+        if (modified) {
+            sendViewUpdate(event, writer)
+            sendViewChanged()
+        }
     }
 
     private fun sendViewChanged() {

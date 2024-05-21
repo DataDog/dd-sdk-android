@@ -9,7 +9,7 @@ package com.datadog.android.event
 /**
  * An interface which can be implemented to modify the writable attributes inside an event [T].
  */
-interface EventMapper<T : Any> {
+fun interface EventMapper<T : Any> {
     /**
      * By implementing this method you can intercept and modify the writable
      * attributes inside any event [T] before it gets serialised.

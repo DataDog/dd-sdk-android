@@ -14,8 +14,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
+import com.datadog.android.trace.internal.addActiveTraceToContext
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.android.trace.internal.removeActiveTraceFromContext
 import com.datadog.legacy.trace.api.Config
 import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.legacy.trace.context.ScopeListener
@@ -85,7 +87,7 @@ class AndroidTracer internal constructor(
         private var bundleWithRumEnabled: Boolean = true
         private var sampleRate: Double = DEFAULT_SAMPLE_RATE
 
-        // TODO RUMM-0000 should have a nicer call chain
+        // TODO RUM-3786 should have a nicer call chain
         private var serviceName: String = ""
             get() {
                 return field.ifEmpty {

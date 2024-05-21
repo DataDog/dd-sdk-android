@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.stub
 
-import android.content.Context
+import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
@@ -20,6 +20,8 @@ import fr.xgouchet.elmyr.Forge
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 /**
  * A stub implementation of [InternalSdkCore].
@@ -30,7 +32,7 @@ import org.mockito.kotlin.whenever
 @Suppress("UnsafeThirdPartyFunctionCall")
 class StubSDKCore(
     private val forge: Forge,
-    private val mockContext: Context = mock(),
+    private val mockContext: Application = mock(),
     private val mockSdkCore: InternalSdkCore = mock()
 ) : InternalSdkCore by mockSdkCore {
 
@@ -144,6 +146,14 @@ class StubSDKCore(
 
     override fun getFeatureContext(featureName: String): Map<String, Any?> {
         return datadogContext.featuresContext[featureName].orEmpty()
+    }
+
+    override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
+        return StubScheduledExecutorService(executorContext)
+    }
+
+    override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
+        return StubExecutorService(executorContext)
     }
 
     // endregion

@@ -60,7 +60,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 wipe pending data 𝕎 migrateData() {null to any}`(
+    fun `M wipe pending data W migrateData() {null to any}`(
         @Forgery consent: TrackingConsent,
         @Forgery pendingDir: File
     ) {
@@ -81,7 +81,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `𝕄 wipe pending data 𝕎 migrateData() {PENDING to NOT_GRANTED}`(
+    fun `M wipe pending data W migrateData() {PENDING to NOT_GRANTED}`(
         @Forgery pendingDir: File
     ) {
         // Given
@@ -101,7 +101,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `𝕄 wipe pending data 𝕎 migrateData() {GRANTED to PENDING}`(
+    fun `M wipe pending data W migrateData() {GRANTED to PENDING}`(
         @Forgery pendingDir: File
     ) {
         // Given
@@ -121,7 +121,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `𝕄 wipe pending data 𝕎 migrateData() {NOT_GRANTED to PENDING}`(
+    fun `M wipe pending data W migrateData() {NOT_GRANTED to PENDING}`(
         @Forgery pendingDir: File
     ) {
         // Given
@@ -141,7 +141,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `𝕄 move pending data 𝕎 migrateData() {PENDING to GRANTED}`(
+    fun `M move pending data W migrateData() {PENDING to GRANTED}`(
         @Forgery pendingDir: File,
         @Forgery grantedDir: File
     ) {
@@ -163,7 +163,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @RepeatedTest(8)
-    fun `𝕄 do nothing 𝕎 migrateData() {x to x}`(
+    fun `M do nothing W migrateData() {x to x}`(
         @Forgery consent: TrackingConsent
     ) {
         // When
@@ -179,7 +179,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 migrateData() {GRANTED to NOT_GRANTED}`() {
+    fun `M do nothing W migrateData() {GRANTED to NOT_GRANTED}`() {
         // When
         testedMigrator.migrateData(
             TrackingConsent.GRANTED,
@@ -193,7 +193,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 migrateData() {NOT_GRANTED to GRANTED}`() {
+    fun `M do nothing W migrateData() {NOT_GRANTED to GRANTED}`() {
         // When
         testedMigrator.migrateData(
             TrackingConsent.NOT_GRANTED,

@@ -10,8 +10,8 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.lint.InternalApi
 
 /**
@@ -79,7 +79,7 @@ class _InternalProxy internal constructor(
     }
 
     companion object {
-        // TODO RUMM-3008 Expose it as public API? Needed for the integration tests at least,
+        // TODO RUM-368 Expose it as public API? Needed for the integration tests at least,
         //  because OkHttp MockWebServer is HTTP based
         fun allowClearTextHttp(builder: Configuration.Builder): Configuration.Builder {
             return builder.allowClearTextHttp()

@@ -8,18 +8,21 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Rect
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class SwitchCompatMapper(
-    private val textWireframeMapper: TextViewMapper,
+    private val textWireframeMapper: TextViewMapper<SwitchCompat>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
@@ -36,9 +39,10 @@ internal open class SwitchCompatMapper(
     override fun resolveMainWireframes(
         view: SwitchCompat,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback)
+        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 
     @Suppress("ReturnCount")
@@ -46,15 +50,10 @@ internal open class SwitchCompatMapper(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
-        val trackThumbDimensions = resolveThumbAndTrackDimensions(
-            view,
-            mappingContext.systemInformation
-        )
-        if (thumbId == null || trackId == null || trackThumbDimensions == null) {
-            return null
-        }
+        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
+
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
         val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
         val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
         val thumbHeight = trackThumbDimensions[THUMB_HEIGHT_INDEX]
@@ -64,42 +63,47 @@ internal open class SwitchCompatMapper(
             view,
             mappingContext.systemInformation.screenDensity
         )
-        val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
-        val thumbShapeStyle = resolveThumbShapeStyle(view, checkableColor)
-        val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = trackId,
-            x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-            y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
-            width = trackWidth,
-            height = trackHeight,
-            border = null,
-            shapeStyle = trackShapeStyle
-        )
-        val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = thumbId,
-            x = viewGlobalBounds.x + viewGlobalBounds.width - thumbWidth,
-            y = viewGlobalBounds.y + (viewGlobalBounds.height - thumbHeight) / 2,
-            width = thumbWidth,
-            height = thumbHeight,
-            border = null,
-            shapeStyle = thumbShapeStyle
-        )
-        return listOf(trackWireframe, thumbWireframe)
+
+        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
+        if (trackId != null) {
+            val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
+            val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+                id = trackId,
+                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
+                y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
+                width = trackWidth,
+                height = trackHeight,
+                border = null,
+                shapeStyle = trackShapeStyle
+            )
+            wireframes.add(trackWireframe)
+        }
+
+        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+        if (thumbId != null) {
+            val thumbShapeStyle = resolveThumbShapeStyle(view, checkableColor)
+            val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
+                id = thumbId,
+                x = viewGlobalBounds.x + viewGlobalBounds.width - thumbWidth,
+                y = viewGlobalBounds.y + (viewGlobalBounds.height - thumbHeight) / 2,
+                width = thumbWidth,
+                height = thumbHeight,
+                border = null,
+                shapeStyle = thumbShapeStyle
+            )
+            wireframes.add(thumbWireframe)
+        }
+        return wireframes
     }
 
     override fun resolveNotCheckedCheckable(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
-        val trackThumbDimensions = resolveThumbAndTrackDimensions(
-            view,
-            mappingContext.systemInformation
-        )
-        if (thumbId == null || trackId == null || trackThumbDimensions == null) {
-            return null
-        }
+        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
+
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
         val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
         val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
         val thumbHeight = trackThumbDimensions[THUMB_HEIGHT_INDEX]
@@ -109,27 +113,71 @@ internal open class SwitchCompatMapper(
             view,
             mappingContext.systemInformation.screenDensity
         )
-        val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
-        val thumbShapeStyle = resolveThumbShapeStyle(view, checkableColor)
-        val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = trackId,
-            x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-            y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
-            width = trackWidth,
-            height = trackHeight,
-            border = null,
-            shapeStyle = trackShapeStyle
+
+        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
+        if (trackId != null) {
+            val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
+            val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+                id = trackId,
+                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
+                y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
+                width = trackWidth,
+                height = trackHeight,
+                border = null,
+                shapeStyle = trackShapeStyle
+            )
+            wireframes.add(trackWireframe)
+        }
+
+        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+        if (thumbId != null) {
+            val thumbShapeStyle = resolveThumbShapeStyle(view, checkableColor)
+            val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
+                id = thumbId,
+                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
+                y = viewGlobalBounds.y + (viewGlobalBounds.height - thumbHeight) / 2,
+                width = thumbWidth,
+                height = thumbHeight,
+                border = null,
+                shapeStyle = thumbShapeStyle
+            )
+            wireframes.add(thumbWireframe)
+        }
+        return wireframes
+    }
+
+    override fun resolveMaskedCheckable(
+        view: SwitchCompat,
+        mappingContext: MappingContext
+    ): List<MobileSegment.Wireframe>? {
+        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
+
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
+        val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
+        val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
+        val checkableColor = resolveCheckableColor(view)
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
         )
-        val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = thumbId,
-            x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-            y = viewGlobalBounds.y + (viewGlobalBounds.height - thumbHeight) / 2,
-            width = thumbWidth,
-            height = thumbHeight,
-            border = null,
-            shapeStyle = thumbShapeStyle
-        )
-        return listOf(trackWireframe, thumbWireframe)
+
+        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
+        if (trackId != null) {
+            val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
+            val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+                id = trackId,
+                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
+                y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
+                width = trackWidth,
+                height = trackHeight,
+                border = null,
+                shapeStyle = trackShapeStyle
+            )
+            wireframes.add(trackWireframe)
+        }
+
+        return wireframes
     }
 
     // endregion

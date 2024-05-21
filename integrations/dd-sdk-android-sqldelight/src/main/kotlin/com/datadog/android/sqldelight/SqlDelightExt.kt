@@ -6,15 +6,13 @@
 
 package com.datadog.android.sqldelight
 
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithReturnImpl
+import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithoutReturnImpl
+import com.datadog.android.sqldelight.internal.withinSpan
 import com.squareup.sqldelight.Transacter
 import com.squareup.sqldelight.Transacter.Transaction
-import com.squareup.sqldelight.TransactionWithReturn
-import com.squareup.sqldelight.TransactionWithoutReturn
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
-
-// region Public API
 
 /**
  * Starts a [Transaction] and runs [body] in that transaction.
@@ -66,44 +64,3 @@ fun <T : Transacter, R> T.transactionTracedWithResult(
         }
     }
 }
-
-// endregion
-
-// region Internals
-
-internal class TransactionWithSpanAndWithReturnImpl<R>(
-    private val span: Span,
-    private val transaction: TransactionWithReturn<R>
-) : TransactionWithSpanAndWithReturn<R>, Span by span, TransactionWithReturn<R> by transaction
-
-internal class TransactionWithSpanAndWithoutReturnImpl(
-    private val span: Span,
-    private val transaction: TransactionWithoutReturn
-) : TransactionWithSpanAndWithoutReturn, Span by span, TransactionWithoutReturn by transaction
-
-@Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
-internal inline fun <T : Any?> withinSpan(
-    operationName: String,
-    parentSpan: Span? = null,
-    block: Span.() -> T
-): T {
-    val tracer = GlobalTracer.get()
-
-    val span = tracer.buildSpan(operationName)
-        .asChildOf(parentSpan)
-        .start()
-
-    val scope = tracer.activateSpan(span)
-
-    return try {
-        span.block()
-    } catch (e: Throwable) {
-        AndroidTracer.logThrowable(span, e)
-        throw e
-    } finally {
-        span.finish()
-        scope.close()
-    }
-}
-
-// endregion

@@ -86,7 +86,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 call waitForTiming() 𝕎 callStart()`() {
+    fun `M call waitForTiming() W callStart()`() {
         // When
         testedListener.callStart(mockCall)
 
@@ -96,7 +96,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 responseHeadersEnd() for failing request`(
+    fun `M send timing info W responseHeadersEnd() for failing request`(
         @IntForgery(400, 600) statusCode: Int
     ) {
         // Given
@@ -109,21 +109,21 @@ internal class DatadogEventListenerTest {
 
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
         // Then
@@ -135,7 +135,8 @@ internal class DatadogEventListenerTest {
             }
 
             val timing = firstValue
-            assertThat(timing.dnsStart).isGreaterThan(0L).isLessThan(TWENTY_MILLIS_NS)
+            // All timestamp and durations are positive
+            assertThat(timing.dnsStart).isGreaterThan(0L)
             assertThat(timing.dnsDuration).isGreaterThan(0L)
             assertThat(timing.connectStart).isGreaterThan(0L)
             assertThat(timing.connectDuration).isGreaterThan(0L)
@@ -143,43 +144,48 @@ internal class DatadogEventListenerTest {
             assertThat(timing.sslDuration).isGreaterThan(0L)
             assertThat(timing.firstByteStart).isGreaterThan(0L)
             assertThat(timing.firstByteDuration).isGreaterThan(0L)
+            // Header shows failure, there's no download
             assertThat(timing.downloadStart).isEqualTo(0L)
             assertThat(timing.downloadDuration).isEqualTo(0L)
 
-            assertThat(timing.connectStart)
-                .isGreaterThan(timing.dnsStart + timing.dnsDuration)
+            // All start timings are consistent
+            assertThat(timing.connectStart).isGreaterThan(timing.dnsStart + timing.dnsDuration)
             assertThat(timing.sslStart).isGreaterThan(timing.connectStart)
+            assertThat(timing.firstByteStart).isGreaterThan(timing.connectStart + timing.connectDuration)
             assertThat(timing.sslDuration).isLessThan(timing.connectDuration)
-            assertThat(timing.firstByteStart)
-                .isGreaterThan(timing.connectStart + timing.connectDuration)
+
+            // All durations are consistent
+            assertThat(timing.dnsDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.connectDuration).isLessThan((SHORT_SLEEP_NS * 3) + MARGIN_NS)
+            assertThat(timing.firstByteDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
         }
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 callEnd() for successful request`() {
+    fun `M send timing info W callEnd() for successful request`() {
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyEnd(mockCall, fakeByteCount)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.callEnd(mockCall)
 
         // Then
@@ -191,7 +197,8 @@ internal class DatadogEventListenerTest {
             }
 
             val timing = firstValue
-            assertThat(timing.dnsStart).isGreaterThan(0L).isLessThan(TWENTY_MILLIS_NS)
+            // All timestamp and durations are positive
+            assertThat(timing.dnsStart).isGreaterThan(0L)
             assertThat(timing.dnsDuration).isGreaterThan(0L)
             assertThat(timing.connectStart).isGreaterThan(0L)
             assertThat(timing.connectDuration).isGreaterThan(0L)
@@ -202,26 +209,30 @@ internal class DatadogEventListenerTest {
             assertThat(timing.downloadStart).isGreaterThan(0L)
             assertThat(timing.downloadDuration).isGreaterThan(0L)
 
-            assertThat(timing.connectStart)
-                .isGreaterThan(timing.dnsStart + timing.dnsDuration)
+            // All start timings and durations are consistent
+            assertThat(timing.connectStart).isGreaterThan(timing.dnsStart + timing.dnsDuration)
             assertThat(timing.sslStart).isGreaterThan(timing.connectStart)
+            assertThat(timing.firstByteStart).isGreaterThan(timing.connectStart + timing.connectDuration)
+            assertThat(timing.downloadStart).isGreaterThan(timing.firstByteStart + timing.firstByteDuration)
             assertThat(timing.sslDuration).isLessThan(timing.connectDuration)
-            assertThat(timing.firstByteStart)
-                .isGreaterThan(timing.connectStart + timing.connectDuration)
-            assertThat(timing.downloadStart)
-                .isGreaterThan(timing.firstByteStart + timing.firstByteDuration)
+
+            // All durations are consistent
+            assertThat(timing.dnsDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.connectDuration).isLessThan((SHORT_SLEEP_NS * 3) + MARGIN_NS)
+            assertThat(timing.firstByteDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.downloadDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
         }
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 callEnd() for successful request with reused pool`() {
+    fun `M send timing info W callEnd() for successful request with reused pool`() {
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyEnd(mockCall, fakeByteCount)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.callEnd(mockCall)
 
         // Then
@@ -241,38 +252,40 @@ internal class DatadogEventListenerTest {
             assertThat(timing.sslDuration).isEqualTo(0L)
             assertThat(timing.firstByteStart).isEqualTo(0L)
             assertThat(timing.firstByteDuration).isEqualTo(0L)
-            assertThat(timing.downloadStart).isGreaterThan(TimeUnit.NANOSECONDS.toMillis(10L))
-            assertThat(timing.downloadDuration).isGreaterThan(TimeUnit.NANOSECONDS.toMillis(10L))
+
+            assertThat(timing.downloadStart).isGreaterThan(SHORT_SLEEP_NS)
+            assertThat(timing.downloadDuration).isGreaterThan(SHORT_SLEEP_NS)
+                .isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
         }
     }
 
     @Test
-    fun `𝕄 send timing info 𝕎 callFailed() for throwing request`(
+    fun `M send timing info W callFailed() for throwing request`(
         @StringForgery error: String
     ) {
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyEnd(mockCall, fakeByteCount)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.callFailed(mockCall, IOException(error))
 
         // Then
@@ -284,7 +297,8 @@ internal class DatadogEventListenerTest {
             }
 
             val timing = firstValue
-            assertThat(timing.dnsStart).isGreaterThan(0L).isLessThan(TWENTY_MILLIS_NS)
+            // All timestamp and durations are positive
+            assertThat(timing.dnsStart).isGreaterThan(0L)
             assertThat(timing.dnsDuration).isGreaterThan(0L)
             assertThat(timing.connectStart).isGreaterThan(0L)
             assertThat(timing.connectDuration).isGreaterThan(0L)
@@ -295,39 +309,43 @@ internal class DatadogEventListenerTest {
             assertThat(timing.downloadStart).isGreaterThan(0L)
             assertThat(timing.downloadDuration).isGreaterThan(0L)
 
-            assertThat(timing.connectStart)
-                .isGreaterThan(timing.dnsStart + timing.dnsDuration)
+            // All start timings and durations are consistent
+            assertThat(timing.connectStart).isGreaterThan(timing.dnsStart + timing.dnsDuration)
             assertThat(timing.sslStart).isGreaterThan(timing.connectStart)
+            assertThat(timing.firstByteStart).isGreaterThan(timing.connectStart + timing.connectDuration)
+            assertThat(timing.downloadStart).isGreaterThan(timing.firstByteStart + timing.firstByteDuration)
             assertThat(timing.sslDuration).isLessThan(timing.connectDuration)
-            assertThat(timing.firstByteStart)
-                .isGreaterThan(timing.connectStart + timing.connectDuration)
-            assertThat(timing.downloadStart)
-                .isGreaterThan(timing.firstByteStart + timing.firstByteDuration)
+
+            // All durations are consistent
+            assertThat(timing.dnsDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.connectDuration).isLessThan((SHORT_SLEEP_NS * 3) + MARGIN_NS)
+            assertThat(timing.firstByteDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.downloadDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
         }
     }
 
     @Test
-    fun `𝕄 doNothing 𝕎 call without RumMonitor`() {
+    fun `M doNothing W call without RumMonitor`() {
         // Given
         GlobalRumMonitor.reset()
 
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(10)
+        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
         // Then
@@ -389,7 +407,14 @@ internal class DatadogEventListenerTest {
     }
 
     companion object {
-        val TWENTY_MILLIS_NS = TimeUnit.MILLISECONDS.toNanos(20)
+        private const val SHORT_SLEEP_MS = 5L
+
+        private val SHORT_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(SHORT_SLEEP_MS)
+
+        // Because the threading can be random sometimes, we need a margin for our timing assertions
+        // If the tests turn flaky again, we can increase this value
+        // TODO RUM-3845 let the DatdogEventListener use the SDKCore's time info to have more reliable assertions
+        private val MARGIN_NS = TimeUnit.MILLISECONDS.toNanos(60)
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 

@@ -84,7 +84,7 @@ internal class FileEventBatchWriterTest {
     // region write
 
     @Test
-    fun `𝕄 write event 𝕎 write()`(
+    fun `M write event W write()`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
@@ -119,7 +119,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write() {empty array}`(
+    fun `M do nothing W write() {empty array}`(
         @StringForgery batchMetadata: String
     ) {
         // Given
@@ -139,7 +139,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() {item is too big}`(
+    fun `M return false W write() {item is too big}`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
@@ -166,7 +166,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() {write operation failed}`(
+    fun `M return false W write() {write operation failed}`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String,
         @Forgery batchFile: File
@@ -183,7 +183,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 not write metadata 𝕎 write() {no available file}`(
+    fun `M not write metadata W write() {no available file}`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
@@ -211,7 +211,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 not write metadata 𝕎 write() {null or empty metadata}`(
+    fun `M not write metadata W write() {null or empty metadata}`(
         @Forgery batchEvent: RawBatchEvent,
         forge: Forge
     ) {
@@ -234,7 +234,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 not write metadata 𝕎 write() {item is too big}`(
+    fun `M not write metadata W write() {item is too big}`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
@@ -253,7 +253,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 not write metadata 𝕎 write() {write operation failed}`(
+    fun `M not write metadata W write() {write operation failed}`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
@@ -273,7 +273,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 log warning 𝕎 write() {write metadata failed}`(
+    fun `M log warning W write() {write metadata failed}`(
         @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
@@ -307,7 +307,7 @@ internal class FileEventBatchWriterTest {
     // region currentMetadata
 
     @Test
-    fun `𝕄 not read metadata 𝕎 currentMetadata() {no available file}`() {
+    fun `M not read metadata W currentMetadata() {no available file}`() {
         // Given
         testedWriter = FileEventBatchWriter(
             batchFile = fakeBatchFile,
@@ -327,7 +327,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 not read metadata 𝕎 currentMetadata() { file doesn't exist }`() {
+    fun `M not read metadata W currentMetadata() { file doesn't exist }`() {
         // Given
         val metaFile = mock<File>().apply {
             whenever(exists()) doReturn false
@@ -351,7 +351,7 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 read metadata 𝕎 currentMetadata()`(
+    fun `M read metadata W currentMetadata()`(
         @StringForgery fakeMetadata: String,
         @TempDir fakeMetadataDir: File,
         forge: Forge

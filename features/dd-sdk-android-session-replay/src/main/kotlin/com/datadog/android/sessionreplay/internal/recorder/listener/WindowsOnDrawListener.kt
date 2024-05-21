@@ -10,6 +10,13 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
+import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
@@ -21,8 +28,14 @@ internal class WindowsOnDrawListener(
     zOrderedDecorViews: List<View>,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
+    private val privacy: SessionReplayPrivacy,
     private val debouncer: Debouncer = Debouncer(),
-    private val miscUtils: MiscUtils = MiscUtils
+    private val miscUtils: MiscUtils = MiscUtils,
+    private val sdkCore: SdkCore = Datadog.getInstance(),
+    private val sessionReplayFeature: FeatureScope? = (sdkCore as FeatureSdkCore).getFeature(
+        Feature.SESSION_REPLAY_FEATURE_NAME
+    ),
+    private val methodCallTelemetrySamplingRate: Float = METHOD_CALL_SAMPLING_RATE
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
@@ -58,10 +71,19 @@ internal class WindowsOnDrawListener(
             RecordedDataQueueRefs(recordedDataQueueHandler)
         recordedDataQueueRefs.recordedDataQueueItem = item
 
+        val performanceMetric = sessionReplayFeature?.startPerformanceMeasure(
+            callerClass = this.javaClass.name,
+            metric = TelemetryMetricType.MethodCalled,
+            samplingRate = methodCallTelemetrySamplingRate
+        )
+
         val nodes = views
             .mapNotNull {
-                snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
+                snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
             }
+
+        val isSuccessful = nodes.isNotEmpty()
+        performanceMetric?.stopAndSend(isSuccessful)
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
@@ -76,5 +98,9 @@ internal class WindowsOnDrawListener(
 
     private fun resolveContext(views: List<View>): Context? {
         return views.firstOrNull()?.context
+    }
+
+    private companion object {
+        private const val METHOD_CALL_SAMPLING_RATE = 5f
     }
 }

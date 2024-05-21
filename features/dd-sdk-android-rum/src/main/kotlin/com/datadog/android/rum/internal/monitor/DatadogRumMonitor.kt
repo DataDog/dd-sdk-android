@@ -49,7 +49,6 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -69,7 +68,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    internal val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    internal val executorService: ExecutorService
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -362,6 +361,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun addFeatureFlagEvaluations(featureFlags: Map<String, Any>) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluations(featureFlags)
+        )
+    }
+
     override fun stopSession() {
         handleEvent(
             RumRawEvent.StopSession()
@@ -433,6 +438,8 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
+        val now = Time()
+        val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -441,6 +448,8 @@ internal class DatadogRumMonitor(
                 stacktrace = null,
                 isFatal = true,
                 threads = threads,
+                timeSinceAppStartNs = timeSinceAppStartNs,
+                eventTime = now,
                 attributes = emptyMap()
             )
         )
@@ -526,7 +535,8 @@ internal class DatadogRumMonitor(
 
     override fun sendErrorTelemetryEvent(
         message: String,
-        throwable: Throwable?
+        throwable: Throwable?,
+        additionalProperties: Map<String, Any?>?
     ) {
         val stack: String? = throwable?.loggableStackTrace()
         val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
@@ -537,7 +547,7 @@ internal class DatadogRumMonitor(
                 stack = stack,
                 kind = kind,
                 coreConfiguration = null,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
         )
     }
@@ -545,7 +555,8 @@ internal class DatadogRumMonitor(
     override fun sendErrorTelemetryEvent(
         message: String,
         stack: String?,
-        kind: String?
+        kind: String?,
+        additionalProperties: Map<String, Any?>?
     ) {
         handleEvent(
             RumRawEvent.SendTelemetry(
@@ -554,7 +565,7 @@ internal class DatadogRumMonitor(
                 stack = stack,
                 kind = kind,
                 coreConfiguration = null,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
         )
     }
@@ -626,7 +637,7 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)

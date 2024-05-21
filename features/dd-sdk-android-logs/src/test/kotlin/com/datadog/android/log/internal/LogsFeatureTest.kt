@@ -176,7 +176,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize data writer 𝕎 initialize()`() {
+    fun `M initialize data writer W initialize()`() {
         // When
         testedFeature.onInitialize(mockApplicationContext)
 
@@ -186,7 +186,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the eventMapper 𝕎 initialize()`() {
+    fun `M use the eventMapper W initialize()`() {
         // When
         testedFeature.onInitialize(mockApplicationContext)
 
@@ -200,7 +200,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize packageName 𝕎 initialize()`() {
+    fun `M initialize packageName W initialize()`() {
         // When
         testedFeature.onInitialize(mockApplicationContext)
 
@@ -209,21 +209,21 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide logs feature name 𝕎 name()`() {
+    fun `M provide logs feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
             .isEqualTo(Feature.LOGS_FEATURE_NAME)
     }
 
     @Test
-    fun `𝕄 provide logs request factory 𝕎 requestFactory()`() {
+    fun `M provide logs request factory W requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
             .isInstanceOf(LogsRequestFactory::class.java)
     }
 
     @Test
-    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+    fun `M provide default storage configuration W storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)
@@ -288,7 +288,7 @@ internal class LogsFeatureTest {
     // region FeatureEventReceiver#onReceive + unknown
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
+    fun `M log warning and do nothing W onReceive() { unknown event type }`() {
         // Given
         testedFeature.dataWriter = mockDataWriter
 
@@ -317,7 +317,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown type property value }`(
+    fun `M log warning and do nothing W onReceive() { unknown type property value }`(
         forge: Forge
     ) {
         // Given
@@ -353,7 +353,7 @@ internal class LogsFeatureTest {
     // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { JVM crash }`(
+    fun `M write crash log event W onReceive() { JVM crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -405,6 +405,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -426,7 +427,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write feature attributes to crash log event 𝕎 onReceive() { JVM crash }`(
+    fun `M write feature attributes to crash log event W onReceive() { JVM crash }`(
         @StringForgery fakeKey: String,
         @StringForgery fakeValue: String,
         forge: Forge
@@ -469,7 +470,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event and wait 𝕎 onReceive() { JVM crash }`(
+    fun `M write crash log event and wait W onReceive() { JVM crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -529,6 +530,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -550,7 +552,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 not wait forever for crash log write 𝕎 onReceive() { JVM crash, timeout }`(
+    fun `M not wait forever for crash log write W onReceive() { JVM crash, timeout }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -591,7 +593,7 @@ internal class LogsFeatureTest {
 
     @ParameterizedTest
     @EnumSource(ValueMissingType::class)
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { corrupted mandatory fields, NDK crash }`(
+    fun `M log warning and do nothing W onReceive() { corrupted mandatory fields, NDK crash }`(
         missingType: ValueMissingType,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
@@ -646,7 +648,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { NDK crash }`(
+    fun `M write crash log event W onReceive() { NDK crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -681,6 +683,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -693,7 +696,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { NDK crash, explicit network info }`(
+    fun `M write crash log event W onReceive() { NDK crash, explicit network info }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -730,6 +733,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -742,7 +746,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { NDK crash, explicit user info }`(
+    fun `M write crash log event W onReceive() { NDK crash, explicit user info }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -779,6 +783,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasUserInfo(fakeUserInfo)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -796,7 +801,7 @@ internal class LogsFeatureTest {
 
     @ParameterizedTest
     @EnumSource(ValueMissingType::class)
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { corrupted mandatory fields, span log }`(
+    fun `M log warning and do nothing W onReceive() { corrupted mandatory fields, span log }`(
         missingType: ValueMissingType,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
@@ -850,7 +855,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write span log event 𝕎 onReceive() { span log }`(
+    fun `M write span log event W onReceive() { span log }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -885,6 +890,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

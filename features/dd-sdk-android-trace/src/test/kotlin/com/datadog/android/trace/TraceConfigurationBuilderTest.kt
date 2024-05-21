@@ -49,7 +49,7 @@ internal class TraceConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use sensible defaults 𝕎 build()`() {
+    fun `M use sensible defaults W build()`() {
         // When
         val traceConfiguration = testedBuilder.build()
 
@@ -60,7 +60,7 @@ internal class TraceConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build configuration with custom site 𝕎 useCustomEndpoint() and build()`(
+    fun `M build configuration with custom site W useCustomEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com") tracesEndpointUrl: String
     ) {
         // When
@@ -73,7 +73,7 @@ internal class TraceConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build configuration with Span eventMapper 𝕎 setEventMapper() and build()`() {
+    fun `M build configuration with Span eventMapper W setEventMapper() and build()`() {
         // Given
         val mockEventMapper = mock<SpanEventMapper>()
 

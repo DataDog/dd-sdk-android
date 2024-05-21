@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.okhttp.internal.utils.identifyRequest
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
-import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -60,7 +60,7 @@ internal class DatadogEventListenerFactoryTest {
     }
 
     @Test
-    fun `𝕄 create event listener 𝕎 create()`() {
+    fun `M create event listener W create()`() {
         // When
         val result = testedFactory.create(mockCall)
 
@@ -70,7 +70,7 @@ internal class DatadogEventListenerFactoryTest {
     }
 
     @Test
-    fun `𝕄 create no-op event listener 𝕎 create() { SDK instance is not ready }`(
+    fun `M create no-op event listener W create() { SDK instance is not ready }`(
         @StringForgery fakeSdkInstanceName: String
     ) {
         // When

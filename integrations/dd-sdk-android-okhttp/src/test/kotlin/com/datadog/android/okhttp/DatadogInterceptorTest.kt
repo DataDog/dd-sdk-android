@@ -10,11 +10,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.utils.identifyRequest
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -177,7 +177,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request}`(
+    fun `M start and stop RUM Resource W intercept() {successful request}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -217,7 +217,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request, unknown method}`(
+    fun `M start and stop RUM Resource W intercept() {successful request, unknown method}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery fakeMethod: String,
         forge: Forge
@@ -268,7 +268,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request + not sampled}`(
+    fun `M start and stop RUM Resource W intercept() {successful request + not sampled}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -306,7 +306,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request empty response}`(
+    fun `M start and stop RUM Resource W intercept() {successful request empty response}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -354,7 +354,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request null response body}`(
+    fun `M start and stop RUM Resource W intercept() {successful request null response body}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -401,7 +401,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request empty response + !smp}`(
+    fun `M start and stop RUM Resource W intercept() {successful request empty response + !smp}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -447,7 +447,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request null response body + !smp}`(
+    fun `M start and stop RUM Resource W intercept() {successful request null response body + !smp}`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -492,7 +492,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request throwing response}`(
+    fun `M start and stop RUM Resource W intercept() {successful request throwing response}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
@@ -553,7 +553,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {success request throwing response + !smp}`(
+    fun `M start and stop RUM Resource W intercept() {success request throwing response + !smp}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
@@ -612,7 +612,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {failing request}`(
+    fun `M start and stop RUM Resource W intercept() {failing request}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         // Given
@@ -652,7 +652,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {failing request + not sampled}`(
+    fun `M start and stop RUM Resource W intercept() {failing request + not sampled}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         // Given
@@ -690,7 +690,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {throwing request}`(
+    fun `M start and stop RUM Resource W intercept() {throwing request}`(
         @Forgery throwable: Throwable
     ) {
         // Given

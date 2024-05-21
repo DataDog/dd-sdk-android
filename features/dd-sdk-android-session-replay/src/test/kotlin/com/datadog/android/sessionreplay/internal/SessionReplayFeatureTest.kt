@@ -10,12 +10,12 @@ import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.sessionreplay.NoOpRecorder
-import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
+import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
+import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
@@ -97,7 +97,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize writer 𝕎 initialize()`() {
+    fun `M initialize writer W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -107,7 +107,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize session replay recorder 𝕎 initialize()`() {
+    fun `M initialize session replay recorder W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -127,7 +127,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 update feature context for telemetry 𝕎 initialize()`() {
+    fun `M update feature context for telemetry W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -159,7 +159,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 set the feature event receiver 𝕎 initialize()`() {
+    fun `M set the feature event receiver W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -226,6 +226,41 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M stop all the recorders in the recorder W stopRecording()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+
+        // When
+        testedFeature.stopRecording()
+
+        // Then
+        verify(mockRecorder).stopRecorders()
+    }
+
+    @Test
+    fun `M update the isEnabled flag into the context W stopRecording()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+
+        // When
+        testedFeature.stopRecording()
+
+        // Then
+        argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
+            val updatedContext = mutableMapOf<String, Any?>()
+            verify(mockSdkCore, times(3)).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+            allValues.forEach { it.invoke(updatedContext) }
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_ENABLED_KEY])
+                .isEqualTo(false)
+        }
+    }
+
+    @Test
     fun `M do nothing W stopRecording() { was already stopped }`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -269,6 +304,25 @@ internal class SessionReplayFeatureTest {
         // Then
         verify(mockRecorder, times(2))
             .resumeRecorders()
+    }
+
+    @Test
+    fun `M update the isEnabled flag into the context W startRecording()`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+
+        // Then
+        argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
+            val updatedContext = mutableMapOf<String, Any?>()
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+            allValues.forEach { it.invoke(updatedContext) }
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_ENABLED_KEY])
+                .isEqualTo(true)
+        }
     }
 
     @Test
@@ -735,7 +789,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
+    fun `M log warning and do nothing W onReceive() { unknown event type }`() {
         // When
         testedFeature.onReceive(Any())
 
@@ -753,7 +807,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown type property value }`(
+    fun `M log warning and do nothing W onReceive() { unknown type property value }`(
         forge: Forge
     ) {
         // Given
@@ -778,7 +832,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing mandatory fields }`() {
+    fun `M log warning and do nothing W onReceive() { missing mandatory fields }`() {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -799,7 +853,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing keep  state field }`() {
+    fun `M log warning and do nothing W onReceive() { missing keep  state field }`() {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -821,7 +875,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing session id field }`(
+    fun `M log warning and do nothing W onReceive() { missing session id field }`(
         @BoolForgery fakeKeep: Boolean
     ) {
         // Given
@@ -845,7 +899,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { mandatory fields have wrong format }`(
+    fun `M log warning and do nothing W onReceive() { mandatory fields have wrong format }`(
         forge: Forge
     ) {
         // Given
@@ -872,21 +926,21 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide session replay feature name 𝕎 name()`() {
+    fun `M provide session replay feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
             .isEqualTo(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
     }
 
     @Test
-    fun `𝕄 provide Session Replay request factory 𝕎 requestFactory()`() {
+    fun `M provide Session Replay request factory W requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
             .isInstanceOf(SegmentRequestFactory::class.java)
     }
 
     @Test
-    fun `𝕄 provide custom storage configuration 𝕎 storageConfiguration()`() {
+    fun `M provide custom storage configuration W storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(SessionReplayFeature.STORAGE_CONFIGURATION)

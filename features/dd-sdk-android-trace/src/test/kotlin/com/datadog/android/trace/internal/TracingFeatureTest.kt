@@ -73,7 +73,7 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize opentracing writer 𝕎 initialize()`() {
+    fun `M initialize opentracing writer W initialize()`() {
         // When
         testedFeature.onInitialize(mock())
 
@@ -88,7 +88,7 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize otel writer 𝕎 initialize()`() {
+    fun `M initialize otel writer W initialize()`() {
         // When
         testedFeature.onInitialize(mock())
 
@@ -103,7 +103,7 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the eventMapper for opentracing writer 𝕎 initialize()`() {
+    fun `M use the eventMapper for opentracing writer W initialize()`() {
         // When
         testedFeature.onInitialize(mock())
 
@@ -115,7 +115,7 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the eventMapper for otel writer 𝕎 initialize()`() {
+    fun `M use the eventMapper for otel writer W initialize()`() {
         // When
         testedFeature.onInitialize(mock())
 
@@ -127,14 +127,14 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide tracing feature name 𝕎 name()`() {
+    fun `M provide tracing feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
             .isEqualTo(Feature.TRACING_FEATURE_NAME)
     }
 
     @Test
-    fun `𝕄 provide tracing request factory 𝕎 requestFactory()`() {
+    fun `M provide tracing request factory W requestFactory()`() {
         // Given
         testedFeature.onInitialize(mock())
 
@@ -144,7 +144,7 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+    fun `M provide default storage configuration W storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)

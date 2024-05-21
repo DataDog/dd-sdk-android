@@ -5,6 +5,7 @@
  */
 package com.datadog.android.sample
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
@@ -12,6 +13,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -43,6 +46,7 @@ import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
@@ -151,6 +155,7 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
+            .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
         SessionReplay.enable(sessionReplayConfig)
@@ -254,6 +259,7 @@ class SampleApplication : Application() {
             .build()
     }
 
+    @SuppressLint("LogNotTimber")
     private fun createDatadogConfiguration(): Configuration {
         val configBuilder = Configuration.Builder(
             clientToken = BuildConfig.DD_CLIENT_TOKEN,
@@ -269,6 +275,15 @@ class SampleApplication : Application() {
         } catch (e: IllegalArgumentException) {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
+
+        configBuilder.setBackpressureStrategy(
+            BackPressureStrategy(
+                32,
+                { Log.w("BackPressure", "THRESHOLD REACHED!") },
+                { Log.e("BackPressure", "ITEM DROPPED $it!") },
+                BackPressureMitigation.IGNORE_NEWEST
+            )
+        )
 
         return configBuilder.build()
     }

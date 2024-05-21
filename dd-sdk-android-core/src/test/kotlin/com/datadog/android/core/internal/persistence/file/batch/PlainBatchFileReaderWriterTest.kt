@@ -67,7 +67,7 @@ internal class PlainBatchFileReaderWriterTest {
     // region writeData
 
     @Test
-    fun `𝕄 write data in empty file 𝕎 writeData() {append=false}`(
+    fun `M write data in empty file W writeData() {append=false}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent
     ) {
@@ -88,7 +88,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 write data in empty file  𝕎 writeData() {append=true}`(
+    fun `M write data in empty file  W writeData() {append=true}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent
     ) {
@@ -109,7 +109,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 overwrite data in non empty file 𝕎 writeData() {append=false}`(
+    fun `M overwrite data in non empty file W writeData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
         @Forgery event: RawBatchEvent
@@ -131,7 +131,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 append data in non empty file 𝕎 writeData() {append=true}`(
+    fun `M append data in non empty file W writeData() {append=true}`(
         @StringForgery fileName: String,
         @Forgery previousEvent: RawBatchEvent,
         @Forgery event: RawBatchEvent
@@ -156,7 +156,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return false and warn 𝕎 writeData() {parent dir does not exist}`(
+    fun `M return false and warn W writeData() {parent dir does not exist}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean
@@ -184,7 +184,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return false and warn 𝕎 writeData() {file is not file}`(
+    fun `M return false and warn W writeData() {file is not file}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean
@@ -215,7 +215,7 @@ internal class PlainBatchFileReaderWriterTest {
     // region readData
 
     @Test
-    fun `𝕄 return empty list and warn 𝕎 readData() {file does not exist}`(
+    fun `M return empty list and warn W readData() {file does not exist}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -237,7 +237,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return empty list and warn 𝕎 readData() {file is not file}`(
+    fun `M return empty list and warn W readData() {file is not file}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -258,7 +258,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return empty list and warn user 𝕎 readData() { corrupted data }`(
+    fun `M return empty list and warn user W readData() { corrupted data }`(
         @StringForgery fileName: String,
         @StringForgery content: String
     ) {
@@ -279,7 +279,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return valid events read so far and warn 𝕎 readData() { stream cutoff }`(
+    fun `M return valid events read so far and warn W readData() { stream cutoff }`(
         @StringForgery fileName: String,
         forge: Forge
     ) {
@@ -309,7 +309,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return valid events read so far and warn 𝕎 readData() { unexpected block type }`(
+    fun `M return valid events read so far and warn W readData() { unexpected block type }`(
         @StringForgery fileName: String,
         @Forgery events: List<RawBatchEvent>,
         forge: Forge
@@ -363,7 +363,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 readData() { single event }`(
+    fun `M return file content W readData() { single event }`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent
     ) {
@@ -379,7 +379,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 readData() { multiple events }`(
+    fun `M return file content W readData() { multiple events }`(
         @StringForgery fileName: String,
         @Forgery events: List<RawBatchEvent>
     ) {
@@ -399,7 +399,7 @@ internal class PlainBatchFileReaderWriterTest {
     // region writeData + readData
 
     @Test
-    fun `𝕄 return file content 𝕎 writeData + readData() { append = false }`(
+    fun `M return file content W writeData + readData() { append = false }`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent
     ) {
@@ -416,7 +416,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 writeData + readData() { append = true }`(
+    fun `M return file content W writeData + readData() { append = true }`(
         @StringForgery fileName: String,
         @Forgery events: List<RawBatchEvent>
     ) {
@@ -444,7 +444,7 @@ internal class PlainBatchFileReaderWriterTest {
     // region Reading older formats
 
     @Test
-    fun `𝕄 return file content 𝕎 readData() { 2-2-0 and earlier }`() {
+    fun `M return file content W readData() { 2-2-0 and earlier }`() {
         // 2.3.0 release is changing the way we are handling metadata, so we need to make sure
         // that we are backward compatible with data written earlier
 

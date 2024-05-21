@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.material.forge
 
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.MappingContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
@@ -16,7 +16,8 @@ internal class MappingContextForgeryFactory : ForgeryFactory<MappingContext> {
         return MappingContext(
             systemInformation = forge.getForgery(),
             imageWireframeHelper = mock(),
-            hasOptionSelectorParent = forge.aBool()
+            hasOptionSelectorParent = forge.aBool(),
+            privacy = forge.getForgery()
         )
     }
 }

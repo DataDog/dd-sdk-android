@@ -23,10 +23,10 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
@@ -52,9 +52,9 @@ import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGestures
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
-import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -73,7 +73,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -82,10 +81,8 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import java.lang.RuntimeException
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -269,6 +266,7 @@ internal class RumFeature(
         when (event["type"]) {
             NDK_CRASH_BUS_MESSAGE_TYPE ->
                 lateCrashEventHandler.handleNdkCrashEvent(event, dataWriter)
+
             LOGGER_ERROR_BUS_MESSAGE_TYPE -> addLoggerError(event)
             LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE -> addLoggerErrorWithStacktrace(event)
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
@@ -393,7 +391,7 @@ internal class RumFeature(
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, sdkCore.internalLogger)
+        vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
 
         initializeVitalMonitor(
             CPUVitalReader(internalLogger = sdkCore.internalLogger),
@@ -438,7 +436,7 @@ internal class RumFeature(
 
     private fun initializeANRDetector() {
         val detectorRunnable = ANRDetectorRunnable(sdkCore, Handler(Looper.getMainLooper()))
-        anrDetectorExecutorService = Executors.newSingleThreadExecutor()
+        anrDetectorExecutorService = sdkCore.createSingleThreadExecutorService("rum-anr-detection")
         anrDetectorExecutorService?.executeSafe(
             "ANR detection",
             sdkCore.internalLogger,
@@ -517,10 +515,13 @@ internal class RumFeature(
         val throwable = telemetryEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
         val stack = telemetryEvent[EVENT_STACKTRACE_PROPERTY] as? String
         val kind = telemetryEvent["kind"] as? String
+
+        @Suppress("UNCHECKED_CAST")
+        val additionalProperties = telemetryEvent[EVENT_ADDITIONAL_PROPERTIES] as? Map<String, Any?>
         if (throwable != null) {
-            telemetry.error(message, throwable)
+            telemetry.error(message, throwable, additionalProperties)
         } else {
-            telemetry.error(message, stack, kind)
+            telemetry.error(message, stack, kind, additionalProperties)
         }
     }
 
@@ -635,15 +636,12 @@ internal class RumFeature(
             additionalConfig = emptyMap()
         )
 
-        internal val startupTimeNs: Long = System.nanoTime()
-
         internal const val EVENT_MESSAGE_PROPERTY = "message"
         internal const val EVENT_ADDITIONAL_PROPERTIES = "additionalProperties"
         internal const val EVENT_THROWABLE_PROPERTY = "throwable"
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
 
-        internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =

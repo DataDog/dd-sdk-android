@@ -6,10 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 
 internal class FixedLengthStringObfuscator : StringObfuscator {
     override fun obfuscate(stringValue: String): String {
-        return TextViewMapper.STATIC_MASK
+        return TextViewMapper.FIXED_INPUT_MASK
     }
 }

@@ -53,6 +53,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ResourceRecordedDataQueueItemForgeryFactory())
         forge.addFactory(TouchEventRecordedDataQueueItemForgeryFactory())
         forge.addFactory(WireframeBoundsForgeryFactory())
+        forge.addFactory(WebViewWireframeForgeryFactory())
 
         forge.useJvmFactories()
     }

@@ -13,6 +13,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
  * FOR INTERNAL USAGE ONLY.
  */
 @SuppressWarnings("UndocumentedPublicFunction")
+@InternalApi
 interface AdvancedNetworkRumMonitor {
 
     @InternalApi

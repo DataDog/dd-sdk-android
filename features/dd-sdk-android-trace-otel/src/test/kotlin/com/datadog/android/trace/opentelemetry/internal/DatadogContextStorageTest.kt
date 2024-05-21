@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import com.datadog.android.trace.opentelemetry.OtelContext
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.context.Scope

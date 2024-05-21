@@ -19,10 +19,11 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
+import com.datadog.android.rum.internal.utils.resolveViewUrl
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -36,10 +37,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -50,6 +54,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(ForgeExtension::class),
@@ -87,6 +93,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    lateinit var mockScheduledExecutorService: ScheduledExecutorService
+
     // region Strategy tests
 
     @BeforeEach
@@ -103,6 +112,17 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         ) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.LOLLIPOP
+        whenever(rumMonitor.mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
+        whenever(
+            mockScheduledExecutorService.schedule(
+                any(),
+                ArgumentMatchers.eq(AndroidXFragmentLifecycleCallbacks.STOP_VIEW_DELAY_MS),
+                ArgumentMatchers.eq(TimeUnit.MILLISECONDS)
+            )
+        ) doAnswer { invocationOnMock ->
+            (invocationOnMock.arguments[0] as Runnable).run()
+            null
+        }
 
         testedStrategy = FragmentViewTrackingStrategy(
             trackArguments = true,
@@ -599,7 +619,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     override fun createUnequalInstance(
         source: FragmentViewTrackingStrategy,
         forge: Forge
-    ): FragmentViewTrackingStrategy? {
+    ): FragmentViewTrackingStrategy {
         return FragmentViewTrackingStrategy(
             if (forge.aBool()) {
                 !source.trackArguments

@@ -12,7 +12,7 @@ import com.datadog.android.rum.model.ViewEvent
 /**
  * An interface which can be implemented to modify the writable attributes inside ViewEvent.
  */
-interface ViewEventMapper : EventMapper<ViewEvent> {
+fun interface ViewEventMapper : EventMapper<ViewEvent> {
     /**
      * By implementing this method you can intercept and modify the writable
      * attributes inside any event [ViewEvent] before it gets serialised.

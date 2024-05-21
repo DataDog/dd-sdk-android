@@ -13,6 +13,7 @@ import okhttp3.HttpUrl
  * Interface to be implemented by the class which wants to check if the given url is first party
  * and if there is any tracing header types associated with it.
  */
+@Suppress("PackageNameVisibility") // Can't mark it as @InternalApi as it would apply to implementations as well
 interface FirstPartyHostHeaderTypeResolver {
 
     /**

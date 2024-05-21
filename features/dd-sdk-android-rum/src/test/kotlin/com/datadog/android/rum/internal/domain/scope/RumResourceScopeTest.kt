@@ -234,7 +234,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource event 𝕎 handleEvent(StopResource)`(
+    fun `M send Resource event W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -276,7 +276,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -303,7 +302,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 add first party type provider to Resource 𝕎 handleEvent(StopResource)`(
+    fun `M add first party type provider to Resource W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -345,7 +344,6 @@ internal class RumResourceScopeTest {
                     hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasUserSession()
                     hasNoSyntheticsTest()
@@ -374,7 +372,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use the url for provider domain 𝕎 handleEvent(StopResource) { url is broken }`(
+    fun `M use the url for provider domain W handleEvent(StopResource) { url is broken }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -430,7 +428,6 @@ internal class RumResourceScopeTest {
                     hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasUserSession()
                     hasNoSyntheticsTest()
@@ -459,7 +456,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource with trace info 𝕎 handleEvent(StopResource)`(
+    fun `M send Resource with trace info W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -508,7 +505,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -535,7 +531,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource with initial context 𝕎 handleEvent(StopResource)`(
+    fun `M send Resource with initial context W handleEvent(StopResource)`(
         @Forgery context: RumContext,
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
@@ -579,7 +575,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -606,7 +601,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource with synthetics info context 𝕎 handleEvent(StopResource)`(
+    fun `M send Resource with synthetics info context W handleEvent(StopResource)`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         @Forgery kind: RumResourceKind,
@@ -668,7 +663,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -695,7 +689,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with user extra attributes 𝕎 handleEvent(StopResource)`(
+    fun `M send event with user extra attributes W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long
@@ -730,7 +724,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -757,7 +750,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 do not send error event 𝕎 handleEvent(StopResource with error statusCode)`(
+    fun `M do not send error event W handleEvent(StopResource with error statusCode)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(400, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long
@@ -780,7 +773,6 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasUserSession()
                     hasNoSyntheticsTest()
@@ -810,7 +802,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 not send related error event 𝕎 handleEvent(StopResource with success statusCode)`(
+    fun `M not send related error event W handleEvent(StopResource with success statusCode)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 399) statusCode: Long,
         @LongForgery(0, 1024) size: Long
@@ -831,7 +823,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 not send related error event 𝕎 handleEvent(StopResource with missing statusCode)`(
+    fun `M not send related error event W handleEvent(StopResource with missing statusCode)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(0, 1024) size: Long
     ) {
@@ -851,7 +843,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource with initial global attributes 𝕎 handleEvent(StopResource)`(
+    fun `M send Resource with initial global attributes W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -910,7 +902,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -937,7 +928,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource with global attributes 𝕎 handleEvent(StopResource)`(
+    fun `M send Resource with global attributes W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -982,7 +973,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -1009,7 +999,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource with timing 𝕎 handleEvent(AddResourceTiming+StopResource)`(
+    fun `M send Resource with timing W handleEvent(AddResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -1055,7 +1045,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -1083,7 +1072,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource 𝕎 handleEvent(AddResourceTiming+StopResource) {unrelated timing}`(
+    fun `M send Resource W handleEvent(AddResourceTiming+StopResource) {unrelated timing}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -1129,7 +1118,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -1157,7 +1145,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error 𝕎 handleEvent(StopResourceWithError)`(
+    fun `M send Error W handleEvent(StopResourceWithError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1201,9 +1189,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1223,6 +1211,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1231,7 +1220,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with fingerprint 𝕎 handleEvent(StopResourceWithError) { contains fingerprint }`(
+    fun `M send Error with fingerprint W handleEvent(StopResourceWithError) { contains fingerprint }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1282,7 +1271,6 @@ internal class RumResourceScopeTest {
                     hasUserSession()
                     hasErrorFingerprint(fakeFingerprint)
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1310,7 +1298,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error 𝕎 handleEvent(StopResourceWithStackTrace)`(
+    fun `M send Error W handleEvent(StopResourceWithStackTrace)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stackTrace: String,
@@ -1356,9 +1344,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1377,6 +1365,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1385,7 +1374,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with synthetics info 𝕎 handleEvent(StopResourceWithError)`(
+    fun `M send Error with synthetics info W handleEvent(StopResourceWithError)`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         @StringForgery message: String,
@@ -1448,9 +1437,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1470,6 +1459,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1478,7 +1468,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with synthetics info 𝕎 handleEvent(StopResourceWithStackTrace)`(
+    fun `M send Error with synthetics info W handleEvent(StopResourceWithStackTrace)`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         @StringForgery message: String,
@@ -1543,9 +1533,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1564,6 +1554,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1572,7 +1563,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use the url for domain 𝕎 handleEvent(StopResourceWithError) { broken url }`(
+    fun `M use the url for domain W handleEvent(StopResourceWithError) { broken url }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1633,9 +1624,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1655,6 +1646,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1663,7 +1655,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use the url for domain 𝕎 handleEvent(StopResourceWithStacktrace){ broken url }`(
+    fun `M use the url for domain W handleEvent(StopResourceWithStacktrace){ broken url }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stackTrace: String,
@@ -1726,9 +1718,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1747,6 +1739,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1755,7 +1748,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 add first party type provider to Error 𝕎 handleEvent(StopResourceWithError)`(
+    fun `M add first party type provider to Error W handleEvent(StopResourceWithError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1803,9 +1796,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1825,6 +1818,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1833,7 +1827,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 add first party type provider to Error 𝕎 handleEvent(StopResourceWithStackTrace)`(
+    fun `M add first party type provider to Error W handleEvent(StopResourceWithStackTrace)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stackTrace: String,
@@ -1882,9 +1876,9 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1903,6 +1897,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1911,7 +1906,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with initial context 𝕎 handleEvent(StopResourceWithError)`(
+    fun `M send Error with initial context W handleEvent(StopResourceWithError)`(
         @Forgery context: RumContext,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -1957,10 +1952,10 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1980,6 +1975,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1988,7 +1984,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with initial context 𝕎 handleEvent(StopResourceWithStackTrace)`(
+    fun `M send Error with initial context W handleEvent(StopResourceWithStackTrace)`(
         @Forgery context: RumContext,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -2036,10 +2032,10 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -2058,6 +2054,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2066,7 +2063,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with global attributes 𝕎 handleEvent(StopResourceWithError)`(
+    fun `M send Error with global attributes W handleEvent(StopResourceWithError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
@@ -2118,10 +2115,10 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -2141,6 +2138,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2149,7 +2147,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Error with global attributes 𝕎 handleEvent(StopResourceWithStackTrace)`(
+    fun `M send Error with global attributes W handleEvent(StopResourceWithStackTrace)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
@@ -2202,10 +2200,10 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
+                    hasTimeSinceAppStart(null)
                     hasUserSession()
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -2224,6 +2222,7 @@ internal class RumResourceScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSampleRate(fakeSampleRate)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2232,7 +2231,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopResource) with different key`(
+    fun `M do nothing W handleEvent(StopResource) with different key`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2253,7 +2252,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopResourceWithError) with different key`(
+    fun `M do nothing W handleEvent(StopResourceWithError) with different key`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
@@ -2277,7 +2276,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopResourceWithStackTrace) with different key`(
+    fun `M do nothing W handleEvent(StopResourceWithStackTrace) with different key`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
@@ -2304,7 +2303,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(WaitForResourceTiming+StopResource)`(
+    fun `M do nothing W handleEvent(WaitForResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2328,7 +2327,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource 𝕎 handleEvent(WaitForResourceTiming+StopResource) {unrelated wait}`(
+    fun `M send Resource W handleEvent(WaitForResourceTiming+StopResource) {unrelated wait}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2364,7 +2363,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -2393,7 +2391,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource 𝕎 handleEvent(WaitForResourceTiming+AddResourceTiming+StopResource)`(
+    fun `M send Resource W handleEvent(WaitForResourceTiming+AddResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2432,7 +2430,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -2462,7 +2459,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource 𝕎 handleEvent(WaitForResourceTiming+StopResource+AddResourceTiming)`(
+    fun `M send Resource W handleEvent(WaitForResourceTiming+StopResource+AddResourceTiming)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2502,7 +2499,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -2532,7 +2528,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use explicit timings 𝕎 handleEvent { AddResourceTiming + StopResource }`(
+    fun `M use explicit timings W handleEvent { AddResourceTiming + StopResource }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2561,7 +2557,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use attributes timings 𝕎 handleEvent { StopResource without AddResourceTiming  }`(
+    fun `M use attributes timings W handleEvent { StopResource without AddResourceTiming  }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2621,7 +2617,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     hasSource(fakeSourceResourceEvent)
@@ -2689,7 +2684,6 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
                     hasSource(fakeSourceResourceEvent)
@@ -2721,7 +2715,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use graphql attributes 𝕎 handleEvent`(
+    fun `M use graphql attributes W handleEvent`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2755,7 +2749,7 @@ internal class RumResourceScopeTest {
     // region write notification
 
     @Test
-    fun `𝕄 notify about success 𝕎 handleEvent() { resource write succeeded }`(
+    fun `M notify about success W handleEvent() { resource write succeeded }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2775,7 +2769,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent() { resource write failed }`(
+    fun `M notify about error W handleEvent() { resource write failed }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2796,7 +2790,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent() { resource write throws }`(
+    fun `M notify about error W handleEvent() { resource write throws }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -2819,7 +2813,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about success 𝕎 handleEvent() { error write succeeded }`(
+    fun `M notify about success W handleEvent() { error write succeeded }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -2847,7 +2841,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent() { error write failed }`(
+    fun `M notify about error W handleEvent() { error write failed }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -2876,7 +2870,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 notify about error 𝕎 handleEvent() { error write throws }`(
+    fun `M notify about error W handleEvent() { error write throws }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,

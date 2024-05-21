@@ -14,6 +14,7 @@ import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.datadog.android.api.InternalLogger
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
@@ -22,7 +23,7 @@ import androidx.annotation.RequiresApi
 @RequiresApi(Build.VERSION_CODES.Q)
 open class AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper() {
 
-    override fun resolveGradientDrawable(drawable: GradientDrawable): Int? {
+    override fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
         @Suppress("SwallowedException")
         val fillPaint = try {
             fillPaintField?.get(drawable) as? Paint
@@ -42,7 +43,7 @@ open class AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper() {
             null
         } else {
             if (colorFilter != null) {
-                fillColor = resolveBlendModeColorFilter(fillColor, colorFilter)
+                fillColor = resolveBlendModeColorFilter(fillColor, colorFilter, internalLogger)
             }
             mergeColorAndAlpha(fillColor, fillAlpha)
         }
@@ -56,15 +57,38 @@ open class AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper() {
      */
     private fun resolveBlendModeColorFilter(
         fillColor: Int,
-        colorFilter: ColorFilter
+        colorFilter: ColorFilter,
+        internalLogger: InternalLogger
     ): Int {
         return if (colorFilter is BlendModeColorFilter) {
             when (colorFilter.mode) {
                 in blendModesReturningBlendColor -> colorFilter.color
                 in blendModesReturningOriginalColor -> fillColor
-                else -> fillColor
+                else -> {
+                    internalLogger.log(
+                        level = InternalLogger.Level.INFO,
+                        target = InternalLogger.Target.TELEMETRY,
+                        messageBuilder = { "No mapper found for gradient blend mode ${colorFilter.mode}" },
+                        throwable = null,
+                        onlyOnce = true,
+                        additionalProperties = mapOf(
+                            "replay.gradient.blend_mode" to colorFilter.mode
+                        )
+                    )
+                    fillColor
+                }
             }
         } else {
+            internalLogger.log(
+                level = InternalLogger.Level.INFO,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { "No mapper found for gradient color filter ${colorFilter.javaClass}" },
+                throwable = null,
+                onlyOnce = true,
+                additionalProperties = mapOf(
+                    "replay.gradient.filter_type" to colorFilter.javaClass.canonicalName
+                )
+            )
             fillColor
         }
     }

@@ -7,21 +7,23 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
+import android.view.ViewGroup
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueableViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
 
 internal class TreeViewTraversal(
-    private val mappers: List<MapperTypeWrapper>,
-    private val viewMapper: ViewWireframeMapper,
-    private val decorViewMapper: DecorViewMapper,
-    private val viewUtilsInternal: ViewUtilsInternal
+    private val mappers: List<MapperTypeWrapper<*>>,
+    private val defaultViewMapper: WireframeMapper<View>,
+    private val decorViewMapper: WireframeMapper<View>,
+    private val viewUtilsInternal: ViewUtilsInternal,
+    private val internalLogger: InternalLogger
 ) {
 
     @Suppress("ReturnCount")
@@ -38,25 +40,40 @@ internal class TreeViewTraversal(
 
         val traversalStrategy: TraversalStrategy
         val resolvedWireframes: List<MobileSegment.Wireframe>
+        val noOpCallback = NoOpAsyncJobStatusCallback()
 
         // try to resolve from the exhaustive type mappers
-        val mapper = mappers.findFirstForType(view::class.java)
+        val mapper = findMapperForView(view)
 
         if (mapper != null) {
-            val queueableViewMapper =
-                QueueableViewMapper(mapper, recordedDataQueueRefs)
+            val queueStatusCallback = QueueStatusCallback(recordedDataQueueRefs)
             traversalStrategy = if (mapper is TraverseAllChildrenMapper) {
                 TraversalStrategy.TRAVERSE_ALL_CHILDREN
             } else {
                 TraversalStrategy.STOP_AND_RETURN_NODE
             }
-            resolvedWireframes = queueableViewMapper.map(view, mappingContext)
+            resolvedWireframes = mapper.map(view, mappingContext, queueStatusCallback, internalLogger)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = decorViewMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
-        } else {
+            resolvedWireframes = decorViewMapper.map(view, mappingContext, noOpCallback, internalLogger)
+        } else if (view is ViewGroup) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = viewMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
+            resolvedWireframes = defaultViewMapper.map(view, mappingContext, noOpCallback, internalLogger)
+        } else {
+            traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
+            resolvedWireframes = defaultViewMapper.map(view, mappingContext, noOpCallback, internalLogger)
+            val viewType = view.javaClass.canonicalName ?: view.javaClass.name
+
+            internalLogger.log(
+                level = InternalLogger.Level.INFO,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { "No mapper found for view $viewType" },
+                throwable = null,
+                onlyOnce = true,
+                additionalProperties = mapOf(
+                    "replay.widget.type" to viewType
+                )
+            )
         }
 
         return TraversedTreeView(resolvedWireframes, traversalStrategy)
@@ -68,21 +85,12 @@ internal class TreeViewTraversal(
         return !View::class.java.isAssignableFrom(viewParent.javaClass)
     }
 
-    private fun List<MapperTypeWrapper>.findFirstForType(type: Class<*>): WireframeMapper<View, *>? {
-        return firstOrNull {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            it.type.isAssignableFrom(type)
-        }?.mapper
+    private fun findMapperForView(view: View): WireframeMapper<View>? {
+        return mappers.firstOrNull { it.supportsView(view) }?.getUnsafeMapper()
     }
 
     data class TraversedTreeView(
         val mappedWireframes: List<MobileSegment.Wireframe>,
         val nextActionStrategy: TraversalStrategy
     )
-}
-
-internal enum class TraversalStrategy {
-    TRAVERSE_ALL_CHILDREN,
-    STOP_AND_RETURN_NODE,
-    STOP_AND_DROP_NODE
 }

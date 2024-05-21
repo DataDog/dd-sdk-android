@@ -62,7 +62,7 @@ internal class FileMoverTest {
     // region delete
 
     @Test
-    fun `𝕄 delete file 𝕎 delete()`(
+    fun `M delete file W delete()`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -78,7 +78,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 delete folder recursively 𝕎 delete()`(
+    fun `M delete folder recursively W delete()`(
         @StringForgery dirName: String,
         @StringForgery fileName: String,
         @IntForgery(1, 64) fileCount: Int
@@ -99,7 +99,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 delete folder recursively 𝕎 delete() {nested dirs}`(
+    fun `M delete folder recursively W delete() {nested dirs}`(
         @StringForgery dirName: String,
         @StringForgery fileName: String,
         @IntForgery(1, 10) fileCount: Int
@@ -129,7 +129,7 @@ internal class FileMoverTest {
     // region moveFiles
 
     @Test
-    fun `𝕄 return true and warn 𝕎 moveFiles() {source dir does not exist}`() {
+    fun `M return true and warn W moveFiles() {source dir does not exist}`() {
         // Given
         assumeFalse(fakeSrcDir.exists())
         fakeDstDir.mkdirs()
@@ -147,7 +147,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 return false and warn 𝕎 moveFiles() {source dir is not a dir}`() {
+    fun `M return false and warn W moveFiles() {source dir is not a dir}`() {
         // Given
         fakeSrcDir.createNewFile()
         fakeDstDir.mkdirs()
@@ -165,7 +165,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 return false and warn 𝕎 moveFiles() {dest dir is not a dir}`() {
+    fun `M return false and warn W moveFiles() {dest dir is not a dir}`() {
         // Given
         fakeSrcDir.mkdirs()
         fakeDstDir.createNewFile()
@@ -183,7 +183,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 move all files and return true 𝕎 moveFiles()`(
+    fun `M move all files and return true W moveFiles()`(
         @StringForgery fileNames: List<String>
     ) {
         // Given
@@ -209,7 +209,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 do nothing and return true 𝕎 moveFiles() {source dir is empty}`() {
+    fun `M do nothing and return true W moveFiles() {source dir is empty}`() {
         // Given
         fakeSrcDir.mkdirs()
         fakeDstDir.mkdirs()
@@ -224,7 +224,7 @@ internal class FileMoverTest {
     }
 
     @Test
-    fun `𝕄 create dest, move all files and return true 𝕎 moveFiles() {dest dir does not exist}`(
+    fun `M create dest, move all files and return true W moveFiles() {dest dir does not exist}`(
         @StringForgery fileNamesInput: List<String>
     ) {
         // Given

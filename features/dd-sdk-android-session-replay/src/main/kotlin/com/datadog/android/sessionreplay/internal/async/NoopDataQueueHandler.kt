@@ -6,8 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 
 internal class NoopDataQueueHandler : DataQueueHandler {
     override fun addResourceItem(

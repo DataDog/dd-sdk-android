@@ -50,20 +50,22 @@ internal class ANRDetectorRunnable(
                     if (!callback.wasCalled()) {
                         val anrThread = handler.looper.thread
                         val anrException = ANRException(anrThread)
-                        val allThreads = safeGetAllStacktraces()
+                        val allThreads = mutableListOf(
+                            ThreadDump(
+                                name = anrThread.name,
+                                state = anrThread.state.asString(),
+                                stack = anrException.loggableStackTrace(),
+                                crashed = false
+                            )
+                        ) + safeGetAllStacktraces()
+                            .filterKeys { it != anrThread }
                             .filterValues { it.isNotEmpty() }
                             .map {
                                 val thread = it.key
-                                val isAnrThread = thread == anrThread
-                                val stack = if (isAnrThread) {
-                                    anrException.loggableStackTrace()
-                                } else {
-                                    thread.stackTrace.loggableStackTrace()
-                                }
                                 ThreadDump(
                                     name = thread.name,
                                     state = thread.state.asString(),
-                                    stack = stack,
+                                    stack = thread.stackTrace.loggableStackTrace(),
                                     crashed = false
                                 )
                             }

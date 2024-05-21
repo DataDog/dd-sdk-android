@@ -12,7 +12,6 @@ object com.datadog.android.Datadog
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
-  constructor(String, String)
   - US1
   - US3
   - US5
@@ -20,7 +19,6 @@ enum com.datadog.android.DatadogSite
   - AP1
   - US1_FED
   - STAGING
-  constructor(String)
   val intakeEndpoint: String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
@@ -56,7 +54,7 @@ interface com.datadog.android.api.SdkCore
   fun addUserProperties(Map<String, Any?>)
   fun clearAllData()
 data class com.datadog.android.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
   constructor(String, String, String, DeviceType, String, String, String, String, String)
 enum com.datadog.android.api.context.DeviceType
@@ -96,13 +94,17 @@ interface com.datadog.android.api.feature.Feature
     const val RUM_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
+    const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
+interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
+  fun onContextUpdate(String, Map<String, Any?>)
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
+  fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float): com.datadog.android.core.metrics.PerformanceMetric?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
@@ -110,7 +112,11 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
+  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
+  fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
+  fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -148,6 +154,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   val lastViewEvent: com.google.gson.JsonObject?
   val lastFatalAnrSent: Long?
+  val appStartTimeNs: Long
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)
@@ -158,6 +165,11 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+enum com.datadog.android.core.configuration.BackPressureMitigation
+  - DROP_OLDEST
+  - IGNORE_NEWEST
+data class com.datadog.android.core.configuration.BackPressureStrategy
+  constructor(Int, () -> Unit, (Any) -> Unit, BackPressureMitigation)
 enum com.datadog.android.core.configuration.BatchProcessingLevel
   constructor(Int)
   - LOW
@@ -184,6 +196,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setEncryption(com.datadog.android.security.Encryption): Builder
     fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
     fun setCrashReportsEnabled(Boolean): Builder
+    fun setBackpressureStrategy(BackPressureStrategy): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -236,9 +249,6 @@ interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
   val version: Int
   companion object 
     val DEFAULT: BuildSdkVersionProvider
-class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
-  constructor(Int, com.datadog.android.api.InternalLogger)
-  override fun afterExecute(Runnable?, Throwable?)
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
@@ -247,13 +257,30 @@ val NULL_MAP_VALUE: Object
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
-const val HEX_RADIX: Int
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+class com.datadog.android.core.metrics.MethodCalledTelemetry : PerformanceMetric
+  constructor(String, com.datadog.android.api.InternalLogger, Long = System.nanoTime())
+  override fun stopAndSend(Boolean)
+  companion object 
+    const val METHOD_CALLED_METRIC_NAME: String
+    const val METRIC_TYPE_VALUE: String
+    const val OPERATION_NAME: String
+    const val CALLER_CLASS: String
+    const val IS_SUCCESSFUL: String
+    const val EXECUTION_TIME: String
+    const val METHOD_CALL_OPERATION_NAME: String
+interface com.datadog.android.core.metrics.PerformanceMetric
+  fun stopAndSend(Boolean)
+  companion object 
+    const val METRIC_TYPE: String
+    fun startMetric(com.datadog.android.api.InternalLogger, String, TelemetryMetricType, Float = 100.0f): PerformanceMetric?
+enum com.datadog.android.core.metrics.TelemetryMetricType
+  - MethodCalled
 interface com.datadog.android.core.persistence.PersistenceStrategy
   interface Factory
     fun create(String, Int, Long): PersistenceStrategy
@@ -279,6 +306,10 @@ class com.datadog.android.core.sampling.RateBasedSampler : Sampler
 interface com.datadog.android.core.sampling.Sampler
   fun sample(): Boolean
   fun getSampleRate(): Float?
+interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
+  fun drainTo(MutableCollection<Runnable>)
+  interface Factory
+    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
@@ -356,3 +387,4 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3MULTI
   - TRACECONTEXT
 annotation com.datadog.tools.annotation.NoOpImplementation
+  constructor(Boolean = false)

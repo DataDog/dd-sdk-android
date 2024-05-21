@@ -55,9 +55,10 @@ android {
         }
     }
 
-    packagingOptions {
-        exclude("META-INF/LICENSE.md")
-        exclude("META-INF/LICENSE-notice.md")
+    packaging {
+        resources {
+            excludes.addAll(listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"))
+        }
     }
 }
 

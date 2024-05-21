@@ -6,7 +6,7 @@
 
 package com.datadog.android.api
 
-import com.datadog.android.core.SdkInternalLogger
+import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**

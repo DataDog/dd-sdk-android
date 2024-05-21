@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
@@ -77,12 +78,18 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
-        assertThat(resolvedWireframes)
-            .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        } else {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe)
+        }
     }
 
     @Test
@@ -124,12 +131,18 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
-        assertThat(resolvedWireframes)
-            .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        } else {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe)
+        }
     }
 
     @Test
@@ -144,15 +157,32 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             )
         ).thenReturn(null)
         whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
+        val expectedThumbWidth = normalizedThumbWidth - normalizedThumbRightPadding - normalizedThumbLeftPadding
+        val expectedTrackWidth = expectedThumbWidth * 2
+        val expectedTrackHeight = normalizedTrackHeight - normalizedThumbRightPadding - normalizedThumbLeftPadding
+        val expectedTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeTrackIdentifier,
+            x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width - expectedTrackWidth,
+            y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - expectedTrackHeight) / 2,
+            width = expectedTrackWidth,
+            height = expectedTrackHeight,
+            border = null,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = fakeCurrentTextColorString,
+                mockSwitch.alpha
+            )
+        )
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
-        assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
+        assertThat(resolvedWireframes)
+            .isEqualTo(fakeTextWireframes + expectedTrackWireframe)
     }
 }

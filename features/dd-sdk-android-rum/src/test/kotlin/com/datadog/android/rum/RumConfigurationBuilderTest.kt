@@ -15,13 +15,13 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
@@ -68,7 +68,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use sensible defaults 𝕎 build()`() {
+    fun `M use sensible defaults W build()`() {
         // When
         val rumConfiguration = testedBuilder.build()
 
@@ -105,7 +105,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use applicationId provided 𝕎 build()`() {
+    fun `M use applicationId provided W build()`() {
         // When
         val rumConfiguration = testedBuilder.build()
 
@@ -114,7 +114,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with custom endpoint 𝕎 useCustomEndpoint() and build()`(
+    fun `M build config with custom endpoint W useCustomEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
     ) {
         // When
@@ -129,7 +129,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 disable user action tracking W disableUserInteractionTracking()`() {
+    fun `M disable user action tracking W disableUserInteractionTracking()`() {
         // Given
 
         // When
@@ -145,7 +145,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 bundle the custom attributes providers W trackInteractions()`(
+    fun `M bundle the custom attributes providers W trackInteractions()`(
         @IntForgery(0, 10) attributesCount: Int
     ) {
         // Given
@@ -167,7 +167,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use the custom predicate 𝕎 trackInteractions()`() {
+    fun `M use the custom predicate W trackInteractions()`() {
         // Given
         val mockInteractionPredicate: InteractionPredicate = mock()
 
@@ -185,7 +185,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use the NoOpInteractionPredicate 𝕎 trackInteractions() { predicate not provided }`() {
+    fun `M use the NoOpInteractionPredicate W trackInteractions() { predicate not provided }`() {
         // When
         val rumConfiguration = testedBuilder
             .trackUserInteractions()
@@ -200,7 +200,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with long tasks enabled 𝕎 trackLongTasks() and build()`(
+    fun `M build config with long tasks enabled W trackLongTasks() and build()`(
         @LongForgery(1L, 65536L) durationMs: Long
     ) {
         // Given
@@ -219,7 +219,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with long tasks disabled 𝕎 trackLongTasks() and build()`(
+    fun `M build config with long tasks disabled W trackLongTasks() and build()`(
         @LongForgery(0L, 65536L) durationMs: Long
     ) {
         // Given
@@ -238,7 +238,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with view strategy enabled 𝕎 useViewTrackingStrategy() and build()`() {
+    fun `M build config with view strategy enabled W useViewTrackingStrategy() and build()`() {
         // Given
         val strategy: ViewTrackingStrategy = mock()
 
@@ -259,7 +259,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config without view strategy 𝕎 useViewTrackingStrategy(null) and build()`() {
+    fun `M build config without view strategy W useViewTrackingStrategy(null) and build()`() {
         // When
         val rumConfiguration = testedBuilder
             .useViewTrackingStrategy(null)
@@ -274,7 +274,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with sample rate 𝕎 setSessionSampleRate() and build()`(
+    fun `M build config with sample rate W setSessionSampleRate() and build()`(
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
         // When
@@ -291,7 +291,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with sample rate 𝕎 telemetrySampleRate() and build()`(
+    fun `M build config with sample rate W telemetrySampleRate() and build()`(
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
         // When
@@ -308,7 +308,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with background event 𝕎 trackBackgroundEvents() and build()`(
+    fun `M build config with background event W trackBackgroundEvents() and build()`(
         @BoolForgery backgroundEventEnabled: Boolean
     ) {
         // When
@@ -325,7 +325,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with track non-fatal ANRs 𝕎 trackNonFatalAnrs() and build()`(
+    fun `M build config with track non-fatal ANRs W trackNonFatalAnrs() and build()`(
         @BoolForgery trackNonFatalAnrsEnabled: Boolean
     ) {
         // When
@@ -342,7 +342,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM View eventMapper 𝕎 setViewEventMapper() and build()`() {
+    fun `M build config with RUM View eventMapper W setViewEventMapper() and build()`() {
         // Given
         val eventMapper: ViewEventMapper = mock()
 
@@ -360,7 +360,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Resource eventMapper 𝕎 setResourceEventMapper() & build()`() {
+    fun `M build config with RUM Resource eventMapper W setResourceEventMapper() & build()`() {
         // Given
         val eventMapper: EventMapper<ResourceEvent> = mock()
 
@@ -378,7 +378,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Action eventMapper 𝕎 setActionEventMapper() and build()`() {
+    fun `M build config with RUM Action eventMapper W setActionEventMapper() and build()`() {
         // Given
         val eventMapper: EventMapper<ActionEvent> = mock()
 
@@ -396,7 +396,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Error eventMapper 𝕎 setErrorEventMapper() and build()`() {
+    fun `M build config with RUM Error eventMapper W setErrorEventMapper() and build()`() {
         // Given
         val eventMapper: EventMapper<ErrorEvent> = mock()
 
@@ -414,7 +414,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM LongTask eventMapper 𝕎 setLongTaskEventMapper() & build()`() {
+    fun `M build config with RUM LongTask eventMapper W setLongTaskEventMapper() & build()`() {
         // Given
         val eventMapper: EventMapper<LongTaskEvent> = mock()
 
@@ -432,7 +432,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use the given frequency 𝕎 setVitalsMonitorUpdateFrequency`(
+    fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(
         @Forgery fakeFrequency: VitalsUpdateFrequency
     ) {
         // When
@@ -447,7 +447,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 use track frustration flag 𝕎 trackFrustrations`(
+    fun `M use track frustration flag W trackFrustrations`(
         @BoolForgery fakeTrackFrustrations: Boolean
     ) {
         // When
@@ -462,7 +462,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 log warning 𝕎 builder with missing application ID`(
+    fun `M log warning W builder with missing application ID`(
         @BoolForgery fakeTrackFrustrations: Boolean
     ) {
         // When
@@ -477,7 +477,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Telemetry eventMapper 𝕎 setTelemetryConfigurationEventMapper()`() {
+    fun `M build config with RUM Telemetry eventMapper W setTelemetryConfigurationEventMapper()`() {
         // Given
         val eventMapper: EventMapper<TelemetryConfigurationEvent> = mock()
 
@@ -495,7 +495,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 apply configuration telemetry sample rate W applyAdditionalConfig(config) { with sample rate }`(
+    fun `M apply configuration telemetry sample rate W applyAdditionalConfig(config) { with sample rate }`(
         @FloatForgery(0.0f, 100.0f) sampleRate: Float
     ) {
         // When
@@ -511,7 +511,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 set a session listener W setSessionListener()`() {
+    fun `M set a session listener W setSessionListener()`() {
         // Given
         val mockSessionListener = mock<RumSessionListener>()
 

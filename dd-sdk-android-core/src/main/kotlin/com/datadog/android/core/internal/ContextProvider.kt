@@ -9,11 +9,13 @@ package com.datadog.android.core.internal
 import com.datadog.android.api.context.DatadogContext
 
 internal interface ContextProvider {
-    // TODO RUMM-0000 getting context may be quite heavy, should it be something non-blocking here?
-    // TODO RUMM-0000 lifecycle checks may be needed for the cases when context is requested
+    // TODO RUM-3784 getting context may be quite heavy, should it be something non-blocking here?
+
+    // TODO RUM-3784 lifecycle checks may be needed for the cases when context is requested
     //  when datadog is not initialized yet/anymore (case of UploadWorker, other calls site
     //  should be in sync with lifecycle)
-    // TODO RUMM-0000 can be accessed from different threads
+
+    // TODO RUM-3784 can be accessed from different threads
     val context: DatadogContext
 
     fun setFeatureContext(feature: String, context: Map<String, Any?>)

@@ -39,6 +39,7 @@ internal class VitalsFragment :
         rootView.findViewById<CheckBox>(R.id.vital_cpu).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_slow_frame_rate).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_memory).setOnCheckedChangeListener(this)
+        rootView.findViewById<CheckBox>(R.id.vital_stress_test).setOnCheckedChangeListener(this)
         badView = rootView.findViewById(R.id.vital_slow_view)
         progressView = rootView.findViewById(R.id.progress)
         return rootView
@@ -79,12 +80,18 @@ internal class VitalsFragment :
             R.id.vital_cpu -> {
                 viewModel.toggleHeavyComputation(isChecked)
             }
+
             R.id.vital_slow_frame_rate -> {
                 badView.setSlow(isChecked)
                 viewModel.toggleForegroundTasks(isChecked)
             }
+
             R.id.vital_memory -> {
                 viewModel.toggleMemory(isChecked)
+            }
+
+            R.id.vital_stress_test -> {
+                viewModel.toggleStressTest(isChecked)
             }
         }
     }

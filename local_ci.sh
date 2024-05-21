@@ -59,7 +59,7 @@ if [[ $SETUP == 1 ]]; then
   if [[ -x "$(command -v ktlint)" ]]; then
       echo "  KtLint already installed; version $(ktlint --version)"
   else
-    curl -SLO https://github.com/pinterest/ktlint/releases/download/0.47.1/ktlint && chmod a+x ktlint
+    curl -SLO https://github.com/pinterest/ktlint/releases/download/0.50.0/ktlint && chmod a+x ktlint
     sudo mv ktlint /usr/local/bin/
     echo "  KtLint installed; version $(ktlint --version)"
   fi
@@ -127,14 +127,14 @@ if [[ $ANALYSIS == 1 ]]; then
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries"
-    ./gradlew assembleLibraries
+    ./gradlew assembleLibrariesDebug
     ./gradlew printSdkDebugRuntimeClasspath
     classpath=$(cat sdk_classpath)
 
     echo "------ Build Detekt custom rules"
     ./gradlew :tools:detekt:jar
 
-    # TODO RUMM-3263 Switch to Java 17 bytecode
+    # TODO RUM-628 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
     detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
@@ -171,13 +171,13 @@ if [[ $COMPILE == 1 ]]; then
   echo "-- COMPILATION"
 
   echo "---- Assemble Libraries"
-  ./gradlew assembleLibraries
+  ./gradlew assembleLibrariesDebug
 
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest
 
-  echo "---- Assemble Android tests"
-  ./gradlew :instrumented:nightly-tests:assembleDebugAndroidTest :instrumented:integration:assembleDebugAndroidTest
+  echo "---- Assemble Android Instrumentation APKs"
+  ./gradlew :instrumented:integration:assembleDebugAndroidTest
 fi
 
 if [[ $TEST == 1 ]]; then

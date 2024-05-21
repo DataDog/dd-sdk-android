@@ -10,6 +10,8 @@ import android.widget.NumberPicker
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -22,7 +24,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseNumberPickerMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedNumberPickerMapper: BasePickerMapper
 
@@ -134,14 +136,14 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
-                BaseWireframeMapper.OPAQUE_ALPHA_VALUE
+                OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedSelectedLabelHtmlColor)
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
-                BasePickerMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
+                PARTIALLY_OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedNextPrevLabelHtmlColor)
@@ -205,7 +207,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             .thenReturn(null)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()
@@ -224,7 +231,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             .thenReturn(null)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()
@@ -243,7 +255,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             .thenReturn(null)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEmpty()

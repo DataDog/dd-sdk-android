@@ -22,7 +22,6 @@ plugins {
 
     // Tests
     id("de.mobilej.unmock")
-    id("org.jetbrains.kotlinx.kover")
 }
 
 android {

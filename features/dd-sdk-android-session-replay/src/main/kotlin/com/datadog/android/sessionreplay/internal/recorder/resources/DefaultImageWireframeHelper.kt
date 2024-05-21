@@ -15,10 +15,10 @@ import android.widget.TextView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -26,7 +26,7 @@ import java.util.Locale
 
 // This should not have a callback but it should just create a placeholder for resourceResolver
 // The resourceResolver dependency should be removed from here
-// TODO: RUM-0000 Remove the resourceResolver dependency from here
+// TODO RUM-3795 Remove the resourceResolver dependency from here
 internal class DefaultImageWireframeHelper(
     private val logger: InternalLogger,
     private val resourceResolver: ResourceResolver,
@@ -160,7 +160,7 @@ internal class DefaultImageWireframeHelper(
                     pixelsDensity = density,
                     position = compoundDrawablePosition
                 )
-                @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
+                @Suppress("ThreadSafety") // TODO RUM-1462 caller thread of .map is unknown?
                 createImageWireframe(
                     view = textView,
                     currentWireframeIndex = ++wireframeIndex,

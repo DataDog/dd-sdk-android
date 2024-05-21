@@ -70,7 +70,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompiler.get()
     }
 
     testOptions {

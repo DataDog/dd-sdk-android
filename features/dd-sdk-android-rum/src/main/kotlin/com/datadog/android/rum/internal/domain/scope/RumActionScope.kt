@@ -15,9 +15,9 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.utils.hasUserData
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.utils.hasUserData
-import com.datadog.android.rum.utils.newRumEventWriteOperation
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -81,6 +81,7 @@ internal class RumActionScope(
             event is RumRawEvent.SendCustomActionNow -> sendAction(lastInteractionNanos, writer)
             event is RumRawEvent.StartView -> onStartView(now, writer)
             event is RumRawEvent.StopView -> onStopView(now, writer)
+            event is RumRawEvent.StopSession -> onStopSession(now, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now)
             event is RumRawEvent.StartResource -> onStartResource(event, now)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
@@ -117,6 +118,15 @@ internal class RumActionScope(
 
     @WorkerThread
     private fun onStopView(
+        now: Long,
+        writer: DataWriter<Any>
+    ) {
+        ongoingResourceKeys.clear()
+        sendAction(now, writer)
+    }
+
+    @WorkerThread
+    private fun onStopSession(
         now: Long,
         writer: DataWriter<Any>
     ) {
@@ -292,7 +302,6 @@ internal class RumActionScope(
                 context = ActionEvent.Context(additionalProperties = eventAttributes),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
-                        plan = ActionEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)

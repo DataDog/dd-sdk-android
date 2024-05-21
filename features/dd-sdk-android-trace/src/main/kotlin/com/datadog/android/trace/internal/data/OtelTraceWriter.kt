@@ -39,7 +39,7 @@ internal class OtelTraceWriter(
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
-                // TODO: RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
+                // TODO RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
                 trace.forEach { span ->
                     @Suppress("ThreadSafety") // called in the worker context
                     writeSpan(datadogContext, eventBatchWriter, span)

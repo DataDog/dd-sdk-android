@@ -22,10 +22,10 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.utils.hasUserData
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.utils.hasUserData
-import com.datadog.android.rum.utils.newRumEventWriteOperation
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
@@ -281,7 +281,6 @@ internal class RumResourceScope(
                     spanId = spanId,
                     rulePsr = rulePsr,
                     session = ResourceEvent.DdSession(
-                        plan = ResourceEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toResourceSessionPrecondition()
                     ),
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
@@ -365,6 +364,7 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = eventTimestamp,
                 error = ErrorEvent.Error(
                     message = message,
@@ -425,7 +425,6 @@ internal class RumResourceScope(
                 context = ErrorEvent.Context(additionalProperties = eventAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        plan = ErrorEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)

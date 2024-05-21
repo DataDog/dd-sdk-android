@@ -81,7 +81,7 @@ internal class BatchFileDataReaderTest {
     // region lockAndReadNext
 
     @Test
-    fun `𝕄 read batch 𝕎 lockAndReadNext()`(
+    fun `M read batch W lockAndReadNext()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File
     ) {
@@ -107,7 +107,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 lockAndReadNext() {no file}`() {
+    fun `M return null W lockAndReadNext() {no file}`() {
         // Given
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn null
 
@@ -123,7 +123,7 @@ internal class BatchFileDataReaderTest {
     // region release
 
     @Test
-    fun `𝕄 read batch twice 𝕎 lockAndReadNext() + release() + lockAndReadNext()`(
+    fun `M read batch twice W lockAndReadNext() + release() + lockAndReadNext()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File
     ) {
@@ -153,7 +153,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 read batch twice 𝕎 lockAndReadNext() + release() + lockAndReadNext() {multithreaded}`(
+    fun `M read batch twice W lockAndReadNext() + release() + lockAndReadNext() {multithreaded}`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File
     ) {
@@ -194,7 +194,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 read batch once 𝕎 lockAndReadNext() + release() {diff} + lockAndReadNext()`(
+    fun `M read batch once W lockAndReadNext() + release() {diff} + lockAndReadNext()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File
     ) {
@@ -224,7 +224,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 read and release multiple batches 𝕎 lockAndReadNext() + release() { multithreaded }`(
+    fun `M read and release multiple batches W lockAndReadNext() + release() { multithreaded }`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file1: File,
         @Forgery file2: File,
@@ -264,7 +264,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 release() unknown file`(
+    fun `M warn W release() unknown file`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -286,7 +286,7 @@ internal class BatchFileDataReaderTest {
     // region drop
 
     @Test
-    fun `𝕄 delete underlying file+meta 𝕎 lockAndReadNext() + dropBatch()`(
+    fun `M delete underlying file+meta W lockAndReadNext() + dropBatch()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File,
         forge: Forge
@@ -314,7 +314,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 lockAndReadNext() + dropBatch() {delete fails}`(
+    fun `M warn W lockAndReadNext() + dropBatch() {delete fails}`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File
     ) {
@@ -340,7 +340,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 drop() unknown file`(
+    fun `M warn W drop() unknown file`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -362,7 +362,7 @@ internal class BatchFileDataReaderTest {
     // region dropAll
 
     @Test
-    fun `𝕄 delete underlying file 𝕎 lockAndReadNext() + dropAll()`(
+    fun `M delete underlying file W lockAndReadNext() + dropAll()`(
         @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File,
         forge: Forge
@@ -391,7 +391,7 @@ internal class BatchFileDataReaderTest {
     }
 
     @Test
-    fun `𝕄 delete all files+meta 𝕎 lockAndReadNext() + dropAll()`(
+    fun `M delete all files+meta W lockAndReadNext() + dropAll()`(
         @Forgery file1: File,
         @Forgery file2: File,
         @Forgery file3: File,

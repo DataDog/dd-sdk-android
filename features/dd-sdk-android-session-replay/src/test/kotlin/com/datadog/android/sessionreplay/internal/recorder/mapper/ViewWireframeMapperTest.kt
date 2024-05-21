@@ -39,7 +39,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
+internal class ViewWireframeMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedWireframeMapper: ViewWireframeMapper
 
@@ -59,8 +59,9 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         )
     }
 
+    // TODO flaky ?!
     @Test
-    fun `M resolve a ShapeWireframe W map()`(forge: Forge) {
+    fun `M resolve nothing W map() { no drawable }`(forge: Forge) {
         // Given
         val mockView: View = forge.aMockView()
         whenever(
@@ -72,20 +73,15 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         whenever(mockViewIdentifierResolver.resolveViewId(mockView)) doReturn fakeWireframeId
 
         // When
-        val wireframes = testedWireframeMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedWireframeMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
-        assertThat(wireframes.size).isEqualTo(1)
-        val wireframe = wireframes.first()
-
-        assertThat(wireframe.id).isEqualTo(fakeWireframeId)
-        assertThat(wireframe.x).isEqualTo(fakeBounds.x)
-        assertThat(wireframe.y).isEqualTo(fakeBounds.y)
-        assertThat(wireframe.width).isEqualTo(fakeBounds.width)
-        assertThat(wireframe.height).isEqualTo(fakeBounds.height)
-        assertThat(wireframe.clip).isNull()
-        assertThat(wireframe.shapeStyle).isNull()
-        assertThat(wireframe.border).isNull()
+        assertThat(wireframes).isEmpty()
     }
 
     @Test
@@ -107,13 +103,19 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
                 fakeMappingContext.systemInformation.screenDensity
             )
         ) doReturn fakeBounds
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable)) doReturn fakeBackgroundColor
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger))
+            .doReturn(fakeBackgroundColor)
         whenever(mockColorStringFormatter.formatColorAsHexString(fakeBackgroundColor))
             .doReturn(fakeBackgroundColorString)
         whenever(mockViewIdentifierResolver.resolveViewId(mockView)) doReturn fakeWireframeId
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback)
+        val shapeWireframes = testedWireframeMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         val expectedWireframe = MobileSegment.Wireframe.ShapeWireframe(

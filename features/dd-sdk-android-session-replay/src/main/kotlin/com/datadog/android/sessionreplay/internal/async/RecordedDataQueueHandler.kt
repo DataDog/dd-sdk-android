@@ -12,9 +12,9 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import java.lang.ClassCastException
 import java.lang.NullPointerException
 import java.util.Locale
@@ -52,7 +52,7 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         internalLogger = internalLogger,
 
         /**
-         * TODO: RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
+         * TODO RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
          * if we ever decide to make the poolsize greater than 1, we need to ensure
          * synchronization works correctly in the triggerProcessingLoop method below
          */

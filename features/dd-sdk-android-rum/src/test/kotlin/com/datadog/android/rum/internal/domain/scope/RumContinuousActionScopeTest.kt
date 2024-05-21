@@ -165,7 +165,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {resourceCount != 0}`(
+    fun `M do nothing W handleEvent(any) {resourceCount != 0}`(
         @LongForgery(1) count: Long
     ) {
         // Given
@@ -181,7 +181,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {errorCount != 0}`(
+    fun `M do nothing W handleEvent(any) {errorCount != 0}`(
         @LongForgery(1) count: Long
     ) {
         // Given
@@ -197,7 +197,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {crashCount != 0}`(
+    fun `M do nothing W handleEvent(any) {crashCount != 0}`(
         @LongForgery(1) nonFatalCount: Long,
         @LongForgery(1) fatalCount: Long
     ) {
@@ -215,7 +215,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(any)`() {
+    fun `M send Action after timeout W handleEvent(any)`() {
         // Given
         Thread.sleep(TEST_MAX_DURATION_MS)
 
@@ -243,7 +243,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -272,7 +271,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with updated data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`(
+    fun `M send Action with updated data W handleEvent(StopAction+any) {viewTreeChangeCount!=0}`(
         @StringForgery name: String,
         forge: Forge
     ) {
@@ -311,7 +310,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -340,7 +338,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with original data 𝕎 handleEvent(StopAction) {viewTreeChangeCount!=0}`(
+    fun `M send Action with original data W handleEvent(StopAction) {viewTreeChangeCount!=0}`(
         forge: Forge
     ) {
         // Given
@@ -377,7 +375,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -406,7 +403,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopAction+StopResource+any)`(
+    fun `M send Action after threshold W handleEvent(StartResource+StopAction+StopResource+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -446,7 +443,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -477,7 +473,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
+    fun `M send Action W handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -529,7 +525,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -560,7 +555,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithStackTrace+any)`(
+    fun `M send Action W handleEvent(StartResource+StopAction+StopResourceWithStackTrace+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
@@ -617,7 +612,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasDeviceInfo(
@@ -647,7 +641,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+any) missing resource key`(
+    fun `M send Action W handleEvent(StartResource+StopAction+any) missing resource key`(
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
@@ -686,7 +680,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -716,7 +709,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(AddError+StopAction+any)`(
+    fun `M send Action after threshold W handleEvent(AddError+StopAction+any)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -763,7 +756,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -793,7 +785,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(AddError) {isFatal=true}`(
+    fun `M send Action immediately W handleEvent(AddError) {isFatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -834,7 +826,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -862,7 +853,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(AddError{isFatal=false}+AddError{isFatal=true})`(
+    fun `M send Action immediately W handleEvent(AddError{isFatal=false}+AddError{isFatal=true})`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -913,7 +904,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -942,7 +932,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {viewTreeChangeCount != 0}`() {
+    fun `M send Action immediately W handleEvent(StopView) {viewTreeChangeCount != 0}`() {
         // When
         fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -967,7 +957,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -995,7 +984,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {resourceCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {resourceCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1025,7 +1014,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1053,7 +1041,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {longTaskCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {longTaskCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1083,7 +1071,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1111,7 +1098,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {errorCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {errorCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1146,7 +1133,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1174,7 +1160,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {crashCount != 0}`(
+    fun `M send Action immediately W handleEvent(StopView) {crashCount != 0}`(
         @LongForgery(1, 1024) nonFatalCount: Long,
         @LongForgery(1, 1024) fatalCount: Long
     ) {
@@ -1211,7 +1197,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1239,7 +1224,299 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`() {
+    fun `M send Action immediately W handleEvent(StopSession) {viewTreeChangeCount != 0}`() {
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {resourceCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.resourceCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {longTaskCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.longTaskCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(count)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {errorCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.errorCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(count)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action immediately W handleEvent(StopSession) {crashCount != 0}`(
+        @LongForgery(1, 1024) nonFatalCount: Long,
+        @LongForgery(1, 1024) fatalCount: Long
+    ) {
+        // Given
+        testedScope.errorCount = nonFatalCount + fatalCount
+        testedScope.crashCount = fatalCount
+
+        // When
+        fakeEvent = RumRawEvent.StopSession()
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(nonFatalCount + fatalCount)
+                    hasCrashCount(fatalCount)
+                    hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send Action after threshold W handleEvent(StopAction+any) {viewTreeChangeCount!=0}`() {
         // When
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1267,7 +1544,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1296,7 +1572,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with synthetics info 𝕎 handleEvent(StopAction+any)`(
+    fun `M send Action with synthetics info W handleEvent(StopAction+any)`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         forge: Forge
@@ -1357,7 +1633,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasSyntheticsSession()
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1386,7 +1661,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with initial global attributes 𝕎 handleEvent(StopAction+any)`(
+    fun `M send Action with initial global attributes W handleEvent(StopAction+any)`(
         forge: Forge
     ) {
         // Given
@@ -1440,7 +1715,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1469,7 +1743,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with global attributes after threshold 𝕎 handleEvent(StopAction+any)`(
+    fun `M send Action with global attributes after threshold W handleEvent(StopAction+any)`(
         forge: Forge
     ) {
         // Given
@@ -1508,7 +1782,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1537,7 +1810,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {resourceCount != 0}`(
+    fun `M send Action after threshold W handleEvent(StopAction+any) {resourceCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1570,7 +1843,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1599,7 +1871,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {errorCount != 0}`(
+    fun `M send Action after threshold W handleEvent(StopAction+any) {errorCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
@@ -1636,7 +1908,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1665,7 +1936,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {crashCount != 0}`(
+    fun `M send Action after threshold W handleEvent(StopAction+any) {crashCount != 0}`(
         @LongForgery(1, 1024) nonFatalCount: Long,
         @LongForgery(1, 1024) fatalCount: Long
     ) {
@@ -1703,7 +1974,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1732,7 +2002,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action only once 𝕎 handleEvent(StopAction) + handleEvent(any) twice`() {
+    fun `M send Action only once W handleEvent(StopAction) + handleEvent(any) twice`() {
         // Given
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
@@ -1763,7 +2033,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1794,7 +2063,7 @@ internal class RumContinuousActionScopeTest {
 
     @ParameterizedTest
     @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send Action 𝕎 handleEvent(StopView) {no side effect}`(actionType: RumActionType) {
+    fun `M send Action W handleEvent(StopView) {no side effect}`(actionType: RumActionType) {
         testedScope.type = actionType
 
         // Given
@@ -1827,7 +2096,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1855,7 +2123,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send custom Action immediately 𝕎 handleEvent(StopView) {no side effect}`() {
+    fun `M send custom Action immediately W handleEvent(StopView) {no side effect}`() {
         // Given
         testedScope.type = RumActionType.CUSTOM
         testedScope.resourceCount = 0
@@ -1887,7 +2155,67 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M send Action W handleEvent(StopSession) {no side effect}`(actionType: RumActionType) {
+        testedScope.type = actionType
+
+        // Given
+        testedScope.resourceCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        testedScope.longTaskCount = 0
+        fakeEvent = RumRawEvent.StopSession()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(testedScope.type)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -1915,7 +2243,66 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing after threshold 𝕎 handleEvent(any) {no side effect}`() {
+    fun `M send custom Action immediately W handleEvent(StopSession) {no side effect}`() {
+        // Given
+        testedScope.type = RumActionType.CUSTOM
+        testedScope.resourceCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        testedScope.longTaskCount = 0
+        fakeEvent = RumRawEvent.StopSession()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(RumActionType.CUSTOM)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M do nothing after threshold W handleEvent(any) {no side effect}`() {
         // Given
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
@@ -1932,7 +2319,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) before threshold`() {
+    fun `M do nothing W handleEvent(any) before threshold`() {
         // When
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
@@ -1942,7 +2329,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartResource+any)`(
+    fun `M do nothing W handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -1960,7 +2347,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartResource+StopAction+any)`(
+    fun `M do nothing W handleEvent(StartResource+StopAction+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -1982,7 +2369,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+any)`(
+    fun `M send Action after timeout W handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -2014,7 +2401,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -2043,7 +2429,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+StopAction+any)`(
+    fun `M send Action after timeout W handleEvent(StartResource+StopAction+any)`(
         @StringForgery key: String,
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
@@ -2078,7 +2464,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -2108,7 +2493,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action 𝕎 handleEvent(SendCustomActionNow)`() {
+    fun `M send Action W handleEvent(SendCustomActionNow)`() {
         // When
         testedScope.type = RumActionType.CUSTOM
         val event = RumRawEvent.SendCustomActionNow()
@@ -2136,7 +2521,6 @@ internal class RumContinuousActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
                     hasNoSyntheticsTest()
-                    hasLiteSessionPlan()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)

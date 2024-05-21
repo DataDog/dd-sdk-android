@@ -7,9 +7,11 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -21,15 +23,19 @@ internal class UnsupportedViewMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<View, MobileSegment.Wireframe.PlaceholderWireframe>(
+) : BaseWireframeMapper<View>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
     drawableToColorMapper
 ) {
 
-    override fun map(view: View, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
-        List<MobileSegment.Wireframe.PlaceholderWireframe> {
+    override fun map(
+        view: View,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
+    ): List<MobileSegment.Wireframe> {
         val pixelsDensity = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
 
