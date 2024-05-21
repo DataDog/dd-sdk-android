@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -141,7 +142,7 @@ internal class WebViewReplayEventConsumerTest {
         testedConsumer.consume(fakeValidBrowserEvent)
 
         // Then
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedEvent, EventType.DEFAULT)
     }
 
     @Test

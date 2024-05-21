@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.domain.RumContext
@@ -42,7 +43,7 @@ internal class WebViewReplayEventConsumer(
                 ) {
                     map(event, datadogContext, rumContext)?.let { mappedEvent ->
                         @Suppress("ThreadSafety") // inside worker thread context
-                        dataWriter.write(eventBatchWriter, mappedEvent)
+                        dataWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
                     }
                 }
             }
