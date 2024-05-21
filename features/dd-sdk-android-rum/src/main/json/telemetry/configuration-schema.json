@@ -315,6 +315,25 @@
                   "type": "string",
                   "description": "The version of Unity used in a Unity application",
                   "readOnly": false
+                },
+                "app_hang_threshold": {
+                  "type": "integer",
+                  "description": "The threshold used for iOS App Hangs monitoring (in milliseconds)"
+                },
+                "use_pci_intake": {
+                  "type": "boolean",
+                  "description": "Whether logs are sent to the PCI-compliant intake",
+                  "readOnly": false
+                },
+                "tracer_api": {
+                  "type": "string",
+                  "description": "The tracer API used by the SDK. Possible values: 'Datadog', 'OpenTelemetry', 'OpenTracing'",
+                  "readOnly": false
+                },
+                "tracer_api_version": {
+                  "type": "string",
+                  "description": "The version of the tracer API used by the SDK. Eg. '0.1.0'",
+                  "readOnly": false
                 }
               }
             }

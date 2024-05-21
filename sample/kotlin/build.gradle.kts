@@ -61,6 +61,7 @@ android {
     namespace = "com.datadog.android.sample"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         java17()
     }
 
@@ -148,6 +149,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":features:dd-sdk-android-ndk"))
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
@@ -162,6 +164,9 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+
+    // Desugaring SDK
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
 
     // Sample Vendor Library
     implementation(project(":sample:vendor-lib"))

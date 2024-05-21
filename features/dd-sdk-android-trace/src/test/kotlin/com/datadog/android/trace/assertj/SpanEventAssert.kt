@@ -8,7 +8,12 @@ package com.datadog.android.trace.assertj
 
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.trace.api.DDSpanId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -187,7 +192,6 @@ internal class SpanEventAssert(actual: SpanEvent) :
 
     fun hasMeta(attributes: Map<String, String>): SpanEventAssert {
         assertThat(actual.meta.additionalProperties)
-            .hasSameSizeAs(attributes)
             .containsAllEntriesOf(attributes)
         return this
     }
@@ -299,7 +303,127 @@ internal class SpanEventAssert(actual: SpanEvent) :
         return this
     }
 
+    fun hasSpanLinks(links: List<AgentSpanLink>): SpanEventAssert {
+        if (links.isEmpty()) {
+            assertThat(actual.meta.additionalProperties)
+                .overridingErrorMessage(
+                    "Expected SpanEvent to not have span links but " +
+                        "instead was: ${actual.meta.additionalProperties}"
+                )
+                .doesNotContainKey(CoreTracerSpanToSpanEventMapper.SPAN_LINKS_KEY)
+            return this
+        }
+        val serializedLinks = actual.meta.additionalProperties[CoreTracerSpanToSpanEventMapper.SPAN_LINKS_KEY]
+        val deserializedLinks = JsonParser.parseString(serializedLinks).asJsonArray
+        assertThat(deserializedLinks.size())
+            .overridingErrorMessage(
+                "Expected SpanEvent to have ${links.size} span links but " +
+                    "instead was: ${deserializedLinks.size()}"
+            )
+            .isEqualTo(links.size)
+        links.forEachIndexed { index, link ->
+            val actualLink = deserializedLinks[index].asJsonObject
+            val traceId = link.traceId().toHexString()
+            val spanId = DDSpanId.toHexStringPadded(link.spanId())
+            val traceFlags = link.traceFlags()
+            val traceState = link.traceState()
+            val attributes = link.attributes().asMap()
+            SerializedSpanLinkAssert(actualLink)
+                .hasTraceId(traceId)
+                .hasSpanId(spanId)
+                .hasFlags(traceFlags)
+                .hasTraceState(traceState)
+                .hasAttributes(attributes)
+        }
+        return this
+    }
+
     // endregion
+
+    private class SerializedSpanLinkAssert(actualLink: JsonObject) :
+        AbstractObjectAssert<SerializedSpanLinkAssert, JsonObject>(actualLink, SerializedSpanLinkAssert::class.java) {
+        fun hasTraceId(traceId: String): SerializedSpanLinkAssert {
+            val actualTraceId = actual.get("trace_id").asString
+            assertThat(actualTraceId)
+                .overridingErrorMessage(
+                    "Expected SpanEvent to have span link trace id: " +
+                        "$traceId but " +
+                        "instead was: $actualTraceId"
+                )
+                .isEqualTo(traceId)
+            return this
+        }
+
+        fun hasSpanId(spanId: String): SerializedSpanLinkAssert {
+            val actualSpanId = actual.get("span_id").asString
+            assertThat(actualSpanId)
+                .overridingErrorMessage(
+                    "Expected SpanEvent to have span link span id: " +
+                        "$spanId but " +
+                        "instead was: $$actualSpanId"
+                )
+                .isEqualTo(spanId)
+            return this
+        }
+
+        fun hasFlags(flags: Byte): SerializedSpanLinkAssert {
+            if (flags.toInt() != 0) {
+                val actualTraceFlags = actual.get("flags").asByte
+                assertThat(actualTraceFlags)
+                    .overridingErrorMessage(
+                        "Expected SpanEvent to have span link flags: " +
+                            "$flags but " +
+                            "instead was: $actualTraceFlags"
+                    )
+                    .isEqualTo(flags)
+            } else {
+                assertThat(actual.has("flags"))
+                    .overridingErrorMessage(
+                        "Expected SpanEvent to not have span link flags but " +
+                            "instead was: $actual"
+                    )
+                    .isFalse()
+            }
+            return this
+        }
+
+        fun hasTraceState(traceState: String): SerializedSpanLinkAssert {
+            val actualTraceState = actual.get("tracestate").asString
+            if (actualTraceState.isNotEmpty()) {
+                assertThat(actualTraceState)
+                    .overridingErrorMessage(
+                        "Expected SpanEvent to have span link trace state: " +
+                            "$traceState but " +
+                            "instead was: $actualTraceState"
+                    )
+                    .isEqualTo(traceState)
+            } else {
+                assertThat(actual.has("tracestate"))
+                    .overridingErrorMessage(
+                        "Expected SpanEvent to not have span link trace state but " +
+                            "instead was: $actual"
+                    ).isFalse()
+            }
+            return this
+        }
+
+        fun hasAttributes(attributes: Map<String, String>): SerializedSpanLinkAssert {
+            val actualAttributes = actual.get("attributes").toString()
+            val jsonObject = JsonObject()
+            attributes.forEach { (key, value) ->
+                jsonObject.addProperty(key, value)
+            }
+            val expectedAttributesJsonString = jsonObject.toString()
+            assertThat(actualAttributes)
+                .overridingErrorMessage(
+                    "Expected SpanEvent to have span link attributes: " +
+                        "$expectedAttributesJsonString but " +
+                        "instead was: $actualAttributes"
+                )
+                .isEqualTo(expectedAttributesJsonString)
+            return this
+        }
+    }
 
     companion object {
         internal fun assertThat(actual: SpanEvent): SpanEventAssert {

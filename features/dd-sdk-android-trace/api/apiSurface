@@ -14,22 +14,8 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
-class com.datadog.android.trace.OtelTracerProvider : io.opentelemetry.api.trace.TracerProvider
-  constructor(com.datadog.android.api.feature.FeatureSdkCore, com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.TracerAPI, com.datadog.android.api.InternalLogger, Boolean)
-  override fun get(String): io.opentelemetry.api.trace.Tracer
-  override fun get(String, String): io.opentelemetry.api.trace.Tracer
-  override fun tracerBuilder(String): io.opentelemetry.api.trace.TracerBuilder
-  class Builder
-    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-    fun build(): OtelTracerProvider
-    fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
-    fun setService(String): Builder
-    fun setPartialFlushThreshold(Int): Builder
-    fun addTag(String, String): Builder
-    fun setSampleRate(Double): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-  override fun toString(): String
-  companion object 
+interface com.datadog.android.trace.InternalCoreWriterProvider
+  fun getCoreTracerWriter(): com.datadog.trace.common.writer.Writer
 fun io.opentracing.Span.setError(Throwable)
 fun io.opentracing.Span.setError(String)
 fun <T: Any?> withinSpan(String, io.opentracing.Span? = null, Boolean = true, io.opentracing.Span.() -> T): T

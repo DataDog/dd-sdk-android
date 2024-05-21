@@ -26,29 +26,15 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
-public final class com/datadog/android/trace/OtelTracerProvider : io/opentelemetry/api/trace/TracerProvider {
-	public static final field Companion Lcom/datadog/android/trace/OtelTracerProvider$Companion;
-	public fun <init> (Lcom/datadog/android/api/feature/FeatureSdkCore;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Z)V
-	public fun get (Ljava/lang/String;)Lio/opentelemetry/api/trace/Tracer;
-	public fun get (Ljava/lang/String;Ljava/lang/String;)Lio/opentelemetry/api/trace/Tracer;
-	public fun toString ()Ljava/lang/String;
-	public fun tracerBuilder (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;
-}
-
-public final class com/datadog/android/trace/OtelTracerProvider$Builder {
+public final class com/datadog/android/trace/BuildConfig {
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
-	public synthetic fun <init> (Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun addTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/OtelTracerProvider$Builder;
-	public final fun build ()Lcom/datadog/android/trace/OtelTracerProvider;
-	public final fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/OtelTracerProvider$Builder;
-	public final fun setPartialFlushThreshold (I)Lcom/datadog/android/trace/OtelTracerProvider$Builder;
-	public final fun setSampleRate (D)Lcom/datadog/android/trace/OtelTracerProvider$Builder;
-	public final fun setService (Ljava/lang/String;)Lcom/datadog/android/trace/OtelTracerProvider$Builder;
-	public final fun setTracingHeaderTypes (Ljava/util/Set;)Lcom/datadog/android/trace/OtelTracerProvider$Builder;
 }
 
-public final class com/datadog/android/trace/OtelTracerProvider$Companion {
+public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
+	public abstract fun getCoreTracerWriter ()Lcom/datadog/trace/common/writer/Writer;
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
@@ -854,93 +840,6 @@ public abstract interface class com/datadog/legacy/trace/context/TraceScope$Cont
 	public abstract fun close (Z)V
 }
 
-public final class com/datadog/opentelemetry/context/propagation/TraceStateHelper {
-	public static fun decodeHeader (Ljava/lang/String;)Lio/opentelemetry/api/trace/TraceState;
-	public static fun encodeHeader (Lio/opentelemetry/api/trace/TraceState;)Ljava/lang/String;
-}
-
-public final class com/datadog/opentelemetry/trace/OtelConventions {
-	public static fun applyNamingConvention (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)V
-	public static fun applyReservedAttribute (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lio/opentelemetry/api/common/AttributeKey;Ljava/lang/Object;)Z
-	public static fun toOtelSpanKind (Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanKind;
-	public static fun toSpanKindTagValue (Lio/opentelemetry/api/trace/SpanKind;)Ljava/lang/String;
-}
-
-public class com/datadog/opentelemetry/trace/OtelExtractedContext : com/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context {
-	public fun baggageItems ()Ljava/lang/Iterable;
-	public static fun extract (Lio/opentelemetry/context/Context;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
-	public fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
-	public fun getSamplingPriority ()I
-	public fun getSpanId ()J
-	public fun getTrace ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;
-	public fun getTraceId ()Lcom/datadog/trace/api/DDTraceId;
-}
-
-public class com/datadog/opentelemetry/trace/OtelSpan : io/opentelemetry/api/trace/Span {
-	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;)V
-	public fun activate ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
-	public fun addEvent (Ljava/lang/String;Lio/opentelemetry/api/common/Attributes;)Lio/opentelemetry/api/trace/Span;
-	public fun addEvent (Ljava/lang/String;Lio/opentelemetry/api/common/Attributes;JLjava/util/concurrent/TimeUnit;)Lio/opentelemetry/api/trace/Span;
-	public fun end ()V
-	public fun end (JLjava/util/concurrent/TimeUnit;)V
-	public fun getAgentSpanContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
-	public fun getSpanContext ()Lio/opentelemetry/api/trace/SpanContext;
-	public fun getStatusCode ()Lio/opentelemetry/api/trace/StatusCode;
-	public static fun invalid ()Lio/opentelemetry/api/trace/Span;
-	public fun isRecording ()Z
-	public fun recordException (Ljava/lang/Throwable;Lio/opentelemetry/api/common/Attributes;)Lio/opentelemetry/api/trace/Span;
-	public fun setAttribute (Lio/opentelemetry/api/common/AttributeKey;Ljava/lang/Object;)Lio/opentelemetry/api/trace/Span;
-	public fun setStatus (Lio/opentelemetry/api/trace/StatusCode;Ljava/lang/String;)Lio/opentelemetry/api/trace/Span;
-	public fun updateName (Ljava/lang/String;)Lio/opentelemetry/api/trace/Span;
-}
-
-public class com/datadog/opentelemetry/trace/OtelSpanBuilder : io/opentelemetry/api/trace/SpanBuilder {
-	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;)V
-	public fun addLink (Lio/opentelemetry/api/trace/SpanContext;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun addLink (Lio/opentelemetry/api/trace/SpanContext;Lio/opentelemetry/api/common/Attributes;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setAttribute (Lio/opentelemetry/api/common/AttributeKey;Ljava/lang/Object;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setAttribute (Ljava/lang/String;D)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setAttribute (Ljava/lang/String;J)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setAttribute (Ljava/lang/String;Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setAttribute (Ljava/lang/String;Z)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setNoParent ()Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setParent (Lio/opentelemetry/context/Context;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setSpanKind (Lio/opentelemetry/api/trace/SpanKind;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setStartTimestamp (JLjava/util/concurrent/TimeUnit;)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun startSpan ()Lio/opentelemetry/api/trace/Span;
-}
-
-public class com/datadog/opentelemetry/trace/OtelSpanContext : io/opentelemetry/api/trace/SpanContext {
-	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;ZZLio/opentelemetry/api/trace/TraceState;)V
-	public static fun fromLocalSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lio/opentelemetry/api/trace/SpanContext;
-	public static fun fromRemote (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;Lio/opentelemetry/api/trace/TraceState;)Lio/opentelemetry/api/trace/SpanContext;
-	public fun getDelegate ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
-	public fun getSpanId ()Ljava/lang/String;
-	public fun getTraceFlags ()Lio/opentelemetry/api/trace/TraceFlags;
-	public fun getTraceId ()Ljava/lang/String;
-	public fun getTraceState ()Lio/opentelemetry/api/trace/TraceState;
-	public fun isRemote ()Z
-	public fun toString ()Ljava/lang/String;
-}
-
-public class com/datadog/opentelemetry/trace/OtelSpanLink : com/datadog/trace/bootstrap/instrumentation/api/SpanLink {
-	public fun <init> (Lio/opentelemetry/api/trace/SpanContext;)V
-	public fun <init> (Lio/opentelemetry/api/trace/SpanContext;Lio/opentelemetry/api/common/Attributes;)V
-}
-
-public class com/datadog/opentelemetry/trace/OtelTracer : io/opentelemetry/api/trace/Tracer {
-	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;)V
-	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Ljava/util/function/Function;)V
-	public fun spanBuilder (Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanBuilder;
-}
-
-public class com/datadog/opentelemetry/trace/OtelTracerBuilder : io/opentelemetry/api/trace/TracerBuilder {
-	public fun <init> (Ljava/lang/String;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;Lcom/datadog/android/api/InternalLogger;Ljava/util/function/Function;)V
-	public fun build ()Lio/opentelemetry/api/trace/Tracer;
-	public fun setInstrumentationVersion (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;
-	public fun setSchemaUrl (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;
-}
-
 public class com/datadog/opentracing/DDSpan : com/datadog/legacy/trace/api/interceptor/MutableSpan, io/opentracing/Span {
 	public final fun context ()Lcom/datadog/opentracing/DDSpanContext;
 	public synthetic fun context ()Lio/opentracing/SpanContext;
@@ -1316,13 +1215,6 @@ public class com/datadog/opentracing/scopemanager/SimpleScope : com/datadog/open
 	public fun span ()Lio/opentracing/Span;
 }
 
-public abstract interface annotation class com/datadog/trace/advice/ActiveRequestContext : java/lang/annotation/Annotation {
-}
-
-public abstract interface annotation class com/datadog/trace/advice/RequiresRequestContext : java/lang/annotation/Annotation {
-	public abstract fun value ()Lcom/datadog/trace/api/gateway/RequestContextSlot;
-}
-
 public class com/datadog/trace/api/Config {
 	public static final field PREFIX Ljava/lang/String;
 	public fun configProvider ()Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;
@@ -1335,67 +1227,13 @@ public class com/datadog/trace/api/Config {
 	public fun getAgentUnixDomainSocket ()Ljava/lang/String;
 	public fun getAgentUrl ()Ljava/lang/String;
 	public fun getApiKey ()Ljava/lang/String;
-	public fun getApiSecurityRequestSampleRate ()F
-	public fun getAppSecActivation ()Lcom/datadog/trace/api/ProductActivation;
-	public fun getAppSecHttpBlockedTemplateHtml ()Ljava/lang/String;
-	public fun getAppSecHttpBlockedTemplateJson ()Ljava/lang/String;
-	public fun getAppSecObfuscationParameterKeyRegexp ()Ljava/lang/String;
-	public fun getAppSecObfuscationParameterValueRegexp ()Ljava/lang/String;
-	public fun getAppSecReportMaxTimeout ()I
-	public fun getAppSecReportMinTimeout ()I
-	public fun getAppSecRulesFile ()Ljava/lang/String;
-	public fun getAppSecTraceRateLimit ()I
-	public fun getAppSecUserEventsTrackingMode ()Lcom/datadog/trace/api/UserEventTrackingMode;
-	public fun getAppSecWafTimeout ()I
 	public fun getApplicationKey ()Ljava/lang/String;
 	public fun getBaggageMapping ()Ljava/util/Map;
-	public fun getCiVisibilityAdditionalChildProcessJvmArgs ()Ljava/lang/String;
-	public fun getCiVisibilityAgentJarFile ()Ljava/io/File;
-	public fun getCiVisibilityAgentJarUri ()Ljava/lang/String;
-	public fun getCiVisibilityAgentlessUrl ()Ljava/lang/String;
-	public fun getCiVisibilityBackendApiTimeoutMillis ()J
-	public fun getCiVisibilityCodeCoverageExcludedPackages ()[Ljava/lang/String;
-	public fun getCiVisibilityCodeCoverageExcludes ()Ljava/util/List;
-	public fun getCiVisibilityCodeCoverageIncludedPackages ()[Ljava/lang/String;
-	public fun getCiVisibilityCodeCoverageIncludes ()Ljava/util/List;
-	public fun getCiVisibilityCodeCoverageReportDumpDir ()Ljava/lang/String;
-	public fun getCiVisibilityCompilerPluginVersion ()Ljava/lang/String;
-	public fun getCiVisibilityCoverageRootPackagesLimit ()I
-	public fun getCiVisibilityDebugPort ()Ljava/lang/Integer;
-	public fun getCiVisibilityFlakyRetryCount ()I
-	public fun getCiVisibilityGitCommandTimeoutMillis ()J
-	public fun getCiVisibilityGitRemoteName ()Ljava/lang/String;
-	public fun getCiVisibilityGitUploadTimeoutMillis ()J
-	public fun getCiVisibilityInjectedTracerVersion ()Ljava/lang/String;
-	public fun getCiVisibilityJacocoGradleSourceSets ()Ljava/util/List;
-	public fun getCiVisibilityJacocoPluginVersion ()Ljava/lang/String;
-	public fun getCiVisibilityJvmInfoCacheSize ()I
-	public fun getCiVisibilityModuleExecutionSettingsCacheSize ()I
-	public fun getCiVisibilityModuleId ()Ljava/lang/Long;
-	public fun getCiVisibilityModuleName ()Ljava/lang/String;
-	public fun getCiVisibilityResourceFolderNames ()Ljava/util/List;
-	public fun getCiVisibilitySessionId ()Ljava/lang/Long;
-	public fun getCiVisibilitySignalServerHost ()Ljava/lang/String;
-	public fun getCiVisibilitySignalServerPort ()I
 	public fun getClockSyncPeriod ()I
 	public fun getConfigFileStatus ()Ljava/lang/String;
-	public fun getCwsTlsRefresh ()I
 	public fun getDBMPropagationMode ()Ljava/lang/String;
 	public fun getDataStreamsBucketDurationNanoseconds ()J
 	public fun getDataStreamsBucketDurationSeconds ()F
-	public fun getDebuggerCaptureTimeout ()I
-	public fun getDebuggerDiagnosticsInterval ()I
-	public fun getDebuggerExcludeFiles ()Ljava/lang/String;
-	public fun getDebuggerMaxPayloadSize ()J
-	public fun getDebuggerPollInterval ()I
-	public fun getDebuggerProbeFileLocation ()Ljava/lang/String;
-	public fun getDebuggerRedactedIdentifiers ()Ljava/lang/String;
-	public fun getDebuggerRedactedTypes ()Ljava/lang/String;
-	public fun getDebuggerSymbolFlushThreshold ()I
-	public fun getDebuggerSymbolIncludes ()Ljava/lang/String;
-	public fun getDebuggerUploadBatchSize ()I
-	public fun getDebuggerUploadFlushInterval ()I
-	public fun getDebuggerUploadTimeout ()I
 	public fun getDogStatsDArgs ()Ljava/util/List;
 	public fun getDogStatsDNamedPipe ()Ljava/lang/String;
 	public fun getDogStatsDPath ()Ljava/lang/String;
@@ -1421,33 +1259,12 @@ public class com/datadog/trace/api/Config {
 	public fun getHttpResourceRemoveTrailingSlash ()Z
 	public fun getHttpServerErrorStatuses ()Ljava/util/BitSet;
 	public fun getHttpServerPathResourceNameMapping ()Ljava/util/Map;
-	public fun getIastActivation ()Lcom/datadog/trace/api/ProductActivation;
-	public fun getIastMaxConcurrentRequests ()I
-	public fun getIastMaxRangeCount ()I
-	public fun getIastRedactionNamePattern ()Ljava/lang/String;
-	public fun getIastRedactionValuePattern ()Ljava/lang/String;
-	public fun getIastRequestSampling ()F
-	public fun getIastTelemetryVerbosity ()Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-	public fun getIastTruncationMaxValueLength ()I
-	public fun getIastVulnerabilitiesPerRequest ()I
-	public fun getIastWeakCipherAlgorithms ()Ljava/util/regex/Pattern;
-	public fun getIastWeakHashAlgorithms ()Ljava/util/Set;
 	public fun getIdGenerationStrategy ()Lcom/datadog/trace/api/IdGenerationStrategy;
 	public fun getInstrumentationAnalyticsSampleRate ([Ljava/lang/String;)F
 	public fun getJmsUnacknowledgedMaxAge ()I
-	public fun getJmxFetchCheckPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchConfigDir ()Ljava/lang/String;
-	public fun getJmxFetchConfigs ()Ljava/util/List;
-	public fun getJmxFetchInitialRefreshBeansPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchMetricsConfigs ()Ljava/util/List;
-	public fun getJmxFetchMultipleRuntimeServicesLimit ()I
-	public fun getJmxFetchRefreshBeansPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchStatsdHost ()Ljava/lang/String;
-	public fun getJmxFetchStatsdPort ()Ljava/lang/Integer;
 	public fun getLocalRootSpanTags ()Ljava/util/Map;
 	public fun getLongRunningTraceFlushInterval ()J
 	public fun getMergedCrashTrackingTags ()Ljava/util/Map;
-	public fun getMergedJmxTags ()Ljava/util/Map;
 	public fun getMergedProfilingTags ()Ljava/util/Map;
 	public fun getMergedSpanTags ()Ljava/util/Map;
 	public fun getMetricsIgnoredResources ()Ljava/util/Set;
@@ -1518,33 +1335,11 @@ public class com/datadog/trace/api/Config {
 	public fun getWriterType ()Ljava/lang/String;
 	public fun getxDatadogTagsMaxLength ()I
 	public fun isAgentConfiguredUsingDefault ()Z
-	public fun isApiSecurityEnabled ()Z
-	public fun isAppSecReportingInband ()Z
-	public fun isAppSecWafMetrics ()Z
 	public fun isAwsPropagationEnabled ()Z
 	public fun isAzureAppServices ()Z
-	public fun isCiVisibilityAgentlessEnabled ()Z
-	public fun isCiVisibilityAutoConfigurationEnabled ()Z
-	public fun isCiVisibilityBuildInstrumentationEnabled ()Z
-	public fun isCiVisibilityCiProviderIntegrationEnabled ()Z
-	public fun isCiVisibilityCodeCoverageEnabled ()Z
-	public fun isCiVisibilityCodeCoveragePercentageCalculationEnabled ()Z
-	public fun isCiVisibilityCompilerPluginAutoConfigurationEnabled ()Z
-	public fun isCiVisibilityCoverageSegmentsEnabled ()Z
 	public fun isCiVisibilityEnabled ()Z
-	public fun isCiVisibilityFlakyRetryEnabled ()Z
-	public fun isCiVisibilityGitUnshallowDefer ()Z
-	public fun isCiVisibilityGitUnshallowEnabled ()Z
-	public fun isCiVisibilityGitUploadEnabled ()Z
-	public fun isCiVisibilityItrEnabled ()Z
-	public fun isCiVisibilityJacocoPluginVersionProvided ()Z
-	public fun isCiVisibilityRepoIndexSharingEnabled ()Z
-	public fun isCiVisibilitySourceDataEnabled ()Z
-	public fun isCiVisibilitySourceDataRootCheckEnabled ()Z
-	public fun isCiVisibilityTraceSanitationEnabled ()Z
 	public fun isClientIpEnabled ()Z
 	public fun isCrashTrackingAgentless ()Z
-	public fun isCwsEnabled ()Z
 	public fun isDataStreamsEnabled ()Z
 	public fun isDatadogProfilerEnabled ()Z
 	public static fun isDatadogProfilerEnablementOverridden ()Z
@@ -1553,13 +1348,6 @@ public class com/datadog/trace/api/Config {
 	public fun isDbClientSplitByInstance ()Z
 	public fun isDbClientSplitByInstanceTypeSuffix ()Z
 	public fun isDebugEnabled ()Z
-	public fun isDebuggerClassFileDumpEnabled ()Z
-	public fun isDebuggerEnabled ()Z
-	public fun isDebuggerInstrumentTheWorld ()Z
-	public fun isDebuggerMetricsEnabled ()Z
-	public fun isDebuggerSymbolEnabled ()Z
-	public fun isDebuggerSymbolForceUpload ()Z
-	public fun isDebuggerVerifyByteCode ()Z
 	public fun isElasticsearchBodyAndParamsEnabled ()Z
 	public fun isElasticsearchBodyEnabled ()Z
 	public fun isElasticsearchParamsEnabled ()Z
@@ -1577,19 +1365,13 @@ public class com/datadog/trace/api/Config {
 	public fun isHttpServerTagQueryString ()Z
 	public fun isHystrixMeasuredEnabled ()Z
 	public fun isHystrixTagsEnabled ()Z
-	public fun isIastDebugEnabled ()Z
-	public fun isIastDeduplicationEnabled ()Z
-	public fun isIastRedactionEnabled ()Z
-	public fun isIastStacktraceLeakSuppress ()Z
 	public fun isIgniteCacheIncludeKeys ()Z
 	public fun isInjectBaggageAsTagsEnabled ()Z
 	public fun isIntegrationSynapseLegacyOperationName ()Z
 	public fun isJaxRsExceptionAsErrorEnabled ()Z
 	public fun isJmsPropagationDisabledForDestination (Ljava/lang/String;)Z
 	public fun isJmsPropagationEnabled ()Z
-	public fun isJmxFetchEnabled ()Z
 	public fun isJmxFetchIntegrationEnabled (Ljava/lang/Iterable;Z)Z
-	public fun isJmxFetchMultipleRuntimeServicesEnabled ()Z
 	public fun isKafkaClientBase64DecodingEnabled ()Z
 	public fun isKafkaClientPropagationDisabledForTopic (Ljava/lang/String;)Z
 	public fun isKafkaClientPropagationEnabled ()Z
@@ -1849,10 +1631,6 @@ public abstract class com/datadog/trace/api/DDTraceId {
 	public abstract fun toString ()Ljava/lang/String;
 }
 
-public abstract interface annotation class com/datadog/trace/api/DisableTestTrace : java/lang/annotation/Annotation {
-	public abstract fun reason ()Ljava/lang/String;
-}
-
 public final class com/datadog/trace/api/DynamicConfig {
 	public fun captureTraceConfig ()Lcom/datadog/trace/api/DynamicConfig$Snapshot;
 	public static fun create ()Lcom/datadog/trace/api/DynamicConfig$Builder;
@@ -2000,13 +1778,11 @@ public abstract class com/datadog/trace/api/IdGenerationStrategy {
 
 public class com/datadog/trace/api/InstrumenterConfig {
 	public static fun get ()Lcom/datadog/trace/api/InstrumenterConfig;
-	public fun getAppSecActivation ()Lcom/datadog/trace/api/ProductActivation;
 	public fun getExcludedClassLoaders ()Ljava/util/Set;
 	public fun getExcludedClasses ()Ljava/util/List;
 	public fun getExcludedClassesFile ()Ljava/lang/String;
 	public fun getExcludedCodeSources ()Ljava/util/List;
 	public fun getHttpURLConnectionClassName ()Ljava/lang/String;
-	public fun getIastActivation ()Lcom/datadog/trace/api/ProductActivation;
 	public fun getJdbcConnectionClassName ()Ljava/lang/String;
 	public fun getJdbcPreparedStatementClassName ()Ljava/lang/String;
 	public fun getResolverCacheDir ()Ljava/lang/String;
@@ -2019,7 +1795,6 @@ public class com/datadog/trace/api/InstrumenterConfig {
 	public fun getTraceExecutors ()Ljava/util/List;
 	public fun getTraceMethods ()Ljava/util/Map;
 	public fun getTraceThreadPoolExecutorsExclude ()Ljava/util/Set;
-	public fun isCiVisibilityEnabled ()Z
 	public fun isDirectAllocationProfilingEnabled ()Z
 	public fun isIntegrationEnabled (Ljava/lang/Iterable;Z)Z
 	public fun isIntegrationShortcutMatchingEnabled (Ljava/lang/Iterable;Z)Z
@@ -2270,303 +2045,6 @@ public final class com/datadog/trace/api/cache/RadixTreeCache {
 	public fun get (I)Ljava/lang/Object;
 }
 
-public abstract interface class com/datadog/trace/api/civisibility/CIConstants {
-	public static final field TEST_FAIL Ljava/lang/String;
-	public static final field TEST_PASS Ljava/lang/String;
-	public static final field TEST_SKIP Ljava/lang/String;
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/DDTest {
-	public abstract fun end (Ljava/lang/Long;)V
-	public abstract fun setErrorInfo (Ljava/lang/Throwable;)V
-	public abstract fun setSkipReason (Ljava/lang/String;)V
-	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/DDTestModule {
-	public abstract fun end (Ljava/lang/Long;)V
-	public abstract fun setErrorInfo (Ljava/lang/Throwable;)V
-	public abstract fun setSkipReason (Ljava/lang/String;)V
-	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-	public fun testSuiteStart (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Long;)Lcom/datadog/trace/api/civisibility/DDTestSuite;
-	public abstract fun testSuiteStart (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Long;Z)Lcom/datadog/trace/api/civisibility/DDTestSuite;
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/DDTestSession {
-	public abstract fun end (Ljava/lang/Long;)V
-	public abstract fun setErrorInfo (Ljava/lang/Throwable;)V
-	public abstract fun setSkipReason (Ljava/lang/String;)V
-	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-	public abstract fun testModuleStart (Ljava/lang/String;Ljava/lang/Long;)Lcom/datadog/trace/api/civisibility/DDTestModule;
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/DDTestSuite {
-	public abstract fun end (Ljava/lang/Long;)V
-	public abstract fun setErrorInfo (Ljava/lang/Throwable;)V
-	public abstract fun setSkipReason (Ljava/lang/String;)V
-	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-	public abstract fun testStart (Ljava/lang/String;Ljava/lang/reflect/Method;Ljava/lang/Long;)Lcom/datadog/trace/api/civisibility/DDTest;
-}
-
-public abstract class com/datadog/trace/api/civisibility/InstrumentationBridge {
-	public static final field ITR_SKIP_REASON Ljava/lang/String;
-	public static final field ITR_UNSKIPPABLE_TAG Ljava/lang/String;
-	public fun <init> ()V
-	public static fun createBuildEventsHandler ()Lcom/datadog/trace/api/civisibility/events/BuildEventsHandler;
-	public static fun createTestEventsHandler (Ljava/lang/String;)Lcom/datadog/trace/api/civisibility/events/TestEventsHandler;
-	public static fun registerBuildEventsHandlerFactory (Lcom/datadog/trace/api/civisibility/events/BuildEventsHandler$Factory;)V
-	public static fun registerTestEventsHandlerFactory (Lcom/datadog/trace/api/civisibility/events/TestEventsHandler$Factory;)V
-}
-
-public final class com/datadog/trace/api/civisibility/config/Configurations {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getCustom ()Ljava/util/Map;
-	public fun getOsArchitecture ()Ljava/lang/String;
-	public fun getOsPlatform ()Ljava/lang/String;
-	public fun getOsVersion ()Ljava/lang/String;
-	public fun getRuntimeArchitecture ()Ljava/lang/String;
-	public fun getRuntimeName ()Ljava/lang/String;
-	public fun getRuntimeVendor ()Ljava/lang/String;
-	public fun getRuntimeVersion ()Ljava/lang/String;
-	public fun getTestBundle ()Ljava/lang/String;
-	public fun hashCode ()I
-}
-
-public class com/datadog/trace/api/civisibility/config/ModuleExecutionSettings {
-	public static final field EMPTY Lcom/datadog/trace/api/civisibility/config/ModuleExecutionSettings;
-	public fun <init> (ZZLjava/util/Map;Ljava/util/Map;Ljava/util/Collection;Ljava/util/List;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getCoverageEnabledPackages ()Ljava/util/List;
-	public fun getFlakyTests ()Ljava/util/Collection;
-	public fun getFlakyTests (Ljava/lang/String;)Ljava/util/Collection;
-	public fun getSkippableTests (Ljava/lang/String;)Ljava/util/Collection;
-	public fun getSkippableTestsByModule ()Ljava/util/Map;
-	public fun getSystemProperties ()Ljava/util/Map;
-	public fun hashCode ()I
-	public fun isCodeCoverageEnabled ()Z
-	public fun isItrEnabled ()Z
-}
-
-public class com/datadog/trace/api/civisibility/config/TestIdentifier {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/civisibility/config/Configurations;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getConfigurations ()Lcom/datadog/trace/api/civisibility/config/Configurations;
-	public fun getName ()Ljava/lang/String;
-	public fun getParameters ()Ljava/lang/String;
-	public fun getSuite ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract class com/datadog/trace/api/civisibility/coverage/CoverageBridge {
-	public fun <init> ()V
-	public static fun currentCoverageProbeStoreRecord (Ljava/lang/Class;)V
-	public static fun currentCoverageProbeStoreRecord (Ljava/lang/Class;JI)V
-	public static fun currentCoverageProbeStoreRecordNonCode (Ljava/lang/String;)V
-	public static fun getCoverageData ()[B
-	public static fun getCoverageProbeStoreRegistry ()Lcom/datadog/trace/api/civisibility/coverage/CoverageProbeStore$Registry;
-	public static fun registerCoverageDataSupplier (Lcom/datadog/trace/api/civisibility/coverage/CoverageDataSupplier;)V
-	public static fun registerCoverageProbeStoreRegistry (Lcom/datadog/trace/api/civisibility/coverage/CoverageProbeStore$Registry;)V
-	public static fun removeThreadLocalCoverageProbeStore ()V
-	public static fun setThreadLocalCoverageProbeStore (Lcom/datadog/trace/api/civisibility/coverage/CoverageProbeStore;)V
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/coverage/CoverageDataSupplier {
-	public abstract fun get ()[B
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/coverage/CoverageProbeStore : com/datadog/trace/api/civisibility/coverage/TestReportHolder {
-	public abstract fun record (Ljava/lang/Class;)V
-	public abstract fun record (Ljava/lang/Class;JI)V
-	public abstract fun recordNonCodeResource (Ljava/lang/String;)V
-	public abstract fun report (Ljava/lang/Long;Ljava/lang/Long;J)V
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/coverage/CoverageProbeStore$Registry {
-	public abstract fun setTotalProbeCount (Ljava/lang/String;I)V
-}
-
-public class com/datadog/trace/api/civisibility/coverage/TestReport {
-	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;JLjava/util/Collection;)V
-	public fun getSpanId ()J
-	public fun getTestReportFileEntries ()Ljava/util/Collection;
-	public fun getTestSessionId ()Ljava/lang/Long;
-	public fun getTestSuiteId ()Ljava/lang/Long;
-	public fun isNotEmpty ()Z
-}
-
-public class com/datadog/trace/api/civisibility/coverage/TestReportFileEntry {
-	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
-	public fun getSegments ()Ljava/util/Collection;
-	public fun getSourceFileName ()Ljava/lang/String;
-	public fun toString ()Ljava/lang/String;
-}
-
-public class com/datadog/trace/api/civisibility/coverage/TestReportFileEntry$Segment : java/lang/Comparable {
-	public fun <init> (IIIII)V
-	public fun compareTo (Lcom/datadog/trace/api/civisibility/coverage/TestReportFileEntry$Segment;)I
-	public synthetic fun compareTo (Ljava/lang/Object;)I
-	public fun getEndColumn ()I
-	public fun getEndLine ()I
-	public fun getNumberOfExecutions ()I
-	public fun getStartColumn ()I
-	public fun getStartLine ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/coverage/TestReportHolder {
-	public abstract fun getReport ()Lcom/datadog/trace/api/civisibility/coverage/TestReport;
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/events/BuildEventsHandler {
-	public abstract fun getModuleExecutionSettings (Ljava/lang/Object;Ljava/nio/file/Path;)Lcom/datadog/trace/api/civisibility/config/ModuleExecutionSettings;
-	public abstract fun getModuleInfo (Ljava/lang/Object;Ljava/lang/String;)Lcom/datadog/trace/api/civisibility/events/BuildEventsHandler$ModuleInfo;
-	public abstract fun onTestModuleFail (Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public abstract fun onTestModuleFinish (Ljava/lang/Object;Ljava/lang/String;)V
-	public abstract fun onTestModuleSkip (Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onTestModuleStart (Ljava/lang/Object;Ljava/lang/String;Ljava/util/Collection;Ljava/util/Map;)Lcom/datadog/trace/api/civisibility/events/BuildEventsHandler$ModuleInfo;
-	public abstract fun onTestSessionFail (Ljava/lang/Object;Ljava/lang/Throwable;)V
-	public abstract fun onTestSessionFinish (Ljava/lang/Object;)V
-	public abstract fun onTestSessionStart (Ljava/lang/Object;Ljava/lang/String;Ljava/nio/file/Path;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/events/BuildEventsHandler$Factory {
-	public abstract fun create ()Lcom/datadog/trace/api/civisibility/events/BuildEventsHandler;
-}
-
-public final class com/datadog/trace/api/civisibility/events/BuildEventsHandler$ModuleInfo {
-	public final field moduleId J
-	public final field sessionId J
-	public final field signalServerHost Ljava/lang/String;
-	public final field signalServerPort I
-	public fun <init> (JJLjava/lang/String;I)V
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/events/TestEventsHandler : java/io/Closeable {
-	public abstract fun close ()V
-	public abstract fun onTestFailure (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public abstract fun onTestFinish (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)V
-	public abstract fun onTestIgnore (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/reflect/Method;Ljava/lang/String;)V
-	public abstract fun onTestSkip (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onTestStart (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/reflect/Method;)V
-	public abstract fun onTestSuiteFailure (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Throwable;)V
-	public abstract fun onTestSuiteFinish (Ljava/lang/String;Ljava/lang/Class;)V
-	public abstract fun onTestSuiteSkip (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/String;)V
-	public abstract fun onTestSuiteStart (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Class;Ljava/util/Collection;Z)V
-	public abstract fun retryPolicy (Lcom/datadog/trace/api/civisibility/config/TestIdentifier;)Lcom/datadog/trace/api/civisibility/retry/TestRetryPolicy;
-	public abstract fun skip (Lcom/datadog/trace/api/civisibility/config/TestIdentifier;)Z
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/events/TestEventsHandler$Factory {
-	public abstract fun create (Ljava/lang/String;)Lcom/datadog/trace/api/civisibility/events/TestEventsHandler;
-}
-
-public class com/datadog/trace/api/civisibility/noop/NoOpDDTest : com/datadog/trace/api/civisibility/DDTest {
-	public fun <init> ()V
-	public fun end (Ljava/lang/Long;)V
-	public fun setErrorInfo (Ljava/lang/Throwable;)V
-	public fun setSkipReason (Ljava/lang/String;)V
-	public fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-}
-
-public class com/datadog/trace/api/civisibility/noop/NoOpDDTestModule : com/datadog/trace/api/civisibility/DDTestModule {
-	public fun <init> ()V
-	public fun end (Ljava/lang/Long;)V
-	public fun setErrorInfo (Ljava/lang/Throwable;)V
-	public fun setSkipReason (Ljava/lang/String;)V
-	public fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-	public fun testSuiteStart (Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Long;Z)Lcom/datadog/trace/api/civisibility/DDTestSuite;
-}
-
-public class com/datadog/trace/api/civisibility/noop/NoOpDDTestSession : com/datadog/trace/api/civisibility/DDTestSession {
-	public static final field INSTANCE Lcom/datadog/trace/api/civisibility/DDTestSession;
-	public fun <init> ()V
-	public fun end (Ljava/lang/Long;)V
-	public fun setErrorInfo (Ljava/lang/Throwable;)V
-	public fun setSkipReason (Ljava/lang/String;)V
-	public fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-	public fun testModuleStart (Ljava/lang/String;Ljava/lang/Long;)Lcom/datadog/trace/api/civisibility/DDTestModule;
-}
-
-public class com/datadog/trace/api/civisibility/noop/NoOpDDTestSuite : com/datadog/trace/api/civisibility/DDTestSuite {
-	public fun <init> ()V
-	public fun end (Ljava/lang/Long;)V
-	public fun setErrorInfo (Ljava/lang/Throwable;)V
-	public fun setSkipReason (Ljava/lang/String;)V
-	public fun setTag (Ljava/lang/String;Ljava/lang/Object;)V
-	public fun testStart (Ljava/lang/String;Ljava/lang/reflect/Method;Ljava/lang/Long;)Lcom/datadog/trace/api/civisibility/DDTest;
-}
-
-public abstract interface class com/datadog/trace/api/civisibility/retry/TestRetryPolicy {
-	public abstract fun retry (Z)Z
-	public abstract fun retryPossible ()Z
-}
-
-public final class com/datadog/trace/api/config/AppSecConfig {
-	public static final field API_SECURITY_ENABLED Ljava/lang/String;
-	public static final field API_SECURITY_REQUEST_SAMPLE_RATE Ljava/lang/String;
-	public static final field APPSEC_AUTOMATED_USER_EVENTS_TRACKING Ljava/lang/String;
-	public static final field APPSEC_ENABLED Ljava/lang/String;
-	public static final field APPSEC_HTTP_BLOCKED_TEMPLATE_HTML Ljava/lang/String;
-	public static final field APPSEC_HTTP_BLOCKED_TEMPLATE_JSON Ljava/lang/String;
-	public static final field APPSEC_IP_ADDR_HEADER Ljava/lang/String;
-	public static final field APPSEC_OBFUSCATION_PARAMETER_KEY_REGEXP Ljava/lang/String;
-	public static final field APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP Ljava/lang/String;
-	public static final field APPSEC_REPORTING_INBAND Ljava/lang/String;
-	public static final field APPSEC_REPORT_TIMEOUT_SEC Ljava/lang/String;
-	public static final field APPSEC_RULES_FILE Ljava/lang/String;
-	public static final field APPSEC_TRACE_RATE_LIMIT Ljava/lang/String;
-	public static final field APPSEC_WAF_METRICS Ljava/lang/String;
-	public static final field APPSEC_WAF_TIMEOUT Ljava/lang/String;
-}
-
-public final class com/datadog/trace/api/config/CiVisibilityConfig {
-	public static final field CIVISIBILITY_ADDITIONAL_CHILD_PROCESS_JVM_ARGS Ljava/lang/String;
-	public static final field CIVISIBILITY_AGENTLESS_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_AGENTLESS_URL Ljava/lang/String;
-	public static final field CIVISIBILITY_AGENT_JAR_URI Ljava/lang/String;
-	public static final field CIVISIBILITY_AUTO_CONFIGURATION_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_BACKEND_API_TIMEOUT_MILLIS Ljava/lang/String;
-	public static final field CIVISIBILITY_BUILD_INSTRUMENTATION_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_CIPROVIDER_INTEGRATION_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_EXCLUDES Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_INCLUDES Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_PERCENTAGE_CALCULATION_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_REPORT_DUMP_DIR Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_ROOT_PACKAGES_LIMIT Ljava/lang/String;
-	public static final field CIVISIBILITY_CODE_COVERAGE_SEGMENTS_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_COMPILER_PLUGIN_AUTO_CONFIGURATION_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_COMPILER_PLUGIN_VERSION Ljava/lang/String;
-	public static final field CIVISIBILITY_DEBUG_PORT Ljava/lang/String;
-	public static final field CIVISIBILITY_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_FLAKY_RETRY_COUNT Ljava/lang/String;
-	public static final field CIVISIBILITY_FLAKY_RETRY_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_GIT_COMMAND_TIMEOUT_MILLIS Ljava/lang/String;
-	public static final field CIVISIBILITY_GIT_REMOTE_NAME Ljava/lang/String;
-	public static final field CIVISIBILITY_GIT_UNSHALLOW_DEFER Ljava/lang/String;
-	public static final field CIVISIBILITY_GIT_UNSHALLOW_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_GIT_UPLOAD_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_GIT_UPLOAD_TIMEOUT_MILLIS Ljava/lang/String;
-	public static final field CIVISIBILITY_INJECTED_TRACER_VERSION Ljava/lang/String;
-	public static final field CIVISIBILITY_ITR_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_JACOCO_GRADLE_SOURCE_SETS Ljava/lang/String;
-	public static final field CIVISIBILITY_JACOCO_PLUGIN_VERSION Ljava/lang/String;
-	public static final field CIVISIBILITY_JVM_INFO_CACHE_SIZE Ljava/lang/String;
-	public static final field CIVISIBILITY_MODULE_EXECUTION_SETTINGS_CACHE_SIZE Ljava/lang/String;
-	public static final field CIVISIBILITY_MODULE_ID Ljava/lang/String;
-	public static final field CIVISIBILITY_MODULE_NAME Ljava/lang/String;
-	public static final field CIVISIBILITY_REPO_INDEX_SHARING_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_RESOURCE_FOLDER_NAMES Ljava/lang/String;
-	public static final field CIVISIBILITY_SESSION_ID Ljava/lang/String;
-	public static final field CIVISIBILITY_SIGNAL_SERVER_HOST Ljava/lang/String;
-	public static final field CIVISIBILITY_SIGNAL_SERVER_PORT Ljava/lang/String;
-	public static final field CIVISIBILITY_SOURCE_DATA_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_SOURCE_DATA_ROOT_CHECK_ENABLED Ljava/lang/String;
-	public static final field CIVISIBILITY_TRACE_SANITATION_ENABLED Ljava/lang/String;
-}
-
 public final class com/datadog/trace/api/config/CrashTrackingConfig {
 	public static final field CRASH_TRACKING_AGENTLESS Ljava/lang/String;
 	public static final field CRASH_TRACKING_AGENTLESS_DEFAULT Z
@@ -2577,36 +2055,6 @@ public final class com/datadog/trace/api/config/CrashTrackingConfig {
 	public static final field CRASH_TRACKING_TAGS Ljava/lang/String;
 	public static final field CRASH_TRACKING_UPLOAD_TIMEOUT Ljava/lang/String;
 	public static final field CRASH_TRACKING_UPLOAD_TIMEOUT_DEFAULT I
-}
-
-public final class com/datadog/trace/api/config/CwsConfig {
-	public static final field CWS_ENABLED Ljava/lang/String;
-	public static final field CWS_TLS_REFRESH Ljava/lang/String;
-}
-
-public final class com/datadog/trace/api/config/DebuggerConfig {
-	public static final field DEBUGGER_CAPTURE_TIMEOUT Ljava/lang/String;
-	public static final field DEBUGGER_CLASSFILE_DUMP_ENABLED Ljava/lang/String;
-	public static final field DEBUGGER_DIAGNOSTICS_INTERVAL Ljava/lang/String;
-	public static final field DEBUGGER_ENABLED Ljava/lang/String;
-	public static final field DEBUGGER_EXCLUDE_FILES Ljava/lang/String;
-	public static final field DEBUGGER_INSTRUMENT_THE_WORLD Ljava/lang/String;
-	public static final field DEBUGGER_MAX_PAYLOAD_SIZE Ljava/lang/String;
-	public static final field DEBUGGER_METRICS_ENABLED Ljava/lang/String;
-	public static final field DEBUGGER_POLL_INTERVAL Ljava/lang/String;
-	public static final field DEBUGGER_PROBE_FILE_LOCATION Ljava/lang/String;
-	public static final field DEBUGGER_PROBE_URL Ljava/lang/String;
-	public static final field DEBUGGER_REDACTED_IDENTIFIERS Ljava/lang/String;
-	public static final field DEBUGGER_REDACTED_TYPES Ljava/lang/String;
-	public static final field DEBUGGER_SNAPSHOT_URL Ljava/lang/String;
-	public static final field DEBUGGER_SYMBOL_ENABLED Ljava/lang/String;
-	public static final field DEBUGGER_SYMBOL_FLUSH_THRESHOLD Ljava/lang/String;
-	public static final field DEBUGGER_SYMBOL_FORCE_UPLOAD Ljava/lang/String;
-	public static final field DEBUGGER_SYMBOL_INCLUDES Ljava/lang/String;
-	public static final field DEBUGGER_UPLOAD_BATCH_SIZE Ljava/lang/String;
-	public static final field DEBUGGER_UPLOAD_FLUSH_INTERVAL Ljava/lang/String;
-	public static final field DEBUGGER_UPLOAD_TIMEOUT Ljava/lang/String;
-	public static final field DEBUGGER_VERIFY_BYTECODE Ljava/lang/String;
 }
 
 public final class com/datadog/trace/api/config/GeneralConfig {
@@ -2657,41 +2105,6 @@ public final class com/datadog/trace/api/config/GeneralConfig {
 	public static final field TRACE_DEBUG Ljava/lang/String;
 	public static final field TRACE_TRIAGE Ljava/lang/String;
 	public static final field VERSION Ljava/lang/String;
-}
-
-public final class com/datadog/trace/api/config/IastConfig {
-	public static final field IAST_DEBUG_ENABLED Ljava/lang/String;
-	public static final field IAST_DEDUPLICATION_ENABLED Ljava/lang/String;
-	public static final field IAST_DETECTION_MODE Ljava/lang/String;
-	public static final field IAST_ENABLED Ljava/lang/String;
-	public static final field IAST_MAX_CONCURRENT_REQUESTS Ljava/lang/String;
-	public static final field IAST_MAX_RANGE_COUNT Ljava/lang/String;
-	public static final field IAST_REDACTION_ENABLED Ljava/lang/String;
-	public static final field IAST_REDACTION_NAME_PATTERN Ljava/lang/String;
-	public static final field IAST_REDACTION_VALUE_PATTERN Ljava/lang/String;
-	public static final field IAST_REQUEST_SAMPLING Ljava/lang/String;
-	public static final field IAST_STACKTRACE_LEAK_SUPPRESS Ljava/lang/String;
-	public static final field IAST_TELEMETRY_VERBOSITY Ljava/lang/String;
-	public static final field IAST_TRUNCATION_MAX_VALUE_LENGTH Ljava/lang/String;
-	public static final field IAST_VULNERABILITIES_PER_REQUEST Ljava/lang/String;
-	public static final field IAST_WEAK_CIPHER_ALGORITHMS Ljava/lang/String;
-	public static final field IAST_WEAK_HASH_ALGORITHMS Ljava/lang/String;
-}
-
-public final class com/datadog/trace/api/config/JmxFetchConfig {
-	public static final field JMX_FETCH_CHECK_PERIOD Ljava/lang/String;
-	public static final field JMX_FETCH_CONFIG Ljava/lang/String;
-	public static final field JMX_FETCH_CONFIG_DIR Ljava/lang/String;
-	public static final field JMX_FETCH_ENABLED Ljava/lang/String;
-	public static final field JMX_FETCH_INITIAL_REFRESH_BEANS_PERIOD Ljava/lang/String;
-	public static final field JMX_FETCH_METRICS_CONFIGS Ljava/lang/String;
-	public static final field JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_ENABLED Ljava/lang/String;
-	public static final field JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_LIMIT Ljava/lang/String;
-	public static final field JMX_FETCH_REFRESH_BEANS_PERIOD Ljava/lang/String;
-	public static final field JMX_FETCH_START_DELAY Ljava/lang/String;
-	public static final field JMX_FETCH_STATSD_HOST Ljava/lang/String;
-	public static final field JMX_FETCH_STATSD_PORT Ljava/lang/String;
-	public static final field JMX_TAGS Ljava/lang/String;
 }
 
 public final class com/datadog/trace/api/config/ProfilingConfig {
@@ -3000,22 +2413,6 @@ public final class com/datadog/trace/api/experimental/DataStreamsContextCarrier$
 	public fun set (Ljava/lang/String;Ljava/lang/String;)V
 }
 
-public final class com/datadog/trace/api/flare/TracerFlare {
-	public fun <init> ()V
-	public static fun addBinary (Ljava/util/zip/ZipOutputStream;Ljava/lang/String;[B)V
-	public static fun addReporter (Lcom/datadog/trace/api/flare/TracerFlare$Reporter;)V
-	public static fun addReportsToFlare (Ljava/util/zip/ZipOutputStream;)V
-	public static fun addText (Ljava/util/zip/ZipOutputStream;Ljava/lang/String;Ljava/lang/String;)V
-	public static fun cleanupAfterFlare ()V
-	public static fun prepareForFlare ()V
-}
-
-public abstract interface class com/datadog/trace/api/flare/TracerFlare$Reporter {
-	public abstract fun addReportToFlare (Ljava/util/zip/ZipOutputStream;)V
-	public fun cleanupAfterFlare ()V
-	public fun prepareForFlare ()V
-}
-
 public abstract interface class com/datadog/trace/api/function/TriConsumer {
 	public abstract fun accept (Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
 }
@@ -3156,536 +2553,9 @@ public class com/datadog/trace/api/gateway/SubscriptionService$SubscriptionServi
 	public fun reset ()V
 }
 
-public class com/datadog/trace/api/http/StoredBodyFactories {
-	public static fun maybeCreateForByte (Ljava/nio/charset/Charset;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;)Lcom/datadog/trace/api/http/StoredByteBody;
-	public static fun maybeCreateForByte (Ljava/nio/charset/Charset;Ljava/lang/Object;)Lcom/datadog/trace/api/http/StoredByteBody;
-	public static fun maybeCreateForChar (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;)Lcom/datadog/trace/api/http/StoredCharBody;
-	public static fun maybeCreateForChar (Ljava/lang/Object;)Lcom/datadog/trace/api/http/StoredCharBody;
-	public static fun maybeDeliverBodyInOneGo (Ljava/lang/String;Lcom/datadog/trace/api/gateway/RequestContext;)Lcom/datadog/trace/api/gateway/Flow;
-	public static fun maybeDeliverBodyInOneGo (Ljava/util/function/Supplier;Lcom/datadog/trace/api/gateway/RequestContext;)Lcom/datadog/trace/api/gateway/Flow;
-}
-
-public class com/datadog/trace/api/http/StoredBodyFactories$ConstantBodySupplier : com/datadog/trace/api/http/StoredBodySupplier {
-	public fun <init> (Ljava/util/function/Supplier;)V
-	public fun get ()Ljava/lang/CharSequence;
-	public synthetic fun get ()Ljava/lang/Object;
-}
-
 public abstract interface class com/datadog/trace/api/http/StoredBodySupplier : java/util/function/Supplier {
 	public abstract fun get ()Ljava/lang/CharSequence;
 	public synthetic fun get ()Ljava/lang/Object;
-}
-
-public class com/datadog/trace/api/http/StoredByteBody : com/datadog/trace/api/http/StoredBodySupplier {
-	public fun <init> (Lcom/datadog/trace/api/gateway/RequestContext;Ljava/util/function/BiFunction;Ljava/util/function/BiFunction;Ljava/nio/charset/Charset;I)V
-	public fun appendData (I)V
-	public fun appendData (Lcom/datadog/trace/api/http/StoredByteBody$ByteBufferWriteCallback;I)V
-	public fun appendData ([BII)V
-	public fun get ()Ljava/lang/CharSequence;
-	public synthetic fun get ()Ljava/lang/Object;
-	public fun maybeNotify ()Lcom/datadog/trace/api/gateway/Flow;
-	public fun maybeNotifyAndBlock ()V
-	public fun setCharset (Ljava/nio/charset/Charset;)V
-}
-
-public abstract interface class com/datadog/trace/api/http/StoredByteBody$ByteBufferWriteCallback {
-	public abstract fun put (Ljava/nio/ByteBuffer;)V
-}
-
-public class com/datadog/trace/api/http/StoredCharBody : com/datadog/trace/api/http/StoredBodySupplier {
-	public fun <init> (Lcom/datadog/trace/api/gateway/RequestContext;Ljava/util/function/BiFunction;Ljava/util/function/BiFunction;I)V
-	public fun appendData (I)V
-	public fun appendData (Ljava/lang/String;)V
-	public fun appendData (Ljava/nio/CharBuffer;)V
-	public fun appendData ([CII)V
-	public synthetic fun get ()Ljava/lang/CharSequence;
-	public synthetic fun get ()Ljava/lang/Object;
-	public fun get ()Ljava/nio/CharBuffer;
-	public fun maybeNotify ()Lcom/datadog/trace/api/gateway/Flow;
-	public fun maybeNotifyAndBlock ()V
-}
-
-public abstract interface class com/datadog/trace/api/iast/IastCallSites {
-}
-
-public abstract interface class com/datadog/trace/api/iast/IastCallSites$HasTelemetry {
-	public abstract fun setVerbosity (Lcom/datadog/trace/api/iast/telemetry/Verbosity;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/IastContext {
-}
-
-public abstract class com/datadog/trace/api/iast/IastContext$Provider {
-	public static fun get ()Lcom/datadog/trace/api/iast/IastContext;
-	public static fun get (Lcom/datadog/trace/api/gateway/RequestContext;)Lcom/datadog/trace/api/iast/IastContext;
-	public static fun get (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/api/iast/IastContext;
-}
-
-public abstract class com/datadog/trace/api/iast/IastDetectionMode : java/lang/Enum {
-	public static final field DEFAULT Lcom/datadog/trace/api/iast/IastDetectionMode;
-	public static final field FULL Lcom/datadog/trace/api/iast/IastDetectionMode;
-	public static final field UNLIMITED I
-	public abstract fun getIastMaxConcurrentRequests (Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;)I
-	public abstract fun getIastMaxRangeCount (Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;)I
-	public abstract fun getIastRequestSampling (Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;)F
-	public abstract fun getIastVulnerabilitiesPerRequest (Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;)I
-	public abstract fun isIastDeduplicationEnabled (Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;)Z
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/iast/IastDetectionMode;
-	public static fun values ()[Lcom/datadog/trace/api/iast/IastDetectionMode;
-}
-
-public abstract class com/datadog/trace/api/iast/IastEnabledChecks {
-	public static fun isMajorJavaVersionAtLeast (Ljava/lang/String;)Z
-}
-
-public abstract interface class com/datadog/trace/api/iast/IastModule {
-	public static final field LOG Lcom/datadog/trace/logger/Logger;
-	public fun onUnexpectedException (Ljava/lang/String;Ljava/lang/Throwable;)V
-}
-
-public abstract class com/datadog/trace/api/iast/InstrumentationBridge {
-	public static field APPLICATION Lcom/datadog/trace/api/iast/sink/ApplicationModule;
-	public static field CODEC Lcom/datadog/trace/api/iast/propagation/CodecModule;
-	public static field COMMAND_INJECTION Lcom/datadog/trace/api/iast/sink/CommandInjectionModule;
-	public static field HEADER_INJECTION Lcom/datadog/trace/api/iast/sink/HeaderInjectionModule;
-	public static field HSTS_MISSING_HEADER_MODULE Lcom/datadog/trace/api/iast/sink/HstsMissingHeaderModule;
-	public static field INSECURE_COOKIE Lcom/datadog/trace/api/iast/sink/InsecureCookieModule;
-	public static field LDAP_INJECTION Lcom/datadog/trace/api/iast/sink/LdapInjectionModule;
-	public static field NO_HTTPONLY_COOKIE Lcom/datadog/trace/api/iast/sink/NoHttpOnlyCookieModule;
-	public static field NO_SAMESITE_COOKIE Lcom/datadog/trace/api/iast/sink/NoSameSiteCookieModule;
-	public static field PATH_TRAVERSAL Lcom/datadog/trace/api/iast/sink/PathTraversalModule;
-	public static field PROPAGATION Lcom/datadog/trace/api/iast/propagation/PropagationModule;
-	public static field RESPONSE_HEADER_MODULE Lcom/datadog/trace/api/iast/sink/HttpResponseHeaderModule;
-	public static field SQL_INJECTION Lcom/datadog/trace/api/iast/sink/SqlInjectionModule;
-	public static field SSRF Lcom/datadog/trace/api/iast/sink/SsrfModule;
-	public static field STACKTRACE_LEAK_MODULE Lcom/datadog/trace/api/iast/sink/StacktraceLeakModule;
-	public static field STRING Lcom/datadog/trace/api/iast/propagation/StringModule;
-	public static field TRUST_BOUNDARY_VIOLATION Lcom/datadog/trace/api/iast/sink/TrustBoundaryViolationModule;
-	public static field UNVALIDATED_REDIRECT Lcom/datadog/trace/api/iast/sink/UnvalidatedRedirectModule;
-	public static field WEAK_CIPHER Lcom/datadog/trace/api/iast/sink/WeakCipherModule;
-	public static field WEAK_HASH Lcom/datadog/trace/api/iast/sink/WeakHashModule;
-	public static field WEAK_RANDOMNESS Lcom/datadog/trace/api/iast/sink/WeakRandomnessModule;
-	public static field XPATH_INJECTION Lcom/datadog/trace/api/iast/sink/XPathInjectionModule;
-	public static field XSS Lcom/datadog/trace/api/iast/sink/XssModule;
-	public static field X_CONTENT_TYPE_HEADER_MODULE Lcom/datadog/trace/api/iast/sink/XContentTypeModule;
-	public static fun clearIastModules ()V
-	public static fun getIastModule (Ljava/lang/Class;)Lcom/datadog/trace/api/iast/IastModule;
-	public static fun registerIastModule (Lcom/datadog/trace/api/iast/IastModule;)V
-}
-
-public abstract interface annotation class com/datadog/trace/api/iast/Propagation : java/lang/annotation/Annotation {
-}
-
-public abstract interface annotation class com/datadog/trace/api/iast/Sink : java/lang/annotation/Annotation {
-	public abstract fun value ()B
-}
-
-public abstract interface annotation class com/datadog/trace/api/iast/Source : java/lang/annotation/Annotation {
-	public abstract fun value ()B
-}
-
-public abstract class com/datadog/trace/api/iast/SourceTypes {
-	public static final field GRPC_BODY B
-	public static final field GRPC_BODY_STRING Ljava/lang/String;
-	public static final field NONE B
-	public static final field REQUEST_BODY B
-	public static final field REQUEST_BODY_STRING Ljava/lang/String;
-	public static final field REQUEST_COOKIE_NAME B
-	public static final field REQUEST_COOKIE_NAME_STRING Ljava/lang/String;
-	public static final field REQUEST_COOKIE_VALUE B
-	public static final field REQUEST_COOKIE_VALUE_STRING Ljava/lang/String;
-	public static final field REQUEST_HEADER_NAME B
-	public static final field REQUEST_HEADER_NAME_STRING Ljava/lang/String;
-	public static final field REQUEST_HEADER_VALUE B
-	public static final field REQUEST_HEADER_VALUE_STRING Ljava/lang/String;
-	public static final field REQUEST_MATRIX_PARAMETER B
-	public static final field REQUEST_MATRIX_PARAMETER_STRING Ljava/lang/String;
-	public static final field REQUEST_MULTIPART_PARAMETER B
-	public static final field REQUEST_MULTIPART_PARAMETER_STRING Ljava/lang/String;
-	public static final field REQUEST_PARAMETER_NAME B
-	public static final field REQUEST_PARAMETER_NAME_STRING Ljava/lang/String;
-	public static final field REQUEST_PARAMETER_VALUE B
-	public static final field REQUEST_PARAMETER_VALUE_STRING Ljava/lang/String;
-	public static final field REQUEST_PATH B
-	public static final field REQUEST_PATH_PARAMETER B
-	public static final field REQUEST_PATH_PARAMETER_STRING Ljava/lang/String;
-	public static final field REQUEST_PATH_STRING Ljava/lang/String;
-	public static final field REQUEST_QUERY B
-	public static final field REQUEST_QUERY_STRING Ljava/lang/String;
-	public static final field REQUEST_URI B
-	public static final field REQUEST_URI_STRING Ljava/lang/String;
-	public static fun namedSource (B)B
-	public static fun toString (B)Ljava/lang/String;
-	public static fun values ()[B
-}
-
-public abstract interface class com/datadog/trace/api/iast/Taintable {
-	public abstract fun $$DD$getSource ()Lcom/datadog/trace/api/iast/Taintable$Source;
-	public abstract fun $$DD$setSource (Lcom/datadog/trace/api/iast/Taintable$Source;)V
-	public fun $DD$isTainted ()Z
-}
-
-public class com/datadog/trace/api/iast/Taintable$DebugLogger {
-	public fun <init> ()V
-	public static fun logTaint (Lcom/datadog/trace/api/iast/Taintable;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/Taintable$Source {
-	public abstract fun getName ()Ljava/lang/String;
-	public abstract fun getOrigin ()B
-	public abstract fun getValue ()Ljava/lang/String;
-}
-
-public class com/datadog/trace/api/iast/VulnerabilityMarks {
-	public static final field COMMAND_INJECTION_MARK I
-	public static final field HEADER_INJECTION_MARK I
-	public static final field LDAP_INJECTION_MARK I
-	public static final field NOT_MARKED I
-	public static final field PATH_TRAVERSAL_MARK I
-	public static final field SQL_INJECTION_MARK I
-	public static final field SSRF_MARK I
-	public static final field TRUST_BOUNDARY_VIOLATION I
-	public static final field UNVALIDATED_REDIRECT_MARK I
-	public static final field XPATH_INJECTION_MARK I
-	public static final field XSS_MARK I
-}
-
-public abstract class com/datadog/trace/api/iast/VulnerabilityTypes {
-	public static final field ADMIN_CONSOLE_ACTIVE B
-	public static final field ADMIN_CONSOLE_ACTIVE_STRING Ljava/lang/String;
-	public static final field COMMAND_INJECTION B
-	public static final field COMMAND_INJECTION_STRING Ljava/lang/String;
-	public static final field DEFAULT_HTML_ESCAPE_INVALID B
-	public static final field DEFAULT_HTML_ESCAPE_INVALID_STRING Ljava/lang/String;
-	public static final field DIRECTORY_LISTING_LEAK B
-	public static final field DIRECTORY_LISTING_LEAK_STRING Ljava/lang/String;
-	public static final field HEADER_INJECTION B
-	public static final field HEADER_INJECTION_STRING Ljava/lang/String;
-	public static final field HSTS_HEADER_MISSING B
-	public static final field HSTS_HEADER_MISSING_STRING Ljava/lang/String;
-	public static final field INSECURE_COOKIE B
-	public static final field INSECURE_COOKIE_STRING Ljava/lang/String;
-	public static final field INSECURE_JSP_LAYOUT B
-	public static final field INSECURE_JSP_LAYOUT_STRING Ljava/lang/String;
-	public static final field LDAP_INJECTION B
-	public static final field LDAP_INJECTION_STRING Ljava/lang/String;
-	public static final field NO_HTTPONLY_COOKIE B
-	public static final field NO_HTTPONLY_COOKIE_STRING Ljava/lang/String;
-	public static final field NO_SAMESITE_COOKIE B
-	public static final field NO_SAMESITE_COOKIE_STRING Ljava/lang/String;
-	public static final field PATH_TRAVERSAL B
-	public static final field PATH_TRAVERSAL_STRING Ljava/lang/String;
-	public static final field RESPONSE_HEADER B
-	public static final field RESPONSE_HEADER_TYPES [B
-	public static final field SESSION_TIMEOUT B
-	public static final field SESSION_TIMEOUT_STRING Ljava/lang/String;
-	public static final field SPRING_RESPONSE B
-	public static final field SPRING_RESPONSE_TYPES [B
-	public static final field SQL_INJECTION B
-	public static final field SQL_INJECTION_STRING Ljava/lang/String;
-	public static final field SSRF B
-	public static final field SSRF_STRING Ljava/lang/String;
-	public static final field STACKTRACE_LEAK B
-	public static final field STACKTRACE_LEAK_STRING Ljava/lang/String;
-	public static final field TRUST_BOUNDARY_VIOLATION B
-	public static final field TRUST_BOUNDARY_VIOLATION_STRING Ljava/lang/String;
-	public static final field UNVALIDATED_REDIRECT B
-	public static final field UNVALIDATED_REDIRECT_STRING Ljava/lang/String;
-	public static final field VERB_TAMPERING B
-	public static final field VERB_TAMPERING_STRING Ljava/lang/String;
-	public static final field WEAK_CIPHER B
-	public static final field WEAK_CIPHER_STRING Ljava/lang/String;
-	public static final field WEAK_HASH B
-	public static final field WEAK_HASH_STRING Ljava/lang/String;
-	public static final field WEAK_RANDOMNESS B
-	public static final field WEAK_RANDOMNESS_STRING Ljava/lang/String;
-	public static final field XCONTENTTYPE_HEADER_MISSING B
-	public static final field XCONTENTTYPE_HEADER_MISSING_STRING Ljava/lang/String;
-	public static final field XPATH_INJECTION B
-	public static final field XPATH_INJECTION_STRING Ljava/lang/String;
-	public static final field XSS B
-	public static final field XSS_STRING Ljava/lang/String;
-	public static fun toString (B)Ljava/lang/String;
-	public static fun values ()[B
-}
-
-public abstract interface class com/datadog/trace/api/iast/propagation/CodecModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onBase64Decode ([B[B)V
-	public abstract fun onBase64Encode ([B[B)V
-	public abstract fun onStringFromBytes ([BLjava/lang/String;Ljava/lang/String;)V
-	public abstract fun onStringGetBytes (Ljava/lang/String;Ljava/lang/String;[B)V
-	public abstract fun onUrlDecode (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/propagation/PropagationModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun findSource (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;)Lcom/datadog/trace/api/iast/Taintable$Source;
-	public abstract fun findSource (Ljava/lang/Object;)Lcom/datadog/trace/api/iast/Taintable$Source;
-	public abstract fun isTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;)Z
-	public abstract fun isTainted (Ljava/lang/Object;)Z
-	public abstract fun taint (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;B)V
-	public abstract fun taint (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;BLjava/lang/CharSequence;)V
-	public abstract fun taint (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;BLjava/lang/CharSequence;Ljava/lang/CharSequence;)V
-	public abstract fun taint (Ljava/lang/Object;B)V
-	public abstract fun taint (Ljava/lang/Object;BLjava/lang/CharSequence;)V
-	public abstract fun taint (Ljava/lang/Object;BLjava/lang/CharSequence;Ljava/lang/CharSequence;)V
-	public abstract fun taintDeeply (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;BLjava/util/function/Predicate;)I
-	public abstract fun taintDeeply (Ljava/lang/Object;BLjava/util/function/Predicate;)I
-	public abstract fun taintIfAnyTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;[Ljava/lang/Object;)V
-	public abstract fun taintIfAnyTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;[Ljava/lang/Object;ZI)V
-	public abstract fun taintIfAnyTainted (Ljava/lang/Object;[Ljava/lang/Object;)V
-	public abstract fun taintIfAnyTainted (Ljava/lang/Object;[Ljava/lang/Object;ZI)V
-	public abstract fun taintIfTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;Ljava/lang/Object;)V
-	public abstract fun taintIfTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;Ljava/lang/Object;B)V
-	public abstract fun taintIfTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;Ljava/lang/Object;BLjava/lang/CharSequence;)V
-	public abstract fun taintIfTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;Ljava/lang/Object;BLjava/lang/CharSequence;Ljava/lang/CharSequence;)V
-	public abstract fun taintIfTainted (Lcom/datadog/trace/api/iast/IastContext;Ljava/lang/Object;Ljava/lang/Object;ZI)V
-	public abstract fun taintIfTainted (Ljava/lang/Object;Ljava/lang/Object;)V
-	public abstract fun taintIfTainted (Ljava/lang/Object;Ljava/lang/Object;B)V
-	public abstract fun taintIfTainted (Ljava/lang/Object;Ljava/lang/Object;BLjava/lang/CharSequence;)V
-	public abstract fun taintIfTainted (Ljava/lang/Object;Ljava/lang/Object;BLjava/lang/CharSequence;Ljava/lang/CharSequence;)V
-	public abstract fun taintIfTainted (Ljava/lang/Object;Ljava/lang/Object;ZI)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/propagation/StringModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onSplit (Ljava/lang/String;[Ljava/lang/String;)V
-	public abstract fun onStringBuilderAppend (Ljava/lang/CharSequence;Ljava/lang/CharSequence;)V
-	public abstract fun onStringBuilderInit (Ljava/lang/CharSequence;Ljava/lang/CharSequence;)V
-	public abstract fun onStringBuilderToString (Ljava/lang/CharSequence;Ljava/lang/String;)V
-	public abstract fun onStringConcat (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onStringConcatFactory (Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;[I)V
-	public abstract fun onStringConstructor (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onStringFormat (Ljava/lang/Iterable;[Ljava/lang/Object;Ljava/lang/String;)V
-	public abstract fun onStringFormat (Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;)V
-	public abstract fun onStringFormat (Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;)V
-	public abstract fun onStringJoin (Ljava/lang/String;Ljava/lang/CharSequence;[Ljava/lang/CharSequence;)V
-	public abstract fun onStringRepeat (Ljava/lang/String;ILjava/lang/String;)V
-	public abstract fun onStringSubSequence (Ljava/lang/String;IILjava/lang/CharSequence;)V
-	public abstract fun onStringToLowerCase (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onStringToUpperCase (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onStringTrim (Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/ApplicationModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onRealPath (Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/CommandInjectionModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onProcessBuilderStart (Ljava/util/List;)V
-	public abstract fun onRuntimeExec ([Ljava/lang/String;)V
-	public abstract fun onRuntimeExec ([Ljava/lang/String;[Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/HeaderInjectionModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onHeader (Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/HstsMissingHeaderModule : com/datadog/trace/api/iast/sink/HttpRequestEndModule {
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/HttpCookieModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun getType ()Ljava/lang/Object;
-	public abstract fun isVulnerable (Lcom/datadog/trace/api/iast/util/Cookie;)Z
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/HttpRequestEndModule : com/datadog/trace/api/iast/IastModule {
-	public fun isHtmlResponse (Ljava/lang/String;)Z
-	public fun isIgnorableResponseCode (Ljava/lang/Integer;)Z
-	public abstract fun onRequestEnd (Ljava/lang/Object;Lcom/datadog/trace/api/gateway/IGSpanInfo;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/HttpResponseHeaderModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onCookie (Lcom/datadog/trace/api/iast/util/Cookie;)V
-	public abstract fun onHeader (Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/InsecureCookieModule : com/datadog/trace/api/iast/sink/HttpCookieModule {
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/LdapInjectionModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onDirContextSearch (Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/NoHttpOnlyCookieModule : com/datadog/trace/api/iast/sink/HttpCookieModule {
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/NoSameSiteCookieModule : com/datadog/trace/api/iast/sink/HttpCookieModule {
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/PathTraversalModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onPathTraversal (Ljava/io/File;Ljava/lang/String;)V
-	public abstract fun onPathTraversal (Ljava/lang/String;)V
-	public abstract fun onPathTraversal (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onPathTraversal (Ljava/lang/String;[Ljava/lang/String;)V
-	public abstract fun onPathTraversal (Ljava/net/URI;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/SqlInjectionModule : com/datadog/trace/api/iast/IastModule {
-	public static final field DATABASE_PARAMETER Ljava/lang/String;
-	public abstract fun onJdbcQuery (Ljava/lang/String;)V
-	public abstract fun onJdbcQuery (Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/SsrfModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onURLConnection (Ljava/lang/Object;)V
-	public abstract fun onURLConnection (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/StacktraceLeakModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onStacktraceLeak (Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/TrustBoundaryViolationModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onSessionValue (Ljava/lang/String;Ljava/lang/Object;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/UnvalidatedRedirectModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onHeader (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onRedirect (Ljava/lang/String;)V
-	public abstract fun onRedirect (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onURIRedirect (Ljava/net/URI;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/WeakCipherModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onCipherAlgorithm (Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/WeakHashModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onHashingAlgorithm (Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/WeakRandomnessModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onWeakRandom (Ljava/lang/Class;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/XContentTypeModule : com/datadog/trace/api/iast/sink/HttpRequestEndModule {
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/XPathInjectionModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onExpression (Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/api/iast/sink/XssModule : com/datadog/trace/api/iast/IastModule {
-	public abstract fun onXss (Ljava/lang/CharSequence;Ljava/lang/String;I)V
-	public abstract fun onXss (Ljava/lang/String;)V
-	public abstract fun onXss (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun onXss (Ljava/lang/String;[Ljava/lang/Object;)V
-	public abstract fun onXss ([C)V
-}
-
-public final class com/datadog/trace/api/iast/telemetry/IastMetric : java/lang/Enum {
-	public static final field EXECUTED_PROPAGATION Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field EXECUTED_SINK Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field EXECUTED_SOURCE Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field EXECUTED_TAINTED Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field INSTRUMENTED_PROPAGATION Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field INSTRUMENTED_SINK Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field INSTRUMENTED_SOURCE Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field REQUEST_TAINTED Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static final field TAINTED_FLAT_MODE Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static fun count ()I
-	public fun getIndex (B)I
-	public fun getName ()Ljava/lang/String;
-	public fun getScope ()Lcom/datadog/trace/api/iast/telemetry/IastMetric$Scope;
-	public fun getTag ()Lcom/datadog/trace/api/iast/telemetry/IastMetric$Tag;
-	public fun isCommon ()Z
-	public fun isEnabled (Lcom/datadog/trace/api/iast/telemetry/Verbosity;)Z
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public static fun values ()[Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-}
-
-public final class com/datadog/trace/api/iast/telemetry/IastMetric$Scope {
-	public static final field GLOBAL Lcom/datadog/trace/api/iast/telemetry/IastMetric$Scope;
-	public static final field REQUEST Lcom/datadog/trace/api/iast/telemetry/IastMetric$Scope;
-	public fun getName ()Ljava/lang/String;
-}
-
-public class com/datadog/trace/api/iast/telemetry/IastMetric$Tag {
-	public static final field SOURCE_TYPE Lcom/datadog/trace/api/iast/telemetry/IastMetric$Tag;
-	public static final field VULNERABILITY_TYPE Lcom/datadog/trace/api/iast/telemetry/IastMetric$Tag;
-	public fun getName ()Ljava/lang/String;
-	public fun getValues ()[B
-	public fun isWrapped (B)Z
-	public fun toString (B)Ljava/lang/String;
-	public fun unwrap (B)[B
-}
-
-public class com/datadog/trace/api/iast/telemetry/IastMetricCollector : com/datadog/trace/api/telemetry/MetricCollector {
-	public fun <init> ()V
-	protected fun <init> (Ljava/util/concurrent/BlockingQueue;Ljava/util/concurrent/atomic/AtomicLongArray;)V
-	public static fun add (Lcom/datadog/trace/api/iast/telemetry/IastMetric;BI)V
-	public static fun add (Lcom/datadog/trace/api/iast/telemetry/IastMetric;BILjava/lang/Object;)V
-	public static fun add (Lcom/datadog/trace/api/iast/telemetry/IastMetric;I)V
-	public static fun add (Lcom/datadog/trace/api/iast/telemetry/IastMetric;ILjava/lang/Object;)V
-	public fun addMetric (Lcom/datadog/trace/api/iast/telemetry/IastMetric;BI)V
-	public fun drain ()Ljava/util/Collection;
-	public static fun get ()Lcom/datadog/trace/api/iast/telemetry/IastMetricCollector;
-	public fun merge (Ljava/util/Collection;)V
-	public fun prepareMetrics ()V
-}
-
-public abstract interface class com/datadog/trace/api/iast/telemetry/IastMetricCollector$HasMetricCollector {
-	public abstract fun getMetricCollector ()Lcom/datadog/trace/api/iast/telemetry/IastMetricCollector;
-}
-
-public class com/datadog/trace/api/iast/telemetry/IastMetricCollector$IastMetricData : com/datadog/trace/api/telemetry/MetricCollector$Metric {
-	public fun <init> (Lcom/datadog/trace/api/iast/telemetry/IastMetric;BJ)V
-	public static fun computeTag (Lcom/datadog/trace/api/iast/telemetry/IastMetric;B)Ljava/lang/String;
-	public fun getMetric ()Lcom/datadog/trace/api/iast/telemetry/IastMetric;
-	public fun getSpanTag ()Ljava/lang/String;
-	public fun getTagValue ()B
-}
-
-public final class com/datadog/trace/api/iast/telemetry/Verbosity : java/lang/Enum {
-	public static final field DEBUG Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-	public static final field INFORMATION Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-	public static final field MANDATORY Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-	public static final field OFF Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-	public fun isDebugEnabled ()Z
-	public fun isEnabled (Lcom/datadog/trace/api/iast/telemetry/Verbosity;)Z
-	public fun isInformationEnabled ()Z
-	public fun isMandatoryEnabled ()Z
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-	public static fun values ()[Lcom/datadog/trace/api/iast/telemetry/Verbosity;
-}
-
-public class com/datadog/trace/api/iast/util/Cookie {
-	public fun <init> (Ljava/lang/String;ZZLjava/lang/String;)V
-	public fun getCookieName ()Ljava/lang/String;
-	public fun getSameSite ()Ljava/lang/String;
-	public fun isHttpOnly ()Z
-	public fun isSecure ()Z
-	public static fun named (Ljava/lang/String;)Lcom/datadog/trace/api/iast/util/Cookie$Builder;
-}
-
-public class com/datadog/trace/api/iast/util/Cookie$Builder {
-	public fun <init> (Ljava/lang/String;)V
-	public fun build ()Lcom/datadog/trace/api/iast/util/Cookie;
-	public fun httpOnly (Z)Lcom/datadog/trace/api/iast/util/Cookie$Builder;
-	public fun sameSite (Ljava/lang/String;)Lcom/datadog/trace/api/iast/util/Cookie$Builder;
-	public fun secure (Z)Lcom/datadog/trace/api/iast/util/Cookie$Builder;
-}
-
-public final class com/datadog/trace/api/intake/TrackType : java/lang/Enum {
-	public static final field CITESTCOV Lcom/datadog/trace/api/intake/TrackType;
-	public static final field CITESTCYCLE Lcom/datadog/trace/api/intake/TrackType;
-	public static final field NOOP Lcom/datadog/trace/api/intake/TrackType;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/intake/TrackType;
-	public static fun values ()[Lcom/datadog/trace/api/intake/TrackType;
-}
-
-public abstract class com/datadog/trace/api/interceptor/AbstractTraceInterceptor : com/datadog/trace/api/interceptor/TraceInterceptor {
-	protected fun <init> (Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;)V
-	public fun priority ()I
-}
-
-public final class com/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority : java/lang/Enum {
-	public static final field CI_VISIBILITY_APM Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
-	public static final field CI_VISIBILITY_TRACE Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
-	public static final field DD_INTAKE Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
-	public static final field GIT_METADATA Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
-	public static final field SERVICE_NAME_COLLECTING Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
-	public static fun values ()[Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;
 }
 
 public abstract interface class com/datadog/trace/api/interceptor/MutableSpan {
@@ -4160,98 +3030,6 @@ public abstract interface class com/datadog/trace/api/scopemanager/ScopeListener
 	public abstract fun afterScopeClosed ()V
 }
 
-public class com/datadog/trace/api/telemetry/CoreMetricCollector : com/datadog/trace/api/telemetry/MetricCollector {
-	public fun drain ()Ljava/util/Collection;
-	public static fun getInstance ()Lcom/datadog/trace/api/telemetry/CoreMetricCollector;
-	public fun prepareMetrics ()V
-}
-
-public class com/datadog/trace/api/telemetry/CoreMetricCollector$CoreMetric : com/datadog/trace/api/telemetry/MetricCollector$Metric {
-	public fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/String;)V
-}
-
-public class com/datadog/trace/api/telemetry/IntegrationsCollector {
-	public fun drain ()Ljava/util/Map;
-	public static fun get ()Lcom/datadog/trace/api/telemetry/IntegrationsCollector;
-	public fun update (Ljava/lang/Iterable;Z)V
-}
-
-public class com/datadog/trace/api/telemetry/LogCollector {
-	public fun addLogMessage (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public fun drain ()Ljava/util/Collection;
-	public static fun get ()Lcom/datadog/trace/api/telemetry/LogCollector;
-}
-
-public class com/datadog/trace/api/telemetry/LogCollector$RawLogMessage {
-	public field count I
-	public final field logLevel Ljava/lang/String;
-	public final field messageOriginal Ljava/lang/String;
-	public final field throwable Ljava/lang/Throwable;
-	public final field timestamp J
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;J)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun message ()Ljava/lang/String;
-}
-
-public abstract interface class com/datadog/trace/api/telemetry/MetricCollector {
-	public static final field RAW_QUEUE_SIZE I
-	public abstract fun drain ()Ljava/util/Collection;
-	public abstract fun prepareMetrics ()V
-}
-
-public class com/datadog/trace/api/telemetry/MetricCollector$Metric {
-	public final field common Z
-	public final field metricName Ljava/lang/String;
-	public final field namespace Ljava/lang/String;
-	public final field tags Ljava/util/List;
-	public final field timestamp J
-	public final field type Ljava/lang/String;
-	public final field value Ljava/lang/Number;
-	public fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/String;)V
-	public fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/util/List;)V
-	public fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/Number;[Ljava/lang/String;)V
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public class com/datadog/trace/api/telemetry/WafMetricCollector : com/datadog/trace/api/telemetry/MetricCollector {
-	public static final field INSTANCE Lcom/datadog/trace/api/telemetry/WafMetricCollector;
-	public fun <init> ()V
-	public fun drain ()Ljava/util/Collection;
-	public static fun get ()Lcom/datadog/trace/api/telemetry/WafMetricCollector;
-	public fun prepareMetrics ()V
-	public fun wafInit (Ljava/lang/String;Ljava/lang/String;)V
-	public fun wafRequest ()V
-	public fun wafRequestBlocked ()V
-	public fun wafRequestTriggered ()V
-	public fun wafUpdates (Ljava/lang/String;)V
-}
-
-public class com/datadog/trace/api/telemetry/WafMetricCollector$AtomicRequestCounter {
-	public fun <init> ()V
-	public final fun get ()J
-	public final fun getAndReset ()J
-	public final fun increment ()V
-}
-
-public class com/datadog/trace/api/telemetry/WafMetricCollector$WafInitRawMetric : com/datadog/trace/api/telemetry/WafMetricCollector$WafMetric {
-	public fun <init> (JLjava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract class com/datadog/trace/api/telemetry/WafMetricCollector$WafMetric : com/datadog/trace/api/telemetry/MetricCollector$Metric {
-	public fun <init> (Ljava/lang/String;J[Ljava/lang/String;)V
-}
-
-public class com/datadog/trace/api/telemetry/WafMetricCollector$WafRequestsRawMetric : com/datadog/trace/api/telemetry/WafMetricCollector$WafMetric {
-	public fun <init> (JLjava/lang/String;Ljava/lang/String;ZZ)V
-}
-
-public class com/datadog/trace/api/telemetry/WafMetricCollector$WafUpdatesRawMetric : com/datadog/trace/api/telemetry/WafMetricCollector$WafMetric {
-	public fun <init> (JLjava/lang/String;Ljava/lang/String;)V
-}
-
 public class com/datadog/trace/api/time/ControllableTimeSource : com/datadog/trace/api/time/TimeSource {
 	public fun <init> ()V
 	public fun advance (J)V
@@ -4277,18 +3055,6 @@ public abstract interface class com/datadog/trace/api/time/TimeSource {
 	public abstract fun getNanoTicks ()J
 }
 
-public class com/datadog/trace/appsec/api/blocking/Blocking {
-	public static fun forUser (Ljava/lang/String;)Lcom/datadog/trace/appsec/api/blocking/Blocking$UserBlockingSpec;
-	public static fun setBlockingService (Lcom/datadog/trace/appsec/api/blocking/BlockingService;)V
-	public static fun tryCommitBlockingResponse (ILcom/datadog/trace/appsec/api/blocking/BlockingContentType;)Z
-	public static fun tryCommitBlockingResponse (ILcom/datadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
-}
-
-public class com/datadog/trace/appsec/api/blocking/Blocking$UserBlockingSpec {
-	public fun blockIfMatch ()V
-	public fun shouldBlock ()Lcom/datadog/trace/appsec/api/blocking/BlockingDetails;
-}
-
 public final class com/datadog/trace/appsec/api/blocking/BlockingContentType : java/lang/Enum {
 	public static final field AUTO Lcom/datadog/trace/appsec/api/blocking/BlockingContentType;
 	public static final field HTML Lcom/datadog/trace/appsec/api/blocking/BlockingContentType;
@@ -4298,45 +3064,9 @@ public final class com/datadog/trace/appsec/api/blocking/BlockingContentType : j
 	public static fun values ()[Lcom/datadog/trace/appsec/api/blocking/BlockingContentType;
 }
 
-public class com/datadog/trace/appsec/api/blocking/BlockingDetails {
-	public final field blockingContentType Lcom/datadog/trace/appsec/api/blocking/BlockingContentType;
-	public final field extraHeaders Ljava/util/Map;
-	public final field statusCode I
-	public fun <init> (ILcom/datadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)V
-}
-
-public class com/datadog/trace/appsec/api/blocking/BlockingException : java/lang/RuntimeException {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
-	public fun <init> (Ljava/lang/Throwable;)V
-}
-
-public abstract interface class com/datadog/trace/appsec/api/blocking/BlockingService {
-	public static final field NOOP Lcom/datadog/trace/appsec/api/blocking/BlockingService;
-	public abstract fun shouldBlockUser (Ljava/lang/String;)Lcom/datadog/trace/appsec/api/blocking/BlockingDetails;
-	public abstract fun tryCommitBlockingResponse (ILcom/datadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
-}
-
-public class com/datadog/trace/appsec/api/blocking/BlockingService$BlockingServiceNoop : com/datadog/trace/appsec/api/blocking/BlockingService {
-	public fun shouldBlockUser (Ljava/lang/String;)Lcom/datadog/trace/appsec/api/blocking/BlockingDetails;
-	public fun tryCommitBlockingResponse (ILcom/datadog/trace/appsec/api/blocking/BlockingContentType;Ljava/util/Map;)Z
-}
-
 public class com/datadog/trace/bootstrap/ActiveSubsystems {
 	public static field APPSEC_ACTIVE Z
 	public fun <init> ()V
-}
-
-public class com/datadog/trace/bootstrap/config/provider/AgentArgsInjector {
-	public fun <init> ()V
-	public static fun injectAgentArgsConfig (Ljava/lang/String;)V
-	public static fun injectAgentArgsConfig (Ljava/util/Map;)V
-}
-
-public class com/datadog/trace/bootstrap/config/provider/AgentArgsParser {
-	public fun <init> ()V
-	public static fun parseAgentArgs (Ljava/lang/String;)Ljava/util/Map;
 }
 
 public final class com/datadog/trace/bootstrap/config/provider/CapturedEnvironmentConfigSource : com/datadog/trace/bootstrap/config/provider/ConfigProvider$Source {
@@ -5405,38 +4135,6 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/WriterConstan
 	public static final field TRACE_STRUCTURE_WRITER_TYPE Ljava/lang/String;
 }
 
-public class com/datadog/trace/civisibility/interceptor/CiVisibilityApmProtocolInterceptor : com/datadog/trace/api/interceptor/AbstractTraceInterceptor {
-	public static final field INSTANCE Lcom/datadog/trace/civisibility/interceptor/CiVisibilityApmProtocolInterceptor;
-	protected fun <init> (Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;)V
-	public fun onTraceComplete (Ljava/util/Collection;)Ljava/util/Collection;
-}
-
-public class com/datadog/trace/civisibility/interceptor/CiVisibilityTraceInterceptor : com/datadog/trace/api/interceptor/AbstractTraceInterceptor {
-	public static final field INSTANCE Lcom/datadog/trace/civisibility/interceptor/CiVisibilityTraceInterceptor;
-	protected fun <init> (Lcom/datadog/trace/api/interceptor/AbstractTraceInterceptor$Priority;)V
-	public fun onTraceComplete (Ljava/util/Collection;)Ljava/util/Collection;
-}
-
-public final class com/datadog/trace/common/metrics/AggregateMetric {
-	public fun <init> ()V
-	public fun clear ()V
-	public fun getDuration ()J
-	public fun getErrorCount ()I
-	public fun getErrorLatencies ()Lcom/datadog/trace/core/histogram/Histogram;
-	public fun getHitCount ()I
-	public fun getOkLatencies ()Lcom/datadog/trace/core/histogram/Histogram;
-	public fun getTopLevelCount ()I
-	public fun recordDurations (ILjava/util/concurrent/atomic/AtomicLongArray;)Lcom/datadog/trace/common/metrics/AggregateMetric;
-}
-
-public final class com/datadog/trace/common/metrics/Batch : com/datadog/trace/common/metrics/InboxItem {
-	public fun add (JJ)Z
-	public fun contributeTo (Lcom/datadog/trace/common/metrics/AggregateMetric;)V
-	public fun getKey ()Lcom/datadog/trace/common/metrics/MetricKey;
-	public fun isUsed ()Z
-	public fun reset (Lcom/datadog/trace/common/metrics/MetricKey;)Lcom/datadog/trace/common/metrics/Batch;
-}
-
 public abstract interface class com/datadog/trace/common/metrics/EventListener {
 	public abstract fun onEvent (Lcom/datadog/trace/common/metrics/EventListener$EventType;Ljava/lang/String;)V
 }
@@ -5460,13 +4158,6 @@ public final class com/datadog/trace/common/metrics/MetricKey {
 	public fun getType ()Lcom/datadog/trace/bootstrap/instrumentation/api/UTF8BytesString;
 	public fun hashCode ()I
 	public fun isSynthetics ()Z
-}
-
-public abstract interface class com/datadog/trace/common/metrics/MetricWriter {
-	public abstract fun add (Lcom/datadog/trace/common/metrics/MetricKey;Lcom/datadog/trace/common/metrics/AggregateMetric;)V
-	public abstract fun finishBucket ()V
-	public abstract fun reset ()V
-	public abstract fun startBucket (IJJ)V
 }
 
 public abstract interface class com/datadog/trace/common/metrics/MetricsAggregator : java/lang/AutoCloseable {
@@ -5626,6 +4317,7 @@ public class com/datadog/trace/common/sampling/SpanSamplingRules {
 }
 
 public final class com/datadog/trace/common/sampling/SpanSamplingRules$Rule : com/datadog/trace/api/sampling/SamplingRule$SpanSamplingRule {
+	public fun asStringJsonRule ()Ljava/lang/String;
 	public static fun create (Lcom/datadog/trace/common/sampling/SpanSamplingRules$JsonRule;)Lcom/datadog/trace/common/sampling/SpanSamplingRules$Rule;
 	public fun getMaxPerSecond ()I
 	public fun getName ()Ljava/lang/String;
@@ -5644,6 +4336,7 @@ public class com/datadog/trace/common/sampling/TraceSamplingRules {
 }
 
 public final class com/datadog/trace/common/sampling/TraceSamplingRules$Rule : com/datadog/trace/api/sampling/SamplingRule$TraceSamplingRule {
+	public fun asStringJsonRule ()Ljava/lang/String;
 	public static fun create (Lcom/datadog/trace/common/sampling/TraceSamplingRules$JsonRule;)Lcom/datadog/trace/common/sampling/TraceSamplingRules$Rule;
 	public fun getName ()Ljava/lang/String;
 	public fun getResource ()Ljava/lang/String;
@@ -5683,16 +4376,6 @@ public abstract interface class com/datadog/trace/common/writer/ListWriter$Filte
 	public abstract fun accept (Ljava/util/List;)Z
 }
 
-public class com/datadog/trace/common/writer/LoggingWriter : com/datadog/trace/common/writer/Writer {
-	public fun <init> ()V
-	public fun close ()V
-	public fun flush ()Z
-	public fun incrementDropCounts (I)V
-	public fun start ()V
-	public fun toString ()Ljava/lang/String;
-	public fun write (Ljava/util/List;)V
-}
-
 public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/common/writer/Writer {
 	public fun <init> ()V
 	public fun close ()V
@@ -5705,15 +4388,6 @@ public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/comm
 public abstract class com/datadog/trace/common/writer/Payload {
 	protected field body Ljava/nio/ByteBuffer;
 	public fun <init> ()V
-}
-
-public class com/datadog/trace/common/writer/PrintingWriter : com/datadog/trace/common/writer/Writer {
-	public fun <init> (Ljava/io/OutputStream;Z)V
-	public fun close ()V
-	public fun flush ()Z
-	public fun incrementDropCounts (I)V
-	public fun start ()V
-	public fun write (Ljava/util/List;)V
 }
 
 public abstract class com/datadog/trace/common/writer/RemoteApi {
@@ -5954,7 +4628,6 @@ public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/ins
 	public fun addScopeListener (Lcom/datadog/trace/api/scopemanager/ScopeListener;)V
 	public fun addScopeListener (Ljava/lang/Runnable;Ljava/lang/Runnable;)V
 	public fun addTraceInterceptor (Lcom/datadog/trace/api/interceptor/TraceInterceptor;)Z
-	public fun addTracerReportToFlare (Ljava/util/zip/ZipOutputStream;)V
 	public synthetic fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
 	public fun captureSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;
@@ -6079,6 +4752,7 @@ public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/Tra
 	public fun getEndpointTracker ()Lcom/datadog/trace/api/EndpointTracker;
 	public fun getError ()I
 	public fun getHttpStatusCode ()S
+	public fun getLinks ()Ljava/util/List;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/api/interceptor/MutableSpan;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/core/CoreSpan;
@@ -6377,18 +5051,6 @@ public abstract interface class com/datadog/trace/core/PendingTraceBuffer$Elemen
 	public abstract fun writeOnBufferFull ()Z
 }
 
-public final class com/datadog/trace/core/StatusLogger : com/squareup/moshi/JsonAdapter, com/datadog/trace/util/AgentTaskScheduler$Task, com/squareup/moshi/JsonAdapter$Factory {
-	public fun <init> ()V
-	public fun create (Ljava/lang/reflect/Type;Ljava/util/Set;Lcom/squareup/moshi/Moshi;)Lcom/squareup/moshi/JsonAdapter;
-	public fun fromJson (Lcom/squareup/moshi/JsonReader;)Lcom/datadog/trace/api/Config;
-	public synthetic fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/lang/Object;
-	public static fun logStatus (Lcom/datadog/trace/api/Config;)V
-	public fun run (Lcom/datadog/trace/api/Config;)V
-	public synthetic fun run (Ljava/lang/Object;)V
-	public fun toJson (Lcom/squareup/moshi/JsonWriter;Lcom/datadog/trace/api/Config;)V
-	public synthetic fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/lang/Object;)V
-}
-
 public class com/datadog/trace/core/datastreams/DataStreamContextExtractor : com/datadog/trace/core/propagation/HttpCodec$Extractor {
 	public fun <init> (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;Lcom/datadog/trace/api/time/TimeSource;Ljava/util/function/Supplier;Lcom/datadog/trace/api/WellKnownTags;)V
 	public fun extract (Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor;)Lcom/datadog/trace/bootstrap/instrumentation/api/TagContext;
@@ -6416,10 +5078,6 @@ public abstract interface class com/datadog/trace/core/datastreams/DataStreamsMo
 	public abstract fun injector ()Lcom/datadog/trace/core/datastreams/DataStreamContextInjector;
 	public abstract fun mergePathwayContextIntoSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
 	public abstract fun start ()V
-}
-
-public abstract interface class com/datadog/trace/core/datastreams/DatastreamsPayloadWriter {
-	public abstract fun writePayload (Ljava/util/Collection;)V
 }
 
 public class com/datadog/trace/core/datastreams/DefaultPathwayContext : com/datadog/trace/bootstrap/instrumentation/api/PathwayContext {
@@ -6456,28 +5114,6 @@ public class com/datadog/trace/core/datastreams/NoOpDataStreamMonitoring : com/d
 public class com/datadog/trace/core/datastreams/SchemaSampler {
 	public fun <init> ()V
 	public fun shouldSample (J)I
-}
-
-public class com/datadog/trace/core/datastreams/StatsBucket {
-	public fun <init> (JJ)V
-	public fun addBacklog (Lcom/datadog/trace/bootstrap/instrumentation/api/Backlog;)V
-	public fun addPoint (Lcom/datadog/trace/bootstrap/instrumentation/api/StatsPoint;)V
-	public fun getBacklogs ()Ljava/util/Collection;
-	public fun getBucketDurationNanos ()J
-	public fun getGroups ()Ljava/util/Collection;
-	public fun getStartTimeNanos ()J
-}
-
-public class com/datadog/trace/core/datastreams/StatsGroup {
-	public fun <init> (Ljava/util/List;JJ)V
-	public fun add (JJJ)V
-	public fun getEdgeLatency ()Lcom/datadog/trace/core/histogram/Histogram;
-	public fun getEdgeTags ()Ljava/util/List;
-	public fun getHash ()J
-	public fun getParentHash ()J
-	public fun getPathwayLatency ()Lcom/datadog/trace/core/histogram/Histogram;
-	public fun getPayloadSize ()Lcom/datadog/trace/core/histogram/Histogram;
-	public fun toString ()Ljava/lang/String;
 }
 
 public class com/datadog/trace/core/datastreams/TagsProcessor {
@@ -6555,14 +5191,6 @@ public abstract class com/datadog/trace/core/monitor/HealthMetrics : java/lang/A
 	public fun summary ()Ljava/lang/String;
 }
 
-public final class com/datadog/trace/core/monitor/MonitoringImpl : com/datadog/trace/monitor/Monitoring {
-	public fun <init> (Lcom/datadog/trace/api/StatsDClient;JLjava/util/concurrent/TimeUnit;)V
-	public fun newCounter (Ljava/lang/String;)Lcom/datadog/trace/monitor/Counter;
-	public fun newThreadLocalTimer (Ljava/lang/String;)Lcom/datadog/trace/monitor/Recording;
-	public fun newTimer (Ljava/lang/String;)Lcom/datadog/trace/monitor/Recording;
-	public fun newTimer (Ljava/lang/String;[Ljava/lang/String;)Lcom/datadog/trace/monitor/Recording;
-}
-
 public final class com/datadog/trace/core/monitor/StatsDCounter : com/datadog/trace/monitor/Counter {
 	public fun increment (I)V
 	public fun incrementErrorCount (Ljava/lang/String;I)V
@@ -6570,13 +5198,6 @@ public final class com/datadog/trace/core/monitor/StatsDCounter : com/datadog/tr
 
 public class com/datadog/trace/core/monitor/ThreadLocalRecording : com/datadog/trace/monitor/Recording {
 	public fun <init> (Ljava/lang/ThreadLocal;)V
-	public fun flush ()V
-	public fun reset ()V
-	public fun start ()Lcom/datadog/trace/monitor/Recording;
-	public fun stop ()V
-}
-
-public class com/datadog/trace/core/monitor/Timer : com/datadog/trace/monitor/Recording {
 	public fun flush ()V
 	public fun reset ()V
 	public fun start ()Lcom/datadog/trace/monitor/Recording;
@@ -6841,6 +5462,12 @@ public final class com/datadog/trace/core/util/GlobPattern {
 	public static fun globToRegexPattern (Ljava/lang/String;)Ljava/util/regex/Pattern;
 }
 
+public class com/datadog/trace/core/util/JsonObjectUtils {
+	public fun <init> ()V
+	public static fun getAsString (Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+	public static fun safeGetAsMap (Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/util/Map;
+}
+
 public final class com/datadog/trace/core/util/LRUCache : java/util/LinkedHashMap {
 	public fun <init> (I)V
 	public fun <init> (IFI)V
@@ -6850,6 +5477,11 @@ public final class com/datadog/trace/core/util/LRUCache : java/util/LinkedHashMa
 
 public abstract interface class com/datadog/trace/core/util/LRUCache$ExpiryListener {
 	public abstract fun accept (Ljava/util/Map$Entry;)V
+}
+
+public class com/datadog/trace/core/util/MapUtils {
+	public fun <init> ()V
+	public static fun getAsJsonObject (Ljava/util/Map;)Lcom/google/gson/JsonObject;
 }
 
 public abstract interface class com/datadog/trace/core/util/Matcher {
@@ -6896,14 +5528,6 @@ public abstract interface class com/datadog/trace/ddagent/DroppingPolicy {
 public class com/datadog/trace/ddagent/DroppingPolicy$DisabledDroppingPolicy : com/datadog/trace/ddagent/DroppingPolicy {
 	public fun <init> ()V
 	public fun active ()Z
-}
-
-public final class com/datadog/trace/lambda/ReadFromInputStreamJsonAdapter : com/squareup/moshi/JsonAdapter {
-	public fun <init> ()V
-	public fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/io/ByteArrayInputStream;
-	public synthetic fun fromJson (Lcom/squareup/moshi/JsonReader;)Ljava/lang/Object;
-	public fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/io/ByteArrayInputStream;)V
-	public synthetic fun toJson (Lcom/squareup/moshi/JsonWriter;Ljava/lang/Object;)V
 }
 
 public class com/datadog/trace/logger/DatadogCoreTracerLogger : com/datadog/trace/logger/Logger {
@@ -6998,32 +5622,6 @@ public class com/datadog/trace/logger/NoOpLogger : com/datadog/trace/logger/Logg
 	public fun warn (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
 	public fun warn (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public fun warn (Ljava/lang/String;[Ljava/lang/Object;)V
-}
-
-public class com/datadog/trace/logging/GlobalLogLevelSwitcher : com/datadog/trace/logging/LogLevelSwitcher {
-	public static fun get ()Lcom/datadog/trace/logging/LogLevelSwitcher;
-	public fun reinitialize ()V
-	public fun restore ()V
-	public fun switchLevel (Lcom/datadog/trace/logging/LogLevel;)V
-}
-
-public final class com/datadog/trace/logging/LogLevel : java/lang/Enum {
-	public static final field DEBUG Lcom/datadog/trace/logging/LogLevel;
-	public static final field ERROR Lcom/datadog/trace/logging/LogLevel;
-	public static final field INFO Lcom/datadog/trace/logging/LogLevel;
-	public static final field OFF Lcom/datadog/trace/logging/LogLevel;
-	public static final field TRACE Lcom/datadog/trace/logging/LogLevel;
-	public static final field WARN Lcom/datadog/trace/logging/LogLevel;
-	public static fun fromString (Ljava/lang/String;)Lcom/datadog/trace/logging/LogLevel;
-	public fun isEnabled (Lcom/datadog/trace/logging/LogLevel;)Z
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/logging/LogLevel;
-	public static fun values ()[Lcom/datadog/trace/logging/LogLevel;
-}
-
-public abstract interface class com/datadog/trace/logging/LogLevelSwitcher {
-	public abstract fun reinitialize ()V
-	public abstract fun restore ()V
-	public abstract fun switchLevel (Lcom/datadog/trace/logging/LogLevel;)V
 }
 
 public final class com/datadog/trace/logging/LoggingSettingsDescription {
@@ -7324,10 +5922,6 @@ public final class com/datadog/trace/util/PidHelper {
 	public static fun getPidAsLong ()J
 }
 
-public abstract class com/datadog/trace/util/ProcessUtils {
-	public static fun getCurrentJvmPath ()Ljava/lang/String;
-}
-
 public final class com/datadog/trace/util/Strings {
 	public fun <init> ()V
 	public static fun escapeToJson (Ljava/lang/String;)Ljava/lang/String;
@@ -7369,36 +5963,6 @@ public class com/datadog/trace/util/TraceUtils {
 	public static fun normalizeServiceName (Ljava/lang/String;)Ljava/lang/String;
 	public static fun normalizeSpanType (Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
 	public static fun normalizeTag (Ljava/lang/String;)Ljava/lang/String;
-}
-
-public abstract class com/datadog/trace/util/stacktrace/AbstractStackWalker : com/datadog/trace/util/stacktrace/StackWalker {
-	public fun <init> ()V
-	public fun walk (Ljava/util/function/Function;)Ljava/lang/Object;
-}
-
-public class com/datadog/trace/util/stacktrace/DefaultStackWalker : com/datadog/trace/util/stacktrace/AbstractStackWalker {
-	public fun isEnabled ()Z
-}
-
-public abstract class com/datadog/trace/util/stacktrace/StackUtils {
-	public fun <init> ()V
-	public static fun filter (Ljava/lang/Throwable;Ljava/util/function/Predicate;)Ljava/lang/Throwable;
-	public static fun filterDatadog (Ljava/lang/Throwable;)Ljava/lang/Throwable;
-	public static fun filterFirst (Ljava/lang/Throwable;Ljava/util/function/Predicate;)Ljava/lang/Throwable;
-	public static fun filterFirstDatadog (Ljava/lang/Throwable;)Ljava/lang/Throwable;
-	public static fun filterPackagesIn (Ljava/lang/Throwable;[Ljava/lang/String;)Ljava/lang/Throwable;
-	public static fun filterUntil (Ljava/lang/Throwable;Ljava/util/function/Predicate;)Ljava/lang/Throwable;
-	public static fun update (Ljava/lang/Throwable;Ljava/util/function/Function;)Ljava/lang/Throwable;
-}
-
-public abstract interface class com/datadog/trace/util/stacktrace/StackWalker {
-	public abstract fun isEnabled ()Z
-	public abstract fun walk (Ljava/util/function/Function;)Ljava/lang/Object;
-}
-
-public class com/datadog/trace/util/stacktrace/StackWalkerFactory {
-	public static final field INSTANCE Lcom/datadog/trace/util/stacktrace/StackWalker;
-	public fun <init> ()V
 }
 
 public class com/datadog/trace/util/throwable/FatalAgentMisconfigurationError : java/lang/Error {

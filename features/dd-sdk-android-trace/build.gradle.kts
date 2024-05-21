@@ -39,10 +39,10 @@ plugins {
 
 android {
     defaultConfig {
+        buildFeatures {
+            buildConfig = true
+        }
         consumerProguardFiles("consumer-rules.pro")
-    }
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
     }
     namespace = "com.datadog.android.trace"
     sourceSets.named("test") {
@@ -52,9 +52,7 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring(libs.desugarJdk)
     api(project(":dd-sdk-android-core"))
-    api(libs.openTelemetryApi)
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
@@ -99,3 +97,8 @@ publishingConfig(
     "The Tracing feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
+android {
+    lint {
+        lintConfig = file("lint-baseline.xml")
+    }
+}

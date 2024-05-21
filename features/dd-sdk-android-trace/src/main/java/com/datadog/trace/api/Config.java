@@ -12,88 +12,9 @@ import static com.datadog.trace.api.DDTags.RUNTIME_VERSION_TAG;
 import static com.datadog.trace.api.DDTags.SCHEMA_VERSION_TAG_KEY;
 import static com.datadog.trace.api.DDTags.SERVICE;
 import static com.datadog.trace.api.DDTags.SERVICE_TAG;
-import static com.datadog.trace.api.UserEventTrackingMode.SAFE;
-import static com.datadog.trace.api.config.AppSecConfig.API_SECURITY_ENABLED;
-import static com.datadog.trace.api.config.AppSecConfig.API_SECURITY_REQUEST_SAMPLE_RATE;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_AUTOMATED_USER_EVENTS_TRACKING;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_HTTP_BLOCKED_TEMPLATE_HTML;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_HTTP_BLOCKED_TEMPLATE_JSON;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_IP_ADDR_HEADER;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_OBFUSCATION_PARAMETER_KEY_REGEXP;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_REPORTING_INBAND;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_REPORT_TIMEOUT_SEC;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_RULES_FILE;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_TRACE_RATE_LIMIT;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_WAF_METRICS;
-import static com.datadog.trace.api.config.AppSecConfig.APPSEC_WAF_TIMEOUT;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_ADDITIONAL_CHILD_PROCESS_JVM_ARGS;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_AGENTLESS_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_AGENTLESS_URL;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_AGENT_JAR_URI;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_AUTO_CONFIGURATION_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_BACKEND_API_TIMEOUT_MILLIS;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_BUILD_INSTRUMENTATION_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CIPROVIDER_INTEGRATION_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_EXCLUDES;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_INCLUDES;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_PERCENTAGE_CALCULATION_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_REPORT_DUMP_DIR;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_ROOT_PACKAGES_LIMIT;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_CODE_COVERAGE_SEGMENTS_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_COMPILER_PLUGIN_AUTO_CONFIGURATION_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_COMPILER_PLUGIN_VERSION;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_DEBUG_PORT;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_FLAKY_RETRY_COUNT;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_FLAKY_RETRY_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_GIT_COMMAND_TIMEOUT_MILLIS;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_GIT_REMOTE_NAME;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_GIT_UNSHALLOW_DEFER;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_GIT_UNSHALLOW_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_GIT_UPLOAD_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_GIT_UPLOAD_TIMEOUT_MILLIS;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_INJECTED_TRACER_VERSION;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_ITR_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_JACOCO_GRADLE_SOURCE_SETS;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_JACOCO_PLUGIN_VERSION;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_JVM_INFO_CACHE_SIZE;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_MODULE_EXECUTION_SETTINGS_CACHE_SIZE;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_MODULE_ID;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_MODULE_NAME;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_REPO_INDEX_SHARING_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_RESOURCE_FOLDER_NAMES;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_SESSION_ID;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_SIGNAL_SERVER_HOST;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_SIGNAL_SERVER_PORT;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_SOURCE_DATA_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_SOURCE_DATA_ROOT_CHECK_ENABLED;
-import static com.datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_TRACE_SANITATION_ENABLED;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_AGENTLESS;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_AGENTLESS_DEFAULT;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_TAGS;
-import static com.datadog.trace.api.config.CwsConfig.CWS_ENABLED;
-import static com.datadog.trace.api.config.CwsConfig.CWS_TLS_REFRESH;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_CAPTURE_TIMEOUT;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_CLASSFILE_DUMP_ENABLED;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_DIAGNOSTICS_INTERVAL;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_ENABLED;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_EXCLUDE_FILES;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_INSTRUMENT_THE_WORLD;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_MAX_PAYLOAD_SIZE;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_METRICS_ENABLED;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_POLL_INTERVAL;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_PROBE_FILE_LOCATION;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_REDACTED_IDENTIFIERS;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_REDACTED_TYPES;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_SYMBOL_ENABLED;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_SYMBOL_FLUSH_THRESHOLD;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_SYMBOL_FORCE_UPLOAD;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_SYMBOL_INCLUDES;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_BATCH_SIZE;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_FLUSH_INTERVAL;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_TIMEOUT;
-import static com.datadog.trace.api.config.DebuggerConfig.DEBUGGER_VERIFY_BYTECODE;
 import static com.datadog.trace.api.config.GeneralConfig.API_KEY;
 import static com.datadog.trace.api.config.GeneralConfig.API_KEY_FILE;
 import static com.datadog.trace.api.config.GeneralConfig.APPLICATION_KEY;
@@ -136,29 +57,6 @@ import static com.datadog.trace.api.config.GeneralConfig.TRACER_METRICS_MAX_PEND
 import static com.datadog.trace.api.config.GeneralConfig.TRACE_DEBUG;
 import static com.datadog.trace.api.config.GeneralConfig.TRACE_TRIAGE;
 import static com.datadog.trace.api.config.GeneralConfig.VERSION;
-import static com.datadog.trace.api.config.IastConfig.IAST_DEBUG_ENABLED;
-import static com.datadog.trace.api.config.IastConfig.IAST_DETECTION_MODE;
-import static com.datadog.trace.api.config.IastConfig.IAST_REDACTION_ENABLED;
-import static com.datadog.trace.api.config.IastConfig.IAST_REDACTION_NAME_PATTERN;
-import static com.datadog.trace.api.config.IastConfig.IAST_REDACTION_VALUE_PATTERN;
-import static com.datadog.trace.api.config.IastConfig.IAST_STACKTRACE_LEAK_SUPPRESS;
-import static com.datadog.trace.api.config.IastConfig.IAST_TELEMETRY_VERBOSITY;
-import static com.datadog.trace.api.config.IastConfig.IAST_TRUNCATION_MAX_VALUE_LENGTH;
-import static com.datadog.trace.api.config.IastConfig.IAST_WEAK_CIPHER_ALGORITHMS;
-import static com.datadog.trace.api.config.IastConfig.IAST_WEAK_HASH_ALGORITHMS;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_CHECK_PERIOD;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_CONFIG;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_CONFIG_DIR;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_ENABLED;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_INITIAL_REFRESH_BEANS_PERIOD;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_METRICS_CONFIGS;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_ENABLED;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_LIMIT;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_REFRESH_BEANS_PERIOD;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_START_DELAY;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_STATSD_HOST;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_STATSD_PORT;
-import static com.datadog.trace.api.config.JmxFetchConfig.JMX_TAGS;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_AGENTLESS;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_AGENTLESS_DEFAULT;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_API_KEY_FILE_OLD;
@@ -313,7 +211,6 @@ import static com.datadog.trace.api.config.TracerConfig.TRACE_STRICT_WRITES_ENAB
 import static com.datadog.trace.api.config.TracerConfig.TRACE_X_DATADOG_TAGS_MAX_LENGTH;
 import static com.datadog.trace.api.config.TracerConfig.WRITER_BAGGAGE_INJECT;
 import static com.datadog.trace.api.config.TracerConfig.WRITER_TYPE;
-import static com.datadog.trace.api.iast.IastDetectionMode.DEFAULT;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableList;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableSet;
 import static com.datadog.trace.util.Strings.propertyNameToEnvironmentVariableName;
@@ -325,8 +222,6 @@ import androidx.annotation.NonNull;
 import com.datadog.trace.api.config.GeneralConfig;
 import com.datadog.trace.api.config.ProfilingConfig;
 import com.datadog.trace.api.config.TracerConfig;
-import com.datadog.trace.api.iast.IastDetectionMode;
-import com.datadog.trace.api.iast.telemetry.Verbosity;
 import com.datadog.trace.api.naming.SpanNaming;
 import com.datadog.trace.bootstrap.config.provider.CapturedEnvironmentConfigSource;
 import com.datadog.trace.bootstrap.config.provider.ConfigProvider;
@@ -457,7 +352,6 @@ public class Config {
     private final Map<String, String> serviceMapping;
     private final Map<String, String> tags;
     private final Map<String, String> spanTags;
-    private final Map<String, String> jmxTags;
     private final Map<String, String> requestHeaderTags;
     private final Map<String, String> responseHeaderTags;
     private final Map<String, String> baggageMapping;
@@ -503,18 +397,6 @@ public class Config {
     private final Integer statsDClientSocketTimeout;
 
     private final boolean runtimeMetricsEnabled;
-    private final boolean jmxFetchEnabled;
-    private final String jmxFetchConfigDir;
-    private final List<String> jmxFetchConfigs;
-    @Deprecated
-    private final List<String> jmxFetchMetricsConfigs;
-    private final Integer jmxFetchCheckPeriod;
-    private final Integer jmxFetchInitialRefreshBeansPeriod;
-    private final Integer jmxFetchRefreshBeansPeriod;
-    private final String jmxFetchStatsdHost;
-    private final Integer jmxFetchStatsdPort;
-    private final boolean jmxFetchMultipleRuntimeServicesEnabled;
-    private final int jmxFetchMultipleRuntimeServicesLimit;
 
     // These values are default-ed to those of jmx fetch values as needed
     private final boolean healthMetricsEnabled;
@@ -572,81 +454,6 @@ public class Config {
 
     private final boolean clientIpEnabled;
 
-    private final boolean appSecReportingInband;
-    private final String appSecRulesFile;
-    private final int appSecReportMinTimeout;
-    private final int appSecReportMaxTimeout;
-    private final int appSecTraceRateLimit;
-    private final boolean appSecWafMetrics;
-    private final int appSecWafTimeout;
-    private final String appSecObfuscationParameterKeyRegexp;
-    private final String appSecObfuscationParameterValueRegexp;
-    private final String appSecHttpBlockedTemplateHtml;
-    private final String appSecHttpBlockedTemplateJson;
-    private final UserEventTrackingMode appSecUserEventsTracking;
-    private final boolean apiSecurityEnabled;
-    private final float apiSecurityRequestSampleRate;
-
-    private final IastDetectionMode iastDetectionMode;
-    private final int iastMaxConcurrentRequests;
-    private final int iastVulnerabilitiesPerRequest;
-    private final float iastRequestSampling;
-    private final boolean iastDebugEnabled;
-    private final Verbosity iastTelemetryVerbosity;
-    private final boolean iastRedactionEnabled;
-    private final String iastRedactionNamePattern;
-    private final String iastRedactionValuePattern;
-    private final int iastMaxRangeCount;
-    private final int iastTruncationMaxValueLength;
-    private final boolean iastStacktraceLeakSuppress;
-
-    private final boolean ciVisibilityTraceSanitationEnabled;
-    private final boolean ciVisibilityAgentlessEnabled;
-    private final String ciVisibilityAgentlessUrl;
-
-    private final boolean ciVisibilitySourceDataEnabled;
-    private final boolean ciVisibilitySourceDataRootCheckEnabled;
-    private final boolean ciVisibilityBuildInstrumentationEnabled;
-    private final Long ciVisibilitySessionId;
-    private final Long ciVisibilityModuleId;
-    private final String ciVisibilityAgentJarUri;
-    private final boolean ciVisibilityAutoConfigurationEnabled;
-    private final String ciVisibilityAdditionalChildProcessJvmArgs;
-    private final boolean ciVisibilityCompilerPluginAutoConfigurationEnabled;
-    private final boolean ciVisibilityCodeCoverageEnabled;
-    private final boolean ciVisibilityCodeCoveragePercentageCalculationEnabled;
-    private final String ciVisibilityCodeCoverageReportDumpDir;
-    private final String ciVisibilityCompilerPluginVersion;
-    private final String ciVisibilityJacocoPluginVersion;
-    private final boolean ciVisibilityJacocoPluginVersionProvided;
-    private final List<String> ciVisibilityCodeCoverageIncludes;
-    private final List<String> ciVisibilityCodeCoverageExcludes;
-    private final String[] ciVisibilityCodeCoverageIncludedPackages;
-    private final String[] ciVisibilityCodeCoverageExcludedPackages;
-    private final List<String> ciVisibilityJacocoGradleSourceSets;
-    private final Integer ciVisibilityDebugPort;
-    private final boolean ciVisibilityGitUploadEnabled;
-    private final boolean ciVisibilityGitUnshallowEnabled;
-    private final boolean ciVisibilityGitUnshallowDefer;
-    private final long ciVisibilityGitCommandTimeoutMillis;
-    private final String ciVisibilityGitRemoteName;
-    private final long ciVisibilityBackendApiTimeoutMillis;
-    private final long ciVisibilityGitUploadTimeoutMillis;
-    private final String ciVisibilitySignalServerHost;
-    private final int ciVisibilitySignalServerPort;
-    private final boolean ciVisibilityItrEnabled;
-    private final boolean ciVisibilityCiProviderIntegrationEnabled;
-    private final boolean ciVisibilityRepoIndexSharingEnabled;
-    private final int ciVisibilityModuleExecutionSettingsCacheSize;
-    private final int ciVisibilityJvmInfoCacheSize;
-    private final boolean ciVisibilityCoverageSegmentsEnabled;
-    private final int ciVisibilityCoverageRootPackagesLimit;
-    private final String ciVisibilityInjectedTracerVersion;
-    private final List<String> ciVisibilityResourceFolderNames;
-    private final boolean ciVisibilityFlakyRetryEnabled;
-    private final int ciVisibilityFlakyRetryCount;
-    private final String ciVisibilityModuleName;
-
     private final boolean remoteConfigEnabled;
     private final boolean remoteConfigIntegrityCheckEnabled;
     private final String remoteConfigUrl;
@@ -656,27 +463,6 @@ public class Config {
     private final String remoteConfigTargetsKey;
 
     private final String DBMPropagationMode;
-
-    private final boolean debuggerEnabled;
-    private final int debuggerUploadTimeout;
-    private final int debuggerUploadFlushInterval;
-    private final boolean debuggerClassFileDumpEnabled;
-    private final int debuggerPollInterval;
-    private final int debuggerDiagnosticsInterval;
-    private final boolean debuggerMetricEnabled;
-    private final String debuggerProbeFileLocation;
-    private final int debuggerUploadBatchSize;
-    private final long debuggerMaxPayloadSize;
-    private final boolean debuggerVerifyByteCode;
-    private final boolean debuggerInstrumentTheWorld;
-    private final String debuggerExcludeFiles;
-    private final int debuggerCaptureTimeout;
-    private final String debuggerRedactedIdentifiers;
-    private final String debuggerRedactedTypes;
-    private final boolean debuggerSymbolEnabled;
-    private final boolean debuggerSymbolForceUpload;
-    private final String debuggerSymbolIncludes;
-    private final int debuggerSymbolFlushThreshold;
 
     private final boolean awsPropagationEnabled;
     private final boolean sqsPropagationEnabled;
@@ -734,17 +520,8 @@ public class Config {
     private final BitSet grpcServerErrorStatuses;
     private final BitSet grpcClientErrorStatuses;
 
-    private final boolean cwsEnabled;
-    private final int cwsTlsRefresh;
-
     private final boolean dataStreamsEnabled;
     private final float dataStreamsBucketDurationSeconds;
-
-    private final Set<String> iastWeakHashAlgorithms;
-
-    private final Pattern iastWeakCipherAlgorithms;
-
-    private final boolean iastDeduplicationEnabled;
 
     private final float telemetryHeartbeatInterval;
     private final long telemetryExtendedHeartbeatInterval;
@@ -982,7 +759,6 @@ public class Config {
         }
 
         spanTags = configProvider.getMergedMap(SPAN_TAGS);
-        jmxTags = configProvider.getMergedMap(JMX_TAGS);
 
         primaryTag = configProvider.getString(PRIMARY_TAG);
 
@@ -1207,42 +983,13 @@ public class Config {
 
         dogStatsDStartDelay =
                 configProvider.getInteger(
-                        DOGSTATSD_START_DELAY, DEFAULT_DOGSTATSD_START_DELAY, JMX_FETCH_START_DELAY);
+                        DOGSTATSD_START_DELAY, DEFAULT_DOGSTATSD_START_DELAY);
 
         statsDClientQueueSize = configProvider.getInteger(STATSD_CLIENT_QUEUE_SIZE);
         statsDClientSocketBuffer = configProvider.getInteger(STATSD_CLIENT_SOCKET_BUFFER);
         statsDClientSocketTimeout = configProvider.getInteger(STATSD_CLIENT_SOCKET_TIMEOUT);
 
         runtimeMetricsEnabled = configProvider.getBoolean(RUNTIME_METRICS_ENABLED, true);
-
-        jmxFetchEnabled =
-                runtimeMetricsEnabled
-                        && configProvider.getBoolean(JMX_FETCH_ENABLED, DEFAULT_JMX_FETCH_ENABLED);
-        jmxFetchConfigDir = configProvider.getString(JMX_FETCH_CONFIG_DIR);
-        jmxFetchConfigs = tryMakeImmutableList(configProvider.getList(JMX_FETCH_CONFIG));
-        jmxFetchMetricsConfigs =
-                tryMakeImmutableList(configProvider.getList(JMX_FETCH_METRICS_CONFIGS));
-        jmxFetchCheckPeriod = configProvider.getInteger(JMX_FETCH_CHECK_PERIOD);
-        jmxFetchInitialRefreshBeansPeriod =
-                configProvider.getInteger(JMX_FETCH_INITIAL_REFRESH_BEANS_PERIOD);
-        jmxFetchRefreshBeansPeriod = configProvider.getInteger(JMX_FETCH_REFRESH_BEANS_PERIOD);
-
-        jmxFetchStatsdPort = configProvider.getInteger(JMX_FETCH_STATSD_PORT, DOGSTATSD_PORT);
-        jmxFetchStatsdHost =
-                configProvider.getString(
-                        JMX_FETCH_STATSD_HOST,
-                        // default to agent host if an explicit port has been set
-                        null != jmxFetchStatsdPort && jmxFetchStatsdPort > 0 ? agentHost : null,
-                        DOGSTATSD_HOST);
-
-        jmxFetchMultipleRuntimeServicesEnabled =
-                configProvider.getBoolean(
-                        JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_ENABLED,
-                        DEFAULT_JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_ENABLED);
-        jmxFetchMultipleRuntimeServicesLimit =
-                configProvider.getInteger(
-                        JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_LIMIT,
-                        DEFAULT_JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_LIMIT);
 
         // Writer.Builder createMonitor will use the values of the JMX fetch & agent to fill-in defaults
         healthMetricsEnabled =
@@ -1270,9 +1017,6 @@ public class Config {
                 configProvider.getBoolean(TRACE_ANALYTICS_ENABLED, DEFAULT_TRACE_ANALYTICS_ENABLED);
 
         String traceClientIpHeader = configProvider.getString(TRACE_CLIENT_IP_HEADER);
-        if (traceClientIpHeader == null) {
-            traceClientIpHeader = configProvider.getString(APPSEC_IP_ADDR_HEADER);
-        }
         if (traceClientIpHeader != null) {
             traceClientIpHeader = traceClientIpHeader.toLowerCase(Locale.ROOT);
         }
@@ -1434,205 +1178,6 @@ public class Config {
 
         clientIpEnabled = configProvider.getBoolean(CLIENT_IP_ENABLED, DEFAULT_CLIENT_IP_ENABLED);
 
-        appSecReportingInband =
-                configProvider.getBoolean(APPSEC_REPORTING_INBAND, DEFAULT_APPSEC_REPORTING_INBAND);
-        appSecRulesFile = configProvider.getString(APPSEC_RULES_FILE, null);
-
-        // Default AppSec report timeout min=5, max=60
-        appSecReportMaxTimeout = configProvider.getInteger(APPSEC_REPORT_TIMEOUT_SEC, 60);
-        appSecReportMinTimeout = Math.min(appSecReportMaxTimeout, 5);
-
-        appSecTraceRateLimit =
-                configProvider.getInteger(APPSEC_TRACE_RATE_LIMIT, DEFAULT_APPSEC_TRACE_RATE_LIMIT);
-
-        appSecWafMetrics = configProvider.getBoolean(APPSEC_WAF_METRICS, DEFAULT_APPSEC_WAF_METRICS);
-
-        appSecWafTimeout = configProvider.getInteger(APPSEC_WAF_TIMEOUT, DEFAULT_APPSEC_WAF_TIMEOUT);
-
-        appSecObfuscationParameterKeyRegexp =
-                configProvider.getString(APPSEC_OBFUSCATION_PARAMETER_KEY_REGEXP, null);
-        appSecObfuscationParameterValueRegexp =
-                configProvider.getString(APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP, null);
-
-        appSecHttpBlockedTemplateHtml =
-                configProvider.getString(APPSEC_HTTP_BLOCKED_TEMPLATE_HTML, null);
-        appSecHttpBlockedTemplateJson =
-                configProvider.getString(APPSEC_HTTP_BLOCKED_TEMPLATE_JSON, null);
-        appSecUserEventsTracking =
-                UserEventTrackingMode.fromString(
-                        configProvider.getStringNotEmpty(
-                                APPSEC_AUTOMATED_USER_EVENTS_TRACKING, SAFE.toString()));
-        apiSecurityEnabled =
-                configProvider.getBoolean(API_SECURITY_ENABLED, DEFAULT_API_SECURITY_ENABLED);
-        apiSecurityRequestSampleRate =
-                configProvider.getFloat(
-                        API_SECURITY_REQUEST_SAMPLE_RATE, DEFAULT_API_SECURITY_REQUEST_SAMPLE_RATE);
-
-        iastDebugEnabled = configProvider.getBoolean(IAST_DEBUG_ENABLED, DEFAULT_IAST_DEBUG_ENABLED);
-
-        iastDetectionMode =
-                configProvider.getEnum(IAST_DETECTION_MODE, IastDetectionMode.class, DEFAULT);
-        iastMaxConcurrentRequests = iastDetectionMode.getIastMaxConcurrentRequests(configProvider);
-        iastVulnerabilitiesPerRequest =
-                iastDetectionMode.getIastVulnerabilitiesPerRequest(configProvider);
-        iastRequestSampling = iastDetectionMode.getIastRequestSampling(configProvider);
-        iastDeduplicationEnabled = iastDetectionMode.isIastDeduplicationEnabled(configProvider);
-        iastWeakHashAlgorithms =
-                tryMakeImmutableSet(
-                        configProvider.getSet(IAST_WEAK_HASH_ALGORITHMS, DEFAULT_IAST_WEAK_HASH_ALGORITHMS));
-        iastWeakCipherAlgorithms =
-                getPattern(
-                        DEFAULT_IAST_WEAK_CIPHER_ALGORITHMS,
-                        configProvider.getString(IAST_WEAK_CIPHER_ALGORITHMS));
-        iastTelemetryVerbosity =
-                configProvider.getEnum(IAST_TELEMETRY_VERBOSITY, Verbosity.class, Verbosity.INFORMATION);
-        iastRedactionEnabled =
-                configProvider.getBoolean(IAST_REDACTION_ENABLED, DEFAULT_IAST_REDACTION_ENABLED);
-        iastRedactionNamePattern =
-                configProvider.getString(IAST_REDACTION_NAME_PATTERN, DEFAULT_IAST_REDACTION_NAME_PATTERN);
-        iastRedactionValuePattern =
-                configProvider.getString(
-                        IAST_REDACTION_VALUE_PATTERN, DEFAULT_IAST_REDACTION_VALUE_PATTERN);
-        iastTruncationMaxValueLength =
-                configProvider.getInteger(
-                        IAST_TRUNCATION_MAX_VALUE_LENGTH, DEFAULT_IAST_TRUNCATION_MAX_VALUE_LENGTH);
-        iastMaxRangeCount = iastDetectionMode.getIastMaxRangeCount(configProvider);
-        iastStacktraceLeakSuppress =
-                configProvider.getBoolean(
-                        IAST_STACKTRACE_LEAK_SUPPRESS, DEFAULT_IAST_STACKTRACE_LEAK_SUPPRESS);
-
-        ciVisibilityTraceSanitationEnabled =
-                configProvider.getBoolean(CIVISIBILITY_TRACE_SANITATION_ENABLED, true);
-
-        ciVisibilityAgentlessEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_AGENTLESS_ENABLED, DEFAULT_CIVISIBILITY_AGENTLESS_ENABLED);
-
-        ciVisibilitySourceDataEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_SOURCE_DATA_ENABLED, DEFAULT_CIVISIBILITY_SOURCE_DATA_ENABLED);
-
-        ciVisibilitySourceDataRootCheckEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_SOURCE_DATA_ROOT_CHECK_ENABLED,
-                        DEFAULT_CIVISIBILITY_SOURCE_DATA_ROOT_CHECK_ENABLED);
-
-        ciVisibilityBuildInstrumentationEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_BUILD_INSTRUMENTATION_ENABLED,
-                        DEFAULT_CIVISIBILITY_BUILD_INSTRUMENTATION_ENABLED);
-
-        ciVisibilitySessionId = configProvider.getLong(CIVISIBILITY_SESSION_ID);
-        ciVisibilityModuleId = configProvider.getLong(CIVISIBILITY_MODULE_ID);
-
-        final String ciVisibilityAgentlessUrlStr = configProvider.getString(CIVISIBILITY_AGENTLESS_URL);
-        URI parsedCiVisibilityUri = null;
-        if (ciVisibilityAgentlessUrlStr != null && !ciVisibilityAgentlessUrlStr.isEmpty()) {
-            try {
-                parsedCiVisibilityUri = new URL(ciVisibilityAgentlessUrlStr).toURI();
-            } catch (MalformedURLException | URISyntaxException ex) {
-                log.error(
-                        "Cannot parse CI Visibility agentless URL '{}', skipping", ciVisibilityAgentlessUrlStr);
-            }
-        }
-        if (parsedCiVisibilityUri != null) {
-            ciVisibilityAgentlessUrl = ciVisibilityAgentlessUrlStr;
-        } else {
-            ciVisibilityAgentlessUrl = null;
-        }
-
-        ciVisibilityAgentJarUri = configProvider.getString(CIVISIBILITY_AGENT_JAR_URI);
-        ciVisibilityAutoConfigurationEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_AUTO_CONFIGURATION_ENABLED,
-                        DEFAULT_CIVISIBILITY_AUTO_CONFIGURATION_ENABLED);
-        ciVisibilityAdditionalChildProcessJvmArgs =
-                configProvider.getString(CIVISIBILITY_ADDITIONAL_CHILD_PROCESS_JVM_ARGS);
-        ciVisibilityCompilerPluginAutoConfigurationEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_COMPILER_PLUGIN_AUTO_CONFIGURATION_ENABLED,
-                        DEFAULT_CIVISIBILITY_COMPILER_PLUGIN_AUTO_CONFIGURATION_ENABLED);
-        ciVisibilityCodeCoverageEnabled =
-                configProvider.getBoolean(CIVISIBILITY_CODE_COVERAGE_ENABLED, true);
-        ciVisibilityCodeCoveragePercentageCalculationEnabled =
-                configProvider.getBoolean(CIVISIBILITY_CODE_COVERAGE_PERCENTAGE_CALCULATION_ENABLED, true);
-        ciVisibilityCodeCoverageReportDumpDir =
-                configProvider.getString(CIVISIBILITY_CODE_COVERAGE_REPORT_DUMP_DIR);
-        ciVisibilityCompilerPluginVersion =
-                configProvider.getString(
-                        CIVISIBILITY_COMPILER_PLUGIN_VERSION, DEFAULT_CIVISIBILITY_COMPILER_PLUGIN_VERSION);
-        ciVisibilityJacocoPluginVersion =
-                configProvider.getString(
-                        CIVISIBILITY_JACOCO_PLUGIN_VERSION, DEFAULT_CIVISIBILITY_JACOCO_PLUGIN_VERSION);
-        ciVisibilityJacocoPluginVersionProvided =
-                configProvider.getString(CIVISIBILITY_JACOCO_PLUGIN_VERSION) != null;
-        ciVisibilityCodeCoverageIncludes =
-                Arrays.asList(
-                        COLON.split(configProvider.getString(CIVISIBILITY_CODE_COVERAGE_INCLUDES, ":")));
-        ciVisibilityCodeCoverageExcludes =
-                Arrays.asList(
-                        COLON.split(
-                                configProvider.getString(
-                                        CIVISIBILITY_CODE_COVERAGE_EXCLUDES,
-                                        DEFAULT_CIVISIBILITY_JACOCO_PLUGIN_EXCLUDES)));
-        ciVisibilityCodeCoverageIncludedPackages =
-                convertJacocoExclusionFormatToPackagePrefixes(ciVisibilityCodeCoverageIncludes);
-        ciVisibilityCodeCoverageExcludedPackages =
-                convertJacocoExclusionFormatToPackagePrefixes(ciVisibilityCodeCoverageExcludes);
-        ciVisibilityJacocoGradleSourceSets =
-                configProvider.getList(
-                        CIVISIBILITY_JACOCO_GRADLE_SOURCE_SETS, Collections.singletonList("main"));
-        ciVisibilityDebugPort = configProvider.getInteger(CIVISIBILITY_DEBUG_PORT);
-        ciVisibilityGitUploadEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_GIT_UPLOAD_ENABLED, DEFAULT_CIVISIBILITY_GIT_UPLOAD_ENABLED);
-        ciVisibilityGitUnshallowEnabled =
-                configProvider.getBoolean(
-                        CIVISIBILITY_GIT_UNSHALLOW_ENABLED, DEFAULT_CIVISIBILITY_GIT_UNSHALLOW_ENABLED);
-        ciVisibilityGitUnshallowDefer =
-                configProvider.getBoolean(CIVISIBILITY_GIT_UNSHALLOW_DEFER, true);
-        ciVisibilityGitCommandTimeoutMillis =
-                configProvider.getLong(
-                        CIVISIBILITY_GIT_COMMAND_TIMEOUT_MILLIS,
-                        DEFAULT_CIVISIBILITY_GIT_COMMAND_TIMEOUT_MILLIS);
-        ciVisibilityBackendApiTimeoutMillis =
-                configProvider.getLong(
-                        CIVISIBILITY_BACKEND_API_TIMEOUT_MILLIS,
-                        DEFAULT_CIVISIBILITY_BACKEND_API_TIMEOUT_MILLIS);
-        ciVisibilityGitUploadTimeoutMillis =
-                configProvider.getLong(
-                        CIVISIBILITY_GIT_UPLOAD_TIMEOUT_MILLIS, DEFAULT_CIVISIBILITY_GIT_UPLOAD_TIMEOUT_MILLIS);
-        ciVisibilityGitRemoteName =
-                configProvider.getString(
-                        CIVISIBILITY_GIT_REMOTE_NAME, DEFAULT_CIVISIBILITY_GIT_REMOTE_NAME);
-        ciVisibilitySignalServerHost =
-                configProvider.getString(
-                        CIVISIBILITY_SIGNAL_SERVER_HOST, DEFAULT_CIVISIBILITY_SIGNAL_SERVER_HOST);
-        ciVisibilitySignalServerPort =
-                configProvider.getInteger(
-                        CIVISIBILITY_SIGNAL_SERVER_PORT, DEFAULT_CIVISIBILITY_SIGNAL_SERVER_PORT);
-        ciVisibilityItrEnabled = configProvider.getBoolean(CIVISIBILITY_ITR_ENABLED, true);
-        ciVisibilityCiProviderIntegrationEnabled =
-                configProvider.getBoolean(CIVISIBILITY_CIPROVIDER_INTEGRATION_ENABLED, true);
-        ciVisibilityRepoIndexSharingEnabled =
-                configProvider.getBoolean(CIVISIBILITY_REPO_INDEX_SHARING_ENABLED, true);
-        ciVisibilityModuleExecutionSettingsCacheSize =
-                configProvider.getInteger(CIVISIBILITY_MODULE_EXECUTION_SETTINGS_CACHE_SIZE, 16);
-        ciVisibilityJvmInfoCacheSize = configProvider.getInteger(CIVISIBILITY_JVM_INFO_CACHE_SIZE, 8);
-        ciVisibilityCoverageSegmentsEnabled =
-                configProvider.getBoolean(CIVISIBILITY_CODE_COVERAGE_SEGMENTS_ENABLED, false);
-        ciVisibilityCoverageRootPackagesLimit =
-                configProvider.getInteger(CIVISIBILITY_CODE_COVERAGE_ROOT_PACKAGES_LIMIT, 50);
-        ciVisibilityInjectedTracerVersion =
-                configProvider.getString(CIVISIBILITY_INJECTED_TRACER_VERSION);
-        ciVisibilityResourceFolderNames =
-                configProvider.getList(
-                        CIVISIBILITY_RESOURCE_FOLDER_NAMES, DEFAULT_CIVISIBILITY_RESOURCE_FOLDER_NAMES);
-        ciVisibilityFlakyRetryEnabled =
-                configProvider.getBoolean(CIVISIBILITY_FLAKY_RETRY_ENABLED, false);
-        ciVisibilityFlakyRetryCount = configProvider.getInteger(CIVISIBILITY_FLAKY_RETRY_COUNT, 5);
-        ciVisibilityModuleName = configProvider.getString(CIVISIBILITY_MODULE_NAME);
-
         remoteConfigEnabled =
                 configProvider.getBoolean(REMOTE_CONFIG_ENABLED, DEFAULT_REMOTE_CONFIG_ENABLED);
         remoteConfigIntegrityCheckEnabled =
@@ -1651,50 +1196,6 @@ public class Config {
                         REMOTE_CONFIG_TARGETS_KEY_ID, DEFAULT_REMOTE_CONFIG_TARGETS_KEY_ID);
         remoteConfigTargetsKey =
                 configProvider.getString(REMOTE_CONFIG_TARGETS_KEY, DEFAULT_REMOTE_CONFIG_TARGETS_KEY);
-
-        debuggerEnabled = configProvider.getBoolean(DEBUGGER_ENABLED, DEFAULT_DEBUGGER_ENABLED);
-        debuggerUploadTimeout =
-                configProvider.getInteger(DEBUGGER_UPLOAD_TIMEOUT, DEFAULT_DEBUGGER_UPLOAD_TIMEOUT);
-        debuggerUploadFlushInterval =
-                configProvider.getInteger(
-                        DEBUGGER_UPLOAD_FLUSH_INTERVAL, DEFAULT_DEBUGGER_UPLOAD_FLUSH_INTERVAL);
-        debuggerClassFileDumpEnabled =
-                configProvider.getBoolean(
-                        DEBUGGER_CLASSFILE_DUMP_ENABLED, DEFAULT_DEBUGGER_CLASSFILE_DUMP_ENABLED);
-        debuggerPollInterval =
-                configProvider.getInteger(DEBUGGER_POLL_INTERVAL, DEFAULT_DEBUGGER_POLL_INTERVAL);
-        debuggerDiagnosticsInterval =
-                configProvider.getInteger(
-                        DEBUGGER_DIAGNOSTICS_INTERVAL, DEFAULT_DEBUGGER_DIAGNOSTICS_INTERVAL);
-        debuggerMetricEnabled =
-                runtimeMetricsEnabled
-                        && configProvider.getBoolean(
-                        DEBUGGER_METRICS_ENABLED, DEFAULT_DEBUGGER_METRICS_ENABLED);
-        debuggerProbeFileLocation = configProvider.getString(DEBUGGER_PROBE_FILE_LOCATION);
-        debuggerUploadBatchSize =
-                configProvider.getInteger(DEBUGGER_UPLOAD_BATCH_SIZE, DEFAULT_DEBUGGER_UPLOAD_BATCH_SIZE);
-        debuggerMaxPayloadSize =
-                configProvider.getInteger(DEBUGGER_MAX_PAYLOAD_SIZE, DEFAULT_DEBUGGER_MAX_PAYLOAD_SIZE)
-                        * 1024;
-        debuggerVerifyByteCode =
-                configProvider.getBoolean(DEBUGGER_VERIFY_BYTECODE, DEFAULT_DEBUGGER_VERIFY_BYTECODE);
-        debuggerInstrumentTheWorld =
-                configProvider.getBoolean(
-                        DEBUGGER_INSTRUMENT_THE_WORLD, DEFAULT_DEBUGGER_INSTRUMENT_THE_WORLD);
-        debuggerExcludeFiles = configProvider.getString(DEBUGGER_EXCLUDE_FILES);
-        debuggerCaptureTimeout =
-                configProvider.getInteger(DEBUGGER_CAPTURE_TIMEOUT, DEFAULT_DEBUGGER_CAPTURE_TIMEOUT);
-        debuggerRedactedIdentifiers = configProvider.getString(DEBUGGER_REDACTED_IDENTIFIERS, null);
-        debuggerRedactedTypes = configProvider.getString(DEBUGGER_REDACTED_TYPES, null);
-        debuggerSymbolEnabled =
-                configProvider.getBoolean(DEBUGGER_SYMBOL_ENABLED, DEFAULT_DEBUGGER_SYMBOL_ENABLED);
-        debuggerSymbolForceUpload =
-                configProvider.getBoolean(
-                        DEBUGGER_SYMBOL_FORCE_UPLOAD, DEFAULT_DEBUGGER_SYMBOL_FORCE_UPLOAD);
-        debuggerSymbolIncludes = configProvider.getString(DEBUGGER_SYMBOL_INCLUDES, null);
-        debuggerSymbolFlushThreshold =
-                configProvider.getInteger(
-                        DEBUGGER_SYMBOL_FLUSH_THRESHOLD, DEFAULT_DEBUGGER_SYMBOL_FLUSH_THRESHOLD);
 
         awsPropagationEnabled = isPropagationEnabled(true, "aws", "aws-sdk");
         sqsPropagationEnabled = isPropagationEnabled(true, "sqs");
@@ -1776,9 +1277,6 @@ public class Config {
         startupLogsEnabled =
                 configProvider.getBoolean(STARTUP_LOGS_ENABLED, DEFAULT_STARTUP_LOGS_ENABLED);
 
-        cwsEnabled = configProvider.getBoolean(CWS_ENABLED, DEFAULT_CWS_ENABLED);
-        cwsTlsRefresh = configProvider.getInteger(CWS_TLS_REFRESH, DEFAULT_CWS_TLS_REFRESH);
-
         dataStreamsEnabled =
                 configProvider.getBoolean(DATA_STREAMS_ENABLED, DEFAULT_DATA_STREAMS_ENABLED);
         dataStreamsBucketDurationSeconds =
@@ -1845,14 +1343,6 @@ public class Config {
         if (profilingAgentless && apiKey == null) {
             log.warn(
                     "Agentless profiling activated but no api key provided. Profile uploading will likely fail");
-        }
-
-        if (isCiVisibilityEnabled()
-                && ciVisibilityAgentlessEnabled
-                && (apiKey == null || apiKey.isEmpty())) {
-            throw new FatalAgentMisconfigurationError(
-                    "Attempt to start in Agentless mode without API key. "
-                            + "Please ensure that either an API key is configured, or the tracer is set up to work with the Agent");
         }
 
         this.telemetryDebugRequestsEnabled =
@@ -1997,18 +1487,6 @@ public class Config {
 
     public boolean isTraceResolverEnabled() {
         return traceResolverEnabled;
-    }
-
-    public Set<String> getIastWeakHashAlgorithms() {
-        return iastWeakHashAlgorithms;
-    }
-
-    public Pattern getIastWeakCipherAlgorithms() {
-        return iastWeakCipherAlgorithms;
-    }
-
-    public boolean isIastDeduplicationEnabled() {
-        return iastDeduplicationEnabled;
     }
 
     public int getSpanAttributeSchemaVersion() {
@@ -2199,50 +1677,6 @@ public class Config {
 
     public boolean isRuntimeMetricsEnabled() {
         return runtimeMetricsEnabled;
-    }
-
-    public boolean isJmxFetchEnabled() {
-        return jmxFetchEnabled;
-    }
-
-    public String getJmxFetchConfigDir() {
-        return jmxFetchConfigDir;
-    }
-
-    public List<String> getJmxFetchConfigs() {
-        return jmxFetchConfigs;
-    }
-
-    public List<String> getJmxFetchMetricsConfigs() {
-        return jmxFetchMetricsConfigs;
-    }
-
-    public Integer getJmxFetchCheckPeriod() {
-        return jmxFetchCheckPeriod;
-    }
-
-    public Integer getJmxFetchRefreshBeansPeriod() {
-        return jmxFetchRefreshBeansPeriod;
-    }
-
-    public Integer getJmxFetchInitialRefreshBeansPeriod() {
-        return jmxFetchInitialRefreshBeansPeriod;
-    }
-
-    public String getJmxFetchStatsdHost() {
-        return jmxFetchStatsdHost;
-    }
-
-    public Integer getJmxFetchStatsdPort() {
-        return jmxFetchStatsdPort;
-    }
-
-    public boolean isJmxFetchMultipleRuntimeServicesEnabled() {
-        return jmxFetchMultipleRuntimeServicesEnabled;
-    }
-
-    public int getJmxFetchMultipleRuntimeServicesLimit() {
-        return jmxFetchMultipleRuntimeServicesLimit;
     }
 
     public boolean isHealthMetricsEnabled() {
@@ -2504,314 +1938,12 @@ public class Config {
         return clientIpEnabled;
     }
 
-    public ProductActivation getAppSecActivation() {
-        return instrumenterConfig.getAppSecActivation();
-    }
-
-    public boolean isAppSecReportingInband() {
-        return appSecReportingInband;
-    }
-
-    public int getAppSecReportMinTimeout() {
-        return appSecReportMinTimeout;
-    }
-
-    public int getAppSecReportMaxTimeout() {
-        return appSecReportMaxTimeout;
-    }
-
-    public int getAppSecTraceRateLimit() {
-        return appSecTraceRateLimit;
-    }
-
-    public boolean isAppSecWafMetrics() {
-        return appSecWafMetrics;
-    }
-
-    // in microseconds
-    public int getAppSecWafTimeout() {
-        return appSecWafTimeout;
-    }
-
-    public String getAppSecObfuscationParameterKeyRegexp() {
-        return appSecObfuscationParameterKeyRegexp;
-    }
-
-    public String getAppSecObfuscationParameterValueRegexp() {
-        return appSecObfuscationParameterValueRegexp;
-    }
-
-    public String getAppSecHttpBlockedTemplateHtml() {
-        return appSecHttpBlockedTemplateHtml;
-    }
-
-    public String getAppSecHttpBlockedTemplateJson() {
-        return appSecHttpBlockedTemplateJson;
-    }
-
-    public UserEventTrackingMode getAppSecUserEventsTrackingMode() {
-        return appSecUserEventsTracking;
-    }
-
-    public boolean isApiSecurityEnabled() {
-        return apiSecurityEnabled;
-    }
-
-    public float getApiSecurityRequestSampleRate() {
-        return apiSecurityRequestSampleRate;
-    }
-
-    public ProductActivation getIastActivation() {
-        return instrumenterConfig.getIastActivation();
-    }
-
-    public boolean isIastDebugEnabled() {
-        return iastDebugEnabled;
-    }
-
-    public int getIastMaxConcurrentRequests() {
-        return iastMaxConcurrentRequests;
-    }
-
-    public int getIastVulnerabilitiesPerRequest() {
-        return iastVulnerabilitiesPerRequest;
-    }
-
-    public float getIastRequestSampling() {
-        return iastRequestSampling;
-    }
-
-    public Verbosity getIastTelemetryVerbosity() {
-        return isTelemetryEnabled() ? iastTelemetryVerbosity : Verbosity.OFF;
-    }
-
-    public boolean isIastRedactionEnabled() {
-        return iastRedactionEnabled;
-    }
-
-    public String getIastRedactionNamePattern() {
-        return iastRedactionNamePattern;
-    }
-
-    public String getIastRedactionValuePattern() {
-        return iastRedactionValuePattern;
-    }
-
-    public int getIastTruncationMaxValueLength() {
-        return iastTruncationMaxValueLength;
-    }
-
-    public int getIastMaxRangeCount() {
-        return iastMaxRangeCount;
-    }
-
-    public boolean isIastStacktraceLeakSuppress() {
-        return iastStacktraceLeakSuppress;
-    }
-
     public boolean isCiVisibilityEnabled() {
         return false;
     }
 
     public boolean isUsmEnabled() {
         return instrumenterConfig.isUsmEnabled();
-    }
-
-    public boolean isCiVisibilityTraceSanitationEnabled() {
-        return ciVisibilityTraceSanitationEnabled;
-    }
-
-    public boolean isCiVisibilityAgentlessEnabled() {
-        return ciVisibilityAgentlessEnabled;
-    }
-
-    public String getCiVisibilityAgentlessUrl() {
-        return ciVisibilityAgentlessUrl;
-    }
-
-    public boolean isCiVisibilitySourceDataEnabled() {
-        return ciVisibilitySourceDataEnabled;
-    }
-
-    public boolean isCiVisibilitySourceDataRootCheckEnabled() {
-        return ciVisibilitySourceDataRootCheckEnabled;
-    }
-
-    public boolean isCiVisibilityBuildInstrumentationEnabled() {
-        return ciVisibilityBuildInstrumentationEnabled;
-    }
-
-    public Long getCiVisibilitySessionId() {
-        return ciVisibilitySessionId;
-    }
-
-    public Long getCiVisibilityModuleId() {
-        return ciVisibilityModuleId;
-    }
-
-    public String getCiVisibilityAgentJarUri() {
-        return ciVisibilityAgentJarUri;
-    }
-
-    public File getCiVisibilityAgentJarFile() {
-        if (ciVisibilityAgentJarUri == null || ciVisibilityAgentJarUri.isEmpty()) {
-            throw new IllegalArgumentException("Agent JAR URI is not set in config");
-        }
-
-        try {
-            URI agentJarUri = new URI(ciVisibilityAgentJarUri);
-            return new File(agentJarUri);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Malformed agent JAR URI: " + ciVisibilityAgentJarUri, e);
-        }
-    }
-
-    public boolean isCiVisibilityAutoConfigurationEnabled() {
-        return ciVisibilityAutoConfigurationEnabled;
-    }
-
-    public String getCiVisibilityAdditionalChildProcessJvmArgs() {
-        return ciVisibilityAdditionalChildProcessJvmArgs;
-    }
-
-    public boolean isCiVisibilityCompilerPluginAutoConfigurationEnabled() {
-        return ciVisibilityCompilerPluginAutoConfigurationEnabled;
-    }
-
-    public boolean isCiVisibilityCodeCoverageEnabled() {
-        return ciVisibilityCodeCoverageEnabled;
-    }
-
-    public boolean isCiVisibilityCodeCoveragePercentageCalculationEnabled() {
-        return ciVisibilityCodeCoveragePercentageCalculationEnabled;
-    }
-
-    public String getCiVisibilityCodeCoverageReportDumpDir() {
-        return ciVisibilityCodeCoverageReportDumpDir;
-    }
-
-    public String getCiVisibilityCompilerPluginVersion() {
-        return ciVisibilityCompilerPluginVersion;
-    }
-
-    public String getCiVisibilityJacocoPluginVersion() {
-        return ciVisibilityJacocoPluginVersion;
-    }
-
-    public boolean isCiVisibilityJacocoPluginVersionProvided() {
-        return ciVisibilityJacocoPluginVersionProvided;
-    }
-
-    public List<String> getCiVisibilityCodeCoverageIncludes() {
-        return ciVisibilityCodeCoverageIncludes;
-    }
-
-    public List<String> getCiVisibilityCodeCoverageExcludes() {
-        return ciVisibilityCodeCoverageExcludes;
-    }
-
-    public String[] getCiVisibilityCodeCoverageIncludedPackages() {
-        return ciVisibilityCodeCoverageIncludedPackages;
-    }
-
-    public String[] getCiVisibilityCodeCoverageExcludedPackages() {
-        return ciVisibilityCodeCoverageExcludedPackages;
-    }
-
-    public List<String> getCiVisibilityJacocoGradleSourceSets() {
-        return ciVisibilityJacocoGradleSourceSets;
-    }
-
-    public Integer getCiVisibilityDebugPort() {
-        return ciVisibilityDebugPort;
-    }
-
-    public boolean isCiVisibilityGitUploadEnabled() {
-        return ciVisibilityGitUploadEnabled;
-    }
-
-    public boolean isCiVisibilityGitUnshallowEnabled() {
-        return ciVisibilityGitUnshallowEnabled;
-    }
-
-    public boolean isCiVisibilityGitUnshallowDefer() {
-        return ciVisibilityGitUnshallowDefer;
-    }
-
-    public long getCiVisibilityGitCommandTimeoutMillis() {
-        return ciVisibilityGitCommandTimeoutMillis;
-    }
-
-    public long getCiVisibilityBackendApiTimeoutMillis() {
-        return ciVisibilityBackendApiTimeoutMillis;
-    }
-
-    public long getCiVisibilityGitUploadTimeoutMillis() {
-        return ciVisibilityGitUploadTimeoutMillis;
-    }
-
-    public String getCiVisibilityGitRemoteName() {
-        return ciVisibilityGitRemoteName;
-    }
-
-    public int getCiVisibilitySignalServerPort() {
-        return ciVisibilitySignalServerPort;
-    }
-
-    public String getCiVisibilitySignalServerHost() {
-        return ciVisibilitySignalServerHost;
-    }
-
-    public boolean isCiVisibilityItrEnabled() {
-        return ciVisibilityItrEnabled;
-    }
-
-    public boolean isCiVisibilityCiProviderIntegrationEnabled() {
-        return ciVisibilityCiProviderIntegrationEnabled;
-    }
-
-    public boolean isCiVisibilityRepoIndexSharingEnabled() {
-        return ciVisibilityRepoIndexSharingEnabled;
-    }
-
-    public int getCiVisibilityModuleExecutionSettingsCacheSize() {
-        return ciVisibilityModuleExecutionSettingsCacheSize;
-    }
-
-    public int getCiVisibilityJvmInfoCacheSize() {
-        return ciVisibilityJvmInfoCacheSize;
-    }
-
-    public boolean isCiVisibilityCoverageSegmentsEnabled() {
-        return ciVisibilityCoverageSegmentsEnabled;
-    }
-
-    public int getCiVisibilityCoverageRootPackagesLimit() {
-        return ciVisibilityCoverageRootPackagesLimit;
-    }
-
-    public String getCiVisibilityInjectedTracerVersion() {
-        return ciVisibilityInjectedTracerVersion;
-    }
-
-    public List<String> getCiVisibilityResourceFolderNames() {
-        return ciVisibilityResourceFolderNames;
-    }
-
-    public boolean isCiVisibilityFlakyRetryEnabled() {
-        return ciVisibilityFlakyRetryEnabled;
-    }
-
-    public int getCiVisibilityFlakyRetryCount() {
-        return ciVisibilityFlakyRetryCount;
-    }
-
-    public String getCiVisibilityModuleName() {
-        return ciVisibilityModuleName;
-    }
-
-    public String getAppSecRulesFile() {
-        return appSecRulesFile;
     }
 
     public long getRemoteConfigMaxPayloadSizeBytes() {
@@ -2842,74 +1974,6 @@ public class Config {
         return remoteConfigTargetsKey;
     }
 
-    public boolean isDebuggerEnabled() {
-        return debuggerEnabled;
-    }
-
-    public int getDebuggerUploadTimeout() {
-        return debuggerUploadTimeout;
-    }
-
-    public int getDebuggerUploadFlushInterval() {
-        return debuggerUploadFlushInterval;
-    }
-
-    public boolean isDebuggerClassFileDumpEnabled() {
-        return debuggerClassFileDumpEnabled;
-    }
-
-    public int getDebuggerPollInterval() {
-        return debuggerPollInterval;
-    }
-
-    public int getDebuggerDiagnosticsInterval() {
-        return debuggerDiagnosticsInterval;
-    }
-
-    public boolean isDebuggerMetricsEnabled() {
-        return debuggerMetricEnabled;
-    }
-
-    public int getDebuggerUploadBatchSize() {
-        return debuggerUploadBatchSize;
-    }
-
-    public long getDebuggerMaxPayloadSize() {
-        return debuggerMaxPayloadSize;
-    }
-
-    public boolean isDebuggerVerifyByteCode() {
-        return debuggerVerifyByteCode;
-    }
-
-    public boolean isDebuggerInstrumentTheWorld() {
-        return debuggerInstrumentTheWorld;
-    }
-
-    public String getDebuggerExcludeFiles() {
-        return debuggerExcludeFiles;
-    }
-
-    public int getDebuggerCaptureTimeout() {
-        return debuggerCaptureTimeout;
-    }
-
-    public boolean isDebuggerSymbolEnabled() {
-        return debuggerSymbolEnabled;
-    }
-
-    public boolean isDebuggerSymbolForceUpload() {
-        return debuggerSymbolForceUpload;
-    }
-
-    public String getDebuggerSymbolIncludes() {
-        return debuggerSymbolIncludes;
-    }
-
-    public int getDebuggerSymbolFlushThreshold() {
-        return debuggerSymbolFlushThreshold;
-    }
-
     public String getFinalDebuggerProbeUrl() {
         // by default poll from datadog agent
         return "http://" + agentHost + ":" + agentPort;
@@ -2922,18 +1986,6 @@ public class Config {
 
     public String getFinalDebuggerSymDBUrl() {
         return agentUrl + "/symdb/v1/input";
-    }
-
-    public String getDebuggerProbeFileLocation() {
-        return debuggerProbeFileLocation;
-    }
-
-    public String getDebuggerRedactedIdentifiers() {
-        return debuggerRedactedIdentifiers;
-    }
-
-    public String getDebuggerRedactedTypes() {
-        return debuggerRedactedTypes;
     }
 
     public boolean isAwsPropagationEnabled() {
@@ -3038,14 +2090,6 @@ public class Config {
 
     public boolean isStartupLogsEnabled() {
         return startupLogsEnabled;
-    }
-
-    public boolean isCwsEnabled() {
-        return cwsEnabled;
-    }
-
-    public int getCwsTlsRefresh() {
-        return cwsTlsRefresh;
     }
 
     public boolean isAzureAppServices() {
@@ -3208,21 +2252,6 @@ public class Config {
         final Map<String, String> result = newHashMap(getGlobalTags().size() + spanTags.size());
         result.putAll(getGlobalTags());
         result.putAll(spanTags);
-        return Collections.unmodifiableMap(result);
-    }
-
-    public Map<String, String> getMergedJmxTags() {
-        final Map<String, String> runtimeTags = getRuntimeTags();
-        final Map<String, String> result =
-                newHashMap(
-                        getGlobalTags().size() + jmxTags.size() + runtimeTags.size() + 1 /* for serviceName */);
-        result.putAll(getGlobalTags());
-        result.putAll(jmxTags);
-        result.putAll(runtimeTags);
-        // service name set here instead of getRuntimeTags because apm already manages the service tag
-        // and may chose to override it.
-        // Additionally, infra/JMX metrics require `service` rather than APM's `service.name` tag
-        result.put(SERVICE_TAG, serviceName);
         return Collections.unmodifiableMap(result);
     }
 
@@ -3893,8 +2922,6 @@ public class Config {
                 + tags
                 + ", spanTags="
                 + spanTags
-                + ", jmxTags="
-                + jmxTags
                 + ", requestHeaderTags="
                 + requestHeaderTags
                 + ", responseHeaderTags="
@@ -3953,32 +2980,6 @@ public class Config {
                 + tracePropagationExtractFirst
                 + ", clockSyncPeriod="
                 + clockSyncPeriod
-                + ", jmxFetchEnabled="
-                + jmxFetchEnabled
-                + ", dogStatsDStartDelay="
-                + dogStatsDStartDelay
-                + ", jmxFetchConfigDir='"
-                + jmxFetchConfigDir
-                + '\''
-                + ", jmxFetchConfigs="
-                + jmxFetchConfigs
-                + ", jmxFetchMetricsConfigs="
-                + jmxFetchMetricsConfigs
-                + ", jmxFetchCheckPeriod="
-                + jmxFetchCheckPeriod
-                + ", jmxFetchInitialRefreshBeansPeriod="
-                + jmxFetchInitialRefreshBeansPeriod
-                + ", jmxFetchRefreshBeansPeriod="
-                + jmxFetchRefreshBeansPeriod
-                + ", jmxFetchStatsdHost='"
-                + jmxFetchStatsdHost
-                + '\''
-                + ", jmxFetchStatsdPort="
-                + jmxFetchStatsdPort
-                + ", jmxFetchMultipleRuntimeServicesEnabled="
-                + jmxFetchMultipleRuntimeServicesEnabled
-                + ", jmxFetchMultipleRuntimeServicesLimit="
-                + jmxFetchMultipleRuntimeServicesLimit
                 + ", healthMetricsEnabled="
                 + healthMetricsEnabled
                 + ", healthMetricsStatsdHost='"
@@ -4067,32 +3068,6 @@ public class Config {
                 + remoteConfigMaxPayloadSize
                 + ", remoteConfigIntegrityCheckEnabled="
                 + remoteConfigIntegrityCheckEnabled
-                + ", debuggerEnabled="
-                + debuggerEnabled
-                + ", debuggerUploadTimeout="
-                + debuggerUploadTimeout
-                + ", debuggerUploadFlushInterval="
-                + debuggerUploadFlushInterval
-                + ", debuggerClassFileDumpEnabled="
-                + debuggerClassFileDumpEnabled
-                + ", debuggerPollInterval="
-                + debuggerPollInterval
-                + ", debuggerDiagnosticsInterval="
-                + debuggerDiagnosticsInterval
-                + ", debuggerMetricEnabled="
-                + debuggerMetricEnabled
-                + ", debuggerProbeFileLocation="
-                + debuggerProbeFileLocation
-                + ", debuggerUploadBatchSize="
-                + debuggerUploadBatchSize
-                + ", debuggerMaxPayloadSize="
-                + debuggerMaxPayloadSize
-                + ", debuggerVerifyByteCode="
-                + debuggerVerifyByteCode
-                + ", debuggerInstrumentTheWorld="
-                + debuggerInstrumentTheWorld
-                + ", debuggerExcludeFile="
-                + debuggerExcludeFiles
                 + ", awsPropagationEnabled="
                 + awsPropagationEnabled
                 + ", sqsPropagationEnabled="
@@ -4154,25 +3129,6 @@ public class Config {
                 + grpcClientErrorStatuses
                 + ", clientIpEnabled="
                 + clientIpEnabled
-                + ", appSecReportingInband="
-                + appSecReportingInband
-                + ", appSecRulesFile='"
-                + appSecRulesFile
-                + "'"
-                + ", appSecHttpBlockedTemplateHtml="
-                + appSecHttpBlockedTemplateHtml
-                + ", appSecWafTimeout="
-                + appSecWafTimeout
-                + " us, appSecHttpBlockedTemplateJson="
-                + appSecHttpBlockedTemplateJson
-                + ", apiSecurityEnabled="
-                + apiSecurityEnabled
-                + ", apiSecurityRequestSampleRate="
-                + apiSecurityRequestSampleRate
-                + ", cwsEnabled="
-                + cwsEnabled
-                + ", cwsTlsRefresh="
-                + cwsTlsRefresh
                 + ", longRunningTraceEnabled="
                 + longRunningTraceEnabled
                 + ", longRunningTraceFlushInterval="

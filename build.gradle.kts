@@ -79,8 +79,7 @@ registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest")
 registerSubModuleAggregationTask(
     "unitTestReleaseFeatures",
     "testReleaseUnitTest",
-    ":features:",
-    exceptions = setOf("dd-sdk-android-trace")
+    ":features:"
 )
 registerSubModuleAggregationTask("unitTestReleaseIntegrations", "testReleaseUnitTest", ":integrations:")
 
@@ -88,8 +87,7 @@ registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest")
 registerSubModuleAggregationTask(
     "unitTestDebugFeatures",
     "testDebugUnitTest",
-    ":features:",
-    exceptions = setOf("dd-sdk-android-trace")
+    ":features:"
 )
 registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
 

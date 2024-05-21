@@ -143,7 +143,7 @@ class AndroidTracer internal constructor(
             return AndroidTracer(
                 sdkCore,
                 config(),
-                tracingFeature?.dataWriter ?: NoOpWriter(),
+                tracingFeature?.legacyTracerWriter ?: NoOpWriter(),
                 random,
                 logsHandler,
                 bundleWithRumEnabled

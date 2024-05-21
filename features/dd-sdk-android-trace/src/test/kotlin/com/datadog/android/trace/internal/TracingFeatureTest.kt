@@ -13,17 +13,15 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.OtelTraceWriter
 import com.datadog.android.trace.internal.data.TraceWriter
+import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
-import com.datadog.android.trace.internal.domain.event.OtelDdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
-import com.datadog.android.trace.opentelemetry.DatadogContextStorage
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentelemetry.context.ContextStorage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -80,14 +78,13 @@ internal class TracingFeatureTest {
         testedFeature.onInitialize(mock())
 
         // Then
-        assertThat(testedFeature.dataWriter)
+        assertThat(testedFeature.legacyTracerWriter)
             .isInstanceOf(TraceWriter::class.java)
-        val traceWriter = testedFeature.dataWriter as TraceWriter
+        val traceWriter = testedFeature.legacyTracerWriter as TraceWriter
         val ddSpanToSpanEventMapper = traceWriter.ddSpanToSpanEventMapper
         assertThat(ddSpanToSpanEventMapper).isInstanceOf(DdSpanToSpanEventMapper::class.java)
         assertThat((ddSpanToSpanEventMapper as DdSpanToSpanEventMapper).networkInfoEnabled)
             .isEqualTo(fakeNetworkInfoEnabled)
-        assertThat(ContextStorage.get()).isInstanceOf(DatadogContextStorage::class.java)
     }
 
     @Test
@@ -96,12 +93,12 @@ internal class TracingFeatureTest {
         testedFeature.onInitialize(mock())
 
         // Then
-        assertThat(testedFeature.dataWriter)
+        assertThat(testedFeature.legacyTracerWriter)
             .isInstanceOf(TraceWriter::class.java)
-        val traceWriter = testedFeature.otelDataWriter as OtelTraceWriter
+        val traceWriter = testedFeature.coreTracerDataWriter as OtelTraceWriter
         val ddSpanToSpanEventMapper = traceWriter.ddSpanToSpanEventMapper
-        assertThat(ddSpanToSpanEventMapper).isInstanceOf(OtelDdSpanToSpanEventMapper::class.java)
-        assertThat((ddSpanToSpanEventMapper as OtelDdSpanToSpanEventMapper).networkInfoEnabled)
+        assertThat(ddSpanToSpanEventMapper).isInstanceOf(CoreTracerSpanToSpanEventMapper::class.java)
+        assertThat((ddSpanToSpanEventMapper as CoreTracerSpanToSpanEventMapper).networkInfoEnabled)
             .isEqualTo(fakeNetworkInfoEnabled)
     }
 
@@ -111,7 +108,7 @@ internal class TracingFeatureTest {
         testedFeature.onInitialize(mock())
 
         // Then
-        val dataWriter = testedFeature.dataWriter as? TraceWriter
+        val dataWriter = testedFeature.legacyTracerWriter as? TraceWriter
         val spanEventMapperWrapper = dataWriter?.eventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
         assertThat(spanEventMapper).isSameAs(mockSpanEventMapper)
@@ -123,7 +120,7 @@ internal class TracingFeatureTest {
         testedFeature.onInitialize(mock())
 
         // Then
-        val dataWriter = testedFeature.otelDataWriter as? OtelTraceWriter
+        val dataWriter = testedFeature.coreTracerDataWriter as? OtelTraceWriter
         val spanEventMapperWrapper = dataWriter?.eventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
         assertThat(spanEventMapper).isSameAs(mockSpanEventMapper)
