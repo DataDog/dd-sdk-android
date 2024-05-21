@@ -35,6 +35,7 @@ interface FeatureScope {
     /**
      * Write data to the datastore.
      *
+     * @param T datatype of the data to write to the datastore.
      * @param dataStoreFileName name of the datastore file as there could be multiple such files per feature.
      * @param featureName of the calling feature, to determine the path to the datastore file.
      * @param serializer to use to serialize the data.
@@ -50,6 +51,7 @@ interface FeatureScope {
     /**
      * Read data from the datastore.
      *
+     * @param T datatype of the data to read from the datastore.
      * @param dataStoreFileName name of the datastore file as there could be multiple such files per feature.
      * @param featureName of the calling feature, to determine the path to the datastore file.
      * @param deserializer to use to deserialize the data.
