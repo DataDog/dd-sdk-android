@@ -6,9 +6,7 @@
 
 package com.datadog.android.core.metrics
 
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.lint.InternalApi
 
 /**
  * Base class for performance metric events.
@@ -18,6 +16,7 @@ interface PerformanceMetric {
      * Stops measuring and sends the performance metric.
      * @param isSuccessful - was the operation being measured completed successfully.
      */
+    @InternalApi
     fun stopAndSend(isSuccessful: Boolean)
 
     companion object {
@@ -25,32 +24,5 @@ interface PerformanceMetric {
          * Basic Metric type key.
          */
         const val METRIC_TYPE: String = "metric_type"
-
-        /**
-         * If sampled in, returns a metric object to start measuring performance.
-         * @param logger - an instance of the internal logger.
-         * @param callerClass - the name of the class calling this method.
-         * @param metric - the performance metric that we want to measure.
-         * @param samplingRate - the rate at which this metric should be sampled between 0 and 100.
-         * @return a PerformanceMetric object that can later be used to send telemetry, or null if sampled out
-         */
-        fun startMetric(
-            logger: InternalLogger,
-            callerClass: String,
-            metric: TelemetryMetricType,
-            samplingRate: Float = 100.0f
-        ): PerformanceMetric? {
-            val sampler: Sampler = RateBasedSampler(samplingRate)
-            if (!sampler.sample()) return null
-
-            return when (metric) {
-                TelemetryMetricType.MethodCalled -> {
-                    MethodCalledTelemetry(
-                        callerClass,
-                        logger
-                    )
-                }
-            }
-        }
     }
 }

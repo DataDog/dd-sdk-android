@@ -72,7 +72,7 @@ internal class DefaultRecorderProvider(
             timeProvider = SessionReplayTimeProvider(sdkCore),
             mappers = customMappers + builtInMappers(),
             customOptionSelectorDetectors = customOptionSelectorDetectors,
-            internalLogger = sdkCore.internalLogger
+            sdkCore = sdkCore
         )
     }
 

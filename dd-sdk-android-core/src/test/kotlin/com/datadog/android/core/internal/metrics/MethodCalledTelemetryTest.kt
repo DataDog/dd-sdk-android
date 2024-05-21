@@ -4,19 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.metrics
+package com.datadog.android.core.internal.metrics
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.CALLER_CLASS
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.EXECUTION_TIME
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.METHOD_CALL_OPERATION_NAME
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
-import com.datadog.android.core.metrics.MethodCalledTelemetry.Companion.OPERATION_NAME
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.CALLER_CLASS
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.EXECUTION_TIME
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.IS_SUCCESSFUL
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.METHOD_CALLED_METRIC_NAME
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.OPERATION_NAME
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -78,6 +77,9 @@ internal class MethodCalledTelemetryTest {
     @StringForgery
     lateinit var fakeDeviceArchitecture: String
 
+    @StringForgery
+    lateinit var fakeOperationName: String
+
     private var fakeStartTime: Long = 0
     private var fakeStatus: Boolean = false
 
@@ -99,8 +101,9 @@ internal class MethodCalledTelemetryTest {
 
         fakeStartTime = System.nanoTime()
         testedMethodCalledTelemetry = MethodCalledTelemetry(
+            internalLogger = mockInternalLogger,
+            operationName = fakeOperationName,
             callerClass = fakeCallerClass,
-            logger = mockInternalLogger,
             startTime = fakeStartTime
         )
     }
@@ -139,7 +142,7 @@ internal class MethodCalledTelemetryTest {
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
         val operationName = mapCaptor.firstValue[OPERATION_NAME] as String
 
-        assertThat(operationName).isEqualTo(METHOD_CALL_OPERATION_NAME)
+        assertThat(operationName).isEqualTo(fakeOperationName)
     }
 
     @Test

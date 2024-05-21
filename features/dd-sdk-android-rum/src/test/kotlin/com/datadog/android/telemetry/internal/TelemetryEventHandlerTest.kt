@@ -11,9 +11,9 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.internal.RumFeature
@@ -90,7 +90,7 @@ internal class TelemetryEventHandlerTest {
     lateinit var mockConfigurationSampler: Sampler
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -157,7 +157,8 @@ internal class TelemetryEventHandlerTest {
             },
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = fakeServerOffset
-            )
+            ),
+            deviceInfo = mockDeviceInfo
         )
 
         whenever(mockSampler.sample()) doReturn true
@@ -172,14 +173,12 @@ internal class TelemetryEventHandlerTest {
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
-        testedTelemetryHandler =
-            TelemetryEventHandler(
-                mockSdkCore,
-                mockSampler,
-                mockConfigurationSampler,
-                MAX_EVENTS_PER_SESSION_TEST,
-                deviceInfo = mockDeviceInfo
-            )
+        testedTelemetryHandler = TelemetryEventHandler(
+            mockSdkCore,
+            mockSampler,
+            mockConfigurationSampler,
+            MAX_EVENTS_PER_SESSION_TEST
+        )
     }
 
     @AfterEach
@@ -688,13 +687,10 @@ internal class TelemetryEventHandlerTest {
     @Test
     fun `M not write events over the limit W handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
-        val events = forge.aList(
-            size = MAX_EVENTS_PER_SESSION_TEST * 5
-        ) { createRumRawTelemetryEvent() }
+        val events = forge.aList(size = MAX_EVENTS_PER_SESSION_TEST * 5) { createRumRawTelemetryEvent() }
             // remove unwanted identity collisions
             .groupBy { it.identity }.map { it.value.first() }
         val extraNumber = events.size - MAX_EVENTS_PER_SESSION_TEST
-
         val expectedInvocations = MAX_EVENTS_PER_SESSION_TEST
 
         // When
@@ -785,10 +781,8 @@ internal class TelemetryEventHandlerTest {
             TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE,
             mode = times(extraNumber)
         )
-
         argumentCaptor<Any> {
-            verify(mockWriter, times(expectedInvocations))
-                .write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, times(expectedInvocations)).write(eq(mockEventBatchWriter), capture())
             allValues.withIndex().forEach {
                 when (val capturedValue = it.value) {
                     is TelemetryDebugEvent -> {
