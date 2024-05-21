@@ -61,6 +61,7 @@ android {
     namespace = "com.datadog.android.sample"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         java17()
     }
 
@@ -163,6 +164,9 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+
+    // Desugaring SDK
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
 
     // Sample Vendor Library
     implementation(project(":sample:vendor-lib"))
