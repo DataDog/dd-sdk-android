@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.opentelemetry
+package com.datadog.android.trace.opentelemetry.internal
 
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 import io.opentelemetry.context.Scope
