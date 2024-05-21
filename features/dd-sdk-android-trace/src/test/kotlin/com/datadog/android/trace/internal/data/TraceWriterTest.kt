@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
@@ -124,7 +125,11 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.forEach {
-            verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
+            verify(mockEventBatchWriter).write(
+                event = RawBatchEvent(data = it.toByteArray()),
+                batchMetadata = null,
+                eventType = EventType.DEFAULT
+            )
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
@@ -161,7 +166,11 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.forEach {
-            verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
+            verify(mockEventBatchWriter).write(
+                event = RawBatchEvent(data = it.toByteArray()),
+                batchMetadata = null,
+                eventType = EventType.DEFAULT
+            )
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
@@ -193,7 +202,11 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.filterNotNull().forEach {
-            verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
+            verify(mockEventBatchWriter).write(
+                event = RawBatchEvent(data = it.toByteArray()),
+                batchMetadata = null,
+                eventType = EventType.DEFAULT
+            )
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
@@ -252,7 +265,11 @@ internal class TraceWriterTest {
         // THEN
         serializedSpans.forEachIndexed { index, serializedSpan ->
             if (index != faultySpanIndex) {
-                verify(mockEventBatchWriter).write(RawBatchEvent(data = serializedSpan.toByteArray()), null)
+                verify(mockEventBatchWriter).write(
+                    event = RawBatchEvent(data = serializedSpan.toByteArray()),
+                    batchMetadata = null,
+                    eventType = EventType.DEFAULT
+                )
             }
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
