@@ -2,3 +2,6 @@
 -keepnames class * extends android.view.View
 -keepnames class * extends android.graphics.drawable.Drawable
 -keepnames class * extends android.graphics.ColorFilter
+
+# Kept for our internal telemetry
+-keepnames class com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener

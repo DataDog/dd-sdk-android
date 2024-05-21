@@ -43,6 +43,7 @@ interface com.datadog.android.api.InternalLogger
   fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun logMetric(() -> String, Map<String, Any?>)
+  fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
   companion object 
     val UNBOUND: InternalLogger
 interface com.datadog.android.api.SdkCore
@@ -104,7 +105,7 @@ interface com.datadog.android.api.feature.FeatureScope
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
-  fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float): com.datadog.android.core.metrics.PerformanceMetric?
+fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
@@ -263,22 +264,10 @@ fun java.math.BigInteger.toHexString(): String
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
-class com.datadog.android.core.metrics.MethodCalledTelemetry : PerformanceMetric
-  constructor(String, com.datadog.android.api.InternalLogger, Long = System.nanoTime())
-  override fun stopAndSend(Boolean)
-  companion object 
-    const val METHOD_CALLED_METRIC_NAME: String
-    const val METRIC_TYPE_VALUE: String
-    const val OPERATION_NAME: String
-    const val CALLER_CLASS: String
-    const val IS_SUCCESSFUL: String
-    const val EXECUTION_TIME: String
-    const val METHOD_CALL_OPERATION_NAME: String
 interface com.datadog.android.core.metrics.PerformanceMetric
   fun stopAndSend(Boolean)
   companion object 
     const val METRIC_TYPE: String
-    fun startMetric(com.datadog.android.api.InternalLogger, String, TelemetryMetricType, Float = 100.0f): PerformanceMetric?
 enum com.datadog.android.core.metrics.TelemetryMetricType
   - MethodCalled
 interface com.datadog.android.core.persistence.PersistenceStrategy

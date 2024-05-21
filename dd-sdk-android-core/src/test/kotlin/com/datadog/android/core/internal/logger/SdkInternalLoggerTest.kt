@@ -12,16 +12,21 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
+import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset.offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -463,6 +468,7 @@ internal class SdkInternalLoggerTest {
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
+
         // When
         testedInternalLogger.logMetric(
             mockLambda,
@@ -490,6 +496,7 @@ internal class SdkInternalLoggerTest {
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
+
         // When
         assertDoesNotThrow {
             testedInternalLogger.logMetric(
@@ -497,6 +504,60 @@ internal class SdkInternalLoggerTest {
                 fakeAdditionalProperties
             )
         }
+    }
+
+    @Test
+    fun `M create PerformanceMetric W startPerformanceMeasure() {MethodCalled, 100 percent}`(
+        @StringForgery fakeCaller: String,
+        @StringForgery fakeOperation: String
+    ) {
+        // Given
+        val startNs = System.nanoTime()
+
+        // When
+        val result = testedInternalLogger.startPerformanceMeasure(
+            fakeCaller,
+            TelemetryMetricType.MethodCalled,
+            100f,
+            fakeOperation
+        )
+        val endNs = System.nanoTime()
+
+        // Then
+        val methodCalledTelemetry = result as? MethodCalledTelemetry
+        checkNotNull(methodCalledTelemetry)
+        assertThat(methodCalledTelemetry.callerClass).isEqualTo(fakeCaller)
+        assertThat(methodCalledTelemetry.operationName).isEqualTo(fakeOperation)
+        assertThat(methodCalledTelemetry.internalLogger).isSameAs(testedInternalLogger)
+        assertThat(methodCalledTelemetry.startTime).isBetween(startNs, endNs)
+    }
+
+    @Test
+    fun `M apply sample rate W startPerformanceMeasure() {MethodCalled, sampled}`(
+        @StringForgery fakeCaller: String,
+        @StringForgery fakeOperation: String,
+        @FloatForgery(min = 25f, max = 75f) fakeSampleRate: Float
+    ) {
+        // Given
+        var sampleCount = 0
+        val repeatCount = 128
+        val expectedSampledCount = (repeatCount * fakeSampleRate).toInt() / 100
+
+        // When
+        repeat(repeatCount) {
+            val result = testedInternalLogger.startPerformanceMeasure(
+                fakeCaller,
+                TelemetryMetricType.MethodCalled,
+                fakeSampleRate,
+                fakeOperation
+            )
+            if (result != null) {
+                sampleCount++
+            }
+        }
+
+        // Then
+        assertThat(sampleCount).isCloseTo(expectedSampledCount, offset(10))
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {

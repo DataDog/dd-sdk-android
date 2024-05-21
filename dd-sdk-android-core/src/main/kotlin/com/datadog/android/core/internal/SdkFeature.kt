@@ -41,8 +41,6 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.metrics.PerformanceMetric
-import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.util.Collections
@@ -142,19 +140,6 @@ internal class SdkFeature(
     // endregion
 
     // region FeatureScope
-
-    override fun startPerformanceMeasure(
-        callerClass: String,
-        metric: TelemetryMetricType,
-        samplingRate: Float
-    ): PerformanceMetric? {
-        return PerformanceMetric.startMetric(
-            logger = internalLogger,
-            callerClass = callerClass,
-            metric = metric,
-            samplingRate = samplingRate
-        )
-    }
 
     override fun withWriteContext(
         forceNewBatch: Boolean,
