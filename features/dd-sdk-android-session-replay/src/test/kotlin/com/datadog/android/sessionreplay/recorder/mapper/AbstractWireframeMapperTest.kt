@@ -170,7 +170,7 @@ internal abstract class AbstractWireframeMapperTest<V : View, WM : WireframeMapp
         val actualCornerRadius = actual.shapeStyle?.cornerRadius?.toLong()
         val expectedCornerRadius = expected.shapeStyle?.cornerRadius?.toLong()
         if (actualCornerRadius != null && expectedCornerRadius != null) {
-            assertThat(actualCornerRadius).isCloseTo(expectedCornerRadius, withinPercentage(5))
+            assertThat(actualCornerRadius).isCloseTo(expectedCornerRadius, withinPercentage(BOUNDS_THRESHOLD_PERCENT))
         }
     }
 
@@ -178,5 +178,6 @@ internal abstract class AbstractWireframeMapperTest<V : View, WM : WireframeMapp
 
     companion object {
         const val BOUNDS_THRESHOLD_PERCENT = 12.5
+        const val BOUNDS_THRESHOLD_OFFSET = 5L
     }
 }

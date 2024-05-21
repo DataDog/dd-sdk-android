@@ -3,6 +3,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.content.res.ColorStateList
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.widget.SeekBar
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -12,6 +13,8 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.AbstractWireframeMapperTest
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -35,7 +38,8 @@ import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
@@ -109,8 +113,11 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         )
     }
 
+    // region Android O+ (allows setting a min progress value)
+
     @Test
-    fun `M return partial wireframes W map { invalid thumb id`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return partial wireframes W map {invalid thumb id, Android O+}`() {
         // Given
         withPrivacy(SessionReplayPrivacy.ALLOW)
         prepareMockSeekBar()
@@ -131,7 +138,8 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    fun `M return partial wireframes W map { invalid track id`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return partial wireframes W map {invalid active track id, Android O+}`() {
         // Given
         withPrivacy(SessionReplayPrivacy.ALLOW)
         prepareMockSeekBar()
@@ -152,8 +160,141 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    fun `M return partial wireframes W map { invalid non active track id`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return partial wireframes W map {invalid non active track id, Android O+}`() {
         // Given
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockSeekBar()
+        mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedThumbWireframe)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return wireframes W map {privacy=ALLOW, Android O+}`() {
+        // Given
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockSeekBar()
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(3)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[2], expectedThumbWireframe)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return wireframes W map {privacy=MASK, Android O+}`() {
+        // Given
+        withPrivacy(SessionReplayPrivacy.MASK)
+        prepareMockSeekBar()
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(1)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return wireframes W map {privacy=MASK_USER_INPUT, Android O+}`() {
+        // Given
+        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        prepareMockSeekBar()
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(1)
+        assertThat(wireframes[0]).isEqualTo(expectedNonActiveTrackWireframe)
+    }
+
+    // endregion
+
+    // region Android O+ (allows setting a min progress value)
+
+    @Test
+    fun `M return partial wireframes W map { invalid thumb id }`() {
+        // Given
+        fakeMinValue = 0
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockSeekBar()
+        mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, null)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
+    }
+
+    @Test
+    fun `M return partial wireframes W map { invalid active track id }`() {
+        // Given
+        fakeMinValue = 0
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockSeekBar()
+        mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedThumbWireframe)
+    }
+
+    @Test
+    fun `M return partial wireframes W map { invalid non active track id }`() {
+        // Given
+        fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.ALLOW)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
@@ -175,6 +316,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @Test
     fun `M return wireframes W map {privacy=ALLOW}`() {
         // Given
+        fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.ALLOW)
         prepareMockSeekBar()
 
@@ -196,6 +338,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @Test
     fun `M return wireframes W map {privacy=MASK}`() {
         // Given
+        fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.MASK)
         prepareMockSeekBar()
 
@@ -215,6 +358,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @Test
     fun `M return wireframes W map {privacy=MASK_USER_INPUT}`() {
         // Given
+        fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
         prepareMockSeekBar()
 
@@ -230,6 +374,8 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         assertThat(wireframes).hasSize(1)
         assertThat(wireframes[0]).isEqualTo(expectedNonActiveTrackWireframe)
     }
+
+    // endregion
 
     // region Internal
 
