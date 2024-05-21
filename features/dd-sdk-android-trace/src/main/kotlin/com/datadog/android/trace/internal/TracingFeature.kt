@@ -12,33 +12,32 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.event.SpanEventMapper
-import com.datadog.android.trace.internal.data.NoOpOtelWriter
+import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.data.OtelTraceWriter
 import com.datadog.android.trace.internal.data.TraceWriter
+import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
-import com.datadog.android.trace.internal.domain.event.OtelDdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
-import com.datadog.android.trace.opentelemetry.DatadogContextStorage
 import com.datadog.legacy.trace.common.writer.Writer
-import io.opentelemetry.context.ContextStorage
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Tracing feature class, which needs to be registered with Datadog SDK instance.
  */
-internal class TracingFeature constructor(
+internal class TracingFeature(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val spanEventMapper: SpanEventMapper,
     internal val networkInfoEnabled: Boolean
-) : StorageBackedFeature {
+) : InternalCoreWriterProvider, StorageBackedFeature {
 
-    internal var dataWriter: Writer = NoOpWriter()
-    internal var otelDataWriter: com.datadog.trace.common.writer.Writer = NoOpOtelWriter()
+    internal var legacyTracerWriter: Writer = NoOpWriter()
+    internal var coreTracerDataWriter: com.datadog.trace.common.writer.Writer = NoOpCoreTracerWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region Feature
@@ -46,9 +45,8 @@ internal class TracingFeature constructor(
     override val name: String = Feature.TRACING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        dataWriter = createDataWriter(sdkCore)
-        otelDataWriter = createOtelDataWriter(sdkCore)
-        ContextStorage.addWrapper { DatadogContextStorage(it) }
+        legacyTracerWriter = createDataWriter(sdkCore)
+        coreTracerDataWriter = createOtelDataWriter(sdkCore)
         initialized.set(true)
     }
 
@@ -63,8 +61,16 @@ internal class TracingFeature constructor(
         FeatureStorageConfiguration.DEFAULT
 
     override fun onStop() {
-        dataWriter = NoOpWriter()
+        legacyTracerWriter = NoOpWriter()
         initialized.set(false)
+    }
+
+    // endregion
+
+    // region InternalCoreWriterProvider
+
+    override fun getCoreTracerWriter(): com.datadog.trace.common.writer.Writer {
+        return coreTracerDataWriter
     }
 
     // endregion
@@ -88,7 +94,7 @@ internal class TracingFeature constructor(
         val internalLogger = sdkCore.internalLogger
         return OtelTraceWriter(
             sdkCore,
-            ddSpanToSpanEventMapper = OtelDdSpanToSpanEventMapper(networkInfoEnabled),
+            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, internalLogger),
             serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger

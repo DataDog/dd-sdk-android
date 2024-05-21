@@ -9,12 +9,12 @@ package com.datadog.android.trace.integration.otel
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
-import com.datadog.android.trace.OtelTracerProvider
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.integration.opentracing.AndroidTracerTest
 import com.datadog.android.trace.integration.tests.assertj.SpansPayloadAssert
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
+import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.opentelemetry.trace.OtelConventions
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.trace.api.sampling.PrioritySampling
@@ -31,7 +31,6 @@ import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.context.Context
-import io.opentelemetry.context.ContextStorage
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
@@ -58,16 +57,6 @@ internal class OtelTracerProviderTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val datadogContextStorageClass =
-            Class.forName("com.datadog.android.trace.opentelemetry.DatadogContextStorage")
-        val constructorRef = datadogContextStorageClass.constructors.first { it.parameterCount == 1 }
-        ContextStorage.addWrapper {
-            if (it::class.java.isAssignableFrom(datadogContextStorageClass)) {
-                it
-            } else {
-                constructorRef.newInstance(it) as ContextStorage
-            }
-        }
         stubSdkCore = StubSDKCore(forge)
         val fakeTraceConfiguration = TraceConfiguration.Builder().build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
