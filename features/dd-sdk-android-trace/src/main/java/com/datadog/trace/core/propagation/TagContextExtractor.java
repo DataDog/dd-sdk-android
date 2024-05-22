@@ -14,7 +14,8 @@ public class TagContextExtractor implements HttpCodec.Extractor {
   public TagContextExtractor(
       final Supplier<TraceConfig> traceConfigSupplier, final ContextInterpreter.Factory factory) {
     this.traceConfigSupplier = traceConfigSupplier;
-    this.ctxInterpreter = ThreadLocal.withInitial(factory::create);
+    this.ctxInterpreter = new ThreadLocal<>();
+    this.ctxInterpreter.set(factory.create());
   }
 
   @Override
