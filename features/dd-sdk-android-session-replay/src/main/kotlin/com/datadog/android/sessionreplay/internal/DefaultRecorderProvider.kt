@@ -15,6 +15,7 @@ import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.NumberPicker
+import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.SeekBar
 import android.widget.TextView
@@ -31,6 +32,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ProgressBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
@@ -183,6 +185,16 @@ internal class DefaultRecorderProvider(
                     colorStringFormatter,
                     viewBoundsResolver,
                     drawableToColorMapper
+                )
+            ),
+            MapperTypeWrapper(
+                ProgressBar::class.java,
+                ProgressBarWireframeMapper(
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper,
+                    true
                 )
             )
         )

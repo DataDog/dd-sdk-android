@@ -2,9 +2,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
 import android.graphics.Rect
-import android.graphics.drawable.Drawable
 import android.os.Build
-import android.widget.SeekBar
+import android.widget.ProgressBar
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -34,7 +33,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -42,11 +40,9 @@ import kotlin.math.max
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(value = ForgeConfigurator::class)
-internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar, SeekBarWireframeMapper>() {
-
-    @LongForgery
-    var fakeThumbTrackId: Long = 0L
+@ForgeConfiguration(ForgeConfigurator::class)
+internal class ProgressBarWireframeMapperTest :
+    AbstractWireframeMapperTest<ProgressBar, ProgressBarWireframeMapper<ProgressBar>>() {
 
     @LongForgery
     var fakeActiveTrackId: Long = 0L
@@ -69,29 +65,11 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @IntForgery
     var fakeTrackColor: Int = 0
 
-    @IntForgery
-    var fakeThumbColor: Int = 0
-
-    @StringForgery(regex = "#[0-9A-Fa-f]{8}")
-    lateinit var fakeThumbHtmlColor: String
-
     @StringForgery(regex = "#[0-9A-Fa-f]{8}")
     lateinit var fakeNonActiveTrackHtmlColor: String
 
     @StringForgery(regex = "#[0-9A-Fa-f]{8}")
     lateinit var fakeActiveTrackHtmlColor: String
-
-    @IntForgery(min = 2, max = 512)
-    var fakeThumbHRadius: Int = 0
-
-    @IntForgery(min = 2, max = 512)
-    var fakeThumbWRadius: Int = 0
-
-    @Mock
-    lateinit var mockThumbDrawable: Drawable
-
-    @Mock
-    lateinit var mockThumbTintList: ColorStateList
 
     @Mock
     lateinit var mockProgressTintList: ColorStateList
@@ -101,114 +79,25 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
 
     lateinit var expectedActiveTrackWireframe: MobileSegment.Wireframe
     lateinit var expectedNonActiveTrackWireframe: MobileSegment.Wireframe
-    lateinit var expectedThumbWireframe: MobileSegment.Wireframe
 
     @BeforeEach
     fun `set up`() {
-        testedWireframeMapper = SeekBarWireframeMapper(
+        testedWireframeMapper = ProgressBarWireframeMapper(
             mockViewIdentifierResolver,
             mockColorStringFormatter,
             mockViewBoundsResolver,
-            mockDrawableToColorMapper
+            mockDrawableToColorMapper,
+            showProgressWhenMaskUserInput = true
         )
     }
 
-    // region Android O+ (allows setting a min progress value)
+    // region Indeterminate
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `M return partial wireframes W map {invalid thumb id, Android O+}`() {
+    fun `M return generic wireframes W map {indeterminate}`() {
         // Given
         withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
-        mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, null)
-
-        // When
-        val wireframes = testedWireframeMapper.map(
-            mockMappedView,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(wireframes).hasSize(2)
-        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `M return partial wireframes W map {invalid active track id, Android O+}`() {
-        // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
-        mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
-
-        // When
-        val wireframes = testedWireframeMapper.map(
-            mockMappedView,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(wireframes).hasSize(2)
-        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedThumbWireframe)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `M return partial wireframes W map {invalid non active track id, Android O+}`() {
-        // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
-        mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
-
-        // When
-        val wireframes = testedWireframeMapper.map(
-            mockMappedView,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(wireframes).hasSize(2)
-        assertThatBoundsAreCloseEnough(wireframes[0], expectedActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedThumbWireframe)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `M return wireframes W map {privacy=ALLOW, Android O+}`() {
-        // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
-
-        // When
-        val wireframes = testedWireframeMapper.map(
-            mockMappedView,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(wireframes).hasSize(3)
-        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[2], expectedThumbWireframe)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `M return wireframes W map {privacy=MASK, Android O+}`() {
-        // Given
-        withPrivacy(SessionReplayPrivacy.MASK)
-        prepareMockSeekBar()
+        prepareMockProgressBar(isIndeterminate = true)
 
         // When
         val wireframes = testedWireframeMapper.map(
@@ -221,60 +110,18 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         // Then
         assertThat(wireframes).hasSize(1)
         assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `M return wireframes W map {privacy=MASK_USER_INPUT, Android O+}`() {
-        // Given
-        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
-        prepareMockSeekBar()
-
-        // When
-        val wireframes = testedWireframeMapper.map(
-            mockMappedView,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(wireframes).hasSize(1)
-        assertThat(wireframes[0]).isEqualTo(expectedNonActiveTrackWireframe)
     }
 
     // endregion
 
-    // region Android < O
+    // region Android O+, determinate
 
     @Test
-    fun `M return partial wireframes W map { invalid thumb id }`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return partial wireframes W map {determinate, invalid track id, Android 0+}`() {
         // Given
-        fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
-        mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, null)
-
-        // When
-        val wireframes = testedWireframeMapper.map(
-            mockMappedView,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(wireframes).hasSize(2)
-        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
-    }
-
-    @Test
-    fun `M return partial wireframes W map { invalid active track id }`() {
-        // Given
-        fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
+        prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
 
         // When
@@ -286,17 +133,16 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         )
 
         // Then
-        assertThat(wireframes).hasSize(2)
+        assertThat(wireframes).hasSize(1)
         assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedThumbWireframe)
     }
 
     @Test
-    fun `M return partial wireframes W map { invalid non active track id }`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return partial wireframes W map {determinate, invalid non active track id, Android 0+}`() {
         // Given
-        fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
+        prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
 
         // When
@@ -308,17 +154,83 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         )
 
         // Then
-        assertThat(wireframes).hasSize(2)
+        assertThat(wireframes).hasSize(1)
         assertThatBoundsAreCloseEnough(wireframes[0], expectedActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedThumbWireframe)
     }
 
     @Test
-    fun `M return wireframes W map {privacy=ALLOW}`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return wireframes W map {determinate, privacy=ALLOW, Android 0+}`() {
+        // Given
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockProgressBar(isIndeterminate = false)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return wireframes W map {determinate, privacy=MASK, Android 0+}`() {
+        // Given
+        withPrivacy(SessionReplayPrivacy.MASK)
+        prepareMockProgressBar(isIndeterminate = false)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(1)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `M return wireframes W map {determinate, privacy=MASK_USER_INPUT, Android 0+}`() {
+        // Given
+        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        prepareMockProgressBar(isIndeterminate = false)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
+    }
+
+    // endregion
+
+    // region API < Android O, determinate
+
+    @Test
+    fun `M return partial wireframes W map {determinate, invalid track id}`() {
         // Given
         fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.ALLOW)
-        prepareMockSeekBar()
+        prepareMockProgressBar(isIndeterminate = false)
+        mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
 
         // When
         val wireframes = testedWireframeMapper.map(
@@ -329,18 +241,58 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         )
 
         // Then
-        assertThat(wireframes).hasSize(3)
+        assertThat(wireframes).hasSize(1)
         assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
-        assertThatBoundsAreCloseEnough(wireframes[2], expectedThumbWireframe)
     }
 
     @Test
-    fun `M return wireframes W map {privacy=MASK}`() {
+    fun `M return partial wireframes W map {determinate, invalid non active track id}`() {
+        // Given
+        fakeMinValue = 0
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockProgressBar(isIndeterminate = false)
+        mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(1)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedActiveTrackWireframe)
+    }
+
+    @Test
+    fun `M return wireframes W map {determinate, privacy=ALLOW}`() {
+        // Given
+        fakeMinValue = 0
+        withPrivacy(SessionReplayPrivacy.ALLOW)
+        prepareMockProgressBar(isIndeterminate = false)
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
+    }
+
+    @Test
+    fun `M return wireframes W map {determinate, privacy=MASK}`() {
         // Given
         fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.MASK)
-        prepareMockSeekBar()
+        prepareMockProgressBar(isIndeterminate = false)
 
         // When
         val wireframes = testedWireframeMapper.map(
@@ -356,11 +308,11 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    fun `M return wireframes W map {privacy=MASK_USER_INPUT}`() {
+    fun `M return wireframes W map {determinate, privacy=MASK_USER_INPUT}`() {
         // Given
         fakeMinValue = 0
         withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
-        prepareMockSeekBar()
+        prepareMockProgressBar(isIndeterminate = false)
 
         // When
         val wireframes = testedWireframeMapper.map(
@@ -371,49 +323,42 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
         )
 
         // Then
-        assertThat(wireframes).hasSize(1)
-        assertThat(wireframes[0]).isEqualTo(expectedNonActiveTrackWireframe)
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
     }
 
     // endregion
 
     // region Internal
 
-    private fun prepareMockSeekBar() {
+    private fun prepareMockProgressBar(isIndeterminate: Boolean) {
         val fakeStateIntArray = fakeDrawableState.toIntArray()
 
         withUiMode(fakeUiTypeMode)
 
-        prepareMockView<SeekBar> { mockView ->
+        prepareMockView<ProgressBar> { mockView ->
             whenever(mockView.drawableState) doReturn fakeStateIntArray
 
-            whenever(mockView.thumb) doReturn mockThumbDrawable
-            whenever(mockView.thumbTintList) doReturn mockThumbTintList
             whenever(mockView.progressTintList) doReturn mockProgressTintList
 
             whenever(mockView.min) doReturn fakeMinValue
             whenever(mockView.max) doReturn fakeMaxValue
             whenever(mockView.progress) doReturn ((fakeMaxValue - fakeMinValue) * fakeProgress).toInt() + fakeMinValue
+            whenever(mockView.isIndeterminate) doReturn isIndeterminate
         }
 
-        whenever(mockThumbTintList.getColorForState(eq(fakeStateIntArray), any())) doReturn fakeThumbColor
         whenever(mockProgressTintList.getColorForState(eq(fakeStateIntArray), any())) doReturn fakeTrackColor
 
-        whenever(mockThumbDrawable.bounds) doReturn mockThumbBounds
-
-        mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, fakeThumbTrackId)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, fakeActiveTrackId)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, fakeNonActiveTrackId)
 
         mockColorAndAlphaAsHexString(fakeTrackColor, OPAQUE_ALPHA_VALUE, fakeActiveTrackHtmlColor)
         mockColorAndAlphaAsHexString(fakeTrackColor, PARTIALLY_OPAQUE_ALPHA_VALUE, fakeNonActiveTrackHtmlColor)
-        mockColorAndAlphaAsHexString(fakeThumbColor, OPAQUE_ALPHA_VALUE, fakeThumbHtmlColor)
 
         val screenDensity = fakeMappingContext.systemInformation.screenDensity
         val fakeTrackHeight = TRACK_HEIGHT_IN_PX.densityNormalized(screenDensity)
         val fakeTrackY = fakeViewPaddedBounds.y + ((fakeViewPaddedBounds.height - fakeTrackHeight) / 2)
-        whenever(mockThumbBounds.width()) doReturn (screenDensity * fakeThumbWRadius * 2).toInt()
-        whenever(mockThumbBounds.height()) doReturn (screenDensity * fakeThumbHRadius * 2).toInt()
 
         expectedNonActiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeNonActiveTrackId,
@@ -435,18 +380,6 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = fakeActiveTrackHtmlColor,
                 opacity = fakeViewAlpha
-            )
-        )
-        expectedThumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeThumbTrackId,
-            x = fakeViewPaddedBounds.x + (fakeViewPaddedBounds.width * fakeProgress).toLong() - fakeThumbWRadius,
-            y = fakeTrackY + (fakeTrackHeight / 2) - fakeThumbHRadius,
-            width = fakeThumbWRadius * 2L,
-            height = fakeThumbHRadius * 2L,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = fakeThumbHtmlColor,
-                opacity = fakeViewAlpha,
-                cornerRadius = max(fakeThumbWRadius, fakeThumbHRadius)
             )
         )
     }
