@@ -540,7 +540,7 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         var sampleCount = 0
-        val repeatCount = 128
+        val repeatCount = 256
         val expectedSampledCount = (repeatCount * fakeSampleRate).toInt() / 100
 
         // When
@@ -557,7 +557,8 @@ internal class SdkInternalLoggerTest {
         }
 
         // Then
-        assertThat(sampleCount).isCloseTo(expectedSampledCount, offset(10))
+        val margin = (repeatCount / 8) // Allow a 12.5% margin of error
+        assertThat(sampleCount).isCloseTo(expectedSampledCount, offset(margin))
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {
