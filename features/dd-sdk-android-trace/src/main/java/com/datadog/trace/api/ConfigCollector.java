@@ -1,6 +1,5 @@
 package com.datadog.trace.api;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -37,21 +36,16 @@ public class ConfigCollector {
     }
     while (true) {
       Map<String, ConfigSetting> current = collected;
-      current.forEach(merged::putIfAbsent);
+      for(Map.Entry<String, ConfigSetting> entry : current.entrySet()) {
+        if(!keysAndValues.containsKey(entry.getKey())) {
+          merged.put(entry.getKey(), entry.getValue());
+        }
+      }
       if (COLLECTED_UPDATER.compareAndSet(this, current, merged)) {
         break; // success
       }
       // roll back to original update before next attempt
       merged.keySet().retainAll(keysAndValues.keySet());
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public Map<String, ConfigSetting> collect() {
-    if (!collected.isEmpty()) {
-      return COLLECTED_UPDATER.getAndSet(this, new ConcurrentHashMap<>());
-    } else {
-      return Collections.emptyMap();
     }
   }
 }
