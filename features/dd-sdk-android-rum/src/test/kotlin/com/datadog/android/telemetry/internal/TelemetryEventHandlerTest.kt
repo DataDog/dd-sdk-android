@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
@@ -198,7 +199,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryDebugEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertDebugEventMatchesRawEvent(lastValue, debugRawEvent, fakeRumContext)
         }
     }
@@ -224,7 +225,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryDebugEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertDebugEventMatchesRawEvent(lastValue, debugRawEvent, noRumContext)
         }
     }
@@ -243,7 +244,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertErrorEventMatchesRawEvent(lastValue, errorRawEvent, fakeRumContext)
         }
     }
@@ -269,7 +270,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertErrorEventMatchesRawEvent(lastValue, errorRawEvent, noRumContext)
         }
     }
@@ -288,7 +289,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
         }
     }
@@ -314,7 +315,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, noRumContext)
         }
     }
@@ -344,7 +345,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasSessionSampleRate(fakeRumConfiguration.sampleRate.toLong())
@@ -372,7 +373,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasUseProxy(fakeCoreConfiguration.useProxy)
@@ -404,7 +405,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasUseTracing(useTracing)
@@ -438,7 +439,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasTrackNetworkRequests(trackNetworkRequests)
@@ -457,7 +458,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
             assertThat(firstValue).hasSessionReplaySampleRate(null)
             assertThat(firstValue).hasSessionReplayStartManually(null)
@@ -488,7 +489,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
             assertThat(firstValue).hasSessionReplaySampleRate(fakeSampleRate)
             assertThat(firstValue).hasSessionReplayStartManually(fakeSessionReplayIsStartManually)
@@ -519,7 +520,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
             assertThat(firstValue).hasSessionReplaySampleRate(null)
             assertThat(firstValue).hasSessionReplayStartManually(null)
@@ -561,7 +562,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             if (rawEvent.type == TelemetryType.DEBUG) {
                 assertThat(lastValue).isInstanceOf(TelemetryDebugEvent::class.java)
             } else {
@@ -613,7 +614,7 @@ internal class TelemetryEventHandlerTest {
         )
 
         argumentCaptor<Any> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             when (val capturedValue = lastValue) {
                 is TelemetryDebugEvent -> {
                     assertDebugEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
@@ -649,7 +650,7 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             allValues.withIndex().forEach {
                 when (val capturedValue = it.value) {
                     is TelemetryDebugEvent -> {
@@ -708,7 +709,7 @@ internal class TelemetryEventHandlerTest {
 
         argumentCaptor<Any> {
             verify(mockWriter, times(expectedInvocations))
-                .write(eq(mockEventBatchWriter), capture())
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             allValues.withIndex().forEach {
                 when (val capturedValue = it.value) {
                     is TelemetryDebugEvent -> {
@@ -782,7 +783,8 @@ internal class TelemetryEventHandlerTest {
             mode = times(extraNumber)
         )
         argumentCaptor<Any> {
-            verify(mockWriter, times(expectedInvocations)).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, times(expectedInvocations))
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             allValues.withIndex().forEach {
                 when (val capturedValue = it.value) {
                     is TelemetryDebugEvent -> {
@@ -847,7 +849,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         // if limit would be counted before the sampler, it will be twice less writes
         verify(mockWriter, times(MAX_EVENTS_PER_SESSION_TEST))
-            .write(eq(mockEventBatchWriter), any())
+            .write(eq(mockEventBatchWriter), any(), eq(EventType.TELEMETRY))
         verifyNoInteractions(mockInternalLogger)
     }
 

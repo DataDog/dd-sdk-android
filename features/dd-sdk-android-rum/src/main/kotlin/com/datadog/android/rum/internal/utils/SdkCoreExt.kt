@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -20,6 +21,7 @@ internal typealias EventOutcomeAction = (rumMonitor: AdvancedRumMonitor) -> Unit
 internal class WriteOperation(
     private val sdkCore: FeatureSdkCore,
     private val rumDataWriter: DataWriter<Any>,
+    private val eventType: EventType,
     private val eventSource: (DatadogContext) -> Any
 ) {
     private val advancedRumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
@@ -57,7 +59,7 @@ internal class WriteOperation(
                         val event = eventSource(datadogContext)
 
                         @Suppress("ThreadSafety") // called in a worker thread context
-                        val isSuccess = rumDataWriter.write(eventBatchWriter, event)
+                        val isSuccess = rumDataWriter.write(eventBatchWriter, event, eventType)
                         if (isSuccess) {
                             advancedRumMonitor?.let {
                                 onSuccess(it)
@@ -108,7 +110,8 @@ internal class WriteOperation(
 
 internal fun FeatureSdkCore.newRumEventWriteOperation(
     rumDataWriter: DataWriter<Any>,
+    eventType: EventType = EventType.DEFAULT,
     eventSource: (DatadogContext) -> Any
 ): WriteOperation {
-    return WriteOperation(this, rumDataWriter, eventSource)
+    return WriteOperation(this, rumDataWriter, eventType, eventSource)
 }

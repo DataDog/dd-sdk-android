@@ -135,10 +135,14 @@ interface com.datadog.android.api.net.RequestFactory
     const val QUERY_PARAM_SOURCE: String
     const val QUERY_PARAM_TAGS: String
 interface com.datadog.android.api.storage.DataWriter<T>
-  fun write(EventBatchWriter, T): Boolean
+  fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
   fun currentMetadata(): ByteArray?
-  fun write(RawBatchEvent, ByteArray?): Boolean
+  fun write(RawBatchEvent, ByteArray?, EventType): Boolean
+enum com.datadog.android.api.storage.EventType
+  - DEFAULT
+  - CRASH
+  - TELEMETRY
 data class com.datadog.android.api.storage.FeatureStorageConfiguration
   constructor(Long, Int, Long, Long)
   companion object 
@@ -276,7 +280,7 @@ interface com.datadog.android.core.persistence.PersistenceStrategy
   data class Batch
     constructor(String, ByteArray? = null, List<com.datadog.android.api.storage.RawBatchEvent> = mutableListOf())
   fun currentMetadata(): ByteArray?
-  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?): Boolean
+  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType): Boolean
   fun lockAndReadNext(): Batch?
   fun unlockAndKeep(String)
   fun unlockAndDelete(String)

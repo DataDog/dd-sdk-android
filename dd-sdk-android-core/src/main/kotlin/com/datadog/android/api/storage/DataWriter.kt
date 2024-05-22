@@ -18,8 +18,12 @@ interface DataWriter<T> {
     /**
      * Writes the element with a given [EventBatchWriter].
      *
+     * @param writer the writer to use
+     * @param element the event to write
+     * @param eventType additional info about the event
+     *
      * @return true if element was written, false otherwise.
      */
     @WorkerThread
-    fun write(writer: EventBatchWriter, element: T): Boolean
+    fun write(writer: EventBatchWriter, element: T, eventType: EventType): Boolean
 }

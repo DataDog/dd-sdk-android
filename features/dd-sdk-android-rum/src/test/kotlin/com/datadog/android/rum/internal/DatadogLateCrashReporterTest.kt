@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
@@ -161,7 +162,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
@@ -261,7 +262,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
@@ -361,7 +362,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasErrorSourceType(ErrorEvent.SourceType.NDK)
@@ -412,7 +413,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
@@ -507,7 +508,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
@@ -703,7 +704,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
@@ -792,7 +793,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
@@ -879,7 +880,7 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture())
+            verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)

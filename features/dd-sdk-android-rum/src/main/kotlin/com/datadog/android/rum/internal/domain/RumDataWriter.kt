@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
@@ -25,7 +26,7 @@ internal class RumDataWriter(
     // region DataWriter
 
     @WorkerThread
-    override fun write(writer: EventBatchWriter, element: Any): Boolean {
+    override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
         val byteArray = eventSerializer.serializeToByteArray(
             element,
             sdkCore.internalLogger
@@ -48,7 +49,7 @@ internal class RumDataWriter(
         }
 
         synchronized(this) {
-            val result = writer.write(batchEvent, null)
+            val result = writer.write(batchEvent, null, eventType)
             if (result) {
                 onDataWritten(element, byteArray)
             }
