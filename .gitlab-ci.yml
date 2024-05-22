@@ -68,7 +68,7 @@ static-analysis:
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v25558398-8517309a/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
     strategy: depend
 
 analysis:licenses:
