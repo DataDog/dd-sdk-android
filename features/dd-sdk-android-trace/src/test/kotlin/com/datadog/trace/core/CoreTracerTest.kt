@@ -8,6 +8,7 @@ package com.datadog.trace.core
 
 import com.datadog.tools.unit.callStaticMethod
 import com.datadog.tools.unit.createInstance
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.api.Config
 import com.datadog.trace.api.config.GeneralConfig
 import com.datadog.trace.api.config.TracerConfig
@@ -18,6 +19,7 @@ import com.datadog.trace.common.sampling.RateByServiceTraceSampler
 import com.datadog.trace.common.writer.ListWriter
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
+import com.datadog.trace.core.propagation.HttpCodec
 import com.datadog.trace.logger.DatadogCoreTracerLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -39,6 +41,10 @@ internal class CoreTracerTest : DDCoreSpecification() {
         assertThat(tracer.initialSampler).isInstanceOf(RateByServiceTraceSampler::class.java)
         assertThat(tracer.writer).isInstanceOf(NoOpWriter::class.java)
         assertThat(tracer.internalLogger).isSameAs(mockLogger)
+        val injector: HttpCodec.Injector = tracer.propagate().getFieldValue("injector")
+        val extractor: HttpCodec.Extractor = tracer.propagate().getFieldValue("extractor")
+        assertThat(injector).isInstanceOf(HttpCodec.CompoundInjector::class.java)
+        assertThat(extractor).isInstanceOf(HttpCodec.CompoundExtractor::class.java)
         assertThat(tracer.log).isInstanceOf(DatadogCoreTracerLogger::class.java)
 
         // Tear down

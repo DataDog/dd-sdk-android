@@ -60,13 +60,14 @@ import com.datadog.trace.common.sampling.SpanSamplingRules;
 import com.datadog.trace.common.sampling.TraceSamplingRules;
 import com.datadog.trace.common.writer.NoOpWriter;
 import com.datadog.trace.common.writer.Writer;
+import com.datadog.trace.core.datastreams.DataStreamContextInjector;
 import com.datadog.trace.core.datastreams.DataStreamsMonitoring;
 import com.datadog.trace.core.datastreams.NoOpDataStreamMonitoring;
 import com.datadog.trace.core.histogram.Histograms;
 import com.datadog.trace.core.monitor.HealthMetrics;
+import com.datadog.trace.core.propagation.CorePropagation;
 import com.datadog.trace.core.propagation.ExtractedContext;
 import com.datadog.trace.core.propagation.HttpCodec;
-import com.datadog.trace.core.propagation.NoOpCorePropagation;
 import com.datadog.trace.core.propagation.PropagationTags;
 import com.datadog.trace.core.scopemanager.ContinuableScopeManager;
 import com.datadog.trace.core.taginterceptor.RuleFlags;
@@ -269,6 +270,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         private IdGenerationStrategy idGenerationStrategy;
         private Sampler sampler;
         private HttpCodec.Extractor extractor;
+        private HttpCodec.Injector injector;
         private AgentScopeManager scopeManager;
         private Map<String, ?> localRootSpanTags;
         private Map<String, ?> defaultSpanTags;
@@ -307,6 +309,11 @@ public class CoreTracer implements AgentTracer.TracerAPI {
 
         public CoreTracerBuilder extractor(HttpCodec.Extractor extractor) {
             this.extractor = extractor;
+            return this;
+        }
+
+        public CoreTracerBuilder injector(HttpCodec.Injector injector) {
+            this.injector = injector;
             return this;
         }
 
@@ -396,6 +403,10 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             partialFlushMinSpans(config.getPartialFlushMinSpans());
             strictTraceWrites(config.isTraceStrictWritesEnabled());
             injectBaggageAsTags(config.isInjectBaggageAsTagsEnabled());
+            injector(HttpCodec.createInjector(
+                    config,
+                    config.getTracePropagationStylesToInject(),
+                    invertMap(config.getBaggageMapping())));
             return this;
         }
 
@@ -406,6 +417,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     writer,
                     idGenerationStrategy,
                     sampler,
+                    injector,
                     extractor,
                     scopeManager,
                     localRootSpanTags,
@@ -431,6 +443,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             final Writer writer,
             final IdGenerationStrategy idGenerationStrategy,
             final Sampler sampler,
+            final HttpCodec.Injector injector,
             final HttpCodec.Extractor extractor,
             final AgentScopeManager scopeManager,
             final Map<String, ?> localRootSpanTags,
@@ -548,14 +561,12 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         // Create all HTTP injectors plus the DSM one
         Map<TracePropagationStyle, HttpCodec.Injector> injectors =
                 HttpCodec.allInjectorsFor(config, invertMap(baggageMapping));
+        DataStreamContextInjector dataStreamContextInjector = this.dataStreamsMonitoring.injector();
         // Store all propagators to propagation
-        this.propagation = new NoOpCorePropagation(builtExtractor);
+        this.propagation =
+                new CorePropagation(builtExtractor, injector, injectors, dataStreamContextInjector);
         this.tagInterceptor =
                 null == tagInterceptor ? new TagInterceptor(new RuleFlags(config)) : tagInterceptor;
-        this.instrumentationGateway = instrumentationGateway;
-        callbackProviderAppSec = instrumentationGateway.getCallbackProvider(RequestContextSlot.APPSEC);
-        callbackProviderIast = instrumentationGateway.getCallbackProvider(RequestContextSlot.IAST);
-        universalCallbackProvider = instrumentationGateway.getUniversalCallbackProvider();
 
         shutdownCallback = new ShutdownHook(this);
         try {
