@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -50,6 +51,7 @@ import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -76,6 +78,9 @@ internal class SessionReplayFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockExecutorService: ExecutorService
+
+    @Mock
     lateinit var mockSampler: Sampler
 
     lateinit var fakeSessionId: String
@@ -88,6 +93,8 @@ internal class SessionReplayFeatureTest {
         whenever(mockSampler.getSampleRate()).thenReturn(fakeSampleRate)
         fakeSessionId = UUID.randomUUID().toString()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
+
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
