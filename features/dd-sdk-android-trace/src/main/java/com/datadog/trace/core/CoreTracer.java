@@ -24,23 +24,14 @@ import com.datadog.trace.api.InstrumenterConfig;
 import com.datadog.trace.api.StatsDClient;
 import com.datadog.trace.api.TracePropagationStyle;
 import com.datadog.trace.api.config.GeneralConfig;
-import com.datadog.trace.api.experimental.DataStreamsCheckpointer;
-import com.datadog.trace.api.gateway.CallbackProvider;
-import com.datadog.trace.api.gateway.InstrumentationGateway;
 import com.datadog.trace.api.gateway.RequestContext;
 import com.datadog.trace.api.gateway.RequestContextSlot;
-import com.datadog.trace.api.gateway.SubscriptionService;
-import com.datadog.trace.api.interceptor.MutableSpan;
-import com.datadog.trace.api.interceptor.TraceInterceptor;
-import com.datadog.trace.api.internal.TraceSegment;
-import com.datadog.trace.api.metrics.SpanMetricRegistry;
 import com.datadog.trace.api.naming.SpanNaming;
 import com.datadog.trace.api.profiling.Timer;
 import com.datadog.trace.api.sampling.PrioritySampling;
 import com.datadog.trace.api.scopemanager.ScopeListener;
 import com.datadog.trace.api.time.SystemTimeSource;
 import com.datadog.trace.api.time.TimeSource;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentDataStreamsMonitoring;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentHistogram;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
@@ -74,31 +65,20 @@ import com.datadog.trace.core.taginterceptor.RuleFlags;
 import com.datadog.trace.core.taginterceptor.TagInterceptor;
 import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
-import com.datadog.trace.monitor.Monitoring;
 import com.datadog.trace.monitor.NoOpRecording;
 import com.datadog.trace.monitor.Recording;
 import com.datadog.trace.relocate.api.RatelimitedLogger;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
+    import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.SortedSet;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Main entrypoint into the tracer implementation. In addition to implementing
@@ -108,9 +88,6 @@ import java.util.zip.ZipOutputStream;
 public class CoreTracer implements AgentTracer.TracerAPI {
     @VisibleForTesting
     final Logger log;
-    // UINT64 max value
-    public static final BigInteger TRACE_ID_MAX =
-            BigInteger.valueOf(2).pow(64).subtract(BigInteger.ONE);
 
     public static final String LANG_STATSD_TAG = "lang";
     public static final String LANG_VERSION_STATSD_TAG = "lang_version";
@@ -189,9 +166,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     private final int partialFlushMinSpans;
 
     private final StatsDClient statsDClient;
-    private final Monitoring monitoring;
-    private final Monitoring performanceMonitoring;
-
     private final HealthMetrics healthMetrics;
     private final Recording traceWriteTimer;
     private final IdGenerationStrategy idGenerationStrategy;
@@ -218,17 +192,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
      */
     private final TagInterceptor tagInterceptor;
 
-    private final SortedSet<TraceInterceptor> interceptors =
-            new ConcurrentSkipListSet<>(Comparator.comparingInt(TraceInterceptor::priority));
-
     private final AgentPropagation propagation;
+
     private final boolean logs128bTraceIdEnabled;
-
-    private final InstrumentationGateway instrumentationGateway;
-    private final CallbackProvider callbackProviderAppSec;
-    private final CallbackProvider callbackProviderIast;
-    private final CallbackProvider universalCallbackProvider;
-
     private final PropagationTags.Factory propagationTagsFactory;
 
     final InternalLogger internalLogger;
@@ -280,7 +246,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         private int partialFlushMinSpans;
         private TagInterceptor tagInterceptor;
         private boolean strictTraceWrites;
-        private InstrumentationGateway instrumentationGateway;
         private TimeSource timeSource;
         private ProfilingContextIntegration profilingContextIntegration =
                 ProfilingContextIntegration.NoOp.INSTANCE;
@@ -362,11 +327,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             return this;
         }
 
-        public CoreTracerBuilder instrumentationGateway(InstrumentationGateway instrumentationGateway) {
-            this.instrumentationGateway = instrumentationGateway;
-            return this;
-        }
-
         public CoreTracerBuilder timeSource(TimeSource timeSource) {
             this.timeSource = timeSource;
             return this;
@@ -393,7 +353,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             serviceName(config.getServiceName());
             // Explicitly skip setting writer to avoid allocating resources prematurely.
             sampler(Sampler.Builder.forConfig(config, null));
-            instrumentationGateway(new InstrumentationGateway());
             // Explicitly skip setting scope manager because it depends on statsDClient
             localRootSpanTags(config.getLocalRootSpanTags());
             defaultSpanTags(config.getMergedSpanTags());
@@ -428,7 +387,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     partialFlushMinSpans,
                     tagInterceptor,
                     strictTraceWrites,
-                    instrumentationGateway,
                     timeSource,
                     profilingContextIntegration,
                     injectBaggageAsTags,
@@ -454,7 +412,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             final int partialFlushMinSpans,
             final TagInterceptor tagInterceptor,
             final boolean strictTraceWrites,
-            final InstrumentationGateway instrumentationGateway,
             final TimeSource timeSource,
             final ProfilingContextIntegration profilingContextIntegration,
             final boolean injectBaggageAsTags,
@@ -520,8 +477,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
 
         this.traceWriteTimer = NoOpRecording.NO_OP;
         this.healthMetrics = HealthMetrics.NO_OP;
-        this.monitoring = Monitoring.DISABLED;
-        this.performanceMonitoring = Monitoring.DISABLED;
         if (scopeManager == null) {
             this.scopeManager =
                     new ContinuableScopeManager(
@@ -575,7 +530,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             // The JVM is already shutting down.
         }
 
-        registerClassLoader(ClassLoader.getSystemClassLoader());
         propagationTagsFactory = PropagationTags.factory(config);
         this.profilingContextIntegration = profilingContextIntegration;
         this.injectBaggageAsTags = injectBaggageAsTags;
@@ -588,22 +542,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             this.localRootSpanTags = localRootSpanTags;
         }
         this.internalLogger = internalLogger;
-    }
-
-    /**
-     * Used by AgentTestRunner to inject configuration into the test tracer.
-     */
-    public void rebuildTraceConfig(Config config) {
-        dynamicConfig
-                .initial()
-                .setRuntimeMetricsEnabled(config.isRuntimeMetricsEnabled())
-                .setLogsInjectionEnabled(config.isLogsInjectionEnabled())
-                .setDataStreamsEnabled(config.isDataStreamsEnabled())
-                .setServiceMapping(config.getServiceMapping())
-                .setHeaderTags(config.getRequestHeaderTags())
-                .setBaggageMapping(config.getBaggageMapping())
-                .setTraceSampleRate(config.getTraceSampleRate())
-                .apply();
     }
 
     @Override
@@ -620,34 +558,8 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         }
     }
 
-    /**
-     * Only visible for benchmarking purposes
-     *
-     * @return a PendingTrace
-     */
-    public PendingTrace createTrace(DDTraceId id) {
-        return pendingTraceFactory.create(id);
-    }
-
     PendingTrace createTrace(DDTraceId id, ConfigSnapshot traceConfig) {
         return pendingTraceFactory.create(id, traceConfig);
-    }
-
-    /**
-     * If an application is using a non-system classloader, that classloader should be registered
-     * here. Due to the way Spring Boot structures its' executable jar, this might log some warnings.
-     *
-     * @param classLoader to register.
-     */
-    private void registerClassLoader(final ClassLoader classLoader) {
-        try {
-            for (final TraceInterceptor interceptor :
-                    ServiceLoader.load(TraceInterceptor.class, classLoader)) {
-                addTraceInterceptor(interceptor);
-            }
-        } catch (final ServiceConfigurationError e) {
-            log.warn("Problem loading TraceInterceptor for classLoader: {}", classLoader, e);
-        }
     }
 
     /**
@@ -767,11 +679,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public AgentDataStreamsMonitoring getDataStreamsMonitoring() {
-        return dataStreamsMonitoring;
-    }
-
-    @Override
     public Timer getTimer() {
         return timer;
     }
@@ -824,24 +731,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     private List<DDSpan> interceptCompleteTrace(List<DDSpan> trace) {
-        if (!interceptors.isEmpty() && !trace.isEmpty()) {
-            Collection<? extends MutableSpan> interceptedTrace = new ArrayList<>(trace);
-            for (final TraceInterceptor interceptor : interceptors) {
-                try {
-                    // If one TraceInterceptor throws an exception, then continue with the next one
-                    interceptedTrace = interceptor.onTraceComplete(interceptedTrace);
-                } catch (Exception e) {
-                    String interceptorName = interceptor.getClass().getName();
-                    rlLog.warn("Exception in TraceInterceptor {}", interceptorName, e);
-                }
-            }
-            trace = new ArrayList<>(interceptedTrace.size());
-            for (final MutableSpan span : interceptedTrace) {
-                if (span instanceof DDSpan) {
-                    trace.add((DDSpan) span);
-                }
-            }
-        }
         return trace;
     }
 
@@ -879,33 +768,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public boolean addTraceInterceptor(final TraceInterceptor interceptor) {
-        if (interceptors.add(interceptor)) {
-            return true;
-        } else {
-            Comparator<? super TraceInterceptor> interceptorComparator = interceptors.comparator();
-            if (interceptorComparator != null) {
-                TraceInterceptor anotherInterceptor =
-                        interceptors.stream()
-                                .filter(i -> interceptorComparator.compare(i, interceptor) == 0)
-                                .findFirst()
-                                .orElse(null);
-                log.warn(
-                        "Interceptor {} will NOT be registered with the tracer, "
-                                + "as already registered interceptor {} is considered its duplicate",
-                        interceptor,
-                        anotherInterceptor);
-            }
-            return false;
-        }
-    }
-
-    @Override
-    public DataStreamsCheckpointer getDataStreamsCheckpointer() {
-        return this.dataStreamsMonitoring;
-    }
-
-    @Override
     public void addScopeListener(final ScopeListener listener) {
         if (scopeManager instanceof ContinuableScopeManager) {
             ((ContinuableScopeManager) scopeManager).addScopeListener(listener);
@@ -923,27 +785,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public SubscriptionService getSubscriptionService(RequestContextSlot slot) {
-        return (SubscriptionService) instrumentationGateway.getCallbackProvider(slot);
-    }
-
-    @Override
-    public CallbackProvider getCallbackProvider(RequestContextSlot slot) {
-        if (slot == RequestContextSlot.APPSEC) {
-            return callbackProviderAppSec;
-        } else if (slot == RequestContextSlot.IAST) {
-            return callbackProviderIast;
-        } else {
-            return CallbackProvider.CallbackProviderNoop.INSTANCE;
-        }
-    }
-
-    @Override
-    public CallbackProvider getUniversalCallbackProvider() {
-        return universalCallbackProvider;
-    }
-
-    @Override
     public void close() {
         pendingTraceBuffer.close();
         writer.close();
@@ -953,53 +794,15 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public void addScopeListener(
-            Runnable afterScopeActivatedCallback, Runnable afterScopeClosedCallback) {
-        addScopeListener(
-                new ScopeListener() {
-                    @Override
-                    public void afterScopeActivated() {
-                        afterScopeActivatedCallback.run();
-                    }
-
-                    @Override
-                    public void afterScopeClosed() {
-                        afterScopeClosedCallback.run();
-                    }
-                });
-    }
-
-    @Override
     public void flush() {
         pendingTraceBuffer.flush();
         writer.flush();
     }
 
-    @Override
-    public void flushMetrics() {
-        try {
-            metricsAggregator.forceReport().get(2_500, MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            log.debug("Failed to wait for metrics flush.", e);
-        }
-    }
 
     @Override
     public ProfilingContextIntegration getProfilingContext() {
         return profilingContextIntegration;
-    }
-
-    @Override
-    public TraceSegment getTraceSegment() {
-        AgentSpan activeSpan = activeSpan();
-        if (activeSpan == null) {
-            return null;
-        }
-        AgentSpan.Context ctx = activeSpan.context();
-        if (ctx instanceof DDSpanContext) {
-            return ((DDSpanContext) ctx).getTraceSegment();
-        }
-        return null;
     }
 
     private static String[] generateConstantTags(final Config config) {

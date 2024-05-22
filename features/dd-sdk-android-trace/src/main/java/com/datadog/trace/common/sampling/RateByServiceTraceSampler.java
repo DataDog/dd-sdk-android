@@ -12,7 +12,7 @@ import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 /**
  * A rate sampler which maintains different sample rates per service+env name.

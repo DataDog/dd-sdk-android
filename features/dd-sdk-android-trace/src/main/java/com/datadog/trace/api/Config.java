@@ -1,17 +1,14 @@
 package com.datadog.trace.api;
 
 import static com.datadog.trace.api.ConfigDefaults.*;
-import static com.datadog.trace.api.DDTags.HOST_TAG;
 import static com.datadog.trace.api.DDTags.INTERNAL_HOST_NAME;
 import static com.datadog.trace.api.DDTags.LANGUAGE_TAG_KEY;
 import static com.datadog.trace.api.DDTags.LANGUAGE_TAG_VALUE;
 import static com.datadog.trace.api.DDTags.PID_TAG;
 import static com.datadog.trace.api.DDTags.PROFILING_ENABLED;
 import static com.datadog.trace.api.DDTags.RUNTIME_ID_TAG;
-import static com.datadog.trace.api.DDTags.RUNTIME_VERSION_TAG;
 import static com.datadog.trace.api.DDTags.SCHEMA_VERSION_TAG_KEY;
 import static com.datadog.trace.api.DDTags.SERVICE;
-import static com.datadog.trace.api.DDTags.SERVICE_TAG;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_AGENTLESS;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_AGENTLESS_DEFAULT;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_TAGS;
@@ -23,10 +20,8 @@ import static com.datadog.trace.api.config.GeneralConfig.AZURE_APP_SERVICES;
 import static com.datadog.trace.api.config.GeneralConfig.DATA_STREAMS_BUCKET_DURATION_SECONDS;
 import static com.datadog.trace.api.config.GeneralConfig.DATA_STREAMS_ENABLED;
 import static com.datadog.trace.api.config.GeneralConfig.DOGSTATSD_ARGS;
-import static com.datadog.trace.api.config.GeneralConfig.DOGSTATSD_HOST;
 import static com.datadog.trace.api.config.GeneralConfig.DOGSTATSD_NAMED_PIPE;
 import static com.datadog.trace.api.config.GeneralConfig.DOGSTATSD_PATH;
-import static com.datadog.trace.api.config.GeneralConfig.DOGSTATSD_PORT;
 import static com.datadog.trace.api.config.GeneralConfig.DOGSTATSD_START_DELAY;
 import static com.datadog.trace.api.config.GeneralConfig.ENV;
 import static com.datadog.trace.api.config.GeneralConfig.GLOBAL_TAGS;
@@ -51,7 +46,6 @@ import static com.datadog.trace.api.config.GeneralConfig.TELEMETRY_LOG_COLLECTIO
 import static com.datadog.trace.api.config.GeneralConfig.TELEMETRY_METRICS_INTERVAL;
 import static com.datadog.trace.api.config.GeneralConfig.TRACER_METRICS_BUFFERING_ENABLED;
 import static com.datadog.trace.api.config.GeneralConfig.TRACER_METRICS_ENABLED;
-import static com.datadog.trace.api.config.GeneralConfig.TRACER_METRICS_IGNORED_RESOURCES;
 import static com.datadog.trace.api.config.GeneralConfig.TRACER_METRICS_MAX_AGGREGATES;
 import static com.datadog.trace.api.config.GeneralConfig.TRACER_METRICS_MAX_PENDING;
 import static com.datadog.trace.api.config.GeneralConfig.TRACE_DEBUG;
@@ -211,7 +205,6 @@ import static com.datadog.trace.api.config.TracerConfig.TRACE_STRICT_WRITES_ENAB
 import static com.datadog.trace.api.config.TracerConfig.TRACE_X_DATADOG_TAGS_MAX_LENGTH;
 import static com.datadog.trace.api.config.TracerConfig.WRITER_BAGGAGE_INJECT;
 import static com.datadog.trace.api.config.TracerConfig.WRITER_TYPE;
-import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableList;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableSet;
 import static com.datadog.trace.util.Strings.propertyNameToEnvironmentVariableName;
 
@@ -231,17 +224,14 @@ import com.datadog.trace.logger.LoggerFactory;
 import com.datadog.trace.util.FileUtils;
 import com.datadog.trace.util.PidHelper;
 import com.datadog.trace.util.Strings;
-import com.datadog.trace.util.throwable.FatalAgentMisconfigurationError;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
@@ -261,8 +251,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1358,43 +1347,12 @@ public class Config {
         log.debug("New instance: {}", this);
     }
 
-    /**
-     * Converts a list of packages in Jacoco exclusion format ({@code
-     * my.package.*,my.other.package.*}) to list of package prefixes suitable for use with ASM ({@code
-     * my/package/,my/other/package/})
-     */
-    private static String[] convertJacocoExclusionFormatToPackagePrefixes(List<String> packages) {
-        return packages.stream()
-                .map(s -> (s.endsWith("*") ? s.substring(0, s.length() - 1) : s).replace('.', '/'))
-                .toArray(String[]::new);
-    }
-
-    public ConfigProvider configProvider() {
-        return configProvider;
-    }
-
-    public long getStartTimeMillis() {
-        return startTimeMillis;
-    }
-
     public String getRuntimeId() {
         return runtimeIdEnabled ? RuntimeIdHolder.runtimeId : "";
     }
 
     public Long getProcessId() {
         return PidHelper.getPidAsLong();
-    }
-
-    public String getRuntimeVersion() {
-        return runtimeVersion;
-    }
-
-    public String getApiKey() {
-        return apiKey;
-    }
-
-    public String getApplicationKey() {
-        return applicationKey;
     }
 
     public String getSite() {
@@ -1417,10 +1375,6 @@ public class Config {
         return rootContextServiceName;
     }
 
-    public boolean isTraceEnabled() {
-        return instrumenterConfig.isTraceEnabled();
-    }
-
     public boolean isLongRunningTraceEnabled() {
         return longRunningTraceEnabled;
     }
@@ -1429,52 +1383,9 @@ public class Config {
         return longRunningTraceFlushInterval;
     }
 
-    public float getTraceFlushIntervalSeconds() {
-        return traceFlushIntervalSeconds;
-    }
-
-    public boolean isIntegrationSynapseLegacyOperationName() {
-        return integrationSynapseLegacyOperationName;
-    }
-
-    public String getWriterType() {
-        return writerType;
-    }
 
     public boolean isInjectBaggageAsTagsEnabled() {
         return injectBaggageAsTagsEnabled;
-    }
-
-    public boolean isAgentConfiguredUsingDefault() {
-        return agentConfiguredUsingDefault;
-    }
-
-    public String getAgentUrl() {
-        return agentUrl;
-    }
-
-    public String getAgentHost() {
-        return agentHost;
-    }
-
-    public int getAgentPort() {
-        return agentPort;
-    }
-
-    public String getAgentUnixDomainSocket() {
-        return agentUnixDomainSocket;
-    }
-
-    public String getAgentNamedPipe() {
-        return agentNamedPipe;
-    }
-
-    public int getAgentTimeout() {
-        return agentTimeout;
-    }
-
-    public Set<String> getNoProxyHosts() {
-        return noProxyHosts;
     }
 
     public boolean isPrioritySamplingEnabled() {
@@ -1483,10 +1394,6 @@ public class Config {
 
     public String getPrioritySamplingForce() {
         return prioritySamplingForce;
-    }
-
-    public boolean isTraceResolverEnabled() {
-        return traceResolverEnabled;
     }
 
     public int getSpanAttributeSchemaVersion() {
@@ -1541,56 +1448,8 @@ public class Config {
         return httpResourceRemoveTrailingSlash;
     }
 
-    public BitSet getHttpServerErrorStatuses() {
-        return httpServerErrorStatuses;
-    }
-
-    public BitSet getHttpClientErrorStatuses() {
-        return httpClientErrorStatuses;
-    }
-
-    public boolean isHttpServerTagQueryString() {
-        return httpServerTagQueryString;
-    }
-
-    public boolean isHttpServerRawQueryString() {
-        return httpServerRawQueryString;
-    }
-
-    public boolean isHttpServerRawResource() {
-        return httpServerRawResource;
-    }
-
     public boolean isHttpServerDecodedResourcePreserveSpaces() {
         return httpServerDecodedResourcePreserveSpaces;
-    }
-
-    public boolean isHttpServerRouteBasedNaming() {
-        return httpServerRouteBasedNaming;
-    }
-
-    public boolean isHttpClientTagQueryString() {
-        return httpClientTagQueryString;
-    }
-
-    public boolean isHttpClientTagHeaders() {
-        return httpClientTagHeaders;
-    }
-
-    public boolean isHttpClientSplitByDomain() {
-        return httpClientSplitByDomain;
-    }
-
-    public boolean isDbClientSplitByInstance() {
-        return dbClientSplitByInstance;
-    }
-
-    public boolean isDbClientSplitByInstanceTypeSuffix() {
-        return dbClientSplitByInstanceTypeSuffix;
-    }
-
-    public boolean isDbClientSplitByHost() {
-        return dbClientSplitByHost;
     }
 
     public Set<String> getSplitByTags() {
@@ -1655,26 +1514,6 @@ public class Config {
         return clockSyncPeriod;
     }
 
-    public String getDogStatsDNamedPipe() {
-        return dogStatsDNamedPipe;
-    }
-
-    public int getDogStatsDStartDelay() {
-        return dogStatsDStartDelay;
-    }
-
-    public Integer getStatsDClientQueueSize() {
-        return statsDClientQueueSize;
-    }
-
-    public Integer getStatsDClientSocketBuffer() {
-        return statsDClientSocketBuffer;
-    }
-
-    public Integer getStatsDClientSocketTimeout() {
-        return statsDClientSocketTimeout;
-    }
-
     public boolean isRuntimeMetricsEnabled() {
         return runtimeMetricsEnabled;
     }
@@ -1683,44 +1522,8 @@ public class Config {
         return healthMetricsEnabled;
     }
 
-    public String getHealthMetricsStatsdHost() {
-        return healthMetricsStatsdHost;
-    }
-
-    public Integer getHealthMetricsStatsdPort() {
-        return healthMetricsStatsdPort;
-    }
-
-    public boolean isPerfMetricsEnabled() {
-        return perfMetricsEnabled;
-    }
-
-    public boolean isTracerMetricsEnabled() {
-        return tracerMetricsEnabled;
-    }
-
-    public boolean isTracerMetricsBufferingEnabled() {
-        return tracerMetricsBufferingEnabled;
-    }
-
-    public int getTracerMetricsMaxAggregates() {
-        return tracerMetricsMaxAggregates;
-    }
-
-    public int getTracerMetricsMaxPending() {
-        return tracerMetricsMaxPending;
-    }
-
     public boolean isLogsInjectionEnabled() {
         return logsInjectionEnabled;
-    }
-
-    public boolean isReportHostName() {
-        return reportHostName;
-    }
-
-    public boolean isTraceAnalyticsEnabled() {
-        return traceAnalyticsEnabled;
     }
 
     public String getTraceClientIpHeader() {
@@ -1731,10 +1534,6 @@ public class Config {
     // or clientIpEnabled)
     public boolean isTraceClientIpResolverEnabled() {
         return traceClientIpResolverEnabled;
-    }
-
-    public boolean isTraceGitMetadataEnabled() {
-        return traceGitMetadataEnabled;
     }
 
     public Map<String, String> getTraceSamplingServiceRules() {
@@ -1775,86 +1574,6 @@ public class Config {
             }
         }
         return profilingEnabled && instrumenterConfig.isProfilingEnabled();
-    }
-
-    public boolean isProfilingTimelineEventsEnabled() {
-        return timelineEventsEnabled;
-    }
-
-    public boolean isProfilingAgentless() {
-        return profilingAgentless;
-    }
-
-    public int getProfilingStartDelay() {
-        return profilingStartDelay;
-    }
-
-    public boolean isProfilingStartForceFirst() {
-        return profilingStartForceFirst;
-    }
-
-    public int getProfilingUploadPeriod() {
-        return profilingUploadPeriod;
-    }
-
-    public String getProfilingTemplateOverrideFile() {
-        return profilingTemplateOverrideFile;
-    }
-
-    public int getProfilingUploadTimeout() {
-        return profilingUploadTimeout;
-    }
-
-    public String getProfilingUploadCompression() {
-        return profilingUploadCompression;
-    }
-
-    public String getProfilingProxyHost() {
-        return profilingProxyHost;
-    }
-
-    public int getProfilingProxyPort() {
-        return profilingProxyPort;
-    }
-
-    public String getProfilingProxyUsername() {
-        return profilingProxyUsername;
-    }
-
-    public String getProfilingProxyPassword() {
-        return profilingProxyPassword;
-    }
-
-    public int getProfilingExceptionSampleLimit() {
-        return profilingExceptionSampleLimit;
-    }
-
-    public int getProfilingDirectAllocationSampleLimit() {
-        return profilingDirectAllocationSampleLimit;
-    }
-
-    public int getProfilingExceptionHistogramTopItems() {
-        return profilingExceptionHistogramTopItems;
-    }
-
-    public int getProfilingExceptionHistogramMaxCollectionSize() {
-        return profilingExceptionHistogramMaxCollectionSize;
-    }
-
-    public boolean isProfilingExcludeAgentThreads() {
-        return profilingExcludeAgentThreads;
-    }
-
-    public boolean isProfilingUploadSummaryOn413Enabled() {
-        return profilingUploadSummaryOn413Enabled;
-    }
-
-    public boolean isProfilingRecordExceptionMessage() {
-        return profilingRecordExceptionMessage;
-    }
-
-    public boolean isDatadogProfilerEnabled() {
-        return isDatadogProfilerEnabled;
     }
 
     public static boolean isDatadogProfilerEnablementOverridden() {
@@ -1902,38 +1621,6 @@ public class Config {
         return result;
     }
 
-    public boolean isCrashTrackingAgentless() {
-        return crashTrackingAgentless;
-    }
-
-    public boolean isTelemetryEnabled() {
-        return instrumenterConfig.isTelemetryEnabled();
-    }
-
-    public float getTelemetryHeartbeatInterval() {
-        return telemetryHeartbeatInterval;
-    }
-
-    public long getTelemetryExtendedHeartbeatInterval() {
-        return telemetryExtendedHeartbeatInterval;
-    }
-
-    public float getTelemetryMetricsInterval() {
-        return telemetryMetricsInterval;
-    }
-
-    public boolean isTelemetryDependencyServiceEnabled() {
-        return isTelemetryDependencyServiceEnabled;
-    }
-
-    public boolean isTelemetryMetricsEnabled() {
-        return telemetryMetricsEnabled;
-    }
-
-    public boolean isTelemetryLogCollectionEnabled() {
-        return isTelemetryLogCollectionEnabled;
-    }
-
     public boolean isClientIpEnabled() {
         return clientIpEnabled;
     }
@@ -1942,240 +1629,28 @@ public class Config {
         return false;
     }
 
-    public boolean isUsmEnabled() {
-        return instrumenterConfig.isUsmEnabled();
-    }
-
-    public long getRemoteConfigMaxPayloadSizeBytes() {
-        return remoteConfigMaxPayloadSize;
-    }
-
-    public boolean isRemoteConfigEnabled() {
-        return remoteConfigEnabled;
-    }
-
-    public boolean isRemoteConfigIntegrityCheckEnabled() {
-        return remoteConfigIntegrityCheckEnabled;
-    }
-
-    public String getFinalRemoteConfigUrl() {
-        return remoteConfigUrl;
-    }
-
-    public float getRemoteConfigPollIntervalSeconds() {
-        return remoteConfigPollIntervalSeconds;
-    }
-
-    public String getRemoteConfigTargetsKeyId() {
-        return remoteConfigTargetsKeyId;
-    }
-
-    public String getRemoteConfigTargetsKey() {
-        return remoteConfigTargetsKey;
-    }
-
-    public String getFinalDebuggerProbeUrl() {
-        // by default poll from datadog agent
-        return "http://" + agentHost + ":" + agentPort;
-    }
-
-    public String getFinalDebuggerSnapshotUrl() {
-        // by default send to datadog agent
-        return agentUrl + "/debugger/v1/input";
-    }
-
-    public String getFinalDebuggerSymDBUrl() {
-        return agentUrl + "/symdb/v1/input";
-    }
-
     public boolean isAwsPropagationEnabled() {
         return awsPropagationEnabled;
-    }
-
-    public boolean isSqsPropagationEnabled() {
-        return sqsPropagationEnabled;
-    }
-
-    public boolean isKafkaClientPropagationEnabled() {
-        return kafkaClientPropagationEnabled;
-    }
-
-    public boolean isKafkaClientPropagationDisabledForTopic(String topic) {
-        return null != topic && kafkaClientPropagationDisabledTopics.contains(topic);
-    }
-
-    public boolean isJmsPropagationEnabled() {
-        return jmsPropagationEnabled;
-    }
-
-    public boolean isJmsPropagationDisabledForDestination(final String queueOrTopic) {
-        return null != queueOrTopic
-                && (jmsPropagationDisabledQueues.contains(queueOrTopic)
-                || jmsPropagationDisabledTopics.contains(queueOrTopic));
-    }
-
-    public int getJmsUnacknowledgedMaxAge() {
-        return jmsUnacknowledgedMaxAge;
-    }
-
-    public boolean isKafkaClientBase64DecodingEnabled() {
-        return kafkaClientBase64DecodingEnabled;
-    }
-
-    public boolean isRabbitPropagationEnabled() {
-        return rabbitPropagationEnabled;
-    }
-
-    public boolean isRabbitPropagationDisabledForDestination(final String queueOrExchange) {
-        return null != queueOrExchange
-                && (rabbitPropagationDisabledQueues.contains(queueOrExchange)
-                || rabbitPropagationDisabledExchanges.contains(queueOrExchange));
-    }
-
-    public boolean isRabbitIncludeRoutingKeyInResource() {
-        return rabbitIncludeRoutingKeyInResource;
-    }
-
-    public boolean isMessageBrokerSplitByDestination() {
-        return messageBrokerSplitByDestination;
-    }
-
-    public boolean isHystrixTagsEnabled() {
-        return hystrixTagsEnabled;
-    }
-
-    public boolean isHystrixMeasuredEnabled() {
-        return hystrixMeasuredEnabled;
-    }
-
-    public boolean isIgniteCacheIncludeKeys() {
-        return igniteCacheIncludeKeys;
     }
 
     public String getObfuscationQueryRegexp() {
         return obfuscationQueryRegexp;
     }
 
-    public boolean getPlayReportHttpStatus() {
-        return playReportHttpStatus;
-    }
-
-    public boolean isServletPrincipalEnabled() {
-        return servletPrincipalEnabled;
-    }
-
-    public boolean isSpringDataRepositoryInterfaceResourceName() {
-        return springDataRepositoryInterfaceResourceName;
-    }
-
     public int getxDatadogTagsMaxLength() {
         return xDatadogTagsMaxLength;
-    }
-
-    public boolean isServletAsyncTimeoutError() {
-        return servletAsyncTimeoutError;
-    }
-
-    public boolean isTraceAgentV05Enabled() {
-        return traceAgentV05Enabled;
     }
 
     public boolean isDebugEnabled() {
         return debugEnabled;
     }
 
-    public boolean isTriageEnabled() {
-        return triageEnabled;
-    }
-
-    public boolean isStartupLogsEnabled() {
-        return startupLogsEnabled;
-    }
-
-    public boolean isAzureAppServices() {
-        return azureAppServices;
-    }
-
     public boolean isDataStreamsEnabled() {
         return dataStreamsEnabled;
     }
 
-    public float getDataStreamsBucketDurationSeconds() {
-        return dataStreamsBucketDurationSeconds;
-    }
-
-    public long getDataStreamsBucketDurationNanoseconds() {
-        // Rounds to the nearest millisecond before converting to nanos
-        int milliseconds = Math.round(dataStreamsBucketDurationSeconds * 1000);
-        return TimeUnit.MILLISECONDS.toNanos(milliseconds);
-    }
-
-    public String getTraceAgentPath() {
-        return traceAgentPath;
-    }
-
-    public List<String> getTraceAgentArgs() {
-        return traceAgentArgs;
-    }
-
-    public String getDogStatsDPath() {
-        return dogStatsDPath;
-    }
-
-    public List<String> getDogStatsDArgs() {
-        return dogStatsDArgs;
-    }
-
-    public String getConfigFileStatus() {
-        return configFileStatus;
-    }
-
     public IdGenerationStrategy getIdGenerationStrategy() {
         return idGenerationStrategy;
-    }
-
-    public boolean isTrace128bitTraceIdGenerationEnabled() {
-        return trace128bitTraceIdGenerationEnabled;
-    }
-
-    public Set<String> getGrpcIgnoredInboundMethods() {
-        return grpcIgnoredInboundMethods;
-    }
-
-    public Set<String> getGrpcIgnoredOutboundMethods() {
-        return grpcIgnoredOutboundMethods;
-    }
-
-    public boolean isGrpcServerTrimPackageResource() {
-        return grpcServerTrimPackageResource;
-    }
-
-    public BitSet getGrpcServerErrorStatuses() {
-        return grpcServerErrorStatuses;
-    }
-
-    public BitSet getGrpcClientErrorStatuses() {
-        return grpcClientErrorStatuses;
-    }
-
-    public boolean isElasticsearchBodyEnabled() {
-        return elasticsearchBodyEnabled;
-    }
-
-    public boolean isElasticsearchParamsEnabled() {
-        return elasticsearchParamsEnabled;
-    }
-
-    public boolean isElasticsearchBodyAndParamsEnabled() {
-        return elasticsearchBodyAndParamsEnabled;
-    }
-
-    public boolean isSparkTaskHistogramEnabled() {
-        return sparkTaskHistogramEnabled;
-    }
-
-    public boolean isJaxRsExceptionAsErrorEnabled() {
-        return jaxRsExceptionAsErrorsEnabled;
     }
 
     /**
@@ -2205,22 +1680,8 @@ public class Config {
         return Collections.unmodifiableMap(result);
     }
 
-    public WellKnownTags getWellKnownTags() {
-        return new WellKnownTags(
-                getRuntimeId(),
-                reportHostName ? getHostName() : "",
-                getEnv(),
-                serviceName,
-                getVersion(),
-                LANGUAGE_TAG_VALUE);
-    }
-
     public String getPrimaryTag() {
         return primaryTag;
-    }
-
-    public Set<String> getMetricsIgnoredResources() {
-        return tryMakeImmutableSet(configProvider.getList(TRACER_METRICS_IGNORED_RESOURCES));
     }
 
     public String getEnv() {
@@ -2253,62 +1714,6 @@ public class Config {
         result.putAll(getGlobalTags());
         result.putAll(spanTags);
         return Collections.unmodifiableMap(result);
-    }
-
-    public Map<String, String> getMergedProfilingTags() {
-        final Map<String, String> runtimeTags = getRuntimeTags();
-        final String host = getHostName();
-        final Map<String, String> result =
-                newHashMap(
-                        getGlobalTags().size()
-                                + profilingTags.size()
-                                + runtimeTags.size()
-                                + 4 /* for serviceName and host and language and runtime_version */);
-        result.put(HOST_TAG, host); // Host goes first to allow to override it
-        result.putAll(getGlobalTags());
-        result.putAll(profilingTags);
-        result.putAll(runtimeTags);
-        // service name set here instead of getRuntimeTags because apm already manages the service tag
-        // and may chose to override it.
-        result.put(SERVICE_TAG, serviceName);
-        result.put(LANGUAGE_TAG_KEY, LANGUAGE_TAG_VALUE);
-        result.put(RUNTIME_VERSION_TAG, runtimeVersion);
-        return Collections.unmodifiableMap(result);
-    }
-
-    public Map<String, String> getMergedCrashTrackingTags() {
-        final Map<String, String> runtimeTags = getRuntimeTags();
-        final String host = getHostName();
-        final Map<String, String> result =
-                newHashMap(
-                        getGlobalTags().size()
-                                + crashTrackingTags.size()
-                                + runtimeTags.size()
-                                + 3 /* for serviceName and host and language */);
-        result.put(HOST_TAG, host); // Host goes first to allow to override it
-        result.putAll(getGlobalTags());
-        result.putAll(crashTrackingTags);
-        result.putAll(runtimeTags);
-        // service name set here instead of getRuntimeTags because apm already manages the service tag
-        // and may chose to override it.
-        result.put(SERVICE_TAG, serviceName);
-        result.put(LANGUAGE_TAG_KEY, LANGUAGE_TAG_VALUE);
-        return Collections.unmodifiableMap(result);
-    }
-
-    /**
-     * Returns the sample rate for the specified instrumentation or {@link
-     * ConfigDefaults#DEFAULT_ANALYTICS_SAMPLE_RATE} if none specified.
-     */
-    public float getInstrumentationAnalyticsSampleRate(final String... aliases) {
-        for (final String alias : aliases) {
-            final String configKey = alias + ".analytics.sample-rate";
-            final Float rate = configProvider.getFloat("trace." + configKey, configKey);
-            if (null != rate) {
-                return rate;
-            }
-        }
-        return DEFAULT_ANALYTICS_SAMPLE_RATE;
     }
 
     /**
@@ -2448,36 +1853,9 @@ public class Config {
         return parsedVersion;
     }
 
-    public String getFinalProfilingUrl() {
-        if (profilingUrl != null) {
-            // when profilingUrl is set we use it regardless of apiKey/agentless config
-            return profilingUrl;
-        } else if (profilingAgentless) {
-            // when agentless profiling is turned on we send directly to our intake
-            return "https://intake.profile." + site + "/api/v2/profile";
-        } else {
-            // when profilingUrl and agentless are not set we send to the dd trace agent running locally
-            return "http://" + agentHost + ":" + agentPort + "/profiling/v1/input";
-        }
-    }
-
-    public String getFinalCrashTrackingTelemetryUrl() {
-        if (crashTrackingAgentless) {
-            // when agentless crashTracking is turned on we send directly to our intake
-            return "https://all-http-intake.logs." + site + "/api/v2/apmtelemetry";
-        } else {
-            // when agentless are not set we send to the dd trace agent running locally
-            return "http://" + agentHost + ":" + agentPort + "/telemetry/proxy/api/v2/apmtelemetry";
-        }
-    }
-
     public boolean isJmxFetchIntegrationEnabled(
             final Iterable<String> integrationNames, final boolean defaultEnabled) {
         return configProvider.isEnabled(integrationNames, "jmxfetch.", ".enabled", defaultEnabled);
-    }
-
-    public boolean isRuleEnabled(final String name) {
-        return isRuleEnabled(name, true);
     }
 
     public boolean isRuleEnabled(final String name, boolean defaultEnabled) {
@@ -2513,28 +1891,10 @@ public class Config {
                 Arrays.asList(integrationNames), "", ".propagation.enabled", defaultEnabled);
     }
 
-    public boolean isLegacyTracingEnabled(
-            final boolean defaultEnabled, final String... integrationNames) {
-        return SpanNaming.instance().namingSchema().allowInferredServices()
-                && configProvider.isEnabled(
-                Arrays.asList(integrationNames), "", ".legacy.tracing.enabled", defaultEnabled);
-    }
-
-    public boolean isTimeInQueueEnabled(
-            final boolean defaultEnabled, final String... integrationNames) {
-        return SpanNaming.instance().namingSchema().allowInferredServices()
-                && configProvider.isEnabled(
-                Arrays.asList(integrationNames), "", ".time-in-queue.enabled", defaultEnabled);
-    }
-
     public boolean isEnabled(
             final boolean defaultEnabled, final String settingName, String settingSuffix) {
         return configProvider.isEnabled(
                 Collections.singletonList(settingName), "", settingSuffix, defaultEnabled);
-    }
-
-    public String getDBMPropagationMode() {
-        return DBMPropagationMode;
     }
 
     private void logIgnoredSettingWarning(
@@ -2578,19 +1938,8 @@ public class Config {
         return configProvider.isEnabled(integrationNames, "", ".analytics.enabled", defaultEnabled);
     }
 
-    public boolean isTraceAnalyticsIntegrationEnabled(
-            final boolean defaultEnabled, final String... integrationNames) {
-        return configProvider.isEnabled(
-                Arrays.asList(integrationNames), "", ".analytics.enabled", defaultEnabled);
-    }
-
     public boolean isSamplingMechanismValidationDisabled() {
         return configProvider.getBoolean(TracerConfig.SAMPLING_MECHANISM_VALIDATION_DISABLED, false);
-    }
-
-    public <T extends Enum<T>> T getEnumValue(
-            final String name, final Class<T> type, final T defaultValue) {
-        return configProvider.getEnum(name, type, defaultValue);
     }
 
     /**
@@ -2604,10 +1953,6 @@ public class Config {
     public static boolean traceAnalyticsIntegrationEnabled(
             final SortedSet<String> integrationNames, final boolean defaultEnabled) {
         return Config.get().isTraceAnalyticsIntegrationEnabled(integrationNames, defaultEnabled);
-    }
-
-    public boolean isTelemetryDebugRequestsEnabled() {
-        return telemetryDebugRequestsEnabled;
     }
 
     private <T> Set<T> getSettingsSetFromEnvironment(
@@ -2802,17 +2147,6 @@ public class Config {
             ConfigCollector.get().put(name, value, ConfigOrigin.ENV);
         }
         return value;
-    }
-
-    private static Pattern getPattern(String defaultValue, String userValue) {
-        try {
-            if (userValue != null) {
-                return Pattern.compile(userValue);
-            }
-        } catch (Exception e) {
-            log.debug("Cannot create pattern from user value {}", userValue);
-        }
-        return Pattern.compile(defaultValue);
     }
 
     private static String getProp(String name) {

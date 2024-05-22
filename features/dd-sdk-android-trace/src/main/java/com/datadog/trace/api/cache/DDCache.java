@@ -1,7 +1,7 @@
 package com.datadog.trace.api.cache;
 
-import java.util.function.BiConsumer;
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.BiConsumer;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 public interface DDCache<K, V> {
   /**

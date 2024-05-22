@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
+import com.datadog.android.trace.internal.compat.function.Consumer;
 
 public class DefaultPathwayContext implements PathwayContext {
     private static final Logger log = LoggerFactory.getLogger(DefaultPathwayContext.class);

@@ -5,7 +5,7 @@ import com.datadog.trace.api.cache.DDCaches;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 public class TagsProcessor {
   public static final class StringPrefix implements Function<String, String> {

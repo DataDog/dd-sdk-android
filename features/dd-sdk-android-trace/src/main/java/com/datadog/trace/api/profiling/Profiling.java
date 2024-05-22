@@ -6,14 +6,6 @@ import com.datadog.trace.api.internal.InternalTracer;
 
 public interface Profiling {
 
-  static Profiling get() {
-    Tracer tracer = GlobalTracer.get();
-    if (tracer instanceof InternalTracer) {
-      return ((InternalTracer) tracer).getProfilingContext();
-    }
-    return NoOp.INSTANCE;
-  }
-
   /**
    * Stateful API which restores the previous context when closed. This requires more memory so has
    * higher overhead than the stateless API.

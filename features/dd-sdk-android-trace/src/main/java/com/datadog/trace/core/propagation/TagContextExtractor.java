@@ -4,7 +4,7 @@ import com.datadog.trace.api.TraceConfig;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import com.datadog.trace.bootstrap.instrumentation.api.TagContext;
 
-import java.util.function.Supplier;
+import com.datadog.android.trace.internal.compat.function.Supplier;
 
 public class TagContextExtractor implements HttpCodec.Extractor {
 

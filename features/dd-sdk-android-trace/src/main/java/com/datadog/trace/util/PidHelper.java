@@ -4,7 +4,7 @@ import com.datadog.trace.api.Platform;
 import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
 
-import java.util.function.Supplier;
+import com.datadog.android.trace.internal.compat.function.Supplier;
 
 /** Get PID in reasonably cross-platform way. */
 public final class PidHelper {

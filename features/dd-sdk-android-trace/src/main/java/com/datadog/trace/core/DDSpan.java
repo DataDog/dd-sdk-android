@@ -53,7 +53,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public class DDSpan
     implements AgentSpan, CoreSpan<DDSpan>, TransientProfilingContextHolder, AttachableWrapper {
   private final Logger log;
-  public static final String CHECKPOINTED_TAG = "checkpointed";
 
   static DDSpan create(
           final String instrumentationName,

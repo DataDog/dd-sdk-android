@@ -6,14 +6,6 @@ import com.datadog.trace.api.internal.InternalTracer;
 
 /** An interface to Data Streams checkpointer, allowing passing the context manually. */
 public interface DataStreamsCheckpointer {
-  static DataStreamsCheckpointer get() {
-    Tracer tracer = GlobalTracer.get();
-    if (tracer instanceof InternalTracer) {
-      return ((InternalTracer) tracer).getDataStreamsCheckpointer();
-    }
-
-    return NoOp.INSTANCE;
-  }
 
   /**
    * @param type The type of the checkpoint, usually the streaming technology being used. Examples:

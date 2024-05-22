@@ -1,6 +1,5 @@
 package com.datadog.trace.api;
 
-import com.datadog.trace.api.interceptor.TraceInterceptor;
 import com.datadog.trace.api.internal.InternalTracer;
 
 import java.util.ArrayList;
@@ -25,10 +24,6 @@ public class GlobalTracer {
           return "0";
         }
 
-        @Override
-        public boolean addTraceInterceptor(TraceInterceptor traceInterceptor) {
-          return false;
-        }
       };
 
   private static final Collection<Callback> installationCallbacks = new ArrayList<>();

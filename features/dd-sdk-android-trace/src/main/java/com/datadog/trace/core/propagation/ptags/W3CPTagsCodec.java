@@ -12,7 +12,7 @@ import com.datadog.trace.relocate.api.RatelimitedLogger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.IntPredicate;
+import com.datadog.android.trace.internal.compat.function.IntPredicate;
 
 public class W3CPTagsCodec extends PTagsCodec {
   private static final RatelimitedLogger log =
@@ -312,7 +312,7 @@ public class W3CPTagsCodec extends PTagsCodec {
           definitelyOWC = true;
         }
       } else {
-        if (definitelyOWC || !isValid.test(c) || c == separator) {
+        if (definitelyOWC || !isValid.check(c) || c == separator) {
           return -1;
         }
       }
