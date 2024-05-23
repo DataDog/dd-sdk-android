@@ -9,6 +9,7 @@
 * [IMPROVEMENT] Session Replay: Add telemetry to detect uncovered View/Drawable in Session Replay. See [#2028](https://github.com/DataDog/dd-sdk-android/pull/2028)
 * [IMPROVEMENT] Session Replay: Improve `SeekBarMapper`. See [#2037](https://github.com/DataDog/dd-sdk-android/pull/2037)
 * [IMPROVEMENT] RUM: Flag critical events in custom persistence. See [#2044](https://github.com/DataDog/dd-sdk-android/pull/2044)
+* [IMPROVEMENT] Delegate Drawable copy to background thread. See [#2048](https://github.com/DataDog/dd-sdk-android/pull/2048)
 * [MAINTENANCE] Next dev iteration. See [#2020](https://github.com/DataDog/dd-sdk-android/pull/2020)
 * [MAINTENANCE] Merge release `2.9.0` into `develop` branch. See [#2023](https://github.com/DataDog/dd-sdk-android/pull/2023)
 * [MAINTENANCE] Session Replay: Improve UT for SR Obfuscators. See [#2031](https://github.com/DataDog/dd-sdk-android/pull/2031)
