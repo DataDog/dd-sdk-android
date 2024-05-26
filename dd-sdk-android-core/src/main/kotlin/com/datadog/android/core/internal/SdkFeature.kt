@@ -34,10 +34,12 @@ import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
 import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
-import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
-import com.datadog.android.core.internal.persistence.datastore.CURRENT_DATASTORE_VERSION
+import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
+import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
+import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler
+import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -45,9 +47,10 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.persistence.tlvformat.FileTLVBlockReader
 import com.datadog.android.core.persistence.PersistenceStrategy
-import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.privacy.TrackingConsentProviderCallback
+import com.datadog.android.security.Encryption
 import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -60,6 +63,8 @@ internal class SdkFeature(
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger
 ) : FeatureScope {
+
+    override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
     internal val initialized = AtomicBoolean(false)
 
@@ -108,6 +113,10 @@ internal class SdkFeature(
             coreFeature.trackingConsentProvider.registerCallback(wrappedFeature)
         }
 
+        prepareDataStoreHandler(
+            encryption = coreFeature.localDataEncryption
+        )
+
         initialized.set(true)
 
         uploadScheduler.startScheduling()
@@ -132,6 +141,7 @@ internal class SdkFeature(
             uploadScheduler.stopScheduling()
             uploadScheduler = NoOpUploadScheduler()
             storage = NoOpStorage()
+            dataStore = NoOpDataStoreHandler()
             uploader = NoOpDataUploader()
             fileOrchestrator = NoOpFileOrchestrator()
             metricsDispatcher = NoOpMetricsDispatcher()
@@ -145,36 +155,6 @@ internal class SdkFeature(
     // endregion
 
     // region FeatureScope
-
-    override fun <T : Any> writeToDataStore(
-        dataStoreFileName: String,
-        featureName: String,
-        serializer: Serializer<T>,
-        data: T
-    ) {
-        coreFeature.dataStoreHandler.write(
-            dataStoreFileName = dataStoreFileName,
-            featureName = featureName,
-            serializer = serializer,
-            data = data
-        )
-    }
-
-    override fun <T : Any> readFromDataStore(
-        dataStoreFileName: String,
-        featureName: String,
-        deserializer: Deserializer<String, T>,
-        version: Int
-    ): T? =
-        coreFeature.dataStoreHandler.read(
-            dataStoreFileName = dataStoreFileName,
-            featureName = featureName,
-            deserializer = deserializer,
-            version = version
-        )
-
-    override fun getDataStoreCurrentVersion(): Int =
-        CURRENT_DATASTORE_VERSION
 
     override fun withWriteContext(
         forceNewBatch: Boolean,
@@ -373,6 +353,26 @@ internal class SdkFeature(
             callFactory = coreFeature.okHttpClient,
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider
+        )
+    }
+
+    private fun prepareDataStoreHandler(
+        encryption: Encryption?
+    ) {
+        val fileReaderWriter = FileReaderWriter.create(
+            internalLogger,
+            encryption
+        )
+
+        dataStore = FileDataStoreHandler(
+            storageDir = coreFeature.storageDir,
+            internalLogger = internalLogger,
+            fileReaderWriter = fileReaderWriter,
+            fileTLVBlockReader = FileTLVBlockReader(
+                internalLogger = internalLogger,
+                fileReaderWriter = fileReaderWriter
+            ),
+            dataStoreFileHelper = DataStoreFileHelper()
         )
     }
 

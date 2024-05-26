@@ -21,7 +21,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
-import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
 import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
@@ -837,22 +836,6 @@ internal class CoreFeatureTest {
             .isEqualTo(FilePersistenceConfig.MAX_ITEMS_PER_BATCH)
         assertThat(config.recentDelayMs)
             .isEqualTo(fakeConfig.coreConfig.batchSize.windowDurationMs)
-    }
-
-    @Test
-    fun `M initialize the DataStoreHandler W initialize()`() {
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        assertThat(testedFeature.dataStoreHandler)
-            .isInstanceOf(DataStoreHandler::class.java)
-            .isNotInstanceOf(NoOpDataStoreHandler::class.java)
     }
 
     @Test

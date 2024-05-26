@@ -35,9 +35,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
-import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
 import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
-import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler
 import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -49,7 +47,6 @@ import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.persistence.file.writeTextSafe
-import com.datadog.android.core.internal.persistence.tlvformat.FileTLVBlockReader
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -201,6 +198,7 @@ internal class CoreFeature(
         if (initialized.get()) {
             return
         }
+        
         readConfigurationSettings(configuration.coreConfig)
         readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
@@ -231,10 +229,7 @@ internal class CoreFeature(
         val nativeSourceOverride = configuration.additionalConfig[Datadog.DD_NATIVE_SOURCE_TYPE] as? String
         prepareNdkCrashData(nativeSourceOverride)
         setupInfoProviders(appContext, consent)
-        prepareDataStoreHandler(
-            sdkInstanceId = sdkInstanceId,
-            configuration = configuration.coreConfig
-        )
+
         initialized.set(true)
         contextProvider = DatadogContextProvider(this)
     }
@@ -378,28 +373,6 @@ internal class CoreFeature(
                 JsonObjectDeserializer(internalLogger).deserialize(this)
             }
         }
-    }
-
-    private fun prepareDataStoreHandler(
-        sdkInstanceId: String,
-        configuration: Configuration.Core
-    ) {
-        val fileReaderWriter = FileReaderWriter.create(
-            internalLogger,
-            configuration.encryption
-        )
-
-        dataStoreHandler = FileDataStoreHandler(
-            sdkInstanceId = sdkInstanceId,
-            storageDir = storageDir,
-            internalLogger = internalLogger,
-            fileReaderWriter = fileReaderWriter,
-            fileTLVBlockReader = FileTLVBlockReader(
-                internalLogger = internalLogger,
-                fileReaderWriter = fileReaderWriter
-            ),
-            dataStoreFileHelper = DataStoreFileHelper()
-        )
     }
 
     private fun prepareNdkCrashData(nativeSourceType: String?) {
@@ -737,8 +710,8 @@ internal class CoreFeature(
         internal const val BUILD_ID_FILE_NAME = "datadog.buildId"
         internal const val BUILD_ID_IS_MISSING_INFO_MESSAGE =
             "Build ID is not found in the application" +
-                " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
-                " or above to be able to de-obfuscate stacktraces."
+                    " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
+                    " or above to be able to de-obfuscate stacktraces."
         internal const val BUILD_ID_READ_ERROR =
             "Failed to read Build ID information, de-obfuscation may not work properly."
 

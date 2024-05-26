@@ -325,12 +325,11 @@ public abstract interface class com/datadog/android/api/feature/FeatureEventRece
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureScope {
-	public abstract fun getDataStoreCurrentVersion ()I
-	public abstract fun readFromDataStore (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;I)Ljava/lang/Object;
+	public abstract fun getDataStore ()Lcom/datadog/android/core/internal/persistence/datastore/DataStoreHandler;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
+	public abstract fun setDataStore (Lcom/datadog/android/core/internal/persistence/datastore/DataStoreHandler;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
 	public abstract fun withWriteContext (ZLkotlin/jvm/functions/Function2;)V
-	public abstract fun writeToDataStore (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/core/persistence/Serializer;Ljava/lang/Object;)V
 }
 
 public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
@@ -678,6 +677,17 @@ public abstract interface class com/datadog/android/core/internal/net/FirstParty
 
 public abstract interface class com/datadog/android/core/internal/persistence/Deserializer {
 	public abstract fun deserialize (Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/datadog/android/core/internal/persistence/datastore/DataStoreHandler {
+	public static final field CURRENT_DATASTORE_VERSION I
+	public static final field Companion Lcom/datadog/android/core/internal/persistence/datastore/DataStoreHandler$Companion;
+	public abstract fun read (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;I)Ljava/lang/Object;
+	public abstract fun write (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/core/persistence/Serializer;Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/core/internal/persistence/datastore/DataStoreHandler$Companion {
+	public static final field CURRENT_DATASTORE_VERSION I
 }
 
 public final class com/datadog/android/core/internal/persistence/file/FileExtKt {

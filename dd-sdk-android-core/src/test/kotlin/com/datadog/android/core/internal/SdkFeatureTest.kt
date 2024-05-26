@@ -31,16 +31,14 @@ import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
 import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
-import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
-import com.datadog.android.core.internal.persistence.datastore.CURRENT_DATASTORE_VERSION
 import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
+import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.persistence.PersistenceStrategy
-import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -88,7 +86,7 @@ import java.util.Locale
 @ForgeConfiguration(Configurator::class)
 internal class SdkFeatureTest {
 
-    lateinit var testedFeature: SdkFeature
+    private lateinit var testedFeature: SdkFeature
 
     @Mock
     lateinit var mockStorage: Storage
@@ -152,7 +150,7 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        argumentCaptor<Application.ActivityLifecycleCallbacks>() {
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
             verify((appContext.mockInstance)).registerActivityLifecycleCallbacks(capture())
             assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
             assertThat((firstValue as ProcessLifecycleMonitor).callback)
@@ -429,6 +427,33 @@ internal class SdkFeatureTest {
     // region FeatureScope
 
     @Test
+    fun `M unregister datastore W stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
+
+        assertThat(testedFeature.dataStore)
+            .isInstanceOf(DataStoreHandler::class.java)
+            .isNotInstanceOf(NoOpDataStoreHandler::class.java)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataStore).isInstanceOf(NoOpDataStoreHandler::class.java)
+    }
+
+    @Test
+    fun `M register datastore W initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
+
+        // Then
+        assertThat(testedFeature.dataStore)
+            .isInstanceOf(DataStoreHandler::class.java)
+            .isNotInstanceOf(NoOpDataStoreHandler::class.java)
+    }
+
+    @Test
     fun `M provide write context W withWriteContext(callback)`(
         @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeContext: DatadogContext,
@@ -490,72 +515,6 @@ internal class SdkFeatureTest {
 
         // Then
         verify(mockEventReceiver).onReceive(fakeEvent)
-    }
-
-    @Test
-    fun `M return datastore version W getDataStoreCurrentVersion()`() {
-        // When
-        val result = testedFeature.getDataStoreCurrentVersion()
-
-        // Then
-        assertThat(result).isEqualTo(CURRENT_DATASTORE_VERSION)
-    }
-
-    @Test
-    fun `M call datastore read W readFromDataStore()`(
-        @StringForgery fakeDataStoreName: String,
-        @StringForgery fakeFeatureName: String,
-        @Mock mockDeserializer: Deserializer<String, String>,
-        @Mock mockDataStoreHandler: DataStoreHandler
-    ) {
-        // Given
-        whenever(testedFeature.coreFeature.dataStoreHandler)
-            .thenReturn(mockDataStoreHandler)
-
-        // When
-        testedFeature.readFromDataStore(
-            dataStoreFileName = fakeDataStoreName,
-            featureName = fakeFeatureName,
-            deserializer = mockDeserializer,
-            version = CURRENT_DATASTORE_VERSION
-        )
-
-        // Then
-        verify(testedFeature.coreFeature.dataStoreHandler).read(
-            dataStoreFileName = eq(fakeDataStoreName),
-            featureName = eq(fakeFeatureName),
-            deserializer = eq(mockDeserializer),
-            version = eq(CURRENT_DATASTORE_VERSION)
-        )
-    }
-
-    @Test
-    fun `M call datastore write W writeToDataStore()`(
-        @StringForgery fakeDataStoreName: String,
-        @StringForgery fakeFeatureName: String,
-        @StringForgery fakeDataString: String,
-        @Mock mockSerializer: Serializer<String>,
-        @Mock mockDataStoreHandler: DataStoreHandler
-    ) {
-        // Given
-        whenever(testedFeature.coreFeature.dataStoreHandler)
-            .thenReturn(mockDataStoreHandler)
-
-        // When
-        testedFeature.writeToDataStore(
-            dataStoreFileName = fakeDataStoreName,
-            featureName = fakeFeatureName,
-            serializer = mockSerializer,
-            data = fakeDataString
-        )
-
-        // Then
-        verify(testedFeature.coreFeature.dataStoreHandler).write(
-            dataStoreFileName = eq(fakeDataStoreName),
-            featureName = eq(fakeFeatureName),
-            serializer = eq(mockSerializer),
-            data = eq(fakeDataString)
-        )
     }
 
     @Test
