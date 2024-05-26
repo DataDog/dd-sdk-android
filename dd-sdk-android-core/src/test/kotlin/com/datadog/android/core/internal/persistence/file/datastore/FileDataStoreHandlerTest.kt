@@ -8,8 +8,8 @@ package com.datadog.android.core.internal.persistence.file.datastore
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.datastore.CURRENT_DATASTORE_VERSION
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
+import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler.Companion.CURRENT_DATASTORE_VERSION
 import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler
 import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler.Companion.DATASTORE_FOLDER_NAME
 import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler.Companion.FAILED_TO_SERIALIZE_DATA_ERROR
@@ -83,9 +83,6 @@ internal class FileDataStoreHandlerTest {
     lateinit var mockDataStoreFileHelper: DataStoreFileHelper
 
     @StringForgery
-    lateinit var fakeSdkInstanceId: String
-
-    @StringForgery
     lateinit var fakeDataStoreFileName: String
 
     @StringForgery
@@ -104,7 +101,6 @@ internal class FileDataStoreHandlerTest {
         whenever(mockDataStoreDirectory.existsSafe(mockInternalLogger)).thenReturn(true)
         whenever(
             mockDataStoreFileHelper.getDataStoreDirectory(
-                sdkInstanceId = fakeSdkInstanceId,
                 featureName = fakeFeatureName,
                 folderName = DATASTORE_FOLDER_NAME.format(Locale.US, CURRENT_DATASTORE_VERSION),
                 storageDir = mockStorageDir
@@ -128,7 +124,6 @@ internal class FileDataStoreHandlerTest {
         whenever(mockFileTLVBlockReader.all(mockDataStoreFile)).thenReturn(blocksReturned)
 
         testedDataStoreHandler = FileDataStoreHandler(
-            sdkInstanceId = fakeSdkInstanceId,
             fileReaderWriter = mockFileReaderWriter,
             internalLogger = mockInternalLogger,
             storageDir = mockStorageDir,

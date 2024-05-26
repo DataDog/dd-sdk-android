@@ -10,6 +10,7 @@ import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler.Companion.CURRENT_DATASTORE_VERSION
 import com.datadog.android.core.internal.persistence.datastore.ext.toByteArray
 import com.datadog.android.core.internal.persistence.datastore.ext.toInt
 import com.datadog.android.core.internal.persistence.datastore.ext.toLong
@@ -27,7 +28,6 @@ import java.util.Locale
 
 @Suppress("TooManyFunctions")
 internal class FileDataStoreHandler(
-    private val sdkInstanceId: String,
     private val storageDir: File,
     private val internalLogger: InternalLogger,
     private val fileReaderWriter: FileReaderWriter,
@@ -64,7 +64,6 @@ internal class FileDataStoreHandler(
         version: Int
     ): T? {
         val dataStoreDirectory = dataStoreFileHelper.getDataStoreDirectory(
-            sdkInstanceId = sdkInstanceId,
             featureName = featureName,
             folderName = DATASTORE_FOLDER_NAME.format(Locale.US, version),
             storageDir = storageDir
@@ -243,7 +242,6 @@ internal class FileDataStoreHandler(
 
     private fun createDataStoreDirectoryIfNecessary(featureName: String): File {
         val dataStoreDirectory = dataStoreFileHelper.getDataStoreDirectory(
-            sdkInstanceId = sdkInstanceId,
             featureName = featureName,
             folderName = DATASTORE_FOLDER_NAME.format(Locale.US, CURRENT_DATASTORE_VERSION),
             storageDir = storageDir
@@ -273,7 +271,7 @@ internal class FileDataStoreHandler(
     }
 
     internal companion object {
-        internal const val DATASTORE_FOLDER_NAME = "datastore_v$%s"
+        internal const val DATASTORE_FOLDER_NAME = "datastore_v%s"
         private const val DATASTORE_EXPIRE_TIME = DateUtils.DAY_IN_MILLIS * 30 // 30 days
 
         internal const val FAILED_TO_SERIALIZE_DATA_ERROR =

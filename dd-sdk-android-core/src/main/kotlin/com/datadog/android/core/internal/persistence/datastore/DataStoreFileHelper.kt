@@ -10,13 +10,12 @@ import java.io.File
 
 internal class DataStoreFileHelper {
     internal fun getDataStoreDirectory(
-        sdkInstanceId: String,
         storageDir: File,
         featureName: String,
         folderName: String
     ): File = File(
         storageDir,
-        "$sdkInstanceId/$featureName/$folderName"
+        "$featureName/$folderName"
     )
 
     internal fun getDataStoreFile(
