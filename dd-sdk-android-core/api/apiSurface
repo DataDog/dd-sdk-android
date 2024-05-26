@@ -102,7 +102,7 @@ interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
-  var dataStore: com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
+  var dataStore: com.datadog.android.core.persistence.datastore.DataStoreHandler
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
@@ -247,11 +247,6 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun isEmpty(): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
-interface com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
-  fun <T: Any> write(String, String, com.datadog.android.core.persistence.Serializer<T>, T)
-  fun <T: Any> read(String, String, com.datadog.android.core.internal.persistence.Deserializer<String, T>, Int): T?
-  companion object 
-    const val CURRENT_DATASTORE_VERSION: Int
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
@@ -296,6 +291,18 @@ interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
+interface com.datadog.android.core.persistence.datastore.DataStoreCallback
+  fun <T: Any> onSuccess(DataStoreContent<T>)
+  fun onFailure()
+  fun onNoData()
+data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
+  constructor(Long, Int, T?)
+interface com.datadog.android.core.persistence.datastore.DataStoreHandler
+  fun <T: Any> setValue(String, T, com.datadog.android.core.persistence.Serializer<T>, Int = 0)
+  fun <T: Any> value(String, com.datadog.android.core.internal.persistence.Deserializer<String, T>, Int = 0, DataStoreCallback)
+  fun removeValue(String)
+  companion object 
+    const val CURRENT_DATASTORE_VERSION: Int
 class com.datadog.android.core.sampling.RateBasedSampler : Sampler
   constructor(() -> Float)
   constructor(Float)

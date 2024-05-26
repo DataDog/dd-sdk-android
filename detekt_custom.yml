@@ -764,6 +764,7 @@ datadog:
       - "kotlin.Array.orEmpty()"
       - "kotlin.Array.sorted()"
       - "kotlin.Array.toList()"
+      - "kotlin.byteArrayOf(kotlin.ByteArray)"
       - "kotlin.ByteArray.any(kotlin.Function1)"
       - "kotlin.ByteArray.contentEquals(kotlin.ByteArray?)"
       - "kotlin.ByteArray.contentHashCode()"

@@ -325,9 +325,9 @@ public abstract interface class com/datadog/android/api/feature/FeatureEventRece
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureScope {
-	public abstract fun getDataStore ()Lcom/datadog/android/core/internal/persistence/datastore/DataStoreHandler;
+	public abstract fun getDataStore ()Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
-	public abstract fun setDataStore (Lcom/datadog/android/core/internal/persistence/datastore/DataStoreHandler;)V
+	public abstract fun setDataStore (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
 	public abstract fun withWriteContext (ZLkotlin/jvm/functions/Function2;)V
 }
@@ -679,17 +679,6 @@ public abstract interface class com/datadog/android/core/internal/persistence/De
 	public abstract fun deserialize (Ljava/lang/Object;)Ljava/lang/Object;
 }
 
-public abstract interface class com/datadog/android/core/internal/persistence/datastore/DataStoreHandler {
-	public static final field CURRENT_DATASTORE_VERSION I
-	public static final field Companion Lcom/datadog/android/core/internal/persistence/datastore/DataStoreHandler$Companion;
-	public abstract fun read (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;I)Ljava/lang/Object;
-	public abstract fun write (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/core/persistence/Serializer;Ljava/lang/Object;)V
-}
-
-public final class com/datadog/android/core/internal/persistence/datastore/DataStoreHandler$Companion {
-	public static final field CURRENT_DATASTORE_VERSION I
-}
-
 public final class com/datadog/android/core/internal/persistence/file/FileExtKt {
 	public static final fun canReadSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
 	public static final fun existsSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
@@ -800,6 +789,44 @@ public final class com/datadog/android/core/persistence/Serializer$Companion {
 
 public final class com/datadog/android/core/persistence/SerializerKt {
 	public static final fun serializeToByteArray (Lcom/datadog/android/core/persistence/Serializer;Ljava/lang/Object;Lcom/datadog/android/api/InternalLogger;)[B
+}
+
+public abstract interface class com/datadog/android/core/persistence/datastore/DataStoreCallback {
+	public abstract fun onFailure ()V
+	public abstract fun onNoData ()V
+	public abstract fun onSuccess (Lcom/datadog/android/core/persistence/datastore/DataStoreContent;)V
+}
+
+public final class com/datadog/android/core/persistence/datastore/DataStoreContent {
+	public fun <init> (JILjava/lang/Object;)V
+	public final fun component1 ()J
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/lang/Object;
+	public final fun copy (JILjava/lang/Object;)Lcom/datadog/android/core/persistence/datastore/DataStoreContent;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/persistence/datastore/DataStoreContent;JILjava/lang/Object;ILjava/lang/Object;)Lcom/datadog/android/core/persistence/datastore/DataStoreContent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getData ()Ljava/lang/Object;
+	public final fun getLastUpdateDate ()J
+	public final fun getVersionCode ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/core/persistence/datastore/DataStoreHandler {
+	public static final field CURRENT_DATASTORE_VERSION I
+	public static final field Companion Lcom/datadog/android/core/persistence/datastore/DataStoreHandler$Companion;
+	public abstract fun removeValue (Ljava/lang/String;)V
+	public abstract fun setValue (Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/core/persistence/Serializer;I)V
+	public abstract fun value (Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;ILcom/datadog/android/core/persistence/datastore/DataStoreCallback;)V
+}
+
+public final class com/datadog/android/core/persistence/datastore/DataStoreHandler$Companion {
+	public static final field CURRENT_DATASTORE_VERSION I
+}
+
+public final class com/datadog/android/core/persistence/datastore/DataStoreHandler$DefaultImpls {
+	public static synthetic fun setValue$default (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/core/persistence/Serializer;IILjava/lang/Object;)V
+	public static synthetic fun value$default (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;ILcom/datadog/android/core/persistence/datastore/DataStoreCallback;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/core/sampling/RateBasedSampler : com/datadog/android/core/sampling/Sampler {

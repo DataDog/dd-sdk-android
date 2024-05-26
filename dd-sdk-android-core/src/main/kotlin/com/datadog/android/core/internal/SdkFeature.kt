@@ -36,9 +36,8 @@ import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
+import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
-import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
-import com.datadog.android.core.internal.persistence.datastore.FileDataStoreHandler
 import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
@@ -47,8 +46,9 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.persistence.tlvformat.FileTLVBlockReader
+import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
 import java.util.Collections
@@ -364,11 +364,13 @@ internal class SdkFeature(
             encryption
         )
 
-        dataStore = FileDataStoreHandler(
+        dataStore = DataStoreFileHandler(
+            executorService = coreFeature.persistenceExecutorService,
             storageDir = coreFeature.storageDir,
+            featureName = wrappedFeature.name,
             internalLogger = internalLogger,
             fileReaderWriter = fileReaderWriter,
-            fileTLVBlockReader = FileTLVBlockReader(
+            tlvBlockFileReader = TLVBlockFileReader(
                 internalLogger = internalLogger,
                 fileReaderWriter = fileReaderWriter
             ),

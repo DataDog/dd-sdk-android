@@ -9,7 +9,7 @@ package com.datadog.android.api.feature
 import androidx.annotation.AnyThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
-import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
+import com.datadog.android.core.persistence.datastore.DataStoreHandler
 
 /**
  * Represents a Datadog feature.

@@ -17,16 +17,13 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
 
-internal class FileTLVBlockReader(
+internal class TLVBlockFileReader(
     val internalLogger: InternalLogger,
     val fileReaderWriter: FileReaderWriter
 ) {
-    private var endOfStream = AtomicBoolean(false)
-
     @WorkerThread
-    internal fun all(file: File): List<TLVBlock> {
+    internal fun read(file: File): List<TLVBlock> {
         if (!file.existsSafe(internalLogger) || file.lengthSafe(internalLogger) == 0L) {
             return arrayListOf()
         }
@@ -34,10 +31,11 @@ internal class FileTLVBlockReader(
         val blocks = mutableListOf<TLVBlock>()
         val stream = fileReaderWriter.readData(file).inputStream()
 
-        while (!endOfStream.get()) {
-            val nextBlock = readBlock(stream) ?: break
-            blocks.add(nextBlock)
-        }
+        var nextBlock: TLVBlock?
+        do {
+            nextBlock = readBlock(stream)
+            if (nextBlock != null) blocks.add(nextBlock)
+        } while (nextBlock != null)
 
         return blocks
     }
@@ -80,7 +78,6 @@ internal class FileTLVBlockReader(
         val buffer = ByteArray(length)
         val status = safeReadFromStream(stream, buffer)
         return if (status == -1) { // stream is finished (or error)
-            endOfStream.set(true)
             ByteArray(0)
         } else {
             buffer

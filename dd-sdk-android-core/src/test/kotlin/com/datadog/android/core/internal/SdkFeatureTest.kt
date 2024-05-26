@@ -33,12 +33,12 @@ import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
-import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
 import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -246,6 +246,7 @@ internal class SdkFeatureTest {
     fun `M register tracking consent callback W initialize(){feature+TrackingConsentProviderCallback}`() {
         // Given
         val mockFeature = mock<TrackingConsentFeature>()
+        whenever(mockFeature.name).thenReturn(fakeFeatureName)
         testedFeature = SdkFeature(
             coreFeature.mockInstance,
             mockFeature,

@@ -35,7 +35,6 @@ import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
-import com.datadog.android.core.internal.persistence.datastore.DataStoreHandler
 import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -75,6 +74,7 @@ import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
@@ -198,7 +198,7 @@ internal class CoreFeature(
         if (initialized.get()) {
             return
         }
-        
+
         readConfigurationSettings(configuration.coreConfig)
         readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
@@ -710,8 +710,8 @@ internal class CoreFeature(
         internal const val BUILD_ID_FILE_NAME = "datadog.buildId"
         internal const val BUILD_ID_IS_MISSING_INFO_MESSAGE =
             "Build ID is not found in the application" +
-                    " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
-                    " or above to be able to de-obfuscate stacktraces."
+                " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
+                " or above to be able to de-obfuscate stacktraces."
         internal const val BUILD_ID_READ_ERROR =
             "Failed to read Build ID information, de-obfuscation may not work properly."
 
