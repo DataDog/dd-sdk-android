@@ -130,7 +130,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapCachesManager = bitmapCachesManager,
-            drawableUtils = DrawableUtils(internalLogger, bitmapCachesManager),
+            drawableUtils = DrawableUtils(
+                internalLogger,
+                bitmapCachesManager,
+                sdkCore.createSingleThreadExecutorService("drawables")
+            ),
             logger = internalLogger,
             md5HashGenerator = MD5HashGenerator(internalLogger),
             webPImageCompression = WebPImageCompression(internalLogger)
