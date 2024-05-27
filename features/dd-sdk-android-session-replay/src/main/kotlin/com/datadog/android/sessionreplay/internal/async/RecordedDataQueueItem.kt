@@ -12,5 +12,6 @@ internal abstract class RecordedDataQueueItem(
     internal val recordedQueuedItemContext: RecordedQueuedItemContext
 ) {
     internal abstract fun isValid(): Boolean
+
     internal abstract fun isReady(): Boolean
 }

@@ -6,3 +6,4 @@
 # Kept for our internal telemetry
 -keepnames class com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 -keepnames class * extends com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+-keepnames class * extends com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem
