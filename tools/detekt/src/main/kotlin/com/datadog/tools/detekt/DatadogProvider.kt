@@ -34,7 +34,7 @@ class DatadogProvider : RuleSetProvider {
                 InvalidStringFormat(),
                 PackageNameVisibility(config),
                 RequireInternal(),
-                ThreadSafety(),
+                ThreadSafety(config),
                 ThrowingInternalException(),
                 TodoWithoutTask(config),
                 UnsafeCallOnNullableType(),
