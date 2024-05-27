@@ -323,6 +323,7 @@ publish:release-core:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -339,6 +340,7 @@ publish:release-coil:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -355,6 +357,7 @@ publish:release-compose:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -372,6 +375,7 @@ publish:release-fresco:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -388,6 +392,7 @@ publish:release-glide:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -404,6 +409,7 @@ publish:release-trace-coroutines:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -420,6 +426,7 @@ publish:release-rum-coroutines:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -436,6 +443,7 @@ publish:release-ndk:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -452,6 +460,7 @@ publish:release-rx:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -468,6 +477,7 @@ publish:release-sqldelight:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -484,6 +494,7 @@ publish:release-timber:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -516,6 +527,7 @@ publish:release-session-replay:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -532,6 +544,7 @@ publish:release-session-replay-material:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -548,6 +561,7 @@ publish:release-logs:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -564,6 +578,7 @@ publish:release-okhttp:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -580,6 +595,7 @@ publish:release-trace:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -596,6 +612,7 @@ publish:release-trace-otel:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -612,6 +629,7 @@ publish:release-webview:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -628,6 +646,7 @@ publish:release-rum:
   only:
     - tags
     - develop
+    - manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m

@@ -40,7 +40,7 @@ data class Version(
         }
 
         object Snapshot : Type() {
-            override val suffix: String = "-SNAPSHOT"
+            override val suffix: String = ".otel-SNAPSHOT"
         }
     }
 
