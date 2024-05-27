@@ -68,7 +68,7 @@ static-analysis:
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v25558398-8517309a/static-analysis.yml"
     strategy: depend
 
 analysis:licenses:
@@ -320,9 +320,7 @@ test-pyramid:publish-webview-synthetics:
 
 publish:release-core:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -336,9 +334,7 @@ publish:release-core:
 
 publish:release-coil:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -352,9 +348,7 @@ publish:release-coil:
 
 publish:release-compose:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -369,9 +363,7 @@ publish:release-compose:
 
 publish:release-fresco:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -385,9 +377,7 @@ publish:release-fresco:
 
 publish:release-glide:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -401,9 +391,7 @@ publish:release-glide:
 
 publish:release-trace-coroutines:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -417,9 +405,7 @@ publish:release-trace-coroutines:
 
 publish:release-rum-coroutines:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -433,9 +419,7 @@ publish:release-rum-coroutines:
 
 publish:release-ndk:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -449,9 +433,7 @@ publish:release-ndk:
 
 publish:release-rx:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -465,9 +447,7 @@ publish:release-rx:
 
 publish:release-sqldelight:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -481,9 +461,7 @@ publish:release-sqldelight:
 
 publish:release-timber:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -513,9 +491,7 @@ publish:release-android-tv:
 
 publish:release-session-replay:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -529,9 +505,7 @@ publish:release-session-replay:
 
 publish:release-session-replay-material:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -545,9 +519,7 @@ publish:release-session-replay-material:
 
 publish:release-logs:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -561,9 +533,7 @@ publish:release-logs:
 
 publish:release-okhttp:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -577,9 +547,7 @@ publish:release-okhttp:
 
 publish:release-trace:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -593,9 +561,7 @@ publish:release-trace:
 
 publish:release-trace-otel:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -609,9 +575,7 @@ publish:release-trace-otel:
 
 publish:release-webview:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -625,9 +589,7 @@ publish:release-webview:
 
 publish:release-rum:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
