@@ -5,8 +5,8 @@ com.google.code.gson:gson:2.10.1                                :  276 Kb
 io.opentracing:opentracing-api:0.32.0                           :   18 Kb
 io.opentracing:opentracing-noop:0.32.0                          :   10 Kb
 io.opentracing:opentracing-util:0.32.0                          :   10 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
-org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.9.10                       : 1667 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
 Total transitive dependencies size                              :    2 Mb
