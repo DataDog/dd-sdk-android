@@ -1,7 +1,7 @@
 package com.datadog.trace.bootstrap.instrumentation.api;
 
 import java.net.URI;
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 public abstract class URIDataAdapterBase implements URIDataAdapter {
   /** Unique instance that signifies an uninitialized field, to allow for == comparison */

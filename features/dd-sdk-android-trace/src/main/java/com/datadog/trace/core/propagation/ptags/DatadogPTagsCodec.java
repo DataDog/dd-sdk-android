@@ -9,7 +9,7 @@ import com.datadog.trace.relocate.api.RatelimitedLogger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.IntPredicate;
+import com.datadog.android.trace.internal.compat.function.IntPredicate;
 
 /** Captures configuration required for PropagationTags logic */
 final class DatadogPTagsCodec extends PTagsCodec {
@@ -159,7 +159,7 @@ final class DatadogPTagsCodec extends PTagsCodec {
     int pos = start;
     char c = s.charAt(pos);
     do {
-      if (!isValid.test(c) || c == separator) {
+      if (!isValid.check(c) || c == separator) {
         return -1;
       }
       pos++;

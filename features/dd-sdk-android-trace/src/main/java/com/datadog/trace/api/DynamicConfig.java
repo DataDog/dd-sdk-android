@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.BiFunction;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 /**
  * Config that can be dynamically updated via remote-config

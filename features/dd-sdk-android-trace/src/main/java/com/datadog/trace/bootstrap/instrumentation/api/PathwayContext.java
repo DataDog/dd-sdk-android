@@ -2,7 +2,7 @@ package com.datadog.trace.bootstrap.instrumentation.api;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.function.Consumer;
+import com.datadog.android.trace.internal.compat.function.Consumer;
 
 public interface PathwayContext {
   String PROPAGATION_KEY = "dd-pathway-ctx";

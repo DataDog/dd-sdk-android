@@ -8,7 +8,7 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import com.datadog.trace.bootstrap.instrumentation.api.ResourceNamePriorities;
 import com.datadog.trace.bootstrap.instrumentation.api.UTF8BytesString;
 
-import java.util.function.Function;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 public class HttpResourceNames {
   public static final UTF8BytesString DEFAULT_RESOURCE_NAME = UTF8BytesString.create("/");

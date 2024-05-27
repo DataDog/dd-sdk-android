@@ -3,7 +3,7 @@ package com.datadog.trace.api.cache;
 import com.datadog.trace.bootstrap.instrumentation.api.UTF8BytesString;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.function.IntFunction;
+import com.datadog.android.trace.internal.compat.function.IntFunction;
 
 /** Sparse cache of values associated with a small integer */
 public final class RadixTreeCache<T> {

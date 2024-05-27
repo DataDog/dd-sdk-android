@@ -9,8 +9,25 @@ package com.datadog.trace.core.util;
 import com.google.gson.JsonObject;
 
 import java.util.Map;
+import java.util.Objects;
+import com.datadog.android.trace.internal.compat.function.Function;
 
 public class MapUtils {
+
+    public static <V, K> V computeIfAbsent(K key, Map<K, V> originalMap,
+                                           Function<? super K, ? extends V> mappingFunction) {
+        Objects.requireNonNull(mappingFunction);
+        V v;
+        if ((v = originalMap.get(key)) == null) {
+            V newValue;
+            if ((newValue = mappingFunction.apply(key)) != null) {
+                originalMap.put(key, newValue);
+                return newValue;
+            }
+        }
+
+        return v;
+    }
 
     public static JsonObject getAsJsonObject(Map<String, String> map) {
         final JsonObject jsonObject = new JsonObject();

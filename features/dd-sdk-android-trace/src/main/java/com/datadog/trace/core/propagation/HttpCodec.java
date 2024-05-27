@@ -24,7 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
+import com.datadog.android.trace.internal.compat.function.Supplier;
 
 public class HttpCodec {
 

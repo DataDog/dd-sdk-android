@@ -17,7 +17,7 @@ import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Supplier;
+import com.datadog.android.trace.internal.compat.function.Supplier;
 
 /**
  * A codec designed for HTTP transport via headers using Haystack headers.

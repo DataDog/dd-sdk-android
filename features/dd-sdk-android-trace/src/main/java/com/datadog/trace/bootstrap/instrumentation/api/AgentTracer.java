@@ -1,6 +1,5 @@
 package com.datadog.trace.bootstrap.instrumentation.api;
 
-import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
 import static java.util.Collections.emptyList;
 
 import androidx.annotation.Nullable;
@@ -8,19 +7,13 @@ import androidx.annotation.Nullable;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.EndpointCheckpointer;
-import com.datadog.trace.api.EndpointTracker;
 import com.datadog.trace.api.TraceConfig;
 import com.datadog.trace.api.TracePropagationStyle;
-import com.datadog.trace.api.experimental.DataStreamsCheckpointer;
 import com.datadog.trace.api.experimental.DataStreamsContextCarrier;
-import com.datadog.trace.api.gateway.CallbackProvider;
 import com.datadog.trace.api.gateway.Flow;
 import com.datadog.trace.api.gateway.RequestContext;
 import com.datadog.trace.api.gateway.RequestContextSlot;
-import com.datadog.trace.api.gateway.SubscriptionService;
-import com.datadog.trace.api.interceptor.TraceInterceptor;
 import com.datadog.trace.api.internal.InternalTracer;
-import com.datadog.trace.api.internal.TraceSegment;
 import com.datadog.trace.api.profiling.Timer;
 import com.datadog.trace.api.sampling.PrioritySampling;
 import com.datadog.trace.api.sampling.SamplingRule;
@@ -32,147 +25,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import com.datadog.android.trace.internal.compat.function.Consumer;
 
 public class AgentTracer {
   private static final String DEFAULT_INSTRUMENTATION_NAME = "datadog";
-
-  // Implicit parent
-  /** Deprecated. Use {@link #startSpan(String, CharSequence)} instead. */
-  @Deprecated
-  public static AgentSpan startSpan(final CharSequence spanName) {
-    return startSpan(DEFAULT_INSTRUMENTATION_NAME, spanName);
-  }
-
-  /** @see TracerAPI#startSpan(String, CharSequence) */
-  public static AgentSpan startSpan(final String instrumentationName, final CharSequence spanName) {
-    return get().startSpan(instrumentationName, spanName);
-  }
-
-  // Implicit parent
-  /** Deprecated. Use {@link #startSpan(String, CharSequence, long)} instead. */
-  @Deprecated
-  public static AgentSpan startSpan(final CharSequence spanName, final long startTimeMicros) {
-    return startSpan(DEFAULT_INSTRUMENTATION_NAME, spanName, startTimeMicros);
-  }
-
-  /** @see TracerAPI#startSpan(String, CharSequence, long) */
-  public static AgentSpan startSpan(
-      final String instrumentationName, final CharSequence spanName, final long startTimeMicros) {
-    return get().startSpan(instrumentationName, spanName, startTimeMicros);
-  }
-
-  // Explicit parent
-  /** Deprecated. Use {@link #startSpan(String, CharSequence, Context)} instead. */
-  @Deprecated
-  public static AgentSpan startSpan(final CharSequence spanName, final Context parent) {
-    return startSpan(DEFAULT_INSTRUMENTATION_NAME, spanName, parent);
-  }
-
-  /** @see TracerAPI#startSpan(String, CharSequence, Context) */
-  public static AgentSpan startSpan(
-      final String instrumentationName,
-      final CharSequence spanName,
-      final Context parent) {
-    return get().startSpan(instrumentationName, spanName, parent);
-  }
-
-  // Explicit parent
-  /** Deprecated. Use {@link #startSpan(String, CharSequence, Context, long)} instead. */
-  @Deprecated
-  public static AgentSpan startSpan(
-      final CharSequence spanName, final Context parent, final long startTimeMicros) {
-    return startSpan(DEFAULT_INSTRUMENTATION_NAME, spanName, parent, startTimeMicros);
-  }
-
-  /** @see TracerAPI#startSpan(String, CharSequence, Context, long) */
-  public static AgentSpan startSpan(
-      final String instrumentationName,
-      final CharSequence spanName,
-      final Context parent,
-      final long startTimeMicros) {
-    return get().startSpan(instrumentationName, spanName, parent, startTimeMicros);
-  }
-
-  public static AgentScope activateSpan(final AgentSpan span) {
-    return get().activateSpan(span, ScopeSource.INSTRUMENTATION, DEFAULT_ASYNC_PROPAGATING);
-  }
-
-  public static AgentScope activateSpan(final AgentSpan span, final boolean isAsyncPropagating) {
-    return get().activateSpan(span, ScopeSource.INSTRUMENTATION, isAsyncPropagating);
-  }
-
-  public static AgentScope.Continuation captureSpan(final AgentSpan span) {
-    return get().captureSpan(span);
-  }
-
-  /**
-   * Closes the immediately previous iteration scope. Should be called before creating a new span
-   * for {@link #activateNext(AgentSpan)}.
-   */
-  public static void closePrevious(final boolean finishSpan) {
-    get().closePrevious(finishSpan);
-  }
-
-  /**
-   * Activates a new iteration scope; closes automatically after a fixed period.
-   *
-   * @see com.datadog.trace.api.config.TracerConfig#SCOPE_ITERATION_KEEP_ALIVE
-   */
-  public static AgentScope activateNext(final AgentSpan span) {
-    return get().activateNext(span);
-  }
-
-  public static TraceConfig traceConfig(final AgentSpan span) {
-    return null != span ? span.traceConfig() : traceConfig();
-  }
-
-  public static TraceConfig traceConfig() {
-    return get().captureTraceConfig();
-  }
-
-  public static AgentSpan activeSpan() {
-    return get().activeSpan();
-  }
-
-  public static AgentScope activeScope() {
-    return get().activeScope();
-  }
-
-  public static AgentScope.Continuation capture() {
-    final AgentScope activeScope = activeScope();
-    return activeScope == null ? null : activeScope.capture();
-  }
-
-  public static AgentPropagation propagate() {
-    return get().propagate();
-  }
-
-  public static AgentSpan noopSpan() {
-    return get().noopSpan();
-  }
-
-  public static final TracerAPI NOOP_TRACER = new NoopTracerAPI();
-
-  private static volatile TracerAPI provider = NOOP_TRACER;
-
-  public static boolean isRegistered() {
-    return provider != NOOP_TRACER;
-  }
-
-  public static synchronized void registerIfAbsent(final TracerAPI tracer) {
-    if (tracer != null && tracer != NOOP_TRACER) {
-      provider = tracer;
-    }
-  }
-
-  public static synchronized void forceRegister(TracerAPI tracer) {
-    provider = tracer;
-  }
-
-  public static TracerAPI get() {
-    return provider;
-  }
 
   // Not intended to be constructed.
   private AgentTracer() {}
@@ -270,14 +126,6 @@ public class AgentTracer {
 
     void registerTimer(Timer timer);
 
-    SubscriptionService getSubscriptionService(RequestContextSlot slot);
-
-    CallbackProvider getCallbackProvider(RequestContextSlot slot);
-
-    CallbackProvider getUniversalCallbackProvider();
-
-    AgentDataStreamsMonitoring getDataStreamsMonitoring();
-
     Timer getTimer();
 
     String getTraceId(AgentSpan span);
@@ -319,196 +167,6 @@ public class AgentTracer {
     <T> SpanBuilder withRequestContextData(RequestContextSlot slot, T data);
 
     SpanBuilder withLink(AgentSpanLink link);
-  }
-
-  static class NoopTracerAPI implements TracerAPI {
-
-    protected NoopTracerAPI() {}
-
-    @Override
-    public AgentSpan startSpan(final String instrumentationName, final CharSequence spanName) {
-      return NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public AgentSpan startSpan(
-        final String instrumentationName, final CharSequence spanName, final long startTimeMicros) {
-      return NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public AgentSpan startSpan(
-        final String instrumentationName, final CharSequence spanName, final Context parent) {
-      return NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public AgentSpan startSpan(
-        final String instrumentationName,
-        final CharSequence spanName,
-        final Context parent,
-        final long startTimeMicros) {
-      return NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public AgentScope activateSpan(final AgentSpan span, final ScopeSource source) {
-      return NoopAgentScope.INSTANCE;
-    }
-
-    @Override
-    public AgentScope activateSpan(
-        final AgentSpan span, final ScopeSource source, final boolean isAsyncPropagating) {
-      return NoopAgentScope.INSTANCE;
-    }
-
-    @Override
-    public AgentScope.Continuation captureSpan(final AgentSpan span) {
-      return NoopContinuation.INSTANCE;
-    }
-
-    @Override
-    public void closePrevious(final boolean finishSpan) {}
-
-    @Override
-    public AgentScope activateNext(final AgentSpan span) {
-      return NoopAgentScope.INSTANCE;
-    }
-
-    @Override
-    public AgentSpan activeSpan() {
-      return NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public AgentScope activeScope() {
-      return null;
-    }
-
-    @Override
-    public AgentPropagation propagate() {
-      return NoopAgentPropagation.INSTANCE;
-    }
-
-    @Override
-    public AgentSpan noopSpan() {
-      return NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public SpanBuilder buildSpan(final String instrumentationName, final CharSequence spanName) {
-      return null;
-    }
-
-    @Override
-    public void close() {}
-
-    @Override
-    public void addScopeListener(
-        Runnable afterScopeActivatedCallback, Runnable afterScopeClosedCallback) {}
-
-    @Override
-    public void flush() {}
-
-    @Override
-    public void flushMetrics() {}
-
-    @Override
-    public ProfilingContextIntegration getProfilingContext() {
-      return ProfilingContextIntegration.NoOp.INSTANCE;
-    }
-
-    @Override
-    public TraceSegment getTraceSegment() {
-      return null;
-    }
-
-    @Override
-    public String getTraceId() {
-      return null;
-    }
-
-    @Override
-    public String getSpanId() {
-      return null;
-    }
-
-    @Override
-    public String getTraceId(AgentSpan span) {
-      return null;
-    }
-
-    @Override
-    public String getSpanId(AgentSpan span) {
-      return null;
-    }
-
-    @Override
-    public boolean addTraceInterceptor(final TraceInterceptor traceInterceptor) {
-      return false;
-    }
-
-    @Override
-    public DataStreamsCheckpointer getDataStreamsCheckpointer() {
-      return getDataStreamsMonitoring();
-    }
-
-    @Override
-    public void addScopeListener(final ScopeListener listener) {}
-
-    @Override
-    public void registerCheckpointer(EndpointCheckpointer checkpointer) {}
-
-    @Override
-    public void registerTimer(Timer timer) {}
-
-    @Override
-    public SubscriptionService getSubscriptionService(RequestContextSlot slot) {
-      return SubscriptionService.SubscriptionServiceNoop.INSTANCE;
-    }
-
-    @Override
-    public CallbackProvider getCallbackProvider(RequestContextSlot slot) {
-      return CallbackProvider.CallbackProviderNoop.INSTANCE;
-    }
-
-    @Override
-    public CallbackProvider getUniversalCallbackProvider() {
-      return CallbackProvider.CallbackProviderNoop.INSTANCE;
-    }
-
-    @Override
-    public void onRootSpanFinished(AgentSpan root, EndpointTracker tracker) {}
-
-    @Override
-    public EndpointTracker onRootSpanStarted(AgentSpan root) {
-      return EndpointTracker.NO_OP;
-    }
-
-    @Override
-    public ScopeState newScopeState() {
-      return null;
-    }
-
-    @Override
-    public AgentDataStreamsMonitoring getDataStreamsMonitoring() {
-      return NoopAgentDataStreamsMonitoring.INSTANCE;
-    }
-
-    @Override
-    public Timer getTimer() {
-      return Timer.NoOp.INSTANCE;
-    }
-
-    @Override
-    public TraceConfig captureTraceConfig() {
-      return NoopTraceConfig.INSTANCE;
-    }
-
-    @Override
-    public AgentHistogram newHistogram(double relativeAccuracy, int maxNumBins) {
-      return NoopAgentHistogram.INSTANCE;
-    }
   }
 
   public static final class NoopAgentSpan implements AgentSpan {
