@@ -44,18 +44,20 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun sendDebugTelemetryEvent(
         message: String,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>? = null
     )
 
     fun sendErrorTelemetryEvent(
         message: String,
-        throwable: Throwable?
+        throwable: Throwable?,
+        additionalProperties: Map<String, Any?>? = null
     )
 
     fun sendErrorTelemetryEvent(
         message: String,
         stack: String?,
-        kind: String?
+        kind: String?,
+        additionalProperties: Map<String, Any?>? = null
     )
 
     fun sendMetricEvent(

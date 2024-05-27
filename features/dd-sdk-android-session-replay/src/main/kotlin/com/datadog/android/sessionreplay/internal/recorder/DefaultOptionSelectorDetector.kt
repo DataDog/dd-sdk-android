@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatSpinner
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 
 internal class DefaultOptionSelectorDetector : OptionSelectorDetector {
     override fun isOptionSelector(view: ViewGroup): Boolean {

@@ -77,7 +77,8 @@ internal class BatchMetricsDispatcherTest {
                 Feature.RUM_FEATURE_NAME,
                 Feature.TRACING_FEATURE_NAME,
                 Feature.LOGS_FEATURE_NAME,
-                Feature.SESSION_REPLAY_FEATURE_NAME
+                Feature.SESSION_REPLAY_FEATURE_NAME,
+                Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
             )
         )
         whenever(mockDateTimeProvider.getDeviceTimestamp()).doReturn(currentTimeInMillis)
@@ -655,6 +656,7 @@ internal class BatchMetricsDispatcherTest {
             Feature.LOGS_FEATURE_NAME -> BatchMetricsDispatcher.LOGS_TRACK_NAME
             Feature.TRACING_FEATURE_NAME -> BatchMetricsDispatcher.TRACE_TRACK_NAME
             Feature.SESSION_REPLAY_FEATURE_NAME -> BatchMetricsDispatcher.SR_TRACK_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME -> BatchMetricsDispatcher.SR_RESOURCES_TRACK_NAME
             else -> null
         }
     }

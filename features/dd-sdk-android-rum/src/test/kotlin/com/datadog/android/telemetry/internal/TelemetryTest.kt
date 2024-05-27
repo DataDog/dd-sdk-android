@@ -50,13 +50,14 @@ internal class TelemetryTest {
     ) {
         // Given
         val throwable = forge.aNullable { forge.aThrowable() }
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
 
         // When
-        testedTelemetry.error(message, throwable)
+        testedTelemetry.error(message, throwable, fakeAdditionalProperties)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .sendErrorTelemetryEvent(message, throwable)
+            .sendErrorTelemetryEvent(message, throwable, fakeAdditionalProperties)
     }
 
     @Test
@@ -66,6 +67,7 @@ internal class TelemetryTest {
     ) {
         // Given
         val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
         testedTelemetry.debug(message, fakeAdditionalProperties)
 
@@ -81,6 +83,7 @@ internal class TelemetryTest {
     ) {
         // Given
         val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
         testedTelemetry.metric(message, fakeAdditionalProperties)
 

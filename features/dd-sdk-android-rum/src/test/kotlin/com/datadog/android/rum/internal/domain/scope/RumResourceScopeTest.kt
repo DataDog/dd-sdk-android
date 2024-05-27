@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
@@ -192,7 +193,7 @@ internal class RumResourceScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
-        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn true
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
         testedScope = RumResourceScope(
             mockParentScope,
@@ -253,7 +254,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -322,7 +323,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -406,7 +407,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -482,7 +483,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -552,7 +553,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -640,7 +641,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -701,7 +702,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -762,7 +763,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasKind(kind)
@@ -814,7 +815,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -834,7 +835,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -879,7 +880,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -950,7 +951,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -1021,7 +1022,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -1094,7 +1095,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -1172,7 +1173,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1252,7 +1253,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1327,7 +1328,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1420,7 +1421,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1516,7 +1517,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1605,7 +1606,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1699,7 +1700,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1777,7 +1778,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1857,7 +1858,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -1935,7 +1936,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -2015,7 +2016,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -2098,7 +2099,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -2183,7 +2184,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
@@ -2345,7 +2346,7 @@ internal class RumResourceScopeTest {
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp())
@@ -2412,7 +2413,7 @@ internal class RumResourceScopeTest {
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp())
@@ -2480,7 +2481,7 @@ internal class RumResourceScopeTest {
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp())
@@ -2551,7 +2552,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasTiming(timing)
         }
     }
@@ -2575,7 +2576,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasTiming(timing)
         }
     }
@@ -2600,7 +2601,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -2667,7 +2668,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
                 .apply {
                     hasId(testedScope.resourceId)
@@ -2741,7 +2742,7 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
         }
     }
@@ -2777,7 +2778,7 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>())) doReturn false
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
@@ -2799,7 +2800,7 @@ internal class RumResourceScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         whenever(
-            mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>())
+            mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
 
         // When
@@ -2849,7 +2850,7 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
@@ -2879,7 +2880,7 @@ internal class RumResourceScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         whenever(
-            mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
+            mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
 
         mockEvent = RumRawEvent.StopResourceWithError(

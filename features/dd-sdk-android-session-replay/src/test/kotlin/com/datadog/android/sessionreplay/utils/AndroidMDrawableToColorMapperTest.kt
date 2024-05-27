@@ -67,7 +67,7 @@ open class AndroidMDrawableToColorMapperTest : LegacyDrawableToColorMapperTest()
         }
 
         // When
-        val result = testedMapper.mapDrawableToColor(rippleDrawable)
+        val result = testedMapper.mapDrawableToColor(rippleDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(drawableColor)
@@ -90,7 +90,7 @@ open class AndroidMDrawableToColorMapperTest : LegacyDrawableToColorMapperTest()
         }
 
         // When
-        val result = testedMapper.mapDrawableToColor(insetDrawable)
+        val result = testedMapper.mapDrawableToColor(insetDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(drawableColor)

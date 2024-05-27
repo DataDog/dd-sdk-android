@@ -15,12 +15,14 @@ import android.graphics.drawable.Drawable.ConstantState
 import android.util.DisplayMetrics
 import android.view.View
 import android.widget.ImageView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageCompression
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -125,6 +127,9 @@ internal class ImageViewMapperTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @LongForgery
     var fakeId: Long = 0L
 
@@ -159,7 +164,7 @@ internal class ImageViewMapperTest {
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         whenever(mockImageView.context).thenReturn(mockContext)
         whenever(mockBackgroundDrawable.current).thenReturn(mockBackgroundDrawable)
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(any())) doReturn null
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(any(), eq(mockInternalLogger))) doReturn null
 
         whenever(stubImageViewUtils.resolveParentRectAbsPosition(any())).thenReturn(stubParentRect)
         whenever(stubImageViewUtils.resolveContentRectWithScaling(any(), any())).thenReturn(stubContentRect)
@@ -209,7 +214,12 @@ internal class ImageViewMapperTest {
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedMapper.map(
+            mockImageView,
+            mockMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(1)
@@ -232,7 +242,7 @@ internal class ImageViewMapperTest {
             mimeType = fakeMimeType,
             isEmpty = true
         )
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockBackgroundDrawable)) doReturn null
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockBackgroundDrawable, mockInternalLogger)) doReturn null
         whenever(mockImageView.background).thenReturn(mockBackgroundDrawable)
         mockImageWireframeHelper(
             expectedView = mockImageView,
@@ -252,7 +262,12 @@ internal class ImageViewMapperTest {
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedMapper.map(
+            mockImageView,
+            mockMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(2)
@@ -282,7 +297,12 @@ internal class ImageViewMapperTest {
         ).thenReturn(expectedImageWireframe)
 
         // When
-        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedMapper.map(
+            mockImageView,
+            mockMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(1)
@@ -342,7 +362,12 @@ internal class ImageViewMapperTest {
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedMapper.map(
+            mockImageView,
+            mockMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes[0]::class.java).isEqualTo(MobileSegment.Wireframe.ImageWireframe::class.java)
@@ -355,10 +380,15 @@ internal class ImageViewMapperTest {
     ) {
         // Given
         whenever(mockImageView.background).thenReturn(mockColorDrawable)
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockColorDrawable)) doReturn mockColor
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockColorDrawable, mockInternalLogger)) doReturn mockColor
 
         // When
-        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedMapper.map(
+            mockImageView,
+            mockMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes[0]::class.java).isEqualTo(MobileSegment.Wireframe.ShapeWireframe::class.java)
@@ -382,7 +412,12 @@ internal class ImageViewMapperTest {
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockAsyncJobStatusCallback)
+        val wireframes = testedMapper.map(
+            mockImageView,
+            mockMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes.size).isEqualTo(1)

@@ -36,6 +36,10 @@ plugins {
 }
 
 android {
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
+
     namespace = "com.datadog.android.sessionreplay.material"
 }
 

@@ -12,10 +12,10 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.DatadogCore
-import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.HashGenerator
+import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
 import com.datadog.android.core.internal.utils.loggableStackTrace

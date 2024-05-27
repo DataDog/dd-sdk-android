@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.utils
 
-import com.datadog.android.core.internal.utils.HEX_RADIX
+import com.datadog.android.core.internal.utils.toHexString
 
 /**
  * String utility methods needed in the Session Replay Wireframe Mappers.
@@ -18,7 +18,7 @@ object DefaultColorStringFormatter : ColorStringFormatter {
         // shift Android's ARGB to Web RGBA
         val alpha = (color.toLong() and MASK_ALPHA) shr ALPHA_SHIFT_ANDROID
         val colorRGBA = (color.toLong() shl ALPHA_SHIFT_WEB) or alpha
-        val hexString = (MASK_COLOR and colorRGBA).toString(HEX_RADIX)
+        val hexString = (MASK_COLOR and colorRGBA).toHexString()
         return "#${hexString.padStart(WEB_COLOR_STR_LENGTH, '0')}"
     }
 
@@ -31,7 +31,7 @@ object DefaultColorStringFormatter : ColorStringFormatter {
         // expressions under the hood, this approach is at least 2 times faster.
 
         // We remove the original alpha value from the color by masking with 0xffffffff
-        val hexString = (MASK_COLOR and colorRGBA).toString(HEX_RADIX)
+        val hexString = (MASK_COLOR and colorRGBA).toHexString()
         return "#${hexString.padStart(WEB_COLOR_STR_LENGTH, '0')}"
     }
 }

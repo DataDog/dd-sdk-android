@@ -9,12 +9,15 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
@@ -24,12 +27,18 @@ internal open class NumberPickerMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BasePickerMapper(viewIdentifierResolver, colorStringFormatter, viewBoundsResolver, drawableToColorMapper) {
+) : BasePickerMapper(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     override fun map(
         view: NumberPicker,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val prevIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
@@ -62,6 +71,7 @@ internal open class NumberPickerMapper(
             return map(
                 view,
                 mappingContext.systemInformation,
+                mappingContext.privacy,
                 prevIndexLabelId,
                 topDividerId,
                 selectedIndexLabelId,
@@ -77,6 +87,7 @@ internal open class NumberPickerMapper(
     private fun map(
         view: NumberPicker,
         systemInformation: SystemInformation,
+        privacy: SessionReplayPrivacy,
         prevIndexLabelId: Long,
         topDividerId: Long,
         selectedIndexLabelId: Long,
@@ -153,13 +164,24 @@ internal open class NumberPickerMapper(
             textSize,
             nextPrevLabelTextColor
         )
-        return listOf(
-            prevValueLabelWireframe,
-            topDividerWireframe,
-            selectedValueLabelWireframe,
-            bottomDividerWireframe,
-            nextValueLabelWireframe
-        )
+
+        return if (privacy == SessionReplayPrivacy.ALLOW) {
+            listOf(
+                prevValueLabelWireframe,
+                topDividerWireframe,
+                selectedValueLabelWireframe,
+                bottomDividerWireframe,
+                nextValueLabelWireframe
+            )
+        } else {
+            listOf(
+                topDividerWireframe,
+                selectedValueLabelWireframe.copy(
+                    text = DEFAULT_MASKED_TEXT_VALUE
+                ),
+                bottomDividerWireframe
+            )
+        }
     }
 
     private fun resolvePrevLabelValue(view: NumberPicker): String {
@@ -198,5 +220,9 @@ internal open class NumberPickerMapper(
             return numberPicker.displayedValues[normalizedIndex]
         }
         return index.toString()
+    }
+
+    companion object {
+        internal const val DEFAULT_MASKED_TEXT_VALUE = "xxx"
     }
 }

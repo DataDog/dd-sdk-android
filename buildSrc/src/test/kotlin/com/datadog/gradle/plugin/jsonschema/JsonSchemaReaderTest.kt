@@ -31,7 +31,11 @@ class JsonSchemaReaderTest(
         val clazz = JsonSchemaReaderTest::class.java
         val inputPath = clazz.getResource("/input/$inputSchema.json").file
         val testedReader = JsonSchemaReader(
-            mapOf("all_of_merged.json" to "UserMerged"),
+            mapOf(
+                "all_of_merged.json" to "UserMerged",
+                "additional_props_merged.json" to "AdditionalPropsMerged",
+                "additional_props_single_merge.json" to "AdditionalPropsSingleMerge"
+            ),
             NoOpLogger()
         )
 
@@ -55,6 +59,8 @@ class JsonSchemaReaderTest(
                 arrayOf("nested", Book),
                 arrayOf("additional_props", Comment),
                 arrayOf("additional_props_any", Company),
+                arrayOf("additional_props_merged", AdditionalPropsMerged),
+                arrayOf("additional_props_single_merge", AdditionalPropsSingleMerge),
                 arrayOf("definition_name_conflict", Conflict),
                 arrayOf("definition", Customer),
                 arrayOf("definition_with_id", Customer),

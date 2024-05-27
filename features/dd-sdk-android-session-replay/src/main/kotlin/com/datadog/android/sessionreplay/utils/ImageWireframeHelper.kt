@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.utils
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
 
 /**
  * A Helper to handle capturing images in Session replay wireframes.

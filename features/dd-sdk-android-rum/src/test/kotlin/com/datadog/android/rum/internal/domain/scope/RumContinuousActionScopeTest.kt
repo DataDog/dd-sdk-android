@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -146,7 +147,7 @@ internal class RumContinuousActionScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
-        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn true
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
         testedScope = RumActionScope(
             mockParentScope,
@@ -224,7 +225,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -291,7 +292,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -356,7 +357,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -424,7 +425,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -502,7 +503,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -589,7 +590,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -662,7 +663,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -733,7 +734,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -804,7 +805,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -882,7 +883,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -939,7 +940,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -996,7 +997,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1053,7 +1054,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1110,7 +1111,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1174,7 +1175,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1231,7 +1232,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1288,7 +1289,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1345,7 +1346,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1402,7 +1403,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1466,7 +1467,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1525,7 +1526,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1614,7 +1615,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1696,7 +1697,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1763,7 +1764,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1824,7 +1825,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1885,7 +1886,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1952,7 +1953,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2014,7 +2015,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2078,7 +2079,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2137,7 +2138,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2198,7 +2199,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2257,7 +2258,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2382,7 +2383,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2445,7 +2446,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -2501,7 +2502,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)

@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.net
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -16,6 +17,7 @@ import java.util.Locale
  *
  * @param hosts [Map] of hosts and associated tracing header types to initialize instance with.
  */
+@InternalApi
 class DefaultFirstPartyHostHeaderTypeResolver(
     hosts: Map<String, Set<TracingHeaderType>>
 ) : FirstPartyHostHeaderTypeResolver {

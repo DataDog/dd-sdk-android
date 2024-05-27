@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.webview.internal.WebViewEventConsumer
@@ -34,7 +35,7 @@ internal class WebViewLogEventConsumer(
                         val rumContext = rumContextProvider.getRumContext(datadogContext)
                         val mappedEvent = map(event.first, datadogContext, rumContext)
                         @Suppress("ThreadSafety") // inside worker thread context
-                        userLogsWriter.write(eventBatchWriter, mappedEvent)
+                        userLogsWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
                     }
             }
         }

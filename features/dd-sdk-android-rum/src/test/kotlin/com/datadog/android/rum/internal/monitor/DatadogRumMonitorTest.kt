@@ -1707,10 +1707,14 @@ internal class DatadogRumMonitorTest {
     fun `M handle error telemetry event W sendErrorTelemetryEvent() {stack+kind}`(
         @StringForgery message: String,
         @StringForgery stackTrace: String,
-        @StringForgery kind: String
+        @StringForgery kind: String,
+        forge: Forge
     ) {
+        // Given
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
-        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind)
+        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind, fakeAdditionalProperties)
 
         // Then
         argumentCaptor<RumRawEvent.SendTelemetry> {
@@ -1724,6 +1728,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.kind).isEqualTo(kind)
             assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
         }
     }
 
@@ -1732,9 +1737,12 @@ internal class DatadogRumMonitorTest {
         @StringForgery message: String,
         forge: Forge
     ) {
-        // When
+        // Given
         val throwable = forge.aNullable { forge.aThrowable() }
-        testedMonitor.sendErrorTelemetryEvent(message, throwable)
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
+        // When
+        testedMonitor.sendErrorTelemetryEvent(message, throwable, fakeAdditionalProperties)
 
         // Then
         argumentCaptor<RumRawEvent.SendTelemetry> {
@@ -1748,6 +1756,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
             assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
         }
     }
 

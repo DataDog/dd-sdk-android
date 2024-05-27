@@ -8,26 +8,30 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import java.util.LinkedList
 
 internal class SnapshotProducer(
     private val imageWireframeHelper: ImageWireframeHelper,
     private val treeViewTraversal: TreeViewTraversal,
-    private val optionSelectorDetector: OptionSelectorDetector =
-        ComposedOptionSelectorDetector(listOf(DefaultOptionSelectorDetector()))
+    private val optionSelectorDetector: OptionSelectorDetector
 ) {
 
     fun produce(
         rootView: View,
         systemInformation: SystemInformation,
+        privacy: SessionReplayPrivacy,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
         return convertViewToNode(
             rootView,
-            MappingContext(systemInformation, imageWireframeHelper),
+            MappingContext(systemInformation, imageWireframeHelper, privacy),
             LinkedList(),
             recordedDataQueueRefs
         )

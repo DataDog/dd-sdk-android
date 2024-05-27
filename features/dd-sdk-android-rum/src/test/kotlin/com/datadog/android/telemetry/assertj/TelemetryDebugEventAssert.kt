@@ -109,6 +109,66 @@ internal class TelemetryDebugEventAssert(actual: TelemetryDebugEvent) :
         return this
     }
 
+    fun hasDeviceArchitecture(expected: String?): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.device?.architecture)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.device architecture $expected" +
+                    " but was ${actual.telemetry.message}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasDeviceModel(expected: String?): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.device?.model)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.device model $expected" +
+                    " but was ${actual.telemetry.message}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasDeviceBrand(expected: String?): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.device?.brand)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.device brand $expected" +
+                    " but was ${actual.telemetry.message}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasOsBuild(expected: String?): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.os?.build)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.os build $expected" +
+                    " but was ${actual.telemetry.message}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasOsName(expected: String?): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.os?.name)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.os name $expected" +
+                    " but was ${actual.telemetry.message}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasOsVersion(expected: String?): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.os?.version)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.os version $expected" +
+                    " but was ${actual.telemetry.message}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
         fun assertThat(actual: TelemetryDebugEvent) = TelemetryDebugEventAssert(actual)
     }

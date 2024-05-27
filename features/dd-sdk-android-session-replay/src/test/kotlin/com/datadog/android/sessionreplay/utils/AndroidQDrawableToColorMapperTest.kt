@@ -71,7 +71,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         }
 
         // When
-        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(expectedBlendColor)
@@ -103,7 +103,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         }
 
         // When
-        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
@@ -136,7 +136,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         }
 
         // When
-        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(fillPaintColor)
@@ -168,7 +168,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         }
 
         // When
-        val result = testedMapper.mapDrawableToColor(gradientDrawable)
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()

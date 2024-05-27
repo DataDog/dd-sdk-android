@@ -8,18 +8,19 @@ package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.LinkedList
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -28,152 +29,35 @@ import java.util.LinkedList
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class AndroidNStringObfuscatorTest {
-
-    lateinit var testedObfuscator: StringObfuscator
+internal class AndroidNStringObfuscatorTest : AbstractObfuscatorTest() {
 
     @BeforeEach
     fun `set up`() {
         testedObfuscator = AndroidNStringObfuscator()
     }
 
-    // region Android N and above
-
-    @Test
-    fun `M mask String W obfuscate(){string with newline, Android N}`(
-        forge: Forge
+    @ParameterizedTest(name = "{index} (emojis:{0})")
+    @MethodSource("emojiUseCases")
+    fun `M mask emoji chars W obfuscate`(
+        emojiChars: String
     ) {
         // Given
-        val fakeExpectedChunk1 = forge.aString(size = forge.anInt(1, max = 10)) { '\n' }
-        val fakeExpectedChunk2 = forge.aString { 'x' }
-        val fakeExpectedChunk3 = forge.aString(size = forge.anInt(1, max = 10)) { '\n' }
-        val fakeExpectedChunk4 = forge.aString { 'x' }
-        val fakeExpectedChunk5 = forge.aString(size = forge.anInt(1, max = 10)) { '\n' }
-        val fakeExpectedText = (
-            fakeExpectedChunk1 +
-                fakeExpectedChunk2 +
-                fakeExpectedChunk3 +
-                fakeExpectedChunk4 +
-                fakeExpectedChunk5
-            )
-        val fakeText = (
-            fakeExpectedChunk1 +
-                forge.aString(fakeExpectedChunk2.length) { forge.anAlphaNumericalChar() } +
-                fakeExpectedChunk3 +
-                forge.aString(fakeExpectedChunk4.length) { forge.anAlphaNumericalChar() } +
-                fakeExpectedChunk5
-            )
+        val emojiRepeat = List(fakeEmojiRepeat) { emojiChars }
+        val input = emojiRepeat.joinToString(" ")
+        val expectedOutput = emojiRepeat.joinToString(" ") { "x" }
 
         // When
-        val obfuscatedText = testedObfuscator.obfuscate(fakeText)
+        val output = testedObfuscator.obfuscate(input)
 
         // Then
-        assertThat(obfuscatedText).isEqualTo(fakeExpectedText)
+        assertThat(output).isEqualTo(expectedOutput)
     }
 
-    @Test
-    fun `M mask String W obfuscate(){string with carriage return character, Android N}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeExpectedChunk1 = forge.aString(size = forge.anInt(1, max = 10)) { '\r' }
-        val fakeExpectedChunk2 = forge.aString { 'x' }
-        val fakeExpectedChunk3 = forge.aString(size = forge.anInt(1, max = 10)) { '\r' }
-        val fakeExpectedChunk4 = forge.aString { 'x' }
-        val fakeExpectedChunk5 = forge.aString(size = forge.anInt(1, max = 10)) { '\r' }
-        val fakeExpectedText = (
-            fakeExpectedChunk1 +
-                fakeExpectedChunk2 +
-                fakeExpectedChunk3 +
-                fakeExpectedChunk4 +
-                fakeExpectedChunk5
-            )
-        val fakeText = (
-            fakeExpectedChunk1 +
-                forge.aString(fakeExpectedChunk2.length) { forge.anAlphaNumericalChar() } +
-                fakeExpectedChunk3 +
-                forge.aString(fakeExpectedChunk4.length) { forge.anAlphaNumericalChar() } +
-                fakeExpectedChunk5
-            )
+    companion object {
 
-        // When
-        val obfuscatedText = testedObfuscator.obfuscate(fakeText)
-
-        // Then
-        assertThat(obfuscatedText).isEqualTo(fakeExpectedText)
-    }
-
-    @Test
-    fun `M mask String W obfuscate(){string with whitespace character, Android N}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeExpectedChunk1 = forge.aWhitespaceString()
-        val fakeExpectedChunk2 = forge.aString { 'x' }
-        val fakeExpectedChunk3 = forge.aWhitespaceString()
-        val fakeExpectedChunk4 = forge.aString { 'x' }
-        val fakeExpectedChunk5 = forge.aWhitespaceString()
-        val fakeExpectedText = (
-            fakeExpectedChunk1 +
-                fakeExpectedChunk2 +
-                fakeExpectedChunk3 +
-                fakeExpectedChunk4 +
-                fakeExpectedChunk5
-            )
-        val fakeText = (
-            fakeExpectedChunk1 +
-                forge.aString(fakeExpectedChunk2.length) { forge.anAlphaNumericalChar() } +
-                fakeExpectedChunk3 +
-                forge.aString(fakeExpectedChunk4.length) { forge.anAlphaNumericalChar() } +
-                fakeExpectedChunk5
-            )
-
-        // When
-        val obfuscatedText = testedObfuscator.obfuscate(fakeText)
-
-        // Then
-        assertThat(obfuscatedText).isEqualTo(fakeExpectedText)
-    }
-
-    @Test
-    fun `M mask String W obfuscate(){string with whitespace character and emoji, Android N}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeChunk1 = forge.aStringWithEmoji()
-        val fakeChunk2 = forge.aWhitespaceString()
-        val fakeChunk3 = forge.aStringWithEmoji()
-        val fakeChunk4 = forge.aWhitespaceString()
-        val fakeText = fakeChunk1 + fakeChunk2 + fakeChunk3 + fakeChunk4
-
-        // the real size of an emoji chunk is chunk.length/2 as one emoji contains 2 chars.
-        // In our current code for >= Android N we are treating this case correctly so expected
-        // obfuscated string length is chunk.length/2
-        val fakeExpectedChunk1 = String(CharArray(fakeChunk1.length / 2) { 'x' })
-        val fakeExpectedChunk3 = String(CharArray(fakeChunk3.length / 2) { 'x' })
-        val fakeExpectedText = fakeExpectedChunk1 + fakeChunk2 + fakeExpectedChunk3 + fakeChunk4
-
-        // When
-        val obfuscatedText = testedObfuscator.obfuscate(fakeText)
-
-        // Then
-        assertThat(obfuscatedText).isEqualTo(fakeExpectedText)
-    }
-
-    // endregion
-
-    // region Internal
-
-    private fun Forge.aStringWithEmoji(): String {
-        val charsList = LinkedList<Char>()
-        val stringSize = anInt(min = 10, max = 100)
-        repeat(stringSize) {
-            val emojiCodePoint = anInt(min = 0x1f600, max = 0x1f60A)
-            val chars = Character.toChars(emojiCodePoint).toList()
-            charsList.addAll(chars)
+        @JvmStatic
+        fun emojiUseCases(): Stream<Arguments> {
+            return AbstractObfuscatorTest.emojiUseCases()
         }
-        return String(charsList.toCharArray())
     }
-
-    // endregion
 }

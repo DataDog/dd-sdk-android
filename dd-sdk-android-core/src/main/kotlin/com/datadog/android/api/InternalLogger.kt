@@ -6,7 +6,10 @@
 
 package com.datadog.android.api
 
-import com.datadog.android.core.SdkInternalLogger
+import com.datadog.android.core.internal.logger.SdkInternalLogger
+import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.lint.InternalApi
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -103,7 +106,25 @@ interface InternalLogger {
      * @param messageBuilder the lambda building the metric message
      * @param additionalProperties additional properties to add to the metric
      */
+    @InternalApi
     fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>)
+
+    /**
+     * Start measuring a performance metric.
+     *
+     * @param callerClass  name of the class calling the performance measurement.
+     * @param metric name of the metric that we want to measure.
+     * @param samplingRate value between 0-100 for sampling the event.
+     * @param operationName the name of the operation being measured
+     * @return a PerformanceMetric object that can later be used to send telemetry, or null if sampled out
+     */
+    @InternalApi
+    fun startPerformanceMeasure(
+        callerClass: String,
+        metric: TelemetryMetricType,
+        samplingRate: Float,
+        operationName: String
+    ): PerformanceMetric?
 
     companion object {
 

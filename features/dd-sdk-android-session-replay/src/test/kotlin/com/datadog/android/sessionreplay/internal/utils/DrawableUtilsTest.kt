@@ -11,7 +11,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
-import android.os.Handler
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -48,6 +47,7 @@ import java.util.concurrent.Future
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class DrawableUtilsTest {
+
     private lateinit var testedDrawableUtils: DrawableUtils
 
     @Mock
@@ -81,9 +81,6 @@ internal class DrawableUtilsTest {
     private lateinit var mockBitmapCreationCallback: ResourceResolver.BitmapCreationCallback
 
     @Mock
-    private lateinit var mockMainThreadHandler: Handler
-
-    @Mock
     lateinit var mockConstantState: ConstantState
 
     @Mock
@@ -94,6 +91,9 @@ internal class DrawableUtilsTest {
 
     @Mock
     private lateinit var mockLogger: InternalLogger
+
+    @Mock
+    private lateinit var mockFuture: Future<Unit>
 
     @BeforeEach
     fun setup() {
@@ -106,25 +106,18 @@ internal class DrawableUtilsTest {
         whenever(mockBitmap.config).thenReturn(mockConfig)
         whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any())).thenReturn(null)
 
-        doAnswer { invocation ->
-            val work = invocation.getArgument(0) as Runnable
-            work.run()
-            null
-        }.whenever(mockMainThreadHandler).post(
-            any()
-        )
-
-        whenever(mockExecutorService.execute(any())).then {
-            (it.arguments[0] as Runnable).run()
-            mock<Future<Boolean>>()
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            val runnable = it.getArgument<Runnable>(0)
+            runnable.run()
+            mockFuture
         }
 
         testedDrawableUtils = DrawableUtils(
             bitmapWrapper = mockBitmapWrapper,
             canvasWrapper = mockCanvasWrapper,
             bitmapCachesManager = mockBitmapCachesManager,
-            mainThreadHandler = mockMainThreadHandler,
-            logger = mockLogger
+            executorService = mockExecutorService,
+            internalLogger = mockLogger
         )
     }
 

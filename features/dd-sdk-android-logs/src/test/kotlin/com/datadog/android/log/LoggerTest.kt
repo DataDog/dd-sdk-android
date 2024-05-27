@@ -1006,6 +1006,7 @@ internal class LoggerTest {
                         }
                     }
                 }
+
                 1 -> {
                     {
                         repeat(syncOperations) {
@@ -1014,6 +1015,7 @@ internal class LoggerTest {
                         }
                     }
                 }
+
                 2 -> {
                     {
                         repeat(syncOperations) {
@@ -1023,6 +1025,7 @@ internal class LoggerTest {
                         }
                     }
                 }
+
                 3 -> {
                     logDebugExecutionCalls++
                     {
@@ -1037,6 +1040,7 @@ internal class LoggerTest {
                         )
                     }
                 }
+
                 else -> {
                     { }
                 }
@@ -1077,6 +1081,7 @@ internal class LoggerTest {
                         }
                     }
                 }
+
                 1 -> {
                     {
                         repeat(syncedOperations) {
@@ -1087,6 +1092,7 @@ internal class LoggerTest {
                         }
                     }
                 }
+
                 2 -> {
                     logDebugExecutionCalls++
                     {
@@ -1101,6 +1107,7 @@ internal class LoggerTest {
                         )
                     }
                 }
+
                 else -> {
                     { }
                 }

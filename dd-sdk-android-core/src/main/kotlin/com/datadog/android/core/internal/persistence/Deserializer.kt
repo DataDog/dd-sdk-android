@@ -13,6 +13,7 @@ import com.datadog.android.lint.InternalApi
  *
  * FOR INTERNAL USAGE ONLY. THIS INTERFACE CONTENT MAY CHANGE WITHOUT NOTICE.
  */
+@InternalApi
 interface Deserializer<P : Any, R : Any> {
 
     /**

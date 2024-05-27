@@ -11,7 +11,7 @@ package com.datadog.android.core.internal.utils
 /**
  * Special value for missing attribute.
  */
-@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN", "PackageNameVisibility")
 val NULL_MAP_VALUE: Object = Object()
 
 /**
