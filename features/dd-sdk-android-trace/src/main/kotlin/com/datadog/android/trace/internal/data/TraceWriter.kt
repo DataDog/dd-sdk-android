@@ -40,7 +40,6 @@ internal class TraceWriter(
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 trace.forEach { span ->
-                    @Suppress("ThreadSafety") // called in the worker context
                     writeSpan(datadogContext, eventBatchWriter, span)
                 }
             }

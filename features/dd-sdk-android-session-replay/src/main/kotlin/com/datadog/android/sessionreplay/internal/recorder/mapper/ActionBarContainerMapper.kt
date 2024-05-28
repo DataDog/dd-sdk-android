@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import androidx.annotation.UiThread
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.DatadogActionBarContainerAccessor
 import com.datadog.android.api.InternalLogger
@@ -30,6 +31,7 @@ internal class ActionBarContainerMapper(
     drawableToColorMapper
 ) {
 
+    @UiThread
     override fun map(
         view: ActionBarContainer,
         mappingContext: MappingContext,

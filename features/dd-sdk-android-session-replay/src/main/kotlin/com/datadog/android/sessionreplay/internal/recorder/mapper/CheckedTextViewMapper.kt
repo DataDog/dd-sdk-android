@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.CheckedTextView
+import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -32,11 +33,13 @@ internal open class CheckedTextViewMapper(
 
     // region CheckableTextViewMapper
 
+    @UiThread
     override fun resolveCheckableColor(view: CheckedTextView): String {
         val color = view.checkMarkTintList?.defaultColor ?: view.currentTextColor
         return colorStringFormatter.formatColorAndAlphaAsHexString(color, OPAQUE_ALPHA_VALUE)
     }
 
+    @UiThread
     override fun resolveCheckableBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
         val textViewPaddingRight =

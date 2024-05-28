@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -23,6 +24,7 @@ internal class SnapshotProducer(
     private val optionSelectorDetector: OptionSelectorDetector
 ) {
 
+    @UiThread
     fun produce(
         rootView: View,
         systemInformation: SystemInformation,
@@ -38,6 +40,7 @@ internal class SnapshotProducer(
     }
 
     @Suppress("ComplexMethod", "ReturnCount")
+    @UiThread
     private fun convertViewToNode(
         view: View,
         mappingContext: MappingContext,

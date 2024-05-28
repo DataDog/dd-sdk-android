@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.ImageView
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
@@ -32,6 +33,7 @@ internal class ImageViewMapper(
     viewBoundsResolver,
     drawableToColorMapper
 ) {
+    @UiThread
     override fun map(
         view: ImageView,
         mappingContext: MappingContext,
@@ -59,7 +61,6 @@ internal class ImageViewMapper(
 
         if (contentDrawable != null) {
             // resolve foreground
-            @Suppress("ThreadSafety") // TODO RUM-1462 caller thread of .map is unknown?
             mappingContext.imageWireframeHelper.createImageWireframe(
                 view = view,
                 currentWireframeIndex = wireframes.size,

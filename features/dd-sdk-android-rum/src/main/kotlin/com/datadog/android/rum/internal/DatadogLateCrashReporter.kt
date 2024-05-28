@@ -89,11 +89,9 @@ internal class DatadogLateCrashReporter(
                 null,
                 lastViewEvent
             )
-            @Suppress("ThreadSafety") // called in a worker thread context
             rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
             if (lastViewEvent.isWithinSessionAvailability) {
                 val updatedViewEvent = updateViewEvent(lastViewEvent)
-                @Suppress("ThreadSafety") // called in a worker thread context
                 rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
             }
         }
@@ -144,14 +142,11 @@ internal class DatadogLateCrashReporter(
                     threadDumps,
                     lastViewEvent
                 )
-                @Suppress("ThreadSafety") // called in a worker thread context
                 rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
                 if (lastViewEvent.isWithinSessionAvailability) {
                     val updatedViewEvent = updateViewEvent(lastViewEvent)
-                    @Suppress("ThreadSafety") // called in a worker thread context
                     rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
                 }
-                @Suppress("ThreadSafety") // called in a worker thread context
                 sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
             }
         }

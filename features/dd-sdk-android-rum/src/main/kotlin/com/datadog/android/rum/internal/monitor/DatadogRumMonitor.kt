@@ -637,14 +637,16 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
-            telemetryEventHandler.handleEvent(event, writer)
+            // If an issue arise, use the unbound logger to prevent a cycle that would lead
+            // to a stack overflow
+            executorService.submitSafe("Telemetry event handling", InternalLogger.UNBOUND) {
+                telemetryEventHandler.handleEvent(event, writer)
+            }
         } else {
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
                 executorService.submitSafe("Rum event handling", sdkCore.internalLogger) {
-                    @Suppress("ThreadSafety")
                     synchronized(rootScope) {
                         rootScope.handleEvent(event, writer)
                         notifyDebugListenerWithState()

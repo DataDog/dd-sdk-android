@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Checkable
 import android.widget.TextView
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -35,6 +36,7 @@ internal abstract class CheckableTextViewMapper<T>(
 
     // region CheckableWireframeMapper
 
+    @UiThread
     override fun resolveMainWireframes(
         view: T,
         mappingContext: MappingContext,
@@ -44,6 +46,7 @@ internal abstract class CheckableTextViewMapper<T>(
         return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 
+    @UiThread
     override fun resolveCheckedCheckable(
         view: T,
         mappingContext: MappingContext
@@ -72,6 +75,7 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
+    @UiThread
     override fun resolveNotCheckedCheckable(
         view: T,
         mappingContext: MappingContext
@@ -100,6 +104,7 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
+    @UiThread
     override fun resolveMaskedCheckable(view: T, mappingContext: MappingContext): List<MobileSegment.Wireframe>? {
         return resolveNotCheckedCheckable(view, mappingContext)
     }
@@ -108,6 +113,7 @@ internal abstract class CheckableTextViewMapper<T>(
 
     // region CheckableTextViewMapper
 
+    @UiThread
     abstract fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds
 
     protected open fun resolveCheckableColor(view: T): String {
