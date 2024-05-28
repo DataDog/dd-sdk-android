@@ -8,14 +8,11 @@ package com.datadog.android.core.internal.persistence.tlvformat
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.persistence.datastore.ext.copyOfRangeSafe
 import com.datadog.android.core.internal.persistence.datastore.ext.toInt
 import com.datadog.android.core.internal.persistence.datastore.ext.toShort
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.lengthSafe
 import java.io.File
-import java.io.IOException
-import java.io.InputStream
 import java.util.Locale
 
 internal class TLVBlockFileReader(
@@ -23,71 +20,90 @@ internal class TLVBlockFileReader(
     val fileReaderWriter: FileReaderWriter
 ) {
     @WorkerThread
-    internal fun read(file: File): List<TLVBlock> {
-        if (!file.existsSafe(internalLogger) || file.lengthSafe(internalLogger) == 0L) {
-            return arrayListOf()
-        }
-
+    internal fun read(
+        file: File
+    ): List<TLVBlock> {
+        val byteArray = fileReaderWriter.readData(file)
         val blocks = mutableListOf<TLVBlock>()
-        val stream = fileReaderWriter.readData(file).inputStream()
+        var currentIndex = 0
 
-        var nextBlock: TLVBlock?
-        do {
-            nextBlock = readBlock(stream)
-            if (nextBlock != null) blocks.add(nextBlock)
-        } while (nextBlock != null)
+        while (currentIndex < byteArray.size) {
+            val result = readBlock(byteArray, currentIndex) ?: break
+            blocks.add(result.data)
+            currentIndex = result.newIndex
+        }
 
         return blocks
     }
 
-    private fun readBlock(stream: InputStream): TLVBlock? {
-        val type = readType(stream) ?: return null
+    @Suppress("ReturnCount")
+    private fun readBlock(inputArray: ByteArray, currentIndex: Int): TLVResult<TLVBlock>? {
+        val typeResult = readType(inputArray, currentIndex) ?: return null
+        val data = readData(inputArray, typeResult.newIndex) ?: return null
 
-        val data = readData(stream)
-
-        return TLVBlock(type, data)
+        val block = TLVBlock(typeResult.data, data.data, internalLogger)
+        return TLVResult(
+            data = block,
+            newIndex = data.newIndex
+        )
     }
 
-    private fun readType(stream: InputStream): TLVBlockType? {
+    @Suppress("ReturnCount")
+    private fun readType(inputArray: ByteArray, currentIndex: Int): TLVResult<TLVBlockType>? {
         val typeBlockSize = UShort.SIZE_BYTES
-        val bytes = read(stream, typeBlockSize)
+        var newIndex = currentIndex
+        newIndex += typeBlockSize
 
-        if (bytes.size != typeBlockSize) {
+        if (newIndex > inputArray.size) {
+            logFailedToDeserializeError()
             return null
         }
 
+        val bytes = inputArray.copyOfRangeSafe(currentIndex, newIndex)
+
         val shortValue = bytes.toShort()
+
         val tlvHeader = TLVBlockType.fromValue(shortValue.toUShort())
 
         if (tlvHeader == null) {
             logTypeCorruptionError(shortValue)
+            return null
         }
 
-        return tlvHeader
+        return TLVResult(
+            data = tlvHeader,
+            newIndex = currentIndex + typeBlockSize
+        )
     }
 
-    private fun readData(stream: InputStream): ByteArray {
+    private fun readData(inputArray: ByteArray, currentIndex: Int): TLVResult<ByteArray>? {
         val lengthBlockSize = Int.SIZE_BYTES
-        val lengthInBytes = read(stream, lengthBlockSize)
-        val length = lengthInBytes.toInt()
+        var newIndex = currentIndex + lengthBlockSize
 
-        return read(stream, length)
-    }
-
-    private fun read(stream: InputStream, length: Int): ByteArray {
-        val buffer = ByteArray(length)
-        val status = safeReadFromStream(stream, buffer)
-        return if (status == -1) { // stream is finished (or error)
-            ByteArray(0)
-        } else {
-            buffer
+        if (newIndex > inputArray.size) {
+            logFailedToDeserializeError()
+            return null
         }
+
+        val lengthInBytes = inputArray.copyOfRangeSafe(currentIndex, newIndex)
+
+        val lengthData = lengthInBytes.toInt()
+
+        val dataBytes =
+            inputArray.copyOfRangeSafe(newIndex, newIndex + lengthData)
+
+        newIndex += lengthData
+
+        return TLVResult(
+            data = dataBytes,
+            newIndex = newIndex
+        )
     }
 
     private fun logTypeCorruptionError(shortValue: Short) {
         internalLogger.log(
             target = InternalLogger.Target.MAINTAINER,
-            level = InternalLogger.Level.ERROR,
+            level = InternalLogger.Level.WARN,
             messageBuilder = {
                 CORRUPT_TLV_HEADER_TYPE_ERROR.format(
                     Locale.US,
@@ -97,27 +113,21 @@ internal class TLVBlockFileReader(
         )
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
-    private fun safeReadFromStream(stream: InputStream, buffer: ByteArray): Int {
-        return try {
-            stream.read(buffer)
-        } catch (e: IOException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { FAILED_TO_READ_FROM_INPUT_STREAM_ERROR },
-                e
-            )
-            -1
-        } catch (e: NullPointerException) {
-            // cannot happen - buffer is not null
-            -1
-        }
+    private fun logFailedToDeserializeError() {
+        internalLogger.log(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            messageBuilder = { FAILED_TO_DESERIALIZE_ERROR }
+        )
     }
 
+    private data class TLVResult<T : Any>(
+        val data: T,
+        val newIndex: Int
+    )
+
     internal companion object {
-        internal const val CORRUPT_TLV_HEADER_TYPE_ERROR = "TLV header corrupt. Invalid type"
-        internal const val FAILED_TO_READ_FROM_INPUT_STREAM_ERROR =
-            "Failed to read from input stream"
+        internal const val CORRUPT_TLV_HEADER_TYPE_ERROR = "TLV header corrupt. Invalid type %s"
+        internal const val FAILED_TO_DESERIALIZE_ERROR = "Failed to deserialize TLV data length"
     }
 }

@@ -816,8 +816,8 @@ public abstract interface class com/datadog/android/core/persistence/datastore/D
 	public static final field CURRENT_DATASTORE_VERSION I
 	public static final field Companion Lcom/datadog/android/core/persistence/datastore/DataStoreHandler$Companion;
 	public abstract fun removeValue (Ljava/lang/String;)V
-	public abstract fun setValue (Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/core/persistence/Serializer;I)V
-	public abstract fun value (Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;ILcom/datadog/android/core/persistence/datastore/DataStoreCallback;)V
+	public abstract fun setValue (Ljava/lang/String;Ljava/lang/Object;ILcom/datadog/android/core/persistence/Serializer;)V
+	public abstract fun value (Ljava/lang/String;ILcom/datadog/android/core/persistence/datastore/DataStoreCallback;Lcom/datadog/android/core/internal/persistence/Deserializer;)V
 }
 
 public final class com/datadog/android/core/persistence/datastore/DataStoreHandler$Companion {
@@ -825,8 +825,8 @@ public final class com/datadog/android/core/persistence/datastore/DataStoreHandl
 }
 
 public final class com/datadog/android/core/persistence/datastore/DataStoreHandler$DefaultImpls {
-	public static synthetic fun setValue$default (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Object;Lcom/datadog/android/core/persistence/Serializer;IILjava/lang/Object;)V
-	public static synthetic fun value$default (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;Ljava/lang/String;Lcom/datadog/android/core/internal/persistence/Deserializer;ILcom/datadog/android/core/persistence/datastore/DataStoreCallback;ILjava/lang/Object;)V
+	public static synthetic fun setValue$default (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Object;ILcom/datadog/android/core/persistence/Serializer;ILjava/lang/Object;)V
+	public static synthetic fun value$default (Lcom/datadog/android/core/persistence/datastore/DataStoreHandler;Ljava/lang/String;ILcom/datadog/android/core/persistence/datastore/DataStoreCallback;Lcom/datadog/android/core/internal/persistence/Deserializer;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/core/sampling/RateBasedSampler : com/datadog/android/core/sampling/Sampler {

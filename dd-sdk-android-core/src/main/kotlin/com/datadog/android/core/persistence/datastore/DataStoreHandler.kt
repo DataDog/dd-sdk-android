@@ -20,15 +20,15 @@ interface DataStoreHandler {
      * @param T datatype of the data to write to the datastore.
      * @param key name of the datastore entry.
      * @param data to write.
-     * @param serializer to use to serialize the data.
      * @param version optional version for the entry.
      * If not specified will give the entry version 0 - even if that would be a downgrade from the previous version.
+     * @param serializer to use to serialize the data.
      */
     fun <T : Any> setValue(
         key: String,
         data: T,
-        serializer: Serializer<T>,
-        version: Int = 0
+        version: Int = 0,
+        serializer: Serializer<T>
     )
 
     /**
@@ -36,16 +36,16 @@ interface DataStoreHandler {
      *
      * @param T datatype of the data to read from the datastore.
      * @param key name of the datastore entry.
-     * @param deserializer to use to deserialize the data.
      * @param version optional version to use when reading from the datastore.
-     * If specified, will only return data if it exactly matches this version number.
+     * If specified, will only return data if the persistent entry exactly matches this version number.
      * @param callback to return result asynchronously.
+     * @param deserializer to use to deserialize the data.
      */
     fun <T : Any> value(
         key: String,
-        deserializer: Deserializer<String, T>,
         version: Int = 0,
-        callback: DataStoreCallback
+        callback: DataStoreCallback,
+        deserializer: Deserializer<String, T>
     )
 
     /**

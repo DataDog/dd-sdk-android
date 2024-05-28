@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.datastore
 
-import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
@@ -14,10 +13,8 @@ import com.datadog.android.core.internal.persistence.datastore.ext.toByteArray
 import com.datadog.android.core.internal.persistence.datastore.ext.toInt
 import com.datadog.android.core.internal.persistence.datastore.ext.toLong
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.createNewFileSafe
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
@@ -27,7 +24,6 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.core.persistence.datastore.DataStoreHandler
-import com.datadog.android.core.persistence.datastore.DataStoreHandler.Companion.CURRENT_DATASTORE_VERSION
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -46,10 +42,10 @@ internal class DataStoreFileHandler(
     override fun <T : Any> setValue(
         key: String,
         data: T,
-        serializer: Serializer<T>,
-        version: Int
+        version: Int,
+        serializer: Serializer<T>
     ) {
-        executorService.submitSafe("datastoreRead", internalLogger) {
+        executorService.submitSafe("dataStoreWrite", internalLogger) {
             writeEntry(key, data, serializer, version)
         }
     }
@@ -57,35 +53,33 @@ internal class DataStoreFileHandler(
     @WorkerThread
     override fun <T : Any> value(
         key: String,
-        deserializer: Deserializer<String, T>,
         version: Int,
-        callback: DataStoreCallback
+        callback: DataStoreCallback,
+        deserializer: Deserializer<String, T>
     ) {
-        executorService.submitSafe("readEntry", internalLogger) {
+        executorService.submitSafe("dataStoreRead", internalLogger) {
             readEntry(key, deserializer, version, callback)
         }
     }
 
     @WorkerThread
     override fun removeValue(key: String) {
-        executorService.submitSafe("readEntry", internalLogger) {
+        executorService.submitSafe("dataStoreRemove", internalLogger) {
             deleteFromDataStore(key)
         }
     }
 
     private fun deleteFromDataStore(key: String) {
-        val dataStoreDirectory = dataStoreFileHelper.getDataStoreDirectory(
-            featureName = featureName,
-            folderName = DATASTORE_FOLDER_NAME.format(Locale.US, CURRENT_DATASTORE_VERSION),
-            storageDir = storageDir
-        )
-
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
-            dataStoreDirectory = dataStoreDirectory,
-            dataStoreFileName = key
+            featureName = featureName,
+            storageDir = storageDir,
+            internalLogger = internalLogger,
+            key = key
         )
 
-        datastoreFile.deleteSafe(internalLogger)
+        if (datastoreFile.existsSafe(internalLogger)) {
+            datastoreFile.deleteSafe(internalLogger)
+        }
     }
 
     private fun <T : Any> readEntry(
@@ -94,15 +88,11 @@ internal class DataStoreFileHandler(
         version: Int,
         callback: DataStoreCallback
     ) {
-        val dataStoreDirectory = dataStoreFileHelper.getDataStoreDirectory(
-            featureName = featureName,
-            folderName = DATASTORE_FOLDER_NAME.format(Locale.US, CURRENT_DATASTORE_VERSION),
-            storageDir = storageDir
-        )
-
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
-            dataStoreDirectory = dataStoreDirectory,
-            dataStoreFileName = key
+            featureName = featureName,
+            storageDir = storageDir,
+            internalLogger = internalLogger,
+            key = key
         )
 
         if (!datastoreFile.existsSafe(internalLogger)) {
@@ -119,24 +109,33 @@ internal class DataStoreFileHandler(
         serializer: Serializer<T>,
         version: Int
     ) {
-        val dataStoreDirectory = createDataStoreDirectoryIfNecessary(featureName)
-        val dataStoreFile = createDataStoreFileIfNecessary(dataStoreDirectory, key)
+        val datastoreFile = dataStoreFileHelper.getDataStoreFile(
+            featureName = featureName,
+            storageDir = storageDir,
+            internalLogger = internalLogger,
+            key = key
+        )
 
         val lastUpdateBlock = getLastUpdateDateBlock()
         val versionCodeBlock = getVersionCodeBlock(version)
         val dataBlock = getDataBlock(data, serializer)
 
-        if (lastUpdateBlock == null || versionCodeBlock == null || dataBlock == null) return
+        if (lastUpdateBlock == null || versionCodeBlock == null || dataBlock == null) {
+            return
+        }
+
+        val dataToWrite = listOf(lastUpdateBlock, versionCodeBlock, dataBlock).join(
+            separator = byteArrayOf(),
+            internalLogger = internalLogger
+        )
 
         writeToFile(
-            dataStoreFile,
-            listOf(lastUpdateBlock, versionCodeBlock, dataBlock).join(
-                separator = byteArrayOf(),
-                internalLogger = internalLogger
-            )
+            datastoreFile,
+            dataToWrite
         )
     }
 
+    @Suppress("ThreadSafety")
     private fun writeToFile(dataStoreFile: File, data: ByteArray) {
         fileReaderWriter.writeData(
             file = dataStoreFile,
@@ -158,7 +157,8 @@ internal class DataStoreFileHandler(
 
         val dataBlock = TLVBlock(
             type = TLVBlockType.DATA,
-            data = serializedData
+            data = serializedData,
+            internalLogger = internalLogger
         )
 
         return dataBlock.serialize()
@@ -169,7 +169,8 @@ internal class DataStoreFileHandler(
         val lastUpdateDateByteArray = now.toByteArray()
         val lastUpdateDateBlock = TLVBlock(
             type = TLVBlockType.LAST_UPDATE_DATE,
-            data = lastUpdateDateByteArray
+            data = lastUpdateDateByteArray,
+            internalLogger = internalLogger
         )
 
         return lastUpdateDateBlock.serialize()
@@ -179,18 +180,19 @@ internal class DataStoreFileHandler(
         val versionCodeByteArray = version.toByteArray()
         val versionBlock = TLVBlock(
             type = TLVBlockType.VERSION_CODE,
-            data = versionCodeByteArray
+            data = versionCodeByteArray,
+            internalLogger = internalLogger
         )
 
         return versionBlock.serialize()
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "ThreadSafety")
     private fun <T : Any> readFromDataStoreFile(
         datastoreFile: File,
         deserializer: Deserializer<String, T>,
         tlvBlockFileReader: TLVBlockFileReader,
-        requestedVersion: Int? = 0,
+        requestedVersion: Int,
         callback: DataStoreCallback
     ) {
         val tlvBlocks = tlvBlockFileReader.read(datastoreFile)
@@ -209,21 +211,15 @@ internal class DataStoreFileHandler(
             return
         }
 
-        val fileVersionIsWrong = dataStoreContent.versionCode != requestedVersion
-        val fileIsTooOld = isDataStoreTooOld(dataStoreContent.lastUpdateDate)
-
-        if (fileVersionIsWrong) {
-            logInvalidVersionError()
+        if (requestedVersion != 0 && dataStoreContent.versionCode != requestedVersion) {
+            callback.onNoData()
+            return
         }
 
-        if (fileIsTooOld || fileVersionIsWrong) {
-            datastoreFile.deleteSafe(internalLogger)
-            callback.onFailure()
-        } else {
-            callback.onSuccess(dataStoreContent)
-        }
+        callback.onSuccess(dataStoreContent)
     }
 
+    @Suppress("ReturnCount")
     private fun <T : Any> tryToMapToDataStoreContents(
         deserializer: Deserializer<String, T>,
         tlvBlocks: List<TLVBlock>
@@ -243,23 +239,15 @@ internal class DataStoreFileHandler(
             typesToBlocks[type] = block
         }
 
-        val lastUpdateBlock = typesToBlocks[TLVBlockType.LAST_UPDATE_DATE]
-        val versionCodeBlock = typesToBlocks[TLVBlockType.VERSION_CODE]
-        val dataBlock = typesToBlocks[TLVBlockType.DATA]
-        return if (lastUpdateBlock == null || versionCodeBlock == null || dataBlock == null) {
-            null // this should never happen as we know by this stage that these cannot be null
-        } else {
-            DataStoreContent(
-                lastUpdateDate = lastUpdateBlock.data.toLong(),
-                versionCode = versionCodeBlock.data.toInt(),
-                data = deserializer.deserialize(String(dataBlock.data))
-            )
-        }
-    }
+        val lastUpdateBlock = typesToBlocks[TLVBlockType.LAST_UPDATE_DATE] ?: return null
+        val versionCodeBlock = typesToBlocks[TLVBlockType.VERSION_CODE] ?: return null
+        val dataBlock = typesToBlocks[TLVBlockType.DATA] ?: return null
 
-    private fun isDataStoreTooOld(lastUpdateDate: Long): Boolean {
-        val currentTime = System.currentTimeMillis()
-        return currentTime - lastUpdateDate > DATASTORE_EXPIRE_TIME
+        return DataStoreContent(
+            lastUpdateDate = lastUpdateBlock.data.toLong(),
+            versionCode = versionCodeBlock.data.toInt(),
+            data = deserializer.deserialize(String(dataBlock.data))
+        )
     }
 
     private fun logSameBlockAppearsTwiceError(type: TLVBlockType) {
@@ -267,14 +255,6 @@ internal class DataStoreFileHandler(
             target = InternalLogger.Target.MAINTAINER,
             level = InternalLogger.Level.ERROR,
             messageBuilder = { SAME_BLOCK_APPEARS_TWICE_ERROR.format(Locale.US, type) }
-        )
-    }
-
-    private fun logInvalidVersionError() {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { INVALID_VERSION_ERROR }
         )
     }
 
@@ -294,45 +274,9 @@ internal class DataStoreFileHandler(
         )
     }
 
-    private fun createDataStoreDirectoryIfNecessary(featureName: String): File {
-        val dataStoreDirectory = dataStoreFileHelper.getDataStoreDirectory(
-            featureName = featureName,
-            folderName = DATASTORE_FOLDER_NAME.format(Locale.US, CURRENT_DATASTORE_VERSION),
-            storageDir = storageDir
-        )
-
-        if (!dataStoreDirectory.existsSafe(internalLogger)) {
-            dataStoreDirectory.mkdirsSafe(internalLogger)
-        }
-
-        return dataStoreDirectory
-    }
-
-    private fun createDataStoreFileIfNecessary(
-        dataStoreDirectory: File,
-        dataStoreFileName: String
-    ): File {
-        val datastoreFile = dataStoreFileHelper.getDataStoreFile(
-            dataStoreDirectory = dataStoreDirectory,
-            dataStoreFileName = dataStoreFileName
-        )
-
-        if (!datastoreFile.existsSafe(internalLogger)) {
-            datastoreFile.createNewFileSafe(internalLogger)
-        }
-
-        return datastoreFile
-    }
-
     internal companion object {
-        internal const val DATASTORE_FOLDER_NAME = "datastore_v%s"
-        private const val DATASTORE_EXPIRE_TIME = DateUtils.DAY_IN_MILLIS * 30 // 30 days
-
         internal const val FAILED_TO_SERIALIZE_DATA_ERROR =
             "Write error - Failed to serialize data for the datastore"
-
-        internal const val INVALID_VERSION_ERROR =
-            "Read error - datastore file contains wrong version! This should never happen"
         internal const val INVALID_NUMBER_OF_BLOCKS_ERROR =
             "Read error - datastore file contains an invalid number of blocks. Was: %s"
         internal const val SAME_BLOCK_APPEARS_TWICE_ERROR =

@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.tlvformat
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -18,6 +19,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.nio.ByteBuffer
@@ -34,12 +39,16 @@ internal class TLVBlockTest {
     @Mock
     lateinit var mockTLVBlockType: TLVBlockType
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Test
     fun `M return null W serialize() { empty data }`() {
         // Given
         testedTLVBlock = TLVBlock(
             type = mockTLVBlockType,
-            data = ByteArray(0)
+            data = ByteArray(0),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -61,7 +70,8 @@ internal class TLVBlockTest {
 
         testedTLVBlock = TLVBlock(
             type = mockTLVBlockType,
-            data = fakeByteArray
+            data = fakeByteArray,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -77,5 +87,37 @@ internal class TLVBlockTest {
 
         assertThat(typeAsShort).isEqualTo(fakeTLVType)
         assertThat(lengthAsInt).isEqualTo(data?.size)
+    }
+
+    @Test
+    fun `M log error W serialize() { exceeds max data length }`(
+        @StringForgery fakeString: String,
+        @IntForgery(min = 0, max = 10) fakeTypeAsInt: Int
+    ) {
+        // Given
+        val fakeTLVType = fakeTypeAsInt.toShort()
+        val fakeByteArray = fakeString.toByteArray(Charsets.UTF_8)
+        whenever(mockTLVBlockType.rawValue).thenReturn(fakeTLVType.toUShort())
+
+        testedTLVBlock = TLVBlock(
+            type = mockTLVBlockType,
+            data = fakeByteArray,
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedTLVBlock.serialize(1)
+
+        // Then
+        val stringCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            level = eq(InternalLogger.Level.WARN),
+            target = eq(InternalLogger.Target.MAINTAINER),
+            stringCaptor.capture(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+        assertThat(stringCaptor.firstValue.invoke()).startsWith("DataBlock length exceeds limit")
     }
 }

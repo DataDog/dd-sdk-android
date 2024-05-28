@@ -9,16 +9,13 @@ package com.datadog.android.core.internal.persistence.file.datastore
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
-import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler.Companion.DATASTORE_FOLDER_NAME
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler.Companion.FAILED_TO_SERIALIZE_DATA_ERROR
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler.Companion.INVALID_NUMBER_OF_BLOCKS_ERROR
-import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler.Companion.INVALID_VERSION_ERROR
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler.Companion.SAME_BLOCK_APPEARS_TWICE_ERROR
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.createNewFileSafe
+import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
@@ -42,6 +39,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -115,17 +114,11 @@ internal class DataStoreFileHandlerTest {
         }
 
         whenever(
-            mockDataStoreFileHelper.getDataStoreDirectory(
-                featureName = fakeFeatureName,
-                folderName = DATASTORE_FOLDER_NAME.format(Locale.US, CURRENT_DATASTORE_VERSION),
-                storageDir = mockStorageDir
-            )
-        ).thenReturn(mockDataStoreDirectory)
-
-        whenever(
             mockDataStoreFileHelper.getDataStoreFile(
-                dataStoreDirectory = mockDataStoreDirectory,
-                dataStoreFileName = fakeKey
+                featureName = eq(fakeFeatureName),
+                storageDir = eq(mockStorageDir),
+                internalLogger = eq(mockInternalLogger),
+                key = any()
             )
         ).thenReturn(mockDataStoreFile)
 
@@ -252,6 +245,37 @@ internal class DataStoreFileHandlerTest {
     }
 
     @Test
+    fun `M return no data W value() { explicit version and versions don't match }`() {
+        // Given
+        var noData = false
+
+        // When
+        testedDataStoreHandler.value(
+            key = fakeKey,
+            version = 99,
+            callback = object : DataStoreCallback {
+                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+                    // should not get here
+                    assertThat(1).isEqualTo(2)
+                }
+
+                override fun onFailure() {
+                    // should not get here
+                    assertThat(1).isEqualTo(2)
+                }
+
+                override fun onNoData() {
+                    noData = true
+                }
+            },
+            deserializer = mockDeserializer
+        )
+
+        // Then
+        assertThat(noData).isTrue()
+    }
+
+    @Test
     fun `M log error W read() { same block appears twice }`() {
         // Given
         blocksReturned.clear()
@@ -277,41 +301,6 @@ internal class DataStoreFileHandlerTest {
                         level = InternalLogger.Level.ERROR,
                         target = InternalLogger.Target.MAINTAINER,
                         message = expectedError
-                    )
-                }
-
-                override fun onNoData() {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-            }
-        )
-    }
-
-    @Test
-    fun `M log error W read() { version too old }`() {
-        // Given
-        blocksReturned.clear()
-        blocksReturned.add(createLastUpdateDateBlock())
-        blocksReturned.add(createVersionBlock(false))
-        blocksReturned.add(createDataBlock())
-
-        // When
-        testedDataStoreHandler.value(
-            key = fakeKey,
-            deserializer = mockDeserializer,
-            version = CURRENT_DATASTORE_VERSION,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-
-                override fun onFailure() {
-                    mockInternalLogger.verifyLog(
-                        level = InternalLogger.Level.ERROR,
-                        target = InternalLogger.Target.MAINTAINER,
-                        message = INVALID_VERSION_ERROR
                     )
                 }
 
@@ -382,8 +371,8 @@ internal class DataStoreFileHandlerTest {
         // When
         testedDataStoreHandler.setValue(
             key = fakeKey,
-            serializer = mockSerializer,
-            data = fakeDataString
+            data = fakeDataString,
+            serializer = mockSerializer
         )
 
         // Then
@@ -395,35 +384,48 @@ internal class DataStoreFileHandlerTest {
     }
 
     @Test
-    fun `M create directory paths W write() { directory does not already exist }`() {
-        // Given
-        whenever(mockDataStoreDirectory.existsSafe(mockInternalLogger)).thenReturn(false)
-
+    fun `M write to file W setValue()`() {
         // When
         testedDataStoreHandler.setValue(
             key = fakeKey,
-            serializer = mockSerializer,
-            data = fakeDataString
+            data = fakeDataString,
+            serializer = mockSerializer
         )
 
         // Then
-        verify(mockDataStoreDirectory).mkdirsSafe(mockInternalLogger)
+        verify(mockFileReaderWriter).writeData(
+            eq(mockDataStoreFile),
+            any(),
+            eq(false)
+        )
+    }
+
+    // endregion
+
+    // region removeValue
+
+    @Test
+    fun `M call deleteSafe W removeValue() { file exists }`() {
+        // Given
+        whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(true)
+
+        // When
+        testedDataStoreHandler.removeValue(fakeKey)
+
+        // Then
+        verify(mockDataStoreFile).deleteSafe(mockInternalLogger)
     }
 
     @Test
-    fun `M create new datastore file W write() { file does not already exist }`() {
+    fun `M not call deleteSafe W removeValue() { file does not exist }`() {
         // Given
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(false)
 
         // When
-        testedDataStoreHandler.setValue(
-            key = fakeKey,
-            serializer = mockSerializer,
-            data = fakeDataString
-        )
+        testedDataStoreHandler.removeValue(fakeKey)
 
         // Then
-        verify(mockDataStoreFile).createNewFileSafe(mockInternalLogger)
+        verify(mockDataStoreFile, never()).deleteSafe(mockInternalLogger)
     }
 
     // endregion
@@ -432,12 +434,14 @@ internal class DataStoreFileHandlerTest {
         return if (valid) {
             TLVBlock(
                 type = TLVBlockType.VERSION_CODE,
-                data = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(newVersion).array()
+                data = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(newVersion).array(),
+                internalLogger = mockInternalLogger
             )
         } else {
             TLVBlock(
                 type = TLVBlockType.VERSION_CODE,
-                data = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(newVersion - 1).array()
+                data = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(newVersion - 1).array(),
+                internalLogger = mockInternalLogger
             )
         }
     }
@@ -447,13 +451,15 @@ internal class DataStoreFileHandlerTest {
             type = TLVBlockType.LAST_UPDATE_DATE,
             data = ByteBuffer.allocate(Long.SIZE_BYTES)
                 .putLong(System.currentTimeMillis())
-                .array()
+                .array(),
+            internalLogger = mockInternalLogger
         )
 
     private fun createDataBlock(dataBytes: ByteArray = fakeDataBytes): TLVBlock =
         TLVBlock(
             type = TLVBlockType.DATA,
-            data = dataBytes
+            data = dataBytes,
+            internalLogger = mockInternalLogger
         )
 
     private class StubFuture : Future<Any> {

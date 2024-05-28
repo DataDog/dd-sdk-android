@@ -15,17 +15,17 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
     override fun <T : Any> setValue(
         key: String,
         data: T,
-        serializer: Serializer<T>,
-        version: Int
+        version: Int,
+        serializer: Serializer<T>
     ) {
         // NoOp Implementation
     }
 
     override fun <T : Any> value(
         key: String,
-        deserializer: Deserializer<String, T>,
         version: Int,
-        callback: DataStoreCallback
+        callback: DataStoreCallback,
+        deserializer: Deserializer<String, T>
     ) {
         // NoOp Implementation
     }

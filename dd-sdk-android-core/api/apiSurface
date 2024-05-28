@@ -298,8 +298,8 @@ interface com.datadog.android.core.persistence.datastore.DataStoreCallback
 data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
   constructor(Long, Int, T?)
 interface com.datadog.android.core.persistence.datastore.DataStoreHandler
-  fun <T: Any> setValue(String, T, com.datadog.android.core.persistence.Serializer<T>, Int = 0)
-  fun <T: Any> value(String, com.datadog.android.core.internal.persistence.Deserializer<String, T>, Int = 0, DataStoreCallback)
+  fun <T: Any> setValue(String, T, Int = 0, com.datadog.android.core.persistence.Serializer<T>)
+  fun <T: Any> value(String, Int = 0, DataStoreCallback, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
   fun removeValue(String)
   companion object 
     const val CURRENT_DATASTORE_VERSION: Int

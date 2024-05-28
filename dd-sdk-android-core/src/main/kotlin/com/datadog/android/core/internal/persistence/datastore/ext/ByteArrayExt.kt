@@ -25,3 +25,14 @@ internal fun ByteArray.toShort(): Short {
     @Suppress("UnsafeThirdPartyFunctionCall")
     return ByteBuffer.wrap(this).getShort()
 }
+
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
+internal fun ByteArray.copyOfRangeSafe(start: Int, end: Int): ByteArray {
+    return try {
+        this.copyOfRange(start, end)
+    } catch (e: IndexOutOfBoundsException) {
+        byteArrayOf()
+    } catch (e: IllegalArgumentException) {
+        byteArrayOf()
+    }
+}
