@@ -1,4 +1,3 @@
-
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
@@ -13,25 +12,25 @@ import android.graphics.Bitmap.Config
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
-import android.os.Handler
-import android.os.Looper
 import android.util.DisplayMetrics
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
+import java.util.concurrent.ExecutorService
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
-    private val logger: InternalLogger,
+    private val internalLogger: InternalLogger,
     private val bitmapCachesManager: BitmapCachesManager,
-    private val bitmapWrapper: BitmapWrapper = BitmapWrapper(logger),
-    private val canvasWrapper: CanvasWrapper = CanvasWrapper(logger),
-    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
+    private val executorService: ExecutorService,
+    private val bitmapWrapper: BitmapWrapper = BitmapWrapper(internalLogger),
+    private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) {
 
     /**
@@ -59,8 +58,8 @@ internal class DrawableUtils(
             resizeBitmapCallback = object :
                 ResizeBitmapCallback {
                 override fun onSuccess(bitmap: Bitmap) {
-                    mainThreadHandler.post {
-                        @Suppress("ThreadSafety") // this runs on the main thread
+                    executorService.submitSafe("drawOnCanvas", internalLogger) {
+                        @Suppress("ThreadSafety") // this runs on a background thread
                         drawOnCanvas(
                             resources,
                             bitmap,
@@ -71,7 +70,7 @@ internal class DrawableUtils(
                 }
 
                 override fun onFailure() {
-                    logger.log(
+                    internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.MAINTAINER,
                         { FAILED_TO_CREATE_SCALED_BITMAP_ERROR }

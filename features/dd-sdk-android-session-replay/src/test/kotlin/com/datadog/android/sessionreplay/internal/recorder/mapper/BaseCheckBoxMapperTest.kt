@@ -9,10 +9,13 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.CheckBox
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -44,12 +47,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseCheckBoxMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedCheckBoxMapper: CheckBoxMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<CheckBox>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -88,7 +91,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
 
-        whenever(mockTextWireframeMapper.map(eq(mockCheckBox), eq(fakeMappingContext), any()))
+        whenever(mockTextWireframeMapper.map(eq(mockCheckBox), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeTextWireframes)
 
         whenever(
@@ -108,10 +111,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     internal abstract fun setupTestedMapper(): CheckBoxMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
-            opacity = mockCheckBox.alpha
-        )
+        return if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            MobileSegment.ShapeStyle(
+                backgroundColor = checkBoxColor,
+                opacity = mockCheckBox.alpha
+            )
+        } else {
+            null
+        }
     }
 
     // region Unit Tests
@@ -144,7 +151,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -180,7 +188,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -211,7 +220,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -242,7 +252,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -263,7 +274,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

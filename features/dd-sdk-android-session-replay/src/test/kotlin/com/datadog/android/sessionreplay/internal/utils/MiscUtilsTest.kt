@@ -20,11 +20,12 @@ import android.view.WindowManager
 import android.view.WindowMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils.DESERIALIZE_JSON_ERROR
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -120,7 +121,7 @@ internal class MiscUtilsTest {
         // Given
         val expectedThemeColorAsHexa = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
             fakeThemeColor,
-            MiscUtils.OPAQUE_ALPHA_VALUE
+            OPAQUE_ALPHA_VALUE
         )
         val fakeScreenWidth = forge.aPositiveInt()
         val fakeScreenHeight = forge.aPositiveInt()
@@ -159,7 +160,7 @@ internal class MiscUtilsTest {
         // Given
         val expectedThemeColorAsHexa = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
             fakeThemeColor,
-            MiscUtils.OPAQUE_ALPHA_VALUE
+            OPAQUE_ALPHA_VALUE
         )
         val fakeScreenWidth = forge.aPositiveInt(strict = true)
         val fakeScreenHeight = forge.aPositiveInt(strict = true)
@@ -202,7 +203,7 @@ internal class MiscUtilsTest {
         // Given
         val expectedThemeColorAsHexa = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
             fakeThemeColor,
-            MiscUtils.OPAQUE_ALPHA_VALUE
+            OPAQUE_ALPHA_VALUE
         )
         val mockContext: Context = mockContext(null, mockResources, mockTheme)
 

@@ -10,7 +10,7 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.core.DatadogCore
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import java.util.concurrent.TimeUnit
 

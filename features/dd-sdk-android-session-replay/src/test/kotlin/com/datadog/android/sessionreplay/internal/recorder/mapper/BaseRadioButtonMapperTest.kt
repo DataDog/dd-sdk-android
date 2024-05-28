@@ -9,10 +9,13 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.RadioButton
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -44,12 +47,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseRadioButtonMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedRadioButtonMapper: RadioButtonMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<RadioButton>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -87,7 +90,14 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
 
-        whenever(mockTextWireframeMapper.map(eq(mockRadioButton), eq(fakeMappingContext), any()))
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockRadioButton),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        )
             .thenReturn(fakeTextWireframes)
 
         whenever(
@@ -106,8 +116,13 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
     internal abstract fun setupTestedMapper(): RadioButtonMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
+        val backgroundColor = if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            checkBoxColor
+        } else {
+            null
+        }
         return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
+            backgroundColor = backgroundColor,
             opacity = mockRadioButton.alpha,
             cornerRadius = RadioButtonMapper.CORNER_RADIUS
         )
@@ -152,7 +167,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -188,7 +204,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -219,7 +236,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -250,7 +268,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -271,7 +290,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

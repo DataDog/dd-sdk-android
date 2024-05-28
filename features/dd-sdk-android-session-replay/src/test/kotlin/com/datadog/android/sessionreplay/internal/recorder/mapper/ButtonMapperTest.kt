@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.Button
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -32,12 +33,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ButtonMapperTest : BaseWireframeMapperTest() {
+internal class ButtonMapperTest : LegacyBaseWireframeMapperTest() {
 
     private lateinit var testedButtonMapper: ButtonMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<Button>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -51,7 +52,8 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
             mockTextWireframeMapper.map(
                 eq(mockButton),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         ).thenReturn(fakeTextWireframes)
         testedButtonMapper = ButtonMapper(mockTextWireframeMapper)
@@ -67,12 +69,18 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
             mockTextWireframeMapper.map(
                 eq(mockButton),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         ).thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext, mockAsyncJobStatusCallback)
+        val buttonWireframes = testedButtonMapper.map(
+            mockButton,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -88,12 +96,18 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
             mockTextWireframeMapper.map(
                 eq(mockButton),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         ).thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext, mockAsyncJobStatusCallback)
+        val buttonWireframes = testedButtonMapper.map(
+            mockButton,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -107,7 +121,8 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
             mockTextWireframeMapper.map(
                 eq(mockButton),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         ).thenReturn(fakeTextWireframes)
 
@@ -116,7 +131,12 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext, mockAsyncJobStatusCallback)
+        val buttonWireframes = testedButtonMapper.map(
+            mockButton,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(buttonWireframes).isEqualTo(expectedWireframes)

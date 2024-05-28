@@ -9,10 +9,13 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.widget.CheckedTextView
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -44,12 +47,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseCheckedTextViewMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedCheckedTextWireframeMapper: CheckedTextViewMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper<CheckedTextView>
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -115,7 +118,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             mockTextWireframeMapper.map(
                 eq(mockCheckedTextView),
                 eq(fakeMappingContext),
-                any()
+                any(),
+                eq(mockInternalLogger)
             )
         ).thenReturn(fakeTextWireframes)
 
@@ -135,10 +139,14 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
     internal abstract fun setupTestedMapper(): CheckedTextViewMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
-            opacity = mockCheckedTextView.alpha
-        )
+        return if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            MobileSegment.ShapeStyle(
+                backgroundColor = checkBoxColor,
+                opacity = mockCheckedTextView.alpha
+            )
+        } else {
+            null
+        }
     }
 
     // region Unit Tests
@@ -166,7 +174,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -196,7 +205,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -226,7 +236,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -259,7 +270,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -288,7 +300,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -316,7 +329,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -337,7 +351,8 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

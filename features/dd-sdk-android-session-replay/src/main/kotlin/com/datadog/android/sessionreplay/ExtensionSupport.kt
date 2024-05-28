@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 
 /**
  * In case you need to provide different configuration for a specific Android UI framework that
@@ -17,12 +17,12 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMappe
  * @see [SessionReplayConfiguration.Builder.addExtensionSupport]
  */
 interface ExtensionSupport {
+
     /**
-     * Use this method if you want to apply a custom [WireframeMapper] for a specific [View] type
-     * and for a specific [SessionReplayPrivacy].
-     * @return the [View] type to custom [WireframeMapper] map grouped by [SessionReplayPrivacy].
+     * Use this method if you want to apply a custom [WireframeMapper] for a specific [View].
+     * @return the list of [MapperTypeWrapper]
      */
-    fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>>
+    fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
 
     /**
      * Implement this method if you need to return some specific implementations for the

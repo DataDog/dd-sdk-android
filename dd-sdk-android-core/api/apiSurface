@@ -43,6 +43,7 @@ interface com.datadog.android.api.InternalLogger
   fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun logMetric(() -> String, Map<String, Any?>)
+  fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
   companion object 
     val UNBOUND: InternalLogger
 interface com.datadog.android.api.SdkCore
@@ -94,6 +95,7 @@ interface com.datadog.android.api.feature.Feature
     const val RUM_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
+    const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
 interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
   fun onContextUpdate(String, Map<String, Any?>)
@@ -103,6 +105,7 @@ interface com.datadog.android.api.feature.FeatureScope
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
+fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
@@ -132,10 +135,14 @@ interface com.datadog.android.api.net.RequestFactory
     const val QUERY_PARAM_SOURCE: String
     const val QUERY_PARAM_TAGS: String
 interface com.datadog.android.api.storage.DataWriter<T>
-  fun write(EventBatchWriter, T): Boolean
+  fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
   fun currentMetadata(): ByteArray?
-  fun write(RawBatchEvent, ByteArray?): Boolean
+  fun write(RawBatchEvent, ByteArray?, EventType): Boolean
+enum com.datadog.android.api.storage.EventType
+  - DEFAULT
+  - CRASH
+  - TELEMETRY
 data class com.datadog.android.api.storage.FeatureStorageConfiguration
   constructor(Long, Int, Long, Long)
   companion object 
@@ -255,20 +262,25 @@ val NULL_MAP_VALUE: Object
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
-const val HEX_RADIX: Int
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+interface com.datadog.android.core.metrics.PerformanceMetric
+  fun stopAndSend(Boolean)
+  companion object 
+    const val METRIC_TYPE: String
+enum com.datadog.android.core.metrics.TelemetryMetricType
+  - MethodCalled
 interface com.datadog.android.core.persistence.PersistenceStrategy
   interface Factory
     fun create(String, Int, Long): PersistenceStrategy
   data class Batch
     constructor(String, ByteArray? = null, List<com.datadog.android.api.storage.RawBatchEvent> = mutableListOf())
   fun currentMetadata(): ByteArray?
-  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?): Boolean
+  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType): Boolean
   fun lockAndReadNext(): Batch?
   fun unlockAndKeep(String)
   fun unlockAndDelete(String)

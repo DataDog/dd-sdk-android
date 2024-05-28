@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -20,7 +22,7 @@ internal class ViewWireframeMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
-) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>(
+) : BaseWireframeMapper<View>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
@@ -30,24 +32,29 @@ internal class ViewWireframeMapper(
     override fun map(
         view: View,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe.ShapeWireframe> {
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
+    ): List<MobileSegment.Wireframe> {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha) }
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
 
-        return listOf(
-            MobileSegment.Wireframe.ShapeWireframe(
-                resolveViewId(view),
-                viewGlobalBounds.x,
-                viewGlobalBounds.y,
-                viewGlobalBounds.width,
-                viewGlobalBounds.height,
-                shapeStyle = shapeStyle,
-                border = null
+        if (shapeStyle != null) {
+            return listOf(
+                MobileSegment.Wireframe.ShapeWireframe(
+                    resolveViewId(view),
+                    viewGlobalBounds.x,
+                    viewGlobalBounds.y,
+                    viewGlobalBounds.width,
+                    viewGlobalBounds.height,
+                    shapeStyle = shapeStyle,
+                    border = null
+                )
             )
-        )
+        } else {
+            return emptyList()
+        }
     }
 }

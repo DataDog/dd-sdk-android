@@ -6,9 +6,14 @@
 
 package com.datadog.android.rum.internal.domain.event
 
+import com.datadog.android.lint.InternalApi
+
 /**
  * Timings for the resource connection.
+ *
+ * FOR INTERNAL USAGE ONLY.
  */
+@InternalApi
 data class ResourceTiming(
     /**
      * Timestamp (in nanoseconds) of DNS lookup start.

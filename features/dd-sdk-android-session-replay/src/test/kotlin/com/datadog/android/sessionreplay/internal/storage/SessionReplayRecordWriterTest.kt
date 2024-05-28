@@ -10,6 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.RecordCallback
@@ -62,7 +63,7 @@ internal class SessionReplayRecordWriterTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull()))
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
             .thenReturn(true)
 
         whenever(mockSdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME))
@@ -84,7 +85,11 @@ internal class SessionReplayRecordWriterTest {
         testedWriter.write(fakeRecord)
 
         // Then
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord.toJson().toByteArray()), null)
+        verify(mockEventBatchWriter).write(
+            event = RawBatchEvent(data = fakeRecord.toJson().toByteArray()),
+            batchMetadata = null,
+            eventType = EventType.DEFAULT
+        )
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verify(mockRecordCallback).onRecordForViewSent(fakeRecord)
@@ -109,7 +114,7 @@ internal class SessionReplayRecordWriterTest {
     @Test
     fun `M not call record callback W write { eventBatchWriter write failed }`(forge: Forge) {
         // Given
-        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull()))
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
             .thenReturn(false)
 
         val fakeRecord = forge.forgeEnrichedRecord()
@@ -122,7 +127,11 @@ internal class SessionReplayRecordWriterTest {
         testedWriter.write(fakeRecord)
 
         // Then
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord.toJson().toByteArray()), null)
+        verify(mockEventBatchWriter).write(
+            event = RawBatchEvent(data = fakeRecord.toJson().toByteArray()),
+            batchMetadata = null,
+            eventType = EventType.DEFAULT
+        )
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verifyNoMoreInteractions(mockRecordCallback)

@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.storage
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.model.LogEvent
@@ -53,6 +54,9 @@ internal class LogsDataWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         testedWriter = LogsDataWriter(mockSerializer, mockInternalLogger)
@@ -68,16 +72,21 @@ internal class LogsDataWriterTest {
         whenever(
             mockEventBatchWriter.write(
                 RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
-                null
+                null,
+                fakeEventType
             )
         ) doReturn true
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isTrue
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()), null)
+        verify(mockEventBatchWriter).write(
+            RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
+            null,
+            fakeEventType
+        )
         verifyNoInteractions(mockInternalLogger)
     }
 
@@ -91,16 +100,21 @@ internal class LogsDataWriterTest {
         whenever(
             mockEventBatchWriter.write(
                 RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
-                null
+                null,
+                fakeEventType
             )
         ) doReturn false
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeLogEvent.toString().toByteArray()), null)
+        verify(mockEventBatchWriter).write(
+            RawBatchEvent(data = fakeLogEvent.toString().toByteArray()),
+            null,
+            fakeEventType
+        )
         verifyNoInteractions(mockInternalLogger)
     }
 
@@ -112,7 +126,7 @@ internal class LogsDataWriterTest {
         whenever(mockSerializer.serialize(fakeLogEvent)) doReturn null
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -130,7 +144,7 @@ internal class LogsDataWriterTest {
         whenever(mockSerializer.serialize(fakeLogEvent)) doThrow fakeThrowable
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse

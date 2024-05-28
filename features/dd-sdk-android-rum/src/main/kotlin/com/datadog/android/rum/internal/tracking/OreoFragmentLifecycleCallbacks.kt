@@ -22,9 +22,9 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.utils.resolveViewName
+import com.datadog.android.rum.internal.utils.runIfValid
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.android.rum.utils.resolveViewName
-import com.datadog.android.rum.utils.runIfValid
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 

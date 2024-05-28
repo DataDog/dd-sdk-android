@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
@@ -169,7 +170,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -242,7 +243,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -299,7 +300,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent>().apply {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -535,7 +536,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -588,7 +589,7 @@ internal class DatadogLogHandlerTest {
         countDownLatch.await(1, TimeUnit.SECONDS)
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -639,7 +640,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -699,7 +700,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -746,7 +747,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(key, value)
@@ -776,7 +777,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(key, value)
@@ -806,7 +807,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(key, loggerValue)
@@ -846,7 +847,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(LogAttributes.DD_TRACE_ID, fakeTraceId)
@@ -867,7 +868,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .doesNotContainKey(LogAttributes.DD_TRACE_ID)
@@ -888,7 +889,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(
@@ -925,7 +926,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .doesNotContainKey(LogAttributes.DD_TRACE_ID)
@@ -990,7 +991,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)

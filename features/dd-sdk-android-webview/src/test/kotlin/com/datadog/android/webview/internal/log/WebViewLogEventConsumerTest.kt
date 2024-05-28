@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -129,7 +130,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -192,7 +193,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -225,7 +226,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).doesNotHaveField(WebViewLogEventConsumer.DATE_KEY_NAME)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -245,7 +246,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        verify(mockUserLogsWriter).write(mockEventBatchWriter, fakeBrokenJsonObject)
+        verify(mockUserLogsWriter).write(mockEventBatchWriter, fakeBrokenJsonObject, EventType.DEFAULT)
     }
 
     @ParameterizedTest
@@ -284,7 +285,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,

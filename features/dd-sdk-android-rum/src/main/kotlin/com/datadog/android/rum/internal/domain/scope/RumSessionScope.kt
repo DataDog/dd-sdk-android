@@ -14,8 +14,8 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.rum.utils.percent
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit

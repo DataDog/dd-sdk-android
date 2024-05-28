@@ -18,6 +18,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.feature.event.JvmCrash
@@ -192,7 +193,7 @@ internal class LogsFeature(
                 )
 
                 @Suppress("ThreadSafety") // called in a worker thread context
-                dataWriter.write(eventBatchWriter, log)
+                dataWriter.write(eventBatchWriter, log, EventType.CRASH)
                 lock.countDown()
             }
 
@@ -249,7 +250,7 @@ internal class LogsFeature(
                 )
 
                 @Suppress("ThreadSafety") // called in a worker thread context
-                dataWriter.write(eventBatchWriter, log)
+                dataWriter.write(eventBatchWriter, log, EventType.CRASH)
             }
     }
 
@@ -290,7 +291,7 @@ internal class LogsFeature(
                 )
 
                 @Suppress("ThreadSafety") // called in a worker thread context
-                dataWriter.write(eventBatchWriter, log)
+                dataWriter.write(eventBatchWriter, log, EventType.DEFAULT)
             }
     }
 

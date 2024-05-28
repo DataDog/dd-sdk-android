@@ -7,10 +7,12 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.ImageView
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -33,12 +35,13 @@ internal class ImageViewMapper(
     override fun map(
         view: ImageView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         // add background wireframes if any
-        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback, internalLogger))
 
         val drawable = view.drawable?.current ?: return wireframes
 

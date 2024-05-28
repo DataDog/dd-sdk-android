@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
@@ -18,14 +20,15 @@ import java.util.Locale
 internal class DecorViewMapper(
     private val viewWireframeMapper: ViewWireframeMapper,
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
-) : WireframeMapper<View, MobileSegment.Wireframe> {
+) : WireframeMapper<View> {
 
     override fun map(
         view: View,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe.ShapeWireframe> {
-        val wireframes = viewWireframeMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback())
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
+    ): List<MobileSegment.Wireframe> {
+        val wireframes = viewWireframeMapper.map(view, mappingContext, NoOpAsyncJobStatusCallback(), internalLogger)
             .toMutableList()
         if (mappingContext.systemInformation.themeColor != null) {
             // we add the background color from the theme to the decorView
@@ -71,18 +74,24 @@ internal class DecorViewMapper(
 
     private fun addShapeStyleFromThemeIfNeeded(
         themeColor: String,
-        wireframes: MutableList<MobileSegment.Wireframe.ShapeWireframe>,
+        wireframes: MutableList<MobileSegment.Wireframe>,
         view: View
     ) {
+        val rootNonEmptyWireframe = wireframes.filterIsInstance<MobileSegment.Wireframe.ShapeWireframe>()
+            .firstOrNull { it.shapeStyle != null }
+
         // we add a shapeStyle based on the Theme color in case the
         // root wireframe does not have a ShapeStyle
-        if (wireframes.firstOrNull { it.shapeStyle != null } == null) {
+        if (rootNonEmptyWireframe == null) {
             val shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = themeColor,
                 opacity = view.alpha
             )
             for (i in 0 until wireframes.size) {
-                wireframes[i] = wireframes[i].copy(shapeStyle = shapeStyle)
+                val oldWireframe = wireframes[i]
+                if (oldWireframe is MobileSegment.Wireframe.ShapeWireframe) {
+                    wireframes[i] = oldWireframe.copy(shapeStyle = shapeStyle)
+                }
             }
         }
     }
