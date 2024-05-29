@@ -12,6 +12,7 @@ import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
+    private val resourcesDataStoreManager: ResourcesDataStoreManager,
     private val resourcesWriter: ResourcesWriter,
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
@@ -36,13 +38,18 @@ internal class RecordedDataProcessor(
     override fun processResources(
         item: ResourceRecordedDataQueueItem
     ) {
-        val enrichedResource = EnrichedResource(
-            resource = item.resourceData,
-            applicationId = item.applicationId,
-            filename = item.identifier
-        )
+        val resourceHash = item.identifier
+        if (!resourcesDataStoreManager.wasResourcePreviouslySent(resourceHash)) {
+            resourcesDataStoreManager.store(resourceHash)
 
-        resourcesWriter.write(enrichedResource)
+            val enrichedResource = EnrichedResource(
+                resource = item.resourceData,
+                applicationId = item.applicationId,
+                filename = resourceHash
+            )
+
+            resourcesWriter.write(enrichedResource)
+        }
     }
 
     @WorkerThread

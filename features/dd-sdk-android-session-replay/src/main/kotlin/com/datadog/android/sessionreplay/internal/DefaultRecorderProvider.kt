@@ -37,6 +37,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMap
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
@@ -61,12 +62,14 @@ internal class DefaultRecorderProvider(
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
+        resourcesDataStoreManager: ResourcesDataStoreManager,
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         application: Application
     ): Recorder {
         return SessionReplayRecorder(
             application,
+            resourcesDataStoreManager = resourcesDataStoreManager,
             resourcesWriter = resourceWriter,
             rumContextProvider = SessionReplayRumContextProvider(sdkCore),
             privacy = privacy,

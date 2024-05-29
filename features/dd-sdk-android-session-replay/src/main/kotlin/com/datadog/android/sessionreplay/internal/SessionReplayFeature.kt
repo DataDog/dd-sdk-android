@@ -24,6 +24,9 @@ import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
+import com.datadog.android.sessionreplay.internal.resources.StringSetDeserializer
+import com.datadog.android.sessionreplay.internal.resources.StringSetSerializer
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -89,10 +92,20 @@ internal class SessionReplayFeature(
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
 
         val resourcesFeature = registerResourceFeature(sdkCore)
+        val dataStoreWriter = ResourcesDataStoreManager(
+            featureSdkCore = sdkCore,
+            serializer = StringSetSerializer(),
+            deserializer = StringSetDeserializer()
+        )
 
         dataWriter = createDataWriter()
         sessionReplayRecorder =
-            recorderProvider.provideSessionReplayRecorder(resourcesFeature.dataWriter, dataWriter, appContext)
+            recorderProvider.provideSessionReplayRecorder(
+                resourcesDataStoreManager = dataStoreWriter,
+                resourceWriter = resourcesFeature.dataWriter,
+                recordWriter = dataWriter,
+                application = appContext
+            )
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
@@ -274,16 +287,16 @@ internal class SessionReplayFeature(
             )
 
         internal const val REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE = "Session Replay could not " +
-            "be initialized without the Application context."
+                "be initialized without the Application context."
         internal const val SESSION_SAMPLED_OUT_MESSAGE = "This session was sampled out from" +
-            " recording. No replay will be provided for it."
+                " recording. No replay will be provided for it."
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Session Replay feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Session Replay feature received an event with unknown value of \"type\" property=%s."
         internal const val EVENT_MISSING_MANDATORY_FIELDS = "Session Replay feature received an " +
-            "event where one or more mandatory (keepSession) fields" +
-            " are either missing or have wrong type."
+                "event where one or more mandatory (keepSession) fields" +
+                " are either missing or have wrong type."
         internal const val CANNOT_START_RECORDING_NOT_INITIALIZED =
             "Cannot start session recording, because Session Replay feature is not initialized."
         const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
