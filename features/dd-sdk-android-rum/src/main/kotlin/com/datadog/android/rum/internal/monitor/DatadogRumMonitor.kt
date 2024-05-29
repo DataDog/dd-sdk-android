@@ -637,11 +637,7 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            // If an issue arise, use the unbound logger to prevent a cycle that would lead
-            // to a stack overflow
-            executorService.submitSafe("Telemetry event handling", InternalLogger.UNBOUND) {
-                telemetryEventHandler.handleEvent(event, writer)
-            }
+            telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
