@@ -24,7 +24,7 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
     override fun <T : Any> value(
         key: String,
         version: Int,
-        callback: DataStoreCallback,
+        callback: DataStoreCallback<T>,
         deserializer: Deserializer<String, T>
     ) {
         // NoOp Implementation

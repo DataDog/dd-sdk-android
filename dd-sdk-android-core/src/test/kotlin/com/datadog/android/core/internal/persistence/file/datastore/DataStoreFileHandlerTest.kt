@@ -157,8 +157,8 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             deserializer = mockDeserializer,
             version = CURRENT_DATASTORE_VERSION,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+            callback = object : DataStoreCallback<ByteArray> {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
                     // should not get here
                     assertThat(1).isEqualTo(2)
                 }
@@ -189,8 +189,8 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             deserializer = mockDeserializer,
             version = CURRENT_DATASTORE_VERSION,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+            callback = object : DataStoreCallback<ByteArray> {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
                     // should not get here
                     assertThat(1).isEqualTo(2)
                 }
@@ -222,8 +222,8 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             deserializer = mockDeserializer,
             version = CURRENT_DATASTORE_VERSION,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+            callback = object : DataStoreCallback<ByteArray> {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
                     // should not get here
                     assertThat(1).isEqualTo(2)
                 }
@@ -253,8 +253,8 @@ internal class DataStoreFileHandlerTest {
         testedDataStoreHandler.value(
             key = fakeKey,
             version = 99,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+            callback = object : DataStoreCallback<ByteArray> {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
                     // should not get here
                     assertThat(1).isEqualTo(2)
                 }
@@ -290,8 +290,8 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             deserializer = mockDeserializer,
             version = CURRENT_DATASTORE_VERSION,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+            callback = object : DataStoreCallback<ByteArray> {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
                     // should not get here
                     assertThat(1).isEqualTo(2)
                 }
@@ -325,8 +325,9 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             deserializer = mockDeserializer,
             version = CURRENT_DATASTORE_VERSION,
-            callback = object : DataStoreCallback {
-                override fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>) {
+            callback = object : DataStoreCallback<ByteArray> {
+
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
                     assertThat(dataStoreContent.data).isEqualTo(fakeDataBytes)
                 }
 

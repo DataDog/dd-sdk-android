@@ -44,7 +44,7 @@ interface DataStoreHandler {
     fun <T : Any> value(
         key: String,
         version: Int = 0,
-        callback: DataStoreCallback,
+        callback: DataStoreCallback<T>,
         deserializer: Deserializer<String, T>
     )
 

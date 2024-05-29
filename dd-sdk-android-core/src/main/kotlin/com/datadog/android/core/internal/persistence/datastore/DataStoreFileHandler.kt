@@ -54,7 +54,7 @@ internal class DataStoreFileHandler(
     override fun <T : Any> value(
         key: String,
         version: Int,
-        callback: DataStoreCallback,
+        callback: DataStoreCallback<T>,
         deserializer: Deserializer<String, T>
     ) {
         executorService.submitSafe("dataStoreRead", internalLogger) {
@@ -86,7 +86,7 @@ internal class DataStoreFileHandler(
         key: String,
         deserializer: Deserializer<String, T>,
         version: Int,
-        callback: DataStoreCallback
+        callback: DataStoreCallback<T>
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
@@ -193,7 +193,7 @@ internal class DataStoreFileHandler(
         deserializer: Deserializer<String, T>,
         tlvBlockFileReader: TLVBlockFileReader,
         requestedVersion: Int,
-        callback: DataStoreCallback
+        callback: DataStoreCallback<T>
     ) {
         val tlvBlocks = tlvBlockFileReader.read(datastoreFile)
 

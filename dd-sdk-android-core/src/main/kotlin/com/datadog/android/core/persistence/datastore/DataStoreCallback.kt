@@ -9,15 +9,14 @@ package com.datadog.android.core.persistence.datastore
 /**
  * Callback for asynchronous operations on the datastore.
  */
-interface DataStoreCallback {
+interface DataStoreCallback<T : Any> {
 
     /**
      * Called on successfully fetching data from the datastore.
      *
-     * @param T datatype returned by the datastore.
      * @param dataStoreContent contains the datastore data, version and lastUpdateDate.
      */
-    fun <T : Any> onSuccess(dataStoreContent: DataStoreContent<T>)
+    fun onSuccess(dataStoreContent: DataStoreContent<T>)
 
     /**
      * Called when an exception occurred getting data from the datastore.

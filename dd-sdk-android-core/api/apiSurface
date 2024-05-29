@@ -291,15 +291,15 @@ interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
-interface com.datadog.android.core.persistence.datastore.DataStoreCallback
-  fun <T: Any> onSuccess(DataStoreContent<T>)
+interface com.datadog.android.core.persistence.datastore.DataStoreCallback<T: Any>
+  fun onSuccess(DataStoreContent<T>)
   fun onFailure()
   fun onNoData()
 data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
   constructor(Long, Int, T?)
 interface com.datadog.android.core.persistence.datastore.DataStoreHandler
   fun <T: Any> setValue(String, T, Int = 0, com.datadog.android.core.persistence.Serializer<T>)
-  fun <T: Any> value(String, Int = 0, DataStoreCallback, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
+  fun <T: Any> value(String, Int = 0, DataStoreCallback<T>, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
   fun removeValue(String)
   companion object 
     const val CURRENT_DATASTORE_VERSION: Int
