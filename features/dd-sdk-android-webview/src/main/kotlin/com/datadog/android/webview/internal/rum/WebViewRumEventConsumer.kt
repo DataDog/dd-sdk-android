@@ -12,13 +12,11 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
-import java.lang.IllegalStateException
-import java.lang.NumberFormatException
-import java.lang.UnsupportedOperationException
 
 internal class WebViewRumEventConsumer(
     private val sdkCore: FeatureSdkCore,
@@ -50,7 +48,7 @@ internal class WebViewRumEventConsumer(
                     ) as? Boolean ?: false
                     val mappedEvent = map(event, datadogContext, rumContext, sessionReplayEnabled)
                     @Suppress("ThreadSafety") // inside worker thread context
-                    dataWriter.write(eventBatchWriter, mappedEvent)
+                    dataWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
                 }
             }
     }

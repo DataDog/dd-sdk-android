@@ -12,6 +12,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
@@ -75,7 +76,7 @@ internal class OtelTraceWriter(
                 .serialize(datadogContext, mapped)
                 ?.toByteArray(Charsets.UTF_8) ?: return
             synchronized(this) {
-                writer.write(RawBatchEvent(data = serialized), batchMetadata = null)
+                writer.write(RawBatchEvent(data = serialized), batchMetadata = null, eventType = EventType.DEFAULT)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             internalLogger.log(

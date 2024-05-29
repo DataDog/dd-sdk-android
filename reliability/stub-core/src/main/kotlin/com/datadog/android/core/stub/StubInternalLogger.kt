@@ -7,6 +7,8 @@
 package com.datadog.android.core.stub
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.core.metrics.TelemetryMetricType
 
 @Suppress("UnsafeThirdPartyFunctionCall")
 internal class StubInternalLogger : InternalLogger {
@@ -42,6 +44,16 @@ internal class StubInternalLogger : InternalLogger {
     ) {
         println("M [T]: ${messageBuilder()}")
         additionalProperties.log()
+    }
+
+    override fun startPerformanceMeasure(
+        callerClass: String,
+        metric: TelemetryMetricType,
+        samplingRate: Float,
+        operationName: String
+    ): PerformanceMetric? {
+        println("P [T]: $operationName ($callerClass)")
+        return null
     }
 
     private fun <K, T> Map<K, T>.log() {

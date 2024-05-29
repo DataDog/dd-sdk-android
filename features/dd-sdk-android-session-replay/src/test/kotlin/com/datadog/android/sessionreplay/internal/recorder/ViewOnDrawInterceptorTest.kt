@@ -11,8 +11,6 @@ import android.view.ViewTreeObserver
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -46,13 +44,13 @@ internal class ViewOnDrawInterceptorTest {
     private lateinit var testedInterceptor: ViewOnDrawInterceptor
 
     @Mock
-    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
-
-    @Mock
-    lateinit var mockSnapshotProducer: SnapshotProducer
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockOnDrawListenerProducer: OnDrawListenerProducer
+
+    @Mock
+    lateinit var mockOnDrawListener: ViewTreeObserver.OnDrawListener
 
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
@@ -62,10 +60,12 @@ internal class ViewOnDrawInterceptorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeDecorViews = forge.aMockedDecorViewsList()
+
+        whenever(mockOnDrawListenerProducer.create(fakeDecorViews, fakePrivacy)) doReturn mockOnDrawListener
+
         testedInterceptor = ViewOnDrawInterceptor(
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            snapshotProducer = mockSnapshotProducer,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            onDrawListenerProducer = mockOnDrawListenerProducer
         )
     }
 
@@ -75,12 +75,11 @@ internal class ViewOnDrawInterceptorTest {
         testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
 
         // Then
-        val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
         fakeDecorViews.forEach {
-            verify(it.viewTreeObserver).addOnDrawListener(captor.capture())
-        }
-        captor.allValues.forEach {
-            assertThat(it).isInstanceOf(WindowsOnDrawListener::class.java)
+            argumentCaptor<ViewTreeObserver.OnDrawListener> {
+                verify(it.viewTreeObserver).addOnDrawListener(capture())
+                assertThat(firstValue).isSameAs(mockOnDrawListener)
+            }
         }
     }
 
@@ -88,8 +87,6 @@ internal class ViewOnDrawInterceptorTest {
     fun `M create the OnDrawListener with privacy W intercept()`() {
         // Given
         testedInterceptor = ViewOnDrawInterceptor(
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            snapshotProducer = mockSnapshotProducer,
             internalLogger = mockInternalLogger,
             onDrawListenerProducer = { _, privacy ->
                 check(privacy == fakePrivacy) {
@@ -113,8 +110,6 @@ internal class ViewOnDrawInterceptorTest {
         // Given
         val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
         testedInterceptor = ViewOnDrawInterceptor(
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            snapshotProducer = mockSnapshotProducer,
             internalLogger = mockInternalLogger
         ) { _, _ -> mockOnDrawListener }
 

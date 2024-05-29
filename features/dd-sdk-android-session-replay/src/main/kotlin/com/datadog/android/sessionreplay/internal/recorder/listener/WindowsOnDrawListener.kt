@@ -10,12 +10,8 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
-import com.datadog.android.Datadog
-import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -31,59 +27,44 @@ internal class WindowsOnDrawListener(
     private val privacy: SessionReplayPrivacy,
     private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
-    private val sdkCore: SdkCore = Datadog.getInstance(),
-    private val sessionReplayFeature: FeatureScope? = (sdkCore as FeatureSdkCore).getFeature(
-        Feature.SESSION_REPLAY_FEATURE_NAME
-    ),
-    private val methodCallTelemetrySamplingRate: Float = METHOD_CALL_SAMPLING_RATE
+    private val internalLogger: InternalLogger,
+    private val methodCallSamplingRate: Float
 ) : ViewTreeObserver.OnDrawListener {
 
-    internal val weakReferencedDecorViews: List<WeakReference<View>>
-
-    init {
-        weakReferencedDecorViews = zOrderedDecorViews.map { WeakReference(it) }
-    }
+    internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
 
     @MainThread
     override fun onDraw() {
-        debouncer.debounce(resolveTakeSnapshotRunnable())
+        debouncer.debounce(snapshotRunnable)
     }
 
-    @MainThread
-    private fun resolveTakeSnapshotRunnable(): Runnable = Runnable {
+    private val snapshotRunnable: Runnable = Runnable {
         if (weakReferencedDecorViews.isEmpty()) {
             return@Runnable
         }
 
-        val views = weakReferencedDecorViews
-            .mapNotNull { it.get() }
-        if (views.isEmpty()) {
+        val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
+        if (rootViews.isEmpty()) {
             return@Runnable
         }
 
         // is is very important to have the windows sorted by their z-order
-        val context = resolveContext(views) ?: return@Runnable
+        val context = resolveContext(rootViews) ?: return@Runnable
         val systemInformation = miscUtils.resolveSystemInformation(context)
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation)
             ?: return@Runnable
 
-        val recordedDataQueueRefs =
-            RecordedDataQueueRefs(recordedDataQueueHandler)
-        recordedDataQueueRefs.recordedDataQueueItem = item
-
-        val performanceMetric = sessionReplayFeature?.startPerformanceMeasure(
-            callerClass = this.javaClass.name,
-            metric = TelemetryMetricType.MethodCalled,
-            samplingRate = methodCallTelemetrySamplingRate
-        )
-
-        val nodes = views
-            .mapNotNull {
+        val nodes = internalLogger.measureMethodCallPerf(
+            javaClass,
+            METHOD_CALL_CAPTURE_RECORD,
+            methodCallSamplingRate
+        ) {
+            val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
+            recordedDataQueueRefs.recordedDataQueueItem = item
+            rootViews.mapNotNull {
                 snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
             }
-
-        val isSuccessful = nodes.isNotEmpty()
-        performanceMetric?.stopAndSend(isSuccessful)
+        }
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
@@ -100,7 +81,8 @@ internal class WindowsOnDrawListener(
         return views.firstOrNull()?.context
     }
 
-    private companion object {
-        private const val METHOD_CALL_SAMPLING_RATE = 5f
+    companion object {
+        const val METHOD_CALL_SAMPLING_RATE = 5f
+        private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"
     }
 }

@@ -11,6 +11,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -386,8 +387,9 @@ internal open class RumViewScope(
         }
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
+        val eventType = if (isFatal) EventType.CRASH else EventType.DEFAULT
 
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+        sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
 
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -496,7 +498,7 @@ internal open class RumViewScope(
         if (isFatal) {
             errorCount++
             crashCount++
-            sendViewUpdate(event, writer)
+            sendViewUpdate(event, writer, eventType)
         } else {
             pendingErrorCount++
         }
@@ -732,7 +734,7 @@ internal open class RumViewScope(
     }
 
     @Suppress("LongMethod", "ComplexMethod")
-    private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
+    private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>, eventType: EventType = EventType.DEFAULT) {
         val viewComplete = isViewComplete()
         version++
 
@@ -768,7 +770,7 @@ internal open class RumViewScope(
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
 
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+        sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(

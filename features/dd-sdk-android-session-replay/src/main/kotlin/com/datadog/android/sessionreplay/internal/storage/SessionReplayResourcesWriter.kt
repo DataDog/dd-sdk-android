@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
@@ -25,7 +26,8 @@ internal class SessionReplayResourcesWriter(
                         data = enrichedResource.resource,
                         metadata = serializedMetadata
                     ),
-                    batchMetadata = null
+                    batchMetadata = null,
+                    eventType = EventType.DEFAULT
                 )
             }
         }

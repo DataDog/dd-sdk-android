@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -52,9 +53,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class SdkCoreExtTest {
 
-    @Forgery
-    lateinit var fakeDatadogContext: DatadogContext
-
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
@@ -70,6 +68,12 @@ internal class SdkCoreExtTest {
     private val mockSdkCore
         get() = rumMonitor.mockSdkCore
 
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
@@ -78,7 +82,20 @@ internal class SdkCoreExtTest {
         }
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn true
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), any())) doReturn true
+    }
+
+    @Test
+    fun `M write data with default type W submit()`() {
+        // Given
+        val fakeEvent = Any()
+
+        // When
+        mockSdkCore.newRumEventWriteOperation(mockWriter) { fakeEvent }.submit()
+
+        // Then
+        verify(mockWriter).write(mockEventBatchWriter, fakeEvent, EventType.DEFAULT)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -87,13 +104,10 @@ internal class SdkCoreExtTest {
         val fakeEvent = Any()
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) {
-            fakeEvent
-        }
-            .submit()
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { fakeEvent }.submit()
 
         // Then
-        verify(mockWriter).write(mockEventBatchWriter, fakeEvent)
+        verify(mockWriter).write(mockEventBatchWriter, fakeEvent, fakeEventType)
         verifyNoInteractions(mockInternalLogger)
     }
 
@@ -104,12 +118,8 @@ internal class SdkCoreExtTest {
         var invoked = false
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) {
-            fakeEvent
-        }
-            .onSuccess {
-                invoked = true
-            }
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { fakeEvent }
+            .onSuccess { invoked = true }
             .submit()
 
         // Then
@@ -123,16 +133,12 @@ internal class SdkCoreExtTest {
     fun `M call onError W submit() { write was not successful }`() {
         // Given
         val fakeEvent = Any()
-        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn false
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doReturn false
         var invoked = false
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) {
-            fakeEvent
-        }
-            .onError {
-                invoked = true
-            }
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { fakeEvent }
+            .onError { invoked = true }
             .submit()
 
         // Then
@@ -153,16 +159,12 @@ internal class SdkCoreExtTest {
         // Given
         val fakeEvent = Any()
         val fakeException = forge.anException()
-        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doThrow fakeException
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doThrow fakeException
         var invoked = false
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) {
-            fakeEvent
-        }
-            .onError {
-                invoked = true
-            }
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { fakeEvent }
+            .onError { invoked = true }
             .submit()
 
         // Then
@@ -186,12 +188,8 @@ internal class SdkCoreExtTest {
         var invoked = false
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) {
-            throw fakeException
-        }
-            .onError {
-                invoked = true
-            }
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { throw fakeException }
+            .onError { invoked = true }
             .submit()
 
         // Then
@@ -214,9 +212,7 @@ internal class SdkCoreExtTest {
         val fakeException = forge.anException()
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) {
-            throw fakeException
-        }
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { throw fakeException }
             .submit()
 
         // Then
@@ -236,7 +232,7 @@ internal class SdkCoreExtTest {
         mockWriter = mock<NoOpDataWriter<Any>>()
 
         // When
-        mockSdkCore.newRumEventWriteOperation(mockWriter) { fakeEvent }
+        mockSdkCore.newRumEventWriteOperation(mockWriter, fakeEventType) { fakeEvent }
             .onError { errorInvoked = true }
             .onSuccess { successInvoked = true }
             .submit()

@@ -8,8 +8,6 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
-import com.datadog.android.core.metrics.PerformanceMetric
-import com.datadog.android.core.metrics.TelemetryMetricType
 
 /**
  * Represents a Datadog feature.
@@ -40,18 +38,4 @@ interface FeatureScope {
      * Returns the original feature.
      */
     fun <T : Feature> unwrap(): T
-
-    /**
-     * Start measuring a performance metric.
-     *
-     * @param callerClass  name of the class calling the performance measurement.
-     * @param metric name of the metric that we want to measure.
-     * @param samplingRate value between 0-100 for sampling the event.
-     * @return a PerformanceMetric object that can later be used to send telemetry, or null if sampled out
-     */
-    fun startPerformanceMeasure(
-        callerClass: String,
-        metric: TelemetryMetricType,
-        samplingRate: Float
-    ): PerformanceMetric?
 }

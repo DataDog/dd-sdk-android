@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.RemovalReason
@@ -78,6 +79,9 @@ internal class AbstractStorageTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         whenever(mockPersistenceStrategyFactory.create(argThat { contains("/GRANTED") }, any(), any()))
@@ -107,10 +111,10 @@ internal class AbstractStorageTest {
         // Given
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null, fakeEventType)
         }
 
         // When
@@ -118,7 +122,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, null)
+        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, null, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -137,10 +141,10 @@ internal class AbstractStorageTest {
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
-        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata, fakeEventType)
         }
 
         // When
@@ -148,7 +152,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, batchMetadata)
+        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, batchMetadata, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -219,10 +223,10 @@ internal class AbstractStorageTest {
         // Given
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null, fakeEventType)
         }
 
         // When
@@ -230,7 +234,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, null)
+        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, null, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -249,10 +253,10 @@ internal class AbstractStorageTest {
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
-        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata, fakeEventType)
         }
 
         // When
@@ -260,7 +264,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, batchMetadata)
+        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, batchMetadata, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -334,7 +338,7 @@ internal class AbstractStorageTest {
         val batchMetadata = fakeBatchMetadata.toByteArray()
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata, fakeEventType)
         }
 
         // When
