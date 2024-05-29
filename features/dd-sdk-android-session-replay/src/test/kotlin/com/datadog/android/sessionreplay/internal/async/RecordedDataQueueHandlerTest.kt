@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.MAX_DELAY_MS
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
@@ -48,7 +47,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.Locale
 import java.util.Queue
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -331,15 +329,13 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue
-        val expectedLogMessage = ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
-            .format(Locale.US, true)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            expectedLogMessage
+            { it.startsWith("SR RecordedDataQueueHandler: dropped item from the queue. age=") }
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -366,14 +362,14 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue).isEmpty()
-        val expectedLogMessage = ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE.format(Locale.US, false)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            expectedLogMessage
+            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, " +
+                "type=SnapshotRecordedDataQueueItem"
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -399,15 +395,14 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue).isEmpty()
-        val expectedLogMessage = ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
-            .format(Locale.US, false)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            expectedLogMessage
+            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, " +
+                "type=TouchEventRecordedDataQueueItem"
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -432,15 +427,14 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue).isEmpty()
-        val expectedLogMessage = ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
-            .format(Locale.US, false)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            expectedLogMessage
+            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, " +
+                "type=ResourceRecordedDataQueueItem"
         )
         verifyNoMoreInteractions(mockProcessor)
     }

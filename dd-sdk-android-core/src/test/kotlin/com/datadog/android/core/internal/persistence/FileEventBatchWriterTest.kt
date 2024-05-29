@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.ERROR_LARGE_DATA
 import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.WARNING_METADATA_WRITE_FAILED
@@ -68,6 +69,9 @@ internal class FileEventBatchWriterTest {
     @Forgery
     lateinit var fakeBatchMetadataFile: File
 
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         testedWriter = FileEventBatchWriter(
@@ -96,7 +100,7 @@ internal class FileEventBatchWriterTest {
         ) doReturn true
 
         // When
-        val result = testedWriter.write(batchEvent, serializedMetadata)
+        val result = testedWriter.write(batchEvent, serializedMetadata, fakeEventType)
 
         // Then
         assertThat(result).isTrue()
@@ -127,7 +131,7 @@ internal class FileEventBatchWriterTest {
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
 
         // When
-        val result = testedWriter.write(rawBatchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(rawBatchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isTrue
@@ -149,7 +153,7 @@ internal class FileEventBatchWriterTest {
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
 
         // When
-        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -176,7 +180,7 @@ internal class FileEventBatchWriterTest {
         whenever(mockBatchWriter.writeData(batchFile, batchEvent, true)) doReturn false
 
         // When
-        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -202,7 +206,7 @@ internal class FileEventBatchWriterTest {
         whenever(mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)) doReturn true
 
         // When
-        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isTrue
@@ -219,7 +223,7 @@ internal class FileEventBatchWriterTest {
         whenever(mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)) doReturn true
 
         // When
-        val result = testedWriter.write(batchEvent, forge.aNullable { ByteArray(0) })
+        val result = testedWriter.write(batchEvent, forge.aNullable { ByteArray(0) }, fakeEventType)
 
         // Then
         assertThat(result).isTrue
@@ -244,7 +248,7 @@ internal class FileEventBatchWriterTest {
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
 
         // When
-        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -264,7 +268,7 @@ internal class FileEventBatchWriterTest {
         ) doReturn false
 
         // When
-        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -287,7 +291,7 @@ internal class FileEventBatchWriterTest {
         ) doReturn false
 
         // When
-        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
 
         // Then
         assertThat(result).isTrue()

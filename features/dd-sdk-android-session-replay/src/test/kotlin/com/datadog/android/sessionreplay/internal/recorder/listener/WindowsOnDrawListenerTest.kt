@@ -11,9 +11,10 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
-import com.datadog.android.api.SdkCore
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -25,6 +26,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -71,7 +73,16 @@ internal class WindowsOnDrawListenerTest {
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @Mock
+    lateinit var mockSessionReplayFeature: FeatureScope
+
+    @Mock
     lateinit var mockDebouncer: Debouncer
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockPerformanceMetric: PerformanceMetric
 
     @IntForgery(min = 0)
     var fakeDecorWidth: Int = 0
@@ -100,6 +111,9 @@ internal class WindowsOnDrawListenerTest {
 
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
+
+    @FloatForgery
+    var fakeMethodCallSamplingRate: Float = 0f
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -134,6 +148,9 @@ internal class WindowsOnDrawListenerTest {
             whenever(it.configuration).thenReturn(configuration)
         }
         whenever(mockContext.resources).thenReturn(mockResources)
+
+        whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
+
         testedListener = WindowsOnDrawListener(
             zOrderedDecorViews = fakeMockedDecorViews,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
@@ -141,15 +158,14 @@ internal class WindowsOnDrawListenerTest {
             privacy = fakePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            methodCallTelemetrySamplingRate = 100f
+            internalLogger = mockInternalLogger,
+            methodCallSamplingRate = fakeMethodCallSamplingRate
         )
     }
 
     @Test
     fun `M take and add to queue W onDraw()`() {
         // Given
-        stubDebouncer()
-
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
 
@@ -163,11 +179,8 @@ internal class WindowsOnDrawListenerTest {
     @Test
     fun `M update queue with correct nodes W onDraw()`() {
         // Given
-        stubDebouncer()
-
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
-
         fakeSnapshotQueueItem.pendingJobs.set(0)
 
         // When
@@ -187,17 +200,17 @@ internal class WindowsOnDrawListenerTest {
 
     @Test
     fun `M do nothing W onDraw(){ windows are empty }`() {
-        // Given
-        stubDebouncer()
+        // When
         testedListener = WindowsOnDrawListener(
             zOrderedDecorViews = emptyList(),
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             privacy = fakePrivacy,
-            debouncer = mockDebouncer
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            internalLogger = mockInternalLogger,
+            methodCallSamplingRate = fakeMethodCallSamplingRate
         )
-
-        // When
         testedListener.onDraw()
 
         // Then
@@ -209,7 +222,6 @@ internal class WindowsOnDrawListenerTest {
     fun `M do nothing W onDraw(){ windows lost the strong reference }`() {
         // Given
         testedListener.weakReferencedDecorViews.forEach { it.clear() }
-        stubDebouncer()
 
         // When
         testedListener.onDraw()
@@ -222,7 +234,6 @@ internal class WindowsOnDrawListenerTest {
     fun `M do nothing W onDraw(){ no available view context }`() {
         // Given
         fakeMockedDecorViews.forEach { whenever(it.context).thenReturn(null) }
-        stubDebouncer()
 
         // When
         testedListener.onDraw()
@@ -232,29 +243,17 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
-    fun `M call methodCall telemetry with true W onDraw() { has nodes }`(
-        @Mock mockSdkCore: SdkCore,
-        @Mock mockSessionReplayFeature: FeatureScope,
-        @Mock mockPerformanceMetric: PerformanceMetric
-    ) {
+    fun `M call methodCall telemetry with true W onDraw() { has nodes }`() {
         // Given
-        whenever(mockSessionReplayFeature.startPerformanceMeasure(any(), any(), any()))
-            .thenReturn(mockPerformanceMetric)
-
-        testedListener = WindowsOnDrawListener(
-            zOrderedDecorViews = fakeMockedDecorViews,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            snapshotProducer = mockSnapshotProducer,
-            privacy = fakePrivacy,
-            debouncer = mockDebouncer,
-            miscUtils = mockMiscUtils,
-            sdkCore = mockSdkCore,
-            sessionReplayFeature = mockSessionReplayFeature,
-            methodCallTelemetrySamplingRate = 100f
-        )
-
-        stubDebouncer()
-
+        whenever(
+            mockInternalLogger.startPerformanceMeasure(
+                "com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener",
+                TelemetryMetricType.MethodCalled,
+                fakeMethodCallSamplingRate,
+                "Capture Record"
+            )
+        ).thenReturn(mockPerformanceMetric)
+        whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
 
@@ -270,50 +269,32 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
-    fun `M send methodCall telemetry with false W onDraw() { no nodes }`(
-        @Mock mockSdkCore: SdkCore,
-        @Mock mockSessionReplayFeature: FeatureScope,
-        @Mock mockPerformanceMetric: PerformanceMetric
-    ) {
+    fun `M send methodCall telemetry with false W onDraw() { no nodes }`() {
         // Given
-        whenever(mockSessionReplayFeature.startPerformanceMeasure(any(), any(), any()))
-            .thenReturn(mockPerformanceMetric)
-
-        testedListener = WindowsOnDrawListener(
-            zOrderedDecorViews = fakeMockedDecorViews,
-            recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            snapshotProducer = mockSnapshotProducer,
-            privacy = fakePrivacy,
-            debouncer = mockDebouncer,
-            miscUtils = mockMiscUtils,
-            sdkCore = mockSdkCore,
-            sessionReplayFeature = mockSessionReplayFeature,
-            methodCallTelemetrySamplingRate = 100f
-        )
-
-        stubDebouncer()
-
+        whenever(
+            mockInternalLogger.startPerformanceMeasure(
+                "com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener",
+                TelemetryMetricType.MethodCalled,
+                fakeMethodCallSamplingRate,
+                "Capture Record"
+            )
+        ).thenReturn(mockPerformanceMetric)
         whenever(mockSnapshotProducer.produce(any(), any(), any(), any())).thenReturn(null)
-
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
-
         fakeSnapshotQueueItem.pendingJobs.set(0)
 
         // When
         testedListener.onDraw()
 
         // Then
-        val booleanCaptor = argumentCaptor<Boolean>()
-        verify(mockPerformanceMetric).stopAndSend(booleanCaptor.capture())
-        assertThat(booleanCaptor.firstValue).isFalse()
+        argumentCaptor<Boolean> {
+            verify(mockPerformanceMetric).stopAndSend(capture())
+            assertThat(firstValue).isFalse()
+        }
     }
 
     // region Internal
-
-    private fun stubDebouncer() {
-        whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
-    }
 
     private fun Forge.aMockedDecorViewList(): List<View> {
         return aList {

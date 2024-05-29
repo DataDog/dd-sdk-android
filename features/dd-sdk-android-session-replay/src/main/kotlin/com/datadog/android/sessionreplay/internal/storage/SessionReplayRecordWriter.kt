@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
@@ -23,7 +24,12 @@ internal class SessionReplayRecordWriter(
                 val rawBatchEvent = RawBatchEvent(data = serializedRecord)
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
-                    if (eventBatchWriter.write(rawBatchEvent, batchMetadata = null)) {
+                    if (eventBatchWriter.write(
+                            event = rawBatchEvent,
+                            batchMetadata = null,
+                            eventType = EventType.DEFAULT
+                        )
+                    ) {
                         updateViewSent(record)
                     }
                 }

@@ -4,21 +4,24 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.metrics
+package com.datadog.android.core.internal.metrics
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
 
 /**
  * Performance metric to measure the execution time for a method.
+ * @param internalLogger - an instance of the internal logger.
+ * @param operationName the operation name
  * @param callerClass - the class calling the performance metric.
- * @param logger - an instance of the internal logger.
  * @param startTime - the time when the metric is instantiated, to be used as the start point for the measurement.
  */
-class MethodCalledTelemetry(
-    private val callerClass: String,
-    private val logger: InternalLogger,
-    private val startTime: Long = System.nanoTime()
+internal class MethodCalledTelemetry(
+    internal val internalLogger: InternalLogger,
+    internal val operationName: String,
+    internal val callerClass: String,
+    internal val startTime: Long = System.nanoTime()
 ) : PerformanceMetric {
 
     override fun stopAndSend(isSuccessful: Boolean) {
@@ -26,12 +29,12 @@ class MethodCalledTelemetry(
         val additionalProperties: MutableMap<String, Any> = mutableMapOf()
 
         additionalProperties[EXECUTION_TIME] = executionTime
-        additionalProperties[OPERATION_NAME] = METHOD_CALL_OPERATION_NAME
+        additionalProperties[OPERATION_NAME] = operationName
         additionalProperties[CALLER_CLASS] = callerClass
         additionalProperties[IS_SUCCESSFUL] = isSuccessful
         additionalProperties[METRIC_TYPE] = METRIC_TYPE_VALUE
 
-        logger.logMetric(
+        internalLogger.logMetric(
             messageBuilder = { METHOD_CALLED_METRIC_NAME },
             additionalProperties = additionalProperties
         )
@@ -67,10 +70,5 @@ class MethodCalledTelemetry(
          * The key for execution time.
          */
         const val EXECUTION_TIME: String = "execution_time"
-
-        /**
-         * The value for operation name.
-         */
-        const val METHOD_CALL_OPERATION_NAME: String = "Capture Record"
     }
 }

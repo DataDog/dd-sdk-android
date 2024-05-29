@@ -13,6 +13,7 @@ import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
@@ -75,8 +76,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
-        internalLogger: InternalLogger
+        sdkCore: FeatureSdkCore
     ) {
+        val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
             rumContextProvider,
             timeProvider,
@@ -128,33 +130,40 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             bitmapCachesManager = bitmapCachesManager,
-            drawableUtils = DrawableUtils(internalLogger, bitmapCachesManager),
+            drawableUtils = DrawableUtils(
+                internalLogger,
+                bitmapCachesManager,
+                sdkCore.createSingleThreadExecutorService("drawables")
+            ),
             logger = internalLogger,
             md5HashGenerator = MD5HashGenerator(internalLogger),
             webPImageCompression = WebPImageCompression(internalLogger)
         )
 
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
-            recordedDataQueueHandler = recordedDataQueueHandler,
             internalLogger = internalLogger,
-            snapshotProducer = SnapshotProducer(
-                DefaultImageWireframeHelper(
-                    logger = internalLogger,
-                    resourceResolver = resourceResolver,
-                    viewIdentifierResolver = viewIdentifierResolver,
-                    viewUtilsInternal = ViewUtilsInternal(),
-                    imageTypeResolver = ImageTypeResolver()
+            onDrawListenerProducer = DefaultOnDrawListenerProducer(
+                snapshotProducer = SnapshotProducer(
+                    DefaultImageWireframeHelper(
+                        logger = internalLogger,
+                        resourceResolver = resourceResolver,
+                        viewIdentifierResolver = viewIdentifierResolver,
+                        viewUtilsInternal = ViewUtilsInternal(),
+                        imageTypeResolver = ImageTypeResolver()
+                    ),
+                    TreeViewTraversal(
+                        mappers = mappers,
+                        defaultViewMapper = defaultVWM,
+                        decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
+                        viewUtilsInternal = ViewUtilsInternal(),
+                        internalLogger = internalLogger
+                    ),
+                    ComposedOptionSelectorDetector(
+                        customOptionSelectorDetectors + DefaultOptionSelectorDetector()
+                    )
                 ),
-                TreeViewTraversal(
-                    mappers = mappers,
-                    defaultViewMapper = defaultVWM,
-                    decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
-                    viewUtilsInternal = ViewUtilsInternal(),
-                    internalLogger = internalLogger
-                ),
-                ComposedOptionSelectorDetector(
-                    customOptionSelectorDetectors + DefaultOptionSelectorDetector()
-                )
+                recordedDataQueueHandler = recordedDataQueueHandler,
+                sdkCore = sdkCore
             )
         )
         this.windowCallbackInterceptor = WindowCallbackInterceptor(

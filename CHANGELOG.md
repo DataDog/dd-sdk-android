@@ -1,3 +1,26 @@
+# 2.10.0 / 2024-05-23
+
+* [FEATURE] Global: Add Method Call Telemetry. See [#1940](https://github.com/DataDog/dd-sdk-android/pull/1940)
+* [FEATURE] Session Replay: Add support to the `Toolbar` in Session Replay. See [#2024](https://github.com/DataDog/dd-sdk-android/pull/2024)
+* [IMPROVEMENT] Session Replay: Improve masking arch. See [#2011](https://github.com/DataDog/dd-sdk-android/pull/2011)
+* [IMPROVEMENT] Session Replay: Simplify generic type in mappers. See [#2015](https://github.com/DataDog/dd-sdk-android/pull/2015)
+* [IMPROVEMENT] Global: Support additional properties in Telemetry Error events. See [#2025](https://github.com/DataDog/dd-sdk-android/pull/2025)
+* [IMPROVEMENT] Session Replay: Add telemetry on SR resources track. See [#2027](https://github.com/DataDog/dd-sdk-android/pull/2027)
+* [IMPROVEMENT] Session Replay: Add telemetry to detect uncovered View/Drawable in Session Replay. See [#2028](https://github.com/DataDog/dd-sdk-android/pull/2028)
+* [IMPROVEMENT] Session Replay: Improve `SeekBarMapper`. See [#2037](https://github.com/DataDog/dd-sdk-android/pull/2037)
+* [IMPROVEMENT] RUM: Flag critical events in custom persistence. See [#2044](https://github.com/DataDog/dd-sdk-android/pull/2044)
+* [IMPROVEMENT] Delegate Drawable copy to background thread. See [#2048](https://github.com/DataDog/dd-sdk-android/pull/2048)
+* [MAINTENANCE] Next dev iteration. See [#2020](https://github.com/DataDog/dd-sdk-android/pull/2020)
+* [MAINTENANCE] Merge release `2.9.0` into `develop` branch. See [#2023](https://github.com/DataDog/dd-sdk-android/pull/2023)
+* [MAINTENANCE] Session Replay: Improve UT for SR Obfuscators. See [#2031](https://github.com/DataDog/dd-sdk-android/pull/2031)
+* [MAINTENANCE] Create package name consistency rule. See [#2032](https://github.com/DataDog/dd-sdk-android/pull/2032)
+* [MAINTENANCE] Session Replay: Improve the `TextViewMapper` unit tests. See [#2034](https://github.com/DataDog/dd-sdk-android/pull/2034)
+* [MAINTENANCE] Fix KtLint version in `local_ci` script. See [#2039](https://github.com/DataDog/dd-sdk-android/pull/2039)
+* [MAINTENANCE] Session Replay: Fix SR flaky test. See [#2042](https://github.com/DataDog/dd-sdk-android/pull/2042)
+* [MAINTENANCE] Global: Update the Method Call metric usage. See [#2040](https://github.com/DataDog/dd-sdk-android/pull/2040)
+* [MAINTENANCE] Update static analysis pipeline version. See [#2045](https://github.com/DataDog/dd-sdk-android/pull/2045)
+* [MAINTENANCE] Fix flaky test regarding `PerformanceMeasure` sampling rate. See [#2046](https://github.com/DataDog/dd-sdk-android/pull/2046)
+
 # 2.9.0 / 2024-05-02
 
 * [BUGFIX] RUM: Prevent crash in `JankStats` listener. See [#1981](https://github.com/DataDog/dd-sdk-android/pull/1981)

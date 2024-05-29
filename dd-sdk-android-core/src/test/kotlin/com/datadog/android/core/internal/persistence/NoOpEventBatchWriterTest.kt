@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -31,6 +32,9 @@ internal class NoOpEventBatchWriterTest {
 
     private lateinit var testedWriter: EventBatchWriter
 
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         testedWriter = NoOpEventBatchWriter()
@@ -50,7 +54,8 @@ internal class NoOpEventBatchWriterTest {
         // When
         val result = testedWriter.write(
             fakeData,
-            forge.aNullable { fakeMetadata.toByteArray() }
+            forge.aNullable { fakeMetadata.toByteArray() },
+            fakeEventType
         )
 
         // Then
