@@ -192,7 +192,6 @@ internal class LogsFeature(
                     tags = emptySet()
                 )
 
-                @Suppress("ThreadSafety") // called in a worker thread context
                 dataWriter.write(eventBatchWriter, log, EventType.CRASH)
                 lock.countDown()
             }
@@ -249,7 +248,6 @@ internal class LogsFeature(
                     tags = emptySet()
                 )
 
-                @Suppress("ThreadSafety") // called in a worker thread context
                 dataWriter.write(eventBatchWriter, log, EventType.CRASH)
             }
     }
@@ -290,7 +288,6 @@ internal class LogsFeature(
                     tags = emptySet()
                 )
 
-                @Suppress("ThreadSafety") // called in a worker thread context
                 dataWriter.write(eventBatchWriter, log, EventType.DEFAULT)
             }
     }

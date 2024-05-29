@@ -47,7 +47,6 @@ internal class WebViewRumEventConsumer(
                         WebViewReplayEventConsumer.SESSION_REPLAY_ENABLED_KEY
                     ) as? Boolean ?: false
                     val mappedEvent = map(event, datadogContext, rumContext, sessionReplayEnabled)
-                    @Suppress("ThreadSafety") // inside worker thread context
                     dataWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
                 }
             }

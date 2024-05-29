@@ -13,7 +13,6 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
-import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
@@ -55,11 +54,10 @@ internal class DrawableUtils(
             requestedSizeInBytes,
             displayMetrics,
             config,
-            resizeBitmapCallback = object :
-                ResizeBitmapCallback {
+            resizeBitmapCallback = object : ResizeBitmapCallback {
+                @WorkerThread
                 override fun onSuccess(bitmap: Bitmap) {
                     executorService.submitSafe("drawOnCanvas", internalLogger) {
-                        @Suppress("ThreadSafety") // this runs on a background thread
                         drawOnCanvas(
                             resources,
                             bitmap,
@@ -69,6 +67,7 @@ internal class DrawableUtils(
                     }
                 }
 
+                @WorkerThread
                 override fun onFailure() {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
@@ -95,11 +94,14 @@ internal class DrawableUtils(
     }
 
     internal interface ResizeBitmapCallback {
+        @WorkerThread
         fun onSuccess(bitmap: Bitmap)
+
+        @WorkerThread
         fun onFailure()
     }
 
-    @MainThread
+    @WorkerThread
     private fun drawOnCanvas(
         resources: Resources,
         bitmap: Bitmap,

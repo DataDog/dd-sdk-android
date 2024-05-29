@@ -20,7 +20,6 @@ internal class SessionReplayResourcesWriter(
         sdkCore.getFeature(SESSION_REPLAY_RESOURCES_FEATURE_NAME)?.withWriteContext() { _, eventBatchWriter ->
             synchronized(this) {
                 val serializedMetadata = enrichedResource.asBinaryMetadata()
-                @Suppress("ThreadSafety") // called from the worker thread
                 eventBatchWriter.write(
                     event = RawBatchEvent(
                         data = enrichedResource.resource,

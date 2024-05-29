@@ -6,7 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
-import androidx.annotation.WorkerThread
+import androidx.annotation.AnyThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -40,7 +40,7 @@ internal class TelemetryEventHandler(
 
     private val seenInCurrentSession = mutableSetOf<TelemetryEventId>()
 
-    @WorkerThread
+    @AnyThread
     fun handleEvent(
         event: RumRawEvent.SendTelemetry,
         writer: DataWriter<Any>

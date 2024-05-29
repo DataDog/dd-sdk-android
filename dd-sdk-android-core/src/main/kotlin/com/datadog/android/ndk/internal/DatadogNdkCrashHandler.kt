@@ -51,7 +51,6 @@ internal class DatadogNdkCrashHandler(
 
     override fun prepareData() {
         dataPersistenceExecutorService.submitSafe("NDK crash check", internalLogger) {
-            @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
             readCrashData()
         }
     }
@@ -61,7 +60,6 @@ internal class DatadogNdkCrashHandler(
         reportTarget: NdkCrashHandler.ReportTarget
     ) {
         dataPersistenceExecutorService.submitSafe("NDK crash report ", internalLogger) {
-            @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
             checkAndHandleNdkCrashReport(sdkCore, reportTarget)
         }
     }

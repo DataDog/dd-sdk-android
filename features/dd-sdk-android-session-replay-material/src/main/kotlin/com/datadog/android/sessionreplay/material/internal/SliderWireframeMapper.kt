@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material.internal
 
 import android.content.res.ColorStateList
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -27,6 +28,7 @@ internal open class SliderWireframeMapper(
 ) : WireframeMapper<Slider> {
 
     @Suppress("LongMethod")
+    @UiThread
     override fun map(
         view: Slider,
         mappingContext: MappingContext,

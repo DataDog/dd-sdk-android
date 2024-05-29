@@ -58,7 +58,6 @@ internal class WriteOperation(
                     try {
                         val event = eventSource(datadogContext)
 
-                        @Suppress("ThreadSafety") // called in a worker thread context
                         val isSuccess = rumDataWriter.write(eventBatchWriter, event, eventType)
                         if (isSuccess) {
                             advancedRumMonitor?.let {

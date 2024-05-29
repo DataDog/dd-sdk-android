@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -28,7 +29,7 @@ internal class ViewWireframeMapper(
     viewBoundsResolver,
     drawableToColorMapper
 ) {
-
+    @UiThread
     override fun map(
         view: View,
         mappingContext: MappingContext,

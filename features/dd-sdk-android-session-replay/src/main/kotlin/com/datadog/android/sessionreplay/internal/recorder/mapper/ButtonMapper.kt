@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Button
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -18,6 +19,7 @@ internal class ButtonMapper(
     private val textWireframeMapper: TextViewMapper<Button>
 ) : WireframeMapper<Button> {
 
+    @UiThread
     override fun map(
         view: Button,
         mappingContext: MappingContext,
