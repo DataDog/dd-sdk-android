@@ -19,13 +19,6 @@ public interface DataStreamsMonitoring extends AgentDataStreamsMonitoring, AutoC
   HttpCodec.Extractor extractor(HttpCodec.Extractor delegate);
 
   /**
-   * Gets a context injector to propagate {@link PathwayContext}.
-   *
-   * @return A context injector if supported, {@code null} otherwise.
-   */
-  DataStreamContextInjector injector();
-
-  /**
    * Injects DSM {@link PathwayContext} into a span {@link Context}.
    *
    * @param span The span to update.

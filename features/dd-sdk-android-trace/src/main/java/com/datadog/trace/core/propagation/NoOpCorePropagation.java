@@ -25,30 +25,6 @@ public class NoOpCorePropagation implements AgentPropagation {
   public <C> void inject(AgentSpan span, C carrier, Setter<C> setter, TracePropagationStyle style) {
   }
 
-  private <C> void inject(
-      AgentSpan.Context context, C carrier, Setter<C> setter, TracePropagationStyle style) {
-  }
-
-  @Override
-  public <C> void injectPathwayContext(
-      AgentSpan span, C carrier, Setter<C> setter, LinkedHashMap<String, String> sortedTags) {
-  }
-
-  @Override
-  public <C> void injectPathwayContext(
-      AgentSpan span,
-      C carrier,
-      Setter<C> setter,
-      LinkedHashMap<String, String> sortedTags,
-      long defaultTimestamp,
-      long payloadSizeBytes) {
-  }
-
-  @Override
-  public <C> void injectPathwayContextWithoutSendingStats(
-      AgentSpan span, C carrier, Setter<C> setter, LinkedHashMap<String, String> sortedTags) {
-  }
-
   @Override
   public <C> AgentSpan.Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {
     return extractor.extract(carrier, getter);

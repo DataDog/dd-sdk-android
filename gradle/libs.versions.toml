@@ -88,7 +88,6 @@ ktor = "1.6.0"
 # Otel
 jctools = "3.3.0"
 openTelemetry = "1.4.0"
-datatadogSketchesJava = "0.8.2"
 re2j = "1.7"
 
 
@@ -230,7 +229,6 @@ ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
-datadogSketchesJava = { module = "com.datadoghq:sketches-java", version.ref = "datatadogSketchesJava" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 
 [bundles]
@@ -303,7 +301,6 @@ ktor = [
 traceCore = [
     "jctools",
     "okHttp",
-    "datadogSketchesJava",
     "re2j"
 ]
 

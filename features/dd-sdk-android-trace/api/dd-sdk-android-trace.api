@@ -2836,9 +2836,6 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public abstract fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public abstract fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Lcom/datadog/trace/api/TracePropagationStyle;)V
-	public abstract fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
-	public abstract fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;JJ)V
-	public abstract fun injectPathwayContextWithoutSendingStats (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
 }
 
 public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$BinaryContextVisitor : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor {
@@ -3223,7 +3220,6 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun getSpanId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
 	public abstract fun getTimer ()Lcom/datadog/trace/api/profiling/Timer;
 	public abstract fun getTraceId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
-	public abstract fun newHistogram (DI)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentHistogram;
 	public abstract fun noopSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun propagate ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation;
 	public abstract fun registerCheckpointer (Lcom/datadog/trace/api/EndpointCheckpointer;)V
@@ -4184,7 +4180,6 @@ public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/ins
 	public fun getTimer ()Lcom/datadog/trace/api/profiling/Timer;
 	public fun getTraceId ()Ljava/lang/String;
 	public fun getTraceId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
-	public fun newHistogram (DI)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentHistogram;
 	public fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
 	public fun noopSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun onRootSpanFinished (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/EndpointTracker;)V
@@ -4579,13 +4574,6 @@ public abstract interface class com/datadog/trace/core/PendingTraceBuffer$Elemen
 	public abstract fun writeOnBufferFull ()Z
 }
 
-public class com/datadog/trace/core/datastreams/DataStreamContextInjector {
-	public fun <init> (Lcom/datadog/trace/core/datastreams/DataStreamsMonitoring;)V
-	public fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
-	public fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;JJ)V
-	public fun injectPathwayContextWithoutSendingStats (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
-}
-
 public class com/datadog/trace/core/datastreams/DataStreamsContextCarrierAdapter : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor, com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter {
 	public static final field INSTANCE Lcom/datadog/trace/core/datastreams/DataStreamsContextCarrierAdapter;
 	public fun forEachKey (Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier;)V
@@ -4598,23 +4586,8 @@ public abstract interface class com/datadog/trace/core/datastreams/DataStreamsMo
 	public abstract fun clear ()V
 	public abstract fun close ()V
 	public abstract fun extractor (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
-	public abstract fun injector ()Lcom/datadog/trace/core/datastreams/DataStreamContextInjector;
 	public abstract fun mergePathwayContextIntoSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
 	public abstract fun start ()V
-}
-
-public class com/datadog/trace/core/datastreams/DefaultPathwayContext : com/datadog/trace/bootstrap/instrumentation/api/PathwayContext {
-	public fun <init> (Lcom/datadog/trace/api/time/TimeSource;Lcom/datadog/trace/api/WellKnownTags;)V
-	public fun encode ()[B
-	public fun getHash ()J
-	public fun getSavedStats ()Lcom/datadog/trace/bootstrap/instrumentation/api/StatsPoint;
-	public fun isStarted ()Z
-	public fun saveStats (Lcom/datadog/trace/bootstrap/instrumentation/api/StatsPoint;)V
-	public fun setCheckpoint (Ljava/util/LinkedHashMap;Lcom/datadog/android/trace/internal/compat/function/Consumer;)V
-	public fun setCheckpoint (Ljava/util/LinkedHashMap;Lcom/datadog/android/trace/internal/compat/function/Consumer;J)V
-	public fun setCheckpoint (Ljava/util/LinkedHashMap;Lcom/datadog/android/trace/internal/compat/function/Consumer;JJ)V
-	public fun strEncode ()Ljava/lang/String;
-	public fun toString ()Ljava/lang/String;
 }
 
 public class com/datadog/trace/core/datastreams/NoOpDataStreamMonitoring : com/datadog/trace/core/datastreams/DataStreamsMonitoring {
@@ -4623,7 +4596,6 @@ public class com/datadog/trace/core/datastreams/NoOpDataStreamMonitoring : com/d
 	public fun clear ()V
 	public fun close ()V
 	public fun extractor (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
-	public fun injector ()Lcom/datadog/trace/core/datastreams/DataStreamContextInjector;
 	public fun mergePathwayContextIntoSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
 	public fun newPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
 	public fun setCheckpoint (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/util/LinkedHashMap;JJ)V
@@ -4660,25 +4632,6 @@ public final class com/datadog/trace/core/datastreams/TagsProcessor$StringPrefix
 	public fun <init> (Ljava/lang/String;)V
 	public synthetic fun apply (Ljava/lang/Object;)Ljava/lang/Object;
 	public fun apply (Ljava/lang/String;)Ljava/lang/String;
-}
-
-public class com/datadog/trace/core/histogram/Histogram : com/datadog/trace/bootstrap/instrumentation/api/AgentHistogram {
-	public fun <init> (Lcom/datadoghq/sketch/ddsketch/DDSketch;)V
-	public fun accept (D)V
-	public fun accept (DD)V
-	public fun clear ()V
-	public fun getCount ()D
-	public fun getMaxValue ()D
-	public fun getMinValue ()D
-	public fun getValueAtQuantile (D)D
-	public fun isEmpty ()Z
-	public fun serialize ()Ljava/nio/ByteBuffer;
-}
-
-public final class com/datadog/trace/core/histogram/Histograms {
-	public fun <init> ()V
-	public static fun newHistogram ()Lcom/datadog/trace/core/histogram/Histogram;
-	public static fun newHistogram (DI)Lcom/datadog/trace/core/histogram/Histogram;
 }
 
 public abstract class com/datadog/trace/core/monitor/HealthMetrics : java/lang/AutoCloseable {
@@ -4782,14 +4735,11 @@ public abstract interface class com/datadog/trace/core/propagation/ContextInterp
 }
 
 public class com/datadog/trace/core/propagation/CorePropagation : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation {
-	public fun <init> (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;Lcom/datadog/trace/core/propagation/HttpCodec$Injector;Ljava/util/Map;Lcom/datadog/trace/core/datastreams/DataStreamContextInjector;)V
+	public fun <init> (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;Lcom/datadog/trace/core/propagation/HttpCodec$Injector;Ljava/util/Map;)V
 	public fun extract (Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context$Extracted;
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Lcom/datadog/trace/api/TracePropagationStyle;)V
-	public fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
-	public fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;JJ)V
-	public fun injectPathwayContextWithoutSendingStats (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
 }
 
 public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/trace/bootstrap/instrumentation/api/TagContext {
@@ -4834,9 +4784,6 @@ public class com/datadog/trace/core/propagation/NoOpCorePropagation : com/datado
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Lcom/datadog/trace/api/TracePropagationStyle;)V
-	public fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
-	public fun injectPathwayContext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;JJ)V
-	public fun injectPathwayContextWithoutSendingStats (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Ljava/util/LinkedHashMap;)V
 }
 
 public class com/datadog/trace/core/propagation/NoneCodec {
