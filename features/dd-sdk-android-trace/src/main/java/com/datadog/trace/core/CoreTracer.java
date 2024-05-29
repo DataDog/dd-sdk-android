@@ -51,10 +51,8 @@ import com.datadog.trace.common.sampling.SpanSamplingRules;
 import com.datadog.trace.common.sampling.TraceSamplingRules;
 import com.datadog.trace.common.writer.NoOpWriter;
 import com.datadog.trace.common.writer.Writer;
-import com.datadog.trace.core.datastreams.DataStreamContextInjector;
 import com.datadog.trace.core.datastreams.DataStreamsMonitoring;
 import com.datadog.trace.core.datastreams.NoOpDataStreamMonitoring;
-import com.datadog.trace.core.histogram.Histograms;
 import com.datadog.trace.core.monitor.HealthMetrics;
 import com.datadog.trace.core.propagation.CorePropagation;
 import com.datadog.trace.core.propagation.ExtractedContext;
@@ -204,10 +202,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         return dynamicConfig.captureTraceConfig();
     }
 
-    @Override
-    public AgentHistogram newHistogram(double relativeAccuracy, int maxNumBins) {
-        return Histograms.newHistogram(relativeAccuracy, maxNumBins);
-    }
 
     PropagationTags.Factory getPropagationTagsFactory() {
         return propagationTagsFactory;
@@ -516,10 +510,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         // Create all HTTP injectors plus the DSM one
         Map<TracePropagationStyle, HttpCodec.Injector> injectors =
                 HttpCodec.allInjectorsFor(config, invertMap(baggageMapping));
-        DataStreamContextInjector dataStreamContextInjector = this.dataStreamsMonitoring.injector();
         // Store all propagators to propagation
         this.propagation =
-                new CorePropagation(builtExtractor, injector, injectors, dataStreamContextInjector);
+                new CorePropagation(builtExtractor, injector, injectors);
         this.tagInterceptor =
                 null == tagInterceptor ? new TagInterceptor(new RuleFlags(config)) : tagInterceptor;
 

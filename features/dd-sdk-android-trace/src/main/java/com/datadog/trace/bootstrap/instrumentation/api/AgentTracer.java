@@ -135,8 +135,6 @@ public class AgentTracer {
     TraceConfig captureTraceConfig();
 
     ProfilingContextIntegration getProfilingContext();
-
-    AgentHistogram newHistogram(double relativeAccuracy, int maxNumBins);
   }
 
   public interface SpanBuilder {
@@ -518,23 +516,6 @@ public class AgentTracer {
     @Override
     public <C> void inject(
         AgentSpan span, C carrier, Setter<C> setter, TracePropagationStyle style) {}
-
-    @Override
-    public <C> void injectPathwayContext(
-        AgentSpan span, C carrier, Setter<C> setter, LinkedHashMap<String, String> sortedTags) {}
-
-    @Override
-    public <C> void injectPathwayContext(
-        AgentSpan span,
-        C carrier,
-        Setter<C> setter,
-        LinkedHashMap<String, String> sortedTags,
-        long defaultTimestamp,
-        long payloadSizeBytes) {}
-
-    @Override
-    public <C> void injectPathwayContextWithoutSendingStats(
-        AgentSpan span, C carrier, Setter<C> setter, LinkedHashMap<String, String> sortedTags) {}
 
     @Override
     public <C> Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {

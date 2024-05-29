@@ -31,11 +31,6 @@ public class NoOpDataStreamMonitoring implements DataStreamsMonitoring {
   }
 
   @Override
-  public DataStreamContextInjector injector() {
-    return null;
-  }
-
-  @Override
   public void mergePathwayContextIntoSpan(AgentSpan span, DataStreamsContextCarrier carrier) {
 
   }
