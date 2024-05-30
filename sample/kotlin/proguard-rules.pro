@@ -25,3 +25,5 @@
 -dontwarn org.slf4j.impl.StaticLoggerBinder
 -dontwarn org.slf4j.impl.StaticMDCBinder
 -dontwarn reactor.blockhound.integration.BlockHoundIntegration
+# These annotations are introduced by OpenTelemetry API and we need to make sure R8 will not complain about them
+-dontwarn  com.google.**
