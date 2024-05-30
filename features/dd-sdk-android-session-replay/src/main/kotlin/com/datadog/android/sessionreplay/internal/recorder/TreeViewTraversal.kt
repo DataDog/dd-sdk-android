@@ -110,7 +110,7 @@ internal class TreeViewTraversal(
     )
 
     companion object {
-        const val METHOD_CALL_SAMPLING_RATE = 5f
+        const val METHOD_CALL_SAMPLING_RATE = 0.1f
         private const val METHOD_CALL_MAP_PREFIX: String = "Map with"
     }
 }
