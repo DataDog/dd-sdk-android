@@ -1,3 +1,8 @@
+# 2.10.1 / 2024-05-30
+
+* [IMPROVEMENT] Reduce Method Call Sample Rate. See [#2060](https://github.com/DataDog/dd-sdk-android/pull/2060)
+* [IMPROVEMENT] Limit total telemetry events sent per session. See [#2061](https://github.com/DataDog/dd-sdk-android/pull/2061)
+
 # 2.10.0 / 2024-05-23
 
 * [FEATURE] Global: Add Method Call Telemetry. See [#1940](https://github.com/DataDog/dd-sdk-android/pull/1940)
