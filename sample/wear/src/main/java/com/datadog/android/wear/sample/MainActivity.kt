@@ -9,16 +9,20 @@ package com.datadog.android.wear.sample
 import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.wear.sample.databinding.ActivityMainBinding
+import io.opentelemetry.api.GlobalOpenTelemetry
 
 @Suppress("UndocumentedPublicProperty", "UndocumentedPublicClass")
 class MainActivity : Activity() {
 
     private lateinit var binding: ActivityMainBinding
+    private val tracer = GlobalOpenTelemetry.get().getTracer("MainActivity")
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val onCreateSpan = tracer.spanBuilder("onCreate").startSpan()
+        onCreateSpan.setAttribute("activity", MainActivity::class.java.simpleName)
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        onCreateSpan.end()
     }
 }
