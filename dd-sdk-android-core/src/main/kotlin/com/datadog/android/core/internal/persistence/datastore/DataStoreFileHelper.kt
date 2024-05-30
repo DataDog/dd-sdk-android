@@ -13,11 +13,12 @@ import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import java.io.File
 import java.util.Locale
 
-internal class DataStoreFileHelper {
+internal class DataStoreFileHelper(
+    private val internalLogger: InternalLogger
+) {
     internal fun getDataStoreFile(
         featureName: String,
         storageDir: File,
-        internalLogger: InternalLogger,
         key: String
     ): File {
         val dataStoreDirectory = createDataStoreDirectoryIfNecessary(
@@ -51,7 +52,21 @@ internal class DataStoreFileHelper {
         return dataStoreDirectory
     }
 
+    internal fun isKeyInvalid(key: String): Boolean {
+        return key.contains("/")
+    }
+
+    internal fun logInvalidKeyException() {
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { INVALID_DATASTORE_KEY_FORMAT_EXCEPTION }
+        )
+    }
+
     internal companion object {
         internal const val DATASTORE_FOLDER_NAME = "datastore_v%s"
+        internal const val INVALID_DATASTORE_KEY_FORMAT_EXCEPTION =
+            "Datastore key must not be a path!"
     }
 }

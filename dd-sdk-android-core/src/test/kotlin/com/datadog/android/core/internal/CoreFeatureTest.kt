@@ -21,7 +21,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
-import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -1246,23 +1245,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
-    }
-
-    @Test
-    fun `M cleanup DataStoreHandler W stop()`() {
-        // Given
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // When
-        testedFeature.stop()
-
-        // Then
-        assertThat(testedFeature.dataStoreHandler).isInstanceOf(NoOpDataStoreHandler::class.java)
     }
 
     @Test

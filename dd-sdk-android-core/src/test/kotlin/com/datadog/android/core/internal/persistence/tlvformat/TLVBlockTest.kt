@@ -90,7 +90,7 @@ internal class TLVBlockTest {
     }
 
     @Test
-    fun `M log error W serialize() { exceeds max data length }`(
+    fun `M log error W serialize() { exceeds max entry size }`(
         @StringForgery fakeString: String,
         @IntForgery(min = 0, max = 10) fakeTypeAsInt: Int
     ) {

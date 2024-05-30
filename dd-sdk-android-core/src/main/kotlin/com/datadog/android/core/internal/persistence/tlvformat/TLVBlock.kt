@@ -15,42 +15,40 @@ internal class TLVBlock(
     val data: ByteArray,
     val internalLogger: InternalLogger
 ) {
-    internal fun serialize(maxLength: Int = MAXIMUM_DATA_SIZE_MB): ByteArray? {
+    @Suppress("ReturnCount")
+    internal fun serialize(maxEntrySize: Int = MAXIMUM_DATA_SIZE_MB): ByteArray? {
         if (data.isEmpty()) return null
 
-        val typeAsShort = type.rawValue.toShort()
-        val length = data.size
+        val typeFieldSize = Short.SIZE_BYTES
+        val dataLengthFieldSize = Int.SIZE_BYTES
+        val dataFieldSize = data.size
 
-        // allocate IllegalArgumentException - cannot happen because
-        // capacity is always positive
-        //
-        // put BufferOverflowException - cannot happen because we calculate the capacity
-        // of the buffer to take into account the size of the TLV headers
-        //
-        // put/array ReadOnlyBufferException - cannot happen because ByteBuffer
-        // gives a mutable buffer
-        //
-        // array UnsupportedOperationException - ByteBuffer buffer is backed by array
+        val entrySize = typeFieldSize + dataLengthFieldSize + dataFieldSize
+
+        if (entrySize > maxEntrySize) {
+            logEntrySizeExceededError(maxEntrySize)
+            return null
+        }
+
+        val tlvTypeAsShort = type.rawValue.toShort()
+
+        // capacity is not a negative integer, buffer is not read only,
+        // has sufficient capacity and is backed by an array
         @Suppress("UnsafeThirdPartyFunctionCall")
-        val byteBuffer = ByteBuffer
-            .allocate(data.size + Int.SIZE_BYTES + Short.SIZE_BYTES)
-            .putShort(typeAsShort)
-            .putInt(length)
+        return ByteBuffer
+            .allocate(entrySize)
+            .putShort(tlvTypeAsShort)
+            .putInt(dataFieldSize)
             .put(data)
             .array()
+    }
 
-        val bufferLength = byteBuffer.size
-
-        return if (bufferLength > maxLength) {
-            internalLogger.log(
-                target = InternalLogger.Target.MAINTAINER,
-                level = InternalLogger.Level.WARN,
-                messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR.format(Locale.US, maxLength) }
-            )
-            null
-        } else {
-            byteBuffer
-        }
+    private fun logEntrySizeExceededError(maxEntrySize: Int) {
+        internalLogger.log(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR.format(Locale.US, maxEntrySize) }
+        )
     }
 
     internal companion object {

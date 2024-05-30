@@ -38,6 +38,8 @@ import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
+import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
+import com.datadog.android.core.internal.persistence.datastore.DatastoreFileWriter
 import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
@@ -364,17 +366,36 @@ internal class SdkFeature(
             encryption
         )
 
+        val dataStoreFileHelper = DataStoreFileHelper(internalLogger)
+        val featureName = wrappedFeature.name
+        val storageDir = coreFeature.storageDir
+
+        val tlvBlockFileReader = TLVBlockFileReader(
+            internalLogger = internalLogger,
+            fileReaderWriter = fileReaderWriter
+        )
+
+        val dataStoreFileReader = DatastoreFileReader(
+            dataStoreFileHelper = dataStoreFileHelper,
+            featureName = featureName,
+            internalLogger = internalLogger,
+            storageDir = storageDir,
+            tlvBlockFileReader = tlvBlockFileReader
+        )
+
+        val dataStoreFileWriter = DatastoreFileWriter(
+            dataStoreFileHelper = dataStoreFileHelper,
+            featureName = featureName,
+            fileReaderWriter = fileReaderWriter,
+            internalLogger = internalLogger,
+            storageDir = storageDir
+        )
+
         dataStore = DataStoreFileHandler(
             executorService = coreFeature.persistenceExecutorService,
-            storageDir = coreFeature.storageDir,
-            featureName = wrappedFeature.name,
             internalLogger = internalLogger,
-            fileReaderWriter = fileReaderWriter,
-            tlvBlockFileReader = TLVBlockFileReader(
-                internalLogger = internalLogger,
-                fileReaderWriter = fileReaderWriter
-            ),
-            dataStoreFileHelper = DataStoreFileHelper()
+            dataStoreFileReader = dataStoreFileReader,
+            datastoreFileWriter = dataStoreFileWriter
         )
     }
 

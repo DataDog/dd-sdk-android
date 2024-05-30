@@ -35,7 +35,6 @@ import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
-import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -74,7 +73,6 @@ import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
-import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
@@ -139,7 +137,6 @@ internal class CoreFeature(
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
-    internal var dataStoreHandler: DataStoreHandler = NoOpDataStoreHandler()
     internal var site: DatadogSite = DatadogSite.US1
     internal var appBuildId: String? = null
 
@@ -198,7 +195,6 @@ internal class CoreFeature(
         if (initialized.get()) {
             return
         }
-
         readConfigurationSettings(configuration.coreConfig)
         readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
@@ -229,7 +225,6 @@ internal class CoreFeature(
         val nativeSourceOverride = configuration.additionalConfig[Datadog.DD_NATIVE_SOURCE_TYPE] as? String
         prepareNdkCrashData(nativeSourceOverride)
         setupInfoProviders(appContext, consent)
-
         initialized.set(true)
         contextProvider = DatadogContextProvider(this)
     }
@@ -265,7 +260,6 @@ internal class CoreFeature(
 
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
-            dataStoreHandler = NoOpDataStoreHandler()
             trackingConsentProvider = NoOpConsentProvider()
             contextProvider = NoOpContextProvider()
         }
