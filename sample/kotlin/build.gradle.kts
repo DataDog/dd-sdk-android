@@ -132,6 +132,7 @@ android {
 
         getByName("release") {
             isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (e2ePassword != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
