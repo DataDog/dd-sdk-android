@@ -150,7 +150,12 @@ internal class DefaultRecorderProvider(
             ),
             MapperTypeWrapper(
                 Button::class.java,
-                ButtonMapper(textViewMapper as TextViewMapper<Button>)
+                ButtonMapper(
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
             ),
             MapperTypeWrapper(
                 TextView::class.java,
