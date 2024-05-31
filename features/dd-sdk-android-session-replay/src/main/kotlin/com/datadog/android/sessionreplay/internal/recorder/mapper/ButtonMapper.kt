@@ -12,12 +12,23 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
-import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal class ButtonMapper(
-    private val textWireframeMapper: TextViewMapper<Button>
-) : WireframeMapper<Button> {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : TextViewMapper<Button>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     @UiThread
     override fun map(
@@ -26,7 +37,7 @@ internal class ButtonMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger).map {
+        return super.map(view, mappingContext, asyncJobStatusCallback, internalLogger).map {
             if (it is MobileSegment.Wireframe.TextWireframe &&
                 it.shapeStyle == null && it.border == null
             ) {
