@@ -21,4 +21,4 @@
 #-renamesourcefileattribute SourceFile
 
 # These annotations are introduced by OpenTelemetry API and we need to make sure R8 will not complain about them
--dontwarn  com.google.**
+-dontwarn com.google.**
