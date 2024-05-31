@@ -6,15 +6,19 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.ActivityManager
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class RumApplicationScope(
@@ -55,6 +59,7 @@ internal class RumApplicationScope(
         }
 
     private var lastActiveViewInfo: RumViewInfo? = null
+    private var isAppStartedEventSent = false
 
     // region RumScope
 
@@ -77,6 +82,10 @@ internal class RumApplicationScope(
             sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
                 it.putAll(getRumContext().toMap())
             }
+        }
+
+        if (event !is RumRawEvent.SdkInit && !isAppStartedEventSent) {
+            sendApplicationStartEvent(event.eventTime, writer)
         }
 
         delegateToChildren(event, writer)
@@ -154,10 +163,36 @@ internal class RumApplicationScope(
         }
     }
 
+    @WorkerThread
+    private fun sendApplicationStartEvent(eventTime: Time, writer: DataWriter<Any>) {
+        val processImportance = DdRumContentProvider.processImportance
+        val isForegroundProcess = processImportance ==
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        if (isForegroundProcess) {
+            val processStartTimeNs = sdkCore.appStartTimeNs
+            // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
+            // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
+            // To do so, we take the offset of those times in the event time, which should be consistent,
+            // then add that to our processStartTime to get the correct value.
+            val timestampNs = (
+                TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
+                ) + processStartTimeNs
+            val applicationLaunchViewTime = Time(
+                timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
+                nanoTime = processStartTimeNs
+            )
+            val startupTime = eventTime.nanoTime - processStartTimeNs
+            val appStartedEvent =
+                RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
+            delegateToChildren(appStartedEvent, writer)
+            isAppStartedEventSent = true
+        }
+    }
+
     // endregion
 
     companion object {
         internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
-                "sessions when starting a new session"
+            "sessions when starting a new session"
     }
 }

@@ -8,36 +8,50 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Checkable
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal abstract class CheckableTextViewMapper<T>(
-    private val textWireframeMapper: TextViewMapper,
-    private val stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
-) : CheckableWireframeMapper<T>(viewUtils) where T : TextView, T : Checkable {
+    private val textWireframeMapper: TextViewMapper<T>,
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : CheckableWireframeMapper<T>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) where T : TextView, T : Checkable {
 
     // region CheckableWireframeMapper
 
+    @UiThread
     override fun resolveMainWireframes(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback)
+        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 
+    @UiThread
     override fun resolveCheckedCheckable(
         view: T,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val checkableId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             CHECKABLE_KEY_NAME
         ) ?: return null
@@ -61,11 +75,12 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
+    @UiThread
     override fun resolveNotCheckedCheckable(
         view: T,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val checkableId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             CHECKABLE_KEY_NAME
         ) ?: return null
@@ -89,14 +104,20 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
+    @UiThread
+    override fun resolveMaskedCheckable(view: T, mappingContext: MappingContext): List<MobileSegment.Wireframe>? {
+        return resolveNotCheckedCheckable(view, mappingContext)
+    }
+
     // endregion
 
     // region CheckableTextViewMapper
 
+    @UiThread
     abstract fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds
 
     protected open fun resolveCheckableColor(view: T): String {
-        return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
+        return colorStringFormatter.formatColorAndAlphaAsHexString(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
     protected open fun resolveCheckedShapeStyle(view: T, checkBoxColor: String): MobileSegment.ShapeStyle? {

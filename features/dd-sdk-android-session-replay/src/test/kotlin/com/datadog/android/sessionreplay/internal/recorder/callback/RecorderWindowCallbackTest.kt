@@ -1,8 +1,8 @@
 /*
-* Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
-* This product includes software developed at Datadog (https://www.datadoghq.com/).
-* Copyright 2016-Present Datadog, Inc.
-*/
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
 
 package com.datadog.android.sessionreplay.internal.recorder.callback
 
@@ -13,6 +13,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
@@ -97,6 +98,9 @@ internal class RecorderWindowCallbackTest {
     @Mock
     lateinit var mockEventUtils: MotionEventUtils
 
+    @Forgery
+    lateinit var fakePrivacy: SessionReplayPrivacy
+
     @BeforeEach
     fun `set up`() {
         val mockResources = mock<Resources> {
@@ -108,17 +112,18 @@ internal class RecorderWindowCallbackTest {
         whenever(mockContext.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedWindowCallback = RecorderWindowCallback(
-            mockContext,
-            mockRecordedDataQueueHandler,
-            mockWrappedCallback,
-            mockTimeProvider,
-            mockViewOnDrawInterceptor,
-            mockInternalLogger,
+            appContext = mockContext,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            wrappedCallback = mockWrappedCallback,
+            timeProvider = mockTimeProvider,
+            viewOnDrawInterceptor = mockViewOnDrawInterceptor,
+            internalLogger = mockInternalLogger,
+            privacy = fakePrivacy,
             copyEvent = { it },
-            mockEventUtils,
-            TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
-            TEST_FLUSH_BUFFER_THRESHOLD_NS,
-            mockWindowInspector
+            motionEventUtils = mockEventUtils,
+            motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
+            flushPositionBufferThresholdInNs = TEST_FLUSH_BUFFER_THRESHOLD_NS,
+            windowInspector = mockWindowInspector
         )
     }
 
@@ -416,7 +421,7 @@ internal class RecorderWindowCallbackTest {
         // Then
         inOrder(mockViewOnDrawInterceptor) {
             verify(mockViewOnDrawInterceptor).stopIntercepting()
-            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews)
+            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakePrivacy)
         }
     }
 

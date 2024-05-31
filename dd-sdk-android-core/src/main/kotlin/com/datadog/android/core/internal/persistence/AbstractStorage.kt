@@ -11,6 +11,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.RemovalReason
@@ -77,8 +78,8 @@ internal class AbstractStorage(
                 }
 
                 @WorkerThread
-                override fun write(event: RawBatchEvent, batchMetadata: ByteArray?): Boolean {
-                    return strategy.write(event, batchMetadata)
+                override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
+                    return strategy.write(event, batchMetadata, eventType)
                 }
             }
             callback.invoke(writer)
@@ -109,8 +110,8 @@ internal class AbstractStorage(
         }
     }
 
+    @AnyThread
     override fun dropAll() {
-        @Suppress("ThreadSafety")
         executorService.submitSafe("Data drop", internalLogger) {
             grantedPersistenceStrategy.dropAll()
             pendingPersistenceStrategy.dropAll()
@@ -125,7 +126,6 @@ internal class AbstractStorage(
         previousConsent: TrackingConsent,
         newConsent: TrackingConsent
     ) {
-        @Suppress("ThreadSafety")
         executorService.submitSafe("Data migration", internalLogger) {
             if (previousConsent == TrackingConsent.PENDING) {
                 when (newConsent) {

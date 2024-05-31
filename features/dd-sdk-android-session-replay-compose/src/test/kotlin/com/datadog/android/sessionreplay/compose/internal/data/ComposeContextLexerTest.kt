@@ -4135,7 +4135,7 @@ internal class ComposeContextLexerTest {
                     )
                 )
 
-                )
+            )
         }
     }
 }

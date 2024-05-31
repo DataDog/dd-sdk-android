@@ -32,7 +32,7 @@ internal class DatadogExceptionHandler(
     // region Thread.UncaughtExceptionHandler
 
     override fun uncaughtException(t: Thread, e: Throwable) {
-        val threads = getAllThreadsDump(t, e)
+        val threads = getThreadDumps(t, e)
         // write the log immediately
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
@@ -72,7 +72,7 @@ internal class DatadogExceptionHandler(
             )
         }
 
-        // TODO RUMM-0000 If DatadogExceptionHandler goes into dedicated module (module of 1 class
+        // TODO RUM-3794 If DatadogExceptionHandler goes into dedicated module (module of 1 class
         //  only?), we have to wait for the write in some other way
         // give some time to the persistence executor service to finish its tasks
         if (sdkCore is InternalSdkCore) {
@@ -121,30 +121,31 @@ internal class DatadogExceptionHandler(
         }
     }
 
-    private fun getAllThreadsDump(
-        crashedThread: Thread,
-        crashException: Throwable
-    ): List<ThreadDump> {
+    private fun getThreadDumps(crashedThread: Thread, e: Throwable): List<ThreadDump> {
+        return mutableListOf(
+            ThreadDump(
+                crashed = true,
+                name = crashedThread.name,
+                state = crashedThread.state.asString(),
+                stack = e.loggableStackTrace()
+            )
+        ) + safeGetAllStacktraces()
+            .filterKeys { it != crashedThread }
+            .filterValues { it.isNotEmpty() }
+            .map {
+                val thread = it.key
+                ThreadDump(
+                    name = thread.name,
+                    state = thread.state.asString(),
+                    stack = it.value.loggableStackTrace(),
+                    crashed = false
+                )
+            }
+    }
+
+    private fun safeGetAllStacktraces(): Map<Thread, Array<StackTraceElement>> {
         return try {
             Thread.getAllStackTraces()
-                // from getAllStackTraces: A zero-length array will be returned in the map value if
-                // the virtual machine has no stack trace information about a thread.
-                .filterValues { it.isNotEmpty() }
-                .map {
-                    val thread = it.key
-                    val isCrashedThread = thread == crashedThread
-                    val stack = if (isCrashedThread) {
-                        crashException.loggableStackTrace()
-                    } else {
-                        thread.stackTrace.loggableStackTrace()
-                    }
-                    ThreadDump(
-                        name = thread.name,
-                        state = thread.state.asString(),
-                        stack = stack,
-                        crashed = isCrashedThread
-                    )
-                }
         } catch (e: SecurityException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -152,7 +153,7 @@ internal class DatadogExceptionHandler(
                 { "Failed to get all threads dump" },
                 e
             )
-            emptyList()
+            emptyMap()
         }
     }
 

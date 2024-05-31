@@ -7,6 +7,7 @@
 package com.datadog.android.core.persistence
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -61,13 +62,18 @@ interface PersistenceStrategy {
      * Writes the content of the event to the current available batch.
      * @param event the event to write (content + metadata)
      * @param batchMetadata the optional updated batch metadata
+     * @param eventType additional information about the event that can impact the way it is stored. Note: events
+     * with the CRASH type are being sent as part of the Crash Reporting feature, and implies that the process will
+     * exit soon, meaning that those event must be kept synchronously and in a way to be retrieved after the app
+     * restarts in a new process (e.g.: on the file system, or in a local database).
      *
      * @return true if event was written, false otherwise.
      */
     @WorkerThread
     fun write(
         event: RawBatchEvent,
-        batchMetadata: ByteArray?
+        batchMetadata: ByteArray?,
+        eventType: EventType
     ): Boolean
 
     /**

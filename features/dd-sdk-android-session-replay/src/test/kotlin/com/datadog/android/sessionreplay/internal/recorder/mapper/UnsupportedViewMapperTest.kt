@@ -10,13 +10,13 @@ import android.view.View
 import android.widget.Toolbar
 import androidx.appcompat.widget.ActionBarContainer
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.AppcompatToolbarCustomSubclass
 import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.ToolbarCustomSubclass
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -27,6 +27,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
@@ -38,7 +40,7 @@ import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
+internal class UnsupportedViewMapperTest : LegacyBaseWireframeMapperTest() {
 
     private lateinit var testedUnsupportedViewMapper: UnsupportedViewMapper
 
@@ -57,53 +59,60 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     @Mock
     lateinit var mockAppcompatSubclass: AppcompatToolbarCustomSubclass
 
-    @Mock
-    lateinit var mockViewUtils: ViewUtils
-
     @Forgery
     lateinit var fakeViewGlobalBounds: GlobalBounds
+
+    @LongForgery
+    var fakeWireframeId: Long = 0L
 
     @BeforeEach
     fun setup() {
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockAppCompatToolbar,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockToolbarSubclass,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockToolbar,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockActionBarContainer,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
         whenever(
-            mockViewUtils.resolveViewGlobalBounds(
+            mockViewBoundsResolver.resolveViewGlobalBounds(
                 mockAppcompatSubclass,
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
 
-        testedUnsupportedViewMapper = UnsupportedViewMapper(mockViewUtils)
+        whenever(mockViewIdentifierResolver.resolveViewId(any())) doReturn fakeWireframeId
+
+        testedUnsupportedViewMapper = UnsupportedViewMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
     }
 
     @Test
     fun `M resolve with the toolbar label as text W map { AppCompatToolbar }`() {
         // Given
         val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
-            id = System.identityHashCode(mockAppCompatToolbar).toLong(),
+            id = fakeWireframeId,
             x = fakeViewGlobalBounds.x,
             y = fakeViewGlobalBounds.y,
             width = fakeViewGlobalBounds.width,
@@ -121,7 +130,7 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     fun `M resolve with the toolbar label as text W map { Subclass of AppCompatToolbar }`() {
         // Given
         val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
-            id = System.identityHashCode(mockAppcompatSubclass).toLong(),
+            id = fakeWireframeId,
             x = fakeViewGlobalBounds.x,
             y = fakeViewGlobalBounds.y,
             width = fakeViewGlobalBounds.width,
@@ -140,7 +149,7 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     fun `M resolve with the toolbar label as text W map { Subclass of Toolbar }`() {
         // Given
         val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
-            id = System.identityHashCode(mockToolbarSubclass).toLong(),
+            id = fakeWireframeId,
             x = fakeViewGlobalBounds.x,
             y = fakeViewGlobalBounds.y,
             width = fakeViewGlobalBounds.width,
@@ -159,7 +168,7 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     fun `M resolve with the toolbar label as text W map { Toolbar }`() {
         // Given
         val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
-            id = System.identityHashCode(mockToolbar).toLong(),
+            id = fakeWireframeId,
             x = fakeViewGlobalBounds.x,
             y = fakeViewGlobalBounds.y,
             width = fakeViewGlobalBounds.width,
@@ -178,7 +187,7 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     fun `M resolve with the default label as text W map { default unsupported view }`() {
         // Given
         val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
-            id = System.identityHashCode(mockActionBarContainer).toLong(),
+            id = fakeWireframeId,
             x = fakeViewGlobalBounds.x,
             y = fakeViewGlobalBounds.y,
             width = fakeViewGlobalBounds.width,
@@ -195,10 +204,12 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
 
     // region Internal
 
-    private fun getWireframe(view: View): MobileSegment.Wireframe.PlaceholderWireframe {
+    private fun getWireframe(view: View): MobileSegment.Wireframe {
         return testedUnsupportedViewMapper.map(
             view,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )[0]
     }
     // endregion

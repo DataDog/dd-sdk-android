@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.Datadog
@@ -72,12 +73,21 @@ object Rum {
         sdkCore.registerFeature(rumFeature)
 
         val rumMonitor = createMonitor(sdkCore, rumFeature)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // small hack: we need to read last RUM view event file, but we don't want to do on the
+            // main thread, but at the same time we want to read it surely before it is updated
+            // by the new RUM session, so we will read it on the RUM events thread (once read we
+            // will switch to another worker thread, so that RUM events thread is not busy)
+            rumFeature.consumeLastFatalAnr(rumMonitor.executorService)
+        }
+
         GlobalRumMonitor.registerIfAbsent(
             monitor = rumMonitor,
             sdkCore
         )
 
-        // TODO RUM-0000 there is a small chance of application crashing between RUM monitor
+        // TODO RUM-3794 there is a small chance of application crashing between RUM monitor
         //  registration and the moment SDK init is processed, in this case we will miss this crash
         //  (it won't activate new session). Ideally we should start session when monitor is created
         //  and before it is registered, but with current code (internal RUM scopes using the
@@ -109,7 +119,8 @@ object Rum {
         frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
         backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
         trackFrustrations = rumFeature.trackFrustrations,
-        sessionListener = rumFeature.sessionListener
+        sessionListener = rumFeature.sessionListener,
+        executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline")
     )
 
     // endregion

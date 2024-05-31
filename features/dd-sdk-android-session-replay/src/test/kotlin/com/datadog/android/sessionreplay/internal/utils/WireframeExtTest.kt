@@ -106,34 +106,34 @@ internal class WireframeExtTest {
     }
 
     @Test
-    fun `M return false W hasOpaqueBackground { ImageWireframe, base64, noShapeStyle }`(
+    fun `M return false W hasOpaqueBackground { ImageWireframe, resourceId, noShapeStyle }`(
         @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe,
-        @StringForgery fakeBase64: String
+        @StringForgery fakeResourceId: String
     ) {
         // Given
-        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = fakeBase64)
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, resourceId = fakeResourceId)
 
         // Then
         assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
     }
 
     @Test
-    fun `M return false W hasOpaqueBackground { ImageWireframe, no base64, noShapeStyle }`(
+    fun `M return false W hasOpaqueBackground { ImageWireframe, no resourceId, noShapeStyle }`(
         @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
         // Given
-        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = null)
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, resourceId = null)
 
         // Then
         assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
     }
 
     @Test
-    fun `M return false W hasOpaqueBackground { ImageWireframe, empty base64, noShapeStyle }`(
+    fun `M return false W hasOpaqueBackground { ImageWireframe, empty resourceId, noShapeStyle }`(
         @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
         // Given
-        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = "")
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, resourceId = null)
 
         // Then
         assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
@@ -144,6 +144,24 @@ internal class WireframeExtTest {
         @Forgery fakeWireframe: MobileSegment.Wireframe.PlaceholderWireframe
     ) {
         assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
+    }
+
+    @Test
+    fun `M return true W hasOpaqueBackground { WebViewWireframe}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.WebviewWireframe
+    ) {
+        assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
+    }
+
+    @Test
+    fun `M return true W hasOpaqueBackground { WebViewWireframe no shapeStyle}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.WebviewWireframe
+    ) {
+        // Given
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null)
+
+        // Then
+        assertThat(fakeTestWireframe.hasOpaqueBackground()).isTrue
     }
 
     // endregion
@@ -188,6 +206,7 @@ internal class WireframeExtTest {
             is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.PlaceholderWireframe -> this
+            is MobileSegment.Wireframe.WebviewWireframe -> this.copy(shapeStyle = shapeStyle)
         }
     }
 
@@ -202,8 +221,8 @@ internal class WireframeExtTest {
             return listOf(
                 forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>(),
                 forge.getForgery<MobileSegment.Wireframe.TextWireframe>(),
-                // we will make sure the base64 value is null to not influence the tests
-                forge.getForgery<MobileSegment.Wireframe.ImageWireframe>().copy(base64 = null)
+                // we will make sure the resourceId value is null to not influence the tests
+                forge.getForgery<MobileSegment.Wireframe.ImageWireframe>().copy(resourceId = null)
             )
         }
 

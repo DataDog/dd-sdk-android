@@ -100,7 +100,7 @@ internal fun getClassSafe(className: String): Class<*>? {
             InternalLogger.Target.MAINTAINER,
             {
                 "Unable to get class $className through reflection, " +
-                        "either because of obfuscation or dependency version mismatch"
+                    "either because of obfuscation or dependency version mismatch"
             },
             e
         )
@@ -138,7 +138,7 @@ internal fun Class<*>.getDeclaredFieldSafe(fieldName: String): Field? {
             InternalLogger.Target.MAINTAINER,
             {
                 "Unable to get field $fieldName through reflection, " +
-                        "either because of obfuscation or dependency version mismatch"
+                    "either because of obfuscation or dependency version mismatch"
             },
             e
         )

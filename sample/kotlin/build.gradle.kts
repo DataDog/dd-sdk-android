@@ -69,7 +69,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
 
     testOptions {
@@ -147,7 +147,6 @@ dependencies {
     implementation(project(":features:dd-sdk-android-ndk"))
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
-    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
     implementation(project(":integrations:dd-sdk-android-trace-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rum-coroutines"))
@@ -166,7 +165,6 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
-    implementation(platform(libs.androidXComposeBom))
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)

@@ -6,7 +6,9 @@
 
 package com.datadog.android.sessionreplay.material
 
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
+import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
+import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
 import com.google.android.material.slider.Slider
 import com.google.android.material.tabs.TabLayout.TabView
 import org.assertj.core.api.Assertions.assertThat
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -30,69 +33,29 @@ class MaterialExtensionSupportTest {
     }
 
     @Test
-    fun `M return a SliderMapper W getCustomViewMappers() { ALLOW }`() {
+    fun `M return a SliderMapper W getCustomViewMappers()`() {
+        // Given
+        val mockView: Slider = mock()
+
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
-        assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.ALLOW]?.get(Slider::class.java))
-            .isInstanceOf(SliderWireframeMapper::class.java)
+        val sliderMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
+        assertThat(sliderMapper).isInstanceOf(SliderWireframeMapper::class.java)
     }
 
     @Test
-    fun `M return a MaskSliderMapper W getCustomViewMappers() { MASK }`() {
+    fun `M return a TabMapper W getCustomViewMappers()`() {
+        // Given
+        val mockView: TabView = mock()
+
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
-        assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK]?.get(Slider::class.java))
-            .isInstanceOf(MaskSliderWireframeMapper::class.java)
-    }
-
-    @Test
-    fun `M return a MaskSliderMapper W getCustomViewMappers() { MASK_USER_INPUT }`() {
-        // When
-        val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
-
-        // Then
-        assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK_USER_INPUT]?.get(Slider::class.java))
-            .isInstanceOf(MaskSliderWireframeMapper::class.java)
-    }
-
-    @Test
-    fun `M return a TabMapper W getCustomViewMappers() { ALLOW }`() {
-        // When
-        val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
-
-        // Then
-        assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.ALLOW]?.get(TabView::class.java))
-            .isInstanceOf(TabWireframeMapper::class.java)
-    }
-
-    @Test
-    fun `M return a MaskTabMapper W getCustomViewMappers() { MASK  }`() {
-        // When
-        val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
-
-        // Then
-        assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK]?.get(TabView::class.java))
-            .isInstanceOf(MaskTabWireframeMapper::class.java)
-    }
-
-    @Test
-    fun `M return a TabWireframeMapper W getCustomViewMappers() { MASK_USER_INPUT  }`() {
-        // When
-        val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
-
-        // Then
-        assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK_USER_INPUT]?.get(TabView::class.java))
-            .isInstanceOf(TabWireframeMapper::class.java)
+        val sliderMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
+        assertThat(sliderMapper).isInstanceOf(TabWireframeMapper::class.java)
     }
 
     @Test

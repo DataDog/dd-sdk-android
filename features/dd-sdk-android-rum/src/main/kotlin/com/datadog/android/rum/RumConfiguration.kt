@@ -13,6 +13,7 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -20,7 +21,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -130,6 +130,21 @@ data class RumConfiguration internal constructor(
                 null
             }
             rumConfig = rumConfig.copy(longTaskTrackingStrategy = strategy)
+            return this
+        }
+
+        /**
+         * Enable tracking of non-fatal ANRs. This is enabled by default on Android API 29 and
+         * below, and disabled by default on Android API 30 and above. Android API 30+ has a
+         * capability to report fatal ANRs (always enabled). Please note, that tracking non-fatal
+         * ANRs is using Watchdog thread approach, which can be noisy, and also leads to ANR
+         * duplication on Android 30+ if fatal ANR happened, because Watchdog thread approach cannot
+         * categorize ANR as fatal or non-fatal.
+         *
+         * @param enabled whether tracking of non-fatal ANRs is enabled or not.
+         */
+        fun trackNonFatalAnrs(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(trackNonFatalAnrs = enabled)
             return this
         }
 

@@ -88,7 +88,7 @@ class DdRumContentProviderTest {
     // region onCreate
 
     @Test
-    fun `𝕄 detect process importance 𝕎 onCreate()`(
+    fun `M detect process importance W onCreate()`(
         @IntForgery processImportance: Int
     ) {
         // Given
@@ -102,7 +102,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 detect process importance once 𝕎 onCreate() twice`(
+    fun `M detect process importance once W onCreate() twice`(
         @IntForgery processImportance1: Int,
         @IntForgery processImportance2: Int
     ) {
@@ -120,7 +120,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 detect default process importance 𝕎 onCreate() {no context}`() {
+    fun `M detect default process importance W onCreate() {no context}`() {
         // Given
         testedProvider.setFieldValue("mContext", null as Context?)
 
@@ -133,7 +133,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 detect default process importance 𝕎 onCreate() {no activity mgr}`() {
+    fun `M detect default process importance W onCreate() {no activity mgr}`() {
         // Given
         whenever(mockContext.getSystemService(Context.ACTIVITY_SERVICE)) doReturn null
 
@@ -150,7 +150,7 @@ class DdRumContentProviderTest {
     // region ContentProvider
 
     @Test
-    fun `𝕄 return null 𝕎 query()`(
+    fun `M return null W query()`(
         @Forgery uri: URI,
         @StringForgery projection: List<String>,
         @StringForgery selection: String,
@@ -171,7 +171,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 getType()`(
+    fun `M return null W getType()`(
         @Forgery uri: URI
     ) {
         // When
@@ -182,7 +182,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 insert()`(
+    fun `M return null W insert()`(
         @Forgery uri: URI
     ) {
         // When
@@ -196,7 +196,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 return 0 𝕎 delete()`(
+    fun `M return 0 W delete()`(
         @Forgery uri: URI,
         @StringForgery selection: String,
         @StringForgery selectionArgs: List<String>
@@ -213,7 +213,7 @@ class DdRumContentProviderTest {
     }
 
     @Test
-    fun `𝕄 return 0 𝕎 update()`(
+    fun `M return 0 W update()`(
         @Forgery uri: URI,
         @StringForgery selection: String,
         @StringForgery selectionArgs: List<String>

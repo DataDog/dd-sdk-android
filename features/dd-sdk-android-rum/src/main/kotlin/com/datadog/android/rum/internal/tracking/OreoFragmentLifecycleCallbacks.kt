@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 @file:Suppress("DEPRECATION")
 
 package com.datadog.android.rum.internal.tracking
@@ -13,14 +19,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.utils.resolveViewName
+import com.datadog.android.rum.internal.utils.runIfValid
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.android.rum.utils.resolveViewName
-import com.datadog.android.rum.utils.runIfValid
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -31,12 +35,14 @@ internal class OreoFragmentLifecycleCallbacks(
     private val componentPredicate: ComponentPredicate<Fragment>,
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     private lateinit var sdkCore: FeatureSdkCore
     private val executor: ScheduledExecutorService by lazy {
-        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+        sdkCore.createScheduledExecutorService(
+            "rum-fragment-lifecycle"
+        )
     }
 
     private val internalLogger: InternalLogger
@@ -50,13 +56,13 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun register(activity: Activity, sdkCore: SdkCore) {
         this.sdkCore = sdkCore as FeatureSdkCore
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
             activity.fragmentManager.registerFragmentLifecycleCallbacks(this, true)
         }
     }
 
     override fun unregister(activity: Activity) {
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
             activity.fragmentManager.unregisterFragmentLifecycleCallbacks(this)
         }
     }
@@ -65,6 +71,7 @@ internal class OreoFragmentLifecycleCallbacks(
 
     // region FragmentManager.FragmentLifecycleCallbacks
 
+    @Deprecated("Deprecated in Java")
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
         f: Fragment,
@@ -81,6 +88,7 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         if (isNotAViewFragment(f)) return
@@ -92,6 +100,7 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
         super.onFragmentStopped(fm, f)
         if (isNotAViewFragment(f)) return

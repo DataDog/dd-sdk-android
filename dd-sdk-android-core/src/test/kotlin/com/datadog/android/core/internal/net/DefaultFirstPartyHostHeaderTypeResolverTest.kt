@@ -44,7 +44,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isFirstParty(HttpUrl) {unknown host}`(
+    fun `M return false W isFirstParty(HttpUrl) {unknown host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -64,7 +64,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isFirstParty(HttpUrl) {exact first party host}`(
+    fun `M return true W isFirstParty(HttpUrl) {exact first party host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -81,7 +81,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isFirstParty(HttpUrl) {known hosts list was updated}`(
+    fun `M return true W isFirstParty(HttpUrl) {known hosts list was updated}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -100,7 +100,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isFirstParty(HttpUrl) {valid host subdomain}`(
+    fun `M return true W isFirstParty(HttpUrl) {valid host subdomain}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") subdomain: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
@@ -118,7 +118,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isFirstParty(HttpUrl) {unknown host postfixed with valid host}`(
+    fun `M return false W isFirstParty(HttpUrl) {unknown host postfixed with valid host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") prefix: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
@@ -136,7 +136,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isFirstParty(String) {unknown host}`(
+    fun `M return false W isFirstParty(String) {unknown host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -156,7 +156,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isFirstParty(String) {exact first party host}`(
+    fun `M return true W isFirstParty(String) {exact first party host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -173,7 +173,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isFirstParty(String) {valid host subdomain}`(
+    fun `M return true W isFirstParty(String) {valid host subdomain}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") subdomain: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
@@ -191,7 +191,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isFirstParty(String) {known hosts list was updated}`(
+    fun `M return true W isFirstParty(String) {known hosts list was updated}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -248,7 +248,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isFirstParty(String) {unknown host postfixed with valid host}`(
+    fun `M return false W isFirstParty(String) {unknown host postfixed with valid host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") prefix: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
@@ -266,7 +266,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isFirstParty(String) {invalid url}`(
+    fun `M return false W isFirstParty(String) {invalid url}`(
         @StringForgery notAUrl: String
     ) {
         // When
@@ -277,7 +277,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 isEmpty() {empty host list}`() {
+    fun `M return true W isEmpty() {empty host list}`() {
         // Given
         val resolver = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
 
@@ -289,7 +289,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isEmpty() {non empty host list}`() {
+    fun `M return false W isEmpty() {non empty host list}`() {
         // When
         val result = testedDetector.isEmpty()
 
@@ -298,7 +298,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return header types 𝕎 headerTypesForUrl(String) {first party hosts}`(
+    fun `M return header types W headerTypesForUrl(String) {first party hosts}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String
     ) {
@@ -315,7 +315,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 return all header types 𝕎 getAllHeaderTypes() {first party hosts}`() {
+    fun `M return all header types W getAllHeaderTypes() {first party hosts}`() {
         // Given
         var allUsedHeaderTraces = mutableSetOf<TracingHeaderType>()
 
@@ -330,7 +330,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `𝕄 use datadog and tracecontext header types 𝕎 addKnownHosts(String)`(
+    fun `M use datadog and tracecontext header types W addKnownHosts(String)`(
         @StringForgery(regex = "http(s?)") scheme: String,
         forge: Forge
     ) {

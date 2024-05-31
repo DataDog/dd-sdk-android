@@ -400,6 +400,51 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
     }
 
     @Test
+    fun `will do nothing if target is in non-visible ViewGroup `(forge: Forge) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        // ensure the last event is within the bounds of the target
+        val endUpEvent = startDownEvent
+        val targetView = mockView<View>(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.visibility).thenReturn(forge.anElementFrom(View.INVISIBLE, View.GONE))
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(targetView)
+        }
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
     fun `will do nothing and not log warning if target is in Jetpack Compose view `(forge: Forge) {
         val startDownEvent: MotionEvent = forge.getForgery()
         val listSize = forge.anInt(1, 20)

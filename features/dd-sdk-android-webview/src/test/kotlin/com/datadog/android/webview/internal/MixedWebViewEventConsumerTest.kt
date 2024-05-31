@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -47,12 +48,16 @@ internal class MixedWebViewEventConsumerTest {
     lateinit var mockLogsEventConsumer: WebViewLogEventConsumer
 
     @Mock
+    lateinit var mockReplayEventConsumer: WebViewReplayEventConsumer
+
+    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
         testedWebViewEventConsumer = MixedWebViewEventConsumer(
             mockRumEventConsumer,
+            mockReplayEventConsumer,
             mockLogsEventConsumer,
             mockInternalLogger
         )
@@ -96,6 +101,25 @@ internal class MixedWebViewEventConsumerTest {
             // for JsonPrimitive https://github.com/google/gson/issues/1864
             assertThat(firstValue.first.toString()).isEqualTo(fakeBundledEvent.toString())
             assertThat(firstValue.second).isEqualTo(fakeLogEventType)
+        }
+    }
+
+    @Test
+    fun `M delegate to ReplayEventConsumer W consume() { REPLAY eventType }`(forge: Forge) {
+        // Given
+        val fakeBundledEvent = forge.getForgery<JsonObject>()
+        val fakeReplayEventType = forge.anElementFrom(WebViewReplayEventConsumer.REPLAY_EVENT_TYPES)
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeReplayEventType)
+
+        // When
+        testedWebViewEventConsumer.consume(fakeWebEvent.toString())
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockReplayEventConsumer).consume(capture())
+            // toString call because of how Gson is comparing Float/Double vs LazilyParsedNumber
+            // for JsonPrimitive https://github.com/google/gson/issues/1864
+            assertThat(firstValue.toString()).isEqualTo(fakeWebEvent.toString())
         }
     }
 

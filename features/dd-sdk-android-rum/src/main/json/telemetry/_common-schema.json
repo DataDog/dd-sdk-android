@@ -100,6 +100,48 @@
         "type": "string"
       },
       "readOnly": true
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "device": {
+          "type": "object",
+          "description": "Device properties",
+          "properties": {
+            "architecture": {
+              "type": "string",
+              "description": "Architecture of the device"
+            },
+            "brand": {
+              "type": "string",
+              "description": "Brand of the device"
+            },
+            "model": {
+              "type": "string",
+              "description": "Model of the device"
+            }
+          }
+        },
+        "os": {
+          "type": "object",
+          "description": "OS properties",
+          "properties": {
+            "build": {
+              "type": "string",
+              "description": "Build of the OS"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the OS"
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the OS"
+            }
+          }
+        }
+      }
     }
   }
 }

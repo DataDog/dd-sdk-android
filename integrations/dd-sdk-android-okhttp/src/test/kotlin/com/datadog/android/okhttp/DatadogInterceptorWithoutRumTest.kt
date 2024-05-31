@@ -68,7 +68,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `𝕄 warn that RUM is not enabled 𝕎 intercept()`(
+    fun `M warn that RUM is not enabled W intercept()`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -85,7 +85,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 intercept() for successful request`(
+    fun `M do nothing W intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -101,7 +101,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `𝕄 do nothing RUM Resource 𝕎 intercept() for failing request`(
+    fun `M do nothing RUM Resource W intercept() for failing request`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         // Given
@@ -117,7 +117,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 intercept() for throwing request`(
+    fun `M do nothing W intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
         // Given

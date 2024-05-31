@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.RemovalReason
@@ -78,6 +79,9 @@ internal class AbstractStorageTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         whenever(mockPersistenceStrategyFactory.create(argThat { contains("/GRANTED") }, any(), any()))
@@ -99,7 +103,7 @@ internal class AbstractStorageTest {
     // region Storage.writeCurrentBatch
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=granted, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=granted, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
@@ -107,10 +111,10 @@ internal class AbstractStorageTest {
         // Given
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null, fakeEventType)
         }
 
         // When
@@ -118,7 +122,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, null)
+        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, null, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -127,7 +131,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=granted, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=granted, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
@@ -137,10 +141,10 @@ internal class AbstractStorageTest {
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
-        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata, fakeEventType)
         }
 
         // When
@@ -148,7 +152,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, batchMetadata)
+        verify(mockGrantedPersistenceStrategy).write(fakeBatchEvent, batchMetadata, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -157,7 +161,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -183,7 +187,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @StringForgery fakeBatchMetadata: String
     ) {
@@ -211,7 +215,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=pending, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=pending, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
@@ -219,10 +223,10 @@ internal class AbstractStorageTest {
         // Given
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, null, fakeEventType)
         }
 
         // When
@@ -230,7 +234,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, null)
+        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, null, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -239,7 +243,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+write() {consent=pending, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+write() {consent=pending, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
@@ -249,10 +253,10 @@ internal class AbstractStorageTest {
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
-        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull())) doReturn fakeResult
+        whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata, fakeEventType)
         }
 
         // When
@@ -260,7 +264,7 @@ internal class AbstractStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
-        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, batchMetadata)
+        verify(mockPendingPersistenceStrategy).write(fakeBatchEvent, batchMetadata, fakeEventType)
         verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
@@ -269,7 +273,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata=null}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -295,7 +299,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata!=null}`(
+    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata!=null}`(
         @BoolForgery forceNewBatch: Boolean,
         @StringForgery fakeBatchMetadata: String
     ) {
@@ -323,7 +327,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no op writer 𝕎 writeCurrentBatch()+write() {consent=not_granted}`(
+    fun `M provide no op writer W writeCurrentBatch()+write() {consent=not_granted}`(
         @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
         @StringForgery fakeBatchMetadata: String
@@ -334,7 +338,7 @@ internal class AbstractStorageTest {
         val batchMetadata = fakeBatchMetadata.toByteArray()
         var result: Boolean? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
-            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata)
+            result = (it.getArgument(0) as? EventBatchWriter)?.write(fakeBatchEvent, batchMetadata, fakeEventType)
         }
 
         // When
@@ -350,7 +354,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide no op writer 𝕎 writeCurrentBatch()+currentMetadata() {consent=not_granted}`(
+    fun `M provide no op writer W writeCurrentBatch()+currentMetadata() {consent=not_granted}`(
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
@@ -378,7 +382,7 @@ internal class AbstractStorageTest {
     // region Storage.readNextBatch
 
     @Test
-    fun `𝕄 provide null 𝕎 readNextBatch() {no batch}`() {
+    fun `M provide null W readNextBatch() {no batch}`() {
         // Given
         whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn null
 
@@ -392,7 +396,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide BatchData 𝕎 readNextBatch() {with batch}`(
+    fun `M provide BatchData W readNextBatch() {with batch}`(
         @Forgery fakeBatch: PersistenceStrategy.Batch
     ) {
         // Given
@@ -409,7 +413,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 readNextBatch() {no batch}`() {
+    fun `M return null W readNextBatch() {no batch}`() {
         // Given
         whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn null
 
@@ -422,7 +426,7 @@ internal class AbstractStorageTest {
     // region Storage.readNextBatch
 
     @Test
-    fun `𝕄 delete batch W confirmBatchRead() {delete=true}`(
+    fun `M delete batch W confirmBatchRead() {delete=true}`(
         @StringForgery fakeBatchId: String,
         @Forgery fakeRemovalReason: RemovalReason
     ) {
@@ -439,7 +443,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 keep batch W confirmBatchRead() {delete=false}`(
+    fun `M keep batch W confirmBatchRead() {delete=false}`(
         @StringForgery fakeBatchId: String,
         @Forgery fakeRemovalReason: RemovalReason
     ) {
@@ -460,7 +464,7 @@ internal class AbstractStorageTest {
     // region Storage.dropAll
 
     @Test
-    fun `𝕄 drop both granted and pending 𝕎 dropAll()`() {
+    fun `M drop both granted and pending W dropAll()`() {
         // When
         testedStorage.dropAll()
 
@@ -479,7 +483,7 @@ internal class AbstractStorageTest {
     // region TrackingConsentProviderCallback
 
     @Test
-    fun `𝕄 register as consent listener 𝕎 init()`() {
+    fun `M register as consent listener W init()`() {
         // Then
         verify(mockConsentProvider).registerCallback(testedStorage)
         verifyNoInteractions(
@@ -490,7 +494,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {not_granted to not_granted}`() {
+    fun `M do nothing W onConsentUpdated() {not_granted to not_granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.NOT_GRANTED)
 
@@ -503,7 +507,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {not_granted to pending}`() {
+    fun `M do nothing W onConsentUpdated() {not_granted to pending}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
 
@@ -516,7 +520,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {not_granted to granted}`() {
+    fun `M do nothing W onConsentUpdated() {not_granted to granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
 
@@ -529,7 +533,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 drop pending data 𝕎 onConsentUpdated() {pending to not_granted}`() {
+    fun `M drop pending data W onConsentUpdated() {pending to not_granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
 
@@ -543,7 +547,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {pending to pending}`() {
+    fun `M do nothing W onConsentUpdated() {pending to pending}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.PENDING)
 
@@ -556,7 +560,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 migrate data 𝕎 onConsentUpdated() {pending to granted}`() {
+    fun `M migrate data W onConsentUpdated() {pending to granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
 
@@ -570,7 +574,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {granted to not_granted}`() {
+    fun `M do nothing W onConsentUpdated() {granted to not_granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
 
@@ -583,7 +587,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {granted to pending}`() {
+    fun `M do nothing W onConsentUpdated() {granted to pending}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
 
@@ -596,7 +600,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 onConsentUpdated() {granted to granted}`() {
+    fun `M do nothing W onConsentUpdated() {granted to granted}`() {
         // When
         testedStorage.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.GRANTED)
 

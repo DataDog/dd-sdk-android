@@ -17,9 +17,12 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.accessible
 import com.datadog.android.sessionreplay.compose.internal.reflection.getDeclaredFieldSafe
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import java.lang.reflect.Field
 
-internal class ButtonCompositionGroupMapper : AbstractCompositionGroupMapper() {
+internal class ButtonCompositionGroupMapper(
+    colorStringFormatter: ColorStringFormatter
+) : AbstractCompositionGroupMapper(colorStringFormatter) {
 
     override fun map(
         stableGroupId: Long,

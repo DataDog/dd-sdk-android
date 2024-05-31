@@ -22,7 +22,6 @@ plugins {
 
     // Tests
     id("de.mobilej.unmock")
-    id("org.jetbrains.kotlinx.kover")
 }
 
 android {
@@ -49,6 +48,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)

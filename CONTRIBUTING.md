@@ -5,6 +5,8 @@ First of all, thanks for contributing!
 This document provides some basic guidelines for contributing to this repository.
 To propose improvements, feel free to submit a PR or open an Issue.
 
+**Note:** Datadog requires that all commits within this repository must be signed, including those within external contribution PRs. Please ensure you have followed GitHub's [Signing Commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) guide before proposing a contribution. PRs lacking signed commits will not be processed and may be rejected.
+
 ## Setup your developer Environment
 
 To setup your environment, make sure you installed [Android Studio](https://developer.android.com/studio).
@@ -43,7 +45,6 @@ This project hosts the following modules:
     - `integrations/dd-sdk-android-timber`: a lightweight library providing a bridge integration between Datadog SDK and [Timber](https://github.com/JakeWharton/timber);
   - `instrumented/***`: a set of modules used to run instrumented tests:
     - `instrumented/integration`: a test module with integration tests using Espresso;
-    - `instrumented/nightly-tests`: a test module with E2E tests using Espresso;
   - `tools/*`: a set of modules used to extend the tools we use in our workflow:
     - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
     - `tools/lint`: a custom [Lint](https://developer.android.com/studio/write/lint) static analysis rule;
@@ -357,61 +358,4 @@ To ensure that our tests cover the widest range of possible states and inputs, w
 testing thanks to the Elmyr library. Given a unit under test, we must make sure that the whole range 
 of possible input is covered for all tests.
 
-### Nightly Tests
 
-#### Update Session Replay functional tests payloads
-
-Session Replay has a suite of functional tests which can be found in the `instrumentation:integration` module.
-Those tests are assessing the recorded payload for a specific scenario against a given payload from `assets/session_replay_payloads` in the `androidTest` source set.
-In case you need to update these payloads after a change in the SDK, you can run the following command:
-    
-```shell
- ./local_ci.sh --update-session-replay-payloads
-```
-
-#### Implementation
-
-Each public API method in the SDK is covered by a test case in the `nightly-tests` module. All test cases are executed on a Bitrise emulator by a Datadog Synthetic Test every 12 hours. Each test case
-output is measured by 2 Datadog Monitors (one for performance and one for functionality). There are some best practices when writing a nightly test as follows: 
-
-- The test method name must follow the following format: `[rootFeature]_[subFeature]_[method]_[additionalInfo]` where:
-
-    1. `rootFeature` is one of the top level features (logs, rum, apm, et)
-    
-    2. `subFeature` is the feature under test (logger, monitor, …)
-    
-    3. `method` is the method under test (not necessarily exactly the exact method name but the purpose of the feature from a customer’s PoV, e.g: DataScrubbing)
-    
-    4. `additionalInfo` is some context to distinguish multiple test on the same method (could be related to the argument, the context, a state)
-    
-- We need to add an identifier in the method documentation following the method signature in the [apiSurface](dd-sdk-android-core/api/apiSurface). 
-  This will be used by our test coverage tool.
-  
-
-We have created a Live Template that you can add in your development environment (Android Studio, IntelliJ IDEA) to ease your work when creating a nightly test:
-```
-/**
- * apiMethodSignature: THE API METHOD SIGNATURE HERE
- */
-@org.junit.Test
-fun $EXP$() {
-    val testMethodName = "$EXP$"
-    measure(testMethodName) {
-        // API call here
-    }
-}
-
-```
-
-#### Execution
-
-Because of our crash handling [test cases](instrumented/nightly-tests/src/androidTest/kotlin/com/datadog/android/nightly/crash), when running the nightly tests through gradle,  
-the process does not finish properly so it may happen that will keep hanging until it will eventually timeout.To avoid this issue you should run the tests through adb shell directly 
-using the instrumentation tool: 
-```
-./gradlew :instrumented:nightly-tests:installDebug
-./gradlew :instrumented:nightly-tests:installDebugAndroidTest
-adb shell am instrument -w -e package com.datadog.android.nightly.[feature] com.datadog.android.nightly.test/androidx.test.runner.AndroidJUnitRunner
-```
-where `feature` refers to the specific collection of tests (feature to test) and can take one of the following values: `rum`, `crash`, `log`, `trace`. If you want to run
-all the nightly tests just omit the feature in the `package` definition.

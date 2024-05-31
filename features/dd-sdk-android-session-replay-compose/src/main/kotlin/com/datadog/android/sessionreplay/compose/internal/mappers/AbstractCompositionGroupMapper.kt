@@ -16,10 +16,12 @@ import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.parameters
 import com.datadog.android.sessionreplay.compose.internal.stableId
-import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import kotlin.math.roundToInt
 
-internal abstract class AbstractCompositionGroupMapper : CompositionGroupMapper {
+internal abstract class AbstractCompositionGroupMapper(
+    protected val colorStringFormatter: ColorStringFormatter
+) : CompositionGroupMapper {
 
     final override fun map(
         compositionGroup: CompositionGroup,
@@ -55,7 +57,7 @@ internal abstract class AbstractCompositionGroupMapper : CompositionGroupMapper 
             null
         } else {
             val c = Color(color shr COMPOSE_COLOR_SHIFT)
-            StringUtils.formatColorAndAlphaAsHexa(
+            colorStringFormatter.formatColorAndAlphaAsHexString(
                 c.toArgb(),
                 (c.alpha * MAX_ALPHA).roundToInt()
             )

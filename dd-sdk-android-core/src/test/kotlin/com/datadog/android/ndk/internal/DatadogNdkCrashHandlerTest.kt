@@ -12,10 +12,8 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -67,16 +65,13 @@ import java.util.concurrent.ExecutorService
 @ForgeConfiguration(Configurator::class)
 internal class DatadogNdkCrashHandlerTest {
 
-    lateinit var testedHandler: DatadogNdkCrashHandler
+    private lateinit var testedHandler: DatadogNdkCrashHandler
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
     lateinit var mockNdkCrashLogDeserializer: Deserializer<String, NdkCrashLog>
-
-    @Mock
-    lateinit var mockRumEventDeserializer: Deserializer<String, JsonObject>
 
     @Mock
     lateinit var mockNetworkInfoDeserializer: Deserializer<String, NetworkInfo>
@@ -97,10 +92,10 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockRumFileReader: BatchFileReader
+    lateinit var mockEnvFileReader: FileReader<ByteArray>
 
     @Mock
-    lateinit var mockEnvFileReader: FileReader<ByteArray>
+    lateinit var mockLastRumViewEventProvider: () -> JsonObject?
 
     lateinit var fakeNdkCacheDir: File
 
@@ -113,11 +108,6 @@ internal class DatadogNdkCrashHandlerTest {
     @BeforeEach
     fun `set up`() {
         fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
-        whenever(mockRumFileReader.readData(any())) doAnswer {
-            listOf(
-                RawBatchEvent(it.getArgument<File>(0).readBytes())
-            )
-        }
         whenever(mockEnvFileReader.readData(any())) doAnswer {
             it.getArgument<File>(0).readBytes()
         }
@@ -134,19 +124,18 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             mockInternalLogger,
-            mockRumFileReader,
-            mockEnvFileReader
+            mockEnvFileReader,
+            mockLastRumViewEventProvider
         )
     }
 
     // region prepareData
 
     @Test
-    fun `𝕄 read crash data 𝕎 prepareData()`(
+    fun `M read crash data W prepareData()`(
         @StringForgery crashDataStr: String,
         @Forgery fakeCrashData: NdkCrashLog
     ) {
@@ -167,17 +156,13 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read last RUM View event 𝕎 prepareData()`(
-        @StringForgery viewEventStr: String,
+    fun `M read last RUM View event W prepareData()`(
         forge: Forge
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(
-            viewEventStr
-        )
         val fakeViewEvent = forge.aFakeViewEvent()
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr)) doReturn fakeViewEvent.toJson()
+        whenever(mockLastRumViewEventProvider()) doReturn fakeViewEvent.toJson()
 
         // When
         testedHandler.prepareData()
@@ -191,7 +176,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read network info 𝕎 prepareData()`(
+    fun `M read network info W prepareData()`(
         @StringForgery networkInfoStr: String,
         @Forgery fakeNetworkInfo: NetworkInfo
     ) {
@@ -213,7 +198,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read user info 𝕎 prepareData()`(
+    fun `M read user info W prepareData()`(
         @StringForgery userInfoStr: String,
         @Forgery fakeUserInfo: UserInfo
     ) {
@@ -234,10 +219,9 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 prepareData() {directory does not exist}`() {
+    fun `M do nothing W prepareData() {directory does not exist}`() {
         // When
         testedHandler.prepareData()
-        whenever(mockRumEventDeserializer.deserialize(any())) doReturn mock()
         whenever(mockNdkCrashLogDeserializer.deserialize(any())) doReturn mock()
         whenever(mockUserInfoDeserializer.deserialize(any())) doReturn mock()
         whenever(mockNetworkInfoDeserializer.deserialize(any())) doReturn mock()
@@ -252,9 +236,8 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 clear crash data 𝕎 prepareData()`(
+    fun `M clear crash data W prepareData()`(
         @StringForgery crashData: String,
-        @StringForgery viewEvent: String,
         @StringForgery networkInfo: String,
         @StringForgery userInfo: String
     ) {
@@ -262,7 +245,6 @@ internal class DatadogNdkCrashHandlerTest {
         fakeNdkCacheDir.mkdirs()
 
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME)
             .writeText(networkInfo)
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
@@ -282,7 +264,7 @@ internal class DatadogNdkCrashHandlerTest {
 
     @EnumSource(NdkCrashHandler.ReportTarget::class)
     @ParameterizedTest
-    fun `𝕄 do nothing 𝕎 handleNdkCrash() {no crash data}`(
+    fun `M do nothing W handleNdkCrash() {no crash data}`(
         reportTarget: NdkCrashHandler.ReportTarget
     ) {
         // When
@@ -295,7 +277,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 not send log 𝕎 handleNdkCrash() {logs feature is not registered}`(
+    fun `M not send log W handleNdkCrash() {logs feature is not registered}`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
@@ -321,7 +303,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, no user and network info}`(
+    fun `M send log W handleNdkCrash() {missing RUM last view, no user and network info}`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
@@ -340,7 +322,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, with user and network info}`(
+    fun `M send log W handleNdkCrash() {missing RUM last view, with user and network info}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         @Forgery networkInfo: NetworkInfo,
         @Forgery userInfo: UserInfo
@@ -363,7 +345,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with RUM last view}`(
+    fun `M send log + RUM view+error W handleNdkCrash() {with RUM last view}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -384,7 +366,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with RUM last view, override native source type}`(
+    fun `M send log + RUM view+error W handleNdkCrash() {with RUM last view, override native source type}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -393,13 +375,12 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             mockInternalLogger,
-            mockRumFileReader,
             mockEnvFileReader,
-            "ndk+il2cpp"
+            lastRumViewEventProvider = { JsonObject() },
+            nativeCrashSourceType = "ndk+il2cpp"
         )
 
         val fakeViewEvent = forge.aFakeViewEvent()
@@ -426,7 +407,7 @@ internal class DatadogNdkCrashHandlerTest {
             "wrong_id_type"
         ]
     )
-    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with corrupted RUM last view}`(
+    fun `M send log + RUM view+error W handleNdkCrash() {with corrupted RUM last view}`(
         corruptionType: String,
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
@@ -483,7 +464,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrash() { RUM feature is not registered }`(
+    fun `M not send RUM event W handleNdkCrash() { RUM feature is not registered }`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -508,7 +489,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 not send RUM event 𝕎 handleNdkCrash() { missing last RUM view event }`(
+    fun `M not send RUM event W handleNdkCrash() { missing last RUM view event }`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
@@ -525,7 +506,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send RUM event 𝕎 handleNdkCrash()`(
+    fun `M send RUM event W handleNdkCrash()`(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -546,6 +527,7 @@ internal class DatadogNdkCrashHandlerTest {
                 "type" to "ndk_crash",
                 "sourceType" to "ndk",
                 "timestamp" to ndkCrashLog.timestamp,
+                "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
                 "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
@@ -556,7 +538,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send RUM event 𝕎 handleNdkCrash() { override native source type } `(
+    fun `M send RUM event W handleNdkCrash() { override native source type } `(
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
@@ -565,13 +547,12 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             mockInternalLogger,
-            mockRumFileReader,
             mockEnvFileReader,
-            "ndk+il2cpp"
+            lastRumViewEventProvider = { JsonObject() },
+            nativeCrashSourceType = "ndk+il2cpp"
         )
 
         val fakeViewEvent = forge.aFakeViewEvent()
@@ -590,6 +571,7 @@ internal class DatadogNdkCrashHandlerTest {
                 "type" to "ndk_crash",
                 "sourceType" to "ndk+il2cpp",
                 "timestamp" to ndkCrashLog.timestamp,
+                "timeSinceAppStartMs" to ndkCrashLog.timeSinceAppStartMs,
                 "signalName" to ndkCrashLog.signalName,
                 "stacktrace" to ndkCrashLog.stacktrace,
                 "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
@@ -600,7 +582,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 clear the references 𝕎 handleNdkCrash() { both Logs and RUM are handled }`(
+    fun `M clear the references W handleNdkCrash() { both Logs and RUM are handled }`(
         @Forgery ndkCrashLog: NdkCrashLog,
         @Forgery fakeUserInfo: UserInfo,
         @Forgery fakeNetworkInfo: NetworkInfo,

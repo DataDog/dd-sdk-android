@@ -13,8 +13,11 @@ import com.datadog.android.sessionreplay.compose.internal.data.ComposableParamet
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
-internal class TextCompositionGroupMapper : AbstractCompositionGroupMapper() {
+internal class TextCompositionGroupMapper(
+    colorStringFormatter: ColorStringFormatter
+) : AbstractCompositionGroupMapper(colorStringFormatter) {
 
     override fun map(
         stableGroupId: Long,

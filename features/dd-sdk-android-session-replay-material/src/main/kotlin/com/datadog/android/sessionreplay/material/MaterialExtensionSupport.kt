@@ -6,11 +6,20 @@
 
 package com.datadog.android.sessionreplay.material
 
-import android.view.View
 import com.datadog.android.sessionreplay.ExtensionSupport
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
+import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
+import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.google.android.material.slider.Slider
 import com.google.android.material.tabs.TabLayout
 
@@ -19,26 +28,33 @@ import com.google.android.material.tabs.TabLayout
  * configuration.
  */
 class MaterialExtensionSupport : ExtensionSupport {
-    @Suppress("UNCHECKED_CAST")
-    override fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
-        val maskUserInputSliderMapper = MaskSliderWireframeMapper() as WireframeMapper<View, *>
-        val maskSliderMapper = MaskSliderWireframeMapper() as WireframeMapper<View, *>
-        val allowSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
-        val maskTabWireframeMapper = MaskTabWireframeMapper() as WireframeMapper<View, *>
-        val allowTabWireframeMapper = TabWireframeMapper() as WireframeMapper<View, *>
-        return mapOf(
-            SessionReplayPrivacy.ALLOW to mapOf(
-                Slider::class.java to allowSliderMapper,
-                TabLayout.TabView::class.java to allowTabWireframeMapper
-            ),
-            SessionReplayPrivacy.MASK to mapOf(
-                Slider::class.java to maskSliderMapper,
-                TabLayout.TabView::class.java to maskTabWireframeMapper
-            ),
-            SessionReplayPrivacy.MASK_USER_INPUT to mapOf(
-                Slider::class.java to maskUserInputSliderMapper,
-                TabLayout.TabView::class.java to allowTabWireframeMapper
+
+    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
+    private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
+    private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
+    private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+
+    override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
+        val sliderWireframeMapper = SliderWireframeMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver
+        )
+
+        val tabWireframeMapper = TabWireframeMapper(
+            viewIdentifierResolver,
+            viewBoundsResolver,
+            TextViewMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
             )
+        )
+
+        return listOf(
+            MapperTypeWrapper(Slider::class.java, sliderWireframeMapper),
+            MapperTypeWrapper(TabLayout.TabView::class.java, tabWireframeMapper)
         )
     }
 

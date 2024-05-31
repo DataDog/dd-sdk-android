@@ -16,37 +16,44 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
+import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -80,12 +87,16 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.io.InputStream
+import java.lang.RuntimeException
 import java.net.Proxy
 import java.util.Locale
-import java.util.concurrent.ExecutorService
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.experimental.xor
 
@@ -108,7 +119,13 @@ internal class CoreFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockPersistenceExecutorService: ExecutorService
+    lateinit var mockPersistenceExecutorService: FlushableExecutorService
+
+    @Mock
+    lateinit var mockScheduledExecutorService: ScheduledExecutorService
+
+    @Mock
+    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
     @Forgery
     lateinit var fakeConfig: Configuration
@@ -119,15 +136,23 @@ internal class CoreFeatureTest {
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeSdkInstanceId: String
 
+    @Forgery
+    lateinit var fakeBuildId: UUID
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
         testedFeature = CoreFeature(
             mockInternalLogger,
-            persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
+            mockAppStartTimeProvider,
+            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService }
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doReturn fakeBuildId.toString().byteInputStream()
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
@@ -145,7 +170,7 @@ internal class CoreFeatureTest {
     // region initialization
 
     @Test
-    fun `𝕄 initialize time sync 𝕎 initialize`() {
+    fun `M initialize time sync W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -159,7 +184,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize time provider 𝕎 initialize`() {
+    fun `M initialize time provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -174,7 +199,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize system info provider 𝕎 initialize`() {
+    fun `M initialize system info provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -189,7 +214,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize network info provider 𝕎 initialize`() {
+    fun `M initialize network info provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -211,7 +236,7 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
-    fun `𝕄 initialize network info provider 𝕎 initialize {N}`() {
+    fun `M initialize network info provider W initialize {N}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -235,7 +260,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize user info provider 𝕎 initialize`() {
+    fun `M initialize user info provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -250,7 +275,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise the consent provider 𝕎 initialize`() {
+    fun `M initialise the consent provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -267,7 +292,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise the datadog context provider 𝕎 initialize`() {
+    fun `M initialise the datadog context provider W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -282,7 +307,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes first party hosts resolver 𝕎 initialize`() {
+    fun `M initializes first party hosts resolver W initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -303,7 +328,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize()`() {
+    fun `M initializes app info W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -326,7 +351,7 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
-    fun `𝕄 initializes app info 𝕎 initialize() { TIRAMISU }`() {
+    fun `M initializes app info W initialize() { TIRAMISU }`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -349,7 +374,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {null serviceName}`() {
+    fun `M initializes app info W initialize() {null serviceName}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -372,7 +397,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {null versionName}`() {
+    fun `M initializes app info W initialize() {null versionName}`() {
         // Given
         appContext.fakePackageInfo.versionName = null
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -400,7 +425,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name}`() {
+    fun `M initializes app info W initialize() {unknown package name}`() {
         // Given
         @Suppress("DEPRECATION")
         whenever(appContext.mockPackageManager.getPackageInfo(appContext.fakePackageName, 0))
@@ -431,7 +456,7 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, TIRAMISU}`() {
+    fun `M initializes app info W initialize() {unknown package name, TIRAMISU}`() {
         // Given
         whenever(
             appContext.mockPackageManager.getPackageInfo(
@@ -466,7 +491,98 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize()`() {
+    fun `M initializes build ID W initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isEqualTo(fakeBuildId.toString())
+    }
+
+    @Test
+    fun `M initializes build ID W initialize() { asset manager is closed }`() {
+        // Given
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doThrow RuntimeException()
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = CoreFeature.BUILD_ID_READ_ERROR,
+            throwableClass = RuntimeException::class.java
+        )
+    }
+
+    @Test
+    fun `M initializes build ID W initialize() { build ID file is missing }`() {
+        // Given
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doThrow FileNotFoundException()
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            CoreFeature.BUILD_ID_IS_MISSING_INFO_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M initializes build ID W initialize() { IOException during build ID read }`() {
+        // Given
+        val mockBrokenStream = mock<InputStream>().apply {
+            whenever(read(any())) doThrow IOException()
+        }
+        whenever(
+            appContext.mockInstance.assets.open(CoreFeature.BUILD_ID_FILE_NAME)
+        ) doReturn mockBrokenStream
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.appBuildId).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = CoreFeature.BUILD_ID_READ_ERROR,
+            throwableClass = IOException::class.java
+        )
+    }
+
+    @Test
+    fun `M initialize okhttp with strict network policy W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -501,7 +617,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp with no network policy 𝕎 initialize() {needsClearText}`() {
+    fun `M initialize okhttp with no network policy W initialize() {needsClearText}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -521,7 +637,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp with proxy 𝕎 initialize() {proxy configured}`() {
+    fun `M initialize okhttp with proxy W initialize() {proxy configured}`() {
         // When
         val proxy: Proxy = mock()
         val proxyAuth: Authenticator = mock()
@@ -544,7 +660,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize okhttp without proxy 𝕎 initialize() {proxy not configured}`() {
+    fun `M initialize okhttp without proxy W initialize() {proxy not configured}`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -560,7 +676,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize executors 𝕎 initialize()`() {
+    fun `M initialize executors W initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -575,7 +691,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize only once 𝕎 initialize() twice`(
+    fun `M initialize only once W initialize() twice`(
         @Forgery otherConfig: Configuration
     ) {
         // Given
@@ -608,7 +724,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 detect current process 𝕎 initialize() {main process}`(
+    fun `M detect current process W initialize() {main process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -640,7 +756,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 detect current process 𝕎 initialize() {secondary process}`(
+    fun `M detect current process W initialize() {secondary process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -669,7 +785,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 detect current process 𝕎 initialize() {unknown process}`(
+    fun `M detect current process W initialize() {unknown process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -697,7 +813,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 build config 𝕎 buildFilePersistenceConfig()`() {
+    fun `M build config W buildFilePersistenceConfig()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -723,7 +839,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {main process}`(
+    fun `M initialize the NdkCrashHandler data W initialize() {main process}`(
         @TempDir tempDir: File,
         @StringForgery otherProcessName: String
     ) {
@@ -765,7 +881,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {source type override}`(
+    fun `M initialize the NdkCrashHandler data W initialize() {source type override}`(
         @TempDir tempDir: File,
         @StringForgery otherProcessName: String
     ) {
@@ -807,7 +923,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 not initialize the NdkCrashHandler data 𝕎 initialize() {not main process}`(
+    fun `M not initialize the NdkCrashHandler data W initialize() {not main process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
@@ -856,7 +972,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise encryption 𝕎 initialize`(
+    fun `M initialise encryption W initialize`(
         @IntForgery(-128, 128) fakeByte: Int
     ) {
         // Given
@@ -886,7 +1002,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialise persitence strategy 𝕎 initialize`() {
+    fun `M initialise persistence strategy W initialize`() {
         // Given
         val mockPersistenceStrategyFactory = mock<PersistenceStrategy.Factory>()
         fakeConfig = fakeConfig.copy(
@@ -910,10 +1026,213 @@ internal class CoreFeatureTest {
 
     // endregion
 
+    @Test
+    fun `M return last fatal ANR sent W lastFatalAnrSent`(
+        @TempDir tempDir: File,
+        @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(fakeLastFatalAnrSent.toString())
+
+        // When
+        val lastFatalAnrSent = testedFeature.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isEqualTo(fakeLastFatalAnrSent)
+    }
+
+    @Test
+    fun `M return null W lastFatalAnrSent { no file }`(
+        @TempDir tempDir: File
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+
+        // When
+        val lastFatalAnrSent = testedFeature.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isNull()
+    }
+
+    @Test
+    fun `M return null W lastFatalAnrSent { file contains not a number }`(
+        @TempDir tempDir: File,
+        @StringForgery fakeBrokenLastFatalAnrSent: String
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(fakeBrokenLastFatalAnrSent)
+
+        // When
+        val lastFatalAnrSent = testedFeature.lastFatalAnrSent
+
+        // Then
+        assertThat(lastFatalAnrSent).isNull()
+    }
+
+    @Test
+    fun `M delete last fatal ANR sent W deleteLastFatalAnrSent`(
+        @TempDir tempDir: File,
+        @LongForgery fakeLastFatalAnrSent: Long
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(fakeLastFatalAnrSent.toString())
+
+        // When
+        testedFeature.deleteLastFatalAnrSent()
+
+        // Then
+        assertThat(File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)).doesNotExist()
+    }
+
+    @Test
+    fun `M write last view event W writeLastViewEvent`(
+        @TempDir tempDir: File,
+        @StringForgery viewEvent: String
+    ) {
+        // Given
+        val fakeViewEvent = viewEvent.toByteArray()
+
+        testedFeature.storageDir = tempDir
+
+        // When
+        testedFeature.writeLastViewEvent(fakeViewEvent)
+
+        // Then
+        val lastViewEventFile = File(
+            tempDir,
+            CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME
+        )
+        assertThat(lastViewEventFile).exists()
+
+        val fileContent = lastViewEventFile.readBytes()
+        // file will have batch file format, so beginning will contain some metadata,
+        // we need to skip it for the comparison
+        val payload = fileContent.takeLast(fakeViewEvent.size).toByteArray()
+        assertThat(payload).isEqualTo(fakeViewEvent)
+    }
+
+    @Test
+    fun `M delete last view event W deleteLastViewEvent`(
+        @TempDir tempDir: File,
+        @StringForgery fakeViewEvent: String
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)
+            .writeText(fakeViewEvent)
+
+        // When
+        testedFeature.deleteLastViewEvent()
+
+        // Then
+        assertThat(File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)).doesNotExist()
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `M delete last view event W deleteLastViewEvent { legacy NDK location }`(
+        @TempDir tempDir: File,
+        @StringForgery fakeViewEvent: String
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        DatadogNdkCrashHandler.getLastViewEventFile(tempDir)
+            .apply {
+                parentFile?.mkdirs()
+            }
+            .writeText(fakeViewEvent)
+
+        // When
+        testedFeature.deleteLastViewEvent()
+
+        // Then
+        assertThat(DatadogNdkCrashHandler.getLastViewEventFile(tempDir)).doesNotExist()
+    }
+
+    @Test
+    fun `M return null W lastViewEvent { no last view event written }`(
+        @TempDir tempDir: File
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+
+        // When
+        val lastViewEvent = testedFeature.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent).isNull()
+    }
+
+    @Test
+    fun `M return last view event W lastViewEvent`(
+        @TempDir tempDir: File,
+        @Forgery fakeViewEvent: JsonObject
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+        testedFeature.writeLastViewEvent(fakeViewEvent.toString().toByteArray())
+
+        // When
+        val lastViewEvent = testedFeature.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent.toString()).isEqualTo(fakeViewEvent.toString())
+        // file must be deleted once view event is read
+        assertThat(File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)).doesNotExist()
+    }
+
+    @Test
+    fun `M return last view event W lastViewEvent { check old NDK location }`(
+        @TempDir tempDir: File,
+        @Forgery fakeViewEvent: JsonObject
+    ) {
+        // Given
+        testedFeature.storageDir = tempDir
+
+        @Suppress("DEPRECATION")
+        val legacyNdkViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(tempDir)
+        legacyNdkViewEventFile.parentFile?.mkdirs()
+
+        BatchFileReaderWriter
+            .create(internalLogger = mock(), encryption = null)
+            .writeData(
+                legacyNdkViewEventFile,
+                RawBatchEvent(fakeViewEvent.toString().toByteArray()),
+                append = false
+            )
+
+        // When
+        val lastViewEvent = testedFeature.lastViewEvent
+
+        // Then
+        assertThat(lastViewEvent.toString()).isEqualTo(fakeViewEvent.toString())
+    }
+
+    @Test
+    fun `M return app start time W appStartTimeNs`(
+        @LongForgery(min = 0L) fakeAppStartTimeNs: Long
+    ) {
+        // Given
+        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeAppStartTimeNs
+
+        // When
+        val appStartTimeNs = testedFeature.appStartTimeNs
+
+        // Then
+        assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
+    }
+
     // region shutdown
 
     @Test
-    fun `𝕄 cleanup NdkCrashHandler 𝕎 stop()`() {
+    fun `M cleanup NdkCrashHandler W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -930,7 +1249,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 cleanup app info 𝕎 stop()`() {
+    fun `M cleanup app info W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -953,7 +1272,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 cleanup providers 𝕎 stop()`() {
+    fun `M cleanup providers W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -983,7 +1302,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 shut down executors 𝕎 stop()`() {
+    fun `M shut down executors W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -993,7 +1312,7 @@ internal class CoreFeatureTest {
         )
         val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
         testedFeature.uploadExecutorService = mockUploadExecutorService
-        val mockPersistenceExecutorService: ExecutorService = mock()
+        val mockPersistenceExecutorService: FlushableExecutorService = mock()
         testedFeature.persistenceExecutorService = mockPersistenceExecutorService
 
         // When
@@ -1005,7 +1324,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
+    fun `M unregister tracking consent callbacks W stop()`() {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -1024,7 +1343,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 clean up feature context 𝕎 stop()`(
+    fun `M clean up feature context W stop()`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
@@ -1058,8 +1377,13 @@ internal class CoreFeatureTest {
         )
 
         val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
-        val persistenceExecutor =
-            ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, blockingQueue)
+        val persistenceExecutor: FlushableExecutorService = mock()
+        whenever(persistenceExecutor.drainTo(any())) doAnswer { invocation ->
+            blockingQueue.forEach {
+                @Suppress("UNCHECKED_CAST")
+                (invocation.arguments[0] as MutableCollection<Any>).add(it)
+            }
+        }
         testedFeature.persistenceExecutorService = persistenceExecutor
 
         // When
@@ -1105,7 +1429,7 @@ internal class CoreFeatureTest {
             fakeConsent
         )
 
-        val mockPersistenceExecutorService: ExecutorService = mock()
+        val mockPersistenceExecutorService: FlushableExecutorService = mock()
         testedFeature.persistenceExecutorService = mockPersistenceExecutorService
 
         // When

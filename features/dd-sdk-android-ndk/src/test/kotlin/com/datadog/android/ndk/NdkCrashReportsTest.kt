@@ -37,7 +37,7 @@ internal class NdkCrashReportsTest {
     }
 
     @Test
-    fun `𝕄 register ndk crash reports feature 𝕎 enable()`() {
+    fun `M register ndk crash reports feature W enable()`() {
         // When
         NdkCrashReports.enable(mockSdkCore)
 

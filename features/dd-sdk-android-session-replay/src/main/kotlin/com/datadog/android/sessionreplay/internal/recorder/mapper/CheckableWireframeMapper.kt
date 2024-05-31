@@ -8,22 +8,41 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Checkable
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
-    BaseWireframeMapper<T, MobileSegment.Wireframe>(viewUtils = viewUtils)
-        where T : View, T : Checkable {
+internal abstract class CheckableWireframeMapper<T>(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<T>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) where T : View, T : Checkable {
 
+    @UiThread
     override fun map(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback)
-        val checkableWireframes = if (view.isChecked) {
+        val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback, internalLogger)
+        val checkableWireframes = if (mappingContext.privacy != SessionReplayPrivacy.ALLOW) {
+            resolveMaskedCheckable(view, mappingContext)
+        } else if (view.isChecked) {
             resolveCheckedCheckable(view, mappingContext)
         } else {
             resolveNotCheckedCheckable(view, mappingContext)
@@ -34,17 +53,27 @@ internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
         return mainWireframes
     }
 
+    @UiThread
     abstract fun resolveMainWireframes(
         view: T,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe>
 
+    @UiThread
+    abstract fun resolveMaskedCheckable(
+        view: T,
+        mappingContext: MappingContext
+    ): List<MobileSegment.Wireframe>?
+
+    @UiThread
     abstract fun resolveNotCheckedCheckable(
         view: T,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>?
 
+    @UiThread
     abstract fun resolveCheckedCheckable(
         view: T,
         mappingContext: MappingContext

@@ -88,7 +88,7 @@ internal class SingleItemDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write element to file 𝕎 write(element)`(
+    fun `M write element to file W write(element)`(
         @StringForgery data: String,
         @Forgery file: File
     ) {
@@ -109,7 +109,7 @@ internal class SingleItemDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write last element to file 𝕎 write(list)`(
+    fun `M write last element to file W write(list)`(
         @StringForgery data: List<String>,
         @Forgery file: File
     ) {
@@ -130,7 +130,7 @@ internal class SingleItemDataWriterTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write(element) { serialization to null }`(
+    fun `M do nothing W write(element) { serialization to null }`(
         @StringForgery data: String
     ) {
         // Given
@@ -144,7 +144,7 @@ internal class SingleItemDataWriterTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write(element) { serialization exception }`(
+    fun `M do nothing W write(element) { serialization exception }`(
         @StringForgery data: String
     ) {
         // Given
@@ -164,7 +164,7 @@ internal class SingleItemDataWriterTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write(element) { element is too big }`(
+    fun `M do nothing W write(element) { element is too big }`(
         @StringForgery data: String
     ) {
         // When

@@ -1,10 +1,11 @@
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-2019 Datadog, Inc.
+ * Copyright 2016-Present Datadog, Inc.
  */
 
 import com.datadog.gradle.Dependencies
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.javadocConfig
@@ -46,6 +47,10 @@ android {
                 version = Dependencies.Versions.CMake
             }
         }
+    }
+
+    testOptions {
+        targetSdk = AndroidConfig.TARGET_SDK
     }
 
     namespace = "com.datadog.android.ndk"

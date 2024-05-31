@@ -6,11 +6,14 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.lint.InternalApi
+
 /**
  * Converts Thread state to string format. This is needed, because enum may be obfuscated, so we
  * cannot rely on the name property.
  */
-internal fun Thread.State.asString(): String {
+@InternalApi
+fun Thread.State.asString(): String {
     return when (this) {
         Thread.State.NEW -> "new"
         Thread.State.BLOCKED -> "blocked"
@@ -24,4 +27,5 @@ internal fun Thread.State.asString(): String {
 /**
  * Converts stacktrace to string format.
  */
-internal fun Array<StackTraceElement>.loggableStackTrace(): String = joinToString("\n") { "at $it" }
+@InternalApi
+fun Array<StackTraceElement>.loggableStackTrace(): String = joinToString("\n") { "at $it" }

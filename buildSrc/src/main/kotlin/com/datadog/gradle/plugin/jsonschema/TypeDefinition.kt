@@ -113,10 +113,20 @@ sealed class TypeDefinition {
                 }
             }
 
+            val mergedAdditionalProperties =
+                if (this.additionalProperties == null) {
+                    other.additionalProperties
+                } else if (other.additionalProperties == null) {
+                    this.additionalProperties
+                } else {
+                    additionalProperties.mergedWith(other.additionalProperties)
+                }
+
             return Class(
                 name,
                 mergedFields,
-                "$description\n${other.description}".trim()
+                "$description\n${other.description}".trim(),
+                mergedAdditionalProperties
             )
         }
 

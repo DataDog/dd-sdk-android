@@ -10,19 +10,17 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
-import java.lang.ClassCastException
-import java.lang.NullPointerException
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import java.util.Locale
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -52,7 +50,7 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         internalLogger = internalLogger,
 
         /**
-         * TODO: RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
+         * TODO RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
          * if we ever decide to make the poolsize greater than 1, we need to ensure
          * synchronization works correctly in the triggerProcessingLoop method below
          */
@@ -129,9 +127,7 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
     }
 
     @MainThread
-    override fun addSnapshotItem(
-        systemInformation: SystemInformation
-    ): SnapshotRecordedDataQueueItem? {
+    override fun addSnapshotItem(systemInformation: SystemInformation): SnapshotRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
             ?: return null
 
@@ -162,16 +158,8 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         // currentTime needs to be obtained on the uithread
         val currentTime = timeProvider.getDeviceTimestamp()
 
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
-        try {
-            executorService.execute {
-                @Suppress("ThreadSafety") // already in the worker thread context
-                triggerProcessingLoop(currentTime)
-            }
-        } catch (e: RejectedExecutionException) {
-            logConsumeQueueException(e)
-        } catch (e: NullPointerException) {
-            logConsumeQueueException(e)
+        executorService.executeSafe("Recorded Data queue processing", internalLogger) {
+            triggerProcessingLoop(currentTime)
         }
     }
 
@@ -190,18 +178,25 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
             val nextItem = recordedDataQueue.peek()
 
             if (nextItem != null) {
-                if (shouldRemoveItem(nextItem, currentTime)) {
-                    // this should never happen, so if it does we should send telemetry
+                val nextItemAge = currentTime - nextItem.recordedQueuedItemContext.timestamp
+                if (!nextItem.isValid()) {
                     internalLogger.log(
                         InternalLogger.Level.WARN,
                         listOf(
                             InternalLogger.Target.MAINTAINER,
                             InternalLogger.Target.TELEMETRY
                         ),
-                        {
-                            ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
-                                .format(Locale.US, nextItem.isValid())
-                        }
+                        { ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, nextItem.javaClass.simpleName) }
+                    )
+                    recordedDataQueue.poll()
+                } else if (nextItemAge > MAX_DELAY_MS) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        listOf(
+                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
+                        { ITEM_DROPPED_EXPIRED_MESSAGE.format(Locale.US, nextItemAge) }
                     )
                     recordedDataQueue.poll()
                 } else if (nextItem.isReady()) {
@@ -242,14 +237,8 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         processor.processTouchEventsRecords(item)
     }
 
-    private fun shouldRemoveItem(recordedDataQueueItem: RecordedDataQueueItem, currentTime: Long) =
-        !recordedDataQueueItem.isValid() || isTooOld(currentTime, recordedDataQueueItem)
-
-    private fun isTooOld(currentTime: Long, recordedDataQueueItem: RecordedDataQueueItem): Boolean =
-        (currentTime - recordedDataQueueItem.recordedQueuedItemContext.timestamp) > MAX_DELAY_MS
-
     private fun insertIntoRecordedDataQueue(recordedDataQueueItem: RecordedDataQueueItem) {
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionCaught")
         try {
             recordedDataQueue.offer(recordedDataQueueItem)
         } catch (e: IllegalArgumentException) {
@@ -270,15 +259,6 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         )
     }
 
-    private fun logConsumeQueueException(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE },
-            e
-        )
-    }
-
     // end region
 
     internal companion object {
@@ -293,7 +273,11 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
             "SR RecordedDataQueueHandler: failed to add records into the queue"
 
         @VisibleForTesting
-        internal const val ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE =
-            "SR RecordedDataQueueHandler: dropped item from the queue. Valid: %s"
+        internal const val ITEM_DROPPED_INVALID_MESSAGE =
+            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, type=%s"
+
+        @VisibleForTesting
+        internal const val ITEM_DROPPED_EXPIRED_MESSAGE =
+            "SR RecordedDataQueueHandler: dropped item from the queue. age=%d ms"
     }
 }

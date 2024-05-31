@@ -33,7 +33,7 @@ internal class LogsConfigurationBuilderTest {
     private val testedBuilder: LogsConfiguration.Builder = LogsConfiguration.Builder()
 
     @Test
-    fun `𝕄 use sensible defaults 𝕎 build()`() {
+    fun `M use sensible defaults W build()`() {
         // When
         val logsConfiguration = testedBuilder.build()
 
@@ -43,7 +43,7 @@ internal class LogsConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build configuration with custom site 𝕎 useCustomEndpoint() and build()`(
+    fun `M build configuration with custom site W useCustomEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com") logsEndpointUrl: String
     ) {
         // When
@@ -55,7 +55,7 @@ internal class LogsConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build configuration with Log eventMapper 𝕎 setEventMapper() and build()`() {
+    fun `M build configuration with Log eventMapper W setEventMapper() and build()`() {
         // Given
         val mockEventMapper: EventMapper<LogEvent> = mock()
 

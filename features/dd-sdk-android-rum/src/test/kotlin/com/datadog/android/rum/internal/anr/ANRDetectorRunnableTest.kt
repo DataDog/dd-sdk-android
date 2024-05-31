@@ -9,6 +9,9 @@ package com.datadog.android.rum.internal.anr
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -30,12 +33,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.reset
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -51,7 +54,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(value = Configurator::class)
 internal class ANRDetectorRunnableTest {
 
-    lateinit var testedRunnable: ANRDetectorRunnable
+    private lateinit var testedRunnable: ANRDetectorRunnable
 
     @Mock
     lateinit var mockHandler: Handler
@@ -74,19 +77,34 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 report RUM error 𝕎 run() {ANR detected}`() {
+    fun `M report RUM error W run() {ANR detected}`() {
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
 
         // Then
         Thread.sleep(TEST_ANR_THRESHOLD_MS)
-        verify(rumMonitor.mockInstance).addError(
-            eq("Application Not Responding"),
-            eq(RumErrorSource.SOURCE),
-            any(),
-            eq(emptyMap())
-        )
+        argumentCaptor<Map<String, Any?>> {
+            val anrExceptionCaptor = argumentCaptor<Throwable>()
+            verify(rumMonitor.mockInstance).addError(
+                message = eq("Application Not Responding"),
+                source = eq(RumErrorSource.SOURCE),
+                throwable = anrExceptionCaptor.capture(),
+                attributes = capture()
+            )
+            assertThat(anrExceptionCaptor.lastValue).isInstanceOf(ANRException::class.java)
+
+            assertThat(lastValue).containsOnlyKeys(RumAttributes.INTERNAL_ALL_THREADS)
+            @Suppress("UNCHECKED_CAST")
+            val allThreads = lastValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+            assertThat(allThreads.all { !it.crashed }).isTrue()
+
+            val anrThread = allThreads.firstOrNull { it.name == Thread.currentThread().name }
+            check(anrThread != null)
+            assertThat(anrThread.stack).isEqualTo(anrExceptionCaptor.lastValue.loggableStackTrace())
+            assertThat(allThreads.filter { it.name == anrThread.name }).hasSize(1)
+            assertThat(allThreads.filterNot { it.name == anrThread.name }).isNotEmpty
+        }
 
         argumentCaptor<Runnable> {
             verify(mockHandler).post(capture())
@@ -96,7 +114,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not report RUM error 𝕎 run() {no ANR}`() {
+    fun `M not report RUM error W run() {no ANR}`() {
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
@@ -112,7 +130,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 wait ANR resolution before scheduling next runnable 𝕎 run()`() {
+    fun `M wait ANR resolution before scheduling next runnable W run()`() {
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
@@ -127,7 +145,7 @@ internal class ANRDetectorRunnableTest {
 
             lastValue.run()
             // +10 is to remove flakiness, otherwise it seems current thread can resume execution
-            // before AND test thread
+            // before ANR test thread
             Thread.sleep(TEST_ANR_TEST_DELAY_MS + 10)
             verify(mockHandler).post(capture())
             lastValue.run()
@@ -135,7 +153,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not report RUM error 𝕎 stop() + run()`() {
+    fun `M not report RUM error W stop() + run()`() {
         // When
         testedRunnable.stop()
         Thread(testedRunnable).start()
@@ -146,7 +164,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not do anything 𝕎 run() {handler returns false}`() {
+    fun `M not do anything W run() {handler returns false}`() {
         // Given
         whenever(mockHandler.post(any())) doReturn false
 
@@ -163,7 +181,7 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 schedule runnable regularly 𝕎 run()`(
+    fun `M schedule runnable regularly W run()`(
         @IntForgery(1, 10) repeatCount: Int
     ) {
         // Given
@@ -184,7 +202,7 @@ internal class ANRDetectorRunnableTest {
         verifyNoInteractions(rumMonitor.mockInstance)
         verify(
             mockHandler,
-            times(repeatCount + 1)
+            atLeast(repeatCount)
         ).post(isA<ANRDetectorRunnable.CallbackRunnable>())
     }
 

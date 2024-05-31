@@ -8,13 +8,13 @@ package com.datadog.android.sessionreplay.compose
 
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.sessionreplay.ExtensionSupport
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.mappers.ComposeWireframeMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -31,35 +31,15 @@ class ComposeExtensionSupportTest {
     }
 
     @Test
-    fun `M return a ComposeMapper W getCustomViewMappers() { ALLOW }`() {
+    fun `M return a ComposeMapper W getCustomViewMappers()`() {
+        // Given
+        val mockView: ComposeView = mock()
+
         // When
         val customMappers = testedExtensionSupport.getCustomViewMappers()
 
         // Then
-        val composeMapper = customMappers[SessionReplayPrivacy.ALLOW]?.get(ComposeView::class.java)
+        val composeMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
         assertThat(composeMapper).isInstanceOf(ComposeWireframeMapper::class.java)
-        assertThat((composeMapper as ComposeWireframeMapper).privacy).isEqualTo(SessionReplayPrivacy.ALLOW)
-    }
-
-    @Test
-    fun `M return a MaskSliderMapper W getCustomViewMappers() { MASK }`() {
-        // When
-        val customMappers = testedExtensionSupport.getCustomViewMappers()
-
-        // Then
-        val composeMapper = customMappers[SessionReplayPrivacy.MASK]?.get(ComposeView::class.java)
-        assertThat(composeMapper).isInstanceOf(ComposeWireframeMapper::class.java)
-        assertThat((composeMapper as ComposeWireframeMapper).privacy).isEqualTo(SessionReplayPrivacy.MASK)
-    }
-
-    @Test
-    fun `M return a MaskSliderMapper W getCustomViewMappers() { MASK_USER_INPUT }`() {
-        // When
-        val customMappers = testedExtensionSupport.getCustomViewMappers()
-
-        // Then
-        val composeMapper = customMappers[SessionReplayPrivacy.MASK_USER_INPUT]?.get(ComposeView::class.java)
-        assertThat(composeMapper).isInstanceOf(ComposeWireframeMapper::class.java)
-        assertThat((composeMapper as ComposeWireframeMapper).privacy).isEqualTo(SessionReplayPrivacy.MASK_USER_INPUT)
     }
 }

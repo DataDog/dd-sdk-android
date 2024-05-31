@@ -7,16 +7,31 @@
 package com.datadog.android.core.internal.system
 
 import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
+import com.datadog.android.lint.InternalApi
 
 /**
  * Wrapper around [Build.VERSION.SDK_INT] in order to simplify mocking in tests.
  *
  * FOR INTERNAL USAGE ONLY. THIS INTERFACE CONTENT MAY CHANGE WITHOUT NOTICE.
  */
+@InternalApi
 interface BuildSdkVersionProvider {
 
     /**
      * Value of [Build.VERSION.SDK_INT].
      */
-    fun version(): Int
+    val version: Int
+
+    companion object {
+
+        /**
+         * Default implementation which calls Build.VERSION under the hood.
+         */
+        val DEFAULT: BuildSdkVersionProvider = object : BuildSdkVersionProvider {
+
+            @ChecksSdkIntAtLeast
+            override val version: Int = Build.VERSION.SDK_INT
+        }
+    }
 }

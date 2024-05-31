@@ -6,17 +6,17 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class GlobalBoundsForgeryFactory : ForgeryFactory<GlobalBounds> {
     override fun getForgery(forge: Forge): GlobalBounds {
         return GlobalBounds(
-            x = forge.aLong(),
-            y = forge.aLong(),
-            width = forge.aPositiveLong(),
-            height = forge.aPositiveLong()
+            x = forge.aLong(min = -65536L, max = 65536L),
+            y = forge.aLong(min = -65536L, max = 65536L),
+            width = forge.aLong(min = 1L, max = 65536L),
+            height = forge.aLong(min = 1L, max = 65536L)
         )
     }
 }

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.ViewGroup
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 
 internal class ComposedOptionSelectorDetector(private val detectors: List<OptionSelectorDetector>) :
     OptionSelectorDetector {

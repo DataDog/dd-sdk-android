@@ -46,7 +46,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log SUCCESS only to USER 𝕎 logStatus()`(
+    fun `M log SUCCESS only to USER W logStatus()`(
         @Forgery status: UploadStatus.Success
     ) {
         // When
@@ -66,7 +66,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log NETWORK_ERROR only to USER 𝕎 logStatus()`(
+    fun `M log NETWORK_ERROR only to USER W logStatus()`(
         @Forgery status: UploadStatus.NetworkError
     ) {
         // When
@@ -87,7 +87,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log INVALID_TOKEN_ERROR only to USER 𝕎 logStatus()`(
+    fun `M log INVALID_TOKEN_ERROR only to USER W logStatus()`(
         @Forgery status: UploadStatus.InvalidTokenError
     ) {
         // When
@@ -110,7 +110,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_REDIRECTION only to USER 𝕎 logStatus()`(
+    fun `M log HTTP_REDIRECTION only to USER W logStatus()`(
         @Forgery status: UploadStatus.HttpRedirection
     ) {
         // When
@@ -131,7 +131,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_CLIENT_ERROR to USER and TELEMETRY 𝕎 logStatus()`(
+    fun `M log HTTP_CLIENT_ERROR to USER and TELEMETRY W logStatus()`(
         @Forgery status: UploadStatus.HttpClientError
     ) {
         // When
@@ -153,7 +153,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_CLIENT_ERROR_RATE_LIMITING to USER and TELEMETRY 𝕎 logStatus()`(
+    fun `M log HTTP_CLIENT_ERROR_RATE_LIMITING to USER and TELEMETRY W logStatus()`(
         @Forgery status: UploadStatus.HttpClientRateLimiting
     ) {
         // When
@@ -173,7 +173,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_SERVER_ERROR only to USER 𝕎 logStatus()`(
+    fun `M log HTTP_SERVER_ERROR only to USER W logStatus()`(
         @Forgery status: UploadStatus.HttpServerError
     ) {
         // When
@@ -194,7 +194,7 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log UNKNOWN_ERROR only to USER 𝕎 logStatus()`(
+    fun `M log UNKNOWN_ERROR only to USER W logStatus()`(
         @Forgery status: UploadStatus.UnknownError
     ) {
         // When
@@ -209,12 +209,12 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error; the batch was dropped."
+                "because of an unknown error (status code = ${status.code}); the batch was dropped."
         )
     }
 
     @Test
-    fun `𝕄 log INVALID_REQUEST_ERROR only to USER 𝕎 logStatus()`(
+    fun `M log INVALID_REQUEST_ERROR only to USER W logStatus()`(
         @Forgery status: UploadStatus.RequestCreationError
     ) {
         // When

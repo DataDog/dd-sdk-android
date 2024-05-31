@@ -13,38 +13,51 @@ import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeContext
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeFields
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.findComposer
 import com.datadog.android.sessionreplay.compose.internal.getSubComposers
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 /**
  * A wireframe mapper able to convert a Jetpack Compose view into a Datadog Session Replay Wireframe.
- * @property privacy the privacy level to use when tracking composable views
  */
 internal class ComposeWireframeMapper(
-    val privacy: SessionReplayPrivacy
-) : BaseWireframeMapper<ComposeView, MobileSegment.Wireframe>() {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<ComposeView>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
-    private val mappers = mapOf<String, CompositionGroupMapper>(
-        "Text" to TextCompositionGroupMapper(),
-        "Button" to ButtonCompositionGroupMapper()
-        // TODO: RUM-0000 Implement mappers for different Composable groups
+    private val composeMappers = mapOf<String, CompositionGroupMapper>(
+        "Text" to TextCompositionGroupMapper(colorStringFormatter),
+        "Button" to ButtonCompositionGroupMapper(colorStringFormatter)
+        // TODO RUM-4738 Implement mappers for different Composable groups
         // "TabRow" : holds the tab row bg color
         //  "Tab": holds selected tab info
     )
 
+    // region WireframeMapper
+
     override fun map(
         view: ComposeView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val density = mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
 
@@ -57,13 +70,15 @@ internal class ComposeWireframeMapper(
         }
     }
 
-    // region Wireframes
+    // endregion
+
+    // region Internal
 
     private fun createPlaceholderWireframe(
         view: ComposeView,
         density: Float
     ): List<MobileSegment.Wireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, density)
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
         return listOf(
             MobileSegment.Wireframe.PlaceholderWireframe(
                 id = resolveViewId(view),
@@ -143,7 +158,7 @@ internal class ComposeWireframeMapper(
         composeContext: ComposeContext,
         parentUiContext: UiContext
     ): ComposeWireframe? {
-        val mapper = mappers[composeContext.name] ?: return null
+        val mapper = composeMappers[composeContext.name] ?: return null
         return mapper.map(compositionGroup, composeContext, parentUiContext)
     }
 

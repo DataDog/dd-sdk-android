@@ -17,9 +17,9 @@ import com.datadog.android.sdk.utils.asMap
 
 internal abstract class FragmentTrackingTest :
     RumTest<
-            FragmentTrackingPlaygroundActivity,
-            RumMockServerActivityTestRule<FragmentTrackingPlaygroundActivity>
-            >() {
+        FragmentTrackingPlaygroundActivity,
+        RumMockServerActivityTestRule<FragmentTrackingPlaygroundActivity>
+        >() {
 
     // region RumTest
 

@@ -9,17 +9,28 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 @RequiresApi(Build.VERSION_CODES.Q)
 internal abstract class BasePickerMapper(
-    stringUtils: StringUtils = StringUtils,
-    viewUtils: ViewUtils = ViewUtils
-) : BaseWireframeMapper<NumberPicker, MobileSegment.Wireframe>(stringUtils, viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<NumberPicker>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
     protected fun resolveTextSize(view: NumberPicker, screenDensity: Float): Long {
         return view.textSize.toLong().densityNormalized(screenDensity)
@@ -32,9 +43,11 @@ internal abstract class BasePickerMapper(
     protected fun resolveDividerPaddingStart(view: NumberPicker, screenDensity: Float): Long {
         return view.paddingStart.toLong().densityNormalized(screenDensity)
     }
+
     protected fun resolveDividerPaddingEnd(view: NumberPicker, screenDensity: Float): Long {
         return view.paddingEnd.toLong().densityNormalized(screenDensity)
     }
+
     protected fun resolveDividerHeight(screenDensity: Float): Long {
         return DIVIDER_HEIGHT_IN_PX.densityNormalized(screenDensity)
     }
@@ -47,7 +60,7 @@ internal abstract class BasePickerMapper(
     }
 
     protected fun resolveSelectedTextColor(view: NumberPicker): String {
-        return colorAndAlphaAsStringHexa(view.textColor, OPAQUE_ALPHA_VALUE)
+        return colorStringFormatter.formatColorAndAlphaAsHexString(view.textColor, OPAQUE_ALPHA_VALUE)
     }
 
     @Suppress("LongParameterList")
@@ -102,7 +115,6 @@ internal abstract class BasePickerMapper(
         )
 
     companion object {
-        internal const val PARTIALLY_OPAQUE_ALPHA_VALUE: Int = 0x44
         internal const val PREV_INDEX_KEY_NAME = "numeric_picker_prev_index"
         internal const val SELECTED_INDEX_KEY_NAME = "numeric_picker_selected_index"
         internal const val NEXT_INDEX_KEY_NAME = "numeric_picker_next_index"

@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
@@ -67,13 +68,23 @@ internal class RumDataWriterTest {
 
     @StringForgery
     lateinit var fakeSerializedEvent: String
+
     lateinit var fakeSerializedData: ByteArray
+
+    @Forgery
+    lateinit var fakeEventType: EventType
 
     @BeforeEach
     fun `set up`() {
         fakeSerializedData = fakeSerializedEvent.toByteArray(Charsets.UTF_8)
 
-        whenever(mockEventBatchWriter.write(RawBatchEvent(data = fakeSerializedData), null)) doReturn true
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(data = fakeSerializedData),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedWriter = RumDataWriter(
@@ -84,7 +95,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 write data 𝕎 write()`(
+    fun `M write data W write()`(
         forge: Forge
     ) {
         // Given
@@ -99,19 +110,20 @@ internal class RumDataWriterTest {
         whenever(mockSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
 
         // Then
         assertThat(result).isTrue
 
         verify(mockEventBatchWriter).write(
             RawBatchEvent(data = fakeSerializedData),
-            null
+            null,
+            fakeEventType
         )
     }
 
     @Test
-    fun `𝕄 write data with event meta 𝕎 write() {View Event}`(
+    fun `M write data with event meta W write() {View Event}`(
         @Forgery fakeViewEvent: ViewEvent,
         @StringForgery fakeSerializedViewEventMeta: String
     ) {
@@ -124,7 +136,7 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
 
         // When
-        testedWriter.write(mockEventBatchWriter, fakeViewEvent)
+        testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
 
         // Then
         verify(mockEventBatchWriter).write(
@@ -132,12 +144,13 @@ internal class RumDataWriterTest {
                 data = fakeSerializedData,
                 metadata = fakeSerializedViewEventMeta.toByteArray()
             ),
-            null
+            null,
+            fakeEventType
         )
     }
 
     @Test
-    fun `𝕄 write data with empty event meta 𝕎 write() {View Event, meta serialization fails}`(
+    fun `M write data with empty event meta W write() {View Event, meta serialization fails}`(
         @Forgery fakeViewEvent: ViewEvent,
         forge: Forge
     ) {
@@ -150,17 +163,18 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
 
         // When
-        testedWriter.write(mockEventBatchWriter, fakeViewEvent)
+        testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
 
         // Then
         verify(mockEventBatchWriter).write(
             RawBatchEvent(data = fakeSerializedData),
-            null
+            null,
+            fakeEventType
         )
     }
 
     @Test
-    fun `𝕄 not write data 𝕎 write() { exception during serialization }`(
+    fun `M not write data W write() { exception during serialization }`(
         forge: Forge
     ) {
         // Given
@@ -175,7 +189,7 @@ internal class RumDataWriterTest {
         whenever(mockSerializer.serialize(fakeEvent)) doThrow forge.aThrowable()
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -184,7 +198,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() { data was not written }`(
+    fun `M return false W write() { data was not written }`(
         forge: Forge
     ) {
         // Given
@@ -196,10 +210,10 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockEventBatchWriter.write(RawBatchEvent(fakeSerializedData), null)) doReturn false
+        whenever(mockEventBatchWriter.write(RawBatchEvent(fakeSerializedData), null, fakeEventType)) doReturn false
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
@@ -208,7 +222,7 @@ internal class RumDataWriterTest {
     // region onDataWritten
 
     @Test
-    fun `𝕄 do not notify the RumMonitor 𝕎 onDataWritten() { ViewEvent }`(
+    fun `M do not notify the RumMonitor W onDataWritten() { ViewEvent }`(
         @Forgery viewEvent: ViewEvent
     ) {
         // When
@@ -219,7 +233,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 persist the event into the NDK crash folder 𝕎 onDataWritten(){ViewEvent+dir exists}`(
+    fun `M persist the event into the NDK crash folder W onDataWritten(){ViewEvent+dir exists}`(
         @Forgery viewEvent: ViewEvent
     ) {
         // When

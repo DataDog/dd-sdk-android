@@ -64,7 +64,7 @@ internal class PlainFileReaderWriterTest {
     // region writeData
 
     @Test
-    fun `𝕄 write data in empty file 𝕎 writeData() {append=false}`(
+    fun `M write data in empty file W writeData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery content: String
     ) {
@@ -86,7 +86,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 write data in empty file  𝕎 writeData() {append=true}`(
+    fun `M write data in empty file  W writeData() {append=true}`(
         @StringForgery fileName: String,
         @StringForgery content: String
     ) {
@@ -108,7 +108,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 overwrite data in non empty file 𝕎 writeData() {append=false}`(
+    fun `M overwrite data in non empty file W writeData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
         @StringForgery content: String
@@ -131,7 +131,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 append data in non empty file 𝕎 writeData() {append=true}`(
+    fun `M append data in non empty file W writeData() {append=true}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
         @StringForgery content: String
@@ -158,7 +158,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return false and warn 𝕎 writeData() {parent dir does not exist}`(
+    fun `M return false and warn W writeData() {parent dir does not exist}`(
         @StringForgery fileName: String,
         @StringForgery content: String,
         @BoolForgery append: Boolean
@@ -186,7 +186,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return false and warn 𝕎 writeData() {file is not file}`(
+    fun `M return false and warn W writeData() {file is not file}`(
         @StringForgery fileName: String,
         @StringForgery content: String,
         @BoolForgery append: Boolean
@@ -217,7 +217,7 @@ internal class PlainFileReaderWriterTest {
     // region readData
 
     @Test
-    fun `𝕄 return empty array and warn 𝕎 readData() {file does not exist}`(
+    fun `M return empty array and warn W readData() {file does not exist}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -239,7 +239,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return empty array and warn 𝕎 readData() {file is not file}`(
+    fun `M return empty array and warn W readData() {file is not file}`(
         @StringForgery fileName: String
     ) {
         // Given
@@ -260,7 +260,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 readData() { single event }`(
+    fun `M return file content W readData() { single event }`(
         @StringForgery fileName: String,
         @StringForgery event: String
     ) {
@@ -277,7 +277,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 readData() { multiple events }`(
+    fun `M return file content W readData() { multiple events }`(
         @StringForgery fileName: String,
         forge: Forge
     ) {
@@ -301,7 +301,7 @@ internal class PlainFileReaderWriterTest {
     // region writeData + readData
 
     @Test
-    fun `𝕄 return file content 𝕎 writeData + readData() { append = false }`(
+    fun `M return file content W writeData + readData() { append = false }`(
         @StringForgery fileName: String,
         @StringForgery content: String
     ) {
@@ -318,7 +318,7 @@ internal class PlainFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 writeData + readData() { append = true }`(
+    fun `M return file content W writeData + readData() { append = true }`(
         @StringForgery fileName: String,
         forge: Forge
     ) {

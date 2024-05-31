@@ -19,8 +19,8 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
@@ -281,6 +281,8 @@ internal class GesturesListener(
         stack: LinkedList<View>,
         coordinatesContainer: IntArray
     ) {
+        if (!view.isVisible) return
+
         for (i in 0 until view.childCount) {
             val child = view.getChildAt(i)
             if (hitTest(child, x, y, coordinatesContainer)) {
@@ -290,11 +292,11 @@ internal class GesturesListener(
     }
 
     private fun isValidTapTarget(view: View): Boolean {
-        return view.isClickable && view.visibility == View.VISIBLE
+        return view.isClickable && view.isVisible
     }
 
     private fun isValidScrollableTarget(view: View): Boolean {
-        return view.visibility == View.VISIBLE && isScrollableView(view)
+        return view.isVisible && isScrollableView(view)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
@@ -344,6 +346,9 @@ internal class GesturesListener(
         // methods are final.
         return view::class.java.name.startsWith("androidx.compose.ui.platform.ComposeView")
     }
+
+    private val View.isVisible: Boolean
+        get() = visibility == View.VISIBLE
 
     // endregion
 
