@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.datastore.ext.toByteArray
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader.Companion.FAILED_TO_DESERIALIZE_ERROR
 import com.datadog.android.utils.forge.Configurator
@@ -54,17 +53,15 @@ internal class TLVBlockFileReaderTest {
     @StringForgery(regex = "^(\\w{3})\$") // a minimal number of chars to avoid flakiness
     private lateinit var fakeDataString: String
 
-    private lateinit var fakeUpdateBytes: ByteArray
     private lateinit var fakeVersionBytes: ByteArray
     private lateinit var fakeDataBytes: ByteArray
     private lateinit var fakeBufferBytes: ByteArray
 
     @BeforeEach
     fun setup(@IntForgery(min = 0, max = 10) fakeVersion: Int) {
-        val lastUpdateBytes = createLastUpdateBytes()
         val versionBytes = createVersionBytes(fakeVersion)
         val dataBytes = createDataBytes()
-        val dataToWrite = lastUpdateBytes + versionBytes + dataBytes
+        val dataToWrite = versionBytes + dataBytes
 
         whenever(mockFileReaderWriter.readData(mockFile)).thenReturn(dataToWrite)
 
@@ -118,13 +115,10 @@ internal class TLVBlockFileReaderTest {
         val tlvArray = testedReader.read(file = mockFile)
 
         // Then
-        assertThat(tlvArray.size).isEqualTo(3)
-        val lastUpdateObject = tlvArray[0]
-        val versionObject = tlvArray[1]
-        val dataObject = tlvArray[2]
+        assertThat(tlvArray.size).isEqualTo(2)
+        val versionObject = tlvArray[0]
+        val dataObject = tlvArray[1]
 
-        assertThat(lastUpdateObject.type).isEqualTo(TLVBlockType.LAST_UPDATE_DATE)
-        assertThat(lastUpdateObject.data).isEqualTo(fakeUpdateBytes)
         assertThat(versionObject.type).isEqualTo(TLVBlockType.VERSION_CODE)
         assertThat(versionObject.data).isEqualTo(fakeVersionBytes)
         assertThat(dataObject.type).isEqualTo(TLVBlockType.DATA)
@@ -166,19 +160,6 @@ internal class TLVBlockFileReaderTest {
             target = InternalLogger.Target.MAINTAINER,
             message = FAILED_TO_DESERIALIZE_ERROR
         )
-    }
-
-    private fun createLastUpdateBytes(): ByteArray {
-        val now = System.currentTimeMillis()
-        fakeUpdateBytes = now.toByteArray()
-        val lastUpdateType = TLVBlockType.LAST_UPDATE_DATE.rawValue.toShort()
-
-        return ByteBuffer
-            .allocate(fakeUpdateBytes.size + Int.SIZE_BYTES + Short.SIZE_BYTES)
-            .putShort(lastUpdateType)
-            .putInt(fakeUpdateBytes.size)
-            .put(fakeUpdateBytes)
-            .array()
     }
 
     private fun createVersionBytes(fakeVersion: Int): ByteArray {

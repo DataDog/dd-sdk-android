@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.ext.toInt
-import com.datadog.android.core.internal.persistence.datastore.ext.toLong
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
@@ -89,19 +88,17 @@ internal class DatastoreFileReader(
         deserializer: Deserializer<String, T>,
         tlvBlocks: List<TLVBlock>
     ): DataStoreContent<T>? {
-        if (tlvBlocks[0].type != TLVBlockType.LAST_UPDATE_DATE &&
-            tlvBlocks[1].type != TLVBlockType.VERSION_CODE
+        if (tlvBlocks[0].type != TLVBlockType.VERSION_CODE &&
+            tlvBlocks[1].type != TLVBlockType.DATA
         ) {
             logBlocksInUnexpectedBlocksOrderError()
             return null
         }
 
-        val lastUpdateBlock = tlvBlocks[0]
-        val versionCodeBlock = tlvBlocks[1]
-        val dataBlock = tlvBlocks[2]
+        val versionCodeBlock = tlvBlocks[0]
+        val dataBlock = tlvBlocks[1]
 
         return DataStoreContent(
-            lastUpdateDate = lastUpdateBlock.data.toLong(),
             versionCode = versionCodeBlock.data.toInt(),
             data = deserializer.deserialize(String(dataBlock.data))
         )

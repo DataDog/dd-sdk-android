@@ -82,7 +82,6 @@ internal class DataStoreFileReaderTest {
 
     private lateinit var fakeDataBytes: ByteArray
     private lateinit var versionBlock: TLVBlock
-    private lateinit var lastUpdateDateBlock: TLVBlock
     private lateinit var dataBlock: TLVBlock
     private lateinit var blocksReturned: ArrayList<TLVBlock>
 
@@ -102,10 +101,9 @@ internal class DataStoreFileReaderTest {
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(true)
         whenever(mockDeserializer.deserialize(fakeDataString)).thenReturn(fakeDataBytes)
 
-        lastUpdateDateBlock = createLastUpdateDateBlock()
         versionBlock = createVersionBlock(true)
         dataBlock = createDataBlock()
-        blocksReturned = arrayListOf(lastUpdateDateBlock, versionBlock, dataBlock)
+        blocksReturned = arrayListOf(versionBlock, dataBlock)
         whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
 
         testedDatastoreFileReader = DatastoreFileReader(
@@ -218,7 +216,6 @@ internal class DataStoreFileReaderTest {
     fun `M return deserialized data W read()`() {
         // Given
         blocksReturned.clear()
-        blocksReturned.add(createLastUpdateDateBlock())
         blocksReturned.add(createVersionBlock(true))
         blocksReturned.add(createDataBlock())
 
@@ -281,7 +278,7 @@ internal class DataStoreFileReaderTest {
     @Test
     fun `M log unexpectedBlocksOrder error W read() { unexpected block order }`() {
         // Given
-        blocksReturned = arrayListOf(versionBlock, lastUpdateDateBlock, dataBlock)
+        blocksReturned = arrayListOf(dataBlock, versionBlock)
         whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
 
         // When
@@ -346,15 +343,6 @@ internal class DataStoreFileReaderTest {
             )
         }
     }
-
-    private fun createLastUpdateDateBlock(): TLVBlock =
-        TLVBlock(
-            type = TLVBlockType.LAST_UPDATE_DATE,
-            data = ByteBuffer.allocate(Long.SIZE_BYTES)
-                .putLong(System.currentTimeMillis())
-                .array(),
-            internalLogger = mockInternalLogger
-        )
 
     private fun createDataBlock(dataBytes: ByteArray = fakeDataBytes): TLVBlock =
         TLVBlock(

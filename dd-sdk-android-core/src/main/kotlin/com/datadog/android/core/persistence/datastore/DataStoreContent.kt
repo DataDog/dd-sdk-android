@@ -10,12 +10,10 @@ package com.datadog.android.core.persistence.datastore
  * Datastore entry contents and metadata.
  *
  * @param T type of data used by this entry in the datastore.
- * @property lastUpdateDate date when the entry was written.
  * @property versionCode version used by the entry.
  * @property data content of the entry.
  */
 data class DataStoreContent<T : Any>(
-    val lastUpdateDate: Long,
     val versionCode: Int,
     val data: T?
 )

@@ -14,7 +14,7 @@ interface DataStoreCallback<T : Any> {
     /**
      * Called on successfully fetching data from the datastore.
      *
-     * @param dataStoreContent contains the datastore data, version and lastUpdateDate.
+     * @param dataStoreContent contains the datastore data and version.
      */
     fun onSuccess(dataStoreContent: DataStoreContent<T>)
 

@@ -27,10 +27,10 @@ internal class TLVBlockTypeTest {
     @Test
     fun `M return type value W fromValue() { existing value }`() {
         // When
-        val shortValue = TLVBlockType.fromValue(TLVBlockType.LAST_UPDATE_DATE.rawValue)
+        val shortValue = TLVBlockType.fromValue(TLVBlockType.VERSION_CODE.rawValue)
 
         // Then
-        assertThat(shortValue).isEqualTo(TLVBlockType.LAST_UPDATE_DATE)
+        assertThat(shortValue).isEqualTo(TLVBlockType.VERSION_CODE)
     }
 
     @Test

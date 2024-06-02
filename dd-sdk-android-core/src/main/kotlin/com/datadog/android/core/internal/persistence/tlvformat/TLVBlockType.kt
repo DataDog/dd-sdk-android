@@ -7,9 +7,8 @@
 package com.datadog.android.core.internal.persistence.tlvformat
 
 internal enum class TLVBlockType(val rawValue: UShort) {
-    LAST_UPDATE_DATE(0x00u),
-    VERSION_CODE(0x01u),
-    DATA(0x02u);
+    VERSION_CODE(0x00u),
+    DATA(0x01u);
 
     companion object {
         private val map = values().associateBy { it.rawValue }

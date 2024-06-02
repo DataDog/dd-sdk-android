@@ -43,16 +43,15 @@ internal class DatastoreFileWriter(
             key = key
         )
 
-        val lastUpdateBlock = getLastUpdateDateBlock()
         val versionCodeBlock = getVersionCodeBlock(version)
         val dataBlock = getDataBlock(data, serializer)
 
         // failed to serialize one or more blocks
-        if (lastUpdateBlock == null || versionCodeBlock == null || dataBlock == null) {
+        if (versionCodeBlock == null || dataBlock == null) {
             return
         }
 
-        val dataToWrite = listOf(lastUpdateBlock, versionCodeBlock, dataBlock).join(
+        val dataToWrite = listOf(versionCodeBlock, dataBlock).join(
             separator = byteArrayOf(),
             internalLogger = internalLogger
         )
@@ -100,18 +99,6 @@ internal class DatastoreFileWriter(
         )
 
         return dataBlock.serialize()
-    }
-
-    private fun getLastUpdateDateBlock(): ByteArray? {
-        val now = System.currentTimeMillis()
-        val lastUpdateDateByteArray = now.toByteArray()
-        val lastUpdateDateBlock = TLVBlock(
-            type = TLVBlockType.LAST_UPDATE_DATE,
-            data = lastUpdateDateByteArray,
-            internalLogger = internalLogger
-        )
-
-        return lastUpdateDateBlock.serialize()
     }
 
     private fun getVersionCodeBlock(version: Int): ByteArray? {
