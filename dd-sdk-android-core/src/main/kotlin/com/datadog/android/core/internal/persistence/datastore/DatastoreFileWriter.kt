@@ -32,11 +32,6 @@ internal class DatastoreFileWriter(
         serializer: Serializer<T>,
         version: Int
     ) {
-        if (dataStoreFileHelper.isKeyInvalid(key)) {
-            dataStoreFileHelper.logInvalidKeyException()
-            return
-        }
-
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
             storageDir = storageDir,
@@ -65,11 +60,6 @@ internal class DatastoreFileWriter(
 
     @WorkerThread
     internal fun delete(key: String) {
-        if (dataStoreFileHelper.isKeyInvalid(key)) {
-            dataStoreFileHelper.logInvalidKeyException()
-            return
-        }
-
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
             storageDir = storageDir,

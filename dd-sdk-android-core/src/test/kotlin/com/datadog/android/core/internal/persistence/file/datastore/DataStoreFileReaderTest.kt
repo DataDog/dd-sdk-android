@@ -34,7 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -306,26 +305,6 @@ internal class DataStoreFileReaderTest {
                 }
             }
         )
-    }
-
-    @Test
-    fun `M log invalid key exception W read() { invalid key }`() {
-        // Given
-        whenever(mockDataStoreFileHelper.isKeyInvalid(fakeKey)).thenReturn(true)
-
-        // When
-        testedDatastoreFileReader.read(
-            key = fakeKey,
-            deserializer = mockDeserializer,
-            version = 0,
-            callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {}
-                override fun onFailure() {}
-                override fun onNoData() {}
-            }
-        )
-
-        verify(mockDataStoreFileHelper).logInvalidKeyException()
     }
 
     private fun createVersionBlock(valid: Boolean, newVersion: Int = 0): TLVBlock {

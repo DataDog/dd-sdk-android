@@ -181,21 +181,4 @@ internal class DataStoreFileWriterTest {
         // Then
         verify(mockDataStoreFile, never()).deleteSafe(mockInternalLogger)
     }
-
-    @Test
-    fun `M log invalid key exception W read() { invalid key }`() {
-        // Given
-        whenever(mockDataStoreFileHelper.isKeyInvalid(fakeKey)).thenReturn(true)
-
-        // When
-        testedDatastoreFileWriter.write(
-            key = fakeKey,
-            serializer = mockSerializer,
-            data = fakeDataString,
-            version = 0
-        )
-
-        // Then
-        verify(mockDataStoreFileHelper).logInvalidKeyException()
-    }
 }

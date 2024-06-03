@@ -52,21 +52,7 @@ internal class DataStoreFileHelper(
         return dataStoreDirectory
     }
 
-    internal fun isKeyInvalid(key: String): Boolean {
-        return key.contains("/")
-    }
-
-    internal fun logInvalidKeyException() {
-        internalLogger.log(
-            level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { INVALID_DATASTORE_KEY_FORMAT_EXCEPTION }
-        )
-    }
-
     internal companion object {
         internal const val DATASTORE_FOLDER_NAME = "datastore_v%s"
-        internal const val INVALID_DATASTORE_KEY_FORMAT_EXCEPTION =
-            "Datastore key must not be a path!"
     }
 }

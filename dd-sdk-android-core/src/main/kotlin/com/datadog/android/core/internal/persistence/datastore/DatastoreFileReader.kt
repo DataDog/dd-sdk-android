@@ -33,11 +33,6 @@ internal class DatastoreFileReader(
         version: Int,
         callback: DataStoreCallback<T>
     ) {
-        if (dataStoreFileHelper.isKeyInvalid(key)) {
-            dataStoreFileHelper.logInvalidKeyException()
-            return
-        }
-
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
             storageDir = storageDir,
