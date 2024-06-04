@@ -12,11 +12,11 @@ import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
@@ -100,12 +100,12 @@ internal class RecordedDataProcessor(
             handleViewEndRecord(timestamp)
             val screenBounds = systemInformation.screenBounds
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
-                timestamp,
-                MobileSegment.Data1(screenBounds.width, screenBounds.height)
+                timestamp = timestamp,
+                data = MobileSegment.Data1(screenBounds.width, screenBounds.height)
             )
             val focusRecord = MobileSegment.MobileRecord.FocusRecord(
-                timestamp,
-                MobileSegment.Data2(true)
+                timestamp = timestamp,
+                data = MobileSegment.Data2(true)
             )
             records.add(metaRecord)
             records.add(focusRecord)
@@ -118,7 +118,7 @@ internal class RecordedDataProcessor(
                 screenBounds.height
             )
             val viewportRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                timestamp,
+                timestamp = timestamp,
                 data = viewPortResizeData
             )
             records.add(viewportRecord)

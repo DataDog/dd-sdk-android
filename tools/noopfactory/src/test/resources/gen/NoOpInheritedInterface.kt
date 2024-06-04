@@ -4,20 +4,18 @@ package com.example
 
 import kotlin.String
 import kotlin.Suppress
-import kotlin.Unit
 
-@Suppress("RedundantUnitReturnType")
 internal class NoOpInheritedInterface : InheritedInterface {
-    public override var mutableProperty: String = ""
+    override var mutableProperty: String = ""
 
-    public override val immutableProperty: String = ""
+    override val immutableProperty: String = ""
 
-    public override fun doSomething(): Unit {
+    override fun doSomething() {
     }
 
-    public override fun parentMethod(): Unit {
+    override fun parentMethod() {
     }
 
-    public override fun rootMethod(): Unit {
+    override fun rootMethod() {
     }
 }

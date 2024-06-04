@@ -23,7 +23,7 @@ import org.mockito.kotlin.mock
 internal class LoggingSyncListenerTest {
 
     @Test
-    fun `𝕄 log error 𝕎 onError()`(
+    fun `M log error W onError()`(
         @StringForgery(regex = "https://[a-z]+\\.com") fakeHost: String,
         forge: Forge
     ) {

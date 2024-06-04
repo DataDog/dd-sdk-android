@@ -6,175 +6,106 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.content.res.ColorStateList
-import android.content.res.Configuration
-import android.os.Build
 import android.widget.SeekBar
-import androidx.annotation.RequiresApi
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import kotlin.math.max
 
-@RequiresApi(Build.VERSION_CODES.O)
 internal open class SeekBarWireframeMapper(
-    private val viewUtils: ViewUtils = ViewUtils,
-    private val stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator =
-        UniqueIdentifierGenerator
-) : BaseWireframeMapper<SeekBar, MobileSegment.Wireframe>(stringUtils, viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : ProgressBarWireframeMapper<SeekBar>(
+    viewIdentifierResolver = viewIdentifierResolver,
+    colorStringFormatter = colorStringFormatter,
+    viewBoundsResolver = viewBoundsResolver,
+    drawableToColorMapper = drawableToColorMapper,
+    showProgressWhenMaskUserInput = false
+) {
 
-    @Suppress("LongMethod")
-    override fun map(view: SeekBar, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
-        List<MobileSegment.Wireframe> {
-        val activeTrackId = uniqueIdentifierGenerator
-            .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)
-        val nonActiveTrackId = uniqueIdentifierGenerator
-            .resolveChildUniqueIdentifier(view, TRACK_NON_ACTIVE_KEY_NAME)
-        val thumbId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+    override fun mapDeterminate(
+        wireframes: MutableList<MobileSegment.Wireframe>,
+        view: SeekBar,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger,
+        trackBounds: GlobalBounds,
+        trackColor: Int,
+        normalizedProgress: Float
+    ) {
+        super.mapDeterminate(
+            wireframes,
+            view,
+            mappingContext,
+            asyncJobStatusCallback,
+            internalLogger,
+            trackBounds,
+            trackColor,
+            normalizedProgress
+        )
 
-        if (activeTrackId == null || thumbId == null || nonActiveTrackId == null) {
-            return emptyList()
+        if (mappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            val screenDensity = mappingContext.systemInformation.screenDensity
+            val trackHeight = ProgressBarWireframeMapper.TRACK_HEIGHT_IN_PX.densityNormalized(screenDensity)
+            val thumbColor = getColor(view.thumbTintList, view.drawableState) ?: getDefaultColor(view)
+
+            buildThumbWireframe(
+                view = view,
+                trackBounds = trackBounds,
+                normalizedProgress = normalizedProgress,
+                trackHeight = trackHeight,
+                screenDensity = screenDensity,
+                thumbColor = thumbColor
+            )?.let(wireframes::add)
         }
+    }
 
-        val screenDensity = mappingContext.systemInformation.screenDensity
-        val viewGlobalBounds = viewUtils.resolveViewGlobalBounds(view, screenDensity)
-        val normalizedSliderValue = view.normalizedValue()
-        val viewAlpha = view.alpha
+    private fun buildThumbWireframe(
+        view: SeekBar,
+        trackBounds: GlobalBounds,
+        normalizedProgress: Float,
+        trackHeight: Long,
+        screenDensity: Float,
+        thumbColor: Int
+    ): MobileSegment.Wireframe? {
+        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
+            ?: return null
+        val backgroundColor = colorStringFormatter.formatColorAndAlphaAsHexString(thumbColor, OPAQUE_ALPHA_VALUE)
 
-        // padding
-        val trackLeftPadding = view.trackLeftPadding(screenDensity)
-        val trackTopPadding = view.paddingTop.toLong().densityNormalized(screenDensity)
-
-        // colors
-        val trackActiveColor = view.getTrackColor()
-        val thumbColor = view.getThumbColor()
-        val trackActiveColorAsHexa = stringUtils.formatColorAndAlphaAsHexa(
-            trackActiveColor,
-            OPAQUE_ALPHA_VALUE
-        )
-        val trackNonActiveColorAsHexa = stringUtils.formatColorAndAlphaAsHexa(
-            trackActiveColor,
-            PARTIALLY_OPAQUE_ALPHA_VALUE
-        )
-        val thumbColorAsHexa = stringUtils.formatColorAndAlphaAsHexa(thumbColor, OPAQUE_ALPHA_VALUE)
-
-        // track dimensions
-        val trackBounds = view.progressDrawable.bounds
-        val trackWidth = trackBounds.width().toLong().densityNormalized(screenDensity)
-        val trackHeight = TRACK_HEIGHT_IN_PX.densityNormalized(screenDensity)
-        val trackActiveWidth = (trackWidth * normalizedSliderValue).toLong()
-
-        // track positions
-        val trackXPos = viewGlobalBounds.x + trackLeftPadding
-        val trackYPos = viewGlobalBounds.y + trackTopPadding +
-            (viewGlobalBounds.height - trackHeight) / 2
-
-        // thumb dimensions
-        val thumbBounds = view.thumb.bounds
-        val thumbHeight = thumbBounds.height().toLong().densityNormalized(screenDensity)
-
-        // thumb positions
-        val thumbXPos = (trackXPos + trackWidth * normalizedSliderValue).toLong()
-        val thumbYPos = viewGlobalBounds.y + trackTopPadding +
-            (viewGlobalBounds.height - thumbHeight) / 2
-
-        val trackNonActiveWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = nonActiveTrackId,
-            x = trackXPos,
-            y = trackYPos,
-            width = trackWidth,
-            height = trackHeight,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = trackNonActiveColorAsHexa,
-                opacity = viewAlpha
-            )
-        )
-        val trackActiveWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = activeTrackId,
-            x = trackXPos,
-            y = trackYPos,
-            width = trackActiveWidth,
-            height = trackHeight,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = trackActiveColorAsHexa,
-                opacity = viewAlpha
-            )
-        )
-        val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
+        val thumbWidth = view.thumb.bounds.width().densityNormalized(screenDensity).toLong()
+        val thumbHeight = view.thumb.bounds.height().densityNormalized(screenDensity).toLong()
+        return MobileSegment.Wireframe.ShapeWireframe(
             id = thumbId,
-            x = thumbXPos,
-            y = thumbYPos,
-            width = thumbHeight,
+            x = (trackBounds.x + (trackBounds.width * normalizedProgress).toLong() - (thumbWidth / 2)),
+            y = trackBounds.y + (trackHeight / 2) - (thumbHeight / 2),
+            width = thumbWidth,
             height = thumbHeight,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = thumbColorAsHexa,
-                opacity = viewAlpha,
-                cornerRadius = THUMB_SHAPE_CORNER_RADIUS
+                backgroundColor = backgroundColor,
+                opacity = view.alpha,
+                cornerRadius = max(thumbWidth / 2, thumbHeight / 2)
             )
         )
-
-        return resolveViewAsWireframesList(
-            trackNonActiveWireframe,
-            trackActiveWireframe,
-            thumbWireframe
-        )
-    }
-
-    protected open fun resolveViewAsWireframesList(
-        nonActiveTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,
-        activeTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,
-        thumbWireframe: MobileSegment.Wireframe.ShapeWireframe
-    ): List<MobileSegment.Wireframe> {
-        return listOf(nonActiveTrackWireframe, activeTrackWireframe, thumbWireframe)
-    }
-
-    private fun SeekBar.trackLeftPadding(screenDensity: Float): Long {
-        return this.paddingStart.toLong().densityNormalized(screenDensity)
-    }
-
-    private fun SeekBar.normalizedValue(): Float {
-        val range = max.toFloat() - min.toFloat()
-        return if (range == 0f) {
-            0f
-        } else {
-            (this.progress.toFloat() - min.toFloat()) / range
-        }
-    }
-
-    private fun SeekBar.getTrackColor(): Int {
-        return this.progressTintList?.getColor(this.drawableState) ?: getDefaultColor()
-    }
-
-    private fun SeekBar.getThumbColor(): Int {
-        return this.thumbTintList?.getColor(this.drawableState) ?: getDefaultColor()
-    }
-
-    private fun ColorStateList.getColor(state: IntArray): Int {
-        return getColorForState(state, defaultColor)
-    }
-
-    private fun SeekBar.getDefaultColor(): Int {
-        val uiModeFlags = context.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK
-        return if (uiModeFlags == Configuration.UI_MODE_NIGHT_YES) {
-            NIGHT_MODE_COLOR
-        } else {
-            DAY_MODE_COLOR
-        }
     }
 
     companion object {
         internal const val NIGHT_MODE_COLOR = 0xffffff // White
         internal const val DAY_MODE_COLOR = 0 // Black
-        internal const val TRACK_ACTIVE_KEY_NAME = "seekbar_active_track"
-        internal const val TRACK_NON_ACTIVE_KEY_NAME = "seekbar_non_active_track"
+        internal const val ACTIVE_TRACK_KEY_NAME = "seekbar_active_track"
+        internal const val NON_ACTIVE_TRACK_KEY_NAME = "seekbar_non_active_track"
         internal const val THUMB_KEY_NAME = "seekbar_thumb"
-        internal const val OPAQUE_ALPHA_VALUE: Int = 0xff
-        internal const val PARTIALLY_OPAQUE_ALPHA_VALUE: Int = 0x44
+
         internal const val THUMB_SHAPE_CORNER_RADIUS = 10
         internal const val TRACK_HEIGHT_IN_PX = 8L
     }

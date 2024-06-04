@@ -21,9 +21,8 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
-import com.datadog.android.rum.utils.resolveViewName
-import com.datadog.android.rum.utils.runIfValid
-import java.lang.IllegalStateException
+import com.datadog.android.rum.internal.utils.resolveViewName
+import com.datadog.android.rum.internal.utils.runIfValid
 import java.util.WeakHashMap
 
 /**

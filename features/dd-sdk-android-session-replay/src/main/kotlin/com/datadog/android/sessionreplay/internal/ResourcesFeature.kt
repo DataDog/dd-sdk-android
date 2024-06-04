@@ -68,6 +68,5 @@ internal class ResourcesFeature(
             )
 
         internal const val SESSION_REPLAY_RESOURCES_FEATURE_NAME = "session-replay-resources"
-        internal const val RESOURCE_ENDPOINT_FEATURE_FLAG = false
     }
 }

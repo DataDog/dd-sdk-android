@@ -8,32 +8,37 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewTreeObserver.OnDrawListener
-import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
-import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import java.util.WeakHashMap
 
 internal class ViewOnDrawInterceptor(
-    private val recordedDataQueueHandler: RecordedDataQueueHandler,
-    private val snapshotProducer: SnapshotProducer,
-    private val onDrawListenerProducer: (List<View>) -> OnDrawListener =
-        { decorViews ->
-            WindowsOnDrawListener(
-                decorViews,
-                recordedDataQueueHandler,
-                snapshotProducer
-            )
-        }
+    private val internalLogger: InternalLogger,
+    private val onDrawListenerProducer: OnDrawListenerProducer
 ) {
     internal val decorOnDrawListeners: WeakHashMap<View, OnDrawListener> =
         WeakHashMap()
 
-    fun intercept(decorViews: List<View>) {
+    fun intercept(decorViews: List<View>, sessionReplayPrivacy: SessionReplayPrivacy) {
         stopInterceptingAndRemove(decorViews)
-        val onDrawListener = onDrawListenerProducer(decorViews)
+        val onDrawListener = onDrawListenerProducer.create(decorViews, sessionReplayPrivacy)
         decorViews.forEach { decorView ->
-            decorOnDrawListeners[decorView] = onDrawListener
-            decorView.viewTreeObserver?.addOnDrawListener(onDrawListener)
+            val viewTreeObserver = decorView.viewTreeObserver
+            if (viewTreeObserver != null && viewTreeObserver.isAlive) {
+                try {
+                    viewTreeObserver.addOnDrawListener(onDrawListener)
+                    decorOnDrawListeners[decorView] = onDrawListener
+                } catch (e: IllegalStateException) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.TELEMETRY,
+                        { "Unable to add onDrawListener onto viewTreeObserver" },
+                        e
+                    )
+                }
+            }
         }
+
         // force onDraw here in order to make sure we take at least one snapshot if the
         // window is changed very fast
         onDrawListener.onDraw()
@@ -44,16 +49,31 @@ internal class ViewOnDrawInterceptor(
     }
 
     fun stopIntercepting() {
-        decorOnDrawListeners.entries.forEach {
-            it.key.viewTreeObserver.removeOnDrawListener(it.value)
+        decorOnDrawListeners.entries.forEach { (decorView, listener) ->
+            stopInterceptingSafe(decorView, listener)
         }
         decorOnDrawListeners.clear()
     }
 
     private fun stopInterceptingAndRemove(decorViews: List<View>) {
-        decorViews.forEach { window ->
-            decorOnDrawListeners.remove(window)?.let {
-                window.viewTreeObserver.removeOnDrawListener(it)
+        decorViews.forEach { decorView ->
+            decorOnDrawListeners.remove(decorView)?.let { listener ->
+                stopInterceptingSafe(decorView, listener)
+            }
+        }
+    }
+
+    private fun stopInterceptingSafe(decorView: View, listener: OnDrawListener) {
+        if (decorView.viewTreeObserver.isAlive) {
+            try {
+                decorView.viewTreeObserver.removeOnDrawListener(listener)
+            } catch (e: IllegalStateException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Unable to remove onDrawListener from viewTreeObserver" },
+                    e
+                )
             }
         }
     }

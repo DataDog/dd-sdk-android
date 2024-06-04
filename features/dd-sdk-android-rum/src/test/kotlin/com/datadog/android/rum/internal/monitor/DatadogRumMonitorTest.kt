@@ -9,10 +9,12 @@ package com.datadog.android.rum.internal.monitor
 import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.DdRumContentProvider
@@ -23,7 +25,6 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -99,7 +100,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class DatadogRumMonitorTest {
 
-    lateinit var testedMonitor: DatadogRumMonitor
+    private lateinit var testedMonitor: DatadogRumMonitor
 
     @Mock
     lateinit var mockScope: RumScope
@@ -135,7 +136,7 @@ internal class DatadogRumMonitorTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
+    lateinit var mockExecutorService: ExecutorService
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
@@ -148,19 +149,24 @@ internal class DatadogRumMonitorTest {
     @LongForgery(TIMESTAMP_MIN, TIMESTAMP_MAX)
     var fakeTimestamp: Long = 0L
 
-    @LongForgery(min = 0L)
-    var fakeAppStartTimeNs: Long = 0L
-
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @Forgery
+    lateinit var fakeTimeInfo: TimeInfo
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            StubFuture()
+        }
+
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeAppStartTimeNs
+        whenever(mockSdkCore.time) doReturn fakeTimeInfo
 
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
@@ -177,7 +183,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider
+            mockExecutorService
         )
         testedMonitor.rootScope = mockScope
     }
@@ -197,7 +203,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockExecutorService
         )
 
         val rootScope = testedMonitor.rootScope
@@ -209,21 +216,6 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M send null for current session W getCurrentSessionId { no session started }`() {
         // Given
-        testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener
-        )
         val completableFuture = CompletableFuture<String>()
 
         // When
@@ -254,10 +246,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`(
-        @StringForgery(type = StringForgeryType.ASCII) key: String,
-        @StringForgery name: String
-    ) {
+    fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`() {
         // Given
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
@@ -272,10 +261,11 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockExecutorService
         )
         val completableFuture = CompletableFuture<String>()
-        testedMonitor.startView(key, name, fakeAttributes)
+        testedMonitor.start()
         Thread.sleep(PROCESSING_DELAY)
 
         // When
@@ -293,10 +283,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`(
-        @StringForgery(type = StringForgeryType.ASCII) key: String,
-        @StringForgery name: String
-    ) {
+    fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`() {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
@@ -310,11 +297,12 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockExecutorService
         )
 
         val completableFuture = CompletableFuture<String>()
-        testedMonitor.startView(key, name, fakeAttributes)
+        testedMonitor.start()
         Thread.sleep(PROCESSING_DELAY)
 
         // When
@@ -348,6 +336,11 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            StubFuture()
+        }
+
         testedMonitor.addAction(type, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
@@ -632,13 +625,14 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
-    fun `M delegate event to rootScope W onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
@@ -656,6 +650,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -718,10 +713,14 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope on current thread W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
-        @Forgery throwable: Throwable
+        @Forgery throwable: Throwable,
+        forge: Forge
     ) {
         // Given
         testedMonitor.drainExecutorService()
+        val now = System.nanoTime()
+        val appStartTimeNs = forge.aLong(min = 0L, max = now)
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
 
         // When
         testedMonitor.addCrash(message, source, throwable, threads = emptyList())
@@ -737,6 +736,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.isFatal).isTrue
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isEqualTo(event.eventTime.nanoTime - appStartTimeNs)
             assertThat(event.attributes).isEmpty()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -773,7 +773,6 @@ internal class DatadogRumMonitorTest {
             assertThat(firstValue).isInstanceOf(RumRawEvent.SdkInit::class.java)
             with(firstValue as RumRawEvent.SdkInit) {
                 assertThat(isAppInForeground).isTrue()
-                assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
             }
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -809,7 +808,6 @@ internal class DatadogRumMonitorTest {
             assertThat(firstValue).isInstanceOf(RumRawEvent.SdkInit::class.java)
             with(firstValue as RumRawEvent.SdkInit) {
                 assertThat(isAppInForeground).isFalse()
-                assertThat(appStartTimeNs).isEqualTo(fakeAppStartTimeNs)
             }
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -975,6 +973,35 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope with all threads W addError`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @Forgery allThreads: List<ThreadDump>
+    ) {
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_ALL_THREADS to allThreads)
+
+        testedMonitor.addError(message, source, throwable, attributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.stacktrace).isNull()
+            assertThat(event.isFatal).isFalse
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.threads).isEqualTo(allThreads)
+            assertThat(event.timeSinceAppStartNs).isNull()
+            assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `M delegate event to rootScope with timestamp W addError`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -996,13 +1023,14 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
-    fun `M delegate event to rootScope with timestamp W onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope with timestamp W addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
@@ -1023,6 +1051,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1051,13 +1080,14 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
-    fun `M delegate event to rootScope W error type onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W error type addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -1084,13 +1114,14 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
             assertThat(event.type).isEqualTo(errorType)
+            assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @RepeatedTest(10)
-    fun `M delegate event to rootScope W error source type onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W error source type addErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -1129,8 +1160,9 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
             assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
+            assertThat(event.timeSinceAppStartNs).isNull()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1320,6 +1352,42 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W addFeatureFlagEvaluation`(
+        @StringForgery name: String,
+        @StringForgery value: String
+    ) {
+        testedMonitor.addFeatureFlagEvaluation(name, value)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddFeatureFlagEvaluation
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.value).isEqualTo(value)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W addFeatureFlagEvaluations`(
+        @StringForgery name: String,
+        @StringForgery value: String
+    ) {
+        val batch = mapOf(name to value)
+        testedMonitor.addFeatureFlagEvaluations(batch)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddFeatureFlagEvaluations
+            assertThat(event.featureFlags).isSameAs(batch)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `sends keep alive event to rootScope regularly`() {
         argumentCaptor<Runnable> {
             inOrder(mockScope, mockWriter, mockHandler) {
@@ -1389,7 +1457,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider,
             mockExecutor
         )
 
@@ -1434,7 +1501,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider,
             mockExecutorService
         )
 
@@ -1466,7 +1532,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockAppStartTimeProvider,
             mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
@@ -1506,7 +1571,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn true
             }
@@ -1542,7 +1607,7 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                        RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
 
                 whenever(isActive()) doReturn false
             }
@@ -1642,10 +1707,14 @@ internal class DatadogRumMonitorTest {
     fun `M handle error telemetry event W sendErrorTelemetryEvent() {stack+kind}`(
         @StringForgery message: String,
         @StringForgery stackTrace: String,
-        @StringForgery kind: String
+        @StringForgery kind: String,
+        forge: Forge
     ) {
+        // Given
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
-        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind)
+        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind, fakeAdditionalProperties)
 
         // Then
         argumentCaptor<RumRawEvent.SendTelemetry> {
@@ -1659,6 +1728,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.kind).isEqualTo(kind)
             assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
         }
     }
 
@@ -1667,9 +1737,12 @@ internal class DatadogRumMonitorTest {
         @StringForgery message: String,
         forge: Forge
     ) {
-        // When
+        // Given
         val throwable = forge.aNullable { forge.aThrowable() }
-        testedMonitor.sendErrorTelemetryEvent(message, throwable)
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
+        // When
+        testedMonitor.sendErrorTelemetryEvent(message, throwable, fakeAdditionalProperties)
 
         // Then
         argumentCaptor<RumRawEvent.SendTelemetry> {
@@ -1683,6 +1756,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
             assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
         }
     }
 
@@ -1825,48 +1899,13 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockExecutorService = mock<ExecutorService>().apply {
-            // this is the mock for the inner ExecutorService, Futures returned by this one
-            // are never used in the code
-            whenever(submit(any())) doAnswer {
-                it.getArgument<Runnable>(0).run()
-                object : Future<Any> {
-                    override fun cancel(mayInterruptIfRunning: Boolean) =
-                        error("Not supposed to be called")
-
-                    override fun isCancelled(): Boolean = error("Not supposed to be called")
-                    override fun isDone(): Boolean = error("Not supposed to be called")
-                    override fun get(): Any = error("Not supposed to be called")
-                    override fun get(timeout: Long, unit: TimeUnit?): Any =
-                        error("Not supposed to be called")
-                }
-            }
-        }
-
-        testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            executorService = mockExecutorService
-        )
-
         var isMethodOccupied = false
         val mockRootScope = mock<RumScope>().apply {
             whenever(handleEvent(any(), any())) doAnswer {
                 if (isMethodOccupied) {
                     throw IllegalStateException(
                         "Only one thread should" +
-                                " be allowed to enter rootScope at the time."
+                            " be allowed to enter rootScope at the time."
                     )
                 }
                 isMethodOccupied = true
@@ -2002,7 +2041,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 debug = true`() {
+    fun `M enable RUM debugging W debug = true`() {
         // Given
         val mockRumScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
@@ -2017,7 +2056,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `𝕄 disable RUM debugging 𝕎 debug = false`() {
+    fun `M disable RUM debugging W debug = false`() {
         // Given
         val mockRumScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
@@ -2033,7 +2072,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `𝕄 log warn message 𝕎 debug = true() { no RUM feature registered }`() {
+    fun `M log warn message W debug = true() { no RUM feature registered }`() {
         // Given
         val mockInternalLogger = mock<InternalLogger>()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -2048,6 +2087,17 @@ internal class DatadogRumMonitorTest {
             InternalLogger.Target.USER,
             DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
         )
+    }
+
+    class StubFuture : Future<Any> {
+        override fun cancel(mayInterruptIfRunning: Boolean) =
+            error("Not supposed to be called")
+
+        override fun isCancelled(): Boolean = error("Not supposed to be called")
+        override fun isDone(): Boolean = error("Not supposed to be called")
+        override fun get(): Any = error("Not supposed to be called")
+        override fun get(timeout: Long, unit: TimeUnit?): Any =
+            error("Not supposed to be called")
     }
 
     companion object {

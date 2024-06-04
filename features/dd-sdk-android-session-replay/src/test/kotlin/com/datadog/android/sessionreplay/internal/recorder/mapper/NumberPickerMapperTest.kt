@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,12 +29,20 @@ import org.mockito.quality.Strictness
 internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
 
     override fun provideTestInstance(): NumberPickerMapper {
-        return NumberPickerMapper(mockStringUtils, mockViewUtils, mockUniqueIdentifierGenerator)
+        return NumberPickerMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
     }
 
+    // region privacy = ALLOW
+
     @Test
-    fun `M map the NumberPicker to a list of wireframes W map()`() {
+    fun `M return a list of wireframes W map() {privacy=ALLOW}`() {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         val expectedSelectedLabelValue = fakeValue.toString()
         val expectedPrevLabelValue = (fakeValue - 1).toString()
         val expectedNextLabelValue = (fakeValue + 1).toString()
@@ -47,7 +56,12 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -62,8 +76,9 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     }
 
     @Test
-    fun `M map the NumberPicker to a list of wireframes W map(){ value equals max }`() {
+    fun `M return a list of wireframes W map() {privacy=ALLOW, value=max }`() {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = fakeValue.toString()
@@ -79,7 +94,12 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -94,8 +114,9 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     }
 
     @Test
-    fun `M map the NumberPicker to a list of wireframes W map(){ value equals min }`() {
+    fun `M return a list of wireframes W map() {privacy=ALLOW, value=min }`() {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = fakeValue.toString()
@@ -111,7 +132,12 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -126,10 +152,11 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     }
 
     @Test
-    fun `M map the NumberPicker to a list of wireframes W map() { displayedValues}`(
+    fun `M return a list of wireframes W map() {privacy=ALLOW, with displayedValues}`(
         forge: Forge
     ) {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
@@ -147,7 +174,12 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -162,10 +194,11 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     }
 
     @Test
-    fun `M map the NumberPicker to a list of wireframes W map(){ displayedValues, max value }`(
+    fun `M return a list of wireframes W map() {privacy=ALLOW, with displayedValues, value=max}`(
         forge: Forge
     ) {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -184,7 +217,12 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -199,10 +237,11 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     }
 
     @Test
-    fun `M map the NumberPicker to a list of wireframes W map(){ displayedValues, min value }`(
+    fun `M return a list of wireframes W map() {privacy=ALLOW, with displayedValues, value=min}`(
         forge: Forge
     ) {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -222,7 +261,12 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -237,32 +281,436 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     }
 
     @Test
-    fun `M return empty list W map { prevLabelId null }`() {
+    fun `M return empty list W map {privacy=ALLOW, prevLabelId=null}`() {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.PREV_INDEX_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 
     @Test
-    fun `M return empty list W map { nextLabelId null }`() {
+    fun `M return empty list W map {privacy=ALLOW, nextLabelId=null}`() {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         whenever(
-            mockUniqueIdentifierGenerator
+            mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
                     BasePickerMapper.NEXT_INDEX_KEY_NAME
                 )
         )
             .thenReturn(null)
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
+
+    // endregion
+
+    // region privacy = MASK
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK}`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK, value=max}`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeValue = fakeMaxValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK, value=min }`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeValue = fakeMinValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK, with displayedValues}`(
+        forge: Forge
+    ) {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
+            .toTypedArray()
+        whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK, with displayedValues, value=max}`(
+        forge: Forge
+    ) {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeValue = fakeMaxValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
+            .toTypedArray()
+        whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK, with displayedValues, value=min}`(
+        forge: Forge
+    ) {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeValue = fakeMinValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
+            .toTypedArray()
+        whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    // endregion
+
+    // region privacy = MASK_USER_INPUT
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT}`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, value=max}`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeValue = fakeMaxValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, value=min }`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeValue = fakeMinValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, with displayedValues}`(
+        forge: Forge
+    ) {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
+            .toTypedArray()
+        whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, with displayedValues, value=max}`(
+        forge: Forge
+    ) {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeValue = fakeMaxValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
+            .toTypedArray()
+        whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, with displayedValues, value=min}`(
+        forge: Forge
+    ) {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeValue = fakeMinValue
+        whenever(mockNumberPicker.value).thenReturn(fakeValue)
+        val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
+            .toTypedArray()
+        whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
+        val expectedSelectedLabelValue = "xxx"
+        val expectedTopDividerWireframe = fakeTopDividerWireframe()
+        val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
+            .copy(text = expectedSelectedLabelValue)
+        val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
+
+        // When
+        val wireframes = testedNumberPickerMapper.map(
+            mockNumberPicker,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).isEqualTo(
+            listOf(
+                expectedTopDividerWireframe,
+                expectedSelectedLabelWireframe,
+                expectedBottomDividerWireframe
+            )
+        )
+    }
+
+    // endregion
 }

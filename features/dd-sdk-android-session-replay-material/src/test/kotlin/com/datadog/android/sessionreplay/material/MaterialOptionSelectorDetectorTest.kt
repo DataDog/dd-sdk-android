@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.material
 
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.content.Context
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderWindowCallback
@@ -19,7 +20,8 @@ internal class WindowCallbackInterceptor(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val timeProvider: TimeProvider,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val privacy: SessionReplayPrivacy
 ) {
     private val wrappedWindows: WeakHashMap<Window, Any?> = WeakHashMap()
 
@@ -52,7 +54,8 @@ internal class WindowCallbackInterceptor(
             toWrap,
             timeProvider,
             viewOnDrawInterceptor,
-            internalLogger
+            internalLogger,
+            privacy
         )
     }
 

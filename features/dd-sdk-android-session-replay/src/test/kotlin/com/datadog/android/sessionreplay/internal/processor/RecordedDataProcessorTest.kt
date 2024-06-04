@@ -1,4 +1,4 @@
- /*
+/*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
@@ -13,13 +13,13 @@ import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
+import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -1250,6 +1250,8 @@ internal class RecordedDataProcessorTest {
                 this.copy(id = id)
             is MobileSegment.Wireframe.PlaceholderWireframe ->
                 this.copy(id = id)
+            is MobileSegment.Wireframe.WebviewWireframe ->
+                this.copy(id = id)
         }
     }
 
@@ -1271,22 +1273,22 @@ internal class RecordedDataProcessorTest {
         resourceData: ByteArray,
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
     ): ResourceRecordedDataQueueItem = ResourceRecordedDataQueueItem(
-            recordedQueuedItemContext = usedContext,
-            resourceData = resourceData,
-            applicationId = fakeRumContext.applicationId,
-            identifier = fakeIdentifier
-        )
+        recordedQueuedItemContext = usedContext,
+        resourceData = resourceData,
+        applicationId = fakeRumContext.applicationId,
+        identifier = fakeIdentifier
+    )
 
     private fun createSnapshotItem(
         snapshot: List<Node>,
         systemInformation: SystemInformation = fakeSystemInformation,
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
     ): SnapshotRecordedDataQueueItem = SnapshotRecordedDataQueueItem(
-            usedContext,
-            systemInformation = systemInformation
-        ).apply {
-            this.nodes = snapshot
-        }
+        usedContext,
+        systemInformation = systemInformation
+    ).apply {
+        this.nodes = snapshot
+    }
 
     private fun createTouchEventItem(
         touchEvent: List<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>,

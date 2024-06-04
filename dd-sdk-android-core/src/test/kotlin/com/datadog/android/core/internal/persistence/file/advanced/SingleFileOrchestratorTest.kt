@@ -58,7 +58,7 @@ internal class SingleFileOrchestratorTest {
     // region getWritableFile
 
     @Test
-    fun `𝕄 create parent dir 𝕎 getWritableFile()`(@BoolForgery forceNewBatch: Boolean) {
+    fun `M create parent dir W getWritableFile()`(@BoolForgery forceNewBatch: Boolean) {
         // When
         testedOrchestrator.getWritableFile(forceNewBatch)
 
@@ -67,7 +67,7 @@ internal class SingleFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return file 𝕎 getWritableFile()`(@BoolForgery forceNewBatch: Boolean) {
+    fun `M return file W getWritableFile()`(@BoolForgery forceNewBatch: Boolean) {
         // When
         val result = testedOrchestrator.getWritableFile(forceNewBatch)
 
@@ -80,7 +80,7 @@ internal class SingleFileOrchestratorTest {
     // region getReadableFile
 
     @Test
-    fun `𝕄 create parent dir 𝕎 getReadableFile()`() {
+    fun `M create parent dir W getReadableFile()`() {
         // When
         testedOrchestrator.getReadableFile(emptySet())
 
@@ -89,7 +89,7 @@ internal class SingleFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return file 𝕎 getReadableFile()`() {
+    fun `M return file W getReadableFile()`() {
         // When
         val result = testedOrchestrator.getReadableFile(emptySet())
 
@@ -98,7 +98,7 @@ internal class SingleFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 getReadableFile() {file is excluded}`() {
+    fun `M return null W getReadableFile() {file is excluded}`() {
         // When
         val result = testedOrchestrator.getReadableFile(setOf(fakeFile))
 
@@ -111,7 +111,7 @@ internal class SingleFileOrchestratorTest {
     // region getAllFiles
 
     @Test
-    fun `𝕄 create parent dir 𝕎 getAllFiles()`() {
+    fun `M create parent dir W getAllFiles()`() {
         // When
         testedOrchestrator.getAllFiles()
 
@@ -120,7 +120,7 @@ internal class SingleFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return file 𝕎 getAllFiles()`() {
+    fun `M return file W getAllFiles()`() {
         // When
         val result = testedOrchestrator.getAllFiles()
 
@@ -131,7 +131,7 @@ internal class SingleFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return file 𝕎 getAllFlushableFiles()`() {
+    fun `M return file W getAllFlushableFiles()`() {
         // When
         val result = testedOrchestrator.getFlushableFiles()
 
@@ -146,7 +146,7 @@ internal class SingleFileOrchestratorTest {
     // region getRootDir
 
     @Test
-    fun `𝕄 return null 𝕎 getRootDir()`() {
+    fun `M return null W getRootDir()`() {
         // When
         val result = testedOrchestrator.getRootDir()
 
@@ -159,7 +159,7 @@ internal class SingleFileOrchestratorTest {
     // region getMetadataFile
 
     @Test
-    fun `𝕄 return null 𝕎 getMetadataFile()`() {
+    fun `M return null W getMetadataFile()`() {
         // When
         val result = testedOrchestrator.getMetadataFile(fakeFile)
 

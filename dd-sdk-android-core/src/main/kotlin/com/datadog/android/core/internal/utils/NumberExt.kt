@@ -9,7 +9,10 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.lint.InternalApi
 import java.math.BigInteger
 
-internal const val HEX_RADIX = 16
+/**
+ * Radix used to convert numbers to hexadecimal strings.
+ */
+internal const val HEX_RADIX: Int = 16
 
 /**
  * Converts [Int] into hexadecimal representation.

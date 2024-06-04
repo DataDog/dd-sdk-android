@@ -1,4 +1,3 @@
 class com.datadog.android.sessionreplay.compose.ComposeExtensionSupport : com.datadog.android.sessionreplay.ExtensionSupport
-  override fun getCustomViewMappers(): Map<com.datadog.android.sessionreplay.SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>
-  override fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector>
-  companion object 
+  override fun getCustomViewMappers(): List<com.datadog.android.sessionreplay.MapperTypeWrapper<*>>
+  override fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>

@@ -22,10 +22,10 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.utils.hasUserData
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.utils.hasUserData
-import com.datadog.android.rum.utils.newRumEventWriteOperation
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
@@ -140,6 +140,7 @@ internal class RumResourceScope(
             event.statusCode,
             event.throwable.loggableStackTrace(),
             event.throwable.javaClass.canonicalName,
+            ErrorEvent.Category.EXCEPTION,
             writer
         )
     }
@@ -153,12 +154,16 @@ internal class RumResourceScope(
 
         attributes.putAll(event.attributes)
 
+        val errorCategory =
+            if (event.stackTrace.isNotEmpty()) ErrorEvent.Category.EXCEPTION else null
+
         sendError(
             event.message,
             event.source,
             event.statusCode,
             event.stackTrace,
             event.errorType,
+            errorCategory,
             writer
         )
     }
@@ -276,7 +281,6 @@ internal class RumResourceScope(
                     spanId = spanId,
                     rulePsr = rulePsr,
                     session = ResourceEvent.DdSession(
-                        plan = ResourceEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toResourceSessionPrecondition()
                     ),
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
@@ -328,9 +332,11 @@ internal class RumResourceScope(
         statusCode: Long?,
         stackTrace: String?,
         errorType: String?,
+        errorCategory: ErrorEvent.Category?,
         writer: DataWriter<Any>
     ) {
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
+        val errorFingerprint = attributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
 
         val rumContext = getRumContext()
 
@@ -358,12 +364,14 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = eventTimestamp,
                 error = ErrorEvent.Error(
                     message = message,
                     source = source.toSchemaSource(),
                     stack = stackTrace,
                     isCrash = false,
+                    fingerprint = errorFingerprint,
                     resource = ErrorEvent.Resource(
                         url = url,
                         method = method.toErrorMethod(),
@@ -371,6 +379,7 @@ internal class RumResourceScope(
                         provider = resolveErrorProvider()
                     ),
                     type = errorType,
+                    category = errorCategory,
                     sourceType = ErrorEvent.SourceType.ANDROID
                 ),
                 action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
@@ -416,7 +425,6 @@ internal class RumResourceScope(
                 context = ErrorEvent.Context(additionalProperties = eventAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        plan = ErrorEvent.Plan.PLAN_1,
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)

@@ -7,32 +7,43 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.ImageView
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
+import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal class ImageViewMapper(
-    private val imageWireframeHelper: ImageWireframeHelper,
-    private val imageViewUtils: ImageViewUtils = ImageViewUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator
+    private val imageViewUtils: ImageViewUtils,
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
 ) : BaseAsyncBackgroundWireframeMapper<ImageView>(
-    imageWireframeHelper = imageWireframeHelper,
-    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
 ) {
+    @UiThread
     override fun map(
         view: ImageView,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         // add background wireframes if any
-        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback, internalLogger))
 
         val drawable = view.drawable?.current ?: return wireframes
 
@@ -48,32 +59,25 @@ internal class ImageViewMapper(
         val contentHeightPx = contentRect.height()
         val contentDrawable = drawable.constantState?.newDrawable(resources)
 
-        // resolve foreground
-        @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
-        imageWireframeHelper.createImageWireframe(
-            view = view,
-            currentWireframeIndex = wireframes.size,
-            x = contentXPosInDp,
-            y = contentYPosInDp,
-            width = contentWidthPx,
-            height = contentHeightPx,
-            drawable = contentDrawable,
-            usePIIPlaceholder = true,
-            shapeStyle = null,
-            border = null,
-            clipping = clipping,
-            prefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
-            imageWireframeHelperCallback = object : ImageWireframeHelperCallback {
-                override fun onFinished() {
-                    asyncJobStatusCallback.jobFinished()
-                }
-
-                override fun onStart() {
-                    asyncJobStatusCallback.jobStarted()
-                }
+        if (contentDrawable != null) {
+            // resolve foreground
+            mappingContext.imageWireframeHelper.createImageWireframe(
+                view = view,
+                currentWireframeIndex = wireframes.size,
+                x = contentXPosInDp,
+                y = contentYPosInDp,
+                width = contentWidthPx,
+                height = contentHeightPx,
+                usePIIPlaceholder = true,
+                drawable = contentDrawable,
+                asyncJobStatusCallback = asyncJobStatusCallback,
+                clipping = clipping,
+                shapeStyle = null,
+                border = null,
+                prefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME
+            )?.let {
+                wireframes.add(it)
             }
-        )?.let {
-            wireframes.add(it)
         }
 
         return wireframes

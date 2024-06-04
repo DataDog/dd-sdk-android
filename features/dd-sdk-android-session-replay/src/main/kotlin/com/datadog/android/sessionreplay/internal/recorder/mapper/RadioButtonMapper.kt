@@ -7,25 +7,31 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.RadioButton
+import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal open class RadioButtonMapper(
-    textWireframeMapper: TextViewMapper,
-    stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
+    textWireframeMapper: TextViewMapper<RadioButton>,
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
 ) : CheckableCompoundButtonMapper<RadioButton>(
     textWireframeMapper,
-    stringUtils,
-    uniqueIdentifierGenerator,
-    viewUtils
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
 ) {
 
     // region CheckableTextViewMapper
 
+    @UiThread
     override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
@@ -34,6 +40,7 @@ internal open class RadioButtonMapper(
         )
     }
 
+    @UiThread
     override fun resolveNotCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = null,

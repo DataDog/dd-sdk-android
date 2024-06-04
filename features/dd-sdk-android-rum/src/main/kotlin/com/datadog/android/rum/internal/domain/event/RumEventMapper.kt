@@ -40,10 +40,21 @@ internal data class RumEventMapper(
             is ViewEvent -> viewEventMapper.map(event)
             is ActionEvent -> actionEventMapper.map(event)
             is ErrorEvent -> {
-                if (event.error.isCrash != true) {
-                    errorEventMapper.map(event)
+                // Don't allow the error event to be dropped if it's a crash
+                if (event.error.isCrash == true) {
+                    val mappedEvent = errorEventMapper.map(event)
+                    if (mappedEvent == null) {
+                        internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            InternalLogger.Target.USER,
+                            { NO_DROPPING_FATAL_ERRORS_WARNING_MESSAGE }
+                        )
+                        event
+                    } else {
+                        mappedEvent
+                    }
                 } else {
-                    event
+                    errorEventMapper.map(event)
                 }
             }
             is ResourceEvent -> resourceEventMapper.map(event)
@@ -119,5 +130,9 @@ internal data class RumEventMapper(
         internal const val NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE =
             "RumEventMapper: there was no EventMapper assigned for" +
                 " RUM event type: %s"
+        internal const val NO_DROPPING_FATAL_ERRORS_WARNING_MESSAGE =
+            "RumEventMapper: the return from the ErrorEvent mapper was null for a crash. " +
+                "Dropping crashes in from the event mapper is not supported. " +
+                "The original event object will be used instead."
     }
 }

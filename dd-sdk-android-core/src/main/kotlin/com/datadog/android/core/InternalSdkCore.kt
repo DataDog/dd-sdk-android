@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
+import com.google.gson.JsonObject
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -55,6 +56,29 @@ interface InternalSdkCore : FeatureSdkCore {
     val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
 
     /**
+     * Reads last known RUM view event stored.
+     */
+    @get:WorkerThread
+    @InternalApi
+    val lastViewEvent: JsonObject?
+
+    /**
+     * Reads information about last fatal ANR sent.
+     */
+    @get:WorkerThread
+    @InternalApi
+    val lastFatalAnrSent: Long?
+
+    /**
+     * Provide the time the application started in nanoseconds from device boot, or our best guess
+     * if the actual start time is not available. Note: since the implementation may rely on [System.nanoTime],
+     * this property can only be used to measure elapsed time and is not related to any other notion of system
+     * or wall-clock time. The value is the time since VM start.
+     */
+    @InternalApi
+    val appStartTimeNs: Long
+
+    /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.
      *
      * @param data Serialized RUM view event.
@@ -62,6 +86,20 @@ interface InternalSdkCore : FeatureSdkCore {
     @InternalApi
     @WorkerThread
     fun writeLastViewEvent(data: ByteArray)
+
+    /**
+     * Deletes last RUM view event written.
+     */
+    @InternalApi
+    @WorkerThread
+    fun deleteLastViewEvent()
+
+    /**
+     * Writes timestamp of the last fatal ANR sent.
+     */
+    @InternalApi
+    @WorkerThread
+    fun writeLastFatalAnrSent(anrTimestamp: Long)
 
     /**
      * Get an executor service for persistence purposes.

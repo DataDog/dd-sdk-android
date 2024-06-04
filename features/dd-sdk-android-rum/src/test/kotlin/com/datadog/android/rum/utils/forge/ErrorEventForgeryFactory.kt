@@ -20,6 +20,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
 
     override fun getForgery(forge: Forge): ErrorEvent {
         return ErrorEvent(
+            buildId = forge.aNullable { getForgery<UUID>().toString() },
             date = forge.aTimestamp(),
             error = ErrorEvent.Error(
                 id = forge.aNullable { getForgery<UUID>().toString() },
@@ -45,6 +46,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 type = forge.aNullable { anAlphabeticalString() },
                 handling = forge.aNullable { getForgery() },
                 handlingStack = forge.aNullable { aThrowable().loggableStackTrace() },
+                category = forge.aNullable { getForgery() },
                 threads = forge.aNullable {
                     aList {
                         ErrorEvent.Thread(
@@ -54,7 +56,8 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                             state = aNullable { getForgery<Thread.State>().name.lowercase() }
                         )
                     }
-                }
+                },
+                timeSinceAppStart = forge.aNullable { aPositiveLong() }
             ),
             view = ErrorEvent.ErrorEventView(
                 id = forge.getForgery<UUID>().toString(),

@@ -6,7 +6,9 @@
 
 package com.datadog.android.sessionreplay.material
 
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -27,16 +29,13 @@ import org.mockito.quality.Strictness
 internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
 
     override fun provideTestInstance(): SliderWireframeMapper {
-        return SliderWireframeMapper(
-            viewUtils = mockViewUtils,
-            stringUtils = mockStringUtils,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
-        )
+        return SliderWireframeMapper(mockViewIdentifierResolver, mockColorStringFormatter, mockViewBoundsResolver)
     }
 
     @Test
-    fun `M map the Slider to a list of wireframes W map()`() {
+    fun `M map the Slider to a list of wireframes W map() {ALLOW}`() {
         // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
         val expectedInactiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeInactiveTrackId,
             x = fakeExpectedInactiveTrackXPos,
@@ -73,7 +72,12 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)
+        val mappedWireframes = testedSliderWireframeMapper.map(
+            mockSlider,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -81,6 +85,70 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
                 expectedInactiveTrackWireframe,
                 expectedActiveTrackWireframe,
                 expectedThumbWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M map the Slider to a list of wireframes W map() {MASK}`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        val expectedInactiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeInactiveTrackId,
+            x = fakeExpectedInactiveTrackXPos,
+            y = fakeExpectedInactiveTrackYPos,
+            width = fakeExpectedInactiveTrackWidth,
+            height = fakeExpectedInactiveTrackHeight,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = fakeExpectedTrackInactiveHtmlColor,
+                opacity = fakeViewAlpha
+            )
+        )
+
+        // When
+        val mappedWireframes = testedSliderWireframeMapper.map(
+            mockSlider,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(mappedWireframes).isEqualTo(
+            listOf(
+                expectedInactiveTrackWireframe
+            )
+        )
+    }
+
+    @Test
+    fun `M map the Slider to a list of wireframes W map() {MASK_USER_INPUT}`() {
+        // Given
+        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        val expectedInactiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeInactiveTrackId,
+            x = fakeExpectedInactiveTrackXPos,
+            y = fakeExpectedInactiveTrackYPos,
+            width = fakeExpectedInactiveTrackWidth,
+            height = fakeExpectedInactiveTrackHeight,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = fakeExpectedTrackInactiveHtmlColor,
+                opacity = fakeViewAlpha
+            )
+        )
+
+        // When
+        val mappedWireframes = testedSliderWireframeMapper.map(
+            mockSlider,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(mappedWireframes).isEqualTo(
+            listOf(
+                expectedInactiveTrackWireframe
             )
         )
     }

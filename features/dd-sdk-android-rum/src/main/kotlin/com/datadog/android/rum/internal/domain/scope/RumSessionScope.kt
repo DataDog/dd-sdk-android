@@ -9,14 +9,13 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.storage.NoOpDataWriter
+import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.rum.utils.percent
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -119,19 +118,8 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        val downStreamEvent = if (event is RumRawEvent.SdkInit) {
-            if (event.isAppInForeground) {
-                createApplicationStartEvent(event)
-            } else {
-                // stop here, we initialized the session, no need to go down
-                null
-            }
-        } else {
-            event
-        }
-
-        if (downStreamEvent != null) {
-            childScope = childScope?.handleEvent(downStreamEvent, actualWriter)
+        if (event !is RumRawEvent.SdkInit) {
+            childScope = childScope?.handleEvent(event, actualWriter)
         }
 
         return if (isSessionComplete()) {
@@ -226,26 +214,6 @@ internal class RumSessionScope(
                 RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId
             )
         )
-    }
-
-    private fun createApplicationStartEvent(
-        sdkInitEvent: RumRawEvent.SdkInit
-    ): RumRawEvent.ApplicationStarted {
-        val processStartTimeNs = sdkInitEvent.appStartTimeNs
-        val eventTime = sdkInitEvent.eventTime
-        // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
-        // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
-        // To do so, we take the offset of those times in the event time, which should be consistent,
-        // then add that to our processStartTime to get the correct value.
-        val timestampNs = (
-                TimeUnit.MILLISECONDS.toNanos(eventTime.timestamp) - eventTime.nanoTime
-                ) + processStartTimeNs
-        val applicationLaunchViewTime = Time(
-            timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
-            nanoTime = processStartTimeNs
-        )
-        val startupTime = sdkInitEvent.eventTime.nanoTime - processStartTimeNs
-        return RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
     }
 
     // endregion

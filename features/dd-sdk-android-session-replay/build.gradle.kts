@@ -16,6 +16,7 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -26,8 +27,8 @@ plugins {
     id("com.github.ben-manes.versions")
 
     // Tests
-    id("org.jetbrains.kotlinx.kover")
     id("de.mobilej.unmock")
+    id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -56,6 +57,8 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.androidXAppCompat)
 
+    ksp(project(":tools:noopfactory"))
+
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -74,6 +77,7 @@ dependencies {
 unMock {
     keep("android.widget.ImageView\$ScaleType")
     keep("android.graphics.Rect")
+    keep("android.graphics.drawable.GradientDrawable")
 }
 
 apply(from = "clone_session_replay_schema.gradle.kts")

@@ -32,7 +32,7 @@ internal class JsonObjectDeserializerTest {
     private val testedDeserializer = JsonObjectDeserializer(internalLogger = mock())
 
     @Test
-    fun `𝕄 deserialize a serialized JsonObject 𝕎 deserialize()`(
+    fun `M deserialize a serialized JsonObject W deserialize()`(
         @Forgery fakeJsonObject: JsonObject
     ) {
         // Given
@@ -46,7 +46,7 @@ internal class JsonObjectDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 deserialize() { json array }`(
+    fun `M return null W deserialize() { json array }`(
         @Forgery fakeJsonObject: JsonObject
     ) {
         // Given
@@ -60,7 +60,7 @@ internal class JsonObjectDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 deserialize() { malformed model }`(
+    fun `M return null W deserialize() { malformed model }`(
         @StringForgery fakeModel: String
     ) {
         // When

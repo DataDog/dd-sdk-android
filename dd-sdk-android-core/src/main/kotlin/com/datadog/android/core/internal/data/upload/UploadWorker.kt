@@ -15,7 +15,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.NoOpInternalSdkCore
+import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.utils.unboundInternalLogger

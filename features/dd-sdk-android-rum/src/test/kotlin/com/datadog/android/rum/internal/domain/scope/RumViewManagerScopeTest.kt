@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
@@ -144,7 +145,7 @@ internal class RumViewManagerScopeTest {
     // region Children scopes
 
     @Test
-    fun `𝕄 delegate to child scope 𝕎 handleEvent()`() {
+    fun `M delegate to child scope W handleEvent()`() {
         // Given
         val fakeEvent: RumRawEvent = mock()
         whenever(fakeEvent.eventTime) doReturn Time()
@@ -160,7 +161,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 keep children scope 𝕎 handleEvent child returns non null`() {
+    fun `M keep children scope W handleEvent child returns non null`() {
         // Given
         val fakeEvent: RumRawEvent = mock()
         testedScope.childrenScopes.add(mockChildScope)
@@ -176,7 +177,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 remove children scope 𝕎 handleEvent child returns null`() {
+    fun `M remove children scope W handleEvent child returns null`() {
         // Given
         val fakeEvent: RumRawEvent = mock()
         testedScope.childrenScopes.add(mockChildScope)
@@ -196,7 +197,7 @@ internal class RumViewManagerScopeTest {
     // region Foreground View
 
     @Test
-    fun `𝕄 start a foreground ViewScope 𝕎 handleEvent(StartView) { app displayed }`(
+    fun `M start a foreground ViewScope W handleEvent(StartView) { app displayed }`(
         forge: Forge
     ) {
         // Given
@@ -223,7 +224,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 start a foreground ViewScope 𝕎 handleEvent(StartView) { app not displayed }`(
+    fun `M start a foreground ViewScope W handleEvent(StartView) { app not displayed }`(
         forge: Forge
     ) {
         // Given
@@ -250,7 +251,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 reset feature flags 𝕎 handleEvent(StartView) { view already active }`(
+    fun `M reset feature flags W handleEvent(StartView) { view already active }`(
         forge: Forge
     ) {
         // Given
@@ -278,7 +279,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 send gap message 𝕎 handleEvent(StopView) + handleEvent(StartView)`(
+    fun `M send gap message W handleEvent(StopView) + handleEvent(StartView)`(
         forge: Forge
     ) {
         // Given
@@ -302,7 +303,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not send gap message 𝕎 handleEvent(StartView) + handleEvent(StartView)`(
+    fun `M not send gap message W handleEvent(StartView) + handleEvent(StartView)`(
         forge: Forge
     ) {
         // Given
@@ -329,7 +330,7 @@ internal class RumViewManagerScopeTest {
     // region Background View
 
     @Test
-    fun `𝕄 start a bg ViewScope 𝕎 handleEvent { app displayed, event is relevant }`(
+    fun `M start a bg ViewScope W handleEvent { app displayed, event is relevant }`(
         forge: Forge
     ) {
         // Given
@@ -356,7 +357,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 start a bg ViewScope 𝕎 handleEvent { stopped view, event is relevant }`(
+    fun `M start a bg ViewScope W handleEvent { stopped view, event is relevant }`(
         forge: Forge
     ) {
         // Given
@@ -388,7 +389,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 start a bg ViewScope 𝕎 handleEvent { event is relevant, not foreground }`(
+    fun `M start a bg ViewScope W handleEvent { event is relevant, not foreground }`(
         forge: Forge
     ) {
         // Given
@@ -430,7 +431,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { app displayed, event not relevant}`(
+    fun `M not start a bg ViewScope W handleEvent { app displayed, event not relevant}`(
         forge: Forge
     ) {
         // Given
@@ -445,7 +446,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { app displayed, event is background ANR}`() {
+    fun `M not start a bg ViewScope W handleEvent { app displayed, event is background ANR}`() {
         // Given
         testedScope.applicationDisplayed = true
         val fakeEvent = RumRawEvent.AddError(
@@ -466,7 +467,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { bg disabled, event is relevant }`(
+    fun `M not start a bg ViewScope W handleEvent { bg disabled, event is relevant }`(
         forge: Forge
     ) {
         // Given
@@ -494,7 +495,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { app displayed, event relevant, active view }`(
+    fun `M not start a bg ViewScope W handleEvent { app displayed, event relevant, active view }`(
         forge: Forge
     ) {
         // Given
@@ -525,7 +526,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 send warn dev log 𝕎 handleEvent { app displayed, event is relevant, bg disabled }`(
+    fun `M send warn dev log W handleEvent { app displayed, event is relevant, bg disabled }`(
         forge: Forge
     ) {
         // Given
@@ -561,7 +562,7 @@ internal class RumViewManagerScopeTest {
     // region AppLaunch View
 
     @Test
-    fun `𝕄 start an AppLaunch ViewScope 𝕎 handleEvent { app not displayed }`(
+    fun `M start an AppLaunch ViewScope W handleEvent { app not displayed }`(
         forge: Forge
     ) {
         // Given
@@ -589,7 +590,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start an AppLaunch ViewScope 𝕎 handleEvent { app displayed }`(
+    fun `M not start an AppLaunch ViewScope W handleEvent { app displayed }`(
         forge: Forge
     ) {
         // Given
@@ -621,7 +622,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start an AppLaunch ViewScope 𝕎 handleEvent { session stopped }`(
+    fun `M not start an AppLaunch ViewScope W handleEvent { session stopped }`(
         forge: Forge
     ) {
         // Given
@@ -653,7 +654,7 @@ internal class RumViewManagerScopeTest {
     // region ApplicationStarted
 
     @Test
-    fun `𝕄 send ApplicationStarted event 𝕎 handleEvent ()`(
+    fun `M send ApplicationStarted event W handleEvent ()`(
         forge: Forge
     ) {
         // Given
@@ -673,7 +674,7 @@ internal class RumViewManagerScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue.action.type)
                 .isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
             // Application start event occurs at the start time
@@ -687,7 +688,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not send ApplicationStarted event 𝕎 onViewDisplayed() {app already started}`(
+    fun `M not send ApplicationStarted event W onViewDisplayed() {app already started}`(
         forge: Forge
     ) {
         // Given

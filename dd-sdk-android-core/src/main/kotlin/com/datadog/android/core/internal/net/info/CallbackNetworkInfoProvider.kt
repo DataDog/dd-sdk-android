@@ -17,12 +17,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 
 @TargetApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
     private val dataWriter: DataWriter<NetworkInfo>,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val internalLogger: InternalLogger
 ) :
     ConnectivityManager.NetworkCallback(),
@@ -31,7 +30,7 @@ internal class CallbackNetworkInfoProvider(
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             dataWriter.write(field)
         }
 
@@ -164,7 +163,7 @@ internal class CallbackNetworkInfoProvider(
 
     @SuppressLint("NewApi")
     private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
-        return if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.Q &&
+        return if (buildSdkVersionProvider.version >= Build.VERSION_CODES.Q &&
             networkCapabilities.signalStrength != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         ) {
             networkCapabilities.signalStrength.toLong()

@@ -12,6 +12,7 @@ import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.Locale
+import java.util.UUID
 
 class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
 
@@ -31,6 +32,7 @@ class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
             deviceInfo = forge.getForgery(),
             userInfo = forge.getForgery(),
             trackingConsent = forge.aValueFrom(TrackingConsent::class.java),
+            appBuildId = forge.aNullable { getForgery<UUID>().toString() },
             // building nested maps with default size slows down tests quite a lot, so will use
             // an explicit small size
             featuresContext = forge.aMap(size = 2) {

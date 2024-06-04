@@ -129,7 +129,7 @@ internal class UploadWorkerTest {
     // region doWork
 
     @Test
-    fun `𝕄 send batches 𝕎 doWork() {single batch per feature}`(
+    fun `M send batches W doWork() {single batch per feature}`(
         @Forgery batchA: List<RawBatchEvent>,
         @StringForgery batchAMeta: String,
         @Forgery batchB: List<RawBatchEvent>,
@@ -205,7 +205,7 @@ internal class UploadWorkerTest {
 
     @ParameterizedTest
     @MethodSource("errorStatusValues")
-    fun `𝕄 send and keep batches 𝕎 doWork() {single batch per feature with error}`(
+    fun `M send and keep batches W doWork() {single batch per feature with error}`(
         status: UploadStatus,
         @Forgery batchA: List<RawBatchEvent>,
         @StringForgery batchAMeta: String,
@@ -278,7 +278,7 @@ internal class UploadWorkerTest {
     }
 
     @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success}`(forge: Forge) {
+    fun `M send batches W doWork() {multiple batches, all Success}`(forge: Forge) {
         // Given
         val batchesA = forge.aList {
             aList { RawBatchEvent(aString().toByteArray()) }
@@ -358,7 +358,7 @@ internal class UploadWorkerTest {
     }
 
     @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success, async storage}`(forge: Forge) {
+    fun `M send batches W doWork() {multiple batches, all Success, async storage}`(forge: Forge) {
         // Given
         val batchesA = forge.aList {
             aList { RawBatchEvent(aString().toByteArray()) }
@@ -446,7 +446,7 @@ internal class UploadWorkerTest {
 
     @ParameterizedTest
     @MethodSource("errorStatusValues")
-    fun `𝕄 send batches 𝕎 doWork() {multiple batches, some fails with retry}`(
+    fun `M send batches W doWork() {multiple batches, some fails with retry}`(
         failingStatus: UploadStatus,
         forge: Forge
     ) {
@@ -546,7 +546,7 @@ internal class UploadWorkerTest {
     }
 
     @Test
-    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
+    fun `M log error W doWork() { SDK is not initialized }`() {
         // Given
         Datadog.registry.clear()
 

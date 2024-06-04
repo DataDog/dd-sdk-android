@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.ComposeContext
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -56,9 +58,12 @@ internal class AbstractCompositionGroupMapperTest {
     @LongForgery
     private var fakeGroupId: Long = 0L
 
+    @Mock
+    lateinit var mockColorStringFormatter: ColorStringFormatter
+
     @BeforeEach
     fun `set up`() {
-        testedMapper = StubAbstractCompositionGroupMapper()
+        testedMapper = StubAbstractCompositionGroupMapper(mockColorStringFormatter)
     }
 
     @Test
@@ -117,7 +122,9 @@ internal class AbstractCompositionGroupMapperTest {
     }
 }
 
-internal class StubAbstractCompositionGroupMapper : AbstractCompositionGroupMapper() {
+internal class StubAbstractCompositionGroupMapper(
+    colorStringFormatter: ColorStringFormatter
+) : AbstractCompositionGroupMapper(colorStringFormatter) {
 
     var mappedWireframe: ComposeWireframe? = null
 

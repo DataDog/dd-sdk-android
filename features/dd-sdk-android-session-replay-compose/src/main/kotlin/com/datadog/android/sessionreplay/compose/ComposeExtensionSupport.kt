@@ -6,13 +6,18 @@
 
 package com.datadog.android.sessionreplay.compose
 
-import android.view.View
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.sessionreplay.ExtensionSupport
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.ComposeWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 /**
  * Jetpack Compose extension support implementation to be used in the Session Replay
@@ -20,22 +25,26 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMappe
  */
 class ComposeExtensionSupport : ExtensionSupport {
 
-    override fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
-        return SessionReplayPrivacy.values()
-            .associateWith { mapOf(composeViewClass to getComposeWireframeMapper(it)) }
-            .toMap()
+    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
+    private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
+    private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
+    private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+
+    override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
+        return listOf(
+            MapperTypeWrapper(
+                ComposeView::class.java,
+                ComposeWireframeMapper(
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper
+                )
+            )
+        )
     }
 
     override fun getOptionSelectorDetectors(): List<OptionSelectorDetector> {
         return emptyList()
-    }
-
-    private fun getComposeWireframeMapper(privacy: SessionReplayPrivacy): WireframeMapper<View, *> {
-        @Suppress("UNCHECKED_CAST")
-        return ComposeWireframeMapper(privacy) as WireframeMapper<View, *>
-    }
-
-    companion object {
-        private val composeViewClass: Class<*> = ComposeView::class.java
     }
 }

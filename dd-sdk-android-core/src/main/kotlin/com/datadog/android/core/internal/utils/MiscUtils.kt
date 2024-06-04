@@ -61,6 +61,7 @@ internal inline fun retryWithDelay(
 }
 
 @Suppress("UndocumentedPublicClass")
+@InternalApi
 object JsonSerializer {
     // it could be an extension function, but since the scope is very wide (Any?) in order to avoid
     // polluting user-space, we are going to encapsulate it. Maybe later if we have an internal

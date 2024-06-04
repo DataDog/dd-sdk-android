@@ -6,12 +6,14 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class ViewUtilsInternal {
 
@@ -23,10 +25,9 @@ internal class ViewUtilsInternal {
         return !view.isShown || view.width <= 0 || view.height <= 0
     }
 
+    @SuppressLint("RestrictedApi") // ActionBarContextView is public, but has @RestrictTo(LIBRARY_GROUP_PREFIX)
     internal fun isSystemNoise(view: View): Boolean {
-        return view.id in systemViewIds ||
-            view is ViewStub ||
-            view is ActionBarContextView
+        return view.id in systemViewIds || view is ViewStub || view is ActionBarContextView
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
@@ -55,7 +56,7 @@ internal class ViewUtilsInternal {
         view: View,
         drawable: Drawable,
         pixelsDensity: Float,
-        position: ImageWireframeHelper.CompoundDrawablePositions
+        position: DefaultImageWireframeHelper.CompoundDrawablePositions
     ): GlobalBounds {
         val coordinates = IntArray(2)
         // this will always have size >= 2
@@ -76,19 +77,22 @@ internal class ViewUtilsInternal {
         var yPosition: Long
 
         when (position) {
-            ImageWireframeHelper.CompoundDrawablePositions.LEFT -> {
+            DefaultImageWireframeHelper.CompoundDrawablePositions.LEFT -> {
                 xPosition = viewPaddingStart
                 yPosition = getCenterVerticalOffset(viewHeight, drawableHeight)
             }
-            ImageWireframeHelper.CompoundDrawablePositions.TOP -> {
+
+            DefaultImageWireframeHelper.CompoundDrawablePositions.TOP -> {
                 xPosition = getCenterHorizontalOffset(viewWidth, drawableWidth)
                 yPosition = viewPaddingTop
             }
-            ImageWireframeHelper.CompoundDrawablePositions.RIGHT -> {
+
+            DefaultImageWireframeHelper.CompoundDrawablePositions.RIGHT -> {
                 xPosition = viewWidth - (drawableWidth + viewPaddingEnd)
                 yPosition = getCenterVerticalOffset(viewHeight, drawableHeight)
             }
-            ImageWireframeHelper.CompoundDrawablePositions.BOTTOM -> {
+
+            DefaultImageWireframeHelper.CompoundDrawablePositions.BOTTOM -> {
                 xPosition = getCenterHorizontalOffset(viewWidth, drawableWidth)
                 yPosition = viewHeight - (drawableHeight + viewPaddingBottom)
             }

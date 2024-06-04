@@ -8,6 +8,8 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 /**
  * Extension of [SdkCore] containing the necessary methods for the features development.
@@ -66,9 +68,40 @@ interface FeatureSdkCore : SdkCore {
     fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver)
 
     /**
+     * Sets context update receiver for the given feature.
+     *
+     * @param featureName Feature name.
+     * @param listener Listener to remove.
+     */
+    fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
+
+    /**
+     * Removes context update listener for the given feature.
+     *
+     * @param featureName Feature name.
+     * @param listener Listener to remove.
+     */
+    fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
+
+    /**
      * Removes events receive for the given feature.
      *
      * @param featureName Feature name.
      */
     fun removeEventReceiver(featureName: String)
+
+    /**
+     * Returns a new single thread [ExecutorService], set up with backpressure and internal monitoring.
+     *
+     * @param executorContext Context to be used for logging and naming threads running on this executor.
+     */
+    fun createSingleThreadExecutorService(executorContext: String): ExecutorService
+
+    /**
+     * Returns a new [ScheduledExecutorService], set up with internal monitoring.
+     * It will use a default of one thread and can spawn at most as many thread as there are CPU cores.
+     *
+     * @param executorContext Context to be used for logging and naming threads running on this executor.
+     */
+    fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService
 }

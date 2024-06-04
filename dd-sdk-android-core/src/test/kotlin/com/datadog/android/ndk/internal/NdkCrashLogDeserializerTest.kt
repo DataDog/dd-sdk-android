@@ -29,7 +29,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class NdkCrashLogDeserializerTest {
 
-    lateinit var testedDeserializer: NdkCrashLogDeserializer
+    private lateinit var testedDeserializer: NdkCrashLogDeserializer
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -54,7 +54,7 @@ internal class NdkCrashLogDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null W deserialize { wrong Json format }`() {
+    fun `M return null W deserialize { wrong Json format }`() {
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize("{]}")
 

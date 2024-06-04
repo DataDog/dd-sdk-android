@@ -19,14 +19,13 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider(
     private val dataWriter: DataWriter<NetworkInfo>,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) :
     ThreadSafeReceiver(),
     NetworkInfoProvider {
@@ -34,7 +33,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
     private var networkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             dataWriter.write(field)
         }
 
@@ -54,7 +53,9 @@ internal class BroadcastReceiverNetworkInfoProvider(
 
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        registerReceiver(context, filter).also { onReceive(context, it) }
+        registerReceiver(context, filter).also {
+            onReceive(context, it)
+        }
     }
 
     override fun unregister(context: Context) {
@@ -104,7 +105,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
         }
         val cellularTechnology = getCellularTechnology(subtype)
 
-        return if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.P) {
+        return if (buildSdkVersionProvider.version >= Build.VERSION_CODES.P) {
             val telephonyMgr =
                 context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
             val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME

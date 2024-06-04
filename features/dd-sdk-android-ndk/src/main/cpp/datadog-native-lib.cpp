@@ -32,6 +32,7 @@ static pthread_mutex_t handler_mutex = PTHREAD_MUTEX_INITIALIZER;
 static const uint8_t tracking_consent_pending = 0;
 static const uint8_t tracking_consent_granted = 1;
 static uint8_t tracking_consent = tracking_consent_pending; // 0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED
+static uint64_t global_app_start_time_millis = 0;
 
 #ifndef NDEBUG
 
@@ -46,11 +47,12 @@ void unlockMutex() {
 #endif
 
 std::string serialize_crash_report(int signum, uint64_t timestamp, const char* signal_name, const char* error_message, const char* error_stacktrace) {
-    static const char* json_formatter = R"({"signal":%s,"timestamp":%s,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
-
+    static const char* json_formatter = R"({"signal":%s,"timestamp":%s,"time_since_app_start_ms":%s,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
+    const uint64_t time_since_app_start = timestamp - global_app_start_time_millis;
     std::string serialized_log = stringutils::format(json_formatter,
                                                      std::to_string(signum).c_str(),
                                                      std::to_string(timestamp).c_str(),
+                                                     std::to_string(time_since_app_start).c_str(),
                                                      signal_name,
                                                      error_message,
                                                      error_stacktrace);
@@ -125,6 +127,9 @@ void update_tracking_consent(jint consent) {
     tracking_consent = (uint8_t) consent;
 }
 
+void update_app_start_time_millis(jlong time_ms) {
+    global_app_start_time_millis = time_ms;
+}
 
 /// Jni bindings
 extern "C" JNIEXPORT void JNICALL
@@ -132,10 +137,12 @@ Java_com_datadog_android_ndk_internal_NdkCrashReportsFeature_registerSignalHandl
         JNIEnv *env,
         jobject /* this */,
         jstring storage_path,
-        jint consent) {
+        jint consent,
+        jlong app_start_time_millis) {
 
     update_main_context(env, storage_path);
     update_tracking_consent(consent);
+    update_app_start_time_millis(app_start_time_millis);
     start_monitoring();
 }
 

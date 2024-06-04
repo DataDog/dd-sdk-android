@@ -33,7 +33,7 @@ internal class FileReaderWriterTest {
     lateinit var mockLogger: InternalLogger
 
     @Test
-    fun `𝕄 create FileReaderWriter 𝕎 create() { without encryption }`() {
+    fun `M create FileReaderWriter W create() { without encryption }`() {
         // When
         val readerWriter = FileReaderWriter.create(mockLogger, null)
         // Then
@@ -42,7 +42,7 @@ internal class FileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 create FileReaderWriter 𝕎 create() { with encryption }`() {
+    fun `M create FileReaderWriter W create() { with encryption }`() {
         // When
         val mockEncryption = mock<Encryption>()
         val readerWriter = FileReaderWriter.create(

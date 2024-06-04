@@ -15,6 +15,7 @@
           "type": "object",
           "description": "The telemetry log information",
           "required": ["status", "message"],
+          "additionalProperties": true,
           "properties": {
             "type": {
               "type": "string",

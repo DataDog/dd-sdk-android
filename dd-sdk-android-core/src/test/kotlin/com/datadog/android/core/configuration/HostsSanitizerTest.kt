@@ -77,7 +77,7 @@ internal class HostsSanitizerTest {
     }
 
     @Test
-    fun `𝕄 filter out everything W sanitizeHosts { using top level domains only }`(
+    fun `M filter out everything W sanitizeHosts { using top level domains only }`(
         @StringForgery(
             regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
@@ -90,7 +90,7 @@ internal class HostsSanitizerTest {
     }
 
     @Test
-    fun `𝕄 return only localhost W sanitizeHosts { using top level domains and localhost }`(
+    fun `M return only localhost W sanitizeHosts { using top level domains and localhost }`(
         @StringForgery(
             regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>,

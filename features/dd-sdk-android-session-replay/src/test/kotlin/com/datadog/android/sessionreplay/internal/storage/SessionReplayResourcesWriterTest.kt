@@ -10,6 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
@@ -57,7 +59,7 @@ internal class SessionReplayResourcesWriterTest {
 
     @BeforeEach
     fun setup() {
-        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull()))
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
             .thenReturn(true)
 
         whenever(mockFeatureSdkCore.getFeature(ResourcesFeature.SESSION_REPLAY_RESOURCES_FEATURE_NAME))
@@ -82,8 +84,9 @@ internal class SessionReplayResourcesWriterTest {
         // Then
         val metadataBytearray = fakeEnrichedResource.asBinaryMetadata()
         verify(mockEventBatchWriter).write(
-            RawBatchEvent(data = fakeEnrichedResource.resource, metadata = metadataBytearray),
-            batchMetadata = null
+            event = RawBatchEvent(data = fakeEnrichedResource.resource, metadata = metadataBytearray),
+            batchMetadata = null,
+            eventType = EventType.DEFAULT
         )
     }
 }

@@ -13,17 +13,17 @@ import android.os.Build
 import android.util.TypedValue
 import android.view.WindowManager
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 
 internal object MiscUtils {
 
-    internal const val OPAQUE_ALPHA_VALUE = 255
     private const val GET_STRING_FROM_JSON_ERROR = "Error getting string property from json"
     internal const val DESERIALIZE_JSON_ERROR = "Error deserializing json object"
 
@@ -83,14 +83,14 @@ internal object MiscUtils {
 
     fun resolveSystemInformation(context: Context): SystemInformation {
         val screenDensity = context.resources.displayMetrics.density
-        val themeColorAsHexa = resolveThemeColor(context.theme)?.let {
-            StringUtils.formatColorAndAlphaAsHexa(it, OPAQUE_ALPHA_VALUE)
+        val themeColorAsHexString = resolveThemeColor(context.theme)?.let {
+            DefaultColorStringFormatter.formatColorAndAlphaAsHexString(it, OPAQUE_ALPHA_VALUE)
         }
         return SystemInformation(
             screenBounds = resolveScreenBounds(context, screenDensity),
             screenOrientation = context.resources.configuration.orientation,
             screenDensity = screenDensity,
-            themeColor = themeColorAsHexa
+            themeColor = themeColorAsHexString
         )
     }
 

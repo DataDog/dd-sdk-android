@@ -12,9 +12,11 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.extension.asLogStatus
@@ -92,6 +94,9 @@ internal class DatadogLogHandlerTest {
     lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockLogsFeature: LogsFeature
+
+    @Mock
     lateinit var mockRumFeature: FeatureScope
 
     @Mock
@@ -131,6 +136,7 @@ internal class DatadogLogHandlerTest {
         whenever(
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
+        whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
         whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -164,7 +170,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -175,6 +181,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -236,7 +243,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -247,6 +254,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -292,7 +300,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent>().apply {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -303,6 +311,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -327,6 +336,8 @@ internal class DatadogLogHandlerTest {
                 )
         }
     }
+
+    // region Forwarding to RUM
 
     @Test
     fun `doesn't forward low level log to RumMonitor`(forge: Forge) {
@@ -435,6 +446,76 @@ internal class DatadogLogHandlerTest {
         )
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
+    fun `forward error log with feature attributes to RumMonitor`(
+        logLevel: Int,
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        whenever(mockLogsFeature.getAttributes()) doReturn mapOf(
+            key to value
+        )
+
+        // When
+        testedHandler.handleLog(
+            logLevel,
+            fakeMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags
+        )
+
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumFeature).sendEvent(
+                capture()
+            )
+            @Suppress("UNCHECKED_CAST")
+            assertThat(lastValue["attributes"] as Map<String, *>)
+                .containsEntry(key, value)
+                .containsAllEntriesOf(fakeAttributes)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
+    fun `forward error log with feature attributes and error strings to RumMonitor`(
+        logLevel: Int,
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String,
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        whenever(mockLogsFeature.getAttributes()) doReturn mapOf(
+            key to value
+        )
+
+        testedHandler.handleLog(
+            logLevel,
+            fakeMessage,
+            errorKind,
+            errorMessage,
+            errorStack,
+            fakeAttributes,
+            fakeTags
+        )
+
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumFeature).sendEvent(
+                capture()
+            )
+            @Suppress("UNCHECKED_CAST")
+            assertThat(lastValue["attributes"] as Map<String, *>)
+                .containsEntry(key, value)
+                .containsAllEntriesOf(fakeAttributes)
+        }
+    }
+
+    // endregion
+
     @Test
     fun `forward log with custom timestamp to LogWriter`(forge: Forge) {
         val customTimestamp = forge.aPositiveLong()
@@ -455,7 +536,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -466,6 +547,7 @@ internal class DatadogLogHandlerTest {
                 .hasDate((customTimestamp + serverTimeOffsetMs).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -507,7 +589,7 @@ internal class DatadogLogHandlerTest {
         countDownLatch.await(1, TimeUnit.SECONDS)
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -518,6 +600,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -557,7 +640,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -568,6 +651,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -616,7 +700,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -627,6 +711,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(emptyMap())
                 .hasExactlyTags(
                     setOf(
@@ -638,6 +723,98 @@ internal class DatadogLogHandlerTest {
                 .doesNotHaveError()
         }
     }
+
+    // region Attributes
+
+    @Test
+    fun `M add feature attributes W handleLog`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        whenever(mockLogsFeature.getAttributes()) doReturn mapOf(
+            key to value
+        )
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            emptyMap(),
+            fakeTags
+        )
+
+        // Then
+        argumentCaptor<LogEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            assertThat(lastValue.additionalProperties)
+                .containsEntry(key, value)
+        }
+    }
+
+    @Test
+    fun `M combine feature attributes with logged attributes W handleLog`(
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @StringForgery loggerKey: String,
+        @StringForgery loggerValue: String
+    ) {
+        // Given
+        whenever(mockLogsFeature.getAttributes()) doReturn mapOf(
+            key to value
+        )
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            mapOf(loggerKey to loggerValue),
+            fakeTags
+        )
+
+        // Then
+        argumentCaptor<LogEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            assertThat(lastValue.additionalProperties)
+                .containsEntry(key, value)
+                .containsEntry(loggerKey, loggerValue)
+        }
+    }
+
+    @Test
+    fun `M overwrite attributes with logged attributes W handleLog`(
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @StringForgery loggerValue: String
+    ) {
+        // Given
+        whenever(mockLogsFeature.getAttributes()) doReturn mapOf(
+            key to value
+        )
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            mapOf(key to loggerValue),
+            fakeTags
+        )
+
+        // Then
+        argumentCaptor<LogEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            assertThat(lastValue.additionalProperties)
+                .containsEntry(key, loggerValue)
+        }
+    }
+
+    // endregion
 
     @Test
     fun `it will add the span id and trace id if we active an active tracer`(
@@ -670,7 +847,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(LogAttributes.DD_TRACE_ID, fakeTraceId)
@@ -691,7 +868,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .doesNotContainKey(LogAttributes.DD_TRACE_ID)
@@ -712,7 +889,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(
@@ -749,7 +926,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue.additionalProperties)
                 .doesNotContainKey(LogAttributes.DD_TRACE_ID)
@@ -814,7 +991,7 @@ internal class DatadogLogHandlerTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -824,6 +1001,7 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

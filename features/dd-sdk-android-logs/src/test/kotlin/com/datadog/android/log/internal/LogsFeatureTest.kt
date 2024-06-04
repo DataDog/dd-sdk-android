@@ -16,9 +16,11 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
@@ -175,7 +177,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize data writer 𝕎 initialize()`() {
+    fun `M initialize data writer W initialize()`() {
         // When
         testedFeature.onInitialize(mockApplicationContext)
 
@@ -185,7 +187,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the eventMapper 𝕎 initialize()`() {
+    fun `M use the eventMapper W initialize()`() {
         // When
         testedFeature.onInitialize(mockApplicationContext)
 
@@ -199,7 +201,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize packageName 𝕎 initialize()`() {
+    fun `M initialize packageName W initialize()`() {
         // When
         testedFeature.onInitialize(mockApplicationContext)
 
@@ -208,30 +210,86 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide logs feature name 𝕎 name()`() {
+    fun `M provide logs feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
             .isEqualTo(Feature.LOGS_FEATURE_NAME)
     }
 
     @Test
-    fun `𝕄 provide logs request factory 𝕎 requestFactory()`() {
+    fun `M provide logs request factory W requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
             .isInstanceOf(LogsRequestFactory::class.java)
     }
 
     @Test
-    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+    fun `M provide default storage configuration W storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)
     }
 
-    // region FeatureEventReceiver#onReceive
+    @Test
+    fun `M add attributes W addAttribute`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // When
+        testedFeature.addAttribute(key, value)
+
+        // Then
+        val attributes = testedFeature.getAttributes()
+        assertThat(attributes).containsEntry(key, value)
+    }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
+    fun `M remove attributes W removeAttribute`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        testedFeature.addAttribute(key, value)
+
+        // When
+        testedFeature.removeAttribute(key)
+
+        // Then
+        val attributes = testedFeature.getAttributes()
+        assertThat(attributes).isEmpty()
+    }
+
+    @Test
+    fun `M provide attribute snapshot W getAttributes`(
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @StringForgery secondValue: String
+    ) {
+        // Given
+        testedFeature.addAttribute(key, value)
+        val attributes = testedFeature.getAttributes()
+
+        // When
+        testedFeature.addAttribute(key, secondValue)
+
+        // Then
+        assertThat(attributes).containsEntry(key, value)
+    }
+
+    @Test
+    fun `M add attributes replaces null W addAttribute { null value }`(
+        @StringForgery key: String
+    ) {
+        testedFeature.addAttribute(key, null)
+
+        // Then
+        assertThat(testedFeature.getAttributes()).containsEntry(key, NULL_MAP_VALUE)
+    }
+
+    // region FeatureEventReceiver#onReceive + unknown
+
+    @Test
+    fun `M log warning and do nothing W onReceive() { unknown event type }`() {
         // Given
         testedFeature.dataWriter = mockDataWriter
 
@@ -260,7 +318,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown type property value }`(
+    fun `M log warning and do nothing W onReceive() { unknown type property value }`(
         forge: Forge
     ) {
         // Given
@@ -293,10 +351,10 @@ internal class LogsFeatureTest {
 
     // endregion
 
-    // region FeatureEventReceiver#onReceive
+    // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { JVM crash }`(
+    fun `M write crash log event W onReceive() { JVM crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -320,7 +378,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -348,6 +406,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -369,7 +428,50 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event and wait 𝕎 onReceive() { JVM crash }`(
+    fun `M write feature attributes to crash log event W onReceive() { JVM crash }`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.addAttribute(fakeKey, fakeValue)
+        val fakeThrowable = forge.aThrowable()
+        val event = JvmCrash.Logs(
+            threadName = fakeThreadName,
+            timestamp = forge.aLong(),
+            message = forge.aString(),
+            loggerName = forge.aString(),
+            throwable = fakeThrowable,
+            threads = forge.aList { forge.getForgery() }
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        argumentCaptor<LogEvent> {
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+
+            val log = lastValue
+
+            assertThatLog(log)
+                .hasExactlyAttributes(
+                    mapOf(
+                        fakeKey to fakeValue,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumActionId,
+                        LogAttributes.DD_TRACE_ID to fakeTraceId,
+                        LogAttributes.DD_SPAN_ID to fakeSpanId
+                    )
+                )
+        }
+    }
+
+    @Test
+    fun `M write crash log event and wait W onReceive() { JVM crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -401,7 +503,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -429,6 +531,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -450,7 +553,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 not wait forever for crash log write 𝕎 onReceive() { JVM crash, timeout }`(
+    fun `M not wait forever for crash log write W onReceive() { JVM crash, timeout }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -491,7 +594,7 @@ internal class LogsFeatureTest {
 
     @ParameterizedTest
     @EnumSource(ValueMissingType::class)
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { corrupted mandatory fields, NDK crash }`(
+    fun `M log warning and do nothing W onReceive() { corrupted mandatory fields, NDK crash }`(
         missingType: ValueMissingType,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
@@ -546,7 +649,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { NDK crash }`(
+    fun `M write crash log event W onReceive() { NDK crash }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -568,7 +671,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -581,6 +684,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -593,7 +697,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { NDK crash, explicit network info }`(
+    fun `M write crash log event W onReceive() { NDK crash, explicit network info }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -617,7 +721,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -630,6 +734,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -642,7 +747,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write crash log event 𝕎 onReceive() { NDK crash, explicit user info }`(
+    fun `M write crash log event W onReceive() { NDK crash, explicit user info }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -666,7 +771,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             val log = lastValue
 
@@ -679,6 +784,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasUserInfo(fakeUserInfo)
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
                     setOf(
@@ -696,7 +802,7 @@ internal class LogsFeatureTest {
 
     @ParameterizedTest
     @EnumSource(ValueMissingType::class)
-    fun `𝕄 log warning and do nothing 𝕎 onReceive() { corrupted mandatory fields, span log }`(
+    fun `M log warning and do nothing W onReceive() { corrupted mandatory fields, span log }`(
         missingType: ValueMissingType,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
@@ -750,7 +856,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `𝕄 write span log event 𝕎 onReceive() { span log }`(
+    fun `M write span log event W onReceive() { span log }`(
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -772,7 +878,7 @@ internal class LogsFeatureTest {
 
         // Then
         argumentCaptor<LogEvent> {
-            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             val log = lastValue
 
@@ -785,6 +891,7 @@ internal class LogsFeatureTest {
                 .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

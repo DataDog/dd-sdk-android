@@ -26,9 +26,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.CombinedRumSessionListener
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -51,7 +49,6 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -71,8 +68,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    internal val executorService: ExecutorService
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -194,7 +190,7 @@ internal class DatadogRumMonitor(
 
     @Deprecated(
         "This method is deprecated and will be removed in the future versions." +
-                " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
+            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
         key: String,
@@ -312,6 +308,10 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         val errorType = getErrorType(attributes)
+        val mutableAttributes = attributes.toMutableMap()
+
+        @Suppress("UNCHECKED_CAST")
+        val threads = mutableAttributes.remove(RumAttributes.INTERNAL_ALL_THREADS) as? List<ThreadDump>
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -319,10 +319,10 @@ internal class DatadogRumMonitor(
                 throwable,
                 null,
                 false,
-                attributes.toMap(),
+                mutableAttributes,
                 eventTime,
                 errorType,
-                threads = emptyList()
+                threads = threads.orEmpty()
             )
         )
     }
@@ -358,6 +358,12 @@ internal class DatadogRumMonitor(
                 name,
                 value
             )
+        )
+    }
+
+    override fun addFeatureFlagEvaluations(featureFlags: Map<String, Any>) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluations(featureFlags)
         )
     }
 
@@ -408,10 +414,9 @@ internal class DatadogRumMonitor(
     override fun start() {
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        val processStartTimeNs = appStartTimeProvider.appStartTimeNs
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         handleEvent(
-            RumRawEvent.SdkInit(isAppInForeground, processStartTimeNs)
+            RumRawEvent.SdkInit(isAppInForeground)
         )
     }
 
@@ -433,6 +438,8 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
+        val now = Time()
+        val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -441,6 +448,8 @@ internal class DatadogRumMonitor(
                 stacktrace = null,
                 isFatal = true,
                 threads = threads,
+                timeSinceAppStartNs = timeSinceAppStartNs,
+                eventTime = now,
                 attributes = emptyMap()
             )
         )
@@ -526,7 +535,8 @@ internal class DatadogRumMonitor(
 
     override fun sendErrorTelemetryEvent(
         message: String,
-        throwable: Throwable?
+        throwable: Throwable?,
+        additionalProperties: Map<String, Any?>?
     ) {
         val stack: String? = throwable?.loggableStackTrace()
         val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
@@ -537,7 +547,7 @@ internal class DatadogRumMonitor(
                 stack = stack,
                 kind = kind,
                 coreConfiguration = null,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
         )
     }
@@ -545,7 +555,8 @@ internal class DatadogRumMonitor(
     override fun sendErrorTelemetryEvent(
         message: String,
         stack: String?,
-        kind: String?
+        kind: String?,
+        additionalProperties: Map<String, Any?>?
     ) {
         handleEvent(
             RumRawEvent.SendTelemetry(
@@ -554,7 +565,7 @@ internal class DatadogRumMonitor(
                 stack = stack,
                 kind = kind,
                 coreConfiguration = null,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
         )
     }
@@ -626,14 +637,12 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
                 executorService.submitSafe("Rum event handling", sdkCore.internalLogger) {
-                    @Suppress("ThreadSafety")
                     synchronized(rootScope) {
                         rootScope.handleEvent(event, writer)
                         notifyDebugListenerWithState()

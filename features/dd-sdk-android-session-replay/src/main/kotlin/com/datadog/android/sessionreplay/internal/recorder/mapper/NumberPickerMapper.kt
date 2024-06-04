@@ -9,43 +9,56 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 @RequiresApi(Build.VERSION_CODES.Q)
 internal open class NumberPickerMapper(
-    stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
-) : BasePickerMapper(stringUtils, viewUtils) {
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BasePickerMapper(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
+    @UiThread
     override fun map(
         view: NumberPicker,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val prevIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val prevIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             PREV_INDEX_KEY_NAME
         )
-        val selectedIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val selectedIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             SELECTED_INDEX_KEY_NAME
         )
-        val topDividerId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val topDividerId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             DIVIDER_TOP_KEY_NAME
         )
-        val bottomDividerId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val bottomDividerId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             DIVIDER_BOTTOM_KEY_NAME
         )
-        val nextIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+        val nextIndexLabelId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
             NEXT_INDEX_KEY_NAME
         )
@@ -60,6 +73,7 @@ internal open class NumberPickerMapper(
             return map(
                 view,
                 mappingContext.systemInformation,
+                mappingContext.privacy,
                 prevIndexLabelId,
                 topDividerId,
                 selectedIndexLabelId,
@@ -75,6 +89,7 @@ internal open class NumberPickerMapper(
     private fun map(
         view: NumberPicker,
         systemInformation: SystemInformation,
+        privacy: SessionReplayPrivacy,
         prevIndexLabelId: Long,
         topDividerId: Long,
         selectedIndexLabelId: Long,
@@ -82,7 +97,7 @@ internal open class NumberPickerMapper(
         nextIndexLabelId: Long
     ): List<MobileSegment.Wireframe> {
         val screenDensity = systemInformation.screenDensity
-        val viewGlobalBounds = viewUtils.resolveViewGlobalBounds(
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
             view,
             screenDensity
         )
@@ -91,7 +106,7 @@ internal open class NumberPickerMapper(
         val paddingStart = resolveDividerPaddingStart(view, screenDensity)
         val paddingEnd = resolveDividerPaddingEnd(view, screenDensity)
         val textColor = resolveSelectedTextColor(view)
-        val nextPrevLabelTextColor = colorAndAlphaAsStringHexa(
+        val nextPrevLabelTextColor = colorStringFormatter.formatColorAndAlphaAsHexString(
             view.textColor,
             PARTIALLY_OPAQUE_ALPHA_VALUE
         )
@@ -151,13 +166,24 @@ internal open class NumberPickerMapper(
             textSize,
             nextPrevLabelTextColor
         )
-        return listOf(
-            prevValueLabelWireframe,
-            topDividerWireframe,
-            selectedValueLabelWireframe,
-            bottomDividerWireframe,
-            nextValueLabelWireframe
-        )
+
+        return if (privacy == SessionReplayPrivacy.ALLOW) {
+            listOf(
+                prevValueLabelWireframe,
+                topDividerWireframe,
+                selectedValueLabelWireframe,
+                bottomDividerWireframe,
+                nextValueLabelWireframe
+            )
+        } else {
+            listOf(
+                topDividerWireframe,
+                selectedValueLabelWireframe.copy(
+                    text = DEFAULT_MASKED_TEXT_VALUE
+                ),
+                bottomDividerWireframe
+            )
+        }
     }
 
     private fun resolvePrevLabelValue(view: NumberPicker): String {
@@ -196,5 +222,9 @@ internal open class NumberPickerMapper(
             return numberPicker.displayedValues[normalizedIndex]
         }
         return index.toString()
+    }
+
+    companion object {
+        internal const val DEFAULT_MASKED_TEXT_VALUE = "xxx"
     }
 }

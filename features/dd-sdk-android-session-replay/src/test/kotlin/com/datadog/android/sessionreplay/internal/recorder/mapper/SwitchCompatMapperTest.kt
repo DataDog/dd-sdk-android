@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.StringUtils
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -32,8 +32,10 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     override fun setupTestedMapper(): SwitchCompatMapper {
         return SwitchCompatMapper(
             mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
-            viewUtils = mockViewUtils
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
         )
     }
 
@@ -41,10 +43,6 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     fun `M resolve the switch as wireframes W map() { checked }`() {
         // Given
         whenever(mockSwitch.isChecked).thenReturn(true)
-        val expectedColor = StringUtils.formatColorAndAlphaAsHexa(
-            fakeCurrentTextColor,
-            OPAQUE_ALPHA_VALUE
-        )
         val expectedThumbWidth =
             normalizedThumbWidth - normalizedThumbRightPadding - normalizedThumbLeftPadding
         val expectedTrackWidth = expectedThumbWidth * 2
@@ -58,7 +56,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             height = expectedTrackHeight,
             border = null,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = expectedColor,
+                backgroundColor = fakeCurrentTextColorString,
                 mockSwitch.alpha
             )
         )
@@ -70,7 +68,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             height = expectedThumbWidth,
             border = null,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = expectedColor,
+                backgroundColor = fakeCurrentTextColorString,
                 mockSwitch.alpha,
                 cornerRadius = SwitchCompatMapper.THUMB_CORNER_RADIUS
             )
@@ -79,22 +77,25 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
-        assertThat(resolvedWireframes)
-            .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        } else {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe)
+        }
     }
 
     @Test
     fun `M resolve the switch as wireframes W map() { not checked }`() {
         // Given
         whenever(mockSwitch.isChecked).thenReturn(false)
-        val expectedColor = StringUtils.formatColorAndAlphaAsHexa(
-            fakeCurrentTextColor,
-            OPAQUE_ALPHA_VALUE
-        )
         val expectedThumbWidth =
             normalizedThumbWidth - normalizedThumbRightPadding - normalizedThumbLeftPadding
         val expectedTrackWidth = expectedThumbWidth * 2
@@ -108,7 +109,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             height = expectedTrackHeight,
             border = null,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = expectedColor,
+                backgroundColor = fakeCurrentTextColorString,
                 mockSwitch.alpha
             )
         )
@@ -120,7 +121,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             height = expectedThumbWidth,
             border = null,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = expectedColor,
+                backgroundColor = fakeCurrentTextColorString,
                 mockSwitch.alpha,
                 cornerRadius = SwitchCompatMapper.THUMB_CORNER_RADIUS
             )
@@ -129,12 +130,19 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
-        assertThat(resolvedWireframes)
-            .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe + expectedThumbWireframe)
+        } else {
+            assertThat(resolvedWireframes)
+                .isEqualTo(fakeTextWireframes + expectedTrackWireframe)
+        }
     }
 
     @Test
@@ -143,20 +151,38 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     ) {
         // Given
         whenever(
-            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
         ).thenReturn(null)
         whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
+        val expectedThumbWidth = normalizedThumbWidth - normalizedThumbRightPadding - normalizedThumbLeftPadding
+        val expectedTrackWidth = expectedThumbWidth * 2
+        val expectedTrackHeight = normalizedTrackHeight - normalizedThumbRightPadding - normalizedThumbLeftPadding
+        val expectedTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeTrackIdentifier,
+            x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width - expectedTrackWidth,
+            y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - expectedTrackHeight) / 2,
+            width = expectedTrackWidth,
+            height = expectedTrackHeight,
+            border = null,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = fakeCurrentTextColorString,
+                mockSwitch.alpha
+            )
+        )
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
-        assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
+        assertThat(resolvedWireframes)
+            .isEqualTo(fakeTextWireframes + expectedTrackWireframe)
     }
 }

@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.storage
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
@@ -52,13 +53,16 @@ internal class WebViewDataWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Forgery
+    lateinit var fakeEventType: EventType
+
     @BeforeEach
     fun `set up`() {
         testedWriter = WebViewDataWriter(mockSerializer, mockLogger)
     }
 
     @Test
-    fun `𝕄 write data 𝕎 write()`(
+    fun `M write data W write()`(
         @Forgery fakeLogEvent: JsonObject
     ) {
         // Given
@@ -67,21 +71,26 @@ internal class WebViewDataWriterTest {
         whenever(
             mockEventBatchWriter.write(
                 RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
-                null
+                null,
+                fakeEventType
             )
         ) doReturn true
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isTrue
-        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()), null)
+        verify(mockEventBatchWriter).write(
+            event = RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
+            batchMetadata = null,
+            eventType = fakeEventType
+        )
         verifyNoInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() { bytes were not written }`(
+    fun `M return false W write() { bytes were not written }`(
         @Forgery fakeLogEvent: JsonObject
     ) {
         // Given
@@ -89,38 +98,42 @@ internal class WebViewDataWriterTest {
         whenever(mockSerializer.serialize(fakeLogEvent)) doReturn fakeSerializedLogEvent
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
-                null
+                event = RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
+                batchMetadata = null,
+                eventType = fakeEventType
             )
         ) doReturn false
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
-        verify(mockEventBatchWriter).write(RawBatchEvent(fakeLogEvent.toString().toByteArray()), null)
+        verify(mockEventBatchWriter).write(
+            event = RawBatchEvent(data = fakeLogEvent.toString().toByteArray()),
+            batchMetadata = null,
+            eventType = fakeEventType
+        )
         verifyNoInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 return false 𝕎 write() { serialization returns null }`(
+    fun `M return false W write() { serialization returns null }`(
         @Forgery fakeLogEvent: JsonObject
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeLogEvent)) doReturn null
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
-
         verifyNoInteractions(mockEventBatchWriter, mockLogger)
     }
 
     @Test
-    fun `𝕄 return false and log error 𝕎 write() { serialization failed with exception }`(
+    fun `M return false and log error W write() { serialization failed with exception }`(
         @Forgery fakeLogEvent: JsonObject,
         forge: Forge
     ) {
@@ -129,18 +142,16 @@ internal class WebViewDataWriterTest {
         whenever(mockSerializer.serialize(fakeLogEvent)) doThrow fakeThrowable
 
         // When
-        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent)
+        val result = testedWriter.write(mockEventBatchWriter, fakeLogEvent, fakeEventType)
 
         // Then
         assertThat(result).isFalse
-
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Error serializing JsonObject model",
             fakeThrowable
         )
-
         verifyNoInteractions(mockEventBatchWriter)
     }
 }

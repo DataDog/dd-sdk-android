@@ -44,28 +44,30 @@ internal class TelemetryTest {
     }
 
     @Test
-    fun `𝕄 report error event 𝕎 error()`(
+    fun `M report error event W error()`(
         @StringForgery message: String,
         forge: Forge
     ) {
         // Given
         val throwable = forge.aNullable { forge.aThrowable() }
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
 
         // When
-        testedTelemetry.error(message, throwable)
+        testedTelemetry.error(message, throwable, fakeAdditionalProperties)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .sendErrorTelemetryEvent(message, throwable)
+            .sendErrorTelemetryEvent(message, throwable, fakeAdditionalProperties)
     }
 
     @Test
-    fun `𝕄 report debug event 𝕎 debug()`(
+    fun `M report debug event W debug()`(
         @StringForgery message: String,
         forge: Forge
     ) {
         // Given
         val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
         testedTelemetry.debug(message, fakeAdditionalProperties)
 
@@ -75,12 +77,13 @@ internal class TelemetryTest {
     }
 
     @Test
-    fun `𝕄 report metric event 𝕎 metric()`(
+    fun `M report metric event W metric()`(
         @StringForgery message: String,
         forge: Forge
     ) {
         // Given
         val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
         testedTelemetry.metric(message, fakeAdditionalProperties)
 

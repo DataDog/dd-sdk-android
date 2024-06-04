@@ -27,7 +27,7 @@ internal class Sha256HashGeneratorTest {
     private val testedGenerator = Sha256HashGenerator()
 
     @Test
-    fun `𝕄 generate hash of expected format 𝕎 generate()`(
+    fun `M generate hash of expected format W generate()`(
         @StringForgery fakeInput: String
     ) {
         // When
@@ -39,7 +39,7 @@ internal class Sha256HashGeneratorTest {
     }
 
     @Test
-    fun `𝕄 generate same hash 𝕎 generate() { same input }`(
+    fun `M generate same hash W generate() { same input }`(
         @StringForgery fakeInput: String
     ) {
         // When
@@ -51,7 +51,7 @@ internal class Sha256HashGeneratorTest {
     }
 
     @Test
-    fun `𝕄 generate different hash 𝕎 generate() { different input }`(
+    fun `M generate different hash W generate() { different input }`(
         @StringForgery fakeInput1: String,
         @StringForgery fakeInput2: String
     ) {

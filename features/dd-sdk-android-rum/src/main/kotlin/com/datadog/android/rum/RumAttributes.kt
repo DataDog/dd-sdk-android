@@ -9,7 +9,6 @@ package com.datadog.android.rum
 /**
  * This class holds constant rum attribute keys.
  */
-// @Suppress("unused")
 object RumAttributes {
 
     // region Tags
@@ -74,6 +73,11 @@ object RumAttributes {
      * Overrides the default RUM error source `is_crash` with a custom one.
      */
     const val INTERNAL_ERROR_IS_CRASH: String = "_dd.error.is_crash"
+
+    /**
+     * All threads information.
+     */
+    internal const val INTERNAL_ALL_THREADS: String = "_dd.error.threads"
 
     // endregion
 
@@ -158,6 +162,11 @@ object RumAttributes {
      * This value is filled automatically by the [RumMonitor].
      */
     const val ERROR_DATABASE_PATH: String = "error.database.path"
+
+    /**
+     * Specifies a custom error fingerprint for the supplied error.
+     */
+    const val ERROR_FINGERPRINT: String = "_dd.error.fingerprint"
 
     // endregion
 
@@ -274,7 +283,6 @@ object RumAttributes {
 
     /**
      * Total number of bytes transmitted from the client to the server. (Number)
-     * TODO RUMM-469 rename to v2
      */
     const val NETWORK_BYTES_READ: String = "network.bytes_read"
 

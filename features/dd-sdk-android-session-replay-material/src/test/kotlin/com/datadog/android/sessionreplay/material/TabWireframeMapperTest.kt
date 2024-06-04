@@ -6,8 +6,9 @@
 
 package com.datadog.android.sessionreplay.material
 
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -28,8 +29,8 @@ internal class TabWireframeMapperTest : BaseTabWireframeMapperTest() {
 
     override fun provideTestInstance(): TabWireframeMapper {
         return TabWireframeMapper(
-            viewUtils = mockViewUtils,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            viewBoundsResolver = mockViewBoundsResolver,
             textViewMapper = mockTextWireframeMapper
         )
     }
@@ -37,7 +38,12 @@ internal class TabWireframeMapperTest : BaseTabWireframeMapperTest() {
     @Test
     fun `M use a TextViewMapper when initialized`() {
         // Given
-        val tabWireframeMapper = TabWireframeMapper()
+        val tabWireframeMapper = TabWireframeMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
 
         // Then
         assertThat(tabWireframeMapper.textViewMapper)

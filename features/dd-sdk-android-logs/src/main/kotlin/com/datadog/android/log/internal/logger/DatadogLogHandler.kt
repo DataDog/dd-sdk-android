@@ -11,8 +11,10 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import android.util.Log as AndroidLog
@@ -44,8 +46,13 @@ internal class DatadogLogHandler(
         }
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
+        val combinedAttributes = mutableMapOf<String, Any?>()
+        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
+        if (logsFeature != null) {
+            combinedAttributes.putAll(logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap())
+        }
+        combinedAttributes.putAll(attributes)
         if (sampler.sample()) {
-            val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
                 logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
@@ -54,14 +61,13 @@ internal class DatadogLogHandler(
                         datadogContext,
                         message,
                         throwable,
-                        attributes,
+                        combinedAttributes,
                         tags,
                         threadName,
                         resolvedTimeStamp
                     )
                     if (log != null) {
-                        @Suppress("ThreadSafety") // called in a worker thread context
-                        writer.write(eventBatchWriter, log)
+                        writer.write(eventBatchWriter, log, EventType.DEFAULT)
                     }
                 }
             } else {
@@ -81,7 +87,7 @@ internal class DatadogLogHandler(
                         "type" to "logger_error",
                         "message" to message,
                         "throwable" to throwable,
-                        "attributes" to attributes
+                        "attributes" to combinedAttributes
                     )
                 )
             } else {
@@ -94,6 +100,7 @@ internal class DatadogLogHandler(
         }
     }
 
+    @Suppress("LongMethod")
     override fun handleLog(
         level: Int,
         message: String,
@@ -109,8 +116,14 @@ internal class DatadogLogHandler(
         }
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
+        val combinedAttributes = mutableMapOf<String, Any?>()
+        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
+        if (logsFeature != null) {
+            combinedAttributes.putAll(logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap())
+        }
+        combinedAttributes.putAll(attributes)
+
         if (sampler.sample()) {
-            val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
                 logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
@@ -121,14 +134,13 @@ internal class DatadogLogHandler(
                         errorKind,
                         errorMessage,
                         errorStacktrace,
-                        attributes,
+                        combinedAttributes,
                         tags,
                         threadName,
                         resolvedTimeStamp
                     )
                     if (log != null) {
-                        @Suppress("ThreadSafety") // called in a worker thread context
-                        writer.write(eventBatchWriter, log)
+                        writer.write(eventBatchWriter, log, EventType.DEFAULT)
                     }
                 }
             } else {
@@ -148,7 +160,7 @@ internal class DatadogLogHandler(
                         "type" to "logger_error_with_stacktrace",
                         "message" to message,
                         "stacktrace" to errorStacktrace,
-                        "attributes" to attributes
+                        "attributes" to combinedAttributes
                     )
                 )
             } else {

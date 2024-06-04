@@ -505,16 +505,6 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasLiteSessionPlan(): ViewEventAssert {
-        assertThat(actual.dd.session?.plan)
-            .overridingErrorMessage(
-                "Expected event to have a session plan of 1 instead it was %s",
-                actual.dd.session?.plan ?: "null"
-            )
-            .isEqualTo(ViewEvent.Plan.PLAN_1)
-        return this
-    }
-
     fun hasStartReason(reason: RumSessionScope.StartReason): ViewEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(

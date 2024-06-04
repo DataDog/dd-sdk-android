@@ -7,21 +7,39 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.ViewUtils
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class UnsupportedViewMapper(viewUtils: ViewUtils = ViewUtils) :
-    BaseWireframeMapper<View, MobileSegment.Wireframe.PlaceholderWireframe>(viewUtils = viewUtils) {
+internal class UnsupportedViewMapper(
+    viewIdentifierResolver: ViewIdentifierResolver,
+    colorStringFormatter: ColorStringFormatter,
+    viewBoundsResolver: ViewBoundsResolver,
+    drawableToColorMapper: DrawableToColorMapper
+) : BaseWireframeMapper<View>(
+    viewIdentifierResolver,
+    colorStringFormatter,
+    viewBoundsResolver,
+    drawableToColorMapper
+) {
 
-    override fun map(view: View, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
-        List<MobileSegment.Wireframe.PlaceholderWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(
-            view,
-            mappingContext.systemInformation.screenDensity
-        )
+    @UiThread
+    override fun map(
+        view: View,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
+    ): List<MobileSegment.Wireframe> {
+        val pixelsDensity = mappingContext.systemInformation.screenDensity
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
 
         return listOf(
             MobileSegment.Wireframe.PlaceholderWireframe(

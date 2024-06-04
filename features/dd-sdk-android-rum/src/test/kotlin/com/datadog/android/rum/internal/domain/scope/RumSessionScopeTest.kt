@@ -9,11 +9,11 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -117,7 +117,7 @@ internal class RumSessionScopeTest {
     // region RUM Feature Context
 
     @Test
-    fun `𝕄 update RUM feature context 𝕎 init()`() {
+    fun `M update RUM feature context W init()`() {
         // Given
         val expectedContext = testedScope.getRumContext()
 
@@ -139,7 +139,7 @@ internal class RumSessionScopeTest {
     // region childScope
 
     @Test
-    fun `𝕄 have a ViewManager child scope 𝕎 init() { with same sample rate }`() {
+    fun `M have a ViewManager child scope W init() { with same sample rate }`() {
         // Given
         initializeTestedScope(fakeSampleRate, false)
 
@@ -152,7 +152,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {TRACKED}`(
+    fun `M delegate events to child scope W handleViewEvent() {TRACKED}`(
         forge: Forge
     ) {
         // Given
@@ -168,7 +168,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {NOT TRACKED}`() {
+    fun `M delegate events to child scope W handleViewEvent() {NOT TRACKED}`() {
         // Given
         (testedScope as RumSessionScope).sessionState = RumSessionScope.State.NOT_TRACKED
         val mockEvent: RumRawEvent = mock()
@@ -182,7 +182,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {EXPIRED}`() {
+    fun `M delegate events to child scope W handleViewEvent() {EXPIRED}`() {
         // Given
         (testedScope as RumSessionScope).sessionState = RumSessionScope.State.EXPIRED
         val mockEvent: RumRawEvent = mock()
@@ -196,44 +196,11 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M send ApplicationStarted event once W handleEvent(SdkInit) { app is in foreground }`(
+    fun `M not send any event downstream W handleEvent(SdkInit)`(
         forge: Forge
     ) {
         // Given
-        val fakeEvent = forge.sdkInitEvent().copy(isAppInForeground = true)
-
-        val expectedEventTimestamp =
-            TimeUnit.NANOSECONDS.toMillis(
-                TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
-                        fakeEvent.eventTime.nanoTime + fakeEvent.appStartTimeNs
-            )
-
-        // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        argumentCaptor<RumRawEvent> {
-            verify(mockChildScope).handleEvent(capture(), eq(mockWriter))
-            assertThat(firstValue).isInstanceOf(RumRawEvent.ApplicationStarted::class.java)
-            val appStartEventTime = (firstValue as RumRawEvent.ApplicationStarted).eventTime
-            assertThat(appStartEventTime.timestamp).isEqualTo(expectedEventTimestamp)
-            assertThat(appStartEventTime.nanoTime).isEqualTo(fakeEvent.appStartTimeNs)
-
-            val processStartTimeNs = (firstValue as RumRawEvent.ApplicationStarted)
-                .applicationStartupNanos
-            assertThat(processStartTimeNs)
-                .isEqualTo(fakeEvent.eventTime.nanoTime - fakeEvent.appStartTimeNs)
-
-            assertThat(allValues.filterIsInstance<RumRawEvent.ApplicationStarted>()).hasSize(1)
-        }
-    }
-
-    @Test
-    fun `M not send ApplicationStarted event W handleEvent(SdkInit) { app is not in foreground }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeEvent = forge.sdkInitEvent().copy(isAppInForeground = false)
+        val fakeEvent = forge.sdkInitEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -305,7 +272,7 @@ internal class RumSessionScopeTest {
     // region getRumContext()
 
     @Test
-    fun `𝕄 have empty session context 𝕎 init()+getRumContext()`() {
+    fun `M have empty session context W init()+getRumContext()`() {
         // Given
 
         // When
@@ -320,7 +287,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new session context 𝕎 handleEvent(view)+getRumContext() {sampling = 100}`(
+    fun `M create new session context W handleEvent(view)+getRumContext() {sampling = 100}`(
         forge: Forge
     ) {
         // Given
@@ -340,7 +307,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new untracked context 𝕎 handleEvent(view)+getRumContext() {sampling = 0}`(
+    fun `M create new untracked context W handleEvent(view)+getRumContext() {sampling = 0}`(
         forge: Forge
     ) {
         // Given
@@ -360,7 +327,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new context 𝕎 handleEvent(view)+getRumContext() {sampling = x}`(
+    fun `M create new context W handleEvent(view)+getRumContext() {sampling = x}`(
         forge: Forge
     ) {
         var tracked = 0
@@ -394,7 +361,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new session context 𝕎 handleEvent(SdkInit)+getRumContext() {sampling = 100, foreground}`(
+    fun `M create new session context W handleEvent(SdkInit)+getRumContext() {sampling = 100, foreground}`(
         forge: Forge
     ) {
         // Given
@@ -415,7 +382,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new session context 𝕎 handleEvent(SdkInit)+getRumContext(){sampling=100,background+enabled}`(
+    fun `M create new session context W handleEvent(SdkInit)+getRumContext(){sampling=100,background+enabled}`(
         forge: Forge
     ) {
         // Given
@@ -436,7 +403,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 not create new session context 𝕎 handleEvent(SdkInit)+getRumContext(){sampling=100,background+disabled}`(
+    fun `M not create new session context W handleEvent(SdkInit)+getRumContext(){sampling=100,background+disabled}`(
         forge: Forge
     ) {
         // Given
@@ -457,7 +424,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 keep session context 𝕎 handleEvent(non interactive) {before expiration}`(
+    fun `M keep session context W handleEvent(non interactive) {before expiration}`(
         forge: Forge
     ) {
         // Given
@@ -476,7 +443,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 keep session context 𝕎 handleEvent(action) {before expiration}`(
+    fun `M keep session context W handleEvent(action) {before expiration}`(
         forge: Forge
     ) {
         // Given
@@ -495,7 +462,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 keep session context 𝕎 handleEvent(view) {before expiration}`(
+    fun `M keep session context W handleEvent(view) {before expiration}`(
         forge: Forge
     ) {
         // Given
@@ -514,7 +481,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after expiration, background enabled}`(
+    fun `M update context W handleEvent(non interactive) {after expiration, background enabled}`(
         forge: Forge
     ) {
         // Given
@@ -535,7 +502,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after expiration, background disabled}`(
+    fun `M update context W handleEvent(non interactive) {after expiration, background disabled}`(
         forge: Forge
     ) {
         // Given
@@ -556,7 +523,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(action) {after expiration}`(
+    fun `M update context W handleEvent(action) {after expiration}`(
         forge: Forge
     ) {
         // Given
@@ -578,7 +545,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(view) {after expiration}`(
+    fun `M update context W handleEvent(view) {after expiration}`(
         forge: Forge
     ) {
         // Given
@@ -600,7 +567,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(resource) {after expiration, background enabled}`(
+    fun `M update context W handleEvent(resource) {after expiration, background enabled}`(
         forge: Forge
     ) {
         // Given
@@ -623,7 +590,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(error) {after expiration, background enabled}`(
+    fun `M update context W handleEvent(error) {after expiration, background enabled}`(
         forge: Forge
     ) {
         // Given
@@ -646,7 +613,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(resource) {after expiration, background disabled}`(
+    fun `M update context W handleEvent(resource) {after expiration, background disabled}`(
         forge: Forge
     ) {
         // Given
@@ -667,7 +634,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(error) {after expiration, background disabled}`(
+    fun `M update context W handleEvent(error) {after expiration, background disabled}`(
         forge: Forge
     ) {
         // Given
@@ -688,7 +655,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after timeout threshold}`(
+    fun `M update context W handleEvent(non interactive) {after timeout threshold}`(
         forge: Forge
     ) {
         // Given
@@ -715,7 +682,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(action) {after timeout threshold}`(
+    fun `M update context W handleEvent(action) {after timeout threshold}`(
         forge: Forge
     ) {
         // Given
@@ -742,7 +709,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update context 𝕎 handleEvent(view) {after timeout threshold}`(
+    fun `M update context W handleEvent(view) {after timeout threshold}`(
         forge: Forge
     ) {
         // Given
@@ -769,7 +736,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new context 𝕎 handleEvent(ResetSession)+getRumContext()`(
+    fun `M create new context W handleEvent(ResetSession)+getRumContext()`(
         forge: Forge
     ) {
         // Given
@@ -796,7 +763,7 @@ internal class RumSessionScopeTest {
     // region Session Listener
 
     @Test
-    fun `𝕄 notify listener 𝕎 session is updated {tracked, timed out}`(
+    fun `M notify listener W session is updated {tracked, timed out}`(
         forge: Forge
     ) {
         // Given
@@ -823,7 +790,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 session is updated {tracked, expired}`(
+    fun `M notify listener W session is updated {tracked, expired}`(
         forge: Forge
     ) {
         // Given
@@ -845,7 +812,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 session is updated {tracked, manual reset}`(
+    fun `M notify listener W session is updated {tracked, manual reset}`(
         forge: Forge
     ) {
         // Given
@@ -867,7 +834,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 session is updated {not tracked, timed out}`(
+    fun `M notify listener W session is updated {not tracked, timed out}`(
         forge: Forge
     ) {
         // Given
@@ -895,7 +862,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 session is updated {not tracked, expired}`(
+    fun `M notify listener W session is updated {not tracked, expired}`(
         forge: Forge
     ) {
         // Given
@@ -918,7 +885,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify listener 𝕎 session is updated {not tracked, manual reset}`(
+    fun `M notify listener W session is updated {not tracked, manual reset}`(
         forge: Forge
     ) {
         // Given
@@ -945,7 +912,7 @@ internal class RumSessionScopeTest {
     // region Session Replay Event Bus
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 new interaction event received`(
+    fun `M notify Session Replay feature W new interaction event received`(
         forge: Forge
     ) {
         // Given
@@ -979,7 +946,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 new non-interaction event received`(
+    fun `M notify Session Replay feature W new non-interaction event received`(
         forge: Forge
     ) {
         // Given
@@ -1024,7 +991,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, timed out}`(
+    fun `M notify Session Replay feature W session is updated {tracked, timed out}`(
         forge: Forge
     ) {
         // Given
@@ -1059,7 +1026,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, expired}`(
+    fun `M notify Session Replay feature W session is updated {tracked, expired}`(
         forge: Forge
     ) {
         // Given
@@ -1096,7 +1063,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, manual reset}`(
+    fun `M notify Session Replay feature W session is updated {tracked, manual reset}`(
         forge: Forge
     ) {
         // Given
@@ -1142,7 +1109,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {not tracked, timed out}`(
+    fun `M notify Session Replay feature W session is updated {not tracked, timed out}`(
         forge: Forge
     ) {
         // Given
@@ -1179,7 +1146,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {not tracked, expired}`(
+    fun `M notify Session Replay feature W session is updated {not tracked, expired}`(
         forge: Forge
     ) {
         // Given
@@ -1215,7 +1182,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {not tracked, manual reset}`(
+    fun `M notify Session Replay feature W session is updated {not tracked, manual reset}`(
         forge: Forge
     ) {
         // Given
@@ -1259,7 +1226,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 session is updated {no SessionReplay feature registered}`(
+    fun `M do nothing W session is updated {no SessionReplay feature registered}`(
         forge: Forge
     ) {
         // Given
