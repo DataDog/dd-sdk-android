@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.persistence.datastore
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
-import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import java.io.File
 import java.util.Locale
 

@@ -6,10 +6,10 @@
 
 package com.datadog.android.core.internal.persistence.datastore
 
+import com.datadog.android.api.storage.datastore.DataStoreCallback
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
-import com.datadog.android.core.persistence.datastore.DataStoreCallback
-import com.datadog.android.core.persistence.datastore.DataStoreHandler
 
 internal class NoOpDataStoreHandler : DataStoreHandler {
     override fun <T : Any> setValue(

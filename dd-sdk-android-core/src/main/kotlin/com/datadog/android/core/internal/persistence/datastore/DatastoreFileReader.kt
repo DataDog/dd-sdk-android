@@ -8,13 +8,13 @@ package com.datadog.android.core.internal.persistence.datastore
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.datastore.DataStoreCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.ext.toInt
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
-import com.datadog.android.core.persistence.datastore.DataStoreCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import java.io.File
 import java.util.Locale
@@ -40,7 +40,7 @@ internal class DatastoreFileReader(
         )
 
         if (!datastoreFile.existsSafe(internalLogger)) {
-            callback.onNoData()
+            callback.onSuccess(null)
             return
         }
 
@@ -72,7 +72,7 @@ internal class DatastoreFileReader(
         }
 
         if (requestedVersion != 0 && dataStoreContent.versionCode != requestedVersion) {
-            callback.onNoData()
+            callback.onSuccess(null)
             return
         }
 

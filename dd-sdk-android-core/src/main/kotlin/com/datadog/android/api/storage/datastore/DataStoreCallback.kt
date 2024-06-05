@@ -4,7 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.persistence.datastore
+package com.datadog.android.api.storage.datastore
+
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 
 /**
  * Callback for asynchronous operations on the datastore.
@@ -12,19 +14,14 @@ package com.datadog.android.core.persistence.datastore
 interface DataStoreCallback<T : Any> {
 
     /**
-     * Called on successfully fetching data from the datastore.
+     * Triggered on successfully fetching data from the datastore.
      *
-     * @param dataStoreContent contains the datastore data and version.
+     * @param dataStoreContent contains the datastore content if there was data to fetch.
      */
-    fun onSuccess(dataStoreContent: DataStoreContent<T>)
+    fun onSuccess(dataStoreContent: DataStoreContent<T>?)
 
     /**
-     * Called when an exception occurred getting data from the datastore.
+     * Triggered when an exception occurred getting data from the datastore.
      */
     fun onFailure()
-
-    /**
-     * Called when no data is found for the given key.
-     */
-    fun onNoData()
 }

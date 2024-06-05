@@ -20,6 +20,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
@@ -50,7 +51,6 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
-import com.datadog.android.core.persistence.datastore.DataStoreHandler
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
 import java.util.Collections

@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.datastore
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.datastore.DataStoreCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
@@ -16,7 +17,6 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
-import com.datadog.android.core.persistence.datastore.DataStoreCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
