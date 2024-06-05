@@ -39,7 +39,9 @@ internal class RecordedDataProcessor(
         item: ResourceRecordedDataQueueItem
     ) {
         val resourceHash = item.identifier
-        if (!resourcesDataStoreManager.wasResourcePreviouslySent(resourceHash)) {
+        val isKnownResource = resourcesDataStoreManager.wasResourcePreviouslySent(resourceHash)
+
+        if (!isKnownResource) {
             resourcesDataStoreManager.store(resourceHash)
 
             val enrichedResource = EnrichedResource(

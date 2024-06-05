@@ -113,8 +113,6 @@ internal class RecordedDataProcessorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockResourcesFeature.dataWriter).thenReturn(mockResourcesWriter)
-        whenever(mockResourcesDataStoreManager.wasResourcePreviouslySent(any()))
-            .thenReturn(false)
 
         initialRecordedQueuedItemContext = RecordedQueuedItemContext(
             fakeTimestamp,
@@ -1258,12 +1256,14 @@ internal class RecordedDataProcessorTest {
     }
 
     @Test
-    fun `M not write resource data W processResources { resource was previously seen }`(forge: Forge) {
+    fun `M not write resource data W processResources { resource was previously seen }`(
+        @StringForgery fakeString: String
+    ) {
         // Given
+        val fakeByteArray = fakeString.toByteArray()
+        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
         whenever(mockResourcesDataStoreManager.wasResourcePreviouslySent(fakeIdentifier))
             .thenReturn(true)
-        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
-        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
 
         // When
         testedProcessor.processResources(fakeResourceItem)
