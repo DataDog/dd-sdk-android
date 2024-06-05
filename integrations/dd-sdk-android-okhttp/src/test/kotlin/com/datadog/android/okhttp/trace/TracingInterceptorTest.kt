@@ -13,6 +13,8 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.TraceContext
+import com.datadog.android.okhttp.internal.utils.forge.Configurator
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
@@ -22,10 +24,10 @@ import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
+import com.datadog.opentracing.propagation.ExtractedContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -73,6 +75,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.math.BigInteger
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -83,7 +86,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(BaseConfigurator::class)
+@ForgeConfiguration(Configurator::class)
 internal open class TracingInterceptorTest {
 
     lateinit var testedInterceptor: TracingInterceptor
@@ -685,6 +688,44 @@ internal open class TracingInterceptorTest {
             assertThat(firstValue.headers(key)).containsOnly(value)
         }
         verify(mockSpanBuilder).asChildOf(parentSpanContext)
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
+    }
+
+    @Test
+    fun `M inject tracing header W intercept() for request with parent TraceContext`(
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @Forgery fakeTraceContext: TraceContext,
+        forge: Forge
+    ) {
+        // Given
+        val fakeExpectedTraceId = BigInteger(fakeTraceContext.traceId, 16)
+        val fakeExpectedSpanId = BigInteger(fakeTraceContext.spanId, 16)
+        whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
+        fakeRequest = forgeRequest(forge) { it.tag(TraceContext::class.java, fakeTraceContext) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(key)).containsOnly(value)
+        }
+        argumentCaptor<SpanContext>() {
+            verify(mockSpanBuilder).asChildOf(capture())
+            val extractedContext = firstValue as ExtractedContext
+            assertThat(extractedContext.traceId).isEqualTo(fakeExpectedTraceId)
+            assertThat(extractedContext.spanId).isEqualTo(fakeExpectedSpanId)
+        }
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
     }
 

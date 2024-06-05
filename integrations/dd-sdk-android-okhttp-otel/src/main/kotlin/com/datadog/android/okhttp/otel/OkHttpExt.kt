@@ -28,5 +28,5 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder {
 
 @Suppress("PackageNameVisibility")
 private fun resolveSamplingPriority(context: SpanContext): Int {
-    return if (context.isSampled) PrioritySampling.SAMPLER_KEEP.toInt() else PrioritySampling.UNSET.toInt()
+    return if (context.isSampled) PrioritySampling.USER_KEEP.toInt() else PrioritySampling.UNSET.toInt()
 }

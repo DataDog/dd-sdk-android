@@ -23,6 +23,8 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
   override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
   override fun onSdkInstanceReady(com.datadog.android.core.InternalSdkCore)
+data class com.datadog.android.okhttp.TraceContext
+  constructor(String, String, Int)
 fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
 interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
