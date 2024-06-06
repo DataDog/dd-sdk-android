@@ -8,7 +8,7 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.okhttp.internal.utils.forge.Configurator
+import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.verifyLog
@@ -43,7 +43,7 @@ import java.util.Locale
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(OkHttpConfigurator::class)
 internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     @Mock

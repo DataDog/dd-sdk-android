@@ -72,9 +72,9 @@ internal class OkHttpExtTest {
 
         // Then
         val taggedContext = request.tag(TraceContext::class.java)
-        assertThat(taggedContext).isNotNull()
-        assertThat(taggedContext?.spanId).isEqualTo(fakeSpanId)
-        assertThat(taggedContext?.traceId).isEqualTo(fakeTraceId)
-        assertThat(taggedContext?.samplingPriority).isEqualTo(expectedPrioritySampling)
+        checkNotNull(taggedContext)
+        assertThat(taggedContext.spanId).isEqualTo(fakeSpanId)
+        assertThat(taggedContext.traceId).isEqualTo(fakeTraceId)
+        assertThat(taggedContext.samplingPriority).isEqualTo(expectedPrioritySampling)
     }
 }

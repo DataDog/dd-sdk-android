@@ -9,7 +9,6 @@ package com.datadog.android.okhttp.otel
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.trace.api.sampling.PrioritySampling
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.SpanContext
 import okhttp3.Request
 
 /**
@@ -19,14 +18,8 @@ import okhttp3.Request
  */
 fun Request.Builder.addParentSpan(span: Span): Request.Builder {
     val context = span.spanContext
-    val prioritySampling = resolveSamplingPriority(context)
-    // the context will always be a TraceContext
-    @Suppress("UnsafeThirdPartyFunctionCall")
+    val prioritySampling = if (context.isSampled) PrioritySampling.USER_KEEP.toInt() else PrioritySampling.UNSET.toInt()
+    @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
     tag(TraceContext::class.java, TraceContext(context.traceId, context.spanId, prioritySampling))
     return this
-}
-
-@Suppress("PackageNameVisibility")
-private fun resolveSamplingPriority(context: SpanContext): Int {
-    return if (context.isSampled) PrioritySampling.USER_KEEP.toInt() else PrioritySampling.UNSET.toInt()
 }

@@ -7,7 +7,7 @@
 package com.datadog.android.okhttp.internal.otel
 
 import com.datadog.android.okhttp.TraceContext
-import com.datadog.android.okhttp.internal.utils.forge.Configurator
+import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.opentracing.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -27,7 +27,7 @@ import java.math.BigInteger
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(OkHttpConfigurator::class)
 internal class TraceContextExtTest {
 
     @Forgery

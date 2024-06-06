@@ -9,7 +9,7 @@ package com.datadog.android.okhttp.internal.utils.forge
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 
-internal class Configurator : BaseConfigurator() {
+internal class OkHttpConfigurator : BaseConfigurator() {
 
     override fun configure(forge: Forge) {
         super.configure(forge)
