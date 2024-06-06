@@ -123,7 +123,6 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            version = 0,
             callback = object : DataStoreCallback<ByteArray> {
                 override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     assertThat(dataStoreContent).isNull()
@@ -150,7 +149,6 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            version = 0,
             callback = object : DataStoreCallback<ByteArray> {
                 override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     // should not get here
@@ -199,7 +197,6 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            version = 0,
             callback = object : DataStoreCallback<ByteArray> {
 
                 override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
@@ -224,7 +221,6 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            version = 0,
             callback = object : DataStoreCallback<ByteArray> {
                 override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     // should not get here
@@ -251,7 +247,6 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            version = 0,
             callback = object : DataStoreCallback<ByteArray> {
                 override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     // should not get here

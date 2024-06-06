@@ -107,7 +107,6 @@ internal class DataStoreFileHandlerTest {
         verify(mockDataStoreFileReader).read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            version = 0,
             callback = fileCallback
         )
     }

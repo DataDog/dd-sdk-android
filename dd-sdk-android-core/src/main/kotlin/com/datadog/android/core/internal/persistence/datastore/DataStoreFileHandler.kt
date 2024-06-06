@@ -40,7 +40,7 @@ internal class DataStoreFileHandler(
 
     override fun <T : Any> value(
         key: String,
-        version: Int,
+        version: Int?,
         callback: DataStoreCallback<T>,
         deserializer: Deserializer<String, T>
     ) {

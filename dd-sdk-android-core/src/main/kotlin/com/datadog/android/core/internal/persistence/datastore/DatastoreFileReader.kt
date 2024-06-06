@@ -30,7 +30,7 @@ internal class DatastoreFileReader(
     internal fun <T : Any> read(
         key: String,
         deserializer: Deserializer<String, T>,
-        version: Int,
+        version: Int? = null,
         callback: DataStoreCallback<T>
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
@@ -52,7 +52,7 @@ internal class DatastoreFileReader(
         datastoreFile: File,
         deserializer: Deserializer<String, T>,
         tlvBlockFileReader: TLVBlockFileReader,
-        requestedVersion: Int,
+        requestedVersion: Int?,
         callback: DataStoreCallback<T>
     ) {
         val tlvBlocks = tlvBlockFileReader.read(datastoreFile)
@@ -73,7 +73,8 @@ internal class DatastoreFileReader(
             return
         }
 
-        if (requestedVersion != 0 && dataStoreContent.versionCode != requestedVersion) {
+        // if an optional version is specified then only return data if the entry version exactly matches
+        if (requestedVersion != null && requestedVersion != dataStoreContent.versionCode) {
             callback.onSuccess(null)
             return
         }
