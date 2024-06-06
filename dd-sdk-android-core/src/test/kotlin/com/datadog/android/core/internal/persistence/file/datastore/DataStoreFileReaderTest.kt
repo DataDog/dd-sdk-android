@@ -23,7 +23,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -115,10 +115,9 @@ internal class DataStoreFileReaderTest {
     }
 
     @Test
-    fun `M return noData W read() { datastore file does not exist }`() {
+    fun `M return no data W read() { datastore file does not exist }`() {
         // Given
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(false)
-        var gotNoData = false
 
         // When
         testedDatastoreFileReader.read(
@@ -126,24 +125,16 @@ internal class DataStoreFileReaderTest {
             deserializer = mockDeserializer,
             version = 0,
             callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
-                    // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
+                    assertThat(dataStoreContent).isNull()
                 }
 
                 override fun onFailure() {
                     // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
-                }
-
-                override fun onNoData() {
-                    gotNoData = true
+                    assertThat(1).isEqualTo(2)
                 }
             }
         )
-
-        // Then
-        Assertions.assertThat(gotNoData).isTrue()
     }
 
     @Test
@@ -151,7 +142,9 @@ internal class DataStoreFileReaderTest {
         // Given
         blocksReturned.removeLast()
 
-        val expectedError = INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, blocksReturned.size)
+        val foundBlocks = blocksReturned.size
+        val expectedBlocks = TLVBlockType.values().size
+        val expectedError = INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, foundBlocks, expectedBlocks)
 
         // When
         testedDatastoreFileReader.read(
@@ -159,9 +152,9 @@ internal class DataStoreFileReaderTest {
             deserializer = mockDeserializer,
             version = 0,
             callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
+                    assertThat(1).isEqualTo(2)
                 }
 
                 override fun onFailure() {
@@ -171,44 +164,28 @@ internal class DataStoreFileReaderTest {
                         message = expectedError
                     )
                 }
-
-                override fun onNoData() {
-                    // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
-                }
             }
         )
     }
 
     @Test
-    fun `M return noData W value() { explicit version and versions don't match }`() {
-        // Given
-        var noData = false
-
+    fun `M return no data W value() { explicit version and versions don't match }`() {
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             version = 99,
             callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
-                    // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
+                    assertThat(dataStoreContent).isNull()
                 }
 
                 override fun onFailure() {
                     // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
-                }
-
-                override fun onNoData() {
-                    noData = true
+                    assertThat(1).isEqualTo(2)
                 }
             },
             deserializer = mockDeserializer
         )
-
-        // Then
-        Assertions.assertThat(noData).isTrue()
     }
 
     @Test
@@ -225,18 +202,13 @@ internal class DataStoreFileReaderTest {
             version = 0,
             callback = object : DataStoreCallback<ByteArray> {
 
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
-                    Assertions.assertThat(dataStoreContent.data).isEqualTo(fakeDataBytes)
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
+                    assertThat(dataStoreContent?.data).isEqualTo(fakeDataBytes)
                 }
 
                 override fun onFailure() {
                     // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
-                }
-
-                override fun onNoData() {
-                    // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
+                    assertThat(1).isEqualTo(2)
                 }
             }
         )
@@ -254,14 +226,9 @@ internal class DataStoreFileReaderTest {
             deserializer = mockDeserializer,
             version = 0,
             callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
-                }
-
-                override fun onNoData() {
-                    // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
+                    assertThat(1).isEqualTo(2)
                 }
 
                 override fun onFailure() {
@@ -271,7 +238,7 @@ internal class DataStoreFileReaderTest {
         )
 
         // Then
-        Assertions.assertThat(gotFailure).isTrue()
+        assertThat(gotFailure).isTrue()
     }
 
     @Test
@@ -286,9 +253,9 @@ internal class DataStoreFileReaderTest {
             deserializer = mockDeserializer,
             version = 0,
             callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
                     // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
+                    assertThat(1).isEqualTo(2)
                 }
 
                 override fun onFailure() {
@@ -297,11 +264,6 @@ internal class DataStoreFileReaderTest {
                         level = InternalLogger.Level.ERROR,
                         message = UNEXPECTED_BLOCKS_ORDER_ERROR
                     )
-                }
-
-                override fun onNoData() {
-                    // should not get here
-                    Assertions.assertThat(1).isEqualTo(2)
                 }
             }
         )

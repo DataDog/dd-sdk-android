@@ -47,7 +47,7 @@ internal class DatastoreFileWriter(
         }
 
         val dataToWrite = listOf(versionCodeBlock, dataBlock).join(
-            separator = byteArrayOf(),
+            separator = EMPTY_BYTE_ARRAY,
             internalLogger = internalLogger
         )
 
@@ -113,5 +113,6 @@ internal class DatastoreFileWriter(
     internal companion object {
         internal const val FAILED_TO_SERIALIZE_DATA_ERROR =
             "Write error - Failed to serialize data for the datastore"
+        private val EMPTY_BYTE_ARRAY = ByteArray(0)
     }
 }

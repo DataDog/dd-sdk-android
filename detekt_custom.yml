@@ -1011,7 +1011,6 @@ datadog:
       - "kotlin.Boolean.hashCode()"
       - "kotlin.Byte.toInt()"
       - "kotlin.ByteArray.constructor(kotlin.Int)"
-      - "kotlin.ByteArray.inputStream()"
       - "kotlin.Char.isLowerCase()"
       - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"

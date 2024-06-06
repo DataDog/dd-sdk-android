@@ -42,7 +42,7 @@ internal class DataStoreFileHelper(
 
         val dataStoreDirectory = File(
             storageDir,
-            "$featureName/$folderName"
+            "$folderName/$featureName"
         )
 
         if (!dataStoreDirectory.existsSafe(internalLogger)) {

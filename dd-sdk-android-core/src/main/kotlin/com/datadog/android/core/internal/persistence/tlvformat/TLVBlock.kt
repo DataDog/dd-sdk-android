@@ -26,7 +26,7 @@ internal class TLVBlock(
         val entrySize = typeFieldSize + dataLengthFieldSize + dataFieldSize
 
         if (entrySize > maxEntrySize) {
-            logEntrySizeExceededError(maxEntrySize)
+            logEntrySizeExceededError(entrySize, maxEntrySize)
             return null
         }
 
@@ -43,11 +43,11 @@ internal class TLVBlock(
             .array()
     }
 
-    private fun logEntrySizeExceededError(maxEntrySize: Int) {
+    private fun logEntrySizeExceededError(entrySize: Int, maxEntrySize: Int) {
         internalLogger.log(
             target = InternalLogger.Target.MAINTAINER,
             level = InternalLogger.Level.WARN,
-            messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR.format(Locale.US, maxEntrySize) }
+            messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR.format(Locale.US, maxEntrySize, entrySize) }
         )
     }
 
@@ -55,6 +55,6 @@ internal class TLVBlock(
         // The maximum length of data (Value) in TLV block defining key data.
         private const val MAXIMUM_DATA_SIZE_MB = 10 * 1024 * 1024 // 10 mb
         internal const val BYTE_LENGTH_EXCEEDED_ERROR =
-            "DataBlock length exceeds limit of %s bytes"
+            "DataBlock length exceeds limit of %s bytes, was %s"
     }
 }

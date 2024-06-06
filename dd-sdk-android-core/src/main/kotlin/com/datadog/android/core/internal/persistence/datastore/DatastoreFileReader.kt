@@ -58,13 +58,15 @@ internal class DatastoreFileReader(
         val tlvBlocks = tlvBlockFileReader.read(datastoreFile)
 
         // there should be as many blocks read as there are block types
-        if (tlvBlocks.size != TLVBlockType.values().size) {
-            logInvalidNumberOfBlocksError(tlvBlocks.size)
+        val numberBlocksFound = tlvBlocks.size
+        val numberBlocksExpected = TLVBlockType.values().size
+        if (numberBlocksFound != numberBlocksExpected) {
+            logInvalidNumberOfBlocksError(numberBlocksFound, numberBlocksExpected)
             callback.onFailure()
             return
         }
 
-        val dataStoreContent = tryToMapToDataStoreContents(deserializer, tlvBlocks)
+        val dataStoreContent = mapToDataStoreContents(deserializer, tlvBlocks)
 
         if (dataStoreContent == null) {
             callback.onFailure()
@@ -79,7 +81,7 @@ internal class DatastoreFileReader(
         callback.onSuccess(dataStoreContent)
     }
 
-    private fun <T : Any> tryToMapToDataStoreContents(
+    private fun <T : Any> mapToDataStoreContents(
         deserializer: Deserializer<String, T>,
         tlvBlocks: List<TLVBlock>
     ): DataStoreContent<T>? {
@@ -99,11 +101,14 @@ internal class DatastoreFileReader(
         )
     }
 
-    private fun logInvalidNumberOfBlocksError(numberOfBlocks: Int) {
+    private fun logInvalidNumberOfBlocksError(numberBlocksFound: Int, numberBlocksExpected: Int) {
         internalLogger.log(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, numberOfBlocks) }
+            messageBuilder = {
+                INVALID_NUMBER_OF_BLOCKS_ERROR
+                    .format(Locale.US, numberBlocksFound, numberBlocksExpected)
+            }
         )
     }
 
@@ -117,7 +122,7 @@ internal class DatastoreFileReader(
 
     internal companion object {
         internal const val INVALID_NUMBER_OF_BLOCKS_ERROR =
-            "Read error - datastore file contains an invalid number of blocks. Was: %s"
+            "Read error - datastore entry has invalid number of blocks. Was: %s expected: %s"
         internal const val UNEXPECTED_BLOCKS_ORDER_ERROR =
             "Read error - blocks are in an unexpected order"
     }

@@ -82,9 +82,8 @@ internal class DataStoreFileHandlerTest {
         }
 
         fileCallback = object : DataStoreCallback<ByteArray> {
-            override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>) {}
+            override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {}
             override fun onFailure() {}
-            override fun onNoData() {}
         }
 
         testedDataStoreHandler = DataStoreFileHandler(

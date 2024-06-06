@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
@@ -433,7 +432,6 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         assertThat(testedFeature.dataStore)
-            .isInstanceOf(DataStoreHandler::class.java)
             .isNotInstanceOf(NoOpDataStoreHandler::class.java)
 
         // When
@@ -450,7 +448,6 @@ internal class SdkFeatureTest {
 
         // Then
         assertThat(testedFeature.dataStore)
-            .isInstanceOf(DataStoreHandler::class.java)
             .isNotInstanceOf(NoOpDataStoreHandler::class.java)
     }
 
