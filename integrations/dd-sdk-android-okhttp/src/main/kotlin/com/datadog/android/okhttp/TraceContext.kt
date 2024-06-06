@@ -9,7 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.lint.InternalApi
 
 /**
- * The context of a trace to be propagated through the okhttp requests for Datadog tracing.
+ * The context of a trace to be propagated through the OkHttp requests for Datadog tracing.
  */
 @InternalApi
 data class TraceContext(
