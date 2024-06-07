@@ -34,7 +34,7 @@ androidx.slidingpanelayout:slidingpanelayout:1.0.0              :   22 Kb
 androidx.swiperefreshlayout:swiperefreshlayout:1.0.0            :   32 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
 org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 

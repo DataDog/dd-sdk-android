@@ -12,9 +12,9 @@ com.facebook.fresco:memory-type-java:2.3.0                      :    3 Kb
 com.facebook.fresco:memory-type-native:2.3.0                    :    4 Kb
 com.facebook.fresco:nativeimagefilters:2.3.0                    :   52 Kb
 com.facebook.fresco:nativeimagetranscoder:2.3.0                 :  764 Kb
-com.squareup.okhttp3:okhttp:4.11.0                              :  768 Kb
-com.squareup.okio:okio-jvm:3.2.0                                :  337 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
+com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
+com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22                  :  963 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22                  :  969 b 
 org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb

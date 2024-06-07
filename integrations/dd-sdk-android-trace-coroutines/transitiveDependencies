@@ -1,6 +1,6 @@
 Dependencies List
 
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
 org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2         : 1635 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb

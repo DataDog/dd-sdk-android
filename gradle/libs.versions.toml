@@ -3,7 +3,7 @@
 kotlin = "1.8.22"
 kotlinSP = "1.8.22-1.0.11"
 gson = "2.10.1"
-okHttp = "4.11.0"
+okHttp = "4.12.0"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
