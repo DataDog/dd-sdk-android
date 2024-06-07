@@ -27,6 +27,7 @@ include(":integrations:dd-sdk-android-sqldelight")
 include(":integrations:dd-sdk-android-timber")
 include(":integrations:dd-sdk-android-tv")
 include(":integrations:dd-sdk-android-okhttp")
+include(":integrations:dd-sdk-android-okhttp-otel")
 include(":integrations:dd-sdk-android-rum-coroutines")
 include(":integrations:dd-sdk-android-trace-coroutines")
 

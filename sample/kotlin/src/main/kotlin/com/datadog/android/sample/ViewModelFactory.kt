@@ -41,7 +41,7 @@ internal class ViewModelFactory(
                 WebViewModel(localServer) as T
             }
             OtelTracesViewModel::class.java -> {
-                OtelTracesViewModel() as T
+                OtelTracesViewModel(okHttpClient, localServer) as T
             }
             else -> {
                 modelClass.newInstance()

@@ -37,6 +37,16 @@ internal class OtelTracesFragment : Fragment(), View.OnClickListener {
         return rootView
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.onResume()
+    }
+
+    override fun onPause() {
+        viewModel.onPause()
+        super.onPause()
+    }
+
     @Suppress("UnsafeCallOnNullableType") // not an issue in the sample
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)

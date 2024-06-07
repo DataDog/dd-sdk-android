@@ -164,6 +164,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
 
     // Desugaring SDK
     coreLibraryDesugaring(libs.androidDesugaringSdk)

@@ -9,7 +9,9 @@ package com.datadog.android.sample.traces
 import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
 import com.datadog.android.log.Logger
+import com.datadog.android.okhttp.otel.addParentSpan
 import com.datadog.android.sample.BuildConfig
+import com.datadog.android.vendor.sample.LocalServer
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
@@ -17,13 +19,27 @@ import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextKey
 import io.opentelemetry.context.Scope
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 @Suppress("DEPRECATION")
-internal class OtelTracesViewModel : ViewModel() {
+internal class OtelTracesViewModel(
+    private val okHttpClient: OkHttpClient,
+    private val localServer: LocalServer
+
+) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var chainedContextsTask: AsyncTask<Unit, Unit, Unit>? = null
     private var linkedSpansTask: AsyncTask<Unit, Unit, Unit>? = null
+
+    fun onResume() {
+        localServer.start("https://www.datadoghq.com/")
+    }
+
+    fun onPause() {
+        localServer.stop()
+    }
 
     fun startAsyncOperation(
         onProgress: (Int) -> Unit = {},
@@ -34,7 +50,11 @@ internal class OtelTracesViewModel : ViewModel() {
     }
 
     fun startChainedContexts(onDone: () -> Unit = {}) {
-        chainedContextsTask = ChainedContextsTask(onDone)
+        chainedContextsTask = ChainedContextsTask(
+            localServer.getUrl(),
+            okHttpClient,
+            onDone
+        )
         chainedContextsTask?.execute()
     }
 
@@ -123,6 +143,8 @@ internal class OtelTracesViewModel : ViewModel() {
     // region ChainedContextsTask
 
     private class ChainedContextsTask(
+        private val url: String,
+        private val okHttpClient: OkHttpClient,
         val onDone: () -> Unit
     ) : AsyncTask<Unit, Unit, Unit>() {
         private val tracer: Tracer = GlobalOpenTelemetry.get()
@@ -167,7 +189,12 @@ internal class OtelTracesViewModel : ViewModel() {
             logger.v("Sanitizing username: $username")
             Thread.sleep(2000)
             processingSanitization.end()
-            Thread.sleep(5000)
+            val request = Request.Builder()
+                .get()
+                .url(url)
+                .addParentSpan(processingFormSpan)
+                .build()
+            okHttpClient.newCall(request).execute()
             formScope.close()
             processingFormSpan.end()
         }
