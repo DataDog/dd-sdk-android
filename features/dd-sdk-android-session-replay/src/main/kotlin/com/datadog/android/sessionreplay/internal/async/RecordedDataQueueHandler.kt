@@ -10,6 +10,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
@@ -20,7 +21,6 @@ import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -158,16 +158,8 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
         // currentTime needs to be obtained on the uithread
         val currentTime = timeProvider.getDeviceTimestamp()
 
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
-        try {
-            executorService.execute {
-                @Suppress("ThreadSafety") // already in the worker thread context
-                triggerProcessingLoop(currentTime)
-            }
-        } catch (e: RejectedExecutionException) {
-            logConsumeQueueException(e)
-        } catch (e: NullPointerException) {
-            logConsumeQueueException(e)
+        executorService.executeSafe("Recorded Data queue processing", internalLogger) {
+            triggerProcessingLoop(currentTime)
         }
     }
 
@@ -246,7 +238,7 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
     }
 
     private fun insertIntoRecordedDataQueue(recordedDataQueueItem: RecordedDataQueueItem) {
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionCaught")
         try {
             recordedDataQueue.offer(recordedDataQueueItem)
         } catch (e: IllegalArgumentException) {
@@ -263,15 +255,6 @@ internal class RecordedDataQueueHandler : DataQueueHandler {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             { FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE },
-            e
-        )
-    }
-
-    private fun logConsumeQueueException(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE },
             e
         )
     }

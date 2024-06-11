@@ -54,8 +54,6 @@ internal class BroadcastReceiverNetworkInfoProvider(
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         registerReceiver(context, filter).also {
-            // TODO RUM-1462 address Thread safety
-            @Suppress("ThreadSafety") // Treatment should be fast enough
             onReceive(context, it)
         }
     }

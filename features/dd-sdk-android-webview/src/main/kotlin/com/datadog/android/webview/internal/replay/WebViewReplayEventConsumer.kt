@@ -42,7 +42,6 @@ internal class WebViewReplayEventConsumer(
                     sessionReplayEnabled
                 ) {
                     map(event, datadogContext, rumContext)?.let { mappedEvent ->
-                        @Suppress("ThreadSafety") // inside worker thread context
                         dataWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
                     }
                 }

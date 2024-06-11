@@ -90,6 +90,15 @@ datadog:
     - '**/reliability/**'
     - '**/sample/**'
     - '**/tools/**'
+  ThreadSafety:
+    active: true
+    workerThreadSwitchingCalls:
+      - "com.datadog.android.core.internal.utils.submitSafe"
+      - "com.datadog.android.core.internal.utils.executeSafe"
+      - "com.datadog.android.core.internal.utils.scheduleSafe"
+      - "com.datadog.android.api.feature.FeatureScope.withWriteContext"
+    mainThreadSwitchingCalls:
+      - "android.widget.LinearLayout.post"
   TodoWithoutTask:
     active: true
     deprecatedPrefixes:

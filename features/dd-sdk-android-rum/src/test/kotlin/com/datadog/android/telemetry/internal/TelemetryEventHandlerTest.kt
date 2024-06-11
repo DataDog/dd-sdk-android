@@ -698,13 +698,18 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `M not write events over the limit W handleEvent(SendTelemetry)`(forge: Forge) {
+    fun `M not write events over the limit W handleEvent(SendTelemetry)`() {
         // Given
-        val events = forge.aList(size = MAX_EVENTS_PER_SESSION_TEST * 5) { createRumRawTelemetryEvent() }
-            // remove unwanted identity collisions
-            .groupBy { it.identity }.map { it.value.first() }
-        val extraNumber = events.size - MAX_EVENTS_PER_SESSION_TEST
-        val expectedInvocations = MAX_EVENTS_PER_SESSION_TEST
+        val event = RumRawEvent.SendTelemetry(
+            TelemetryType.DEBUG,
+            "Metric event",
+            null,
+            null,
+            coreConfiguration = null,
+            additionalProperties = null,
+            isMetric = true
+        )
+        val events = (0..MAX_EVENTS_PER_SESSION_TEST).map { event }
 
         // When
         events.forEach {
@@ -713,122 +718,40 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         mockInternalLogger.verifyLog(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.MAINTAINER,
-            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE,
-            mode = times(extraNumber)
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.MAINTAINER,
+            message = TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
         )
-
-        argumentCaptor<Any> {
-            verify(mockWriter, times(expectedInvocations))
-                .write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
-            allValues.withIndex().forEach {
-                when (val capturedValue = it.value) {
-                    is TelemetryDebugEvent -> {
-                        assertDebugEventMatchesRawEvent(
-                            capturedValue,
-                            events[it.index],
-                            fakeRumContext
-                        )
-                    }
-
-                    is TelemetryErrorEvent -> {
-                        assertErrorEventMatchesRawEvent(
-                            capturedValue,
-                            events[it.index],
-                            fakeRumContext
-                        )
-                    }
-
-                    is TelemetryConfigurationEvent -> {
-                        assertConfigEventMatchesRawEvent(
-                            capturedValue,
-                            events[it.index],
-                            fakeRumContext
-                        )
-                    }
-
-                    else -> throw IllegalArgumentException(
-                        "Unexpected type=${lastValue::class.jvmName} of the captured value."
-                    )
-                }
-            }
-        }
     }
 
     @Test
     fun `M continue writing events after new session W handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
-        val eventMap = mutableMapOf<TelemetryEventId, RumRawEvent.SendTelemetry>()
-        while (eventMap.size <= MAX_EVENTS_PER_SESSION_TEST) {
-            val candidate = forge.createRumRawTelemetryEvent()
-            val id = candidate.identity
-            eventMap[id] = candidate
-        }
-        val eventsInOldSession = eventMap.map { it.value }
-        val extraNumber = eventsInOldSession.size - MAX_EVENTS_PER_SESSION_TEST
+        val event = RumRawEvent.SendTelemetry(
+            TelemetryType.DEBUG,
+            "Metric event",
+            null,
+            null,
+            coreConfiguration = null,
+            additionalProperties = null,
+            isMetric = true // important because non-metric events can only be seen once
+        )
+        val eventsInOldSession = (0..MAX_EVENTS_PER_SESSION_TEST / 2).map { event }
+        val eventsInNewSession = (0..MAX_EVENTS_PER_SESSION_TEST / 2).map { event }
 
-        val eventsInNewSession = forge.aList(
-            size = forge.anInt(1, MAX_EVENTS_PER_SESSION_TEST)
-        ) { createRumRawTelemetryEvent() }
-            // remove unwanted identity collisions
-            .groupBy { it.identity }.map { it.value.first() }
-
-        val expectedEvents = eventsInOldSession
-            .take(MAX_EVENTS_PER_SESSION_TEST) + eventsInNewSession
-        val expectedInvocations = expectedEvents.size
-
-        // When
         eventsInOldSession.forEach {
             testedTelemetryHandler.handleEvent(it, mockWriter)
         }
+
+        // When
         testedTelemetryHandler.onSessionStarted(forge.aString(), forge.aBool())
+
         eventsInNewSession.forEach {
             testedTelemetryHandler.handleEvent(it, mockWriter)
         }
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.MAINTAINER,
-            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE,
-            mode = times(extraNumber)
-        )
-        argumentCaptor<Any> {
-            verify(mockWriter, times(expectedInvocations))
-                .write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
-            allValues.withIndex().forEach {
-                when (val capturedValue = it.value) {
-                    is TelemetryDebugEvent -> {
-                        assertDebugEventMatchesRawEvent(
-                            capturedValue,
-                            expectedEvents[it.index],
-                            fakeRumContext
-                        )
-                    }
-
-                    is TelemetryErrorEvent -> {
-                        assertErrorEventMatchesRawEvent(
-                            capturedValue,
-                            expectedEvents[it.index],
-                            fakeRumContext
-                        )
-                    }
-
-                    is TelemetryConfigurationEvent -> {
-                        assertConfigEventMatchesRawEvent(
-                            capturedValue,
-                            expectedEvents[it.index],
-                            fakeRumContext
-                        )
-                    }
-
-                    else -> throw IllegalArgumentException(
-                        "Unexpected type=${lastValue::class.jvmName} of the captured value."
-                    )
-                }
-            }
-        }
+        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     @Test

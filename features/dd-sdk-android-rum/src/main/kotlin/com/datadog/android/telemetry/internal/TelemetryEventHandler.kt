@@ -6,7 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
-import androidx.annotation.WorkerThread
+import androidx.annotation.AnyThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -38,16 +38,18 @@ internal class TelemetryEventHandler(
 
     private var trackNetworkRequests = false
 
-    private val seenInCurrentSession = mutableSetOf<TelemetryEventId>()
+    private val eventIDsSeenInCurrentSession = mutableSetOf<TelemetryEventId>()
+    private var totalEventsSeenInCurrentSession = 0
 
-    @WorkerThread
+    @AnyThread
     fun handleEvent(
         event: RumRawEvent.SendTelemetry,
         writer: DataWriter<Any>
     ) {
         if (!canWrite(event)) return
 
-        seenInCurrentSession.add(event.identity)
+        eventIDsSeenInCurrentSession.add(event.identity)
+        totalEventsSeenInCurrentSession++
 
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, eventBatchWriter ->
             val timestamp = event.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
@@ -105,7 +107,8 @@ internal class TelemetryEventHandler(
     }
 
     override fun onSessionStarted(sessionId: String, isDiscarded: Boolean) {
-        seenInCurrentSession.clear()
+        eventIDsSeenInCurrentSession.clear()
+        totalEventsSeenInCurrentSession = 0
     }
 
     // region private
@@ -120,7 +123,7 @@ internal class TelemetryEventHandler(
 
         val eventIdentity = event.identity
 
-        if (!event.isMetric && seenInCurrentSession.contains(eventIdentity)) {
+        if (!event.isMetric && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
@@ -129,7 +132,7 @@ internal class TelemetryEventHandler(
             return false
         }
 
-        if (seenInCurrentSession.size >= maxEventCountPerSession) {
+        if (totalEventsSeenInCurrentSession >= maxEventCountPerSession) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,

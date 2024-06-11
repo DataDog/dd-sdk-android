@@ -67,7 +67,6 @@ internal class DatadogLogHandler(
                         resolvedTimeStamp
                     )
                     if (log != null) {
-                        @Suppress("ThreadSafety") // called in a worker thread context
                         writer.write(eventBatchWriter, log, EventType.DEFAULT)
                     }
                 }
@@ -141,7 +140,6 @@ internal class DatadogLogHandler(
                         resolvedTimeStamp
                     )
                     if (log != null) {
-                        @Suppress("ThreadSafety") // called in a worker thread context
                         writer.write(eventBatchWriter, log, EventType.DEFAULT)
                     }
                 }

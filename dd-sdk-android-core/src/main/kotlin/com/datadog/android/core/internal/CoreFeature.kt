@@ -201,7 +201,6 @@ internal class CoreFeature(
         setupExecutors()
         persistenceExecutorService.submitSafe("NTP Sync initialization", unboundInternalLogger) {
             // Kronos performs I/O operation on startup, it needs to run in background
-            @Suppress("ThreadSafety") // we are in the worker thread context
             initializeClockSync(appContext)
         }
         setupOkHttpClient(configuration.coreConfig)

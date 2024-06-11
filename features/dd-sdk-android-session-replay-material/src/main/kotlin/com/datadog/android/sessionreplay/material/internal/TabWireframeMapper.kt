@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material.internal
 
 import android.widget.TextView
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -42,6 +43,7 @@ internal open class TabWireframeMapper(
         )
     )
 
+    @UiThread
     override fun map(
         view: TabView,
         mappingContext: MappingContext,
@@ -104,6 +106,7 @@ internal open class TabWireframeMapper(
         )
     }
 
+    @UiThread
     private fun findAndResolveLabelWireframes(
         view: TabView,
         mappingContext: MappingContext,

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.view.View
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -44,6 +45,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
 
     private var uniqueIdentifierGenerator = DefaultViewIdentifierResolver
 
+    @UiThread
     override fun map(
         view: T,
         mappingContext: MappingContext,
@@ -55,6 +57,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         return backgroundWireframe?.let { listOf(it) } ?: emptyList()
     }
 
+    @UiThread
     private fun resolveViewBackground(
         view: View,
         mappingContext: MappingContext,
@@ -112,6 +115,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         )
     }
 
+    @UiThread
     private fun resolveBackgroundAsImageWireframe(
         view: View,
         bounds: GlobalBounds,
@@ -124,7 +128,6 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
 
         val drawableCopy = view.background?.constantState?.newDrawable(resources)
         return if (drawableCopy != null) {
-            @Suppress("ThreadSafety") // TODO RUM-1462 caller thread of .map is unknown?
             mappingContext.imageWireframeHelper.createImageWireframe(
                 view = view,
                 currentWireframeIndex = 0,
