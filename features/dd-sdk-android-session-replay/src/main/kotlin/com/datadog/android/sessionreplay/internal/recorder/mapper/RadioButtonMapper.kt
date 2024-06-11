@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.RadioButton
+import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -30,6 +31,7 @@ internal open class RadioButtonMapper(
 
     // region CheckableTextViewMapper
 
+    @UiThread
     override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
@@ -38,6 +40,7 @@ internal open class RadioButtonMapper(
         )
     }
 
+    @UiThread
     override fun resolveNotCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = null,

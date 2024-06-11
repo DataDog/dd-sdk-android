@@ -70,7 +70,6 @@ internal class ResourceResolver(
 
         // do in the background
         threadPoolExecutor.executeSafe("resolveResourceId", logger) {
-            @Suppress("ThreadSafety") // this runs inside an executor
             createBitmap(
                 resources = resources,
                 drawable = drawable,
@@ -192,6 +191,7 @@ internal class ResourceResolver(
             drawableHeight = drawableHeight,
             displayMetrics = displayMetrics,
             bitmapCreationCallback = object : BitmapCreationCallback {
+                @WorkerThread
                 override fun onReady(bitmap: Bitmap) {
                     val compressedBitmapBytes = webPImageCompression.compressBitmap(bitmap)
 
@@ -201,7 +201,6 @@ internal class ResourceResolver(
                         return
                     }
 
-                    @Suppress("ThreadSafety") // this runs inside an executor
                     resolveResourceHash(
                         drawable = drawable,
                         bitmap = bitmap,
@@ -211,6 +210,7 @@ internal class ResourceResolver(
                     )
                 }
 
+                @WorkerThread
                 override fun onFailure() {
                     resolveResourceCallback.onFailed()
                 }
@@ -272,7 +272,11 @@ internal class ResourceResolver(
     // endregion
 
     internal interface BitmapCreationCallback {
+
+        @WorkerThread
         fun onReady(bitmap: Bitmap)
+
+        @WorkerThread
         fun onFailure()
     }
 

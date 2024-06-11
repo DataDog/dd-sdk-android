@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.view.View
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -35,6 +36,7 @@ interface WireframeMapper<in T : View> {
      * @see MobileSegment.Wireframe
      * @see SystemInformation
      */
+    @UiThread
     fun map(
         view: T,
         mappingContext: MappingContext,

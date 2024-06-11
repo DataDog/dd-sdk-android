@@ -34,7 +34,6 @@ internal class WebViewLogEventConsumer(
                     ?.withWriteContext { datadogContext, eventBatchWriter ->
                         val rumContext = rumContextProvider.getRumContext(datadogContext)
                         val mappedEvent = map(event.first, datadogContext, rumContext)
-                        @Suppress("ThreadSafety") // inside worker thread context
                         userLogsWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
                     }
             }

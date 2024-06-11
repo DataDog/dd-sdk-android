@@ -57,5 +57,6 @@ internal interface Storage {
     /**
      * Removes all the files backed by this storage, synchronously.
      */
+    @AnyThread
     fun dropAll()
 }

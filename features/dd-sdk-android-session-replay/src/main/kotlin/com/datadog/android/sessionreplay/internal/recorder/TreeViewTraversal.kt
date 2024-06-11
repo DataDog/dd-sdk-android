@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -29,6 +30,7 @@ internal class TreeViewTraversal(
 ) {
 
     @Suppress("ReturnCount")
+    @UiThread
     fun traverse(
         view: View,
         mappingContext: MappingContext,
@@ -108,7 +110,7 @@ internal class TreeViewTraversal(
     )
 
     companion object {
-        const val METHOD_CALL_SAMPLING_RATE = 5f
+        const val METHOD_CALL_SAMPLING_RATE = 0.1f
         private const val METHOD_CALL_MAP_PREFIX: String = "Map with"
     }
 }

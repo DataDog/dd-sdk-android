@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -253,7 +254,9 @@ internal class WindowsOnDrawListenerTest {
                 "Capture Record"
             )
         ).thenReturn(mockPerformanceMetric)
-        whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
+        whenever(mockDebouncer.debounce(any())) doAnswer {
+            (it.arguments[0] as Runnable).run()
+        }
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
 

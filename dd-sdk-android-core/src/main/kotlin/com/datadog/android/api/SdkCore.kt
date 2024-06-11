@@ -6,6 +6,7 @@
 
 package com.datadog.android.api
 
+import androidx.annotation.AnyThread
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.privacy.TrackingConsent
@@ -37,6 +38,7 @@ interface SdkCore {
      * @param consent which can take one of the values
      * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
      */
+    @AnyThread
     fun setTrackingConsent(consent: TrackingConsent)
 
     /**
@@ -48,6 +50,7 @@ interface SdkCore {
      * @param extraInfo additional information. An extra information can be
      * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
      */
+    @AnyThread
     fun setUserInfo(
         id: String? = null,
         name: String? = null,
@@ -64,10 +67,12 @@ interface SdkCore {
      * @param extraInfo additional information. An extra information can be
      * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
      */
+    @AnyThread
     fun addUserProperties(extraInfo: Map<String, Any?>)
 
     /**
      * Clears all unsent data in all registered features.
      */
+    @AnyThread
     fun clearAllData()
 }

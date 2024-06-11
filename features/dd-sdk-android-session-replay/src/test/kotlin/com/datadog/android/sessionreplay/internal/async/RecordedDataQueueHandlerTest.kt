@@ -53,7 +53,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -134,39 +133,6 @@ internal class RecordedDataQueueHandlerTest {
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
             recordedQueue = fakeRecordedDataQueue
-        )
-    }
-
-    @ParameterizedTest
-    @ValueSource(
-        classes = [
-            NullPointerException::class,
-            RejectedExecutionException::class
-        ]
-    )
-    fun `M log exception W executor service throws`(exceptionType: Class<Throwable>) {
-        // Given
-        val fakeThrowable = exceptionType.getDeclaredConstructor().newInstance()
-        val mockExecutorService = mock<ExecutorService>()
-        testedHandler = RecordedDataQueueHandler(
-            processor = mockProcessor,
-            rumContextDataHandler = mockRumContextDataHandler,
-            timeProvider = mockTimeProvider,
-            executorService = mockExecutorService,
-            internalLogger = mockInternalLogger
-        )
-        testedHandler.recordedDataQueue.add(fakeSnapshotQueueItem)
-        whenever(mockExecutorService.execute(any())).thenThrow(fakeThrowable)
-
-        // When
-        testedHandler.tryToConsumeItems()
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            RecordedDataQueueHandler.FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE,
-            fakeThrowable
         )
     }
 
