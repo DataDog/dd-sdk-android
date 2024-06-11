@@ -6,9 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.resources
 
-import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.persistence.Serializer
 
-internal class StringSetDeserializer : Deserializer<String, Set<String>> {
-    override fun deserialize(model: String): Set<String> =
-        model.split(",").toSet()
+internal class ResourceHashesEntrySerializer : Serializer<ResourceHashesEntry> {
+    override fun serialize(model: ResourceHashesEntry): String {
+        return model.lastUpdateDateNs.toString() + "|" + model.resourceHashes.joinToString(",")
+    }
 }

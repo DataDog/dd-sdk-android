@@ -6,14 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.resources
 
-import com.datadog.android.core.internal.persistence.Deserializer
-
-internal class LongDeserializer : Deserializer<String, Long> {
-    override fun deserialize(model: String): Long? {
-        return try {
-            model.toLong()
-        } catch (e: NumberFormatException) {
-            null
-        }
-    }
-}
+internal data class ResourceHashesEntry(
+    val lastUpdateDateNs: Long,
+    val resourceHashes: Set<String>
+)

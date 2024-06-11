@@ -15,19 +15,18 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicLong
 
-@Suppress("TooManyFunctions")
 internal class ResourcesDataStoreManager(
     private val featureSdkCore: FeatureSdkCore,
-    private val resourceHashesSerializer: Serializer<Set<String>>,
-    private val resourcesHashesDeserializer: Deserializer<String, Set<String>>,
-    private val updateDateSerializer: Serializer<Long>,
-    private val updateDateDeserializer: Deserializer<String, Long>,
+    private val resourceHashesSerializer: Serializer<ResourceHashesEntry>,
+    private val resourcesHashesDeserializer: Deserializer<String, ResourceHashesEntry>,
     private val featureScope: FeatureScope? = featureSdkCore.getFeature(
         SESSION_REPLAY_RESOURCES_FEATURE_NAME
     )
 ) {
     private val knownResources = Collections.synchronizedSet(mutableSetOf<String>())
+    private val storedLastUpdateDateNs = AtomicLong(System.nanoTime())
 
     init {
         initializeManager()
@@ -38,67 +37,57 @@ internal class ResourcesDataStoreManager(
 
     internal fun store(resourceHash: String) {
         knownResources.add(resourceHash)
-        writeResources()
+        writeResourcesToStore()
     }
 
     // region internal
 
     private fun initializeManager() {
-        fetchLastUpdateDate(
-            onFetchSuccessful = { dataStoreContentUpdateDate ->
-                onFetchLastUpdateDateSuccess(dataStoreContentUpdateDate?.data)
+        fetchStoredResourceHashes(
+            onFetchSuccessful = { storedEntry ->
+                val lastUpdateDateNs = storedEntry?.data?.lastUpdateDateNs
+                val storedHashes = storedEntry?.data?.resourceHashes
+
+                lastUpdateDateNs?.let {
+                    storedLastUpdateDateNs.set(lastUpdateDateNs)
+                }
+
+                if (didDataStoreExpire()) {
+                    handleDataStoreExpired(storedHashes)
+                } else {
+                    storedHashes?.let { hashes ->
+                        knownResources.addAll(hashes)
+                    }
+                }
             },
             onFetchFailure = {
-                createOrOverwriteLastUpdateDateFile(featureScope)
+                deleteStoredHashesEntry()
             }
         )
     }
 
-    private fun writeResources() {
+    private fun writeResourcesToStore() {
+        val data = ResourceHashesEntry(
+            lastUpdateDateNs = storedLastUpdateDateNs.get(),
+            resourceHashes = knownResources
+        )
+
         featureScope?.dataStore?.setValue(
-            data = knownResources,
-            key = DATASTORE_HASHES_CONTENT_FILENAME,
+            data = data,
+            key = DATASTORE_HASHES_ENTRY_NAME,
             serializer = resourceHashesSerializer
         )
     }
 
-    private fun createOrOverwriteLastUpdateDateFile(featureScope: FeatureScope?) {
-        val now = System.currentTimeMillis()
-        featureScope?.dataStore?.setValue(
-            key = DATASTORE_HASHES_UPDATE_DATE_FILENAME,
-            data = now,
-            serializer = updateDateSerializer
-        )
-    }
-
-    private fun fetchLastUpdateDate(
-        onFetchSuccessful: (dataStoreContent: DataStoreContent<Long>?) -> Unit = {},
+    private fun fetchStoredResourceHashes(
+        onFetchSuccessful: (dataStoreContent: DataStoreContent<ResourceHashesEntry>?) -> Unit = {},
         onFetchFailure: () -> Unit = {}
     ) {
         featureScope?.dataStore?.value(
-            key = DATASTORE_HASHES_UPDATE_DATE_FILENAME,
-            deserializer = updateDateDeserializer,
-            callback = object : DataStoreCallback<Long> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<Long>?) {
-                    onFetchSuccessful(dataStoreContent)
-                }
-
-                override fun onFailure() {
-                    onFetchFailure()
-                }
-            }
-        )
-    }
-
-    private fun fetchStoredResources(
-        onFetchSuccessful: (dataStoreContent: DataStoreContent<Set<String>>?) -> Unit = {},
-        onFetchFailure: () -> Unit = {}
-    ) {
-        featureScope?.dataStore?.value(
-            key = DATASTORE_HASHES_CONTENT_FILENAME,
+            key = DATASTORE_HASHES_ENTRY_NAME,
             deserializer = resourcesHashesDeserializer,
-            callback = object : DataStoreCallback<Set<String>> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<Set<String>>?) {
+            callback = object : DataStoreCallback<ResourceHashesEntry> {
+                override fun onSuccess(dataStoreContent: DataStoreContent<ResourceHashesEntry>?) {
                     onFetchSuccessful(dataStoreContent)
                 }
 
@@ -109,56 +98,23 @@ internal class ResourcesDataStoreManager(
         )
     }
 
-    private fun onFetchLastUpdateDateSuccess(storedLastUpdateDate: Long?) {
-        if (storedLastUpdateDate == null) {
-            createOrOverwriteLastUpdateDateFile(featureScope)
-            return
-        }
-
-        if (didDataStoreExpire(storedLastUpdateDate)) {
-            handleDataStoreExpired()
-            return
-        }
-
-        fetchStoredResources(
-            onFetchSuccessful = { dataContentStoredHashes ->
-                val newHashes = dataContentStoredHashes?.data
-                newHashes?.let {
-                    knownResources.addAll(it)
-                }
-            }
-        )
+    private fun handleDataStoreExpired(storedHashes: Set<String>?) {
+        storedHashes?.let { knownResources.removeAll(it) }
+        storedLastUpdateDateNs.set(System.nanoTime())
+        deleteStoredHashesEntry()
     }
 
-    private fun handleDataStoreExpired() {
-        // we fetch the hashes in order not to remove everything in knownResources
-        // because its possible that while the init block is executing asynchronously
-        // hashes are already being stored in the manager, and if so we don't want to just clear
-        // them all if the datastore expired, but only the ones that are relevant
-        fetchStoredResources(
-            onFetchSuccessful = { fetchedHashes ->
-                val storedHashes = fetchedHashes?.data
-                storedHashes?.let {
-                    knownResources.removeAll(it)
-                }
+    private fun deleteStoredHashesEntry() =
+        featureScope?.dataStore?.removeValue(DATASTORE_HASHES_ENTRY_NAME)
 
-                createOrOverwriteLastUpdateDateFile(featureScope)
-                deleteStoredHashesFile()
-            }
-        )
-    }
-
-    private fun deleteStoredHashesFile() =
-        featureScope?.dataStore?.removeValue(DATASTORE_HASHES_CONTENT_FILENAME)
-
-    private fun didDataStoreExpire(storedLastUpdateDate: Long): Boolean =
-        System.currentTimeMillis() - storedLastUpdateDate > DATASTORE_EXPIRATION_MS
+    private fun didDataStoreExpire(): Boolean =
+        System.nanoTime() - storedLastUpdateDateNs.get() > DATASTORE_EXPIRATION_NS
 
     // endregion
 
     internal companion object {
-        internal const val DATASTORE_EXPIRATION_MS = DateUtils.DAY_IN_MILLIS * 30 // 30 days
-        internal const val DATASTORE_HASHES_UPDATE_DATE_FILENAME = "resource-hash-store-update-date"
-        internal const val DATASTORE_HASHES_CONTENT_FILENAME = "resource-hash-store-contents"
+        internal const val DATASTORE_EXPIRATION_NS =
+            DateUtils.DAY_IN_MILLIS * 30 * 1000 * 1000 // 30 days in nanoseconds
+        internal const val DATASTORE_HASHES_ENTRY_NAME = "resource-hash-store"
     }
 }

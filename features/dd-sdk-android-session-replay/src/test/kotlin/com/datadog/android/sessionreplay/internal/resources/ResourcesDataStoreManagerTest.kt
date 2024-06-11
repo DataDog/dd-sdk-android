@@ -15,9 +15,8 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_EXPIRATION_MS
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_HASHES_CONTENT_FILENAME
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_HASHES_UPDATE_DATE_FILENAME
+import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_EXPIRATION_NS
+import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_HASHES_ENTRY_NAME
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -32,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -51,16 +51,10 @@ internal class ResourcesDataStoreManagerTest {
     lateinit var mockFeatureSdkCore: FeatureSdkCore
 
     @Mock
-    lateinit var mockStringSetSerializer: Serializer<Set<String>>
+    lateinit var mockResourceHashesEntrySerializer: Serializer<ResourceHashesEntry>
 
     @Mock
-    lateinit var mockStringSetDeserializer: Deserializer<String, Set<String>>
-
-    @Mock
-    lateinit var mockLongSerializer: Serializer<Long>
-
-    @Mock
-    lateinit var mockLongDeserializer: Deserializer<String, Long>
+    lateinit var mockResourceHashesEntryDeserializer: Deserializer<String, ResourceHashesEntry>
 
     @Mock
     lateinit var mockFeatureScope: FeatureScope
@@ -77,18 +71,17 @@ internal class ResourcesDataStoreManagerTest {
             .thenReturn(mockFeatureScope)
 
         whenever(mockFeatureScope.dataStore).thenReturn(mockDataStoreHandler)
-
-        testedDataStoreManager = ResourcesDataStoreManager(
-            featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
-        )
     }
 
     @Test
     fun `M return false W wasResourcePreviouslySent() { resource was not already sent }`() {
+        // Given
+        testedDataStoreManager = ResourcesDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
+
         // When
         val wasSent = testedDataStoreManager.wasResourcePreviouslySent(fakeHash)
 
@@ -99,6 +92,11 @@ internal class ResourcesDataStoreManagerTest {
     @Test
     fun `M return true W wasResourcePreviouslySent() { resource was already sent }`() {
         // Given
+        testedDataStoreManager = ResourcesDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
         testedDataStoreManager.store(fakeHash)
 
         // When
@@ -111,20 +109,30 @@ internal class ResourcesDataStoreManagerTest {
     @Test
     fun `M write hash to datastore W store()`() {
         // When
+        testedDataStoreManager = ResourcesDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
         testedDataStoreManager.store(fakeHash)
 
         // Then
         verify(mockFeatureScope.dataStore).setValue(
-            key = eq(DATASTORE_HASHES_CONTENT_FILENAME),
+            key = eq(DATASTORE_HASHES_ENTRY_NAME),
             data = any(),
             version = anyOrNull(),
-            serializer = eq(mockStringSetSerializer)
+            serializer = eq(mockResourceHashesEntrySerializer)
         )
     }
 
     @Test
     fun `M be threadsafe W store() { store on one thread, read on another }`() {
         // Given
+        testedDataStoreManager = ResourcesDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
         val writeThread = Runnable {
             testedDataStoreManager.store(fakeHash)
         }
@@ -144,275 +152,189 @@ internal class ResourcesDataStoreManagerTest {
     // region init
 
     @Test
-    fun `M query updateDate from dataStore W init()`() {
-        // When
+    fun `M query entry from dataStore W init()`() {
+        // Given
+        testedDataStoreManager = ResourcesDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
+
+        // Then
         verify(mockDataStoreHandler).value(
-            key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
+            key = eq(DATASTORE_HASHES_ENTRY_NAME),
             version = anyOrNull(),
-            callback = any<DataStoreCallback<Long>>(),
+            callback = any<DataStoreCallback<ResourceHashesEntry>>(),
             deserializer = any()
         )
     }
 
     @Test
-    fun `M query hashes from dataStore W init()`(
-        @Mock mockDataStoreContentUpdateTime: DataStoreContent<Long>,
+    fun `M overwrite last update date W init() { datastore expired }`(
+        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
+        @Mock mockResourceHashesEntry: ResourceHashesEntry,
         @IntForgery fakeVersionCode: Int
     ) {
         // Given
-        val validTime = System.currentTimeMillis() - (DATASTORE_EXPIRATION_MS / 2)
-        whenever(mockDataStoreContentUpdateTime.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockDataStoreContentUpdateTime.data).thenReturn(validTime)
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-                version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(mockDataStoreContentUpdateTime)
-        }
-
-        // When
-        testedDataStoreManager = ResourcesDataStoreManager(
-            featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
-        )
-
-        // Then
-        verify(mockDataStoreHandler).value(
-            key = eq(DATASTORE_HASHES_CONTENT_FILENAME),
-            version = anyOrNull(),
-            callback = any<DataStoreCallback<Long>>(),
-            deserializer = any()
-        )
-    }
-
-    @Test
-    fun `M create new update file W init() { no stored update file }`(
-        @Mock mockDataStoreContentUpdateTime: DataStoreContent<Long>,
-        @IntForgery fakeVersionCode: Int
-    ) {
-        // Given
-        whenever(mockDataStoreContentUpdateTime.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockDataStoreContentUpdateTime.data).thenReturn(null)
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-                version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(mockDataStoreContentUpdateTime)
-        }
-
-        // When
-        testedDataStoreManager = ResourcesDataStoreManager(
-            featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
-        )
-
-        // Then
-        verify(mockDataStoreHandler).setValue(
-            key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-            version = anyOrNull(),
-            data = any(),
-            serializer = any()
-        )
-    }
-
-    @Test
-    fun `M overwrite last update file W init() { datastore expired }`(
-        @Mock mockDataStoreContentUpdateTime: DataStoreContent<Long>,
-        @IntForgery fakeVersionCode: Int,
-        @StringForgery fakeTestKey: String
-    ) {
-        // Given
-        val fakeSetStrings = hashSetOf(fakeTestKey)
         val fakeHashes = DataStoreContent(
             versionCode = fakeVersionCode,
-            data = fakeSetStrings
+            data = mockResourceHashesEntry
         )
 
-        whenever(mockDataStoreContentUpdateTime.versionCode).thenReturn(fakeVersionCode)
-        val timestamp = System.currentTimeMillis() - (DATASTORE_EXPIRATION_MS * 2)
-        whenever(mockDataStoreContentUpdateTime.data).thenReturn(timestamp)
+        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
+        val expiredTimestamp = System.nanoTime() - (DATASTORE_EXPIRATION_NS * 2)
+        whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(expiredTimestamp)
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(mockDataStoreContentUpdateTime)
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
+            callback.onSuccess(mockDataStoreContentEntry)
         }
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_CONTENT_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Set<String>>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<HashSet<String>>
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
             callback.onSuccess(fakeHashes)
         }
 
-        testedDataStoreManager.store(fakeTestKey)
-        assertThat(testedDataStoreManager.wasResourcePreviouslySent(fakeTestKey)).isTrue()
-
         // When
         testedDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
         )
 
+        testedDataStoreManager.store(fakeHash)
+
         // Then
+        val resourceHashesEntryCaptor = argumentCaptor<ResourceHashesEntry>()
         verify(mockDataStoreHandler).setValue(
-            key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-            data = any(),
+            key = eq(DATASTORE_HASHES_ENTRY_NAME),
+            data = resourceHashesEntryCaptor.capture(),
             version = anyOrNull(),
-            serializer = eq(mockLongSerializer)
+            serializer = eq(mockResourceHashesEntrySerializer)
         )
+
+        assertThat(resourceHashesEntryCaptor.firstValue.lastUpdateDateNs).isNotEqualTo(expiredTimestamp)
     }
 
     @Test
     fun `M remove stored hashes file W init() { datastore expired }`(
-        @Mock mockDataStoreContentUpdateTime: DataStoreContent<Long>,
-        @IntForgery fakeVersionCode: Int,
-        @StringForgery fakeTestKey: String
+        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
+        @Mock mockResourceHashesEntry: ResourceHashesEntry,
+        @IntForgery fakeVersionCode: Int
     ) {
         // Given
-        val fakeSetStrings = hashSetOf(fakeTestKey)
         val fakeHashes = DataStoreContent(
             versionCode = fakeVersionCode,
-            data = fakeSetStrings
+            data = mockResourceHashesEntry
         )
 
-        whenever(mockDataStoreContentUpdateTime.versionCode).thenReturn(fakeVersionCode)
-        val timestamp = System.currentTimeMillis() - (DATASTORE_EXPIRATION_MS * 2)
-        whenever(mockDataStoreContentUpdateTime.data).thenReturn(timestamp)
+        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
+        val expiredTime = System.nanoTime() - (DATASTORE_EXPIRATION_NS * 2)
+        whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(expiredTime)
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(mockDataStoreContentUpdateTime)
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
+            callback.onSuccess(mockDataStoreContentEntry)
         }
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_CONTENT_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Set<String>>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<HashSet<String>>
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
             callback.onSuccess(fakeHashes)
         }
-
-        testedDataStoreManager.store(fakeTestKey)
-        assertThat(testedDataStoreManager.wasResourcePreviouslySent(fakeTestKey)).isTrue()
 
         // When
         testedDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
         )
 
         // Then
         verify(mockDataStoreHandler).removeValue(
-            key = DATASTORE_HASHES_CONTENT_FILENAME
+            key = DATASTORE_HASHES_ENTRY_NAME
         )
     }
 
     @Test
     fun `M clear stored hashes from cache W init() { datastore expired }`(
-        @Mock mockDataStoreContentUpdateTime: DataStoreContent<Long>,
+        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
+        @Mock mockResourceHashesEntry: ResourceHashesEntry,
         @IntForgery fakeVersionCode: Int,
         @StringForgery fakeTestKey: String
     ) {
         // Given
-        val fakeSetStrings = hashSetOf(fakeTestKey)
         val fakeHashes = DataStoreContent(
             versionCode = fakeVersionCode,
-            data = fakeSetStrings
+            data = mockResourceHashesEntry
         )
 
-        whenever(mockDataStoreContentUpdateTime.versionCode).thenReturn(fakeVersionCode)
-        val timestamp = System.currentTimeMillis() - (DATASTORE_EXPIRATION_MS * 2)
-        whenever(mockDataStoreContentUpdateTime.data).thenReturn(timestamp)
+        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
+        val timestamp = System.nanoTime() - (DATASTORE_EXPIRATION_NS * 2)
+        whenever(mockDataStoreContentEntry.data?.lastUpdateDateNs).thenReturn(timestamp)
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(mockDataStoreContentUpdateTime)
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
+            callback.onSuccess(mockDataStoreContentEntry)
         }
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_CONTENT_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Set<String>>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<HashSet<String>>
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
             callback.onSuccess(fakeHashes)
         }
-
-        testedDataStoreManager.store(fakeTestKey)
-        assertThat(testedDataStoreManager.wasResourcePreviouslySent(fakeTestKey)).isTrue()
 
         // When
         testedDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
         )
 
         // Then
@@ -425,53 +347,53 @@ internal class ResourcesDataStoreManagerTest {
 
     @Test
     fun `M add stored hashes to known set W init() { valid update date }`(
-        @Mock mockDataStoreContentUpdateTime: DataStoreContent<Long>,
-        @Mock mockDataStoreContentHashes: DataStoreContent<Set<String>>,
+        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
+        @Mock mockResourceHashesEntry: ResourceHashesEntry,
         @StringForgery fakeString: String,
         @IntForgery fakeVersionCode: Int
     ) {
         // Given
         val fakeSetStrings = hashSetOf(fakeString)
-        val validTime = System.currentTimeMillis() - (DATASTORE_EXPIRATION_MS / 2)
-        whenever(mockDataStoreContentUpdateTime.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockDataStoreContentUpdateTime.data).thenReturn(validTime)
+        val validTime = System.nanoTime() - (DATASTORE_EXPIRATION_NS / 2)
+        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
+        whenever(mockDataStoreContentEntry.data).thenReturn(mockResourceHashesEntry)
+        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings)
+        whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(validTime)
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(mockDataStoreContentUpdateTime)
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
+            callback.onSuccess(mockDataStoreContentEntry)
         }
 
-        whenever(mockDataStoreContentHashes.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockDataStoreContentHashes.data).thenReturn(fakeSetStrings)
+        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
+        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings)
 
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_CONTENT_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Set<String>>
-            callback.onSuccess(mockDataStoreContentHashes)
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
+            callback.onSuccess(mockDataStoreContentEntry)
         }
 
         // When
         testedDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
         )
 
         // Then
@@ -480,70 +402,31 @@ internal class ResourcesDataStoreManagerTest {
     }
 
     @Test
-    fun `M create new update file W init() { failed to get update date }`() {
+    fun `M do nothing W init() { failed to get datastore entry }`() {
         // Given
         whenever(
             mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
                 version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
+                callback = any<DataStoreCallback<ResourceHashesEntry>>(),
                 deserializer = any()
             )
         ) doAnswer {
             @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
+            val callback = it.arguments[2] as DataStoreCallback<ResourceHashesEntry>
             callback.onFailure()
         }
 
         // When
         testedDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourcesHashesDeserializer = mockResourceHashesEntryDeserializer
         )
 
         // Then
-        verify(mockDataStoreHandler).setValue(
-            key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-            version = anyOrNull(),
-            data = any(),
-            serializer = any()
-        )
-    }
-
-    @Test
-    fun `M create new update file W init() { no data for update date }`() {
-        // Given
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-                version = anyOrNull(),
-                callback = any<DataStoreCallback<Long>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreCallback<Long>
-            callback.onSuccess(null)
-        }
-
-        // When
-        testedDataStoreManager = ResourcesDataStoreManager(
-            featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockStringSetSerializer,
-            resourcesHashesDeserializer = mockStringSetDeserializer,
-            updateDateSerializer = mockLongSerializer,
-            updateDateDeserializer = mockLongDeserializer
-        )
-
-        // Then
-        verify(mockDataStoreHandler).setValue(
-            key = eq(DATASTORE_HASHES_UPDATE_DATE_FILENAME),
-            version = anyOrNull(),
-            data = any(),
-            serializer = any()
+        verify(mockDataStoreHandler).removeValue(
+            key = DATASTORE_HASHES_ENTRY_NAME
         )
     }
 

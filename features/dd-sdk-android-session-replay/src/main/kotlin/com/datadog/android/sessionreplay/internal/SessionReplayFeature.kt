@@ -24,11 +24,9 @@ import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
-import com.datadog.android.sessionreplay.internal.resources.LongDeserializer
-import com.datadog.android.sessionreplay.internal.resources.LongSerializer
+import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
+import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
 import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
-import com.datadog.android.sessionreplay.internal.resources.StringSetDeserializer
-import com.datadog.android.sessionreplay.internal.resources.StringSetSerializer
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -97,10 +95,8 @@ internal class SessionReplayFeature(
 
         val resourcesDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = sdkCore,
-            resourceHashesSerializer = StringSetSerializer(),
-            resourcesHashesDeserializer = StringSetDeserializer(),
-            updateDateSerializer = LongSerializer(),
-            updateDateDeserializer = LongDeserializer()
+            resourceHashesSerializer = ResourceHashesEntrySerializer(),
+            resourcesHashesDeserializer = ResourceHashesEntryDeserializer()
         )
 
         dataWriter = createDataWriter()
