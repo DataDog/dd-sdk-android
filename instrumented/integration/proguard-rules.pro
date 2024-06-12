@@ -33,6 +33,3 @@
 
 -dontwarn kotlin.Experimental$Level
 -dontwarn kotlin.Experimental
-# Required because we are compiling the `dd-sdk-android-trace` module which depends on "io.opentelemetry.api" which
-# uses google autovalue annotations
--dontwarn com.google.**
