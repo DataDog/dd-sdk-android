@@ -1,6 +1,5 @@
 package com.datadog.trace.core.monitor;
 
-import com.datadog.trace.common.writer.RemoteApi;
 import com.datadog.trace.core.DDSpan;
 
 import java.util.List;
@@ -65,12 +64,6 @@ public abstract class HealthMetrics implements AutoCloseable {
   public void onCloseScope() {}
 
   public void onScopeStackOverflow() {}
-
-  public void onSend(
-      final int traceCount, final int sizeInBytes, final RemoteApi.Response response) {}
-
-  public void onFailedSend(
-      final int traceCount, final int sizeInBytes, final RemoteApi.Response response) {}
 
   public void onLongRunningUpdate(final int dropped, final int write, final int expired) {}
 

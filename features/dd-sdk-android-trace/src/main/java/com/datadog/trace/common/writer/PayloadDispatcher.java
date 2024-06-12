@@ -12,6 +12,4 @@ interface PayloadDispatcher {
 
   void flush();
 
-  // used by tests
-  Collection<Class<? extends RemoteApi>> getApis();
 }

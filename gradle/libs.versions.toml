@@ -300,7 +300,6 @@ ktor = [
 
 traceCore = [
     "jctools",
-    "okHttp",
     "re2j"
 ]
 

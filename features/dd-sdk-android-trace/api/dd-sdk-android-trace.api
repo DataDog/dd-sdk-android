@@ -26,13 +26,6 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
-public final class com/datadog/android/trace/BuildConfig {
-	public static final field BUILD_TYPE Ljava/lang/String;
-	public static final field DEBUG Z
-	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
-	public fun <init> ()V
-}
-
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
 	public abstract fun getCoreTracerWriter ()Lcom/datadog/trace/common/writer/Writer;
 }
@@ -3928,14 +3921,6 @@ public final class com/datadog/trace/common/sampling/TraceSamplingRules$Rule : c
 	public fun getTags ()Ljava/util/Map;
 }
 
-public class com/datadog/trace/common/writer/CompositePayloadDispatcher : com/datadog/trace/common/writer/PayloadDispatcher {
-	public fun <init> ([Lcom/datadog/trace/common/writer/PayloadDispatcher;)V
-	public fun addTrace (Ljava/util/List;)V
-	public fun flush ()V
-	public fun getApis ()Ljava/util/Collection;
-	public fun onDroppedTrace (I)V
-}
-
 public class com/datadog/trace/common/writer/ListWriter : java/util/concurrent/CopyOnWriteArrayList, com/datadog/trace/common/writer/Writer {
 	public static final field ACCEPT_ALL Lcom/datadog/trace/common/writer/ListWriter$Filter;
 	public fun <init> ()V
@@ -3971,34 +3956,6 @@ public class com/datadog/trace/common/writer/NoOpWriter : com/datadog/trace/comm
 public abstract class com/datadog/trace/common/writer/Payload {
 	protected field body Ljava/nio/ByteBuffer;
 	public fun <init> ()V
-}
-
-public abstract class com/datadog/trace/common/writer/RemoteApi {
-	protected field failedTraces J
-	protected final field ioLogger Lcom/datadog/trace/relocate/api/IOLogger;
-	protected field receivedTraces J
-	protected field sentTraces J
-	protected field totalTraces J
-	public fun <init> ()V
-	protected fun countAndLogFailedSend (IILokhttp3/Response;Ljava/io/IOException;)V
-	protected fun countAndLogSuccessfulSend (II)V
-	protected fun createSendLogMessage (IILjava/lang/String;)Ljava/lang/String;
-	protected abstract fun getLogger ()Lcom/datadog/trace/logger/Logger;
-	protected static fun getResponseBody (Lokhttp3/Response;)Ljava/lang/String;
-	protected abstract fun sendSerializedTraces (Lcom/datadog/trace/common/writer/Payload;)Lcom/datadog/trace/common/writer/RemoteApi$Response;
-	protected static fun toLoggerResponse (Lokhttp3/Response;Ljava/lang/String;)Lcom/datadog/trace/relocate/api/IOLogger$Response;
-}
-
-public final class com/datadog/trace/common/writer/RemoteApi$Response {
-	public final fun exception ()Ljava/lang/Throwable;
-	public static fun failed (I)Lcom/datadog/trace/common/writer/RemoteApi$Response;
-	public static fun failed (Ljava/lang/Throwable;)Lcom/datadog/trace/common/writer/RemoteApi$Response;
-	public final fun response ()Ljava/lang/String;
-	public final fun status ()Ljava/lang/Integer;
-	public final fun success ()Z
-	public static fun success (I)Lcom/datadog/trace/common/writer/RemoteApi$Response;
-	public static fun success (ILjava/lang/String;)Lcom/datadog/trace/common/writer/RemoteApi$Response;
-	public static fun success (ILjava/lang/Throwable;)Lcom/datadog/trace/common/writer/RemoteApi$Response;
 }
 
 public abstract interface class com/datadog/trace/common/writer/RemoteResponseListener {
@@ -4645,7 +4602,6 @@ public abstract class com/datadog/trace/core/monitor/HealthMetrics : java/lang/A
 	public fun onCreateSpan ()V
 	public fun onCreateTrace ()V
 	public fun onFailedPublish (II)V
-	public fun onFailedSend (IILcom/datadog/trace/common/writer/RemoteApi$Response;)V
 	public fun onFailedSerialize (Ljava/util/List;Ljava/lang/Throwable;)V
 	public fun onFinishContinuation ()V
 	public fun onFinishSpan ()V
@@ -4657,7 +4613,6 @@ public abstract class com/datadog/trace/core/monitor/HealthMetrics : java/lang/A
 	public fun onScheduleFlush (Z)V
 	public fun onScopeCloseError (I)V
 	public fun onScopeStackOverflow ()V
-	public fun onSend (IILcom/datadog/trace/common/writer/RemoteApi$Response;)V
 	public fun onSerialize (I)V
 	public fun onShutdown (Z)V
 	public fun onSingleSpanSample ()V
