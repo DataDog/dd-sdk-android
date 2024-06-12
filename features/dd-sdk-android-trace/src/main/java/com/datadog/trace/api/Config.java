@@ -12,10 +12,6 @@ import static com.datadog.trace.api.DDTags.SERVICE;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_AGENTLESS;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_AGENTLESS_DEFAULT;
 import static com.datadog.trace.api.config.CrashTrackingConfig.CRASH_TRACKING_TAGS;
-import static com.datadog.trace.api.config.GeneralConfig.API_KEY;
-import static com.datadog.trace.api.config.GeneralConfig.API_KEY_FILE;
-import static com.datadog.trace.api.config.GeneralConfig.APPLICATION_KEY;
-import static com.datadog.trace.api.config.GeneralConfig.APPLICATION_KEY_FILE;
 import static com.datadog.trace.api.config.GeneralConfig.AZURE_APP_SERVICES;
 import static com.datadog.trace.api.config.GeneralConfig.DATA_STREAMS_BUCKET_DURATION_SECONDS;
 import static com.datadog.trace.api.config.GeneralConfig.DATA_STREAMS_ENABLED;
@@ -53,10 +49,6 @@ import static com.datadog.trace.api.config.GeneralConfig.TRACE_TRIAGE;
 import static com.datadog.trace.api.config.GeneralConfig.VERSION;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_AGENTLESS;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_AGENTLESS_DEFAULT;
-import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_API_KEY_FILE_OLD;
-import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_API_KEY_FILE_VERY_OLD;
-import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_API_KEY_OLD;
-import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_API_KEY_VERY_OLD;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_DATADOG_PROFILER_ENABLED;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_DIRECT_ALLOCATION_SAMPLE_LIMIT;
 import static com.datadog.trace.api.config.ProfilingConfig.PROFILING_DIRECT_ALLOCATION_SAMPLE_LIMIT_DEFAULT;
@@ -206,9 +198,6 @@ import static com.datadog.trace.api.config.TracerConfig.TRACE_X_DATADOG_TAGS_MAX
 import static com.datadog.trace.api.config.TracerConfig.WRITER_BAGGAGE_INJECT;
 import static com.datadog.trace.api.config.TracerConfig.WRITER_TYPE;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableSet;
-import static com.datadog.trace.util.Strings.propertyNameToEnvironmentVariableName;
-
-import android.os.Build;
 
 import androidx.annotation.NonNull;
 
@@ -218,26 +207,16 @@ import com.datadog.trace.api.config.TracerConfig;
 import com.datadog.trace.api.naming.SpanNaming;
 import com.datadog.trace.bootstrap.config.provider.CapturedEnvironmentConfigSource;
 import com.datadog.trace.bootstrap.config.provider.ConfigProvider;
-import com.datadog.trace.bootstrap.config.provider.SystemPropertiesConfigSource;
 import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
-import com.datadog.trace.util.FileUtils;
 import com.datadog.trace.util.PidHelper;
-import com.datadog.trace.util.Strings;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -303,13 +282,6 @@ public class Config {
      */
     private final String runtimeVersion;
 
-    private final String applicationKey;
-    /**
-     * Note: this has effect only on profiling site. Traces are sent to Datadog agent and are not
-     * affected by this setting. If CI Visibility is used with agentless mode, api key is used when
-     * sending data (including traces) to backend
-     */
-    private final String apiKey;
     /**
      * Note: this has effect only on profiling site. Traces are sent to Datadog agent and are not
      * affected by this setting.
@@ -326,7 +298,6 @@ public class Config {
     private final String agentUrl;
     private final String agentHost;
     private final int agentPort;
-    private final String agentUnixDomainSocket;
     private final String agentNamedPipe;
     private final int agentTimeout;
     private final Set<String> noProxyHosts;
@@ -558,46 +529,7 @@ public class Config {
         configFileStatus = configProvider.getConfigFileStatus();
         runtimeIdEnabled = configProvider.getBoolean(RUNTIME_ID_ENABLED, true);
         runtimeVersion = System.getProperty("java.version", "unknown");
-
-        // Note: We do not want APiKey to be loaded from property for security reasons
-        // Note: we do not use defined default here
-        // FIXME: We should use better authentication mechanism
-        final String apiKeyFile = configProvider.getString(API_KEY_FILE);
-        String tmpApiKey =
-                configProvider.getStringExcludingSource(API_KEY, null, SystemPropertiesConfigSource.class);
-        if (apiKeyFile != null) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    tmpApiKey =
-                            new String(Files.readAllBytes(Paths.get(apiKeyFile)), StandardCharsets.UTF_8).trim();
-                } else {
-                    tmpApiKey = new String(FileUtils.readAllBytes(apiKeyFile), StandardCharsets.UTF_8).trim();
-                }
-            } catch (final IOException e) {
-                log.error(
-                        "Cannot read API key from file {}, skipping. Exception {}", apiKeyFile, e.getMessage());
-            }
-        }
         site = configProvider.getString(SITE, DEFAULT_SITE);
-
-        String tmpApplicationKey =
-                configProvider.getStringExcludingSource(
-                        APPLICATION_KEY, null, SystemPropertiesConfigSource.class);
-        String applicationKeyFile = configProvider.getString(APPLICATION_KEY_FILE);
-        if (applicationKeyFile != null) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    tmpApplicationKey =
-                            new String(Files.readAllBytes(Paths.get(applicationKeyFile)), StandardCharsets.UTF_8)
-                                    .trim();
-                } else {
-                    tmpApplicationKey = new String(FileUtils.readAllBytes(applicationKeyFile), StandardCharsets.UTF_8).trim();
-                }
-            } catch (final IOException e) {
-                log.error("Cannot read API key from file {}, skipping", applicationKeyFile, e);
-            }
-        }
-        applicationKey = tmpApplicationKey;
 
         String userProvidedServiceName =
                 configProvider.getStringExcludingSource(
@@ -620,12 +552,7 @@ public class Config {
         writerType = configProvider.getString(WRITER_TYPE, DEFAULT_AGENT_WRITER_TYPE);
         injectBaggageAsTagsEnabled =
                 configProvider.getBoolean(WRITER_BAGGAGE_INJECT, DEFAULT_WRITER_BAGGAGE_INJECT);
-        String lambdaInitType = getEnv("AWS_LAMBDA_INITIALIZATION_TYPE");
-        if (lambdaInitType != null && lambdaInitType.equals("snap-start")) {
-            secureRandom = true;
-        } else {
-            secureRandom = configProvider.getBoolean(SECURE_RANDOM, DEFAULT_SECURE_RANDOM);
-        }
+        secureRandom = configProvider.getBoolean(SECURE_RANDOM, DEFAULT_SECURE_RANDOM);
         elasticsearchBodyEnabled =
                 configProvider.getBoolean(ELASTICSEARCH_BODY_ENABLED, DEFAULT_ELASTICSEARCH_BODY_ENABLED);
         elasticsearchParamsEnabled =
@@ -663,7 +590,6 @@ public class Config {
 
         String agentHostFromEnvironment = null;
         int agentPortFromEnvironment = -1;
-        String unixSocketFromEnvironment = null;
         boolean rebuildAgentUrl = false;
 
         final String agentUrlFromEnvironment = configProvider.getString(TRACE_AGENT_URL);
@@ -672,9 +598,6 @@ public class Config {
                 final URI parsedAgentUrl = new URI(agentUrlFromEnvironment);
                 agentHostFromEnvironment = parsedAgentUrl.getHost();
                 agentPortFromEnvironment = parsedAgentUrl.getPort();
-                if ("unix".equals(parsedAgentUrl.getScheme())) {
-                    unixSocketFromEnvironment = parsedAgentUrl.getPath();
-                }
             } catch (URISyntaxException e) {
                 log.warn("{} not configured correctly: {}. Ignoring", TRACE_AGENT_URL, e.getMessage());
             }
@@ -708,23 +631,11 @@ public class Config {
             agentUrl = agentUrlFromEnvironment;
         }
 
-        if (unixSocketFromEnvironment == null) {
-            unixSocketFromEnvironment = configProvider.getString(AGENT_UNIX_DOMAIN_SOCKET);
-            String unixPrefix = "unix://";
-            // handle situation where someone passes us a unix:// URL instead of a socket path
-            if (unixSocketFromEnvironment != null && unixSocketFromEnvironment.startsWith(unixPrefix)) {
-                unixSocketFromEnvironment = unixSocketFromEnvironment.substring(unixPrefix.length());
-            }
-        }
-
-        agentUnixDomainSocket = unixSocketFromEnvironment;
-
         agentNamedPipe = configProvider.getString(AGENT_NAMED_PIPE);
 
         agentConfiguredUsingDefault =
                 agentHostFromEnvironment == null
                         && agentPortFromEnvironment < 0
-                        && unixSocketFromEnvironment == null
                         && agentNamedPipe == null;
 
         agentTimeout = configProvider.getInteger(AGENT_TIMEOUT, DEFAULT_AGENT_TIMEOUT);
@@ -1039,47 +950,6 @@ public class Config {
                         PROFILING_DATADOG_PROFILER_ENABLED, isDatadogProfilerSafeInCurrentEnvironment());
         profilingUrl = configProvider.getString(PROFILING_URL);
 
-        if (tmpApiKey == null) {
-            final String oldProfilingApiKeyFile = configProvider.getString(PROFILING_API_KEY_FILE_OLD);
-            tmpApiKey = getEnv(propertyNameToEnvironmentVariableName(PROFILING_API_KEY_OLD));
-            if (oldProfilingApiKeyFile != null) {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        tmpApiKey =
-                                new String(
-                                        Files.readAllBytes(Paths.get(oldProfilingApiKeyFile)), StandardCharsets.UTF_8)
-                                        .trim();
-                    } else {
-                        tmpApiKey = new String(FileUtils.readAllBytes(oldProfilingApiKeyFile), StandardCharsets.UTF_8)
-                                .trim();
-                    }
-                } catch (final IOException e) {
-                    log.error("Cannot read API key from file {}, skipping", oldProfilingApiKeyFile, e);
-                }
-            }
-        }
-        if (tmpApiKey == null) {
-            final String veryOldProfilingApiKeyFile =
-                    configProvider.getString(PROFILING_API_KEY_FILE_VERY_OLD);
-            tmpApiKey = getEnv(propertyNameToEnvironmentVariableName(PROFILING_API_KEY_VERY_OLD));
-            if (veryOldProfilingApiKeyFile != null) {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        tmpApiKey =
-                                new String(
-                                        Files.readAllBytes(Paths.get(veryOldProfilingApiKeyFile)),
-                                        StandardCharsets.UTF_8)
-                                        .trim();
-                    } else {
-                        tmpApiKey = new String(FileUtils.readAllBytes(veryOldProfilingApiKeyFile), StandardCharsets.UTF_8)
-                                .trim();
-                    }
-                } catch (final IOException e) {
-                    log.error("Cannot read API key from file {}, skipping", veryOldProfilingApiKeyFile, e);
-                }
-            }
-        }
-
         profilingTags = configProvider.getMergedMap(PROFILING_TAGS);
         profilingStartDelay =
                 configProvider.getInteger(PROFILING_START_DELAY, PROFILING_START_DELAY_DEFAULT);
@@ -1293,9 +1163,6 @@ public class Config {
                             new ArrayList<>(parseStringIntoSetOfNonEmptyStrings(dogStatsDArgsString)));
         }
 
-        // Setting this last because we have a few places where this can come from
-        apiKey = tmpApiKey;
-
         boolean longRunningEnabled =
                 configProvider.getBoolean(
                         TracerConfig.TRACE_LONG_RUNNING_ENABLED,
@@ -1329,10 +1196,6 @@ public class Config {
         this.traceFlushIntervalSeconds =
                 configProvider.getFloat(
                         TracerConfig.TRACE_FLUSH_INTERVAL, DEFAULT_TRACE_FLUSH_INTERVAL);
-        if (profilingAgentless && apiKey == null) {
-            log.warn(
-                    "Agentless profiling activated but no api key provided. Profile uploading will likely fail");
-        }
 
         this.telemetryDebugRequestsEnabled =
                 configProvider.getBoolean(
@@ -1565,22 +1428,13 @@ public class Config {
     }
 
     public boolean isProfilingEnabled() {
-        if (Platform.isNativeImage()) {
-            if (!instrumenterConfig.isProfilingEnabled() && profilingEnabled) {
-                log.warn(
-                        "Profiling was not enabled during the native image build. "
-                                + "Please set DD_PROFILING_ENABLED=true in your native image build configuration if you want"
-                                + "to use profiling.");
-            }
-        }
         return profilingEnabled && instrumenterConfig.isProfilingEnabled();
     }
 
     public static boolean isDatadogProfilerEnablementOverridden() {
         // old non-LTS versions without important backports
         // also, we have no windows binaries
-        return Platform.isWindows()
-                || Platform.isJavaVersion(18)
+        return Platform.isJavaVersion(18)
                 || Platform.isJavaVersion(16)
                 || Platform.isJavaVersion(15)
                 || Platform.isJavaVersion(14)
@@ -2065,36 +1919,11 @@ public class Config {
      * Returns the detected hostname. First tries locally, then using DNS
      */
     static String initHostName() {
-        String possibleHostname;
-
-        // Try environment variable.  This works in almost all environments
-        if (isWindowsOS()) {
-            possibleHostname = getEnv("COMPUTERNAME");
-        } else {
-            possibleHostname = getEnv("HOSTNAME");
-        }
+        String possibleHostname = getEnv("HOSTNAME");
 
         if (possibleHostname != null && !possibleHostname.isEmpty()) {
             log.debug("Determined hostname from environment variable");
             return possibleHostname.trim();
-        }
-
-        // Try hostname files
-        final String[] hostNameFiles = new String[]{"/proc/sys/kernel/hostname", "/etc/hostname"};
-        for (final String hostNameFile : hostNameFiles) {
-            try {
-                byte[] hostnameBytes = readHostnameFromFile(hostNameFile);
-                if (hostnameBytes != null) {
-                    possibleHostname = new String(hostnameBytes, StandardCharsets.UTF_8);
-                }
-            } catch (Throwable t) {
-                // Ignore
-            }
-            possibleHostname = Strings.trim(possibleHostname);
-            if (!possibleHostname.isEmpty()) {
-                log.debug("Determined hostname from file {}", hostNameFile);
-                return possibleHostname;
-            }
         }
 
         // Try hostname command
@@ -2121,26 +1950,6 @@ public class Config {
         return null;
     }
 
-    private static byte[] readHostnameFromFile(String hostnameFilePath) throws IOException {
-        final Path hostNamePath;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            hostNamePath = FileSystems.getDefault().getPath(hostnameFilePath);
-            if (Files.isRegularFile(hostNamePath)) {
-                return Files.readAllBytes(hostNamePath);
-            }
-        } else {
-            File file = new File(hostnameFilePath);
-            if (file.exists()) {
-                return FileUtils.readAllBytes(file.getAbsolutePath());
-            }
-        }
-        return null;
-    }
-
-    private static boolean isWindowsOS() {
-        return getProp("os.name").startsWith("Windows");
-    }
-
     private static String getEnv(String name) {
         String value = System.getenv(name);
         if (value != null) {
@@ -2165,9 +1974,7 @@ public class Config {
 
     private static final Config INSTANCE =
             new Config(
-                    Platform.isNativeImageBuilder()
-                            ? ConfigProvider.withoutCollector()
-                            : ConfigProvider.getInstance(),
+                    ConfigProvider.getInstance(),
                     InstrumenterConfig.get());
 
     public static Config get() {
@@ -2206,8 +2013,6 @@ public class Config {
                 + '\''
                 + ", runtimeVersion='"
                 + runtimeVersion
-                + ", apiKey="
-                + (apiKey == null ? "null" : "****")
                 + ", site='"
                 + site
                 + '\''
@@ -2236,8 +2041,6 @@ public class Config {
                 + '\''
                 + ", agentPort="
                 + agentPort
-                + ", agentUnixDomainSocket='"
-                + agentUnixDomainSocket
                 + '\''
                 + ", agentTimeout="
                 + agentTimeout

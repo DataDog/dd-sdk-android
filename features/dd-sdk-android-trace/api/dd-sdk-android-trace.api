@@ -1053,11 +1053,6 @@ public abstract class com/datadog/opentracing/decorators/AbstractDecorator {
 	public fun shouldSetTag (Lcom/datadog/opentracing/DDSpanContext;Ljava/lang/String;Ljava/lang/Object;)Z
 }
 
-public class com/datadog/opentracing/decorators/DBTypeDecorator : com/datadog/opentracing/decorators/AbstractDecorator {
-	public fun <init> ()V
-	public fun shouldSetTag (Lcom/datadog/opentracing/DDSpanContext;Ljava/lang/String;Ljava/lang/Object;)Z
-}
-
 public class com/datadog/opentracing/decorators/DDDecoratorsFactory {
 	public fun <init> ()V
 	public static fun createBuiltinDecorators ()Ljava/util/List;
@@ -1081,11 +1076,6 @@ public class com/datadog/opentracing/decorators/PeerServiceDecorator : com/datad
 public class com/datadog/opentracing/decorators/ServiceNameDecorator : com/datadog/opentracing/decorators/AbstractDecorator {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Z)V
-	public fun shouldSetTag (Lcom/datadog/opentracing/DDSpanContext;Ljava/lang/String;Ljava/lang/Object;)Z
-}
-
-public class com/datadog/opentracing/decorators/ServletContextDecorator : com/datadog/opentracing/decorators/AbstractDecorator {
-	public fun <init> ()V
 	public fun shouldSetTag (Lcom/datadog/opentracing/DDSpanContext;Ljava/lang/String;Ljava/lang/Object;)Z
 }
 
@@ -1307,7 +1297,6 @@ public final class com/datadog/trace/api/ConfigDefaults {
 	public static final field DEFAULT_AGENT_WRITER_TYPE Ljava/lang/String;
 	public static final field DEFAULT_ASYNC_PROPAGATING Z
 	public static final field DEFAULT_DOGSTATSD_PORT I
-	public static final field DEFAULT_DOGSTATSD_SOCKET_PATH Ljava/lang/String;
 	public static final field DEFAULT_IAST_DEDUPLICATION_ENABLED Z
 	public static final field DEFAULT_IAST_MAX_CONCURRENT_REQUESTS I
 	public static final field DEFAULT_IAST_MAX_RANGE_COUNT I
@@ -1317,7 +1306,6 @@ public final class com/datadog/trace/api/ConfigDefaults {
 	public static final field DEFAULT_SERVLET_ROOT_CONTEXT_SERVICE_NAME Ljava/lang/String;
 	public static final field DEFAULT_STARTUP_LOGS_ENABLED Z
 	public static final field DEFAULT_TRACE_AGENT_PORT I
-	public static final field DEFAULT_TRACE_AGENT_SOCKET_PATH Ljava/lang/String;
 	public static final field DEFAULT_TRACE_X_DATADOG_TAGS_MAX_LENGTH I
 }
 
@@ -1635,7 +1623,6 @@ public final class com/datadog/trace/api/Platform {
 	public static fun getRuntimePatches ()Ljava/lang/String;
 	public static fun getRuntimeVendor ()Ljava/lang/String;
 	public static fun getRuntimeVersion ()Ljava/lang/String;
-	public static fun hasJfr ()Z
 	public static fun isGraalVM ()Z
 	public static fun isIbm8 ()Z
 	public static fun isJ9 ()Z
@@ -1648,12 +1635,7 @@ public final class com/datadog/trace/api/Platform {
 	public static fun isJavaVersionBetween (II)Z
 	public static fun isJavaVersionBetween (IIII)Z
 	public static fun isJavaVersionBetween (IIIIII)Z
-	public static fun isLinux ()Z
-	public static fun isMac ()Z
-	public static fun isNativeImage ()Z
-	public static fun isNativeImageBuilder ()Z
 	public static fun isOracleJDK8 ()Z
-	public static fun isWindows ()Z
 }
 
 public final class com/datadog/trace/api/Platform$GC : java/lang/Enum {
@@ -2143,29 +2125,6 @@ public final class com/datadog/trace/api/config/UsmConfig {
 public class com/datadog/trace/api/env/CapturedEnvironment {
 	public static fun get ()Lcom/datadog/trace/api/env/CapturedEnvironment;
 	public fun getProperties ()Ljava/util/Map;
-}
-
-public abstract interface class com/datadog/trace/api/experimental/DataStreamsCheckpointer {
-	public abstract fun setConsumeCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public abstract fun setProduceCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-}
-
-public final class com/datadog/trace/api/experimental/DataStreamsCheckpointer$NoOp : com/datadog/trace/api/experimental/DataStreamsCheckpointer {
-	public static final field INSTANCE Lcom/datadog/trace/api/experimental/DataStreamsCheckpointer;
-	public fun <init> ()V
-	public fun setConsumeCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public fun setProduceCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-}
-
-public abstract interface class com/datadog/trace/api/experimental/DataStreamsContextCarrier {
-	public abstract fun entries ()Ljava/util/Set;
-	public abstract fun set (Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public final class com/datadog/trace/api/experimental/DataStreamsContextCarrier$NoOp : com/datadog/trace/api/experimental/DataStreamsContextCarrier {
-	public static final field INSTANCE Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;
-	public fun entries ()Ljava/util/Set;
-	public fun set (Ljava/lang/String;Ljava/lang/String;)V
 }
 
 public abstract interface class com/datadog/trace/api/function/TriConsumer {
@@ -2804,14 +2763,6 @@ public final class com/datadog/trace/bootstrap/config/provider/SystemPropertiesC
 	public fun origin ()Lcom/datadog/trace/api/ConfigOrigin;
 }
 
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentDataStreamsMonitoring : com/datadog/trace/api/experimental/DataStreamsCheckpointer {
-	public abstract fun add (Lcom/datadog/trace/bootstrap/instrumentation/api/StatsPoint;)V
-	public abstract fun newPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
-	public abstract fun setCheckpoint (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/util/LinkedHashMap;JJ)V
-	public abstract fun shouldSampleSchema (Ljava/lang/String;)I
-	public abstract fun trackBacklog (Ljava/util/LinkedHashMap;J)V
-}
-
 public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentHistogram {
 	public abstract fun accept (D)V
 	public abstract fun accept (DD)V
@@ -2993,18 +2944,6 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 }
 
 public class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer {
-}
-
-public class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$NoopAgentDataStreamsMonitoring : com/datadog/trace/bootstrap/instrumentation/api/AgentDataStreamsMonitoring {
-	public static final field INSTANCE Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$NoopAgentDataStreamsMonitoring;
-	public fun <init> ()V
-	public fun add (Lcom/datadog/trace/bootstrap/instrumentation/api/StatsPoint;)V
-	public fun newPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
-	public fun setCheckpoint (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/util/LinkedHashMap;JJ)V
-	public fun setConsumeCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public fun setProduceCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public fun shouldSampleSchema (Ljava/lang/String;)I
-	public fun trackBacklog (Ljava/util/LinkedHashMap;J)V
 }
 
 public class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$NoopAgentHistogram : com/datadog/trace/bootstrap/instrumentation/api/AgentHistogram {
@@ -4531,66 +4470,6 @@ public abstract interface class com/datadog/trace/core/PendingTraceBuffer$Elemen
 	public abstract fun writeOnBufferFull ()Z
 }
 
-public class com/datadog/trace/core/datastreams/DataStreamsContextCarrierAdapter : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor, com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter {
-	public static final field INSTANCE Lcom/datadog/trace/core/datastreams/DataStreamsContextCarrierAdapter;
-	public fun forEachKey (Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier;)V
-	public synthetic fun forEachKey (Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier;)V
-	public fun set (Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun set (Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/trace/core/datastreams/DataStreamsMonitoring : com/datadog/trace/bootstrap/instrumentation/api/AgentDataStreamsMonitoring, java/lang/AutoCloseable {
-	public abstract fun clear ()V
-	public abstract fun close ()V
-	public abstract fun extractor (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
-	public abstract fun mergePathwayContextIntoSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public abstract fun start ()V
-}
-
-public class com/datadog/trace/core/datastreams/NoOpDataStreamMonitoring : com/datadog/trace/core/datastreams/DataStreamsMonitoring {
-	public fun <init> ()V
-	public fun add (Lcom/datadog/trace/bootstrap/instrumentation/api/StatsPoint;)V
-	public fun clear ()V
-	public fun close ()V
-	public fun extractor (Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
-	public fun mergePathwayContextIntoSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public fun newPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
-	public fun setCheckpoint (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/util/LinkedHashMap;JJ)V
-	public fun setConsumeCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public fun setProduceCheckpoint (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/trace/api/experimental/DataStreamsContextCarrier;)V
-	public fun shouldSampleSchema (Ljava/lang/String;)I
-	public fun start ()V
-	public fun trackBacklog (Ljava/util/LinkedHashMap;J)V
-}
-
-public class com/datadog/trace/core/datastreams/SchemaSampler {
-	public fun <init> ()V
-	public fun shouldSample (J)I
-}
-
-public class com/datadog/trace/core/datastreams/TagsProcessor {
-	public static final field CONSUMER_GROUP_TAG Ljava/lang/String;
-	public static final field DIRECTION_IN Ljava/lang/String;
-	public static final field DIRECTION_OUT Ljava/lang/String;
-	public static final field DIRECTION_TAG Ljava/lang/String;
-	public static final field EXCHANGE_TAG Ljava/lang/String;
-	public static final field GROUP_TAG Ljava/lang/String;
-	public static final field HAS_ROUTING_KEY_TAG Ljava/lang/String;
-	public static final field KAFKA_CLUSTER_ID_TAG Ljava/lang/String;
-	public static final field PARTITION_TAG Ljava/lang/String;
-	public static final field SUBSCRIPTION_TAG Ljava/lang/String;
-	public static final field TOPIC_TAG Ljava/lang/String;
-	public static final field TYPE_TAG Ljava/lang/String;
-	public fun <init> ()V
-	public static fun createTag (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-}
-
-public final class com/datadog/trace/core/datastreams/TagsProcessor$StringPrefix : com/datadog/android/trace/internal/compat/function/Function {
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun apply (Ljava/lang/Object;)Ljava/lang/Object;
-	public fun apply (Ljava/lang/String;)Ljava/lang/String;
-}
-
 public abstract class com/datadog/trace/core/monitor/HealthMetrics : java/lang/AutoCloseable {
 	public static field NO_OP Lcom/datadog/trace/core/monitor/HealthMetrics;
 	public fun <init> ()V
@@ -4893,17 +4772,6 @@ public class com/datadog/trace/core/util/JsonObjectUtils {
 	public static fun safeGetAsMap (Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/util/Map;
 }
 
-public final class com/datadog/trace/core/util/LRUCache : java/util/LinkedHashMap {
-	public fun <init> (I)V
-	public fun <init> (IFI)V
-	public fun <init> (II)V
-	public fun <init> (Lcom/datadog/trace/core/util/LRUCache$ExpiryListener;IFI)V
-}
-
-public abstract interface class com/datadog/trace/core/util/LRUCache$ExpiryListener {
-	public abstract fun accept (Ljava/util/Map$Entry;)V
-}
-
 public class com/datadog/trace/core/util/MapUtils {
 	public fun <init> ()V
 	public static fun computeIfAbsent (Ljava/lang/Object;Ljava/util/Map;Lcom/datadog/android/trace/internal/compat/function/Function;)Ljava/lang/Object;
@@ -4926,18 +4794,6 @@ public class com/datadog/trace/core/util/SimpleRateLimiter {
 	protected fun <init> (ILcom/datadog/trace/api/time/TimeSource;)V
 	public fun getCapacity ()I
 	public fun tryAcquire ()Z
-}
-
-public final class com/datadog/trace/core/util/SystemAccess {
-	public fun <init> ()V
-	public static fun disableJmx ()V
-	public static fun enableJmx ()V
-	public static fun getCurrentThreadCpuTime ()J
-}
-
-public abstract interface class com/datadog/trace/core/util/SystemAccessProvider {
-	public static final field NONE Lcom/datadog/trace/core/util/SystemAccessProvider;
-	public abstract fun getThreadCpuTime ()J
 }
 
 public class com/datadog/trace/core/util/TagsMatcher {
@@ -5095,22 +4951,6 @@ public abstract class com/datadog/trace/monitor/Recording : java/lang/AutoClosea
 	public abstract fun stop ()V
 }
 
-public class com/datadog/trace/relocate/api/IOLogger {
-	public fun <init> (Lcom/datadog/trace/logger/Logger;)V
-	public fun error (Ljava/lang/String;)Z
-	public fun error (Ljava/lang/String;Lcom/datadog/trace/relocate/api/IOLogger$Response;)Z
-	public fun error (Ljava/lang/String;Lcom/datadog/trace/relocate/api/IOLogger$Response;Ljava/lang/Exception;)Z
-	public fun error (Ljava/lang/String;Ljava/lang/Exception;)Z
-	public fun success (Ljava/lang/String;[Ljava/lang/Object;)Z
-}
-
-public final class com/datadog/trace/relocate/api/IOLogger$Response {
-	public fun <init> (ILjava/lang/String;Ljava/lang/String;)V
-	public fun getBody ()Ljava/lang/String;
-	public fun getMessage ()Ljava/lang/String;
-	public fun getStatusCode ()I
-}
-
 public class com/datadog/trace/relocate/api/RatelimitedLogger {
 	public fun <init> (Lcom/datadog/trace/logger/Logger;ILjava/util/concurrent/TimeUnit;)V
 	public fun warn (Ljava/lang/String;[Ljava/lang/Object;)Z
@@ -5165,14 +5005,7 @@ public final class com/datadog/trace/util/AgentThreadFactory : java/util/concurr
 
 public final class com/datadog/trace/util/AgentThreadFactory$AgentThread : java/lang/Enum {
 	public static final field APPSEC_HTTP_DISPATCHER Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field CI_GIT_DATA_SHUTDOWN_HOOK Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field CI_GIT_DATA_UPLOADER Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field CI_PROJECT_CONFIGURATOR Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field CI_SHELL_COMMAND Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field CI_SIGNAL_SERVER Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field CI_TEST_EVENTS_SHUTDOWN_HOOK Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
 	public static final field CWS_TLS Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
-	public static final field DATA_STREAMS_MONITORING Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
 	public static final field DEBUGGER_HTTP_DISPATCHER Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
 	public static final field FLEET_MANAGEMENT_POLLER Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
 	public static final field JMX_COLLECTOR Lcom/datadog/trace/util/AgentThreadFactory$AgentThread;
@@ -5204,25 +5037,6 @@ public final class com/datadog/trace/util/CollectionUtils {
 	public static fun tryMakeImmutableSet (Ljava/util/Collection;)Ljava/util/Set;
 }
 
-public class com/datadog/trace/util/FNV64Hash {
-	public fun <init> ()V
-	public static fun generateHash (Ljava/lang/String;Lcom/datadog/trace/util/FNV64Hash$Version;)J
-	public static fun generateHash ([BIILcom/datadog/trace/util/FNV64Hash$Version;)J
-	public static fun generateHash ([BLcom/datadog/trace/util/FNV64Hash$Version;)J
-}
-
-public final class com/datadog/trace/util/FNV64Hash$Version : java/lang/Enum {
-	public static final field v1 Lcom/datadog/trace/util/FNV64Hash$Version;
-	public static final field v1A Lcom/datadog/trace/util/FNV64Hash$Version;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/util/FNV64Hash$Version;
-	public static fun values ()[Lcom/datadog/trace/util/FNV64Hash$Version;
-}
-
-public class com/datadog/trace/util/FileUtils {
-	public fun <init> ()V
-	public static fun readAllBytes (Ljava/lang/String;)[B
-}
-
 public final class com/datadog/trace/util/PidHelper {
 	public fun <init> ()V
 	public static fun getPid ()Ljava/lang/String;
@@ -5231,13 +5045,6 @@ public final class com/datadog/trace/util/PidHelper {
 
 public final class com/datadog/trace/util/Strings {
 	public fun <init> ()V
-	public static fun escapeToJson (Ljava/lang/String;)Ljava/lang/String;
-	public static fun getClassName (Ljava/lang/String;)Ljava/lang/String;
-	public static fun getInternalName (Ljava/lang/String;)Ljava/lang/String;
-	public static fun getPackageName (Ljava/lang/String;)Ljava/lang/String;
-	public static fun getResourceName (Ljava/lang/String;)Ljava/lang/String;
-	public static fun isNotBlank (Ljava/lang/String;)Z
-	public static fun join (Ljava/lang/CharSequence;Ljava/lang/Iterable;)Ljava/lang/String;
 	public static fun join (Ljava/lang/CharSequence;[Ljava/lang/CharSequence;)Ljava/lang/String;
 	public static fun normalizedHeaderTag (Ljava/lang/String;)Ljava/lang/String;
 	public static fun propertyNameToEnvironmentVariableName (Ljava/lang/String;)Ljava/lang/String;
@@ -5248,21 +5055,12 @@ public final class com/datadog/trace/util/Strings {
 	public static fun sha256 (Ljava/lang/String;)Ljava/lang/String;
 	public static fun systemPropertyNameToEnvironmentVariableName (Ljava/lang/String;)Ljava/lang/String;
 	public static fun toEnvVar (Ljava/lang/String;)Ljava/lang/String;
-	public static fun toJson (Ljava/lang/Iterable;)Ljava/lang/String;
-	public static fun toJson (Ljava/util/Map;)Ljava/lang/String;
-	public static fun toJson (Ljava/util/Map;Z)Ljava/lang/String;
 	public static fun trim (Ljava/lang/String;)Ljava/lang/String;
-	public static fun truncate (Ljava/lang/CharSequence;I)Ljava/lang/CharSequence;
-	public static fun truncate (Ljava/lang/String;I)Ljava/lang/String;
 }
 
 public final class com/datadog/trace/util/TagsHelper {
 	public fun <init> ()V
 	public static fun concatTags ([Ljava/lang/String;)Ljava/lang/String;
 	public static fun sanitize (Ljava/lang/String;)Ljava/lang/String;
-}
-
-public class com/datadog/trace/util/throwable/FatalAgentMisconfigurationError : java/lang/Error {
-	public fun <init> (Ljava/lang/String;)V
 }
 

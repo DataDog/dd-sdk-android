@@ -32,7 +32,6 @@ import com.datadog.trace.api.sampling.PrioritySampling;
 import com.datadog.trace.api.scopemanager.ScopeListener;
 import com.datadog.trace.api.time.SystemTimeSource;
 import com.datadog.trace.api.time.TimeSource;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentHistogram;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScopeManager;
@@ -51,8 +50,6 @@ import com.datadog.trace.common.sampling.SpanSamplingRules;
 import com.datadog.trace.common.sampling.TraceSamplingRules;
 import com.datadog.trace.common.writer.NoOpWriter;
 import com.datadog.trace.common.writer.Writer;
-import com.datadog.trace.core.datastreams.DataStreamsMonitoring;
-import com.datadog.trace.core.datastreams.NoOpDataStreamMonitoring;
 import com.datadog.trace.core.monitor.HealthMetrics;
 import com.datadog.trace.core.propagation.CorePropagation;
 import com.datadog.trace.core.propagation.ExtractedContext;
@@ -169,7 +166,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     private final IdGenerationStrategy idGenerationStrategy;
     private final PendingTrace.Factory pendingTraceFactory;
     private final EndpointCheckpointerHolder endpointCheckpointer;
-    private final DataStreamsMonitoring dataStreamsMonitoring;
 
     private final boolean disableSamplingMechanismValidation;
     private final TimeSource timeSource;
@@ -503,7 +499,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         // (using milliseconds granularity.) This avoids a fleet of traced applications starting at the
         // same time from sending metrics in sync.
 
-        this.dataStreamsMonitoring = new NoOpDataStreamMonitoring();
         // Create default extractor from config if not provided and decorate it with DSM extractor
         HttpCodec.Extractor builtExtractor =
                 extractor == null ? HttpCodec.createExtractor(config, this::captureTraceConfig) : extractor;
@@ -783,7 +778,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         writer.close();
         statsDClient.close();
         metricsAggregator.close();
-        dataStreamsMonitoring.close();
     }
 
     @Override
@@ -1139,7 +1133,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                             && parentContext.getPathwayContext() != null
                             && parentContext.getPathwayContext().isStarted()
                             ? parentContext.getPathwayContext()
-                            : dataStreamsMonitoring.newPathwayContext();
+                            : AgentTracer.NoopPathwayContext.INSTANCE;
 
             // when removing fake services the best upward service name to pick is the local root one
             // since a split by tag (i.e. servlet context) might have happened on it.

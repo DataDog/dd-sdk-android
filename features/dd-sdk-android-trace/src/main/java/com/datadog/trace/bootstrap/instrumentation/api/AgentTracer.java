@@ -9,7 +9,6 @@ import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.EndpointCheckpointer;
 import com.datadog.trace.api.TraceConfig;
 import com.datadog.trace.api.TracePropagationStyle;
-import com.datadog.trace.api.experimental.DataStreamsContextCarrier;
 import com.datadog.trace.api.gateway.Flow;
 import com.datadog.trace.api.gateway.RequestContext;
 import com.datadog.trace.api.gateway.RequestContextSlot;
@@ -669,42 +668,6 @@ public class AgentTracer {
 
     @Override
     public void cancelContinuation(final AgentScope.Continuation continuation) {}
-  }
-
-  public static class NoopAgentDataStreamsMonitoring implements AgentDataStreamsMonitoring {
-    public static final NoopAgentDataStreamsMonitoring INSTANCE =
-        new NoopAgentDataStreamsMonitoring();
-
-    @Override
-    public void trackBacklog(LinkedHashMap<String, String> sortedTags, long value) {}
-
-    @Override
-    public void setCheckpoint(
-        AgentSpan span,
-        LinkedHashMap<String, String> sortedTags,
-        long defaultTimestamp,
-        long payloadSizeBytes) {}
-
-    @Override
-    public PathwayContext newPathwayContext() {
-      return NoopPathwayContext.INSTANCE;
-    }
-
-    @Override
-    public void add(StatsPoint statsPoint) {}
-
-    @Override
-    public int shouldSampleSchema(String topic) {
-      return 0;
-    }
-
-    @Override
-    public void setConsumeCheckpoint(
-        String type, String source, DataStreamsContextCarrier carrier) {}
-
-    @Override
-    public void setProduceCheckpoint(
-        String type, String target, DataStreamsContextCarrier carrier) {}
   }
 
   public static class NoopPathwayContext implements PathwayContext {

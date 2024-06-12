@@ -79,16 +79,6 @@ public class TraceStructureWriter implements Writer {
 
   private static String[] parseArgs(String outputFile) {
     String[] args = ARGS_DELIMITER.split(outputFile);
-    // Check Windows absolute paths (<drive>:<path>) as column is used as arg delimiter
-    if (Platform.isWindows()
-        && args.length > 1
-        && args[0].length() == 1
-        && (args[1].startsWith("\\") || args[1].startsWith("/"))) {
-      String[] windowsArgs = new String[args.length - 1];
-      windowsArgs[0] = args[0] + ":" + args[1];
-      System.arraycopy(args, 2, windowsArgs, 1, args.length - 2);
-      args = windowsArgs;
-    }
     return args;
   }
 

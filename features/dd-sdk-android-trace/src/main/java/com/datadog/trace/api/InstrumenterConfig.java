@@ -138,14 +138,8 @@ public class InstrumenterConfig {
             TRACE_128_BIT_TRACEID_LOGGING_ENABLED, DEFAULT_TRACE_128_BIT_TRACEID_LOGGING_ENABLED);
     profilingEnabled = configProvider.getBoolean(PROFILING_ENABLED, PROFILING_ENABLED_DEFAULT);
 
-    if (!Platform.isNativeImageBuilder()) {
-      usmEnabled = configProvider.getBoolean(USM_ENABLED, DEFAULT_USM_ENABLED);
-      telemetryEnabled = configProvider.getBoolean(TELEMETRY_ENABLED, DEFAULT_TELEMETRY_ENABLED);
-    } else {
-      // disable these features in native-image
-      telemetryEnabled = false;
-      usmEnabled = false;
-    }
+    usmEnabled = configProvider.getBoolean(USM_ENABLED, DEFAULT_USM_ENABLED);
+    telemetryEnabled = configProvider.getBoolean(TELEMETRY_ENABLED, DEFAULT_TELEMETRY_ENABLED);
 
     traceExecutorsAll = configProvider.getBoolean(TRACE_EXECUTORS_ALL, DEFAULT_TRACE_EXECUTORS_ALL);
     traceExecutors = tryMakeImmutableList(configProvider.getList(TRACE_EXECUTORS));
@@ -174,10 +168,7 @@ public class InstrumenterConfig {
     resolverNamesAreUnique = configProvider.getBoolean(RESOLVER_NAMES_ARE_UNIQUE, false);
     resolverUseLoadClass = configProvider.getBoolean(RESOLVER_USE_LOADCLASS, true);
     resolverUseUrlCaches = configProvider.getBoolean(RESOLVER_USE_URL_CACHES);
-    resolverResetInterval =
-        Platform.isNativeImageBuilder()
-            ? 0
-            : configProvider.getInteger(RESOLVER_RESET_INTERVAL, DEFAULT_RESOLVER_RESET_INTERVAL);
+    resolverResetInterval = configProvider.getInteger(RESOLVER_RESET_INTERVAL, DEFAULT_RESOLVER_RESET_INTERVAL);
 
     runtimeContextFieldInjection =
         configProvider.getBoolean(
@@ -377,10 +368,7 @@ public class InstrumenterConfig {
 
   // This has to be placed after all other static fields to give them a chance to initialize
   private static final InstrumenterConfig INSTANCE =
-      new InstrumenterConfig(
-          Platform.isNativeImageBuilder()
-              ? ConfigProvider.withoutCollector()
-              : ConfigProvider.getInstance());
+      new InstrumenterConfig(ConfigProvider.getInstance());
 
   public static InstrumenterConfig get() {
     return INSTANCE;
