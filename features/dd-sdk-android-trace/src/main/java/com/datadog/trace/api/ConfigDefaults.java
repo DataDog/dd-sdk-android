@@ -36,8 +36,6 @@ public final class ConfigDefaults {
   public static final String DEFAULT_AGENT_HOST = "localhost";
   public static final int DEFAULT_TRACE_AGENT_PORT = 8126;
   public static final int DEFAULT_DOGSTATSD_PORT = 8125;
-  public static final String DEFAULT_TRACE_AGENT_SOCKET_PATH = "/var/run/datadog/apm.socket";
-  public static final String DEFAULT_DOGSTATSD_SOCKET_PATH = "/var/run/datadog/dsd.socket";
   public static final int DEFAULT_AGENT_TIMEOUT = 10; // timeout in seconds
   public static final String DEFAULT_SERVICE_NAME = "unnamed-java-app";
   public static final String DEFAULT_SERVLET_ROOT_CONTEXT_SERVICE_NAME = "root-servlet";
@@ -122,28 +120,6 @@ public final class ConfigDefaults {
   public static final boolean DEFAULT_IAST_DEDUPLICATION_ENABLED = true;
 
   static final boolean DEFAULT_USM_ENABLED = false;
-
-  static final boolean DEFAULT_CIVISIBILITY_ENABLED = false;
-  static final boolean DEFAULT_CIVISIBILITY_AGENTLESS_ENABLED = false;
-  static final boolean DEFAULT_CIVISIBILITY_SOURCE_DATA_ENABLED = true;
-  static final boolean DEFAULT_CIVISIBILITY_SOURCE_DATA_ROOT_CHECK_ENABLED = false;
-  static final boolean DEFAULT_CIVISIBILITY_BUILD_INSTRUMENTATION_ENABLED = true;
-  static final boolean DEFAULT_CIVISIBILITY_AUTO_CONFIGURATION_ENABLED = true;
-  static final boolean DEFAULT_CIVISIBILITY_COMPILER_PLUGIN_AUTO_CONFIGURATION_ENABLED = true;
-  static final String DEFAULT_CIVISIBILITY_COMPILER_PLUGIN_VERSION = "0.1.8";
-  static final String DEFAULT_CIVISIBILITY_JACOCO_PLUGIN_VERSION = "0.8.11";
-  static final String DEFAULT_CIVISIBILITY_JACOCO_PLUGIN_EXCLUDES =
-      "com.datadog.trace.*:org.apache.commons.*:org.mockito.*";
-  static final boolean DEFAULT_CIVISIBILITY_GIT_UPLOAD_ENABLED = true;
-  static final boolean DEFAULT_CIVISIBILITY_GIT_UNSHALLOW_ENABLED = true;
-  static final long DEFAULT_CIVISIBILITY_GIT_COMMAND_TIMEOUT_MILLIS = 30_000;
-  static final long DEFAULT_CIVISIBILITY_BACKEND_API_TIMEOUT_MILLIS = 30_000;
-  static final long DEFAULT_CIVISIBILITY_GIT_UPLOAD_TIMEOUT_MILLIS = 60_000;
-  static final String DEFAULT_CIVISIBILITY_GIT_REMOTE_NAME = "origin";
-  static final String DEFAULT_CIVISIBILITY_SIGNAL_SERVER_HOST = "127.0.0.1";
-  static final int DEFAULT_CIVISIBILITY_SIGNAL_SERVER_PORT = 0;
-  static final List<String> DEFAULT_CIVISIBILITY_RESOURCE_FOLDER_NAMES =
-      asList("/resources/", "/java/", "/groovy/", "/kotlin/", "/scala/");
 
   static final boolean DEFAULT_REMOTE_CONFIG_ENABLED = true;
   static final boolean DEFAULT_REMOTE_CONFIG_INTEGRITY_CHECK_ENABLED = false;

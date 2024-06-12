@@ -5,11 +5,6 @@ import java.util.List;
 import java.util.Locale;
 
 public final class Platform {
-  // A helper class to capture whether the executable is a native image or not.
-  // This class needs to be iniatlized at build only during the AOT compilation and build.
-  private static class Captured {
-    public static final boolean isNativeImage = checkForNativeImageBuilder();
-  }
 
   public enum GC {
     SERIAL("marksweep"),
@@ -48,54 +43,9 @@ public final class Platform {
 
 //  private static final GC GARBAGE_COLLECTOR = GC.current();
 
-  private static final boolean HAS_JFR = checkForJfr();
-  private static final boolean IS_NATIVE_IMAGE_BUILDER = checkForNativeImageBuilder();
-  private static final boolean IS_NATIVE_IMAGE = Captured.isNativeImage;
-
 //  public static GC activeGarbageCollector() {
 //    return GARBAGE_COLLECTOR;
 //  }
-
-  public static boolean hasJfr() {
-    return HAS_JFR;
-  }
-
-  public static boolean isNativeImageBuilder() {
-    return IS_NATIVE_IMAGE_BUILDER;
-  }
-
-  public static boolean isNativeImage() {
-    return IS_NATIVE_IMAGE;
-  }
-
-  private static boolean checkForJfr() {
-    try {
-      /* Check only for the open-sources JFR implementation.
-       * If it is ever needed to support also the closed sourced JDK 8 version the check should be
-       * enhanced.
-       * Need this custom check because ClassLoaderMatchers.hasClassNamed() does not support bootstrap class loader yet.
-       * Note: the downside of this is that we load some JFR classes at startup.
-       */
-      return ClassLoader.getSystemClassLoader().getResource("jdk/jfr/Event.class") != null;
-    } catch (Throwable e) {
-      return false;
-    }
-  }
-  private static boolean checkManagementFactory() {
-    try {
-      return ClassLoader.getSystemClassLoader().getResource("java/lang/ManagementFactory.class") != null;
-    } catch (Throwable e) {
-      return false;
-    }
-  }
-
-  private static boolean checkForNativeImageBuilder() {
-    try {
-      return "org.graalvm.nativeimage.builder".equals(System.getProperty("jdk.module.main"));
-    } catch (Throwable e) {
-      return false;
-    }
-  }
 
   /* The method splits java version string by digits. Delimiters are: dot, underscore and plus */
   private static List<Integer> splitDigits(String str) {
@@ -297,21 +247,6 @@ public final class Platform {
   public static boolean isJavaVersionBetween(
       int fromMajor, int fromMinor, int fromUpdate, int toMajor, int toMinor, int toUpdate) {
     return JAVA_VERSION.isBetween(fromMajor, fromMinor, fromUpdate, toMajor, toMinor, toUpdate);
-  }
-
-  public static boolean isLinux() {
-    return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
-  }
-
-  public static boolean isWindows() {
-    // https://mkyong.com/java/how-to-detect-os-in-java-systemgetpropertyosname/
-    final String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-    return os.contains("win");
-  }
-
-  public static boolean isMac() {
-    final String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-    return os.contains("mac");
   }
 
   public static boolean isOracleJDK8() {
