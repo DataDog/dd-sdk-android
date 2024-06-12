@@ -8,7 +8,7 @@ package com.datadog.opentracing.scopemanager;
 
 import com.datadog.opentracing.DDSpan;
 import com.datadog.opentracing.jfr.DDScopeEventFactory;
-import com.datadog.trace.context.ScopeListener;
+import com.datadog.legacy.trace.context.ScopeListener;
 import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
 import io.opentracing.Span;

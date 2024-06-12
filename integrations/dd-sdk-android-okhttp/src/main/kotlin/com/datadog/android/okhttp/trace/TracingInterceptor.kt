@@ -18,12 +18,14 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.TraceContext
+import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.legacy.trace.api.DDTags
+import com.datadog.legacy.trace.api.interceptor.MutableSpan
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDTracer
-import com.datadog.trace.api.DDTags
-import com.datadog.trace.api.interceptor.MutableSpan
-import com.datadog.trace.api.sampling.PrioritySampling
 import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
@@ -432,6 +434,7 @@ internal constructor(
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
         val tagContext = request.tag(Span::class.java)?.context()
+            ?: request.tag(TraceContext::class.java)?.toOpenTracingContext()
 
         val headerContext = tracer.extract(
             Format.Builtin.TEXT_MAP_EXTRACT,

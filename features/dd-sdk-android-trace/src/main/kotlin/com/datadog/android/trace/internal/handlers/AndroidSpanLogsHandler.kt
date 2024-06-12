@@ -11,9 +11,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
+import com.datadog.legacy.trace.api.DDTags
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
-import com.datadog.trace.api.DDTags
 import io.opentracing.log.Fields
 import java.util.concurrent.TimeUnit
 

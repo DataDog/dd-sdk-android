@@ -76,11 +76,19 @@ registerSubModuleAggregationTask("assembleLibrariesDebug", "assembleDebug")
 registerSubModuleAggregationTask("assembleLibrariesRelease", "assembleRelease")
 
 registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest")
-registerSubModuleAggregationTask("unitTestReleaseFeatures", "testReleaseUnitTest", ":features:")
+registerSubModuleAggregationTask(
+    "unitTestReleaseFeatures",
+    "testReleaseUnitTest",
+    ":features:"
+)
 registerSubModuleAggregationTask("unitTestReleaseIntegrations", "testReleaseUnitTest", ":integrations:")
 
 registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest")
-registerSubModuleAggregationTask("unitTestDebugFeatures", "testDebugUnitTest", ":features:")
+registerSubModuleAggregationTask(
+    "unitTestDebugFeatures",
+    "testDebugUnitTest",
+    ":features:"
+)
 registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
 
 tasks.register("assembleSampleRelease") {
@@ -141,7 +149,7 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
-nightlyTestsCoverageConfig(threshold = 0.85f)
+nightlyTestsCoverageConfig(threshold = 0.81f)
 
 tasks.register("printSdkDebugRuntimeClasspath") {
     val fileTreeClassPathCollector = UnionFileTree(

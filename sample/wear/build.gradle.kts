@@ -32,6 +32,7 @@ android {
     namespace = "com.datadog.android.wear.sample"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         java17()
     }
 
@@ -65,8 +66,10 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-ndk"))
     implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-logs"))
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
     implementation(libs.timber)
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")

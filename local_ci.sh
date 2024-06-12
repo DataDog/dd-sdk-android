@@ -85,6 +85,7 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf features/dd-sdk-android-session-replay/build/
   rm -rf features/dd-sdk-android-session-replay-material/build/
   rm -rf features/dd-sdk-android-trace/build/
+  rm -rf features/dd-sdk-android-trace-otel/build/
   rm -rf features/dd-sdk-android-webview/build/
   rm -rf integrations/dd-sdk-android-coil/build/
   rm -rf integrations/dd-sdk-android-compose/build/
@@ -93,6 +94,7 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf integrations/dd-sdk-android-rum-coroutines/build/
   rm -rf integrations/dd-sdk-android-trace-coroutines/build/
   rm -rf integrations/dd-sdk-android-okhttp/build/
+  rm -rf integrations/dd-sdk-android-okhttp-otel/build/
   rm -rf integrations/dd-sdk-android-rx/build/
   rm -rf integrations/dd-sdk-android-sqldelight/build/
   rm -rf integrations/dd-sdk-android-timber/build/
