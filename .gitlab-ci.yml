@@ -107,49 +107,6 @@ test:debug:
     paths:
       - "*.hprof"
 
-# We need separated steps for tracing module tests as these cannot be run with the CI visibility agent enabled. Also they need to be executed with
-# the daemon capability as the worker threads are running as a daemon.
-
-test:trace-debug:
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
-  stage: test
-  timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
-  script:
-    - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :features:dd-sdk-android-trace:testDebugUnitTest --stacktrace --build-cache --gradle-user-home cache/
-  artifacts:
-    when: always
-    expire_in: 1 week
-    reports:
-      junit: "**/build/test-results/testDebugUnitTest/*.xml"
-
-test:trace-release:
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
-  stage: test
-  timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
-  script:
-    - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :features:dd-sdk-android-trace:testReleaseUnitTest --stacktrace --build-cache --gradle-user-home cache/
-  artifacts:
-    when: always
-    expire_in: 1 week
-    reports:
-      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
-
 test:tools:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
