@@ -39,9 +39,6 @@ plugins {
 
 android {
     defaultConfig {
-        buildFeatures {
-            buildConfig = true
-        }
         consumerProguardFiles("consumer-rules.pro")
     }
     namespace = "com.datadog.android.trace"
