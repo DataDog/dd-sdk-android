@@ -35,6 +35,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -768,7 +769,7 @@ internal class OtelTracerProviderTest {
             }
     }
 
-    @RepeatedTest(10)
+    @Test
     fun `M use user-keep or user-drop priority W buildSpan { tracer was provided a sample rate }`(
         @StringForgery fakeInstrumentationName: String,
         @DoubleForgery(min = 0.0, max = 100.0) sampleRate: Double,
@@ -778,14 +779,18 @@ internal class OtelTracerProviderTest {
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setSampleRate(sampleRate).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
         val blockingWriterWrapper = tracer.useBlockingWriter()
-        val numberOfSpans = 100
+        val numberOfSpans = 300
         val normalizedSampleRate = sampleRate / 100.0
         val expectedKeptSpans = (numberOfSpans * normalizedSampleRate).toInt()
         val expectedDroppedSpans = numberOfSpans - expectedKeptSpans
 
         // When
         repeat(numberOfSpans) {
-            tracer.spanBuilder(forge.anAlphabeticalString()).startSpan().end()
+            val span = tracer.spanBuilder(forge.anAlphabeticalString()).startSpan()
+            // there is a throttle on the sampler which drops all the spans over the 100 limit in 1 second
+            // so we need to sleep a bit to make sure the spans are not dropped because of throttling
+            Thread.sleep(10)
+            span.end()
         }
 
         // Then
@@ -803,7 +808,10 @@ internal class OtelTracerProviderTest {
         val keptSpans = spansWritten.filter {
             it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_KEEP.toInt()
         }
-        val offset = 10
+        // Because of the way sampling works the deviation can be quite high so we will have to use an offset of 15%
+        // here to make sure this test will never be flaky
+        val offset = numberOfSpans * 15 / 100
+        assertThat(droppedSpans.size + keptSpans.size).isEqualTo(numberOfSpans)
         assertThat(droppedSpans.size).isCloseTo(expectedDroppedSpans, Offset.offset(offset))
         assertThat(keptSpans.size).isCloseTo(expectedKeptSpans, Offset.offset(offset))
     }

@@ -48,7 +48,7 @@ internal class TraceContextExtTest {
     @Test
     fun `M extract the context W toOpenTracingContext {broken trace id format}`(forge: Forge) {
         // When
-        val fakeBrokenTraceId = forge.anAlphabeticalString()
+        val fakeBrokenTraceId = forge.aNonHexadecimalString()
         fakeTestedContext = fakeTestedContext.copy(traceId = fakeBrokenTraceId)
         val spanContext = fakeTestedContext.toOpenTracingContext()
 
@@ -62,7 +62,7 @@ internal class TraceContextExtTest {
     @Test
     fun `M extract the context W toOpenTracingContext {broken span id format}`(forge: Forge) {
         // When
-        val fakeBrokenSpanId = forge.anAlphabeticalString()
+        val fakeBrokenSpanId = forge.aNonHexadecimalString()
         fakeTestedContext = fakeTestedContext.copy(spanId = fakeBrokenSpanId)
         val spanContext = fakeTestedContext.toOpenTracingContext()
 
@@ -71,5 +71,9 @@ internal class TraceContextExtTest {
         assertThat(extractedContext.traceId).isEqualTo(BigInteger(fakeTestedContext.traceId, 16))
         assertThat(extractedContext.spanId).isEqualTo(BigInteger.ZERO)
         assertThat(extractedContext.samplingPriority).isEqualTo(fakeTestedContext.samplingPriority)
+    }
+
+    private fun Forge.aNonHexadecimalString(): String {
+        return anAlphabeticalString() + aStringMatching("[^0-9a-fA-F]")
     }
 }
