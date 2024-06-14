@@ -631,6 +631,39 @@ internal class OtelTracerBuilderProviderTest {
 
     // endregion
 
+    // region trace rate limit
+
+    @Test
+    fun `M use the trace rate limit W setTraceRateLimit`(
+        @IntForgery(min = 1, max = Int.MAX_VALUE) traceRateLimit: Int
+    ) {
+        // Given
+        val tracer = testedOtelTracerProviderBuilder.setTraceRateLimit(traceRateLimit).build()
+            .tracerBuilder(fakeInstrumentationName).build()
+
+        // When
+        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+
+        // Then
+        val config: Config = coreTracer.getFieldValue("initialConfig")
+        assertThat(config.traceRateLimit).isEqualTo(traceRateLimit)
+    }
+
+    @Test
+    fun `M use the default rate limit W build { if not provided }`() {
+        // Given
+        val tracer = testedOtelTracerProviderBuilder.build().tracerBuilder(fakeInstrumentationName).build()
+
+        // When
+        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+
+        // Then
+        val config: Config = coreTracer.getFieldValue("initialConfig")
+        assertThat(config.traceRateLimit).isEqualTo(Int.MAX_VALUE)
+    }
+
+    // endregion
+
     // region bundle with RUM
 
     @Test

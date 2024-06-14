@@ -7,6 +7,7 @@
 package com.datadog.android.trace.opentelemetry
 
 import androidx.annotation.FloatRange
+import androidx.annotation.IntRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
@@ -105,6 +106,8 @@ class OtelTracerProvider internal constructor(
         private var tracingHeaderTypes: Set<TracingHeaderType> =
             setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
         private var sampleRate: Double? = null
+        private var traceRateLimit = Int.MAX_VALUE
+
         private var serviceName: String = ""
             get() {
                 return field.ifEmpty {
@@ -237,6 +240,19 @@ class OtelTracerProvider internal constructor(
         }
 
         /**
+         * Sets the trace rate limit. This is the maximum number of traces per second that will be
+         * accepted. Please not that this property is used in conjunction with the sample rate. If no sample rate
+         * is provided this property and its related logic will be ignored.
+         * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
+         */
+        fun setTraceRateLimit(
+            @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
+        ): Builder {
+            this.traceRateLimit = traceRateLimit
+            return this
+        }
+
+        /**
          * Enables the trace bundling with the current active View. If this feature is enabled all
          * the spans from this moment on will be bundled with the current view information and you
          * will be able to see all the traces sent during a specific view in the RUM Explorer.
@@ -253,6 +269,7 @@ class OtelTracerProvider internal constructor(
                 TracerConfig.SPAN_TAGS,
                 globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
             )
+            properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
 
             // In case the sample rate is not set we should not specify it. The agent code under the hood
             // will provide different sampler based on this property and also different sampling priorities used
