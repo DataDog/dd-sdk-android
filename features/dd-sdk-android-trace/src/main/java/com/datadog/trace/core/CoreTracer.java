@@ -23,7 +23,6 @@ import com.datadog.trace.api.IdGenerationStrategy;
 import com.datadog.trace.api.InstrumenterConfig;
 import com.datadog.trace.api.StatsDClient;
 import com.datadog.trace.api.TracePropagationStyle;
-import com.datadog.trace.api.config.GeneralConfig;
 import com.datadog.trace.api.gateway.RequestContext;
 import com.datadog.trace.api.gateway.RequestContextSlot;
 import com.datadog.trace.api.naming.SpanNaming;
@@ -83,12 +82,6 @@ import java.util.Properties;
 public class CoreTracer implements AgentTracer.TracerAPI {
     @VisibleForTesting
     final Logger log;
-
-    public static final String LANG_STATSD_TAG = "lang";
-    public static final String LANG_VERSION_STATSD_TAG = "lang_version";
-    public static final String LANG_INTERPRETER_STATSD_TAG = "lang_interpreter";
-    public static final String LANG_INTERPRETER_VENDOR_STATSD_TAG = "lang_interpreter_vendor";
-    public static final String TRACER_VERSION_STATSD_TAG = "tracer_version";
 
     /**
      * Tracer start time in nanoseconds measured up to a millisecond accuracy
@@ -792,29 +785,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         return profilingContextIntegration;
     }
 
-    private static String[] generateConstantTags(final Config config) {
-        final List<String> constantTags = new ArrayList<>();
-
-        constantTags.add(statsdTag(LANG_STATSD_TAG, "java"));
-        constantTags.add(statsdTag(LANG_VERSION_STATSD_TAG, DDTraceCoreInfo.JAVA_VERSION));
-        constantTags.add(statsdTag(LANG_INTERPRETER_STATSD_TAG, DDTraceCoreInfo.JAVA_VM_NAME));
-        constantTags.add(statsdTag(LANG_INTERPRETER_VENDOR_STATSD_TAG, DDTraceCoreInfo.JAVA_VM_VENDOR));
-        constantTags.add(statsdTag(TRACER_VERSION_STATSD_TAG, DDTraceCoreInfo.VERSION));
-        constantTags.add(statsdTag("service", config.getServiceName()));
-
-        final Map<String, String> mergedSpanTags = config.getMergedSpanTags();
-        final String version = mergedSpanTags.get(GeneralConfig.VERSION);
-        if (version != null && !version.isEmpty()) {
-            constantTags.add(statsdTag("version", version));
-        }
-
-        final String env = mergedSpanTags.get(GeneralConfig.ENV);
-        if (env != null && !env.isEmpty()) {
-            constantTags.add(statsdTag("env", env));
-        }
-
-        return constantTags.toArray(new String[0]);
-    }
 
     Recording writeTimer() {
         return traceWriteTimer.start();
