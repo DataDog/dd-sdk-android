@@ -226,7 +226,8 @@ class OtelTracerProvider internal constructor(
         }
 
         /**
-         * Sets the sample rate of spans.
+         * Sets the sample rate of spans. Please have in mind that there is an automatic limit of 100
+         * spans per second.
          * @param sampleRate the sample rate as a percentage between 0 and 100 (default is 100%)
          */
         fun setSampleRate(
