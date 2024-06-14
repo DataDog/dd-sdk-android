@@ -6,11 +6,9 @@
 
 package com.datadog.trace.core
 
-import com.datadog.tools.unit.callStaticMethod
 import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.api.Config
-import com.datadog.trace.api.config.GeneralConfig
 import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.config.provider.ConfigProvider
@@ -49,40 +47,6 @@ internal class CoreTracerTest : DDCoreSpecification() {
 
         // Tear down
         tracer.close()
-    }
-
-    @ParameterizedTest
-    @MethodSource("serviceEnvVersionTags")
-    fun `verify service, env, and version are added as stats tags`(service: String?, env: String?, version: String?) {
-        // Given
-        var expectedSize = 6
-        val properties = Properties()
-        service?.let { properties.setProperty(GeneralConfig.SERVICE_NAME, it) }
-        env?.let {
-            properties.setProperty(GeneralConfig.ENV, it)
-            expectedSize += 1
-        }
-        version?.let {
-            properties.setProperty(GeneralConfig.VERSION, it)
-            expectedSize += 1
-        }
-        val config = createInstance(
-            Config::class.java,
-            ConfigProvider.withPropertiesOverride(properties)
-        )
-
-        // When
-        val constantTags: Array<String> =
-            CoreTracer::class.java.callStaticMethod("generateConstantTags", config)
-
-        // Then
-        assertThat(constantTags.size).isEqualTo(expectedSize)
-        when (service) {
-            null -> assertThat(constantTags).anyMatch { it.startsWith("service:") }
-            else -> assertThat(constantTags).contains("service:$service")
-        }
-        env?.let { assertThat(constantTags).contains("env:$env") }
-        version?.let { assertThat(constantTags).contains("version:$version") }
     }
 
     @Test

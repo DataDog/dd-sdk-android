@@ -205,7 +205,6 @@ import com.datadog.trace.api.config.GeneralConfig;
 import com.datadog.trace.api.config.ProfilingConfig;
 import com.datadog.trace.api.config.TracerConfig;
 import com.datadog.trace.api.naming.SpanNaming;
-import com.datadog.trace.bootstrap.config.provider.CapturedEnvironmentConfigSource;
 import com.datadog.trace.bootstrap.config.provider.ConfigProvider;
 import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
@@ -532,8 +531,7 @@ public class Config {
         site = configProvider.getString(SITE, DEFAULT_SITE);
 
         String userProvidedServiceName =
-                configProvider.getStringExcludingSource(
-                        SERVICE, null, CapturedEnvironmentConfigSource.class, SERVICE_NAME);
+                configProvider.getString(SERVICE, null, SERVICE_NAME);
 
         if (userProvidedServiceName == null) {
             serviceNameSetByUser = false;

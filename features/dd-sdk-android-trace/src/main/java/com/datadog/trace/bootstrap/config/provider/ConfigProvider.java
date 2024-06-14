@@ -1,16 +1,9 @@
 package com.datadog.trace.bootstrap.config.provider;
 
-import static com.datadog.trace.api.config.GeneralConfig.CONFIGURATION_FILE;
-
 import com.datadog.trace.api.ConfigCollector;
 import com.datadog.trace.api.ConfigOrigin;
 import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -345,66 +338,12 @@ public final class ConfigProvider {
   }
 
   public static ConfigProvider createDefault() {
-    Properties configProperties =
-        loadConfigurationFile(
-            new ConfigProvider(new SystemPropertiesConfigSource(), new EnvironmentConfigSource()));
-    if (configProperties.isEmpty()) {
-      return new ConfigProvider(
-          new SystemPropertiesConfigSource(),
-          new EnvironmentConfigSource(),
-          new CapturedEnvironmentConfigSource());
-    } else {
-      return new ConfigProvider(
-          new SystemPropertiesConfigSource(),
-          new EnvironmentConfigSource(),
-          new PropertiesConfigSource(configProperties, true),
-          new CapturedEnvironmentConfigSource());
-    }
-  }
-
-  public static ConfigProvider withoutCollector() {
-    Properties configProperties =
-        loadConfigurationFile(
-            new ConfigProvider(
-                false, new SystemPropertiesConfigSource(), new EnvironmentConfigSource()));
-    if (configProperties.isEmpty()) {
-      return new ConfigProvider(
-          false,
-          new SystemPropertiesConfigSource(),
-          new EnvironmentConfigSource(),
-          new CapturedEnvironmentConfigSource());
-    } else {
-      return new ConfigProvider(
-          false,
-          new SystemPropertiesConfigSource(),
-          new EnvironmentConfigSource(),
-          new PropertiesConfigSource(configProperties, true),
-          new CapturedEnvironmentConfigSource());
-    }
+      return new ConfigProvider();
   }
 
   public static ConfigProvider withPropertiesOverride(Properties properties) {
     PropertiesConfigSource providedConfigSource = new PropertiesConfigSource(properties, false);
-    Properties configProperties =
-        loadConfigurationFile(
-            new ConfigProvider(
-                new SystemPropertiesConfigSource(),
-                new EnvironmentConfigSource(),
-                providedConfigSource));
-    if (configProperties.isEmpty()) {
-      return new ConfigProvider(
-          new SystemPropertiesConfigSource(),
-          new EnvironmentConfigSource(),
-          providedConfigSource,
-          new CapturedEnvironmentConfigSource());
-    } else {
-      return new ConfigProvider(
-          providedConfigSource,
-          new SystemPropertiesConfigSource(),
-          new EnvironmentConfigSource(),
-          new PropertiesConfigSource(configProperties, true),
-          new CapturedEnvironmentConfigSource());
-    }
+    return new ConfigProvider(providedConfigSource);
   }
 
   private void collectMapSetting(String key, Map<String, String> merged, ConfigOrigin origin) {
@@ -421,47 +360,6 @@ public final class ConfigProvider {
       mergedValue.append(entry.getValue());
     }
     ConfigCollector.get().put(key, mergedValue.toString(), origin);
-  }
-
-  /**
-   * Loads the optional configuration properties file into the global {@link Properties} object.
-   *
-   * @return The {@link Properties} object. the returned instance might be empty of file does not
-   *     exist or if it is in a wrong format.
-   * @param configProvider
-   */
-  private static Properties loadConfigurationFile(ConfigProvider configProvider) {
-    final Properties properties = new Properties();
-
-    // Reading from system property first and from env after
-    String configurationFilePath = configProvider.getString(CONFIGURATION_FILE);
-    if (null == configurationFilePath) {
-      return properties;
-    }
-
-    // Normalizing tilde (~) paths for unix systems
-    configurationFilePath =
-        configurationFilePath.replaceFirst("^~", System.getProperty("user.home"));
-
-    // Configuration properties file is optional
-    final File configurationFile = new File(configurationFilePath);
-    if (!configurationFile.exists()) {
-      log.error("Configuration file '{}' not found.", configurationFilePath);
-      return properties;
-    }
-
-    try (final FileReader fileReader = new FileReader(configurationFile)) {
-      properties.load(fileReader);
-    } catch (final FileNotFoundException fnf) {
-      log.error("Configuration file '{}' not found.", configurationFilePath);
-    } catch (final IOException ioe) {
-      log.error(
-          "Configuration file '{}' cannot be accessed or correctly parsed.", configurationFilePath);
-    }
-
-    properties.setProperty(PropertiesConfigSource.CONFIG_FILE_STATUS, configurationFilePath);
-
-    return properties;
   }
 
   public abstract static class Source {
