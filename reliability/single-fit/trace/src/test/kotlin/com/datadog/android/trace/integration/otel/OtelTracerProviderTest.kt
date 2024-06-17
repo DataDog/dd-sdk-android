@@ -23,6 +23,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -786,11 +787,9 @@ internal class OtelTracerProviderTest {
 
         // When
         repeat(numberOfSpans) {
-            val span = tracer.spanBuilder(forge.anAlphabeticalString()).startSpan()
-            // there is a throttle on the sampler which drops all the spans over the 100 limit in 1 second
-            // so we need to sleep a bit to make sure the spans are not dropped because of throttling
-            Thread.sleep(10)
-            span.end()
+            tracer.spanBuilder(forge.anAlphabeticalString())
+                .startSpan()
+                .end()
         }
 
         // Then
@@ -814,6 +813,183 @@ internal class OtelTracerProviderTest {
         assertThat(droppedSpans.size + keptSpans.size).isEqualTo(numberOfSpans)
         assertThat(droppedSpans.size).isCloseTo(expectedDroppedSpans, Offset.offset(offset))
         assertThat(keptSpans.size).isCloseTo(expectedKeptSpans, Offset.offset(offset))
+    }
+
+    // endregion
+
+    // region trace rate limit
+
+    @Test
+    fun `M drop the spans W buildSpan { trace rate limit reached in 1 second, sample rate specified }`(
+        @StringForgery fakeInstrumentationName: String,
+        @IntForgery(min = 1, max = 3) traceLimit: Int,
+        forge: Forge
+    ) {
+        // Given
+        val testedProvider = OtelTracerProvider.Builder(stubSdkCore)
+            .setTraceRateLimit(traceLimit)
+            .setSampleRate(100.0)
+            .build()
+        val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
+        val blockingWriterWrapper = tracer.useBlockingWriter()
+
+        // When
+        val startNanos = System.nanoTime()
+        var spansCounter = 0
+        while ((System.nanoTime() - startNanos) < ONE_SECOND_AS_NANOS && (spansCounter < 200)) {
+            tracer.spanBuilder(forge.anAlphabeticalString()).startSpan().end()
+            spansCounter++
+        }
+
+        // Then
+        blockingWriterWrapper.waitForTracesMax(spansCounter)
+        val spansWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+            .map {
+                (JsonParser.parseString(it.eventData) as JsonObject)
+                    .getAsJsonArray("spans")
+                    .get(0)
+                    .asJsonObject
+            }
+        val userKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_KEEP.toInt()
+        }
+        val samplerKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_KEEP.toInt()
+        }
+        assertThat(samplerKeptSpans.size).isEqualTo(0)
+        assertThat(userKeptSpans.size).isLessThanOrEqualTo(traceLimit)
+    }
+
+    @Test
+    fun `M ignore trace rate limit W buildSpan { trace rate limit reached in 1 second, sample rate not specified }`(
+        @StringForgery fakeInstrumentationName: String,
+        @IntForgery(min = 1, max = 3) traceLimit: Int,
+        forge: Forge
+    ) {
+        // Given
+        val testedProvider = OtelTracerProvider.Builder(stubSdkCore)
+            .setTraceRateLimit(traceLimit)
+            .build()
+        val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
+        val blockingWriterWrapper = tracer.useBlockingWriter()
+
+        // When
+        val startNanos = System.nanoTime()
+        var spansCounter = 0
+        while ((System.nanoTime() - startNanos) < ONE_SECOND_AS_NANOS && (spansCounter < 200)) {
+            tracer.spanBuilder(forge.anAlphabeticalString()).startSpan().end()
+            spansCounter++
+        }
+
+        // Then
+        blockingWriterWrapper.waitForTracesMax(spansCounter)
+        val spansWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+            .map {
+                (JsonParser.parseString(it.eventData) as JsonObject)
+                    .getAsJsonArray("spans")
+                    .get(0)
+                    .asJsonObject
+            }
+        val userKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_KEEP.toInt()
+        }
+        val samplerKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_KEEP.toInt()
+        }
+        assertThat(samplerKeptSpans.size).isEqualTo(spansCounter)
+        assertThat(userKeptSpans.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `M ignore trace limit W buildSpan { trace rate limit is 1 but sample rate is not specified }`(
+        @StringForgery fakeInstrumentationName: String,
+        forge: Forge
+    ) {
+        // Given
+        val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setTraceRateLimit(1).build()
+        val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
+        val blockingWriterWrapper = tracer.useBlockingWriter()
+
+        // When
+        val startNanos = System.nanoTime()
+        var spansCounter = 0
+        while (((System.nanoTime() - startNanos) < (ONE_SECOND_AS_NANOS * 2)) && (spansCounter < 200)) {
+            tracer.spanBuilder(forge.anAlphabeticalString()).startSpan().end()
+            spansCounter++
+        }
+
+        // Then
+        blockingWriterWrapper.waitForTracesMax(spansCounter)
+        val spansWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+            .map {
+                (JsonParser.parseString(it.eventData) as JsonObject)
+                    .getAsJsonArray("spans")
+                    .get(0)
+                    .asJsonObject
+            }
+        val userDroppedSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_DROP.toInt()
+        }
+        val samplerDroppedSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_DROP.toInt()
+        }
+        val userKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_KEEP.toInt()
+        }
+        val samplerKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_KEEP.toInt()
+        }
+        assertThat(userDroppedSpans.size).isEqualTo(0)
+        assertThat(samplerDroppedSpans.size).isEqualTo(0)
+        assertThat(userKeptSpans.size).isEqualTo(0)
+        assertThat(samplerKeptSpans.size).isEqualTo(spansCounter)
+    }
+
+    @Test
+    fun `M only keep 1 span W buildSpan { trace rate limit is 1 and sample rate is specified }`(
+        @StringForgery fakeInstrumentationName: String,
+        @IntForgery(min = 2, max = 10) numberOfSpans: Int,
+        forge: Forge
+    ) {
+        // Given
+        val testedProvider = OtelTracerProvider.Builder(stubSdkCore)
+            .setTraceRateLimit(1)
+            .setSampleRate(100.0)
+            .build()
+        val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
+        val blockingWriterWrapper = tracer.useBlockingWriter()
+
+        // When
+        repeat(numberOfSpans) {
+            tracer.spanBuilder(forge.anAlphabeticalString()).startSpan().end()
+        }
+
+        // Then
+        blockingWriterWrapper.waitForTracesMax(numberOfSpans)
+        val spansWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+            .map {
+                (JsonParser.parseString(it.eventData) as JsonObject)
+                    .getAsJsonArray("spans")
+                    .get(0)
+                    .asJsonObject
+            }
+        val userDroppedSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_DROP.toInt()
+        }
+        val samplerDroppedSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_DROP.toInt()
+        }
+        val userKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.USER_KEEP.toInt()
+        }
+        val samplerKeptSpans = spansWritten.filter {
+            it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_KEEP.toInt()
+        }
+        assertThat(userDroppedSpans.size + userKeptSpans.size).isEqualTo(numberOfSpans)
+        assertThat(samplerDroppedSpans.size).isEqualTo(0)
+        assertThat(userKeptSpans.size).isEqualTo(1)
+        assertThat(samplerKeptSpans.size).isEqualTo(0)
+        assertThat(userDroppedSpans.size).isEqualTo(numberOfSpans - 1)
     }
 
     // endregion
@@ -972,6 +1148,7 @@ internal class OtelTracerProviderTest {
     // endregion
 
     companion object {
+        private val ONE_SECOND_AS_NANOS = TimeUnit.SECONDS.toNanos(1)
         private const val DEFAULT_SPAN_NAME = "internal"
         private const val JOIN_TIMEOUT_MS = 5000L
         private const val SAMPLING_PRIORITY_KEY = "metrics._sampling_priority_v1"

@@ -10,5 +10,6 @@ class com.datadog.android.trace.opentelemetry.OtelTracerProvider : io.openteleme
     fun setPartialFlushThreshold(Int): Builder
     fun addTag(String, String): Builder
     fun setSampleRate(Double): Builder
+    fun setTraceRateLimit(Int): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
   override fun toString(): String

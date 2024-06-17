@@ -23,6 +23,7 @@ public final class com/datadog/android/trace/opentelemetry/OtelTracerProvider$Bu
 	public final fun setPartialFlushThreshold (I)Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Builder;
 	public final fun setSampleRate (D)Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Builder;
 	public final fun setService (Ljava/lang/String;)Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Builder;
+	public final fun setTraceRateLimit (I)Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Builder;
 	public final fun setTracingHeaderTypes (Ljava/util/Set;)Lcom/datadog/android/trace/opentelemetry/OtelTracerProvider$Builder;
 }
 
