@@ -96,7 +96,7 @@ internal class SessionReplayFeature(
         val resourcesDataStoreManager = ResourcesDataStoreManager(
             featureSdkCore = sdkCore,
             resourceHashesSerializer = ResourceHashesEntrySerializer(),
-            resourcesHashesDeserializer = ResourceHashesEntryDeserializer()
+            resourcesHashesDeserializer = ResourceHashesEntryDeserializer(internalLogger = sdkCore.internalLogger)
         )
 
         dataWriter = createDataWriter()

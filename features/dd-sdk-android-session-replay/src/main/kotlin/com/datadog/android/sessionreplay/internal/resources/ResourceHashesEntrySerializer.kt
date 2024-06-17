@@ -10,6 +10,6 @@ import com.datadog.android.core.persistence.Serializer
 
 internal class ResourceHashesEntrySerializer : Serializer<ResourceHashesEntry> {
     override fun serialize(model: ResourceHashesEntry): String {
-        return model.lastUpdateDateNs.toString() + "|" + model.resourceHashes.joinToString(",")
+        return model.toJson().asJsonObject.toString()
     }
 }

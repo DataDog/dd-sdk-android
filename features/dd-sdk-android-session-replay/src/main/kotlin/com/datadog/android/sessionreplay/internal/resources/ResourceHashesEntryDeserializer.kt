@@ -6,27 +6,34 @@
 
 package com.datadog.android.sessionreplay.internal.resources
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.google.gson.JsonParseException
+import java.util.Locale
 
-internal class ResourceHashesEntryDeserializer : Deserializer<String, ResourceHashesEntry> {
+internal class ResourceHashesEntryDeserializer(
+    private val internalLogger: InternalLogger
+) : Deserializer<String, ResourceHashesEntry> {
     override fun deserialize(model: String): ResourceHashesEntry? {
-        val parts = model.split("|")
-        val lastUpdateDate = stringToLong(parts[0]) ?: return null
-        return ResourceHashesEntry(
-            lastUpdateDateNs = lastUpdateDate,
-            resourceHashes = stringToSet(parts[1])
-        )
-    }
-
-    private fun stringToLong(input: String): Long? {
         return try {
-            input.toLong()
-        } catch (e: NumberFormatException) {
+            ResourceHashesEntry.fromJson(model)
+        } catch (e: JsonParseException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                {
+                    DESERIALIZE_ERROR_MESSAGE_FORMAT.format(
+                        Locale.US,
+                        model
+                    )
+                }
+            )
             null
         }
     }
 
-    private fun stringToSet(input: String): Set<String> {
-        return input.split(",").toSet()
+    internal companion object {
+        internal const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
+            "Error while trying to deserialize the ResourceHashesEntry: %s"
     }
 }
