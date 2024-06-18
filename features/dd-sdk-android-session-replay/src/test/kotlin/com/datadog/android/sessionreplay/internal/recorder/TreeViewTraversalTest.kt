@@ -18,6 +18,7 @@ import android.widget.TextView
 import androidx.drawerlayout.widget.DrawerLayout
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -378,7 +379,7 @@ internal class TreeViewTraversalTest {
     @Test
     fun `M return correct sample rate W traverse { ViewWireframeMapper }()`(forge: Forge) {
         // Given
-        val expectedSampleRate = TreeViewTraversal.MethodCallSamplingRate.RARE.rate
+        val expectedSampleRate = MethodCallSamplingRate.RARE.rate
         val mockViewGroup = forge.aMockView<ViewGroup>()
 
         val mockView = mock<View> {
@@ -404,7 +405,7 @@ internal class TreeViewTraversalTest {
     @Test
     fun `M return correct sample rate W traverse { DecorViewMapper }()`() {
         // Given
-        val expectedSampleRate = TreeViewTraversal.MethodCallSamplingRate.REDUCED.rate
+        val expectedSampleRate = MethodCallSamplingRate.RARE.rate
         val mockView = mock<View> {
             whenever(it.parent) doReturn null
         }
@@ -426,9 +427,9 @@ internal class TreeViewTraversalTest {
     }
 
     @Test
-    fun `M return default sample rate W traverse() { specific mapper }`(forge: Forge) {
+    fun `M return correct sample rate W traverse() { specific mapper }`(forge: Forge) {
         // Given
-        val expectedSampleRate = TreeViewTraversal.MethodCallSamplingRate.DEFAULT.rate
+        val expectedSampleRate = MethodCallSamplingRate.RARE.rate
         val mockViewGroup = forge.aMockView<ViewGroup>()
         val mockDefaultView = mock<View> {
             whenever(it.parent) doReturn mockViewGroup

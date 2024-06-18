@@ -268,6 +268,11 @@ fun java.math.BigInteger.toHexString(): String
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+enum com.datadog.android.core.metrics.MethodCallSamplingRate
+  constructor(Float)
+  - DEFAULT
+  - REDUCED
+  - RARE
 interface com.datadog.android.core.metrics.PerformanceMetric
   fun stopAndSend(Boolean)
   companion object 

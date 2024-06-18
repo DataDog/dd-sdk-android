@@ -75,7 +75,6 @@ internal class WindowsOnDrawListener(
     }
 
     companion object {
-        const val METHOD_CALL_SAMPLING_RATE = 0.1f
         private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"
 
         private val METHOD_CALL_CALLER_CLASS = WindowsOnDrawListener::class.java

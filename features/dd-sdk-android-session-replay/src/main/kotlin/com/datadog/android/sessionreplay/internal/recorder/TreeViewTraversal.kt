@@ -11,16 +11,12 @@ import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
-import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -91,7 +87,7 @@ internal class TreeViewTraversal(
         val resolvedWireframes = internalLogger.measureMethodCallPerf(
             javaClass,
             "$METHOD_CALL_MAP_PREFIX ${mapper.javaClass.simpleName}",
-            getSamplingRateForMapper(mapper.javaClass.simpleName)
+            MethodCallSamplingRate.RARE.rate
         ) {
             mapper.map(view, mappingContext, jobStatusCallback, internalLogger)
         }
@@ -109,27 +105,10 @@ internal class TreeViewTraversal(
         return mappers.firstOrNull { it.supportsView(view) }?.getUnsafeMapper()
     }
 
-    private fun getSamplingRateForMapper(mapperName: String): Float {
-        return when (mapperName) {
-            ViewWireframeMapper::class.simpleName -> MethodCallSamplingRate.RARE.rate
-            TextViewMapper::class.simpleName -> MethodCallSamplingRate.RARE.rate
-            ImageViewMapper::class.simpleName -> MethodCallSamplingRate.RARE.rate
-            DecorViewMapper::class.simpleName -> MethodCallSamplingRate.REDUCED.rate
-            ButtonMapper::class.simpleName -> MethodCallSamplingRate.REDUCED.rate
-            else -> MethodCallSamplingRate.DEFAULT.rate
-        }
-    }
-
     data class TraversedTreeView(
         val mappedWireframes: List<MobileSegment.Wireframe>,
         val nextActionStrategy: TraversalStrategy
     )
-
-    internal enum class MethodCallSamplingRate(val rate: Float) {
-        DEFAULT(rate = 0.1f),
-        REDUCED(rate = 0.01f),
-        RARE(rate = 0.001f)
-    }
 
     internal companion object {
         internal const val METHOD_CALL_MAP_PREFIX = "Map with"
