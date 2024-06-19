@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.resources
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -53,7 +54,7 @@ internal class ResourceHashesEntryDeserializerTest {
         fakeHashSet.add(fakeHash)
         val expectedEntry = ResourceHashesEntry(
             lastUpdateDateNs = fakeUpdateDate,
-            resourceHashes = fakeHashSet
+            resourceHashes = fakeHashSet.toList()
         )
         val json = expectedEntry.toJson()
 
@@ -61,7 +62,8 @@ internal class ResourceHashesEntryDeserializerTest {
         val actualEntry = testedDeserializer.deserialize(json.toString())
 
         // Then
-        assertThat(actualEntry).isEqualTo(expectedEntry)
+        assertThat(actualEntry?.lastUpdateDateNs?.toLong()).isEqualTo(expectedEntry.lastUpdateDateNs)
+        assertThat(actualEntry?.resourceHashes).isEqualTo(expectedEntry.resourceHashes)
     }
 
     @Test

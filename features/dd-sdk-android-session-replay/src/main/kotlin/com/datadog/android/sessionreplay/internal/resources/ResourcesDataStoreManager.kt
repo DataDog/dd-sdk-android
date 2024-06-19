@@ -14,8 +14,8 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
+import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import java.util.Collections
-import java.util.concurrent.atomic.AtomicLong
 
 internal class ResourcesDataStoreManager(
     private val featureSdkCore: FeatureSdkCore,
@@ -26,7 +26,7 @@ internal class ResourcesDataStoreManager(
     )
 ) {
     private val knownResources = Collections.synchronizedSet(mutableSetOf<String>())
-    private val storedLastUpdateDateNs = AtomicLong(System.nanoTime())
+    private var storedLastUpdateDateNs = System.nanoTime()
 
     init {
         initializeManager()
@@ -49,11 +49,11 @@ internal class ResourcesDataStoreManager(
                 val storedHashes = storedEntry?.data?.resourceHashes
 
                 lastUpdateDateNs?.let {
-                    storedLastUpdateDateNs.set(lastUpdateDateNs)
+                    storedLastUpdateDateNs = lastUpdateDateNs.toLong()
                 }
 
                 if (didDataStoreExpire()) {
-                    handleDataStoreExpired(storedHashes)
+                    handleDataStoreExpired(storedHashes?.toSet())
                 } else {
                     storedHashes?.let { hashes ->
                         knownResources.addAll(hashes)
@@ -68,8 +68,8 @@ internal class ResourcesDataStoreManager(
 
     private fun writeResourcesToStore() {
         val data = ResourceHashesEntry(
-            lastUpdateDateNs = storedLastUpdateDateNs.get(),
-            resourceHashes = knownResources
+            lastUpdateDateNs = storedLastUpdateDateNs,
+            resourceHashes = knownResources.toList()
         )
 
         featureScope?.dataStore?.setValue(
@@ -100,7 +100,7 @@ internal class ResourcesDataStoreManager(
 
     private fun handleDataStoreExpired(storedHashes: Set<String>?) {
         storedHashes?.let { knownResources.removeAll(it) }
-        storedLastUpdateDateNs.set(System.nanoTime())
+        storedLastUpdateDateNs = System.nanoTime()
         deleteStoredHashesEntry()
     }
 
@@ -108,7 +108,7 @@ internal class ResourcesDataStoreManager(
         featureScope?.dataStore?.removeValue(DATASTORE_HASHES_ENTRY_NAME)
 
     private fun didDataStoreExpire(): Boolean =
-        System.nanoTime() - storedLastUpdateDateNs.get() > DATASTORE_EXPIRATION_NS
+        System.nanoTime() - storedLastUpdateDateNs > DATASTORE_EXPIRATION_NS
 
     // endregion
 

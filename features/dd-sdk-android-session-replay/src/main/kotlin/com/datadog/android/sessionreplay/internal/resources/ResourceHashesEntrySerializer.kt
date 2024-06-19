@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.resources
 
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 
 internal class ResourceHashesEntrySerializer : Serializer<ResourceHashesEntry> {
     override fun serialize(model: ResourceHashesEntry): String {

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.resources
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import com.google.gson.JsonParseException
 import java.util.Locale
 

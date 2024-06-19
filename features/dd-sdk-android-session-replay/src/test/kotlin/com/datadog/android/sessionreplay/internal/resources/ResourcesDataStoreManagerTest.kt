@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_EXPIRATION_NS
 import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager.Companion.DATASTORE_HASHES_ENTRY_NAME
+import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -357,7 +358,7 @@ internal class ResourcesDataStoreManagerTest {
         val validTime = System.nanoTime() - (DATASTORE_EXPIRATION_NS / 2)
         whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
         whenever(mockDataStoreContentEntry.data).thenReturn(mockResourceHashesEntry)
-        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings)
+        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings.toList())
         whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(validTime)
 
         whenever(
@@ -374,7 +375,7 @@ internal class ResourcesDataStoreManagerTest {
         }
 
         whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings)
+        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings.toList())
 
         whenever(
             mockDataStoreHandler.value(
