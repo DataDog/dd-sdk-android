@@ -27,6 +27,7 @@ import com.datadog.legacy.trace.common.sampling.Sampler;
 import com.datadog.legacy.trace.common.writer.LoggingWriter;
 import com.datadog.legacy.trace.common.writer.Writer;
 import com.datadog.legacy.trace.context.ScopeListener;
+
 import io.opentracing.References;
 import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
@@ -50,6 +51,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
     // UINT64 max value
     public static final BigInteger TRACE_ID_MAX =
+            BigInteger.valueOf(2).pow(128).subtract(BigInteger.ONE);
+
+    public static final BigInteger SPAN_ID_MAX =
             BigInteger.valueOf(2).pow(64).subtract(BigInteger.ONE);
     public static final BigInteger TRACE_ID_MIN = BigInteger.ZERO;
 
@@ -592,6 +596,19 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
             return value;
         }
 
+        private BigInteger generateNewTraceId() {
+            // It is **extremely** unlikely to generate the value "0" but we still need to handle that
+            // case
+            BigInteger value;
+            do {
+                synchronized (random) {
+                    value = new StringCachingBigInteger(128, random);
+                }
+            } while (value.signum() == 0);
+
+            return value;
+        }
+
         /**
          * Build the SpanContext, if the actual span has a parent, the following attributes must be
          * propagated: - ServiceName - Baggage - Trace (a list of all spans related) - SpanType
@@ -642,7 +659,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
                     baggage = extractedContext.getBaggage();
                 } else {
                     // Start a new trace
-                    traceId = generateNewId();
+                    traceId = generateNewTraceId();
                     parentSpanId = BigInteger.ZERO;
                     samplingPriority = PrioritySampling.UNSET;
                     baggage = null;

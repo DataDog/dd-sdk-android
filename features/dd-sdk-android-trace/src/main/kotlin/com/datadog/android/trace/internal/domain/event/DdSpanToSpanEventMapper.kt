@@ -14,7 +14,8 @@ import com.datadog.android.trace.model.SpanEvent
 import com.datadog.opentracing.DDSpan
 
 internal class DdSpanToSpanEventMapper(
-    internal val networkInfoEnabled: Boolean
+    internal val networkInfoEnabled: Boolean,
+    private val bigIntegerUtils: BigIntegerUtils = BigIntegerUtils
 ) : ContextAwareMapper<DDSpan, SpanEvent> {
 
     // region Mapper
@@ -23,8 +24,9 @@ internal class DdSpanToSpanEventMapper(
         val serverOffset = datadogContext.time.serverTimeOffsetNs
         val metrics = resolveMetrics(model)
         val metadata = resolveMeta(datadogContext, model)
+        val lessSignificantTraceId = bigIntegerUtils.lessSignificantUnsignedLongAsHexa(model.traceId)
         return SpanEvent(
-            traceId = model.traceId.toHexString(),
+            traceId = lessSignificantTraceId,
             spanId = model.spanId.toHexString(),
             parentId = model.parentId.toHexString(),
             resource = model.resourceName,
@@ -63,6 +65,10 @@ internal class DdSpanToSpanEventMapper(
             null
         }
         val userInfo = datadogContext.userInfo
+        val mostSignificantTraceId = bigIntegerUtils.mostSignificantUnsignedLongAsHexa(event.traceId)
+        val additionalProperties = mutableMapOf<String, String>()
+        additionalProperties[TRACE_ID_META_KEY] = mostSignificantTraceId
+        additionalProperties += event.meta
         val usrMeta = SpanEvent.Usr(
             id = userInfo.id,
             name = userInfo.name,
@@ -84,7 +90,7 @@ internal class DdSpanToSpanEventMapper(
             ),
             usr = usrMeta,
             network = networkInfoMeta,
-            additionalProperties = event.meta
+            additionalProperties = additionalProperties
         )
     }
 

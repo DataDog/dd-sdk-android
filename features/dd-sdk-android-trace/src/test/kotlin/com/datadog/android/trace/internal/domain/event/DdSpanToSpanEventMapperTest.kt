@@ -24,8 +24,10 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigInteger
 
@@ -45,22 +47,37 @@ internal class DdSpanToSpanEventMapperTest {
     @BoolForgery
     var fakeNetworkInfoEnabled: Boolean = false
 
+    @Mock
+    lateinit var mockBigIntegerUtils: BigIntegerUtils
+
+    @StringForgery(regex = "[a-f0-9]{16}")
+    lateinit var fakeLessSignificantTraceId: String
+
+    @StringForgery(regex = "[a-f0-9]{16}")
+    lateinit var fakeMostSignificantTraceId: String
+
+    @Forgery
+    lateinit var fakeSpan: DDSpan
+
     @BeforeEach
     fun `set up`() {
-        testedMapper = DdSpanToSpanEventMapper(fakeNetworkInfoEnabled)
+        testedMapper = DdSpanToSpanEventMapper(fakeNetworkInfoEnabled, mockBigIntegerUtils)
+        whenever(mockBigIntegerUtils.lessSignificantUnsignedLongAsHexa(fakeSpan.traceId))
+            .thenReturn(fakeLessSignificantTraceId)
+        whenever(mockBigIntegerUtils.mostSignificantUnsignedLongAsHexa(fakeSpan.traceId))
+            .thenReturn(fakeMostSignificantTraceId)
     }
 
     @RepeatedTest(4)
-    fun `M map a DdSpan to a SpanEvent W map()`(
-        @Forgery fakeSpan: DDSpan
-    ) {
+    fun `M map a DdSpan to a SpanEvent W map()`() {
         // When
         val event = testedMapper.map(fakeDatadogContext, fakeSpan)
 
         // Then
         assertThat(event)
             .hasSpanId(fakeSpan.spanId.toHexString())
-            .hasTraceId(fakeSpan.traceId.toHexString())
+            .hasLessSignificantTraceId(fakeLessSignificantTraceId)
+            .hasMostSignificantTraceId(fakeMostSignificantTraceId)
             .hasParentId(fakeSpan.parentId.toHexString())
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName)
@@ -89,7 +106,6 @@ internal class DdSpanToSpanEventMapperTest {
 
     @RepeatedTest(4)
     fun `M map a DdSpan to a SpanEvent with RUM info W map() {RUM info present}`(
-        @Forgery fakeSpan: DDSpan,
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String,
         @StringForgery fakeViewId: String
@@ -105,7 +121,8 @@ internal class DdSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(fakeSpan.spanId.toHexString())
-            .hasTraceId(fakeSpan.traceId.toHexString())
+            .hasLessSignificantTraceId(fakeLessSignificantTraceId)
+            .hasMostSignificantTraceId(fakeMostSignificantTraceId)
             .hasParentId(fakeSpan.parentId.toHexString())
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName)
@@ -133,9 +150,7 @@ internal class DdSpanToSpanEventMapperTest {
     }
 
     @Test
-    fun `M mark the SpanEvent as top span W map() { parentId is 0 }`(
-        @Forgery fakeSpan: DDSpan
-    ) {
+    fun `M mark the SpanEvent as top span W map() { parentId is 0 }`() {
         // Given
         fakeSpan.setFieldValue("parentId", 0)
 
@@ -148,10 +163,7 @@ internal class DdSpanToSpanEventMapperTest {
     }
 
     @Test
-    fun `M not mark the SpanEvent as top span W map() { parentId is different than 0 }`(
-        forge: Forge,
-        @Forgery fakeSpan: DDSpan
-    ) {
+    fun `M not mark the SpanEvent as top span W map() { parentId is different than 0 }`(forge: Forge) {
         // Given
         fakeSpan.context().setFieldValue("parentId", BigInteger.valueOf(forge.aLong(min = 1)))
 

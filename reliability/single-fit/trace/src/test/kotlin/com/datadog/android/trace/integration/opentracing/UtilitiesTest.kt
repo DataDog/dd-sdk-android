@@ -78,7 +78,7 @@ class UtilitiesTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            traceId = span.leastSignificantTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.setError(fakeThrowable)
@@ -119,11 +119,11 @@ class UtilitiesTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: Long
+        var traceId: String
         var spanId: Long
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsLong()
+            traceId = span.leastSignificantTraceId()
             spanId = span.spanIdAsLong()
             Thread.sleep(OP_DURATION_MS)
             span.setError(fakeErrorMessage)
@@ -135,7 +135,7 @@ class UtilitiesTest {
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId.toHexString())
+        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId.toHexString())
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -172,7 +172,7 @@ class UtilitiesTest {
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
             Thread.sleep(OP_DURATION_MS)
-            traceId = span.traceIdAsHexString()
+            traceId = span.leastSignificantTraceId()
             spanId = span.spanIdAsHexString()
             AndroidTracer.Companion.logThrowable(span, fakeThrowable)
             span.finish()
@@ -212,11 +212,11 @@ class UtilitiesTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: Long
+        var traceId: String
         var spanId: Long
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsLong()
+            traceId = span.leastSignificantTraceId()
             spanId = span.spanIdAsLong()
             Thread.sleep(OP_DURATION_MS)
             AndroidTracer.Companion.logErrorMessage(span, fakeErrorMessage)
@@ -228,7 +228,7 @@ class UtilitiesTest {
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId.toHexString())
+        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId.toHexString())
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -263,7 +263,7 @@ class UtilitiesTest {
         var spanId = ""
         val fullDuration = measureNanoTime {
             withinSpan(fakeOperation) {
-                traceId = traceIdAsHexString()
+                traceId = leastSignificantTraceId()
                 spanId = spanIdAsHexString()
                 Thread.sleep(OP_DURATION_MS)
             }
@@ -305,13 +305,13 @@ class UtilitiesTest {
         var spanId1 = ""
         var spanId2 = ""
         withinSpan(fakeOperation0) {
-            traceId0 = traceIdAsHexString()
+            traceId0 = leastSignificantTraceId()
             spanId0 = spanIdAsHexString()
             withinSpan(fakeOperation1) {
-                traceId1 = traceIdAsHexString()
+                traceId1 = leastSignificantTraceId()
                 spanId1 = spanIdAsHexString()
                 withinSpan(fakeOperation2) {
-                    traceId2 = traceIdAsHexString()
+                    traceId2 = leastSignificantTraceId()
                     spanId2 = spanIdAsHexString()
                     Thread.sleep(OP_DURATION_MS)
                 }
@@ -354,7 +354,7 @@ class UtilitiesTest {
         val fullDuration = measureNanoTime {
             try {
                 withinSpan(fakeOperation) {
-                    traceId = traceIdAsHexString()
+                    traceId = leastSignificantTraceId()
                     spanId = spanIdAsHexString()
                     Thread.sleep(OP_DURATION_MS)
                     throw fakeThrowable
