@@ -123,7 +123,7 @@ internal class DatastoreFileReader(
 
     internal companion object {
         internal const val INVALID_NUMBER_OF_BLOCKS_ERROR =
-            "Read error - datastore entry has invalid number of blocks. Was: %s expected: %s"
+            "Read error - datastore entry has invalid number of blocks. Was: %d, expected: %d"
         internal const val UNEXPECTED_BLOCKS_ORDER_ERROR =
             "Read error - blocks are in an unexpected order"
     }

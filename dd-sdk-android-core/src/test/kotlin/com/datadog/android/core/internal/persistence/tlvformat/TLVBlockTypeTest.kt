@@ -6,23 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.tlvformat
 
-import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
-import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.Extensions
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-)
-@MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 internal class TLVBlockTypeTest {
     @Test
     fun `M return type value W fromValue() { existing value }`() {

@@ -16,6 +16,7 @@ interface DataStoreHandler {
 
     /**
      * Write data to the datastore.
+     * This executes on a worker thread and not on the caller thread.
      *
      * @param T datatype of the data to write to the datastore.
      * @param key name of the datastore entry.
@@ -33,6 +34,7 @@ interface DataStoreHandler {
 
     /**
      * Read data from the datastore.
+     * This executes on a worker thread and not on the caller thread.
      *
      * @param T datatype of the data to read from the datastore.
      * @param key name of the datastore entry.
@@ -50,6 +52,7 @@ interface DataStoreHandler {
 
     /**
      * Remove an entry from the datastore.
+     * This executes on a worker thread and not on the caller thread.
      *
      * @param key name of the datastore entry
      */

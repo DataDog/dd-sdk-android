@@ -78,15 +78,16 @@ internal class TLVBlockTest {
         val block = testedTLVBlock.serialize()
 
         // Then
-        assertThat(block?.size).isEqualTo(fakeString.length + 6)
-        val type = block?.copyOfRange(0, 2)
-        val length = block?.copyOfRange(2, 6)
-        val data = block?.copyOfRange(6, block.size)
-        val typeAsShort = type?.let { ByteBuffer.wrap(it).getShort() }
-        val lengthAsInt = length?.let { ByteBuffer.wrap(it).getInt() }
+        checkNotNull(block)
+        assertThat(block.size).isEqualTo(fakeString.length + 6)
+        val type = block.copyOfRange(0, 2)
+        val length = block.copyOfRange(2, 6)
+        val data = block.copyOfRange(6, block.size)
+        val typeAsShort = type.let { ByteBuffer.wrap(it).getShort() }
+        val lengthAsInt = length.let { ByteBuffer.wrap(it).getInt() }
 
         assertThat(typeAsShort).isEqualTo(fakeTLVType)
-        assertThat(lengthAsInt).isEqualTo(data?.size)
+        assertThat(lengthAsInt).isEqualTo(data.size)
     }
 
     @Test

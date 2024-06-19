@@ -30,10 +30,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.nullableArgumentCaptor
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -118,22 +122,21 @@ internal class DataStoreFileReaderTest {
     fun `M return no data W read() { datastore file does not exist }`() {
         // Given
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(false)
+        val mockCallback = mock<DataStoreCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
-                    assertThat(dataStoreContent).isNull()
-                }
-
-                override fun onFailure() {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-            }
+            callback = mockCallback
         )
+
+        // Then
+        nullableArgumentCaptor<DataStoreContent<ByteArray>> {
+            verify(mockCallback).onSuccess(capture())
+            assertThat(lastValue).isNull()
+            verifyNoMoreInteractions(mockCallback)
+        }
     }
 
     @Test
@@ -144,46 +147,44 @@ internal class DataStoreFileReaderTest {
         val foundBlocks = blocksReturned.size
         val expectedBlocks = TLVBlockType.values().size
         val expectedError = INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, foundBlocks, expectedBlocks)
+        val mockCallback = mock<DataStoreCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-
-                override fun onFailure() {
-                    mockInternalLogger.verifyLog(
-                        target = InternalLogger.Target.MAINTAINER,
-                        level = InternalLogger.Level.ERROR,
-                        message = expectedError
-                    )
-                }
-            }
+            callback = mockCallback
         )
+
+        // Then
+        verify(mockCallback).onFailure()
+        mockInternalLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.ERROR,
+            message = expectedError
+        )
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
     fun `M return no data W value() { explicit version and versions don't match }`() {
+        // Given
+        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             version = 99,
-            callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
-                    assertThat(dataStoreContent).isNull()
-                }
-
-                override fun onFailure() {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-            },
+            callback = mockCallback,
             deserializer = mockDeserializer
         )
+
+        // Then
+        nullableArgumentCaptor<DataStoreContent<ByteArray>> {
+            verify(mockCallback).onSuccess(capture())
+            assertThat(lastValue).isNull()
+            verifyNoMoreInteractions(mockCallback)
+        }
     }
 
     @Test
@@ -192,49 +193,46 @@ internal class DataStoreFileReaderTest {
         blocksReturned.clear()
         blocksReturned.add(createVersionBlock(true))
         blocksReturned.add(createDataBlock())
+        val mockCallback = mock<DataStoreCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = object : DataStoreCallback<ByteArray> {
-
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
-                    assertThat(dataStoreContent?.data).isEqualTo(fakeDataBytes)
-                }
-
-                override fun onFailure() {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-            }
+            callback = mockCallback
         )
+
+        // Then
+        nullableArgumentCaptor<DataStoreContent<ByteArray>> {
+            verify(mockCallback).onSuccess(capture())
+            assertThat(lastValue?.data).isEqualTo(fakeDataBytes)
+            verifyNoMoreInteractions(mockCallback)
+        }
     }
 
     @Test
     fun `M return onFailure W read() { invalid number of blocks }`() {
         // Given
         blocksReturned.removeLast()
-        var gotFailure = false
+        val expectedMessage =
+            INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, blocksReturned.size, TLVBlockType.values().size)
+        val mockCallback = mock<DataStoreCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-
-                override fun onFailure() {
-                    gotFailure = true
-                }
-            }
+            callback = mockCallback
         )
 
         // Then
-        assertThat(gotFailure).isTrue()
+        verify(mockCallback).onFailure()
+        mockInternalLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.ERROR,
+            message = expectedMessage
+        )
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
@@ -242,26 +240,23 @@ internal class DataStoreFileReaderTest {
         // Given
         blocksReturned = arrayListOf(dataBlock, versionBlock)
         whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
+        val mockCallback = mock<DataStoreCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = object : DataStoreCallback<ByteArray> {
-                override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {
-                    // should not get here
-                    assertThat(1).isEqualTo(2)
-                }
-
-                override fun onFailure() {
-                    mockInternalLogger.verifyLog(
-                        target = InternalLogger.Target.MAINTAINER,
-                        level = InternalLogger.Level.ERROR,
-                        message = UNEXPECTED_BLOCKS_ORDER_ERROR
-                    )
-                }
-            }
+            callback = mockCallback
         )
+
+        // Then
+        verify(mockCallback).onFailure()
+        mockInternalLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.ERROR,
+            message = UNEXPECTED_BLOCKS_ORDER_ERROR
+        )
+        verifyNoMoreInteractions(mockCallback)
     }
 
     private fun createVersionBlock(valid: Boolean, newVersion: Int = 0): TLVBlock {

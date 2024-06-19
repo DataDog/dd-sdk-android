@@ -17,9 +17,9 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 interface FeatureScope {
 
     /**
-     * Property to enable interaction with the DataStore.
+     * Property to enable interaction with the data store.
      */
-    var dataStore: DataStoreHandler
+    val dataStore: DataStoreHandler
 
     /**
      * Utility to write an event, asynchronously.

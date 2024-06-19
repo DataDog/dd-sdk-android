@@ -32,8 +32,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -76,9 +74,8 @@ internal class DataStoreFileHandlerTest {
 
     @BeforeEach
     fun setup() {
-        whenever(mockExecutorService.submit(any())) doAnswer {
+        whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
-            StubFuture()
         }
 
         fileCallback = object : DataStoreCallback<ByteArray> {
@@ -164,16 +161,5 @@ internal class DataStoreFileHandlerTest {
         verify(mockDatastoreFileWriter).delete(
             key = fakeKey
         )
-    }
-
-    private class StubFuture : Future<Any> {
-        override fun cancel(mayInterruptIfRunning: Boolean) =
-            error("Not supposed to be called")
-
-        override fun isCancelled(): Boolean = error("Not supposed to be called")
-        override fun isDone(): Boolean = error("Not supposed to be called")
-        override fun get(): Any = error("Not supposed to be called")
-        override fun get(timeout: Long, unit: TimeUnit?): Any =
-            error("Not supposed to be called")
     }
 }

@@ -50,7 +50,7 @@ internal class TLVBlockFileReaderTest {
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
-    @StringForgery(regex = "^(\\w{3})\$") // a minimal number of chars to avoid flakiness
+    @StringForgery
     private lateinit var fakeDataString: String
 
     private lateinit var fakeVersionBytes: ByteArray
@@ -58,7 +58,7 @@ internal class TLVBlockFileReaderTest {
     private lateinit var fakeBufferBytes: ByteArray
 
     @BeforeEach
-    fun setup(@IntForgery(min = 0, max = 10) fakeVersion: Int) {
+    fun setup(@IntForgery(min = 0) fakeVersion: Int) {
         val versionBytes = createVersionBytes(fakeVersion)
         val dataBytes = createDataBytes()
         val dataToWrite = versionBytes + dataBytes
@@ -115,7 +115,7 @@ internal class TLVBlockFileReaderTest {
         val tlvArray = testedReader.read(file = mockFile)
 
         // Then
-        assertThat(tlvArray.size).isEqualTo(2)
+        assertThat(tlvArray).hasSize(2)
         val versionObject = tlvArray[0]
         val dataObject = tlvArray[1]
 

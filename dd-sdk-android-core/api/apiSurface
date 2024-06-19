@@ -102,7 +102,7 @@ interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
-  var dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
+  val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
