@@ -18,6 +18,7 @@ import com.datadog.android.trace.internal.addActiveTraceToContext
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.android.trace.internal.removeActiveTraceFromContext
+import com.datadog.android.trace.internal.utils.traceIdAsHexString
 import com.datadog.legacy.trace.api.Config
 import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.legacy.trace.context.ScopeListener
@@ -52,7 +53,7 @@ class AndroidTracer internal constructor(
                 val activeContext = activeSpan()?.context()
                 if (activeContext != null) {
                     val activeSpanId = activeContext.toSpanId()
-                    val activeTraceId = activeContext.toTraceId()
+                    val activeTraceId = activeContext.traceIdAsHexString()
                     sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
                 }
             }
@@ -306,7 +307,7 @@ class AndroidTracer internal constructor(
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
 
-        internal const val TRACE_ID_BIT_SIZE = 63
+        internal const val SPAN_ID_BIT_SIZE = 63
 
         /**
          * Helper method to attach a Throwable to a specific Span.

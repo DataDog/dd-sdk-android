@@ -131,11 +131,13 @@ class TraceConfigurationTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceId()
+            mostSignificantTraceId = span.mostSignificantTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -146,7 +148,8 @@ class TraceConfigurationTest {
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(leastSignificantTraceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -174,11 +177,13 @@ class TraceConfigurationTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceId()
+            mostSignificantTraceId = span.mostSignificantTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -189,7 +194,8 @@ class TraceConfigurationTest {
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(leastSignificantTraceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)

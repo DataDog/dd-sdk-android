@@ -946,6 +946,7 @@ public class com/datadog/opentracing/DDTraceOTInfo {
 }
 
 public class com/datadog/opentracing/DDTracer : com/datadog/legacy/trace/api/Tracer, io/opentracing/Tracer, java/io/Closeable {
+	public static final field SPAN_ID_MAX Ljava/math/BigInteger;
 	public static final field TRACE_ID_MAX Ljava/math/BigInteger;
 	public static final field TRACE_ID_MIN Ljava/math/BigInteger;
 	protected fun <init> (Lcom/datadog/legacy/trace/api/Config;Lcom/datadog/legacy/trace/common/writer/Writer;Ljava/util/Random;)V
