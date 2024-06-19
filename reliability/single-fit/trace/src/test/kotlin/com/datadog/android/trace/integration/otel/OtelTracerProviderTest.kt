@@ -78,11 +78,13 @@ internal class OtelTracerProviderTest {
         val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -96,7 +98,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(fakeService)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -124,11 +127,13 @@ internal class OtelTracerProviderTest {
         val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -142,7 +147,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -176,7 +182,8 @@ internal class OtelTracerProviderTest {
         val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName)
@@ -185,7 +192,8 @@ internal class OtelTracerProviderTest {
                 .setAttribute(fakeStringAttributeKey, fakeStringAttributeValue)
                 .setAttribute(fakeBooleanAttributeKey, fakeBooleanAttributeValue)
                 .startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -199,7 +207,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -236,7 +245,8 @@ internal class OtelTracerProviderTest {
         val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName)
@@ -245,7 +255,8 @@ internal class OtelTracerProviderTest {
                 .setAttribute(AttributeKey.stringKey(fakeStringAttributeKey), fakeStringAttributeValue)
                 .setAttribute(AttributeKey.booleanKey(fakeBooleanAttributeKey), fakeBooleanAttributeValue)
                 .startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -259,7 +270,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -290,7 +302,8 @@ internal class OtelTracerProviderTest {
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
         val blockingWriterWrapper = tracer.useBlockingWriter()
-        var parentSpanTraceId: String
+        var lessSignificantParentSpanTraceId: String
+        var mostSignficantParentSpanTraceId: String
         var parentSpanId: String
         var spanId: String
         var fullChildDuration: Long
@@ -298,7 +311,8 @@ internal class OtelTracerProviderTest {
         // When
         val fullParentSpanDuration = measureNanoTime {
             val parenSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
-            parentSpanTraceId = parenSpan.leastSignificantTraceIdAsHexString()
+            lessSignificantParentSpanTraceId = parenSpan.leastSignificantTraceIdAsHexString()
+            mostSignficantParentSpanTraceId = parenSpan.mostSignificantTraceIdAsHexString()
             parentSpanId = parenSpan.spanIdAsHexString()
             fullChildDuration = measureNanoTime {
                 val span = tracer
@@ -322,7 +336,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(parentSpanTraceId)
+                hasLeastSignificantTraceId(lessSignificantParentSpanTraceId)
+                hasMostSignificantTraceId(mostSignficantParentSpanTraceId)
                 hasSpanId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -336,7 +351,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload1)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(parentSpanTraceId)
+                hasLeastSignificantTraceId(lessSignificantParentSpanTraceId)
+                hasMostSignificantTraceId(mostSignficantParentSpanTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -367,14 +383,16 @@ internal class OtelTracerProviderTest {
         val spanKind = forge.aValueFrom(SpanKind::class.java)
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         var span: Span
         val fullDuration = measureNanoTime {
             span = tracer.spanBuilder(fakeOperationName)
                 .setSpanKind(spanKind)
                 .startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -392,7 +410,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -423,14 +442,16 @@ internal class OtelTracerProviderTest {
         val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         var span: Span
         val fullDuration = measureNanoTime {
             span = tracer.spanBuilder(fakeOperationName)
                 .setStartTimestamp(Instant.ofEpochMilli(fakeStartTimestamp))
                 .startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.end()
@@ -444,7 +465,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -493,7 +515,8 @@ internal class OtelTracerProviderTest {
         val span = tracer.spanBuilder(fakeOperationName)
             .addLink(linkedSpan.spanContext, attributes)
             .startSpan()
-        val traceId = span.leastSignificantTraceIdAsHexString()
+        val leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+        val mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         Thread.sleep(OP_DURATION_MS)
         span.end()
@@ -506,7 +529,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload1)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -540,7 +564,8 @@ internal class OtelTracerProviderTest {
         // When
         val parentSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
         val scope = parentSpan.makeCurrent()
-        val parentSpanTraceId = parentSpan.leastSignificantTraceIdAsHexString()
+        val parentSpanLeastSignificantTraceId = parentSpan.leastSignificantTraceIdAsHexString()
+        val parentSpanMostSignificantTraceId = parentSpan.mostSignificantTraceIdAsHexString()
         val parentSpanId = parentSpan.spanIdAsHexString()
         val childSpan = tracer.spanBuilder(fakeSpanName).startSpan()
         val childSpanId = childSpan.spanIdAsHexString()
@@ -559,7 +584,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload1)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(parentSpanTraceId)
+                hasLeastSignificantTraceId(parentSpanLeastSignificantTraceId)
+                hasMostSignificantTraceId(parentSpanMostSignificantTraceId)
                 hasSpanId(childSpanId)
                 hasParentId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -572,7 +598,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(parentSpanTraceId)
+                hasLeastSignificantTraceId(parentSpanLeastSignificantTraceId)
+                hasMostSignificantTraceId(parentSpanMostSignificantTraceId)
                 hasSpanId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -597,7 +624,8 @@ internal class OtelTracerProviderTest {
         // When
         val parentSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
         val scope = parentSpan.makeCurrent()
-        val parentSpanTraceId = parentSpan.leastSignificantTraceIdAsHexString()
+        val parentSpanLeastSignificantTraceId = parentSpan.leastSignificantTraceIdAsHexString()
+        val parentSpanMostSignificantTraceId = parentSpan.mostSignificantTraceIdAsHexString()
         val parentSpanId = parentSpan.spanIdAsHexString()
         var childSpanId = ""
         Thread {
@@ -622,7 +650,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload1)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(parentSpanTraceId)
+                hasLeastSignificantTraceId(parentSpanLeastSignificantTraceId)
+                hasMostSignificantTraceId(parentSpanMostSignificantTraceId)
                 hasSpanId(childSpanId)
                 hasParentId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -635,7 +664,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(parentSpanTraceId)
+                hasLeastSignificantTraceId(parentSpanLeastSignificantTraceId)
+                hasMostSignificantTraceId(parentSpanMostSignificantTraceId)
                 hasSpanId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -665,7 +695,8 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val traceId = span.leastSignificantTraceIdAsHexString()
+        val leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+        val mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         span.end()
 
@@ -677,7 +708,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -705,7 +737,8 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val traceId = span.leastSignificantTraceIdAsHexString()
+        val leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+        val mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         span.end()
 
@@ -717,7 +750,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -745,7 +779,8 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val traceId = span.leastSignificantTraceIdAsHexString()
+        val leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+        val mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
         val spanId = span.spanIdAsHexString()
         span.end()
 
@@ -757,7 +792,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -1017,11 +1053,13 @@ internal class OtelTracerProviderTest {
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
             span.end()
@@ -1034,7 +1072,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -1068,11 +1107,13 @@ internal class OtelTracerProviderTest {
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperationName).startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
             span.end()
@@ -1085,7 +1126,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -1114,11 +1156,13 @@ internal class OtelTracerProviderTest {
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = tracer.spanBuilder(fakeOperation).startSpan()
-            traceId = span.leastSignificantTraceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificantTraceIdAsHexString()
+            mostSignificantTraceId = span.mostSignificantTraceIdAsHexString()
             spanId = span.spanIdAsHexString()
             Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
             span.end()
@@ -1131,7 +1175,8 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificantTraceId(leastSignificantTraceId)
+                hasMostSignificantTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)

@@ -169,14 +169,14 @@ class OtelTracerProvider internal constructor(
                     .serviceName(serviceName)
                     .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpCoreTracerWriter())
                     .partialFlushMinSpans(partialFlushThreshold)
-                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", false))
+                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", true))
                     .build()
                 coreTracer.addScopeListener(object : ScopeListener {
                     override fun afterScopeActivated() {
                         val activeSpanContext = coreTracer.activeSpan()?.context()
                         if (activeSpanContext != null) {
                             val activeSpanId = activeSpanContext.spanId.toString()
-                            val activeTraceId = activeSpanContext.traceId.toString()
+                            val activeTraceId = activeSpanContext.traceId.toHexString()
                             sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
                         }
                     }

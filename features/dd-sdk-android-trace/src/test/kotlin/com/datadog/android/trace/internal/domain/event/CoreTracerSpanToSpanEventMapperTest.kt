@@ -10,8 +10,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.assertj.SpanEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.trace.api.DD128bTraceId
 import com.datadog.trace.api.DDSpanId
+import com.datadog.trace.api.internal.util.LongStringUtils
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
@@ -68,54 +68,8 @@ internal class CoreTracerSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(DDSpanId.toHexStringPadded(fakeSpan.spanId))
-            .hasTraceId(fakeSpan.traceId.toHexString().takeLast(16))
-            .hasParentId(DDSpanId.toHexStringPadded(fakeSpan.parentId))
-            .hasServiceName(fakeSpan.serviceName)
-            .hasOperationName(fakeSpan.operationName.toString())
-            .hasResourceName(fakeSpan.resourceName.toString())
-            .hasSpanType("custom")
-            .hasSpanSource(fakeDatadogContext.source)
-            .hasApplicationId(null)
-            .hasSessionId(null)
-            .hasViewId(null)
-            .hasErrorFlag(fakeSpan.error.toLong())
-            .hasSpanStartTime(fakeSpan.startTime + fakeDatadogContext.time.serverTimeOffsetNs)
-            .hasSpanDuration(fakeSpan.durationNano)
-            .hasSpanLinks(fakeSpan.links)
-            .hasTracerVersion(fakeDatadogContext.sdkVersion)
-            .hasClientPackageVersion(fakeDatadogContext.version).apply {
-                if (fakeNetworkInfoEnabled) {
-                    hasNetworkInfo(fakeDatadogContext.networkInfo)
-                } else {
-                    doesntHaveNetworkInfo()
-                }
-            }
-            .hasUserInfo(fakeDatadogContext.userInfo)
-            .hasMeta(expectedMeta)
-            .hasMetrics(expectedMetrics)
-    }
-
-    @Test
-    fun `M make sure the traceId is always a 16 characters length hex W map()`(
-        @Forgery fakeSpan: DDSpan,
-        forge: Forge
-    ) {
-        // Given
-        // we will generate a traceId with a length of 128 bits
-        val fakeTraceId = DD128bTraceId.from((forge.aLong() + 1), (forge.aLong() + 1))
-        val expectedMeta = fakeSpan.baggage + fakeSpan.tags.map {
-            it.key to it.value.toString()
-        }
-        whenever(fakeSpan.traceId).thenReturn(fakeTraceId)
-        val expectedMetrics = fakeSpan.expectedMetrics()
-
-        // When
-        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
-
-        // Then
-        assertThat(event)
-            .hasSpanId(DDSpanId.toHexStringPadded(fakeSpan.spanId))
-            .hasTraceId(fakeSpan.traceId.toHexString().takeLast(16))
+            .hasLessSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toLong(), 16))
+            .hasMostSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toHighOrderLong(), 16))
             .hasParentId(DDSpanId.toHexStringPadded(fakeSpan.parentId))
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName.toString())
@@ -170,7 +124,8 @@ internal class CoreTracerSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(DDSpanId.toHexStringPadded(fakeSpan.spanId))
-            .hasTraceId(fakeSpan.traceId.toHexString().takeLast(16))
+            .hasLessSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toLong(), 16))
+            .hasMostSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toHighOrderLong(), 16))
             .hasParentId(DDSpanId.toHexStringPadded(fakeSpan.parentId))
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName.toString())

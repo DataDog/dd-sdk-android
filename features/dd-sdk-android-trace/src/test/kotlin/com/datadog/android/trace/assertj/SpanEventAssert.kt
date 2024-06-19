@@ -9,6 +9,7 @@ package com.datadog.android.trace.assertj
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
+import com.datadog.android.trace.internal.domain.event.TRACE_ID_META_KEY
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.api.DDSpanId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
@@ -35,11 +36,22 @@ internal class SpanEventAssert(actual: SpanEvent) :
         return this
     }
 
-    fun hasTraceId(traceId: String): SpanEventAssert {
+    fun hasLessSignificantTraceId(traceId: String): SpanEventAssert {
         assertThat(actual.traceId)
             .overridingErrorMessage(
-                "Expected SpanEvent to have traceId: $traceId" +
+                "Expected SpanEvent to have less significant traceId: $traceId" +
                     " but instead was: ${actual.traceId}"
+            )
+            .isEqualTo(traceId)
+        return this
+    }
+
+    fun hasMostSignificantTraceId(traceId: String): SpanEventAssert {
+        val lessSignificantTraceId = actual.meta.additionalProperties[TRACE_ID_META_KEY]
+        assertThat(lessSignificantTraceId)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have most significant traceId: $traceId" +
+                    " but instead was: $lessSignificantTraceId"
             )
             .isEqualTo(traceId)
         return this

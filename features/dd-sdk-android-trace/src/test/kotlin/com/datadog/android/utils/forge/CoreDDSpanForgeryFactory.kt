@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.api.DD128bTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
@@ -27,7 +27,8 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
         val spanType = forge.anAlphabeticalString()
         val spanStartTime = forge.aPositiveLong()
         val spanDuration = forge.aPositiveLong()
-        val traceId = forge.aLong(min = 1)
+        val highOrderTraceId = forge.aLong(min = 0)
+        val lowOrderTraceId = forge.aLong(min = 0)
         val spanId = forge.aLong(min = 1)
         val parentId = forge.aLong(min = 1)
         val samplingPriority = forge.anInt()
@@ -48,7 +49,7 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
             whenever(it.startTime).thenReturn(spanStartTime)
             whenever(it.durationNano).thenReturn(spanDuration)
             whenever(it.spanId).thenReturn(spanId)
-            whenever(it.traceId).thenReturn(DDTraceId.from(traceId))
+            whenever(it.traceId).thenReturn(DD128bTraceId.from(highOrderTraceId, lowOrderTraceId))
             whenever(it.parentId).thenReturn(parentId)
             whenever(it.baggage).thenReturn(baggageItems)
             whenever(it.tags).thenReturn(tagsAndMetrics)
