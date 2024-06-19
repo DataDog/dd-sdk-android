@@ -14,6 +14,10 @@ internal fun Span.leastSignificantTraceIdAsHexString(): String {
     return spanContext.traceId.takeLast(16)
 }
 
+internal fun Span.mostSignificantTraceIdAsHexString(): String {
+    return spanContext.traceId.take(16)
+}
+
 internal fun Span.spanIdAsHexString(): String {
     return spanContext.spanId
 }
