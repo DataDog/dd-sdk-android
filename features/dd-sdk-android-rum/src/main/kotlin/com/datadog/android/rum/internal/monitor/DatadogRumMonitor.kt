@@ -41,6 +41,7 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
@@ -63,6 +64,7 @@ internal class DatadogRumMonitor(
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
+    sessionEndedMetricDispatcher: SessionMetricDispatcher,
     firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
@@ -81,6 +83,7 @@ internal class DatadogRumMonitor(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
+        sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
         CombinedRumSessionListener(sessionListener, telemetryEventHandler)
     )
 

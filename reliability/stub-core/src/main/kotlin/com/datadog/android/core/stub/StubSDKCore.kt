@@ -73,6 +73,14 @@ class StubSDKCore(
     }
 
     /**
+     * Returns the last metric is sent by [StubInternalLogger].
+     */
+    fun lastMetric(): Map<String, Any>? {
+        return (internalLogger as StubInternalLogger)
+            .telemetryEventsWritten.lastOrNull { it["type"] == "mobile_metric" }
+    }
+
+    /**
      * Stubs the user info visible via the SDK Core.
      * @param userInfo the user info
      */

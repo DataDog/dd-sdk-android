@@ -18,6 +18,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -88,6 +89,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
+    @Mock
+    lateinit var mockDispatcher: SessionMetricDispatcher
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -122,6 +126,7 @@ internal class RumApplicationScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockDispatcher,
             mockSessionListener
         )
     }

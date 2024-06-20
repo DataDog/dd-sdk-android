@@ -32,6 +32,7 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -187,6 +188,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockViewChangedListener: RumViewChangedListener
 
+    @Mock
+    private lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
+
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
@@ -268,6 +272,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -368,6 +373,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -566,6 +572,7 @@ internal class RumViewScopeTest {
         val anotherScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -751,6 +758,7 @@ internal class RumViewScopeTest {
         RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             key,
             fakeEventTime,
             fakeAttributes,
@@ -805,6 +813,7 @@ internal class RumViewScopeTest {
         RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             key,
             fakeEventTime,
             fakeAttributes,
@@ -1385,6 +1394,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -1478,6 +1488,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -1568,6 +1579,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -1664,6 +1676,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8449,6 +8462,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             rawEventData.viewKey,
             fakeEventTime,
             fakeAttributes,
@@ -8513,6 +8527,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8565,6 +8580,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8623,6 +8639,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8687,6 +8704,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8761,6 +8779,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8835,6 +8854,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8890,6 +8910,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,
@@ -8951,6 +8972,7 @@ internal class RumViewScopeTest {
         testedScope = RumViewScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             fakeKey,
             fakeEventTime,
             fakeAttributes,

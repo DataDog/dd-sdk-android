@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -33,6 +34,7 @@ internal class TelemetryEventHandler(
     internal val sdkCore: InternalSdkCore,
     internal val eventSampler: Sampler,
     internal val configurationExtraSampler: Sampler = RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLE_RATE),
+    private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
@@ -64,6 +66,10 @@ internal class TelemetryEventHandler(
                 }
 
                 TelemetryType.ERROR -> {
+                    sessionEndedMetricDispatcher.onSdkErrorTracked(
+                        sessionId = datadogContext.rumContext().sessionId,
+                        errorKind = event.kind
+                    )
                     createErrorEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,

@@ -50,8 +50,9 @@ internal class SessionEndedMetric(
         return true
     }
 
-    fun onErrorTracked(sdkErrorKind: String) {
-        errorKindFrequencies[sdkErrorKind] = (errorKindFrequencies[sdkErrorKind] ?: 0) + 1
+    fun onErrorTracked(sdkErrorKind: String?) {
+        val errorKindKey = sdkErrorKind ?: SDK_ERROR_DEFAULT_KIND
+        errorKindFrequencies[errorKindKey] = (errorKindFrequencies[errorKindKey] ?: 0) + 1
     }
 
     fun onSessionStopped() {
@@ -202,6 +203,11 @@ internal class SessionEndedMetric(
          * Key of TOP [TOP_ERROR_LIMIT] error kinds to the number of their occurrences in the session.
          */
         internal const val SDK_ERRORS_COUNT_BY_KIND_KEY = "by_kind"
+
+        /**
+         * Placeholder of error kind if the attribute is absent.
+         */
+        internal const val SDK_ERROR_DEFAULT_KIND = "Empty error kind"
     }
 
     /**

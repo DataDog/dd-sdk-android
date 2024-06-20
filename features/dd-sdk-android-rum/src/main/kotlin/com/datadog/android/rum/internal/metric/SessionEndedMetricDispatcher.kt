@@ -52,9 +52,15 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
     }
 
     override fun onSdkErrorTracked(sessionId: String, errorKind: String?) {
-        errorKind?.let {
-            metricsBySessionId[sessionId]?.onErrorTracked(it)
-        }
+        metricsBySessionId[sessionId]?.onErrorTracked(errorKind) ?: internalLogger.log(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.MAINTAINER,
+            { buildSdkErrorTrackError(sessionId, errorKind) }
+        )
+    }
+
+    private fun buildSdkErrorTrackError(sessionId: String, errorKind: String?): String {
+        return "Failed to track $errorKind error, session $sessionId has ended"
     }
 
     private fun buildViewTrackError(sessionId: String, viewEvent: ViewEvent): String {
