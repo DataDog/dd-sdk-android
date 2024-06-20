@@ -47,7 +47,6 @@ import static com.datadog.trace.api.config.TraceInstrumentationConfig.TRACE_EXEC
 import static com.datadog.trace.api.config.TraceInstrumentationConfig.TRACE_METHODS;
 import static com.datadog.trace.api.config.TraceInstrumentationConfig.TRACE_OTEL_ENABLED;
 import static com.datadog.trace.api.config.TraceInstrumentationConfig.TRACE_THREAD_POOL_EXECUTORS_EXCLUDE;
-import static com.datadog.trace.api.config.UsmConfig.USM_ENABLED;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableList;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableSet;
 
@@ -83,7 +82,6 @@ public class InstrumenterConfig {
   private final boolean traceOtelEnabled;
   private final boolean logs128bTraceIdEnabled;
   private final boolean profilingEnabled;
-  private final boolean usmEnabled;
   private final boolean telemetryEnabled;
 
   private final boolean traceExecutorsAll;
@@ -119,8 +117,6 @@ public class InstrumenterConfig {
 
   private final boolean internalExitOnFailure;
 
-  private final boolean legacyInstallerEnabled;
-
   private InstrumenterConfig() {
     this(ConfigProvider.createDefault());
   }
@@ -138,7 +134,6 @@ public class InstrumenterConfig {
             TRACE_128_BIT_TRACEID_LOGGING_ENABLED, DEFAULT_TRACE_128_BIT_TRACEID_LOGGING_ENABLED);
     profilingEnabled = configProvider.getBoolean(PROFILING_ENABLED, PROFILING_ENABLED_DEFAULT);
 
-    usmEnabled = configProvider.getBoolean(USM_ENABLED, DEFAULT_USM_ENABLED);
     telemetryEnabled = configProvider.getBoolean(TELEMETRY_ENABLED, DEFAULT_TELEMETRY_ENABLED);
 
     traceExecutorsAll = configProvider.getBoolean(TRACE_EXECUTORS_ALL, DEFAULT_TRACE_EXECUTORS_ALL);
@@ -187,8 +182,6 @@ public class InstrumenterConfig {
         MethodFilterConfigParser.parse(
             configProvider.getString(MEASURE_METHODS, DEFAULT_MEASURE_METHODS));
     internalExitOnFailure = configProvider.getBoolean(INTERNAL_EXIT_ON_FAILURE, false);
-
-    legacyInstallerEnabled = configProvider.getBoolean(LEGACY_INSTALLER_ENABLED, false);
   }
 
   public boolean isIntegrationsEnabled() {
@@ -220,10 +213,6 @@ public class InstrumenterConfig {
 
   public boolean isProfilingEnabled() {
     return profilingEnabled;
-  }
-
-  public boolean isUsmEnabled() {
-    return usmEnabled;
   }
 
   public boolean isTelemetryEnabled() {
@@ -356,16 +345,6 @@ public class InstrumenterConfig {
     return internalExitOnFailure;
   }
 
-  public boolean isLegacyInstallerEnabled() {
-    return legacyInstallerEnabled;
-  }
-
-  public boolean isLegacyInstrumentationEnabled(
-      final boolean defaultEnabled, final String... integrationNames) {
-    return configProvider.isEnabled(
-        Arrays.asList(integrationNames), "", ".legacy.tracing.enabled", defaultEnabled);
-  }
-
   // This has to be placed after all other static fields to give them a chance to initialize
   private static final InstrumenterConfig INSTANCE =
       new InstrumenterConfig(ConfigProvider.getInstance());
@@ -387,8 +366,6 @@ public class InstrumenterConfig {
         + logs128bTraceIdEnabled
         + ", profilingEnabled="
         + profilingEnabled
-        + ", usmEnabled="
-        + usmEnabled
         + ", telemetryEnabled="
         + telemetryEnabled
         + ", traceExecutorsAll="
@@ -441,8 +418,6 @@ public class InstrumenterConfig {
         + '\''
         + ", internalExitOnFailure="
         + internalExitOnFailure
-        + ", legacyInstallerEnabled="
-        + legacyInstallerEnabled
         + '}';
   }
 }
