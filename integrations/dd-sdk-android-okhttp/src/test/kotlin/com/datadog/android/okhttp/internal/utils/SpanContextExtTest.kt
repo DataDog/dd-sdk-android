@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.internal.utils
+package com.datadog.android.okhttp.internal.utils
 
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpanContext
+import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -31,7 +31,7 @@ import java.math.BigInteger
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class SpanContextExtTest {
 
     @Mock
@@ -52,7 +52,7 @@ internal class SpanContextExtTest {
 
     @Test
     fun `M return empty string W traceIdAsHexString() { spanContext is not DDSpanContext }`() {
-        // Given
+        // When
         whenever(mockSpan.context()).thenReturn(mock<SpanContext>())
 
         // When
@@ -64,7 +64,7 @@ internal class SpanContextExtTest {
 
     @Test
     fun `M return empty string W traceIdAsHexString() { ddSpanContext id is null}`() {
-        // Given
+        // When
         whenever(mockSpan.context()).thenReturn(mockDDSpanContext)
         whenever(mockDDSpanContext.traceId).thenReturn(null)
 
@@ -77,7 +77,7 @@ internal class SpanContextExtTest {
 
     @Test
     fun `M return the expected hexa padded string W traceIdAsHexString()`() {
-        // Given
+        // When
         whenever(mockSpan.context()).thenReturn(mockDDSpanContext)
         whenever(mockDDSpanContext.traceId).thenReturn(fakeTraceIdAsBigInteger)
 

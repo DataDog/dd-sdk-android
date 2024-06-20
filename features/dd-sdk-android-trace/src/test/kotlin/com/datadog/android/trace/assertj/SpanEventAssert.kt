@@ -36,22 +36,22 @@ internal class SpanEventAssert(actual: SpanEvent) :
         return this
     }
 
-    fun hasLessSignificantTraceId(traceId: String): SpanEventAssert {
+    fun hasLeastSignificant64BitsTraceId(traceId: String): SpanEventAssert {
         assertThat(actual.traceId)
             .overridingErrorMessage(
-                "Expected SpanEvent to have less significant traceId: $traceId" +
+                "Expected SpanEvent to have least significant traceId: $traceId" +
                     " but instead was: ${actual.traceId}"
             )
             .isEqualTo(traceId)
         return this
     }
 
-    fun hasMostSignificantTraceId(traceId: String): SpanEventAssert {
-        val lessSignificantTraceId = actual.meta.additionalProperties[TRACE_ID_META_KEY]
-        assertThat(lessSignificantTraceId)
+    fun hasMostSignificant64BitsTraceId(traceId: String): SpanEventAssert {
+        val mostSignificantTraceId = actual.meta.additionalProperties[TRACE_ID_META_KEY]
+        assertThat(mostSignificantTraceId)
             .overridingErrorMessage(
                 "Expected SpanEvent to have most significant traceId: $traceId" +
-                    " but instead was: $lessSignificantTraceId"
+                    " but instead was: $mostSignificantTraceId"
             )
             .isEqualTo(traceId)
         return this

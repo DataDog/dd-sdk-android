@@ -8,25 +8,52 @@ package com.datadog.android.trace.internal.domain.event
 
 import java.math.BigInteger
 
-object BigIntegerUtils {
+internal object BigIntegerUtils {
 
     private const val LONG_BITS_SIZE = 64
     private const val HEX_RADIX = 16
-    private const val REQUIRED_ID_HEXA_LENGTH = 16
+    private const val REQUIRED_ID_HEX_LENGTH = 16
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // this can't throw in this context
     private val LONG_MASK = BigInteger("ffffffffffffffff", HEX_RADIX)
 
-    fun lessSignificantUnsignedLongAsHexa(traceId: BigInteger): String {
-        @Suppress("MagicNumber")
-        return traceId.and(LONG_MASK).toString(HEX_RADIX).padStart(REQUIRED_ID_HEXA_LENGTH, '0')
+    // we are not treating these exceptions because we are sure that the input is a valid BigInteger and the
+    // BigInteger overflow cannot happen in this context
+
+    @Suppress("SwallowedException")
+    fun leastSignificant64BitsAsHex(traceId: BigInteger): String {
+        return try {
+            traceId.and(LONG_MASK).toString(HEX_RADIX).padStart(REQUIRED_ID_HEX_LENGTH, '0')
+        } catch (e: NumberFormatException) {
+            ""
+        } catch (e: ArithmeticException) {
+            ""
+        } catch (e: IllegalArgumentException) {
+            ""
+        }
     }
 
-    fun lessSignificantUnsignedLongAsDecimal(traceId: BigInteger): String {
-        @Suppress("MagicNumber")
-        return traceId.and(LONG_MASK).toString()
+    @Suppress("SwallowedException")
+    fun leastSignificant64BitsAsDecimal(traceId: BigInteger): String {
+        return try {
+            traceId.and(LONG_MASK).toString()
+        } catch (e: NumberFormatException) {
+            ""
+        } catch (e: ArithmeticException) {
+            ""
+        }
     }
 
-    fun mostSignificantUnsignedLongAsHexa(traceId: BigInteger): String {
-        @Suppress("MagicNumber")
-        return traceId.shiftRight(LONG_BITS_SIZE).toString(HEX_RADIX).padStart(REQUIRED_ID_HEXA_LENGTH, '0')
+    @Suppress("SwallowedException")
+    fun mostSignificant64BitsAsHex(traceId: BigInteger): String {
+        return try {
+            traceId.shiftRight(LONG_BITS_SIZE).toString(HEX_RADIX).padStart(REQUIRED_ID_HEX_LENGTH, '0')
+        } catch (e: NumberFormatException) {
+            ""
+        } catch (e: ArithmeticException) {
+            ""
+        } catch (e: IllegalArgumentException) {
+            ""
+        }
     }
 }

@@ -49,11 +49,11 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * DDTracer makes it easy to send traces and span to DD using the OpenTracing API.
  */
 public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
-    // UINT64 max value
-    public static final BigInteger TRACE_ID_MAX =
+    // UINT128 max value
+    public static final BigInteger TRACE_ID_128_BITS_MAX =
             BigInteger.valueOf(2).pow(128).subtract(BigInteger.ONE);
 
-    public static final BigInteger SPAN_ID_MAX =
+    public static final BigInteger TRACE_ID_64_BITS_MAX =
             BigInteger.valueOf(2).pow(64).subtract(BigInteger.ONE);
     public static final BigInteger TRACE_ID_MIN = BigInteger.ZERO;
 
