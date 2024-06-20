@@ -188,4 +188,25 @@ internal class DataStoreFileWriterTest {
         // Then
         verify(mockDataStoreFile, never()).deleteSafe(mockInternalLogger)
     }
+
+    @Test
+    fun `M call deleteSafe W clearAllData() { for files }`() {
+        // Given
+        whenever(
+            mockDataStoreFileHelper.createDataStoreDirectoryIfNecessary(
+                fakeFeatureName,
+                mockStorageDir,
+                mockInternalLogger
+            )
+        ).thenReturn(mockDataStoreDirectory)
+
+        whenever(mockDataStoreDirectory.listFiles())
+            .thenReturn(arrayOf(mockDataStoreFile))
+
+        // When
+        testedDatastoreFileWriter.clearAllData()
+
+        // Then
+        verify(mockDataStoreFile).deleteSafe(mockInternalLogger)
+    }
 }

@@ -30,7 +30,7 @@ internal class DataStoreFileHelper(
         return File(dataStoreDirectory, key)
     }
 
-    private fun createDataStoreDirectoryIfNecessary(
+    internal fun createDataStoreDirectoryIfNecessary(
         featureName: String,
         storageDir: File,
         internalLogger: InternalLogger

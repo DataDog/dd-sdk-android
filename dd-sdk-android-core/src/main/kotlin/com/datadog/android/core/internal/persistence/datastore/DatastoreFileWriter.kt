@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.datastore.ext.toByteArray
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.deleteDirectoryContentsSafe
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
@@ -83,6 +84,17 @@ internal class DatastoreFileWriter(
                 callback?.onFailure()
             }
         }
+    }
+
+    @WorkerThread
+    internal fun clearAllData() {
+        val dataStoreDirectory = dataStoreFileHelper.createDataStoreDirectoryIfNecessary(
+            featureName = featureName,
+            storageDir = storageDir,
+            internalLogger = internalLogger
+        )
+
+        dataStoreDirectory.deleteDirectoryContentsSafe(internalLogger)
     }
 
     private fun <T : Any> getDataBlock(

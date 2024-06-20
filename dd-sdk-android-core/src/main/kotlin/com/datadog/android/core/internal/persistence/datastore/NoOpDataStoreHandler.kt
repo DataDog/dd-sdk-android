@@ -38,4 +38,8 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
     ) {
         // NoOp Implementation
     }
+
+    override fun clearAllData() {
+        // NoOp Implementation
+    }
 }

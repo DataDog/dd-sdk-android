@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
@@ -89,6 +90,9 @@ internal class SdkFeatureTest {
 
     @Mock
     lateinit var mockStorage: Storage
+
+    @Mock
+    lateinit var mockDataStore: DataStoreHandler
 
     @Mock
     lateinit var mockWrappedFeature: StorageBackedFeature
@@ -422,6 +426,18 @@ internal class SdkFeatureTest {
 
         // Then
         verify(mockStorage).dropAll()
+    }
+
+    @Test
+    fun `M clear data store W clearAllData()`() {
+        // Given
+        testedFeature.dataStore = mockDataStore
+
+        // When
+        testedFeature.clearAllData()
+
+        // Then
+        verify(mockDataStore).clearAllData()
     }
 
     // region FeatureScope

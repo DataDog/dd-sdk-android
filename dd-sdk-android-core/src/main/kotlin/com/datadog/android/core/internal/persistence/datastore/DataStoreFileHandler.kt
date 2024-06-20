@@ -40,6 +40,12 @@ internal class DataStoreFileHandler(
         }
     }
 
+    override fun clearAllData() {
+        executorService.executeSafe("dataStoreClearAllData", internalLogger) {
+            datastoreFileWriter.clearAllData()
+        }
+    }
+
     override fun <T : Any> value(
         key: String,
         version: Int?,
