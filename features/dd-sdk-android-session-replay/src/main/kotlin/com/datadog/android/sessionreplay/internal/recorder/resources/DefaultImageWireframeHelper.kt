@@ -12,7 +12,7 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.view.View
 import android.widget.TextView
-import androidx.annotation.MainThread
+import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
@@ -36,7 +36,7 @@ internal class DefaultImageWireframeHelper(
 ) : ImageWireframeHelper {
 
     @Suppress("ReturnCount")
-    @MainThread
+    @UiThread
     override fun createImageWireframe(
         view: View,
         currentWireframeIndex: Int,
@@ -130,6 +130,7 @@ internal class DefaultImageWireframeHelper(
     }
 
     @Suppress("NestedBlockDepth")
+    @UiThread
     override fun createCompoundDrawableWireframes(
         textView: TextView,
         mappingContext: MappingContext,
@@ -160,7 +161,6 @@ internal class DefaultImageWireframeHelper(
                     pixelsDensity = density,
                     position = compoundDrawablePosition
                 )
-                @Suppress("ThreadSafety") // TODO RUM-1462 caller thread of .map is unknown?
                 createImageWireframe(
                     view = textView,
                     currentWireframeIndex = ++wireframeIndex,

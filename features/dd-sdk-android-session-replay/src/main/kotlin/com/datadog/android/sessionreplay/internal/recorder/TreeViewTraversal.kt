@@ -8,8 +8,10 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
@@ -29,6 +31,7 @@ internal class TreeViewTraversal(
 ) {
 
     @Suppress("ReturnCount")
+    @UiThread
     fun traverse(
         view: View,
         mappingContext: MappingContext,
@@ -84,7 +87,7 @@ internal class TreeViewTraversal(
         val resolvedWireframes = internalLogger.measureMethodCallPerf(
             javaClass,
             "$METHOD_CALL_MAP_PREFIX ${mapper.javaClass.simpleName}",
-            METHOD_CALL_SAMPLING_RATE
+            MethodCallSamplingRate.RARE.rate
         ) {
             mapper.map(view, mappingContext, jobStatusCallback, internalLogger)
         }
@@ -107,8 +110,7 @@ internal class TreeViewTraversal(
         val nextActionStrategy: TraversalStrategy
     )
 
-    companion object {
-        const val METHOD_CALL_SAMPLING_RATE = 0.1f
-        private const val METHOD_CALL_MAP_PREFIX: String = "Map with"
+    internal companion object {
+        internal const val METHOD_CALL_MAP_PREFIX = "Map with"
     }
 }

@@ -14,8 +14,8 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.legacy.trace.api.DDTags
 import com.datadog.opentracing.DDSpan
-import com.datadog.trace.api.DDTags
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery

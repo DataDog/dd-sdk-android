@@ -1,12 +1,12 @@
-/*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
-
 package com.datadog.trace.common.sampling;
 
-import com.datadog.opentracing.DDSpan;
+import com.datadog.trace.core.CoreSpan;
+import com.datadog.trace.core.util.Matcher;
+import com.datadog.trace.core.util.Matchers;
+import com.datadog.trace.core.util.SimpleRateLimiter;
+import com.datadog.trace.core.util.TagsMatcher;
+
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public abstract class SamplingRule {
@@ -16,9 +16,9 @@ public abstract class SamplingRule {
     this.sampler = sampler;
   }
 
-  public abstract boolean matches(DDSpan span);
+  public abstract <T extends CoreSpan<T>> boolean matches(T span);
 
-  public boolean sample(final DDSpan span) {
+  public <T extends CoreSpan<T>> boolean sample(final T span) {
     return sampler.sample(span);
   }
 
@@ -33,7 +33,7 @@ public abstract class SamplingRule {
     }
 
     @Override
-    public boolean matches(final DDSpan span) {
+    public <T extends CoreSpan<T>> boolean matches(final T span) {
       return true;
     }
   }
@@ -47,12 +47,12 @@ public abstract class SamplingRule {
     }
 
     @Override
-    public boolean matches(final DDSpan span) {
-      final String relevantString = getRelevantString(span);
+    public <T extends CoreSpan<T>> boolean matches(final T span) {
+      final CharSequence relevantString = getRelevantString(span);
       return relevantString != null && pattern.matcher(relevantString).matches();
     }
 
-    protected abstract String getRelevantString(DDSpan span);
+    protected abstract <T extends CoreSpan<T>> CharSequence getRelevantString(T span);
   }
 
   public static class ServiceSamplingRule extends PatternMatchSamplingRule {
@@ -61,7 +61,7 @@ public abstract class SamplingRule {
     }
 
     @Override
-    protected String getRelevantString(final DDSpan span) {
+    protected <T extends CoreSpan<T>> String getRelevantString(final T span) {
       return span.getServiceName();
     }
   }
@@ -72,8 +72,70 @@ public abstract class SamplingRule {
     }
 
     @Override
-    protected String getRelevantString(final DDSpan span) {
+    protected <T extends CoreSpan<T>> CharSequence getRelevantString(final T span) {
       return span.getOperationName();
+    }
+  }
+
+  public static final class TraceSamplingRule extends SamplingRule {
+    private final Matcher serviceMatcher;
+    private final Matcher operationMatcher;
+    private final Matcher resourceMatcher;
+    private final TagsMatcher tagsMatcher;
+
+    public TraceSamplingRule(
+        final String serviceGlob,
+        final String operationGlob,
+        final String resourceGlob,
+        final Map<String, String> tags,
+        final RateSampler sampler) {
+      super(sampler);
+      serviceMatcher = Matchers.compileGlob(serviceGlob);
+      operationMatcher = Matchers.compileGlob(operationGlob);
+      resourceMatcher = Matchers.compileGlob(resourceGlob);
+      tagsMatcher = TagsMatcher.create(tags);
+    }
+
+    @Override
+    public <T extends CoreSpan<T>> boolean matches(T span) {
+      return Matchers.matches(serviceMatcher, span.getServiceName())
+          && Matchers.matches(operationMatcher, span.getOperationName())
+          && Matchers.matches(resourceMatcher, span.getResourceName())
+          && tagsMatcher.matches(span);
+    }
+  }
+
+  public static final class SpanSamplingRule extends SamplingRule {
+    private final Matcher serviceMatcher;
+    private final Matcher operationMatcher;
+    private final SimpleRateLimiter rateLimiter;
+
+    public SpanSamplingRule(
+        final String serviceName,
+        final String operationName,
+        final RateSampler sampler,
+        final SimpleRateLimiter rateLimiter) {
+      super(sampler);
+
+      serviceMatcher = Matchers.compileGlob(serviceName);
+      operationMatcher = Matchers.compileGlob(operationName);
+
+      this.rateLimiter = rateLimiter;
+    }
+
+    @Override
+    public <T extends CoreSpan<T>> boolean matches(T span) {
+      return Matchers.matches(serviceMatcher, span.getServiceName())
+          && Matchers.matches(operationMatcher, span.getOperationName());
+    }
+
+    @Override
+    public <T extends CoreSpan<T>> boolean sample(T span) {
+      return super.sample(span) && (rateLimiter == null || rateLimiter.tryAcquire());
+    }
+
+    public SimpleRateLimiter getRateLimiter() {
+      return rateLimiter;
     }
   }
 }

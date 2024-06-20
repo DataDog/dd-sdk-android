@@ -42,8 +42,10 @@ import,androidx.vectordrawable,Apache-2.0,Copyright 2018 The Android Open Source
 import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.android.tools,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.github.bumptech.glide,"Simplified BSD License/The Apache Software License, Version 2.0","Copyright 2014 Google, Inc. All rights reserved, Copyright (c) 2013. Bump Technologies Inc. All Rights Reserved."
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
+import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."
 import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
 import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
@@ -56,6 +58,7 @@ import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
 import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
+import,io.opentelemetry,Apache-2.0,Copyright 2019 The OpenTelemetry Authors
 import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.opentracing.contrib,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.reactivex.rxjava3,Apache-2.0,"Copyright (c) 2016-present, RxJava Contributors"
@@ -90,6 +93,7 @@ import(test),com.github.xgouchet.Elmyr,MIT,Copyright 2017-2019 Xavier F. Gouchet
 import(test),com.google.android.apps.common.testing.accessibility.framework,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),com.google.code.findbugs,Apache-2.0,"Copyright (C) 2006, University of Maryland"
 import(test),com.parse.bolts,"BSD License","Copyright (c) Facebook, Inc. and its affiliates."
+import(test),com.google.re2j,"Go License","Copyright (c) 2009 The Go Authors. All rights reserved."
 import(test),greatest,ICT,"Copyright (c) 2011-2018 Scott Vokes <vokes.s@gmail.com>"
 import(test),javax.inject,Apache-2.0,Copyright (C) 2009 The JSR-330 Expert Group
 import(test),junit,EPL-1.0,Copyright © 2002-2019 JUnit
@@ -101,6 +105,7 @@ import(test),org.assertj,Apache-2.0,Copyright 2012-2019 the original author or a
 import(test),org.ccil.cowan.tagsoup,Apache-2.0,Copyright 2002-2008 by John Cowan
 import(test),org.hamcrest,BSD-3-Clause,Copyright (c) 2000-2015 www.hamcrest.org
 import(test),org.jacoco,EPL-2.0,"Copyright (c) 2009, 2019 Mountainminds GmbH & Co. KG and Contributors"
+import(test),org.jctools,"Apache-2.0","Copyright 2023 Datadog, Inc."
 import(test),org.junit,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.jupiter,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.platform,EPL-2.0,Copyright 2015-2019 the original author or authors
@@ -111,6 +116,7 @@ import(test),org.objenesis,Apache-2.0,"Copyright (c) 2003-2013, Objenesis Team a
 import(test),org.opentest4j,Apache-2.0,Copyright 2015-2018 the original author or authors
 import(test),org.robolectric,Apache-2.0,Copyright 2015-2018 the original author or authors
 import(test),org.sonatype.oss,Apache-2.0,"Copyright (c) 2008-present Sonatype, Inc."
+import(test),uk.org.webcompere,MIT,Copyright (c) 2020 Ashley Frieze (c) 2017 Stefan Birkner
 build,androidx.compose.compiler,Apache-2.0,Copyright 2019 The Android Open Source Project
 build,ch.qos.logback,EPL-1.0,"Copyright (C) 1999-2015, QOS.ch"
 build,com.android.tools.build,Apache-2.0,Copyright (C) 2013 The Android Open Source Project

@@ -90,7 +90,6 @@ internal open class ConsentAwareFileOrchestrator(
         val previousOrchestrator = resolveDelegateOrchestrator(previousConsent)
         val newOrchestrator = resolveDelegateOrchestrator(newConsent)
         executorService.submitSafe("Data migration", internalLogger) {
-            @Suppress("ThreadSafety") // we are in the worker thread context
             dataMigrator.migrateData(
                 previousConsent,
                 previousOrchestrator,

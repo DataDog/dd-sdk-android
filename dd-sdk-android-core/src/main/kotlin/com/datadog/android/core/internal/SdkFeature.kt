@@ -8,6 +8,8 @@ package com.datadog.android.core.internal
 
 import android.app.Application
 import android.content.Context
+import androidx.annotation.AnyThread
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -112,8 +114,8 @@ internal class SdkFeature(
         return initialized.get()
     }
 
+    @AnyThread
     fun clearAllData() {
-        @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
         storage.dropAll()
     }
 
@@ -344,6 +346,7 @@ internal class SdkFeature(
     // endregion
 
     // Used for nightly tests only
+    @WorkerThread
     internal fun flushStoredData() {
         val flusher = DataFlusher(
             coreFeature.contextProvider,
@@ -353,7 +356,6 @@ internal class SdkFeature(
             FileMover(internalLogger),
             internalLogger
         )
-        @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
         flusher.flush(uploader)
     }
 

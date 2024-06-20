@@ -1,9 +1,3 @@
-/*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
-
 package com.datadog.trace.api;
 
 import static java.lang.annotation.ElementType.METHOD;
@@ -22,4 +16,10 @@ public @interface Trace {
 
   /** The resource name. By default it uses the same value as the operation name */
   String resourceName() default "";
+
+  /** Set whether to measure a trace. By default traces are not measured. */
+  boolean measured() default false;
+
+  /** Set whether to start a new trace. By default it continues the current trace. */
+  boolean noParent() default false;
 }

@@ -637,14 +637,12 @@ internal class DatadogRumMonitor(
                 rootScope.handleEvent(event, writer)
             }
         } else if (event is RumRawEvent.SendTelemetry) {
-            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
                 executorService.submitSafe("Rum event handling", sdkCore.internalLogger) {
-                    @Suppress("ThreadSafety")
                     synchronized(rootScope) {
                         rootScope.handleEvent(event, writer)
                         notifyDebugListenerWithState()

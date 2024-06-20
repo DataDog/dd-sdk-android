@@ -23,7 +23,6 @@ internal class SessionReplayRecordWriter(
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
                 val rawBatchEvent = RawBatchEvent(data = serializedRecord)
                 synchronized(this) {
-                    @Suppress("ThreadSafety") // called from the worker thread
                     if (eventBatchWriter.write(
                             event = rawBatchEvent,
                             batchMetadata = null,

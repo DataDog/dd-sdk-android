@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -38,6 +39,7 @@ open class TextViewMapper<in T : TextView>(
     drawableToColorMapper
 ) {
 
+    @UiThread
     override fun map(
         view: T,
         mappingContext: MappingContext,

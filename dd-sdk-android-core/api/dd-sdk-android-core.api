@@ -731,6 +731,15 @@ public final class com/datadog/android/core/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
 
+public final class com/datadog/android/core/metrics/MethodCallSamplingRate : java/lang/Enum {
+	public static final field DEFAULT Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+	public static final field RARE Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+	public static final field REDUCED Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+	public final fun getRate ()F
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+	public static fun values ()[Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+}
+
 public abstract interface class com/datadog/android/core/metrics/PerformanceMetric {
 	public static final field Companion Lcom/datadog/android/core/metrics/PerformanceMetric$Companion;
 	public static final field METRIC_TYPE Ljava/lang/String;

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.os.Build
 import android.widget.CompoundButton
+import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -32,6 +33,7 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
 
     // region CheckableTextViewMapper
 
+    @UiThread
     override fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
         var checkBoxHeight = DEFAULT_CHECKABLE_HEIGHT_IN_PX

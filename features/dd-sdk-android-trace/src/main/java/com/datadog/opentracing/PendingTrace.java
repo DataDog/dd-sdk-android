@@ -9,7 +9,7 @@ package com.datadog.opentracing;
 import com.datadog.exec.CommonTaskExecutor;
 import com.datadog.exec.CommonTaskExecutor.Task;
 import com.datadog.opentracing.scopemanager.ContinuableScope;
-import com.datadog.trace.common.util.Clock;
+import com.datadog.legacy.trace.common.util.Clock;
 import java.io.Closeable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;

@@ -1,14 +1,18 @@
-/*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
-
 package com.datadog.trace.common.sampling;
 
-import com.datadog.opentracing.DDSpan;
-import com.datadog.trace.api.Config;
+import static com.datadog.trace.bootstrap.instrumentation.api.SamplerConstants.DROP;
+import static com.datadog.trace.bootstrap.instrumentation.api.SamplerConstants.KEEP;
 
+import com.datadog.trace.api.Config;
+import com.datadog.trace.api.TraceConfig;
+import com.datadog.trace.api.config.TracerConfig;
+import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.trace.api.sampling.SamplingMechanism;
+import com.datadog.trace.core.CoreSpan;
+import com.datadog.trace.logger.Logger;
+import com.datadog.trace.logger.LoggerFactory;
+
+import java.util.Map;
 import java.util.Properties;
 
 /** Main interface to sample a collection of traces. */
@@ -20,18 +24,61 @@ public interface Sampler {
    * @param span the parent span with its context
    * @return true when the trace/spans has to be reported/written
    */
-  boolean sample(DDSpan span);
+  <T extends CoreSpan<T>> boolean sample(T span);
 
   final class Builder {
-    public static Sampler forConfig(final Config config) {
+    private static final Logger log = LoggerFactory.getLogger(Builder.class);
+
+    public static Sampler forConfig(final Config config, final TraceConfig traceConfig) {
       Sampler sampler;
       if (config != null) {
-        if (config.isPrioritySamplingEnabled()) {
-          Double samplingRate = config.getTraceSampleRate();
-          if (samplingRate != null) {
-            sampler = new RateByServiceSampler(config.getTraceSampleRate());
+        final Map<String, String> serviceRules = config.getTraceSamplingServiceRules();
+        final Map<String, String> operationRules = config.getTraceSamplingOperationRules();
+        String traceSamplingRulesJson = config.getTraceSamplingRules();
+        TraceSamplingRules traceSamplingRules = TraceSamplingRules.EMPTY;
+        if (traceSamplingRulesJson != null) {
+          traceSamplingRules = TraceSamplingRules.deserialize(traceSamplingRulesJson);
+        }
+        boolean serviceRulesDefined = serviceRules != null && !serviceRules.isEmpty();
+        boolean operationRulesDefined = operationRules != null && !operationRules.isEmpty();
+        boolean jsonTraceSamplingRulesDefined = !traceSamplingRules.isEmpty();
+        if ((serviceRulesDefined || operationRulesDefined) && jsonTraceSamplingRulesDefined) {
+          log.warn(
+              "Both {} and/or {} as well as {} are defined. Only {} will be used for rule-based sampling",
+              TracerConfig.TRACE_SAMPLING_SERVICE_RULES,
+              TracerConfig.TRACE_SAMPLING_OPERATION_RULES,
+              TracerConfig.TRACE_SAMPLING_RULES,
+              TracerConfig.TRACE_SAMPLING_RULES);
+        }
+        Double traceSampleRate =
+            null != traceConfig ? traceConfig.getTraceSampleRate() : config.getTraceSampleRate();
+        if (serviceRulesDefined
+            || operationRulesDefined
+            || jsonTraceSamplingRulesDefined
+            || traceSampleRate != null) {
+          try {
+            sampler =
+                RuleBasedTraceSampler.build(
+                    serviceRules,
+                    operationRules,
+                    traceSamplingRules,
+                    traceSampleRate,
+                    config.getTraceRateLimit());
+          } catch (final IllegalArgumentException e) {
+            log.error("Invalid sampler configuration. Using AllSampler", e);
+            sampler = new AllSampler();
+          }
+        } else if (config.isPrioritySamplingEnabled()) {
+          if (KEEP.equalsIgnoreCase(config.getPrioritySamplingForce())) {
+            log.debug("Force Sampling Priority to: SAMPLER_KEEP.");
+            sampler =
+                new ForcePrioritySampler(PrioritySampling.SAMPLER_KEEP, SamplingMechanism.DEFAULT);
+          } else if (DROP.equalsIgnoreCase(config.getPrioritySamplingForce())) {
+            log.debug("Force Sampling Priority to: SAMPLER_DROP.");
+            sampler =
+                new ForcePrioritySampler(PrioritySampling.SAMPLER_DROP, SamplingMechanism.DEFAULT);
           } else {
-            sampler = new RateByServiceSampler();
+            sampler = new RateByServiceTraceSampler();
           }
         } else {
           sampler = new AllSampler();
@@ -43,7 +90,7 @@ public interface Sampler {
     }
 
     public static Sampler forConfig(final Properties config) {
-      return forConfig(Config.get(config));
+      return forConfig(Config.get(config), null);
     }
 
     private Builder() {}

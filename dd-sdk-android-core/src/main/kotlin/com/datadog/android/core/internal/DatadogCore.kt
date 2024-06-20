@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.util.Log
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -35,6 +36,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.ndk.internal.NdkCrashHandler
@@ -151,11 +153,13 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
+    @AnyThread
     override fun setTrackingConsent(consent: TrackingConsent) {
         coreFeature.trackingConsentProvider.setConsent(consent)
     }
 
     /** @inheritDoc */
+    @AnyThread
     override fun setUserInfo(
         id: String?,
         name: String?,
@@ -173,20 +177,21 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
+    @AnyThread
     override fun addUserProperties(extraInfo: Map<String, Any?>) {
         coreFeature.userInfoProvider.addUserProperties(extraInfo)
     }
 
     /** @inheritDoc */
+    @AnyThread
     override fun clearAllData() {
         features.values.forEach {
             it.clearAllData()
         }
-        // TODO RUM-1462 address Thread safety
-        @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
-        coreFeature.deleteLastViewEvent()
-        @Suppress("ThreadSafety") // removal of the data is done in synchronous manner
-        coreFeature.deleteLastFatalAnrSent()
+        getPersistenceExecutorService().submitSafe("Clear all data", internalLogger) {
+            coreFeature.deleteLastViewEvent()
+            coreFeature.deleteLastFatalAnrSent()
+        }
     }
 
     /** @inheritDoc */
@@ -547,6 +552,7 @@ internal class DatadogCore(
     /**
      * Flushes all stored data (send everything right now).
      */
+    @WorkerThread
     internal fun flushStoredData() {
         // We need to drain and shutdown the executors first to make sure we avoid duplicated
         // data due to async operations.

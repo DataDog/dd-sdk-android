@@ -6,26 +6,38 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.graphics.Typeface
+import android.text.InputType
+import android.view.Gravity
 import android.widget.Button
+import android.widget.TextView
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapperTest
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
-import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapperTest.Companion.parametersMatrix
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset.offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -33,112 +45,177 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ButtonMapperTest : LegacyBaseWireframeMapperTest() {
+internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTest<Button, ButtonMapper>() {
 
-    private lateinit var testedButtonMapper: ButtonMapper
+    @StringForgery
+    lateinit var fakeText: String
 
-    @Mock
-    lateinit var mockTextWireframeMapper: TextViewMapper<Button>
+    @FloatForgery(0f, 255f)
+    var fakeFontSize: Float = 0f
 
-    @Forgery
-    lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
+    @IntForgery(min = 0, max = 0xffffff)
+    var fakeTextColor: Int = 0
 
-    @Mock
-    lateinit var mockButton: Button
+    @StringForgery(regex = "#[0-9A-F]{8}")
+    lateinit var fakeTextColorHexString: String
 
     @BeforeEach
     fun `set up`() {
         whenever(
-            mockTextWireframeMapper.map(
-                eq(mockButton),
-                eq(fakeMappingContext),
-                any(),
-                eq(mockInternalLogger)
+            mockColorStringFormatter.formatColorAndAlphaAsHexString(
+                fakeTextColor,
+                OPAQUE_ALPHA_VALUE
             )
-        ).thenReturn(fakeTextWireframes)
-        testedButtonMapper = ButtonMapper(mockTextWireframeMapper)
+        ) doReturn fakeTextColorHexString
+
+        withPrivacy(privacyOption())
+
+        testedWireframeMapper = ButtonMapper(
+            mockViewIdentifierResolver,
+            mockColorStringFormatter,
+            mockViewBoundsResolver,
+            mockDrawableToColorMapper
+        )
     }
 
-    @Test
-    fun `M resolve textWireframes W map(){textMapper returns wireframes with border}`(
-        forge: Forge
+    abstract fun expectedPrivacyCompliantText(text: String): String
+
+    abstract fun privacyOption(): SessionReplayPrivacy
+
+    @ParameterizedTest(name = "{index} (typeface: {0}, align:{2}, gravity:{3})")
+    @MethodSource("basicParametersMatrix")
+    fun `M resolves wireframe W map`(
+        fakeTypeface: Typeface?,
+        expectedFontFamily: String,
+        fakeTextAlignment: Int,
+        fakeTextGravity: Int,
+        expectedHorizontal: MobileSegment.Horizontal,
+        expectedVertical: MobileSegment.Vertical
     ) {
         // Given
-        fakeTextWireframes = fakeTextWireframes.map { it.copy(border = forge.getForgery()) }
-        whenever(
-            mockTextWireframeMapper.map(
-                eq(mockButton),
-                eq(fakeMappingContext),
-                any(),
-                eq(mockInternalLogger)
-            )
-        ).thenReturn(fakeTextWireframes)
-
-        // When
-        val buttonWireframes = testedButtonMapper.map(
-            mockButton,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
-    }
-
-    @Test
-    fun `M resolve textWireframes W map(){textMapper returns wireframes with shapeStyle}`(
-        forge: Forge
-    ) {
-        // Given
-        fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = forge.getForgery()) }
-        whenever(
-            mockTextWireframeMapper.map(
-                eq(mockButton),
-                eq(fakeMappingContext),
-                any(),
-                eq(mockInternalLogger)
-            )
-        ).thenReturn(fakeTextWireframes)
-
-        // When
-        val buttonWireframes = testedButtonMapper.map(
-            mockButton,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
-    }
-
-    @Test
-    fun `M add a default border W map(){textMapper returns wireframes with no border, shapeStyle}`() {
-        // Given
-        fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = null, border = null) }
-        whenever(
-            mockTextWireframeMapper.map(
-                eq(mockButton),
-                eq(fakeMappingContext),
-                any(),
-                eq(mockInternalLogger)
-            )
-        ).thenReturn(fakeTextWireframes)
-
-        val expectedWireframes = fakeTextWireframes.map {
-            it.copy(border = MobileSegment.ShapeBorder(ButtonMapper.BLACK_COLOR, 1))
+        prepareMockView<Button> { mockView ->
+            whenever(mockView.typeface) doReturn fakeTypeface
+            whenever(mockView.textSize) doReturn fakeFontSize
+            whenever(mockView.currentTextColor) doReturn fakeTextColor
+            whenever(mockView.textAlignment) doReturn fakeTextAlignment
+            whenever(mockView.gravity) doReturn fakeTextGravity
+            whenever(mockView.text) doReturn fakeText
+            whenever(mockView.inputType) doReturn InputType.TYPE_CLASS_TEXT
         }
+        val expectedFontSize = (fakeFontSize / fakeMappingContext.systemInformation.screenDensity).toLong()
 
         // When
-        val buttonWireframes = testedButtonMapper.map(
-            mockButton,
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
             fakeMappingContext,
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
 
         // Then
-        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
+        assertThat(wireframes).hasSize(1)
+        val textWireframe = wireframes[0] as MobileSegment.Wireframe.TextWireframe
+        assertThat(textWireframe)
+            .usingRecursiveComparison()
+            .ignoringFieldsMatchingRegexes("textStyle.*") // Compared below, because of rounding error with density
+            .isEqualTo(
+                MobileSegment.Wireframe.TextWireframe(
+                    id = fakeViewIdentifier,
+                    x = fakeViewGlobalBounds.x,
+                    y = fakeViewGlobalBounds.y,
+                    width = fakeViewGlobalBounds.width,
+                    height = fakeViewGlobalBounds.height,
+                    clip = null,
+                    shapeStyle = null,
+                    border = MobileSegment.ShapeBorder(
+                        color = "#000000ff",
+                        width = 1L
+                    ),
+                    text = expectedPrivacyCompliantText(fakeText),
+                    textStyle = MobileSegment.TextStyle(
+                        family = expectedFontFamily,
+                        size = expectedFontSize,
+                        color = fakeTextColorHexString
+                    ),
+                    textPosition = MobileSegment.TextPosition(
+                        padding = MobileSegment.Padding(0L, 0L, 0L, 0L),
+                        alignment = MobileSegment.Alignment(
+                            horizontal = expectedHorizontal,
+                            vertical = expectedVertical
+                        )
+                    )
+                )
+            )
+        assertThat(textWireframe.textStyle.family).isEqualTo(expectedFontFamily)
+        assertThat(textWireframe.textStyle.color).isEqualTo(fakeTextColorHexString)
+        assertThat(textWireframe.textStyle.size).isCloseTo(expectedFontSize, offset(1L))
+    }
+
+    @Test
+    fun `M resolves wireframe W map {no text}`() {
+        // Given
+        prepareMockView<Button> { mockView ->
+            whenever(mockView.typeface) doReturn null
+            whenever(mockView.textSize) doReturn fakeFontSize
+            whenever(mockView.currentTextColor) doReturn fakeTextColor
+            whenever(mockView.textAlignment) doReturn TextView.TEXT_ALIGNMENT_GRAVITY
+            whenever(mockView.gravity) doReturn Gravity.NO_GRAVITY
+            whenever(mockView.text) doReturn ""
+        }
+        val expectedFontSize = (fakeFontSize / fakeMappingContext.systemInformation.screenDensity).toLong()
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(1)
+        val textWireframe = wireframes[0] as MobileSegment.Wireframe.TextWireframe
+        assertThat(textWireframe)
+            .usingRecursiveComparison()
+            .ignoringFieldsMatchingRegexes("textStyle.*") // Compared below, because of rounding error with density
+            .isEqualTo(
+                MobileSegment.Wireframe.TextWireframe(
+                    id = fakeViewIdentifier,
+                    x = fakeViewGlobalBounds.x,
+                    y = fakeViewGlobalBounds.y,
+                    width = fakeViewGlobalBounds.width,
+                    height = fakeViewGlobalBounds.height,
+                    clip = null,
+                    shapeStyle = null,
+                    border = MobileSegment.ShapeBorder(
+                        color = "#000000ff",
+                        width = 1L
+                    ),
+                    text = expectedPrivacyCompliantText(""),
+                    textStyle = MobileSegment.TextStyle(
+                        family = TextViewMapper.SANS_SERIF_FAMILY_NAME,
+                        size = expectedFontSize,
+                        color = fakeTextColorHexString
+                    ),
+                    textPosition = MobileSegment.TextPosition(
+                        padding = MobileSegment.Padding(0L, 0L, 0L, 0L),
+                        alignment = MobileSegment.Alignment(
+                            horizontal = MobileSegment.Horizontal.LEFT,
+                            vertical = MobileSegment.Vertical.CENTER
+                        )
+                    )
+                )
+            )
+        assertThat(textWireframe.textStyle.family).isEqualTo(TextViewMapper.SANS_SERIF_FAMILY_NAME)
+        assertThat(textWireframe.textStyle.color).isEqualTo(fakeTextColorHexString)
+        assertThat(textWireframe.textStyle.size).isCloseTo(expectedFontSize, offset(1L))
+    }
+
+    companion object {
+
+        @JvmStatic
+        fun basicParametersMatrix(): Stream<Arguments> {
+            return parametersMatrix()
+        }
     }
 }
