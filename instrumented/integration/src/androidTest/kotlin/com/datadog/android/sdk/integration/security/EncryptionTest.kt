@@ -183,10 +183,11 @@ internal class EncryptionTest {
         logger.w("Action added")
 
         rumMonitor.stopResource(
-            resourceName,
-            forge.anInt(100, 600),
-            forge.aLong(min = 0L),
-            forge.aValueFrom(RumResourceKind::class.java),
+            key = resourceName,
+            statusCode = forge.anInt(100, 600),
+            uploadSize = forge.aLong(min = 0L),
+            downloadSize = forge.aLong(min = 0L),
+            kind = forge.aValueFrom(RumResourceKind::class.java),
             attributes = emptyMap()
         )
 

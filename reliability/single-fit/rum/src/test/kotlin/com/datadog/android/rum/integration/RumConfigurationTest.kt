@@ -148,7 +148,8 @@ class RumConfigurationTest {
         @StringForgery mappedResourceUrl: String,
         @Forgery resourceMethod: RumResourceMethod,
         @IntForgery(200, 599) statusCode: Int,
-        @LongForgery size: Long,
+        @LongForgery uploadSize: Long,
+        @LongForgery downloadSize: Long,
         @Forgery resourceKind: RumResourceKind
     ) {
         // Given
@@ -166,7 +167,7 @@ class RumConfigurationTest {
         // When
         rumMonitor.startView(viewKey, viewName, emptyMap())
         rumMonitor.startResource(originalResourceUrl, resourceMethod, originalResourceUrl, emptyMap())
-        rumMonitor.stopResource(originalResourceUrl, statusCode, size, resourceKind, emptyMap())
+        rumMonitor.stopResource(originalResourceUrl, statusCode, uploadSize, downloadSize, resourceKind, emptyMap())
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)

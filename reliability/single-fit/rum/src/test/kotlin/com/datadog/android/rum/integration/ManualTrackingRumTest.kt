@@ -331,7 +331,8 @@ class ManualTrackingRumTest {
         @StringForgery resourceKey: String,
         @Forgery resourceUrl: URL,
         @IntForgery(200, 599) resourceStatus: Int,
-        @LongForgery(0) resourceSize: Long
+        @LongForgery(0) uploadSize: Long,
+        @LongForgery(0) downloadSize: Long
     ) {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
@@ -340,7 +341,14 @@ class ManualTrackingRumTest {
         rumMonitor.startView(key, name, emptyMap())
         rumMonitor.startResource(resourceKey, RumResourceMethod.GET, resourceUrl.toString())
         Thread.sleep(100)
-        rumMonitor.stopResource(resourceKey, resourceStatus, resourceSize, RumResourceKind.NATIVE, emptyMap())
+        rumMonitor.stopResource(
+            key = resourceKey,
+            statusCode = resourceStatus,
+            uploadSize = uploadSize,
+            downloadSize = downloadSize,
+            kind = RumResourceKind.NATIVE,
+            attributes = emptyMap()
+        )
         rumMonitor.stopView(key, emptyMap())
 
         // Then
