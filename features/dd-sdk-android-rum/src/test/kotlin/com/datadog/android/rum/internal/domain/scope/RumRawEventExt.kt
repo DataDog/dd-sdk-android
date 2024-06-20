@@ -69,7 +69,8 @@ internal fun Forge.stopResourceEvent(): RumRawEvent.StopResource {
     return RumRawEvent.StopResource(
         key = anAlphabeticalString(),
         statusCode = aNullable { aLong(100, 600) },
-        size = aNullable { aPositiveLong() },
+        uploadSize = aNullable { aPositiveLong() },
+        downloadSize = aNullable { aPositiveLong() },
         kind = aValueFrom(RumResourceKind::class.java),
         attributes = exhaustiveAttributes()
     )

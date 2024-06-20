@@ -98,7 +98,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
   DEPRECATED fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun startResource(String, RumResourceMethod, String, Map<String, Any?> = emptyMap())
-  fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
+  fun stopResource(String, Int?, Long?, Long?, RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
@@ -169,7 +169,7 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
   fun startResource(com.datadog.android.rum.resource.ResourceId, com.datadog.android.rum.RumResourceMethod, String, Map<String, Any?> = emptyMap())
-  fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?>)
+  fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
@@ -1171,7 +1171,7 @@ data class com.datadog.android.rum.model.ResourceEvent
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
   data class Resource
-    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null, Graphql? = null)
+    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null, Graphql? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Resource

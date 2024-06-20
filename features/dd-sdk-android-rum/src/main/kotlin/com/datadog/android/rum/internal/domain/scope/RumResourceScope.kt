@@ -62,7 +62,8 @@ internal class RumResourceScope(
     internal var stopped = false
     private var kind: RumResourceKind = RumResourceKind.UNKNOWN
     private var statusCode: Long? = null
-    private var size: Long? = null
+    private var uploadSize: Long? = null
+    private var downloadSize: Long? = null
 
     // region RumScope
 
@@ -105,10 +106,11 @@ internal class RumResourceScope(
         attributes.putAll(event.attributes)
         kind = event.kind
         statusCode = event.statusCode
-        size = event.size
+        uploadSize = event.uploadSize
+        downloadSize = event.downloadSize
 
         if (!(waitForTiming && timing == null)) {
-            sendResource(kind, event.statusCode, event.size, event.eventTime, writer)
+            sendResource(event.eventTime, writer)
         }
     }
 
@@ -121,7 +123,7 @@ internal class RumResourceScope(
 
         timing = event.timing
         if (stopped && !sent) {
-            sendResource(kind, statusCode, size, event.eventTime, writer)
+            sendResource(event.eventTime, writer)
         }
     }
 
@@ -170,9 +172,6 @@ internal class RumResourceScope(
 
     @Suppress("LongMethod")
     private fun sendResource(
-        kind: RumResourceKind,
-        statusCode: Long?,
-        size: Long?,
         eventTime: Time,
         writer: DataWriter<Any>
     ) {
@@ -226,7 +225,8 @@ internal class RumResourceScope(
                     duration = duration,
                     method = method.toResourceMethod(),
                     statusCode = statusCode,
-                    size = size,
+                    size = downloadSize,
+                    uploadSize = uploadSize,
                     dns = finalTiming?.dns(),
                     connect = finalTiming?.connect(),
                     ssl = finalTiming?.ssl(),

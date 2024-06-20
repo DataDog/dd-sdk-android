@@ -239,7 +239,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource event W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -250,7 +251,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -307,7 +308,8 @@ internal class RumResourceScopeTest {
     fun `M add first party type provider to Resource W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -319,7 +321,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -377,7 +379,8 @@ internal class RumResourceScopeTest {
     fun `M use the url for provider domain W handleEvent(StopResource) { url is broken }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -403,7 +406,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -461,7 +464,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource with trace info W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeSpanId: String,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeTraceId: String,
         @FloatForgery(0f, 1f) fakeRulePsr: Float,
@@ -479,7 +483,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -537,7 +541,8 @@ internal class RumResourceScopeTest {
         @Forgery context: RumContext,
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -549,7 +554,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -608,7 +613,8 @@ internal class RumResourceScopeTest {
         @StringForgery fakeResultId: String,
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -637,7 +643,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -694,11 +700,12 @@ internal class RumResourceScopeTest {
     fun `M send event with user extra attributes W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long
     ) {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -755,11 +762,12 @@ internal class RumResourceScopeTest {
     fun `M do not send error event W handleEvent(StopResource with error statusCode)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(400, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long
     ) {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -807,11 +815,12 @@ internal class RumResourceScopeTest {
     fun `M not send related error event W handleEvent(StopResource with success statusCode)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 399) statusCode: Long,
-        @LongForgery(0, 1024) size: Long
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long
     ) {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -827,11 +836,12 @@ internal class RumResourceScopeTest {
     @Test
     fun `M not send related error event W handleEvent(StopResource with missing statusCode)`(
         @Forgery kind: RumResourceKind,
-        @LongForgery(0, 1024) size: Long
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long
     ) {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, null, size, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, null, uploadSize, downloadSize, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -848,7 +858,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource with initial global attributes W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -876,7 +887,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -933,7 +944,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource with global attributes W handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -947,7 +959,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -1004,7 +1016,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource with timing W handleEvent(AddResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
@@ -1018,7 +1031,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -1077,7 +1090,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource W handleEvent(AddResourceTiming+StopResource) {unrelated timing}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
@@ -1091,7 +1105,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -2236,14 +2250,15 @@ internal class RumResourceScopeTest {
     fun `M do nothing W handleEvent(StopResource) with different key`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, uploadSize, downloadSize, kind, attributes)
 
         Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -2308,7 +2323,8 @@ internal class RumResourceScopeTest {
     fun `M do nothing W handleEvent(WaitForResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -2319,7 +2335,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -2332,7 +2348,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource W handleEvent(WaitForResourceTiming+StopResource) {unrelated wait}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -2343,7 +2360,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<ResourceEvent> {
@@ -2396,7 +2413,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource W handleEvent(WaitForResourceTiming+AddResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
@@ -2410,7 +2428,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<ResourceEvent> {
@@ -2464,7 +2482,8 @@ internal class RumResourceScopeTest {
     fun `M send Resource W handleEvent(WaitForResourceTiming+StopResource+AddResourceTiming)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
@@ -2475,7 +2494,7 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
@@ -2533,7 +2552,8 @@ internal class RumResourceScopeTest {
     fun `M use explicit timings W handleEvent { AddResourceTiming + StopResource }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
@@ -2544,7 +2564,7 @@ internal class RumResourceScopeTest {
                     to forge.getForgery(ResourceTiming::class.java).asTimingsPayload()
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
 
         // When
         testedScope
@@ -2562,7 +2582,8 @@ internal class RumResourceScopeTest {
     fun `M use attributes timings W handleEvent { StopResource without AddResourceTiming  }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
@@ -2570,7 +2591,7 @@ internal class RumResourceScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
             mapOf("_dd.resource_timings" to timing.asTimingsPayload())
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
 
         // When
         testedScope.handleEvent(mockEvent, mockWriter)
@@ -2587,16 +2608,19 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         val fakeStatusCode = forge.aNullable { forge.aLong() }
-        val fakeSize = forge.aNullable { forge.aLong() }
+        val fakeUploadSize = forge.aNullable { forge.aLong() }
+        val fakeDownloadSize = forge.aNullable { forge.aLong() }
         val fakeKind = forge.aValueFrom(RumResourceKind::class.java)
         val fakeStopEvent = RumRawEvent.StopResource(
-            fakeKey,
-            fakeStatusCode,
-            fakeSize,
-            fakeKind,
-            emptyMap(),
-            Time(0, 0)
+            key = fakeKey,
+            statusCode = fakeStatusCode,
+            uploadSize = fakeUploadSize,
+            downloadSize = fakeDownloadSize,
+            kind = fakeKind,
+            attributes = emptyMap(),
+            eventTime = Time(0, 0)
         )
+
         // Given
         val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
 
@@ -2654,16 +2678,19 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         val fakeStatusCode = forge.aNullable { forge.aLong() }
-        val fakeSize = forge.aNullable { forge.aLong() }
+        val fakeUploadSize = forge.aNullable { forge.aLong() }
+        val fakeDownloadSize = forge.aNullable { forge.aLong() }
         val fakeKind = forge.aValueFrom(RumResourceKind::class.java)
         val fakeStopEvent = RumRawEvent.StopResource(
-            fakeKey,
-            fakeStatusCode,
-            fakeSize,
-            fakeKind,
-            emptyMap(),
-            fakeEventTime
+            key = fakeKey,
+            statusCode = fakeStatusCode,
+            uploadSize = fakeUploadSize,
+            downloadSize = fakeDownloadSize,
+            kind = fakeKind,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
+
         // Given
         val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
 
@@ -2720,7 +2747,8 @@ internal class RumResourceScopeTest {
     fun `M use graphql attributes W handleEvent`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -2736,7 +2764,7 @@ internal class RumResourceScopeTest {
                 "_dd.graphql.variables" to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
 
         // When
         testedScope.handleEvent(mockEvent, mockWriter)
@@ -2754,7 +2782,8 @@ internal class RumResourceScopeTest {
     fun `M notify about success W handleEvent() { resource write succeeded }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -2762,7 +2791,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -2774,7 +2803,8 @@ internal class RumResourceScopeTest {
     fun `M notify about error W handleEvent() { resource write failed }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -2783,7 +2813,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -2795,7 +2825,8 @@ internal class RumResourceScopeTest {
     fun `M notify about error W handleEvent() { resource write throws }`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         forge: Forge
     ) {
         // Given
@@ -2806,7 +2837,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, uploadSize, downloadSize, kind, attributes)
         testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then

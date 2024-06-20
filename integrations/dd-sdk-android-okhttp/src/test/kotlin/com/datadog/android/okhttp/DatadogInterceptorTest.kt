@@ -212,6 +212,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(fakeResponseBody.toByteArray().size.toLong()),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -259,6 +260,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(fakeResponseBody.toByteArray().size.toLong()),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -305,6 +307,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(fakeResponseBody.toByteArray().size.toLong()),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -355,6 +358,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(null),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -404,6 +408,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(null),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -452,6 +457,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(null),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -499,6 +505,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(null),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -562,6 +569,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(null),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -623,6 +631,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(null),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -665,6 +674,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(fakeResponseBody.toByteArray().size.toLong()),
                     eq(kind),
                     eq(expectedStopAttrs)
@@ -705,6 +715,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
+                    eq(fakeRequest.body?.contentLength()),
                     eq(fakeResponseBody.toByteArray().size.toLong()),
                     eq(kind),
                     eq(expectedStopAttrs)

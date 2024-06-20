@@ -71,7 +71,8 @@ internal sealed class RumRawEvent {
     internal data class StopResource(
         val key: Any,
         val statusCode: Long?,
-        val size: Long?,
+        val uploadSize: Long?,
+        val downloadSize: Long?,
         val kind: RumResourceKind,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()

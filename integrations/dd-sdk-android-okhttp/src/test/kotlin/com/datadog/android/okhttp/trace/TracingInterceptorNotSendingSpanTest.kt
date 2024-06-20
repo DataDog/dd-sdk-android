@@ -134,7 +134,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
     lateinit var fakeHostIp: String
 
     lateinit var fakeMethod: RumResourceMethod
+
     var fakeBody: String? = null
+
     var fakeMediaType: MediaType? = null
 
     @StringForgery(type = StringForgeryType.ASCII)

@@ -155,7 +155,8 @@ interface RumMonitor {
      * @param key the instance that represents the active view (usually your
      * request or network call instance).
      * @param statusCode the status code of the resource (if any)
-     * @param size the size of the resource, in bytes
+     * @param uploadSize the size of the resource, in bytes
+     * @param downloadSize the size of the resource, in bytes
      * @param kind the type of resource loaded
      * @param attributes additional custom attributes to attach to the resource. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
@@ -165,7 +166,8 @@ interface RumMonitor {
     fun stopResource(
         key: String,
         statusCode: Int?,
-        size: Long?,
+        uploadSize: Long?,
+        downloadSize: Long?,
         kind: RumResourceKind,
         attributes: Map<String, Any?>
     )

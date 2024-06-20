@@ -245,7 +245,8 @@ internal class DatadogRumMonitor(
     override fun stopResource(
         key: String,
         statusCode: Int?,
-        size: Long?,
+        uploadSize: Long?,
+        downloadSize: Long?,
         kind: RumResourceKind,
         attributes: Map<String, Any?>
     ) {
@@ -254,7 +255,8 @@ internal class DatadogRumMonitor(
             RumRawEvent.StopResource(
                 key,
                 statusCode?.toLong(),
-                size,
+                uploadSize,
+                downloadSize,
                 kind,
                 attributes.toMap(),
                 eventTime
@@ -319,7 +321,8 @@ internal class DatadogRumMonitor(
     override fun stopResource(
         key: ResourceId,
         statusCode: Int?,
-        size: Long?,
+        uploadSize: Long?,
+        downloadSize: Long?,
         kind: RumResourceKind,
         attributes: Map<String, Any?>
     ) {
@@ -328,7 +331,8 @@ internal class DatadogRumMonitor(
             RumRawEvent.StopResource(
                 key,
                 statusCode?.toLong(),
-                size,
+                uploadSize,
+                downloadSize,
                 kind,
                 attributes.toMap(),
                 eventTime
