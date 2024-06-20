@@ -51,7 +51,7 @@ internal class DdSpanToSpanEventMapperTest {
     lateinit var mockBigIntegerUtils: BigIntegerUtils
 
     @StringForgery(regex = "[a-f0-9]{16}")
-    lateinit var fakeLessSignificantTraceId: String
+    lateinit var fakeLeastSignificantTraceId: String
 
     @StringForgery(regex = "[a-f0-9]{16}")
     lateinit var fakeMostSignificantTraceId: String
@@ -62,9 +62,9 @@ internal class DdSpanToSpanEventMapperTest {
     @BeforeEach
     fun `set up`() {
         testedMapper = DdSpanToSpanEventMapper(fakeNetworkInfoEnabled, mockBigIntegerUtils)
-        whenever(mockBigIntegerUtils.lessSignificantUnsignedLongAsHexa(fakeSpan.traceId))
-            .thenReturn(fakeLessSignificantTraceId)
-        whenever(mockBigIntegerUtils.mostSignificantUnsignedLongAsHexa(fakeSpan.traceId))
+        whenever(mockBigIntegerUtils.leastSignificant64BitsAsHex(fakeSpan.traceId))
+            .thenReturn(fakeLeastSignificantTraceId)
+        whenever(mockBigIntegerUtils.mostSignificant64BitsAsHex(fakeSpan.traceId))
             .thenReturn(fakeMostSignificantTraceId)
     }
 
@@ -76,8 +76,8 @@ internal class DdSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(fakeSpan.spanId.toHexString())
-            .hasLessSignificantTraceId(fakeLessSignificantTraceId)
-            .hasMostSignificantTraceId(fakeMostSignificantTraceId)
+            .hasLeastSignificant64BitsTraceId(fakeLeastSignificantTraceId)
+            .hasMostSignificant64BitsTraceId(fakeMostSignificantTraceId)
             .hasParentId(fakeSpan.parentId.toHexString())
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName)
@@ -121,8 +121,8 @@ internal class DdSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(fakeSpan.spanId.toHexString())
-            .hasLessSignificantTraceId(fakeLessSignificantTraceId)
-            .hasMostSignificantTraceId(fakeMostSignificantTraceId)
+            .hasLeastSignificant64BitsTraceId(fakeLeastSignificantTraceId)
+            .hasMostSignificant64BitsTraceId(fakeMostSignificantTraceId)
             .hasParentId(fakeSpan.parentId.toHexString())
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName)

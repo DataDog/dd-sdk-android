@@ -37,18 +37,19 @@ internal class SpansPayloadAssert(actual: JsonObject) :
     class SpanAssert(private val actualSpan: JsonObject, private val index: Int) :
         AbstractObjectAssert<SpanAssert, JsonObject>(actualSpan, SpanAssert::class.java) {
 
-        fun hasLeastSignificantTraceId(traceId: String): SpanAssert {
+        fun hasLeastSignificant64BitsTraceId(traceId: String): SpanAssert {
             val actualTraceId = actualSpan.getString(TRACE_ID_KEY)
             assertThat(actualTraceId).overridingErrorMessage(
-                "Expected less significant traceId to be $traceId but was $actualTraceId for index $index"
+                "Expected least significant traceId to be $traceId " +
+                    "but was $actualTraceId for index $index"
             ).isEqualTo(traceId)
             return this
         }
 
-        fun hasMostSignificantTraceId(traceId: String): SpanAssert {
+        fun hasMostSignificant64BitsTraceId(traceId: String): SpanAssert {
             val actualTraceId = actualSpan.getString(TRACE_ID_META_KEY)
             assertThat(actualTraceId).overridingErrorMessage(
-                "Expected the most signficant trace id to be $traceId but " +
+                "Expected the most significant trace id to be $traceId but " +
                     "was $actualTraceId for index $index"
             ).isEqualTo(traceId)
             return this

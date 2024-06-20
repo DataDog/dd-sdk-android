@@ -251,7 +251,7 @@ internal class OtelTracerBuilderProviderTest {
         val traceId = span.spanContext.traceId
 
         // Then
-        assertThat(traceId.substring(0, 16)).isEqualTo("0000000000000000")
+        assertThat(traceId).hasSize(32)
         assertThat(span.spanContext.traceIdBytes.size).isEqualTo(16)
     }
 
@@ -856,7 +856,7 @@ internal class OtelTracerBuilderProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         val delegateSpan: DDSpan = span.getFieldValue("delegate")
-        val expectedTraceId = delegateSpan.context().traceId.toString()
+        val expectedTraceId = delegateSpan.context().traceId.toHexString()
         val expectedSpanId = delegateSpan.context().spanId.toString()
 
         // When

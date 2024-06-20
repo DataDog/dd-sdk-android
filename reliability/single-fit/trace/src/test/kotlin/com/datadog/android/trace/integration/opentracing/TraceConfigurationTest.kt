@@ -136,8 +136,8 @@ class TraceConfigurationTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            leastSignificantTraceId = span.leastSignificantTraceId()
-            mostSignificantTraceId = span.mostSignificantTraceId()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -182,8 +182,8 @@ class TraceConfigurationTest {
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            leastSignificantTraceId = span.leastSignificantTraceId()
-            mostSignificantTraceId = span.mostSignificantTraceId()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()

@@ -6,6 +6,7 @@
 
 package com.datadog.opentracing.propagation;
 
+import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
 
 import com.datadog.opentracing.DDSpanContext;
@@ -112,7 +113,7 @@ class B3HttpCodec {
             } else {
               trimmedValue = valueParts[0];
             }
-            traceId = validateUInt64BitsID(trimmedValue, HEX_RADIX);
+            traceId = validateUInt128BitsID(trimmedValue, HEX_RADIX);
 
             spanId = validateUInt64BitsID(valueParts[1], HEX_RADIX);
 

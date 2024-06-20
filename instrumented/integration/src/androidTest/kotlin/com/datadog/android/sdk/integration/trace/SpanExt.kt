@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.integration.opentracing
+package com.datadog.android.sdk.integration.trace
 
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.opentracing.DDSpan
@@ -32,13 +32,4 @@ fun Span.mostSignificant64BitsTraceId(): String {
  */
 fun Span.spanIdAsHexString(): String {
     return context().toSpanId().toLong().toHexString()
-}
-
-/**
- * Returns the span's spanId in as Long.
- * The [SpanContext.toSpanId] method returns a string in decimal format,
- * which doesn't match what we send in our events
- */
-fun Span.spanIdAsLong(): Long {
-    return context().toSpanId().toLong()
 }

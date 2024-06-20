@@ -68,8 +68,12 @@ internal abstract class TracesTest {
         assertThat(expectedSpans.size).isEqualTo(sentSpansObjects.size)
         expectedSpans.forEach { span ->
             val json = sentSpansObjects.first {
-                it.get(TRACE_ID_KEY).asString == Long.toHexString((span.traceId.toLong())) &&
-                    it.get(SPAN_ID_KEY).asString == Long.toHexString((span.spanId.toLong()))
+                val leasSignificantTraceId = it.get(TRACE_ID_KEY).asString
+                val mostSignificantTraceId = it.getAsJsonObject("meta")
+                    .getAsJsonPrimitive(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY).asString
+                leasSignificantTraceId == span.leastSignificant64BitsTraceId() &&
+                    mostSignificantTraceId == span.mostSignificant64BitsTraceId() &&
+                    it.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
             }
             assertMatches(json, span)
         }
@@ -139,6 +143,7 @@ internal abstract class TracesTest {
         const val DURATION_KEY = "duration"
         const val SERVICE_NAME_KEY = "service"
         const val TRACE_ID_KEY = "trace_id"
+        const val MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY = "_dd.p.id"
         const val SPAN_ID_KEY = "span_id"
         const val PARENT_ID_KEY = "parent_id"
         const val RESOURCE_KEY = "resource"

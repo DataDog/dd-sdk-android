@@ -16,6 +16,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.internal.utils.identifyRequest
+import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -297,7 +298,7 @@ internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to span.context().toTraceId(),
+                RumAttributes.TRACE_ID to span.context().traceIdAsHexString(),
                 RumAttributes.SPAN_ID to span.context().toSpanId(),
                 RumAttributes.RULE_PSR to traceSampler.getSampleRate()
             )

@@ -24,9 +24,9 @@ internal class DdSpanToSpanEventMapper(
         val serverOffset = datadogContext.time.serverTimeOffsetNs
         val metrics = resolveMetrics(model)
         val metadata = resolveMeta(datadogContext, model)
-        val lessSignificantTraceId = bigIntegerUtils.lessSignificantUnsignedLongAsHexa(model.traceId)
+        val leastSignificantTraceId = bigIntegerUtils.leastSignificant64BitsAsHex(model.traceId)
         return SpanEvent(
-            traceId = lessSignificantTraceId,
+            traceId = leastSignificantTraceId,
             spanId = model.spanId.toHexString(),
             parentId = model.parentId.toHexString(),
             resource = model.resourceName,
@@ -65,7 +65,7 @@ internal class DdSpanToSpanEventMapper(
             null
         }
         val userInfo = datadogContext.userInfo
-        val mostSignificantTraceId = bigIntegerUtils.mostSignificantUnsignedLongAsHexa(event.traceId)
+        val mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(event.traceId)
         val additionalProperties = mutableMapOf<String, String>()
         additionalProperties[TRACE_ID_META_KEY] = mostSignificantTraceId
         additionalProperties += event.meta

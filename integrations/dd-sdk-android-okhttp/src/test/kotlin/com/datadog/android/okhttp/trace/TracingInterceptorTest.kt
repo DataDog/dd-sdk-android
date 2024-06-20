@@ -144,8 +144,10 @@ internal open class TracingInterceptorTest {
     @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
 
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeTraceId: String
+    @StringForgery(regex = "[a-f][0-9]{32}")
+    lateinit var fakeTraceIdAsString: String
+
+    lateinit var fakeTraceId: BigInteger
 
     private var fakeOrigin: String? = null
 
@@ -155,6 +157,7 @@ internal open class TracingInterceptorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeTraceId = BigInteger(fakeTraceIdAsString, 16)
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.withOrigin(fakeOrigin)) doReturn mockSpanBuilder
@@ -162,7 +165,8 @@ internal open class TracingInterceptorTest {
         whenever(mockSpanBuilder.start()) doReturn mockSpan
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
-        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
+        whenever(mockSpanContext.traceId).thenReturn(fakeTraceId)
+        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId.toString()
         whenever(mockTraceSampler.sample()) doReturn true
 
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
@@ -315,7 +319,8 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
         }
@@ -398,7 +403,7 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.headers)
                 .hasTraceParentHeader(
-                    mockSpan.context().toTraceId(),
+                    fakeTraceIdAsString,
                     mockSpan.context().toSpanId(),
                     isSampled = false
                 )
@@ -436,9 +441,10 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.B3M_SPAN_ID_KEY)).isNull()
@@ -447,7 +453,7 @@ internal open class TracingInterceptorTest {
                 .isEqualTo("0")
             assertThat(lastValue.headers)
                 .hasTraceParentHeader(
-                    mockSpan.context().toTraceId(),
+                    fakeTraceIdAsString,
                     mockSpan.context().toSpanId(),
                     isSampled = false
                 )
@@ -505,9 +511,10 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
         }
     }
 
@@ -594,7 +601,7 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.headers)
                 .hasTraceParentHeader(
-                    mockSpan.context().toTraceId(),
+                    fakeTraceIdAsString,
                     mockSpan.context().toSpanId(),
                     isSampled = false
                 )
@@ -638,9 +645,10 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.B3M_SPAN_ID_KEY)).isNull()
@@ -649,7 +657,7 @@ internal open class TracingInterceptorTest {
                 .isEqualTo("0")
             assertThat(lastValue.headers)
                 .hasTraceParentHeader(
-                    mockSpan.context().toTraceId(),
+                    fakeTraceIdAsString,
                     mockSpan.context().toSpanId(),
                     isSampled = false
                 )
@@ -998,8 +1006,9 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
         }
     }
 
@@ -1104,7 +1113,7 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.headers)
                 .hasTraceParentHeader(
-                    mockSpan.context().toTraceId(),
+                    fakeTraceIdAsString,
                     mockSpan.context().toSpanId(),
                     isSampled = false
                 )
@@ -1270,7 +1279,7 @@ internal open class TracingInterceptorTest {
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
-        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
+        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceIdAsString
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
 
         val response = testedInterceptor.intercept(mockChain)
@@ -1303,7 +1312,7 @@ internal open class TracingInterceptorTest {
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
-        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
+        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceIdAsString
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
 
         val response1 = testedInterceptor.intercept(mockChain)
@@ -1513,7 +1522,7 @@ internal open class TracingInterceptorTest {
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
-        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
+        whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
 
         // When

@@ -13,7 +13,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class TraceContextFactory : ForgeryFactory<TraceContext> {
 
     override fun getForgery(forge: Forge): TraceContext {
-        val fakeTraceId = forge.aStringMatching("[0-9a-f]{16}")
+        val fakeTraceId = forge.aStringMatching("[0-9a-f]{32}")
         val fakeSpanId = forge.aStringMatching("[0-9a-f]{16}")
         val fakeSamplingPriority = forge.anInt()
         return TraceContext(

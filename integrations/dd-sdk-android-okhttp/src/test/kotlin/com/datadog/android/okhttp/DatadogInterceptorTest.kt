@@ -184,7 +184,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
@@ -229,7 +229,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
@@ -321,7 +321,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .build()
         }
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
@@ -368,7 +368,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .build()
         }
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
@@ -520,7 +520,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
@@ -619,7 +619,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes

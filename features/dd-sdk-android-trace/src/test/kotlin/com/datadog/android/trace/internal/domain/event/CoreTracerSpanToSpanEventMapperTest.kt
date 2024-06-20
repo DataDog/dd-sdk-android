@@ -68,8 +68,8 @@ internal class CoreTracerSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(DDSpanId.toHexStringPadded(fakeSpan.spanId))
-            .hasLessSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toLong(), 16))
-            .hasMostSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toHighOrderLong(), 16))
+            .hasLeastSignificant64BitsTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toLong(), 16))
+            .hasMostSignificant64BitsTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toHighOrderLong(), 16))
             .hasParentId(DDSpanId.toHexStringPadded(fakeSpan.parentId))
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName.toString())
@@ -124,8 +124,8 @@ internal class CoreTracerSpanToSpanEventMapperTest {
         // Then
         assertThat(event)
             .hasSpanId(DDSpanId.toHexStringPadded(fakeSpan.spanId))
-            .hasLessSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toLong(), 16))
-            .hasMostSignificantTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toHighOrderLong(), 16))
+            .hasLeastSignificant64BitsTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toLong(), 16))
+            .hasMostSignificant64BitsTraceId(LongStringUtils.toHexStringPadded(fakeSpan.traceId.toHighOrderLong(), 16))
             .hasParentId(DDSpanId.toHexStringPadded(fakeSpan.parentId))
             .hasServiceName(fakeSpan.serviceName)
             .hasOperationName(fakeSpan.operationName.toString())
