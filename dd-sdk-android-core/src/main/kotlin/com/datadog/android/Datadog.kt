@@ -7,6 +7,8 @@
 package com.datadog.android
 
 import android.content.Context
+import androidx.annotation.AnyThread
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.UserInfo
@@ -282,6 +284,7 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
+    @AnyThread
     fun clearAllData(sdkCore: SdkCore = getInstance()) {
         sdkCore.clearAllData()
     }
@@ -293,6 +296,7 @@ object Datadog {
     // stop the SDKs persistence - upload streams and will leave it in an inconsistent state. This
     // method is mainly for test purposes.
     @Suppress("unused")
+    @WorkerThread
     private fun flushAndShutdownExecutors() {
         // Note for the future: if we decide to make this a public feature,
         // we need to drain, execute and flush from a background thread or ensure we're

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.utils
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.TextView
+import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 
@@ -54,6 +55,7 @@ interface ImageWireframeHelper {
      * Creates the wireframes for the compound drawables in a [TextView].
      * @param
      */
+    @UiThread
     fun createCompoundDrawableWireframes(
         textView: TextView,
         mappingContext: MappingContext,

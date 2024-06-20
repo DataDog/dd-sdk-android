@@ -90,6 +90,15 @@ datadog:
     - '**/reliability/**'
     - '**/sample/**'
     - '**/tools/**'
+  ThreadSafety:
+    active: true
+    workerThreadSwitchingCalls:
+      - "com.datadog.android.core.internal.utils.submitSafe"
+      - "com.datadog.android.core.internal.utils.executeSafe"
+      - "com.datadog.android.core.internal.utils.scheduleSafe"
+      - "com.datadog.android.api.feature.FeatureScope.withWriteContext"
+    mainThreadSwitchingCalls:
+      - "android.widget.LinearLayout.post"
   TodoWithoutTask:
     active: true
     deprecatedPrefixes:
@@ -224,6 +233,7 @@ datadog:
       - "java.lang.System.arraycopy(kotlin.Any, kotlin.Int, kotlin.Any, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.ArrayStoreException,java.lang.NullPointerException"
       - "java.lang.System.loadLibrary(kotlin.String?):java.lang.SecurityException,java.lang.UnsatisfiedLinkError,java.lang.NullPointerException"
       - "java.lang.reflect.Field.get(kotlin.Any):java.lang.IllegalAccessException,java.lang.IllegalArgumentException,java.lang.NullPointerException,java.lang.ExceptionInInitializerError"
+      - "java.math.BigInteger.constructor(kotlin.String?, kotlin.Int):java.lang.NumberFormatException,java.lang.ArithmeticException"
       - "java.net.URL.constructor(kotlin.String?):java.net.MalformedURLException"
       - "java.security.MessageDigest.getInstance(kotlin.String?):java.security.NoSuchAlgorithmException"
       - "java.text.SimpleDateFormat.constructor(kotlin.String, java.util.Locale):java.lang.NullPointerException"
@@ -249,7 +259,6 @@ datadog:
       - "kotlin.String.takeLast(kotlin.Int):kotlin.IllegalArgumentException"
       - "kotlin.String.toLong():java.lang.NumberFormatException"
       - "kotlin.String.format(kotlin.Array):java.util.IllegalFormatException"
-      - "kotlin.String.takeLast(kotlin.Int):java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -287,6 +296,7 @@ datadog:
       - "okhttp3.Request.Builder.post(okhttp3.RequestBody):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.method(kotlin.String, okhttp3.RequestBody?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.tag(java.lang.Class, io.opentracing.Span?):java.lang.NullPointerException"
+      - "okhttp3.Request.Builder.tag(java.lang.Class, com.datadog.android.okhttp.TraceContext?):java.lang.ClassCastException"
       - "okhttp3.Request.Builder.url(kotlin.String):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Interceptor.Chain.proceed(okhttp3.Request):java.io.IOException"
       - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
@@ -885,6 +895,7 @@ datadog:
       - "kotlin.collections.MutableList.isNullOrEmpty()"
       - "kotlin.collections.MutableList.iterator()"
       - "kotlin.collections.MutableList.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
+      - "kotlin.collections.MutableList.map(kotlin.Function1)"
       - "kotlin.collections.MutableList.remove(java.io.File)"
       - "kotlin.collections.MutableList.remove(java.lang.ref.WeakReference)"
       - "kotlin.collections.MutableList.removeAll(kotlin.Function1)"
@@ -1034,6 +1045,7 @@ datadog:
       - "kotlin.math.max(kotlin.Long, kotlin.Long)"
       - "kotlin.math.min(kotlin.Double, kotlin.Double)"
       - "kotlin.math.sqrt(kotlin.Double)"
+      - "kotlin.String.trim(kotlin.Function1)"
       # endregion
       # region Kotlin Tuples
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
@@ -1084,6 +1096,7 @@ datadog:
       - "kotlin.String.substringAfter(kotlin.Char, kotlin.String)"
       - "kotlin.String.substringAfterLast(kotlin.Char, kotlin.String)"
       - "kotlin.String.substringBefore(kotlin.Char, kotlin.String)"
+      - "kotlin.String.takeLeastSignificant64Bits()"
       - "kotlin.String.toByteArray(java.nio.charset.Charset) "
       - "kotlin.String.toByteArray(java.nio.charset.Charset)"
       - "kotlin.String.toDoubleOrNull()"
@@ -1216,6 +1229,20 @@ datadog:
       - "io.opentracing.propagation.TextMapInject(kotlin.Function2)"
       - "io.opentracing.util.GlobalTracer.get()"
       - "io.opentracing.util.GlobalTracer.isRegistered()"
+      # endregion
+      # region Opentelemetry
+      - "io.opentelemetry.api.trace.Span.getInvalid()"
+      - "io.opentelemetry.api.trace.TracerBuilder.build()"
+      - "io.opentelemetry.api.trace.SpanBuilder.setAttribute(kotlin.String?, kotlin.String?)"
+      - "io.opentelemetry.api.trace.TracerBuilder.setInstrumentationVersion(kotlin.String?)"
+      - "io.opentelemetry.api.trace.TracerProvider.noop()"
+      - "io.opentelemetry.context.Context.get(io.opentelemetry.context.ContextKey?)"
+      - "io.opentelemetry.context.Context.makeCurrent()"
+      - "io.opentelemetry.context.Context.root()"
+      - "io.opentelemetry.context.ContextStorage.addWrapper(java.util.function.Function?)"
+      - "io.opentelemetry.context.ContextStorage.attach(io.opentelemetry.context.Context?)"
+      - "io.opentelemetry.context.ContextStorage.current()"
+      - "io.opentelemetry.context.Scope.close()"
       # endregion
       # region RxJava
       - "io.reactivex.rxjava3.core.Completable.doOnError(io.reactivex.rxjava3.functions.Consumer?)"

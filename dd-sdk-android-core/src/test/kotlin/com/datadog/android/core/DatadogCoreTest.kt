@@ -78,6 +78,7 @@ import org.mockito.quality.Strictness
 import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -728,6 +729,13 @@ internal class DatadogCoreTest {
         )
         val mockCoreFeature = mock<CoreFeature>()
         testedCore.coreFeature = mockCoreFeature
+        val mockExecutorService: FlushableExecutorService = mock()
+        whenever(mockCoreFeature.persistenceExecutorService) doReturn mockExecutorService
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            val runnable = it.arguments.first() as Runnable
+            runnable.run()
+            mock<Future<*>>()
+        }
 
         // When
         testedCore.clearAllData()

@@ -15,6 +15,7 @@ include(":features:dd-sdk-android-trace")
 include(":features:dd-sdk-android-webview")
 include(":features:dd-sdk-android-session-replay")
 include(":features:dd-sdk-android-session-replay-material")
+include(":features:dd-sdk-android-trace-otel")
 
 // INTEGRATION LIBRARIES
 include(":integrations:dd-sdk-android-coil")
@@ -26,6 +27,7 @@ include(":integrations:dd-sdk-android-sqldelight")
 include(":integrations:dd-sdk-android-timber")
 include(":integrations:dd-sdk-android-tv")
 include(":integrations:dd-sdk-android-okhttp")
+include(":integrations:dd-sdk-android-okhttp-otel")
 include(":integrations:dd-sdk-android-rum-coroutines")
 include(":integrations:dd-sdk-android-trace-coroutines")
 

@@ -6,6 +6,7 @@
 
 package com.datadog.android.api.feature
 
+import androidx.annotation.AnyThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
 
@@ -13,6 +14,7 @@ import com.datadog.android.api.storage.EventBatchWriter
  * Represents a Datadog feature.
  */
 interface FeatureScope {
+
     /**
      * Utility to write an event, asynchronously.
      * @param forceNewBatch if `true` forces the [EventBatchWriter] to write in a new file and
@@ -22,6 +24,7 @@ interface FeatureScope {
      * [DatadogContext] will have a state created at the moment this method is called, before the
      * thread switch for the callback invocation.
      */
+    @AnyThread
     fun withWriteContext(
         forceNewBatch: Boolean = false,
         callback: (DatadogContext, EventBatchWriter) -> Unit

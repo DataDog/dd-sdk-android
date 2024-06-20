@@ -110,8 +110,8 @@ internal class AbstractStorage(
         }
     }
 
+    @AnyThread
     override fun dropAll() {
-        @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
         executorService.submitSafe("Data drop", internalLogger) {
             grantedPersistenceStrategy.dropAll()
             pendingPersistenceStrategy.dropAll()
@@ -126,7 +126,6 @@ internal class AbstractStorage(
         previousConsent: TrackingConsent,
         newConsent: TrackingConsent
     ) {
-        @Suppress("ThreadSafety") // TODO RUM-1462 address Thread safety
         executorService.submitSafe("Data migration", internalLogger) {
             if (previousConsent == TrackingConsent.PENDING) {
                 when (newConsent) {

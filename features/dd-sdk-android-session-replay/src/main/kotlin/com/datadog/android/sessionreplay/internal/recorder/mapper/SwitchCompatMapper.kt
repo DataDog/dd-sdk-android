@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Rect
+import androidx.annotation.UiThread
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -36,6 +37,7 @@ internal open class SwitchCompatMapper(
 
     // region CheckableWireframeMapper
 
+    @UiThread
     override fun resolveMainWireframes(
         view: SwitchCompat,
         mappingContext: MappingContext,
@@ -46,6 +48,7 @@ internal open class SwitchCompatMapper(
     }
 
     @Suppress("ReturnCount")
+    @UiThread
     override fun resolveCheckedCheckable(
         view: SwitchCompat,
         mappingContext: MappingContext
@@ -96,6 +99,7 @@ internal open class SwitchCompatMapper(
         return wireframes
     }
 
+    @UiThread
     override fun resolveNotCheckedCheckable(
         view: SwitchCompat,
         mappingContext: MappingContext
@@ -146,6 +150,7 @@ internal open class SwitchCompatMapper(
         return wireframes
     }
 
+    @UiThread
     override fun resolveMaskedCheckable(
         view: SwitchCompat,
         mappingContext: MappingContext

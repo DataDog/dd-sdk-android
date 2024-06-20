@@ -9,8 +9,10 @@ package com.datadog.android.sessionreplay.internal.async
 import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
 
 internal abstract class RecordedDataQueueItem(
-    internal val recordedQueuedItemContext: RecordedQueuedItemContext
+    internal val recordedQueuedItemContext: RecordedQueuedItemContext,
+    internal val creationTimeStampInNs: Long = System.nanoTime()
 ) {
     internal abstract fun isValid(): Boolean
+
     internal abstract fun isReady(): Boolean
 }

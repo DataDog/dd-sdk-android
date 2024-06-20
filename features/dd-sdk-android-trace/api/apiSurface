@@ -14,6 +14,8 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
+interface com.datadog.android.trace.InternalCoreWriterProvider
+  fun getCoreTracerWriter(): com.datadog.trace.common.writer.Writer
 fun io.opentracing.Span.setError(Throwable)
 fun io.opentracing.Span.setError(String)
 fun <T: Any?> withinSpan(String, io.opentracing.Span? = null, Boolean = true, io.opentracing.Span.() -> T): T

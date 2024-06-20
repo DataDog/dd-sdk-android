@@ -6,19 +6,24 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import com.datadog.tools.detekt.rules.AbstractTypedRule
 import io.gitlab.arturbosch.detekt.api.CodeSmell
+import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.api.Debt
 import io.gitlab.arturbosch.detekt.api.Entity
 import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
+import io.gitlab.arturbosch.detekt.api.config
 import io.gitlab.arturbosch.detekt.rules.fqNameOrNull
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.types.SimpleType
 
 /**
@@ -27,7 +32,12 @@ import org.jetbrains.kotlin.types.SimpleType
  * any method call that would cause an operation to be ran on the wrong thread group.
  * @active
  */
-class ThreadSafety : Rule() {
+class ThreadSafety(
+    ruleSetConfig: Config
+) : AbstractTypedRule(ruleSetConfig) {
+
+    private val workerThreadSwitchingCalls: List<String> by config(defaultValue = emptyList())
+    private val mainThreadSwitchingCalls: List<String> by config(defaultValue = emptyList())
 
     private enum class ThreadGroup(
         val className: String?
@@ -59,7 +69,7 @@ class ThreadSafety : Rule() {
         }
     }
 
-    private var parentFunGroup: ThreadGroup = ThreadGroup.UNKNOWN
+    private val parentFunGroupStack: MutableList<ThreadGroup> = mutableListOf(ThreadGroup.UNKNOWN)
 
     // region Rule
 
@@ -79,26 +89,54 @@ class ThreadSafety : Rule() {
     }
 
     override fun visitNamedFunction(function: KtNamedFunction) {
-        if (bindingContext == BindingContext.EMPTY) {
-            return
-        }
-
-        parentFunGroup = function.annotationEntries.mapNotNull {
+        val parentFunGroup: ThreadGroup = function.annotationEntries.mapNotNull {
             it.shortName?.asString()?.toMethodGroup()
         }.firstOrNull() ?: ThreadGroup.UNKNOWN
+        parentFunGroupStack.add(0, parentFunGroup)
 
         super.visitNamedFunction(function)
+
+        parentFunGroupStack.removeAt(0)
     }
 
     override fun visitCallExpression(expression: KtCallExpression) {
-        if (bindingContext == BindingContext.EMPTY) {
-            println("No binding context :/")
-            return
+        var wrapCallWith: ThreadGroup? = null
+        val resolvedCall = expression.getResolvedCall(bindingContext)
+        if (resolvedCall != null) {
+            val callDescriptor = resolvedCall.candidateDescriptor
+
+            checkCallExpression(expression, callDescriptor)
+
+            val call = callDescriptor.fqNameOrNull()?.asString()
+
+            wrapCallWith = if (call in workerThreadSwitchingCalls) {
+                ThreadGroup.WORKER
+            } else if (call in mainThreadSwitchingCalls) {
+                ThreadGroup.MAIN
+            } else {
+                null
+            }
+            if (wrapCallWith == null) {
+                println("Non thread switching call:$call")
+            }
+        } else {
+            val callee = expression.calleeExpression
+            if (callee is KtNameReferenceExpression) {
+                val calleeFullType = callee.getReferencedName().resolveFullType()
+                if (calleeFullType == "java.lang.Runnable") {
+                    wrapCallWith = ThreadGroup.WORKER
+                }
+            }
+            println("Unresolved call expression $expression !!! ")
         }
 
-        checkCallExpression(expression)
-
-        super.visitCallExpression(expression)
+        if (wrapCallWith != null) {
+            parentFunGroupStack.add(0, wrapCallWith)
+            super.visitCallExpression(expression)
+            parentFunGroupStack.removeAt(0)
+        } else {
+            super.visitCallExpression(expression)
+        }
     }
 
     // endregion
@@ -106,8 +144,8 @@ class ThreadSafety : Rule() {
     // region Internal
 
     private fun Iterable<AnnotationDescriptor>.extractMethodGroup(): ThreadGroup {
-        return mapNotNull {
-            val type = it.type
+        return firstNotNullOfOrNull { annotationDescriptor ->
+            val type = annotationDescriptor.type
             when (type) {
                 is SimpleType -> {
                     val typeName = try {
@@ -117,7 +155,7 @@ class ThreadSafety : Rule() {
                         null
                     }
                     if (typeName == null) {
-                        println("\nUNABLE to get annotation name for $it")
+                        println("\nUNABLE to get annotation name for $annotationDescriptor")
                     }
                     typeName?.toMethodGroup()
                 }
@@ -127,8 +165,7 @@ class ThreadSafety : Rule() {
                     null
                 }
             }
-        }
-            .firstOrNull() ?: ThreadGroup.UNKNOWN
+        } ?: ThreadGroup.UNKNOWN
     }
 
     private fun String.toMethodGroup(): ThreadGroup? {
@@ -136,9 +173,8 @@ class ThreadSafety : Rule() {
             .firstOrNull { it.className == this }
     }
 
-    private fun checkCallExpression(expression: KtCallExpression) {
-        val resolvedCall = expression.getResolvedCall(bindingContext) ?: return
-        val callDescriptor = resolvedCall.candidateDescriptor
+    private fun checkCallExpression(expression: KtCallExpression, callDescriptor: CallableDescriptor) {
+        val parentFunGroup = parentFunGroupStack.first()
 
         val calleeGroup = callDescriptor.annotations.extractMethodGroup()
         val allowedCall = ThreadGroup.allowedCalls[parentFunGroup]?.contains(calleeGroup)

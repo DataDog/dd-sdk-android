@@ -1,12 +1,7 @@
-/*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
-
 package com.datadog.trace.common.writer;
 
-import com.datadog.opentracing.DDSpan;
+import com.datadog.trace.core.DDSpan;
+
 import java.io.Closeable;
 import java.util.List;
 
@@ -24,6 +19,13 @@ public interface Writer extends Closeable {
   void start();
 
   /**
+   * Requests the writer to send all finished traces and block until complete.
+   *
+   * @return true if completed normally
+   */
+  boolean flush();
+
+  /**
    * Indicates to the writer that no future writing will come and it should terminates all
    * connections and tasks
    */
@@ -31,6 +33,5 @@ public interface Writer extends Closeable {
   void close();
 
   /** Count that a trace was captured for stats, but without reporting it. */
-  void incrementTraceCount();
-
+  void incrementDropCounts(int spanCount);
 }

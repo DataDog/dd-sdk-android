@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence
 
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -124,19 +125,20 @@ internal class ConsentAwareStorage(
     }
 
     /** @inheritdoc */
-    @WorkerThread
+    @AnyThread
     override fun dropAll() {
-        synchronized(lockedBatches) {
-            lockedBatches.forEach {
-                deleteBatch(it, RemovalReason.Flushed)
+        executorService.submitSafe("ConsentAwareStorage.dropAll", internalLogger) {
+            synchronized(lockedBatches) {
+                lockedBatches.forEach {
+                    deleteBatch(it, RemovalReason.Flushed)
+                }
+                lockedBatches.clear()
             }
-            lockedBatches.clear()
-        }
-
-        arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
-            orchestrator.getAllFiles().forEach {
-                val metaFile = orchestrator.getMetadataFile(it)
-                deleteBatch(it, metaFile, RemovalReason.Flushed)
+            arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
+                orchestrator.getAllFiles().forEach {
+                    val metaFile = orchestrator.getMetadataFile(it)
+                    deleteBatch(it, metaFile, RemovalReason.Flushed)
+                }
             }
         }
     }

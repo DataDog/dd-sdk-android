@@ -7,7 +7,8 @@
 package com.datadog.opentracing
 
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.trace.api.sampling.PrioritySampling
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.tools.unit.createInstance
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -40,7 +41,8 @@ class PendingTraceTest {
         val mockTracer: DDTracer = mock()
         whenever(mockTracer.partialFlushMinSpans) doReturn 1
         val fakeTraceId = BigInteger.valueOf(forge.aLong())
-        val pendingTrace = PendingTrace(mockTracer, fakeTraceId)
+        val pendingTrace =
+            createInstance(PendingTrace::class.java, mockTracer, fakeTraceId)
         val rootSpan = forge.fakeSpan(pendingTrace, mockTracer, fakeTraceId, BigInteger.ZERO, "rootSpan")
         val countDownLatch = CountDownLatch(CONCURRENT_THREAD)
 

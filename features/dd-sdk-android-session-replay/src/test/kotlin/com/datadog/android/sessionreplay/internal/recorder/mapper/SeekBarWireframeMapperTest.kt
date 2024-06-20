@@ -245,7 +245,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
 
     // endregion
 
-    // region Android O+ (allows setting a min progress value)
+    // region Android < O
 
     @Test
     fun `M return partial wireframes W map { invalid thumb id }`() {

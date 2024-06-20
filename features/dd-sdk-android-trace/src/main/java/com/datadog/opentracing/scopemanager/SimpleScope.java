@@ -6,7 +6,7 @@
 
 package com.datadog.opentracing.scopemanager;
 
-import com.datadog.trace.context.ScopeListener;
+import com.datadog.legacy.trace.context.ScopeListener;
 import io.opentracing.Span;
 
 /** Simple scope implementation which does not propagate across threads. */
