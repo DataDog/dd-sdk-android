@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
@@ -26,7 +27,7 @@ internal class DefaultOnDrawListenerProducer(
             snapshotProducer = snapshotProducer,
             privacy = privacy,
             internalLogger = sdkCore.internalLogger,
-            methodCallSamplingRate = WindowsOnDrawListener.METHOD_CALL_SAMPLING_RATE
+            methodCallSamplingRate = MethodCallSamplingRate.DEFAULT.rate
         )
     }
 }
