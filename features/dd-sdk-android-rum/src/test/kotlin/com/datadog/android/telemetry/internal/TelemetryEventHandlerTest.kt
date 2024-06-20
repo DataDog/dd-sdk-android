@@ -20,6 +20,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -107,6 +108,9 @@ internal class TelemetryEventHandlerTest {
     @Mock
     lateinit var mockDeviceInfo: DeviceInfo
 
+    @Mock
+    lateinit var sessionEndedMetricDispatcher: SessionMetricDispatcher
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -180,6 +184,7 @@ internal class TelemetryEventHandlerTest {
             mockSdkCore,
             mockSampler,
             mockConfigurationSampler,
+            sessionEndedMetricDispatcher,
             MAX_EVENTS_PER_SESSION_TEST
         )
     }

@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
@@ -88,6 +89,9 @@ internal class RumViewManagerScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
+
+    @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
@@ -124,6 +128,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             mockParentScope,
             mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             true,
             fakeTrackFrustrations,
             mockViewChangedListener,
@@ -474,6 +479,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -502,6 +508,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -533,6 +540,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -597,6 +605,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -629,6 +638,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,

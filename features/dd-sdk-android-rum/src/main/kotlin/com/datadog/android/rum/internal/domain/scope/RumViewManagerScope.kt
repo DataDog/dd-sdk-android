@@ -16,13 +16,16 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.util.Locale
 
+@Suppress("LongParameterList")
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
+    private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
     private val viewChangedListener: RumViewChangedListener?,
@@ -148,6 +151,7 @@ internal class RumViewManagerScope(
     private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
         val viewScope = RumViewScope.fromEvent(
             this,
+            sessionEndedMetricDispatcher,
             sdkCore,
             event,
             viewChangedListener,
@@ -203,6 +207,7 @@ internal class RumViewManagerScope(
         return RumViewScope(
             this,
             sdkCore,
+            sessionEndedMetricDispatcher,
             RumScopeKey(
                 RUM_BACKGROUND_VIEW_ID,
                 RUM_BACKGROUND_VIEW_URL,
@@ -225,6 +230,7 @@ internal class RumViewManagerScope(
         return RumViewScope(
             this,
             sdkCore,
+            sessionEndedMetricDispatcher,
             RumScopeKey(
                 RUM_APP_LAUNCH_VIEW_ID,
                 RUM_APP_LAUNCH_VIEW_URL,

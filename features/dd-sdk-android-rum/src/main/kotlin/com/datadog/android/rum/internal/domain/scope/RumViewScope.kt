@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -43,6 +44,7 @@ import kotlin.math.min
 internal open class RumViewScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
+    private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val key: RumScopeKey,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
@@ -880,7 +882,9 @@ internal open class RumViewScope(
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version
-            )
+            ).apply {
+                sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
+            }
         }.submit()
     }
 
@@ -1233,6 +1237,7 @@ internal open class RumViewScope(
 
         internal fun fromEvent(
             parentScope: RumScope,
+            sessionEndedMetricDispatcher: SessionMetricDispatcher,
             sdkCore: InternalSdkCore,
             event: RumRawEvent.StartView,
             viewChangedListener: RumViewChangedListener?,
@@ -1246,6 +1251,7 @@ internal open class RumViewScope(
             return RumViewScope(
                 parentScope,
                 sdkCore,
+                sessionEndedMetricDispatcher,
                 event.key,
                 event.eventTime,
                 event.attributes,

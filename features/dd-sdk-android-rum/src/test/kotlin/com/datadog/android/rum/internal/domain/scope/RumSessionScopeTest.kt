@@ -14,6 +14,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -81,6 +82,9 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
 
     @Mock
     lateinit var mockViewChangedListener: RumViewChangedListener
@@ -1252,6 +1256,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             sampleRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,

@@ -17,6 +17,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 
@@ -100,28 +101,33 @@ object Rum {
     private fun createMonitor(
         sdkCore: InternalSdkCore,
         rumFeature: RumFeature
-    ) = DatadogRumMonitor(
-        applicationId = rumFeature.applicationId,
-        sdkCore = sdkCore,
-        sampleRate = rumFeature.sampleRate,
-        writer = rumFeature.dataWriter,
-        handler = Handler(Looper.getMainLooper()),
-        telemetryEventHandler = TelemetryEventHandler(
+    ): DatadogRumMonitor {
+        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(internalLogger = sdkCore.internalLogger)
+        return DatadogRumMonitor(
+            applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
-            eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
-            configurationExtraSampler = RateBasedSampler(
-                rumFeature.telemetryConfigurationSampleRate
-            )
-        ),
-        firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
-        cpuVitalMonitor = rumFeature.cpuVitalMonitor,
-        memoryVitalMonitor = rumFeature.memoryVitalMonitor,
-        frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
-        backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
-        trackFrustrations = rumFeature.trackFrustrations,
-        sessionListener = rumFeature.sessionListener,
-        executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline")
-    )
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            sampleRate = rumFeature.sampleRate,
+            writer = rumFeature.dataWriter,
+            handler = Handler(Looper.getMainLooper()),
+            telemetryEventHandler = TelemetryEventHandler(
+                sdkCore = sdkCore,
+                eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
+                sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+                configurationExtraSampler = RateBasedSampler(
+                    rumFeature.telemetryConfigurationSampleRate
+                )
+            ),
+            firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
+            cpuVitalMonitor = rumFeature.cpuVitalMonitor,
+            memoryVitalMonitor = rumFeature.memoryVitalMonitor,
+            frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
+            backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
+            trackFrustrations = rumFeature.trackFrustrations,
+            sessionListener = rumFeature.sessionListener,
+            executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline")
+        )
+    }
 
     // endregion
 
