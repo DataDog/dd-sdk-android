@@ -59,7 +59,8 @@ internal class ConfigurationCoreForgeryFactory :
                 mock(),
                 mock(),
                 forge.aValueFrom(BackPressureMitigation::class.java)
-            )
+            ),
+            additionalInterceptors = emptyList()
         )
     }
 }
