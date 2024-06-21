@@ -16,6 +16,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -145,6 +146,15 @@ internal class RumViewManagerScope(
                 )
             }
         }
+
+        // Track the orphan event both in foreground and background.
+        SessionEndedMetric.MissedEventType.fromRawEvent(rawEvent = event)?.let {
+            sessionEndedMetricDispatcher.onMissedEventTracked(sessionId = parentScope.getRumContext().sessionId, it)
+        } ?: sdkCore.internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            { MESSAGE_UNKNOWN_MISSED_TYPE }
+        )
     }
 
     @WorkerThread
@@ -289,5 +299,8 @@ internal class RumViewManagerScope(
                 "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
                 "You can also track views manually using the RumMonitor.startView() and " +
                 "RumMonitor.stopView() methods."
+
+        internal const val MESSAGE_UNKNOWN_MISSED_TYPE = "An RUM event was detected, but no view is active, " +
+            "its missed type is unknown"
     }
 }

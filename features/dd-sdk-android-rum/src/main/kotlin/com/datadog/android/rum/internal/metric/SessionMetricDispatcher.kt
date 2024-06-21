@@ -19,12 +19,17 @@ internal interface SessionMetricDispatcher {
     /**
      * Starts a session metric with given session id and start reason of this session.
      */
-    fun startMetric(sessionId: String, startReason: RumSessionScope.StartReason)
+    fun startMetric(
+        sessionId: String,
+        startReason: RumSessionScope.StartReason,
+        ntpOffsetAtStartMs: Long,
+        backgroundEventTracking: Boolean
+    )
 
     /**
      * Ends the session metric with given session id.
      */
-    fun endMetric(sessionId: String)
+    fun endMetric(sessionId: String, ntpOffsetAtEndMs: Long)
 
     /**
      * Called when the session is stopped.
@@ -40,4 +45,9 @@ internal interface SessionMetricDispatcher {
      * Called when a sdk error is tracked by this session metric.
      */
     fun onSdkErrorTracked(sessionId: String, errorKind: String?)
+
+    /**
+     * Called when a missed event is tracked by this session metric.
+     */
+    fun onMissedEventTracked(sessionId: String, missedEventType: SessionEndedMetric.MissedEventType)
 }

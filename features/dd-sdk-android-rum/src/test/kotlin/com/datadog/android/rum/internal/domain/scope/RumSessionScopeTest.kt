@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -101,6 +102,9 @@ internal class RumSessionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @Forgery
+    lateinit var fakeTimeInfo: TimeInfo
+
     lateinit var fakeInitialViewEvent: RumRawEvent
 
     @Mock
@@ -114,6 +118,7 @@ internal class RumSessionScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
+        whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
 
         initializeTestedScope()
     }

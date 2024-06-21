@@ -176,7 +176,7 @@ internal class RumSessionScope(
 
         // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
         if (isExpired || isTimedOut || isActive.not()) {
-            sessionEndedMetricDispatcher.endMetric(sessionId)
+            sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
         if (isInteraction || isSdkInitInForeground) {
@@ -211,8 +211,15 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
+        if (keepSession) {
+            sessionEndedMetricDispatcher.startMetric(
+                sessionId = sessionId,
+                startReason = reason,
+                ntpOffsetAtStartMs = sdkCore.time.serverTimeOffsetMs,
+                backgroundEventTracking = backgroundTrackingEnabled
+            )
+        }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
-        sessionEndedMetricDispatcher.startMetric(sessionId, reason)
     }
 
     private fun updateSessionStateForSessionReplay(state: State, sessionId: String) {

@@ -19,19 +19,26 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
 
     override fun startMetric(
         sessionId: String,
-        startReason: RumSessionScope.StartReason
+        startReason: RumSessionScope.StartReason,
+        ntpOffsetAtStartMs: Long,
+        backgroundEventTracking: Boolean
     ) {
-        metricsBySessionId[sessionId] = SessionEndedMetric(sessionId, startReason)
+        metricsBySessionId[sessionId] = SessionEndedMetric(
+            sessionId = sessionId,
+            startReason = startReason,
+            ntpOffsetAtStartMs = ntpOffsetAtStartMs,
+            hasTrackBackgroundEventsEnabled = backgroundEventTracking
+        )
     }
 
-    override fun endMetric(sessionId: String) {
+    override fun endMetric(sessionId: String, ntpOffsetAtEndMs: Long) {
         // the argument is always non - null, so we can suppress the warning
         @Suppress("UnsafeThirdPartyFunctionCall")
         val metric = metricsBySessionId.remove(sessionId)
         metric?.let {
             internalLogger.logMetric(
                 messageBuilder = { SessionEndedMetric.RUM_SESSION_ENDED_METRIC_NAME },
-                additionalProperties = it.toMetricAttributes()
+                additionalProperties = it.toMetricAttributes(ntpOffsetAtEndMs)
             )
         }
     }
@@ -57,6 +64,10 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
             target = InternalLogger.Target.MAINTAINER,
             { buildSdkErrorTrackError(sessionId, errorKind) }
         )
+    }
+
+    override fun onMissedEventTracked(sessionId: String, missedEventType: SessionEndedMetric.MissedEventType) {
+        metricsBySessionId[sessionId]?.onMissedEventTracked(missedEventType)
     }
 
     private fun buildSdkErrorTrackError(sessionId: String, errorKind: String?): String {

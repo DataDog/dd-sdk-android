@@ -22,6 +22,41 @@ class TelemetryMetricAssert(actual: JsonObject) : JsonObjectAssert(actual, true)
         return this
     }
 
+    fun hasBackgroundEventsTrackingEnable(enable: Boolean): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.has_background_events_tracking_enabled", enable)
+        return this
+    }
+
+    fun hasNtpOffsetAtStart(ntpOffsetAtStart: Long): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.ntp_offset.at_start", ntpOffsetAtStart)
+        return this
+    }
+
+    fun hasNtpOffsetAtEnd(ntpOffsetAtEnd: Long): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.ntp_offset.at_end", ntpOffsetAtEnd)
+        return this
+    }
+
+    fun hasNoViewActionEventCounts(count: Int): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.no_view_events_count.actions", count)
+        return this
+    }
+
+    fun hasNoViewErrorEventCounts(count: Int): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.no_view_events_count.errors", count)
+        return this
+    }
+
+    fun hasNoViewResourceEventCounts(count: Int): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.no_view_events_count.resources", count)
+        return this
+    }
+
+    fun hasNoViewLongTaskEventCounts(count: Int): TelemetryMetricAssert {
+        hasField("additionalProperties.rse.no_view_events_count.long_tasks", count)
+        return this
+    }
+
     companion object {
         fun assertThat(actual: Map<*, *>?): TelemetryMetricAssert {
             return TelemetryMetricAssert(Gson().toJsonTree(actual).asJsonObject)
