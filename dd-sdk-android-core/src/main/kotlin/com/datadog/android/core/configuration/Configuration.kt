@@ -12,6 +12,7 @@ import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.Authenticator
+import okhttp3.Interceptor
 import java.net.Proxy
 
 /**
@@ -42,7 +43,8 @@ internal constructor(
         val site: DatadogSite,
         val batchProcessingLevel: BatchProcessingLevel,
         val persistenceStrategyFactory: PersistenceStrategy.Factory?,
-        val backpressureStrategy: BackPressureStrategy
+        val backpressureStrategy: BackPressureStrategy,
+        val additionalInterceptors: List<Interceptor>
     )
 
     // region Builder
@@ -259,6 +261,18 @@ internal constructor(
             return this
         }
 
+        /**
+         * Add a network interceptor to the internal OkHttpClient used to upload tracked events to Datadog's servers.
+         * @param interceptor the interceptor to add
+         * Note you can call this method more than once if you need to add several interceptors
+         */
+        fun addNetworkInterceptor(interceptor: Interceptor): Builder {
+            coreConfig = coreConfig.copy(
+                additionalInterceptors = coreConfig.additionalInterceptors + interceptor
+            )
+            return this
+        }
+
         internal fun allowClearTextHttp(): Builder {
             coreConfig = coreConfig.copy(
                 needsClearTextHttp = true
@@ -297,7 +311,8 @@ internal constructor(
             site = DatadogSite.US1,
             batchProcessingLevel = BatchProcessingLevel.MEDIUM,
             persistenceStrategyFactory = null,
-            backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY
+            backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY,
+            additionalInterceptors = emptyList()
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

@@ -595,6 +595,8 @@ internal class CoreFeature(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         builder.dns(RotatingDnsResolver())
 
+        configuration.additionalInterceptors.forEach { builder.addNetworkInterceptor(it) }
+
         okHttpClient = builder.build()
     }
 
