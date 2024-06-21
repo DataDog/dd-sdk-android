@@ -12,6 +12,7 @@ import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.Authenticator
+import okhttp3.Interceptor
 import java.net.Proxy
 
 /**
@@ -43,7 +44,8 @@ internal constructor(
         val batchProcessingLevel: BatchProcessingLevel,
         val persistenceStrategyFactory: PersistenceStrategy.Factory?,
         val backpressureStrategy: BackPressureStrategy,
-        val uploadSchedulerStrategy: UploadSchedulerStrategy?
+        val uploadSchedulerStrategy: UploadSchedulerStrategy?,
+        val additionalInterceptors: List<Interceptor>
     )
 
     // region Builder
@@ -261,6 +263,18 @@ internal constructor(
         }
 
         /**
+         * Add a network interceptor to the internal OkHttpClient used to upload tracked events to Datadog's servers.
+         * @param interceptor the interceptor to add
+         * Note you can call this method more than once if you need to add several interceptors
+         */
+        fun addNetworkInterceptor(interceptor: Interceptor): Builder {
+            coreConfig = coreConfig.copy(
+                additionalInterceptors = coreConfig.additionalInterceptors + interceptor
+            )
+            return this
+        }
+
+        /**
          * Sets the strategy to schedule data uploads.
          * @param uploadSchedulerStrategy the upload scheduler strategy,
          * or null to use the default strategy (default: null)
@@ -309,7 +323,8 @@ internal constructor(
             batchProcessingLevel = BatchProcessingLevel.MEDIUM,
             persistenceStrategyFactory = null,
             backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY,
-            uploadSchedulerStrategy = null
+            uploadSchedulerStrategy = null,
+            additionalInterceptors = emptyList()
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

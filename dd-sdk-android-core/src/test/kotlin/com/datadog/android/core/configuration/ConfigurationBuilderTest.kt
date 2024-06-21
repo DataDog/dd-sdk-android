@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Authenticator
+import okhttp3.Interceptor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -430,6 +431,26 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 uploadSchedulerStrategy = mockUploadSchedulerStrategy
+            )
+        )
+    }
+
+    @Test
+    fun `M build config with network interceptor W addNetworkInterceptor() and build()`() {
+        // Given
+        val mockInterceptor1 = mock<Interceptor>()
+        val mockInterceptor2 = mock<Interceptor>()
+
+        // When
+        val config = testedBuilder
+            .addNetworkInterceptor(mockInterceptor1)
+            .addNetworkInterceptor(mockInterceptor2)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                additionalInterceptors = listOf(mockInterceptor1, mockInterceptor2)
             )
         )
     }

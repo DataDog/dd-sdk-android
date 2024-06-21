@@ -60,7 +60,8 @@ internal class ConfigurationCoreForgeryFactory :
                 mock(),
                 forge.aValueFrom(BackPressureMitigation::class.java)
             ),
-            uploadSchedulerStrategy = forge.aNullable { mock() }
+            uploadSchedulerStrategy = forge.aNullable { mock() },
+            additionalInterceptors = emptyList()
         )
     }
 }
