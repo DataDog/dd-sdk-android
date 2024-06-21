@@ -142,11 +142,12 @@ constructor(
                 )
             )
             monitor.stopResource(
-                key,
-                null,
-                size,
-                RumResourceKind.OTHER,
-                emptyMap()
+                key = key,
+                statusCode = null,
+                uploadSize = null,
+                downloadSize = size,
+                kind = RumResourceKind.OTHER,
+                attributes = emptyMap()
             )
         }
     }

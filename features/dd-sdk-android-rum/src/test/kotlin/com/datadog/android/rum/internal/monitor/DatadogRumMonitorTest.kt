@@ -475,10 +475,11 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W stopResource()`(
         @StringForgery key: String,
         @IntForgery(200, 600) statusCode: Int,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery kind: RumResourceKind
     ) {
-        testedMonitor.stopResource(key, statusCode, size, kind, fakeAttributes)
+        testedMonitor.stopResource(key, statusCode, uploadSize, downloadSize, kind, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -488,7 +489,8 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.statusCode).isEqualTo(statusCode.toLong())
             assertThat(event.kind).isEqualTo(kind)
-            assertThat(event.size).isEqualTo(size)
+            assertThat(event.uploadSize).isEqualTo(uploadSize)
+            assertThat(event.downloadSize).isEqualTo(downloadSize)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -499,7 +501,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery key: String,
         @Forgery kind: RumResourceKind
     ) {
-        testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
+        testedMonitor.stopResource(key, null, null, null, kind, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -509,7 +511,8 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.statusCode).isNull()
             assertThat(event.kind).isEqualTo(kind)
-            assertThat(event.size).isNull()
+            assertThat(event.uploadSize).isNull()
+            assertThat(event.downloadSize).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -950,12 +953,13 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope with timestamp W stopResource()`(
         @StringForgery key: String,
         @IntForgery(200, 600) statusCode: Int,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery kind: RumResourceKind
     ) {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        testedMonitor.stopResource(key, statusCode, size, kind, attributes)
+        testedMonitor.stopResource(key, statusCode, uploadSize, downloadSize, kind, attributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -966,7 +970,8 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.statusCode).isEqualTo(statusCode.toLong())
             assertThat(event.kind).isEqualTo(kind)
-            assertThat(event.size).isEqualTo(size)
+            assertThat(event.uploadSize).isEqualTo(uploadSize)
+            assertThat(event.downloadSize).isEqualTo(downloadSize)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)

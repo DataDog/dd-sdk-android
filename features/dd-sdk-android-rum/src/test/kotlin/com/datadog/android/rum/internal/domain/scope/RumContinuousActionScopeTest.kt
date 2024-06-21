@@ -409,7 +409,8 @@ internal class RumContinuousActionScopeTest {
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
+        @LongForgery(0, 1024) uploadSize: Long,
+        @LongForgery(0, 1024) downloadSize: Long,
         @Forgery kind: RumResourceKind
     ) {
         // When
@@ -418,7 +419,7 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
-        fakeEvent = RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap())
+        fakeEvent = RumRawEvent.StopResource(key, statusCode, uploadSize, downloadSize, kind, emptyMap())
         val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)

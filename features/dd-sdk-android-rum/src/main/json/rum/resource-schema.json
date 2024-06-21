@@ -63,6 +63,12 @@
               "minimum": 0,
               "readOnly": true
             },
+            "upload_size": {
+              "type": "integer",
+              "description": "Size in octet of the resource request body",
+              "minimum": 0,
+              "readOnly": true
+            },
             "size": {
               "type": "integer",
               "description": "Size in octet of the resource response body",

@@ -303,11 +303,12 @@ internal constructor(
             )
         }
         GlobalRumMonitor.get(sdkCore).stopResource(
-            requestId,
-            statusCode,
-            getBodyLength(response, sdkCore.internalLogger),
-            kind,
-            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
+            key = requestId,
+            statusCode = statusCode,
+            uploadSize = request.body?.contentLength(),
+            downloadSize = getBodyLength(response, sdkCore.internalLogger),
+            kind = kind,
+            attributes = attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
         )
     }
 

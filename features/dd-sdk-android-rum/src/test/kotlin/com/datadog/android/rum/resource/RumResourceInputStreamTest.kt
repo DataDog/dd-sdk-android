@@ -235,6 +235,7 @@ internal class RumResourceInputStreamTest {
         verify(rumMonitor.mockInstance).stopResource(
             testedInputStream.key,
             null,
+            null,
             0L,
             RumResourceKind.OTHER,
             emptyMap()
@@ -502,6 +503,7 @@ internal class RumResourceInputStreamTest {
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
+                null,
                 contentBytes.size.toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
@@ -549,6 +551,7 @@ internal class RumResourceInputStreamTest {
                 .addResourceTiming(eq(testedInputStream.key), any())
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
+                null,
                 null,
                 contentBytes.size.toLong(),
                 RumResourceKind.OTHER,
@@ -601,6 +604,7 @@ internal class RumResourceInputStreamTest {
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
+                null,
                 (len1 + mark + mark + len2).toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
@@ -647,6 +651,7 @@ internal class RumResourceInputStreamTest {
                 .addResourceTiming(eq(testedInputStream.key), any())
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
+                null,
                 null,
                 (len1 + len2).toLong(),
                 RumResourceKind.OTHER,
@@ -704,6 +709,7 @@ internal class RumResourceInputStreamTest {
             }
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
+                null,
                 null,
                 contentBytes.size.toLong(),
                 RumResourceKind.OTHER,

@@ -204,6 +204,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
+                fakeRequest.body?.contentLength(),
                 fakeResponseBody.toByteArray().size.toLong(),
                 kind,
                 expectedStopAttrs
@@ -245,6 +246,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
+                fakeRequest.body?.contentLength(),
                 fakeResponseBody.toByteArray().size.toLong(),
                 kind,
                 expectedStopAttrs
@@ -287,6 +289,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
+                fakeRequest.body?.contentLength(),
                 fakeResponseBody.toByteArray().size.toLong(),
                 kind,
                 expectedStopAttrs
