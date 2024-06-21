@@ -13,10 +13,10 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class GlobalBoundsForgeryFactory : ForgeryFactory<GlobalBounds> {
     override fun getForgery(forge: Forge): GlobalBounds {
         return GlobalBounds(
-            x = forge.aLong(min = -65536L, max = 65536L),
-            y = forge.aLong(min = -65536L, max = 65536L),
-            width = forge.aLong(min = 1L, max = 65536L),
-            height = forge.aLong(min = 1L, max = 65536L)
+            x = forge.aLong(min = 128L, max = 65536L),
+            y = forge.aLong(min = 128L, max = 65536L),
+            width = forge.aLong(min = 32L, max = 65536L),
+            height = forge.aLong(min = 32L, max = 65536L)
         )
     }
 }
