@@ -64,11 +64,12 @@ class LogsForegroundService : Service() {
             }
             STOP_RUM_RESOURCE -> {
                 rumMonitor.stopResource(
-                    BACKGROUND_RESOURCE_URL,
-                    200,
-                    200,
-                    RumResourceKind.IMAGE,
-                    emptyMap()
+                    key = BACKGROUND_RESOURCE_URL,
+                    statusCode = 200,
+                    uploadSize = 32,
+                    downloadSize = 512,
+                    kind = RumResourceKind.IMAGE,
+                    attributes = emptyMap()
                 )
             }
             else -> {

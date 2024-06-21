@@ -19,7 +19,6 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -31,12 +30,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.event.ViewEventMapper
-import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.model.ErrorEvent
-import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
@@ -226,36 +219,30 @@ class SampleApplication : Application() {
             .trackUserInteractions()
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
-            .setViewEventMapper(object : ViewEventMapper {
-                override fun map(event: ViewEvent): ViewEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
+            .setViewEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setActionEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setResourceEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                if (KEEP_UPLOAD_REQUEST_AS_RESOURCES) {
+                    event
+                } else {
+                    null
                 }
-            })
-            .setActionEventMapper(object : EventMapper<ActionEvent> {
-                override fun map(event: ActionEvent): ActionEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setResourceEventMapper(object : EventMapper<ResourceEvent> {
-                override fun map(event: ResourceEvent): ResourceEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setErrorEventMapper(object : EventMapper<ErrorEvent> {
-                override fun map(event: ErrorEvent): ErrorEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
-                override fun map(event: LongTaskEvent): LongTaskEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
+            }
+            .setErrorEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setLongTaskEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
             .build()
     }
 
@@ -284,6 +271,8 @@ class SampleApplication : Application() {
                 BackPressureMitigation.IGNORE_NEWEST
             )
         )
+
+        configBuilder.addNetworkInterceptor(DatadogInterceptor())
 
         return configBuilder.build()
     }
@@ -319,6 +308,8 @@ class SampleApplication : Application() {
 
     companion object {
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
+
+        private const val KEEP_UPLOAD_REQUEST_AS_RESOURCES = true
 
         init {
             System.loadLibrary("datadog-native-sample-lib")
