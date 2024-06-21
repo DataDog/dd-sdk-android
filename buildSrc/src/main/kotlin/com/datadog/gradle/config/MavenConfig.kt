@@ -49,7 +49,7 @@ fun Project.publishingConfig(projectDescription: String) {
 
                 groupId = MavenConfig.GROUP_ID
                 artifactId = projectName
-                version = AndroidConfig.VERSION.name
+                version = AndroidConfig.VERSION.name + "-debug"
 
                 pom {
                     name.set(projectName)

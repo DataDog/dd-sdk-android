@@ -230,10 +230,13 @@ class SampleApplication : Application() {
             }
             .setResourceEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                if (KEEP_UPLOAD_REQUEST_AS_RESOURCES) {
-                    event
-                } else {
+                val isDdResource = event.resource.url.contains(
+                    DatadogSite.valueOf(BuildConfig.DD_SITE_NAME).intakeEndpoint
+                )
+                if (isDdResource && !KEEP_UPLOAD_REQUEST_AS_RESOURCES) {
                     null
+                } else {
+                    event
                 }
             }
             .setErrorEventMapper { event ->
