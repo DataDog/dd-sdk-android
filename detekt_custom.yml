@@ -1201,6 +1201,8 @@ datadog:
       - "okhttp3.Response.header(kotlin.String, kotlin.String?)"
       - "okhttp3.ResponseBody.contentLength()"
       - "okio.Buffer.constructor()"
+      - "okio.GzipSink.buffer()"
+      - "okio.GzipSink.constructor(okio.Sink)"
       # endregion
       # region org.json
       - "org.json.JSONArray.length()"
