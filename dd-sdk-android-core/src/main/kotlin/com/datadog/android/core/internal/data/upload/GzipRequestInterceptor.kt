@@ -13,11 +13,11 @@ import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import okio.Buffer
 import okio.BufferedSink
 import okio.GzipSink
 import okio.buffer
 import java.io.IOException
-import kotlin.jvm.Throws
 
 /**
  * This interceptor compresses the HTTP request body.
@@ -71,19 +71,40 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
 
     private fun gzip(body: RequestBody): RequestBody? {
         return object : RequestBody() {
+
+            val gzippedBuffer: Buffer by lazy {
+                val buffer = Buffer()
+                val gzipSink: BufferedSink = GzipSink(buffer).buffer()
+                try {
+                    body.writeTo(gzipSink)
+                } catch (e: IOException) {
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.USER),
+                        { "Error gziping a batch" },
+                        e
+                    )
+                } finally {
+                    gzipSink.close()
+                }
+                buffer
+            }
+
+            val gzippedContentLength: Long by lazy {
+                gzippedBuffer.size
+            }
+
             override fun contentType(): MediaType? {
                 return body.contentType()
             }
 
             override fun contentLength(): Long {
-                return -1 // We don't know the compressed length in advance!
+                return gzippedContentLength
             }
 
             @Suppress("UnsafeThirdPartyFunctionCall") // write to is expected to throw IOExceptions
             override fun writeTo(sink: BufferedSink) {
-                val gzipSink: BufferedSink = GzipSink(sink).buffer()
-                body.writeTo(gzipSink)
-                gzipSink.close()
+                sink.write(gzippedBuffer, gzippedContentLength)
             }
         }
     }
