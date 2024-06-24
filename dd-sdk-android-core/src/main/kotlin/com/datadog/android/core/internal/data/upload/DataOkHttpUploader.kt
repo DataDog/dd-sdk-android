@@ -11,9 +11,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.ConnectionPoolInfo
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
@@ -150,6 +152,15 @@ internal class DataOkHttpUploader(
         }
 
         builder.addHeader(HEADER_USER_AGENT, userAgent)
+
+        if (callFactory is OkHttpClient) {
+            val stats = ConnectionPoolInfo(
+                callFactory.connectionPool.connectionCount(),
+                callFactory.connectionPool.idleConnectionCount()
+            )
+
+            builder.tag(ConnectionPoolInfo::class.java, stats)
+        }
 
         return builder.build()
     }

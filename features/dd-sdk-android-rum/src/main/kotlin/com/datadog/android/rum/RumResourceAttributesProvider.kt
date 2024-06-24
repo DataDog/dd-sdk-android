@@ -15,7 +15,7 @@ import okhttp3.Response
  * offers a possibility to add custom attributes to the RUM Resource event.
  */
 @NoOpImplementation
-interface RumResourceAttributesProvider {
+fun interface RumResourceAttributesProvider {
 
     /**
      * Offers a possibility to create custom attributes collection which later will be attached to
