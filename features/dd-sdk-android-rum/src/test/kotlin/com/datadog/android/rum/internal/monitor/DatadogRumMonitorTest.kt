@@ -39,6 +39,7 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
@@ -130,6 +131,9 @@ internal class DatadogRumMonitorTest {
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
     @Mock
+    lateinit var sessionEndedMetricDispatcher: SessionMetricDispatcher
+
+    @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
@@ -178,6 +182,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -199,6 +204,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -257,6 +263,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -293,6 +300,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1452,6 +1460,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1496,6 +1505,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1527,6 +1537,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,

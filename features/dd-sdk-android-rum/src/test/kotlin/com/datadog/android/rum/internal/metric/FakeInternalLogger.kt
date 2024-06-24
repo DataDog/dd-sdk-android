@@ -4,16 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.stub
+package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 
-@Suppress("UnsafeThirdPartyFunctionCall")
-internal class StubInternalLogger : InternalLogger {
+class FakeInternalLogger : InternalLogger {
 
-    val telemetryEventsWritten = mutableListOf<Map<String, Any>>()
+    var lastMetric: Pair<String, Map<String, Any?>>? = null
+
+    var errorLog: String? = null
+
     override fun log(
         level: InternalLogger.Level,
         target: InternalLogger.Target,
@@ -22,9 +24,7 @@ internal class StubInternalLogger : InternalLogger {
         onlyOnce: Boolean,
         additionalProperties: Map<String, Any?>?
     ) {
-        println("${level.name.first()} [${target.name.first()}]: ${messageBuilder()}")
-        additionalProperties?.log()
-        throwable?.printStackTrace()
+        errorLog = messageBuilder()
     }
 
     override fun log(
@@ -35,25 +35,14 @@ internal class StubInternalLogger : InternalLogger {
         onlyOnce: Boolean,
         additionalProperties: Map<String, Any?>?
     ) {
-        println("${level.name.first()} [${targets.joinToString { it.name.first().toString() }}]: ${messageBuilder()}")
-        additionalProperties?.log()
-        throwable?.printStackTrace()
+        // do nothing
     }
 
     override fun logMetric(
         messageBuilder: () -> String,
         additionalProperties: Map<String, Any?>
     ) {
-        println("M [T]: ${messageBuilder()}")
-        additionalProperties.log()
-        val message = messageBuilder()
-        val telemetryEvent =
-            mapOf(
-                "type" to "mobile_metric",
-                "message" to message,
-                "additionalProperties" to additionalProperties
-            )
-        telemetryEventsWritten.add(telemetryEvent)
+        lastMetric = Pair(messageBuilder(), additionalProperties)
     }
 
     override fun startPerformanceMeasure(
@@ -62,13 +51,7 @@ internal class StubInternalLogger : InternalLogger {
         samplingRate: Float,
         operationName: String
     ): PerformanceMetric? {
-        println("P [T]: $operationName ($callerClass)")
+        // do nothing
         return null
-    }
-
-    private fun <K, T> Map<K, T>.log() {
-        forEach {
-            println("    ${it.key}: ${it.value}")
-        }
     }
 }

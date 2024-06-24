@@ -14,6 +14,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class RumSessionScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
+    private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val sampleRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -55,6 +57,7 @@ internal class RumSessionScope(
     internal var childScope: RumScope? = RumViewManagerScope(
         this,
         sdkCore,
+        sessionEndedMetricDispatcher,
         backgroundTrackingEnabled,
         trackFrustrations,
         viewChangedListener,
@@ -149,6 +152,7 @@ internal class RumSessionScope(
 
     private fun stopSession() {
         isActive = false
+        sessionEndedMetricDispatcher.onSessionStopped(sessionId)
     }
 
     private fun isSessionComplete(): Boolean {
@@ -169,6 +173,11 @@ internal class RumSessionScope(
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
         val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
         val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
+
+        // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
+        if (isExpired || isTimedOut || isActive.not()) {
+            sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
+        }
 
         if (isInteraction || isSdkInitInForeground) {
             if (isNewSession || isExpired || isTimedOut) {
@@ -202,6 +211,14 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
+        if (keepSession) {
+            sessionEndedMetricDispatcher.startMetric(
+                sessionId = sessionId,
+                startReason = reason,
+                ntpOffsetAtStartMs = sdkCore.time.serverTimeOffsetMs,
+                backgroundEventTracking = backgroundTrackingEnabled
+            )
+        }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
     }
 

@@ -201,7 +201,7 @@ datadog:
       - "java.util.concurrent.Callable.call():java.lang.Exception"
       - "java.util.concurrent.ConcurrentHashMap.contains(kotlin.Any?):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentHashMap.remove(com.datadog.android.api.feature.FeatureContextUpdateReceiver):java.lang.NullPointerException"
-      - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String):java.lang.NullPointerException"
+      - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String?):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentLinkedQueue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.NullPointerException"
       - "java.util.concurrent.CopyOnWriteArraySet.removeAll(kotlin.collections.Collection):java.lang.NullPointerException,java.lang.ClassCastException"
       - "java.util.concurrent.CountDownLatch.await(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
@@ -262,7 +262,6 @@ datadog:
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
-      - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       - "kotlin.Double.roundToLong():java.lang.IllegalArgumentException"
       # endregion
       # region Kotlin Collections
@@ -274,6 +273,8 @@ datadog:
       - "kotlin.collections.List.get(kotlin.Int):java.util.NoSuchElementException"
       - "kotlin.collections.MutableIterator.next():java.util.NoSuchElementException"
       - "kotlin.collections.MutableIterator.remove():java.lang.UnsupportedOperationException,java.lang.IllegalStateException"
+      - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
+      - "kotlin.collections.MutableSet.last():java.util.NoSuchElementException"
       # endregion
       # region Kotlin Coroutines
       - "kotlinx.coroutines.Deferred.await():java.util.concurrent.CancellationException"
@@ -950,6 +951,8 @@ datadog:
       - "kotlin.collections.MutableSet.remove(com.datadog.android.core.internal.persistence.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.remove(java.io.File)"
       - "kotlin.collections.MutableSet.toList()"
+      - "kotlin.collections.MutableSet.lastOrNull()"
+      - "kotlin.collections.MutableSet.sortedByDescending(kotlin.Function1)"
       - "kotlin.collections.Set.any(kotlin.Function1)"
       - "kotlin.collections.Set.associate(kotlin.Function1)"
       - "kotlin.collections.Set.contains(com.datadog.android.trace.TracingHeaderType)"
@@ -991,6 +994,11 @@ datadog:
       - "kotlin.collections.setOf(kotlin.Array)"
       - "kotlin.collections.setOf(kotlin.Int)"
       - "kotlin.collections.setOf(kotlin.String)"
+      - "kotlin.collections.linkedMapOf()"
+      - "kotlin.collections.MutableCollection.count(kotlin.Function1)"
+      - "kotlin.collections.MutableCollection.sumOf(kotlin.Function1)"
+      - "kotlin.collections.MutableCollection.sum()"
+      - "kotlin.collections.List.sortedByDescending(kotlin.Function1)"
       - "kotlin.emptyArray()"
       - "kotlin.sequences.Sequence.groupBy(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
@@ -1006,6 +1014,7 @@ datadog:
       - "kotlin.Any.hashCode()"
       - "kotlin.Any.toString()"
       - "kotlin.Boolean.hashCode()"
+      - "kotlin.Boolean.not()"
       - "kotlin.Byte.toInt()"
       - "kotlin.ByteArray.constructor(kotlin.Int)"
       - "kotlin.Char.isLowerCase()"
@@ -1028,6 +1037,7 @@ datadog:
       - "kotlin.Int.toDouble()"
       - "kotlin.Int.toFloat()"
       - "kotlin.Int.toLong()"
+      - "kotlin.Int.coerceAtMost(kotlin.Int)"
       - "kotlin.IntArray.constructor(kotlin.Int)"
       - "kotlin.IntArray.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.Long.coerceIn(kotlin.Long, kotlin.Long)"
@@ -1048,6 +1058,7 @@ datadog:
       - "kotlin.String.trim(kotlin.Function1)"
       # endregion
       # region Kotlin Tuples
+      - "kotlin.Pair.constructor(kotlin.String, kotlin.Int)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
