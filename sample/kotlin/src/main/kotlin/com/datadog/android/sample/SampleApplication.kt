@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.ConnectionPoolInfo
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
@@ -280,7 +281,17 @@ class SampleApplication : Application() {
             )
         )
 
-        configBuilder.addNetworkInterceptor(DatadogInterceptor())
+        configBuilder.addNetworkInterceptor(
+            DatadogInterceptor(
+                rumResourceAttributesProvider = { request, _, _ ->
+                    val connectionPoolInfo = request.tag(ConnectionPoolInfo::class.java)
+                    mapOf(
+                        "connection_pool.connection_count" to connectionPoolInfo?.connectionCount,
+                        "connection_pool.idle_connection_count" to connectionPoolInfo?.idleConnectionCount
+                    )
+                }
+            )
+        )
 
         return configBuilder.build()
     }
