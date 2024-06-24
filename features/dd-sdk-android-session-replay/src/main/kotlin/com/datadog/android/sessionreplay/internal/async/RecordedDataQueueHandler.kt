@@ -221,6 +221,6 @@ internal class RecordedDataQueueHandler(
 
         @VisibleForTesting
         internal const val ITEM_DROPPED_EXPIRED_MESSAGE =
-            "SR RecordedDataQueueHandler: dropped item from the queue. age=%d ms"
+            "SR RecordedDataQueueHandler: dropped item from the queue. age=%d ns"
     }
 }
