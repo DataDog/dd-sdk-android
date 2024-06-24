@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
@@ -18,12 +19,16 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 internal class SessionEndedMetric(
     private val sessionId: String,
-    private val startReason: RumSessionScope.StartReason
+    private val startReason: RumSessionScope.StartReason,
+    private val ntpOffsetAtStartMs: Long,
+    private val hasTrackBackgroundEventsEnabled: Boolean
 ) {
 
     private val trackedViewsById = mutableMapOf<String, TrackedView>()
 
     private val errorKindFrequencies = mutableMapOf<String, Int>()
+
+    private val missedEventCountByType = mutableMapOf<MissedEventType, Int>()
 
     private var firstTrackedView: TrackedView? = null
     private var lastTrackedView: TrackedView? = null
@@ -39,7 +44,8 @@ internal class SessionEndedMetric(
         val trackedView = TrackedView(
             viewUrl = trackedViewsById[rumViewEvent.view.id]?.viewUrl ?: rumViewEvent.view.url,
             startMs = trackedViewsById[rumViewEvent.view.id]?.startMs ?: rumViewEvent.date,
-            durationNs = rumViewEvent.view.timeSpent
+            durationNs = rumViewEvent.view.timeSpent,
+            hasReplay = rumViewEvent.session.hasReplay ?: false
         )
 
         trackedViewsById[rumViewEvent.view.id] = trackedView
@@ -59,10 +65,14 @@ internal class SessionEndedMetric(
         wasStopped = true
     }
 
-    fun toMetricAttributes(): Map<String, Any?> {
+    fun onMissedEventTracked(missedEventType: MissedEventType) {
+        missedEventCountByType[missedEventType] = (missedEventCountByType[missedEventType] ?: 0) + 1
+    }
+
+    fun toMetricAttributes(ntpOffsetAtEndMs: Long): Map<String, Any?> {
         return mapOf(
             METRIC_TYPE_KEY to METRIC_TYPE_VALUE,
-            RSE_KEY to resolveRseAttributes()
+            RSE_KEY to resolveRseAttributes(ntpOffsetAtEndMs)
         )
     }
 
@@ -74,14 +84,45 @@ internal class SessionEndedMetric(
         } ?: 0L
     }
 
-    private fun resolveRseAttributes(): Map<String, Any?> {
+    private fun resolveRseAttributes(ntpOffsetAtEnd: Long): Map<String, Any?> {
         return mapOf(
             PROCESS_TYPE_KEY to PROCESS_TYPE_VALUE,
             PRECONDITION_KEY to startReason.asString,
             DURATION_KEY to calculateDuration(),
             WAS_STOPPED_KEY to wasStopped,
             VIEW_COUNTS_KEY to resolveViewCountsAttributes(),
-            SDK_ERRORS_COUNT_KEY to resolveSDKErrorsCountAttributes()
+            SDK_ERRORS_COUNT_KEY to resolveSDKErrorsCountAttributes(),
+            NO_VIEW_EVENTS_COUNT_KEY to resolveNoViewCountsAttributes(),
+            HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY to hasTrackBackgroundEventsEnabled,
+            NTP_OFFSET_KEY to resolveNtpOffsetAttributes(ntpOffsetAtEnd)
+        )
+    }
+
+    private fun resolveNoViewCountsAttributes(): Map<String, Int> {
+        return mapOf(
+            NO_VIEW_EVENTS_COUNT_ACTIONS_KEY to (
+                missedEventCountByType[MissedEventType.ACTION]
+                    ?: 0
+                ),
+            NO_VIEW_EVENTS_COUNT_RESOURCES_KEY to (
+                missedEventCountByType[MissedEventType.RESOURCE]
+                    ?: 0
+                ),
+            NO_VIEW_EVENTS_COUNT_ERRORS_KEY to (
+                missedEventCountByType[MissedEventType.ERROR]
+                    ?: 0
+                ),
+            NO_VIEW_EVENTS_COUNT_LONG_TASKS_KEY to (
+                missedEventCountByType[MissedEventType.LONG_TASK]
+                    ?: 0
+                )
+        )
+    }
+
+    private fun resolveNtpOffsetAttributes(ntpOffsetAtEnd: Long): Map<String, Long> {
+        return mapOf(
+            NTP_OFFSET_AT_START_KEY to ntpOffsetAtStartMs,
+            NTP_OFFSET_AT_END_KEY to ntpOffsetAtEnd
         )
     }
 
@@ -92,7 +133,9 @@ internal class SessionEndedMetric(
             VIEW_COUNTS_BG_KEY
                 to trackedViewsById.values.count { it.viewUrl == RumViewManagerScope.RUM_BACKGROUND_VIEW_URL },
             VIEW_COUNTS_APP_LAUNCH_KEY
-                to trackedViewsById.values.count { it.viewUrl == RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL }
+                to trackedViewsById.values.count { it.viewUrl == RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL },
+            VIEW_COUNT_WITH_HAS_REPLAY
+                to trackedViewsById.values.count { it.hasReplay }
         )
     }
 
@@ -190,6 +233,56 @@ internal class SessionEndedMetric(
         internal const val VIEW_COUNTS_APP_LAUNCH_KEY = "app_launch"
 
         /**
+         * The number of views with has_replay == true.
+         */
+        internal const val VIEW_COUNT_WITH_HAS_REPLAY = "with_has_replay"
+
+        /**
+         * The key of attribute for the number of events dropped due to the absence of an active view at the time they occurred.
+         */
+        internal const val NO_VIEW_EVENTS_COUNT_KEY = "no_view_events_count"
+
+        /**
+         * The number of actions dropped due to the absence of an active view at the time they occurred.
+         */
+        internal const val NO_VIEW_EVENTS_COUNT_ACTIONS_KEY = "actions"
+
+        /**
+         * The number of resources dropped because there was no active view at the time they occurred.
+         */
+        internal const val NO_VIEW_EVENTS_COUNT_RESOURCES_KEY = "resources"
+
+        /**
+         * The number of errors dropped because there was no active view at the time they occurred.
+         */
+        internal const val NO_VIEW_EVENTS_COUNT_ERRORS_KEY = "errors"
+
+        /**
+         * The number of long tasks dropped because there was no active view at the time they occurred.
+         */
+        internal const val NO_VIEW_EVENTS_COUNT_LONG_TASKS_KEY = "long_tasks"
+
+        /**
+         * Boolean value indicating whether tracking of background events was enabled in the RUM configuration.
+         */
+        internal const val HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY = "has_background_events_tracking_enabled"
+
+        /**
+         * The key of NTP offset attributes.
+         */
+        internal const val NTP_OFFSET_KEY = "ntp_offset"
+
+        /**
+         * The NTP offset at the beginning of the session, measured in milliseconds.
+         */
+        internal const val NTP_OFFSET_AT_START_KEY = "at_start"
+
+        /**
+         * The NTP offset at the end of the session, measured in milliseconds.
+         */
+        internal const val NTP_OFFSET_AT_END_KEY = "at_end"
+
+        /**
          * Key of the sdk errors attribute.
          */
         internal const val SDK_ERRORS_COUNT_KEY = "sdk_errors_count"
@@ -216,6 +309,28 @@ internal class SessionEndedMetric(
     internal data class TrackedView(
         val viewUrl: String,
         val startMs: Long,
-        val durationNs: Long
+        val durationNs: Long,
+        val hasReplay: Boolean
     )
+
+    internal enum class MissedEventType {
+        ACTION,
+        RESOURCE,
+        ERROR,
+        LONG_TASK;
+
+        companion object {
+            fun fromRawEvent(rawEvent: RumRawEvent): MissedEventType? {
+                return when (rawEvent) {
+                    is RumRawEvent.AddError,
+                    is RumRawEvent.StopResourceWithError -> ERROR
+
+                    is RumRawEvent.StartAction -> ACTION
+                    is RumRawEvent.StartResource -> RESOURCE
+                    is RumRawEvent.AddLongTask -> LONG_TASK
+                    else -> null
+                }
+            }
+        }
+    }
 }
