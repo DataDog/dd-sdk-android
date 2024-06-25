@@ -100,6 +100,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(fakeService)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -149,6 +151,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -209,6 +213,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -272,6 +278,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -302,7 +310,7 @@ internal class OtelTracerProviderTest {
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
         val blockingWriterWrapper = tracer.useBlockingWriter()
-        var lessSignificantParentSpanTraceId: String
+        var leastSignificantParentSpanTraceId: String
         var mostSignficantParentSpanTraceId: String
         var parentSpanId: String
         var spanId: String
@@ -311,7 +319,7 @@ internal class OtelTracerProviderTest {
         // When
         val fullParentSpanDuration = measureNanoTime {
             val parenSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
-            lessSignificantParentSpanTraceId = parenSpan.leastSignificant64BitsTraceIdAsHex()
+            leastSignificantParentSpanTraceId = parenSpan.leastSignificant64BitsTraceIdAsHex()
             mostSignficantParentSpanTraceId = parenSpan.mostSignificant64BitsTraceIdAsHex()
             parentSpanId = parenSpan.spanIdAsHex()
             fullChildDuration = measureNanoTime {
@@ -336,8 +344,10 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasLeastSignificant64BitsTraceId(lessSignificantParentSpanTraceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantParentSpanTraceId)
                 hasMostSignificant64BitsTraceId(mostSignficantParentSpanTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -351,7 +361,7 @@ internal class OtelTracerProviderTest {
         SpansPayloadAssert.assertThat(payload1)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasLeastSignificant64BitsTraceId(lessSignificantParentSpanTraceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantParentSpanTraceId)
                 hasMostSignificant64BitsTraceId(mostSignficantParentSpanTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -412,6 +422,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -467,6 +479,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -531,6 +545,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -586,6 +602,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(parentSpanLeastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(parentSpanMostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(childSpanId)
                 hasParentId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -600,6 +618,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(parentSpanLeastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(parentSpanMostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -652,6 +672,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(parentSpanLeastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(parentSpanMostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(childSpanId)
                 hasParentId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -666,6 +688,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(parentSpanLeastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(parentSpanMostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(parentSpanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -710,6 +734,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -752,6 +778,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -794,6 +822,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -1074,6 +1104,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -1128,6 +1160,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -1177,6 +1211,8 @@ internal class OtelTracerProviderTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)

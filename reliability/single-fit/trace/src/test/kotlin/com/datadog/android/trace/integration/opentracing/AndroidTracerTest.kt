@@ -135,6 +135,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -180,6 +182,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -233,6 +237,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -288,6 +294,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -362,6 +370,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -407,6 +417,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -454,6 +466,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -500,6 +514,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
             }
         SpansPayloadAssert.assertThat(payload1)
@@ -507,6 +523,8 @@ class AndroidTracerTest {
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(childLeastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(childMostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(childSpanId)
             }
     }

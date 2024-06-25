@@ -65,7 +65,7 @@ internal class BigIntegerUtilsTest {
     }
 
     @Test
-    fun `M extract unsigned less and most significant bits W extract LSB and MSB`() {
+    fun `M extract unsigned least and most significant bits W extract LSB and MSB`() {
         // Given
         val traceId = BigInteger(fakeTraceIdAsHexString, 16)
 

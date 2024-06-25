@@ -55,11 +55,11 @@ internal class DatadogHttpCodecTest {
 
     private lateinit var fakeTaggedHeaders: Map<String, String>
 
-    private lateinit var fakeIdAsHexaString: String
+    private lateinit var fakeIdAsHexString: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeIdAsHexaString = fakeDDSpanContext.traceId.toString(16)
+        fakeIdAsHexString = fakeDDSpanContext.traceId.toString(16)
         fakeTaggedHeaders = forge.aMap(size = forge.anInt(min = 1, max = 10)) {
             anAlphabeticalString() to anAlphabeticalString()
         }

@@ -68,10 +68,10 @@ internal abstract class TracesTest {
         assertThat(expectedSpans.size).isEqualTo(sentSpansObjects.size)
         expectedSpans.forEach { span ->
             val json = sentSpansObjects.first {
-                val leasSignificantTraceId = it.get(TRACE_ID_KEY).asString
+                val leastSignificantTraceId = it.get(TRACE_ID_KEY).asString
                 val mostSignificantTraceId = it.getAsJsonObject("meta")
                     .getAsJsonPrimitive(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY).asString
-                leasSignificantTraceId == span.leastSignificant64BitsTraceId() &&
+                leastSignificantTraceId == span.leastSignificant64BitsTraceId() &&
                     mostSignificantTraceId == span.mostSignificant64BitsTraceId() &&
                     it.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
             }
@@ -111,8 +111,8 @@ internal abstract class TracesTest {
     private fun assertMatches(jsonObject: JsonObject, span: DDSpan) {
         assertThat(jsonObject)
             .hasField(SERVICE_NAME_KEY, span.serviceName)
-            .hasField(TRACE_ID_KEY, Long.toHexString((span.traceId.toLong())))
-            .hasField(SPAN_ID_KEY, Long.toHexString((span.spanId.toLong())))
+            .hasField(TRACE_ID_KEY, span.leastSignificant64BitsTraceId())
+            .hasField(SPAN_ID_KEY, span.spanIdAsHexString())
             .hasField(PARENT_ID_KEY, Long.toHexString((span.parentId.toLong())))
             .hasField(
                 START_TIMESTAMP_KEY,
@@ -124,6 +124,9 @@ internal abstract class TracesTest {
             .hasField(OPERATION_NAME_KEY, span.operationName)
             .hasField(META_KEY, span.meta)
             .hasField(METRICS_KEY, span.metrics)
+        val metaObject = jsonObject.getAsJsonObject(META_KEY)
+        assertThat(metaObject)
+            .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
     }
 
     private fun tracesPayloadToJsonArray(payload: String): List<JsonElement> {

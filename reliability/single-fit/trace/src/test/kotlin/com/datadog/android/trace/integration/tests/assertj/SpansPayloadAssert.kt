@@ -46,6 +46,18 @@ internal class SpansPayloadAssert(actual: JsonObject) :
             return this
         }
 
+        fun hasValidLeastSignificant64BitsTraceId(): SpanAssert {
+            val actualTraceId = actualSpan.getString(TRACE_ID_KEY)
+            assertThat(actualTraceId).matches("[0-9a-f]{16}")
+            return this
+        }
+
+        fun hasValidMostSignificant64BitsTraceId(): SpanAssert {
+            val actualTraceId = actualSpan.getString(TRACE_ID_META_KEY)
+            assertThat(actualTraceId).matches("[0-9a-f]{16}")
+            return this
+        }
+
         fun hasMostSignificant64BitsTraceId(traceId: String): SpanAssert {
             val actualTraceId = actualSpan.getString(TRACE_ID_META_KEY)
             assertThat(actualTraceId).overridingErrorMessage(

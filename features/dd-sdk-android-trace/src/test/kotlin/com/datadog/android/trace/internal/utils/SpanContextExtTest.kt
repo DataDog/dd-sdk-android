@@ -76,7 +76,7 @@ internal class SpanContextExtTest {
     }
 
     @Test
-    fun `M return the expected hexa padded string W traceIdAsHexString()`() {
+    fun `M return the expected hex padded string W traceIdAsHexString()`() {
         // Given
         whenever(mockSpan.context()).thenReturn(mockDDSpanContext)
         whenever(mockDDSpanContext.traceId).thenReturn(fakeTraceIdAsBigInteger)
