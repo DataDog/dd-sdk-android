@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -114,7 +115,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(lambdaCaptor.capture(), any())
+        verify(mockInternalLogger).logMetric(lambdaCaptor.capture(), any(), eq(100.0f))
         lambdaCaptor.firstValue.run {
             val title = this()
             assertThat(title).isEqualTo(METHOD_CALLED_METRIC_NAME)
@@ -127,7 +128,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
         val executionTime = mapCaptor.firstValue[EXECUTION_TIME] as Long
 
         assertThat(executionTime).isLessThan(System.nanoTime() - fakeStartTime)
@@ -139,7 +140,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
         val operationName = mapCaptor.firstValue[OPERATION_NAME] as String
 
         assertThat(operationName).isEqualTo(fakeOperationName)
@@ -151,7 +152,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
         val callerClass = mapCaptor.firstValue[CALLER_CLASS] as String
 
         assertThat(callerClass).isEqualTo(fakeCallerClass)
@@ -163,7 +164,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(fakeStatus)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
         val isSuccessful = mapCaptor.firstValue[IS_SUCCESSFUL] as Boolean
 
         assertThat(isSuccessful).isEqualTo(fakeStatus)
@@ -175,7 +176,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(fakeStatus)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture())
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
         val metricTypeValue = mapCaptor.firstValue[METRIC_TYPE] as String
 
         assertThat(metricTypeValue).isEqualTo(METRIC_TYPE_VALUE)

@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.privacy.TrackingConsent
@@ -44,7 +45,8 @@ internal class BatchMetricsDispatcher(
         resolveBatchDeletedMetricAttributes(batchFile, removalReason)?.let {
             internalLogger.logMetric(
                 messageBuilder = { BATCH_DELETED_MESSAGE },
-                additionalProperties = it
+                additionalProperties = it,
+                samplingRate = MethodCallSamplingRate.DEFAULT.rate
             )
         }
     }
@@ -56,7 +58,8 @@ internal class BatchMetricsDispatcher(
         resolveBatchClosedMetricAttributes(batchFile, batchMetadata)?.let {
             internalLogger.logMetric(
                 messageBuilder = { BATCH_CLOSED_MESSAGE },
-                additionalProperties = it
+                additionalProperties = it,
+                samplingRate = MethodCallSamplingRate.DEFAULT.rate
             )
         }
     }
