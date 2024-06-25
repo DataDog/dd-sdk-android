@@ -11,6 +11,6 @@ import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 
 internal class ResourceHashesEntrySerializer : Serializer<ResourceHashesEntry> {
     override fun serialize(model: ResourceHashesEntry): String {
-        return model.toJson().asJsonObject.toString()
+        return model.toJson().toString()
     }
 }

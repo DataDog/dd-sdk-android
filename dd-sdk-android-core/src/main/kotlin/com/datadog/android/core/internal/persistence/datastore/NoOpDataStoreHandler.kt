@@ -6,8 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.datastore
 
-import com.datadog.android.api.storage.datastore.DataStoreCallback
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 
@@ -16,6 +17,7 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
         key: String,
         data: T,
         version: Int,
+        callback: DataStoreWriteCallback,
         serializer: Serializer<T>
     ) {
         // NoOp Implementation
@@ -24,13 +26,16 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
     override fun <T : Any> value(
         key: String,
         version: Int?,
-        callback: DataStoreCallback<T>,
+        callback: DataStoreReadCallback<T>,
         deserializer: Deserializer<String, T>
     ) {
         // NoOp Implementation
     }
 
-    override fun removeValue(key: String) {
+    override fun removeValue(
+        key: String,
+        callback: DataStoreWriteCallback
+    ) {
         // NoOp Implementation
     }
 }

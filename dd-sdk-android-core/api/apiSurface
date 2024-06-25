@@ -152,15 +152,18 @@ data class com.datadog.android.api.storage.RawBatchEvent
   constructor(ByteArray, ByteArray = EMPTY_BYTE_ARRAY)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-interface com.datadog.android.api.storage.datastore.DataStoreCallback<T: Any>
-  fun onSuccess(com.datadog.android.core.persistence.datastore.DataStoreContent<T>?)
-  fun onFailure()
 interface com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun <T: Any> setValue(String, T, Int = 0, com.datadog.android.core.persistence.Serializer<T>)
-  fun <T: Any> value(String, Int? = null, DataStoreCallback<T>, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
-  fun removeValue(String)
+  fun <T: Any> setValue(String, T, Int = 0, DataStoreWriteCallback, com.datadog.android.core.persistence.Serializer<T>)
+  fun <T: Any> value(String, Int? = null, DataStoreReadCallback<T>, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
+  fun removeValue(String, DataStoreWriteCallback)
   companion object 
     const val CURRENT_DATASTORE_VERSION: Int
+interface com.datadog.android.api.storage.datastore.DataStoreReadCallback<T: Any>
+  fun onSuccess(com.datadog.android.core.persistence.datastore.DataStoreContent<T>?)
+  fun onFailure()
+interface com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+  fun onSuccess()
+  fun onFailure()
 interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.feature.FeatureSdkCore
   val networkInfo: com.datadog.android.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent

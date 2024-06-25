@@ -12,7 +12,7 @@ import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
-    private val resourcesDataStoreManager: ResourcesDataStoreManager,
+    private val resourceDataStoreManager: ResourceDataStoreManager,
     private val resourcesWriter: ResourcesWriter,
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
@@ -39,10 +39,14 @@ internal class RecordedDataProcessor(
         item: ResourceRecordedDataQueueItem
     ) {
         val resourceHash = item.identifier
-        val isKnownResource = resourcesDataStoreManager.wasResourcePreviouslySent(resourceHash)
+        val isKnownResource = resourceDataStoreManager.isPreviouslySentResource(resourceHash)
 
         if (!isKnownResource) {
-            resourcesDataStoreManager.store(resourceHash)
+            // the cacheResourceHash method overwrites the datastore entry and we don't want that if we haven't finished
+            // initializing
+            if (resourceDataStoreManager.isReady()) {
+                resourceDataStoreManager.cacheResourceHash(resourceHash)
+            }
 
             val enrichedResource = EnrichedResource(
                 resource = item.resourceData,

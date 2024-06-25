@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -91,7 +92,7 @@ internal class RecordedDataProcessorTest {
     lateinit var mockResourcesFeature: ResourcesFeature
 
     @Mock
-    lateinit var mockResourcesDataStoreManager: ResourcesDataStoreManager
+    lateinit var mockResourceDataStoreManager: ResourceDataStoreManager
 
     private val invalidRumContext = SessionReplayRumContext()
 
@@ -158,7 +159,7 @@ internal class RecordedDataProcessorTest {
             writer = mockWriter,
             mutationResolver = mockMutationResolver,
             nodeFlattener = mockNodeFlattener,
-            resourcesDataStoreManager = mockResourcesDataStoreManager
+            resourceDataStoreManager = mockResourceDataStoreManager
         )
     }
 
@@ -1243,16 +1244,35 @@ internal class RecordedDataProcessorTest {
     }
 
     @Test
-    fun `M store resource in datastore W processResources { resource not previously seen }`(forge: Forge) {
+    fun `M not store resource in datastore W processResources { resource not previously seen by manager not ready }`(
+        forge: Forge
+    ) {
         // Given
         val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.isReady()).thenReturn(false)
 
         // When
         testedProcessor.processResources(fakeResourceItem)
 
         // Then
-        verify(mockResourcesDataStoreManager, times(1)).store(fakeIdentifier)
+        verify(mockResourceDataStoreManager, never()).cacheResourceHash(fakeIdentifier)
+    }
+
+    @Test
+    fun `M store resource in datastore W processResources { resource not previously seen and manager ready }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
+        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.isReady()).thenReturn(true)
+
+        // When
+        testedProcessor.processResources(fakeResourceItem)
+
+        // Then
+        verify(mockResourceDataStoreManager, times(1)).cacheResourceHash(fakeIdentifier)
     }
 
     @Test
@@ -1262,7 +1282,7 @@ internal class RecordedDataProcessorTest {
         // Given
         val fakeByteArray = fakeString.toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourcesDataStoreManager.wasResourcePreviouslySent(fakeIdentifier))
+        whenever(mockResourceDataStoreManager.isPreviouslySentResource(fakeIdentifier))
             .thenReturn(true)
 
         // When

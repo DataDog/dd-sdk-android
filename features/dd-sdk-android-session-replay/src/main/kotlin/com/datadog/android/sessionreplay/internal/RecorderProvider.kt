@@ -8,13 +8,13 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 
 internal fun interface RecorderProvider {
     fun provideSessionReplayRecorder(
-        resourcesDataStoreManager: ResourcesDataStoreManager,
+        resourceDataStoreManager: ResourceDataStoreManager,
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         application: Application

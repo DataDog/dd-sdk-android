@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.datastore
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.storage.datastore.DataStoreCallback
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
@@ -122,7 +122,7 @@ internal class DataStoreFileReaderTest {
     fun `M return no data W read() { datastore file does not exist }`() {
         // Given
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(false)
-        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+        val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
@@ -147,7 +147,7 @@ internal class DataStoreFileReaderTest {
         val foundBlocks = blocksReturned.size
         val expectedBlocks = TLVBlockType.values().size
         val expectedError = INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, foundBlocks, expectedBlocks)
-        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+        val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
@@ -169,7 +169,7 @@ internal class DataStoreFileReaderTest {
     @Test
     fun `M return no data W value() { explicit version and versions don't match }`() {
         // Given
-        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+        val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
@@ -193,7 +193,7 @@ internal class DataStoreFileReaderTest {
         blocksReturned.clear()
         blocksReturned.add(createVersionBlock(true))
         blocksReturned.add(createDataBlock())
-        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+        val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
@@ -216,7 +216,7 @@ internal class DataStoreFileReaderTest {
         blocksReturned.removeLast()
         val expectedMessage =
             INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, blocksReturned.size, TLVBlockType.values().size)
-        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+        val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
@@ -240,7 +240,7 @@ internal class DataStoreFileReaderTest {
         // Given
         blocksReturned = arrayListOf(dataBlock, versionBlock)
         whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
-        val mockCallback = mock<DataStoreCallback<ByteArray>>()
+        val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(

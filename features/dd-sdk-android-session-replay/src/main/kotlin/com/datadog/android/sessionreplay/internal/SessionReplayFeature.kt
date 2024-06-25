@@ -24,9 +24,9 @@ import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -93,16 +93,16 @@ internal class SessionReplayFeature(
 
         val resourcesFeature = registerResourceFeature(sdkCore)
 
-        val resourcesDataStoreManager = ResourcesDataStoreManager(
+        val resourceDataStoreManager = ResourceDataStoreManager(
             featureSdkCore = sdkCore,
             resourceHashesSerializer = ResourceHashesEntrySerializer(),
-            resourcesHashesDeserializer = ResourceHashesEntryDeserializer(internalLogger = sdkCore.internalLogger)
+            resourceHashesDeserializer = ResourceHashesEntryDeserializer(internalLogger = sdkCore.internalLogger)
         )
 
         dataWriter = createDataWriter()
         sessionReplayRecorder =
             recorderProvider.provideSessionReplayRecorder(
-                resourcesDataStoreManager = resourcesDataStoreManager,
+                resourceDataStoreManager = resourceDataStoreManager,
                 resourceWriter = resourcesFeature.dataWriter,
                 recordWriter = dataWriter,
                 application = appContext

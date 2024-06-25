@@ -17,7 +17,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
-import com.datadog.android.sessionreplay.internal.resources.ResourcesDataStoreManager
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
@@ -81,7 +81,7 @@ internal class SessionReplayRecorderTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockDataStoreManager: ResourcesDataStoreManager
+    lateinit var mockDataStoreManager: ResourceDataStoreManager
 
     private lateinit var fakeActiveWindows: List<Window>
     private lateinit var fakeActiveWindowsDecorViews: List<View>
@@ -116,7 +116,7 @@ internal class SessionReplayRecorderTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             uiHandler = mockUiHandler,
             internalLogger = mockInternalLogger,
-            resourcesDataStoreManager = mockDataStoreManager
+            resourceDataStoreManager = mockDataStoreManager
         )
     }
 

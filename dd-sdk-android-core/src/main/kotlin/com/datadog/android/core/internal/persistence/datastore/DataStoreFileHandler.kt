@@ -7,8 +7,9 @@
 package com.datadog.android.core.internal.persistence.datastore
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.storage.datastore.DataStoreCallback
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.persistence.Serializer
@@ -25,23 +26,24 @@ internal class DataStoreFileHandler(
         key: String,
         data: T,
         version: Int,
+        callback: DataStoreWriteCallback,
         serializer: Serializer<T>
     ) {
         executorService.executeSafe("dataStoreWrite", internalLogger) {
-            datastoreFileWriter.write(key, data, serializer, version)
+            datastoreFileWriter.write(key, data, serializer, callback, version)
         }
     }
 
-    override fun removeValue(key: String) {
+    override fun removeValue(key: String, callback: DataStoreWriteCallback) {
         executorService.executeSafe("dataStoreRemove", internalLogger) {
-            datastoreFileWriter.delete(key)
+            datastoreFileWriter.delete(key, callback)
         }
     }
 
     override fun <T : Any> value(
         key: String,
         version: Int?,
-        callback: DataStoreCallback<T>,
+        callback: DataStoreReadCallback<T>,
         deserializer: Deserializer<String, T>
     ) {
         executorService.executeSafe("dataStoreRead", internalLogger) {

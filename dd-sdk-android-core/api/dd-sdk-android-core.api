@@ -463,17 +463,12 @@ public final class com/datadog/android/api/storage/RawBatchEvent {
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/datadog/android/api/storage/datastore/DataStoreCallback {
-	public abstract fun onFailure ()V
-	public abstract fun onSuccess (Lcom/datadog/android/core/persistence/datastore/DataStoreContent;)V
-}
-
 public abstract interface class com/datadog/android/api/storage/datastore/DataStoreHandler {
 	public static final field CURRENT_DATASTORE_VERSION I
 	public static final field Companion Lcom/datadog/android/api/storage/datastore/DataStoreHandler$Companion;
-	public abstract fun removeValue (Ljava/lang/String;)V
-	public abstract fun setValue (Ljava/lang/String;Ljava/lang/Object;ILcom/datadog/android/core/persistence/Serializer;)V
-	public abstract fun value (Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/storage/datastore/DataStoreCallback;Lcom/datadog/android/core/internal/persistence/Deserializer;)V
+	public abstract fun removeValue (Ljava/lang/String;Lcom/datadog/android/api/storage/datastore/DataStoreWriteCallback;)V
+	public abstract fun setValue (Ljava/lang/String;Ljava/lang/Object;ILcom/datadog/android/api/storage/datastore/DataStoreWriteCallback;Lcom/datadog/android/core/persistence/Serializer;)V
+	public abstract fun value (Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/storage/datastore/DataStoreReadCallback;Lcom/datadog/android/core/internal/persistence/Deserializer;)V
 }
 
 public final class com/datadog/android/api/storage/datastore/DataStoreHandler$Companion {
@@ -481,8 +476,18 @@ public final class com/datadog/android/api/storage/datastore/DataStoreHandler$Co
 }
 
 public final class com/datadog/android/api/storage/datastore/DataStoreHandler$DefaultImpls {
-	public static synthetic fun setValue$default (Lcom/datadog/android/api/storage/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Object;ILcom/datadog/android/core/persistence/Serializer;ILjava/lang/Object;)V
-	public static synthetic fun value$default (Lcom/datadog/android/api/storage/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/storage/datastore/DataStoreCallback;Lcom/datadog/android/core/internal/persistence/Deserializer;ILjava/lang/Object;)V
+	public static synthetic fun setValue$default (Lcom/datadog/android/api/storage/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Object;ILcom/datadog/android/api/storage/datastore/DataStoreWriteCallback;Lcom/datadog/android/core/persistence/Serializer;ILjava/lang/Object;)V
+	public static synthetic fun value$default (Lcom/datadog/android/api/storage/datastore/DataStoreHandler;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/storage/datastore/DataStoreReadCallback;Lcom/datadog/android/core/internal/persistence/Deserializer;ILjava/lang/Object;)V
+}
+
+public abstract interface class com/datadog/android/api/storage/datastore/DataStoreReadCallback {
+	public abstract fun onFailure ()V
+	public abstract fun onSuccess (Lcom/datadog/android/core/persistence/datastore/DataStoreContent;)V
+}
+
+public abstract interface class com/datadog/android/api/storage/datastore/DataStoreWriteCallback {
+	public abstract fun onFailure ()V
+	public abstract fun onSuccess ()V
 }
 
 public abstract interface class com/datadog/android/core/InternalSdkCore : com/datadog/android/api/feature/FeatureSdkCore {
