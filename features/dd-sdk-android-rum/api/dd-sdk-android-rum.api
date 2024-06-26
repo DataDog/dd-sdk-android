@@ -508,6 +508,7 @@ public final class com/datadog/android/rum/model/ActionEvent$ActionEventSource :
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static final field IOS Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static final field ROKU Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
@@ -1814,6 +1815,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ErrorEventSource : j
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static final field IOS Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static final field ROKU Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
@@ -2738,6 +2740,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$LongTaskEventSour
 	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static final field IOS Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static final field ROKU Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
@@ -3721,6 +3724,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$ResourceEventSour
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static final field IOS Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static final field ROKU Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
@@ -3995,6 +3999,7 @@ public final class com/datadog/android/rum/model/ViewContainerSchema$Source : ja
 	public static final field Companion Lcom/datadog/android/rum/model/ViewContainerSchema$Source$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
 	public static final field IOS Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
 	public static final field ROKU Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
 	public static final field UNITY Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
@@ -4970,6 +4975,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ViewEventSource : jav
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource$Companion;
 	public static final field FLUTTER Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static final field IOS Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static final field ROKU Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
@@ -5634,6 +5640,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source$Companion;
 	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
@@ -5905,6 +5912,7 @@ public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Sourc
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source$Companion;
 	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
@@ -6156,6 +6164,7 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Sourc
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source$Companion;
 	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
