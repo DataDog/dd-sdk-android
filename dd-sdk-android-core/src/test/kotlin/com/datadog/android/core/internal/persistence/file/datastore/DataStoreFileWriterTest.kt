@@ -193,10 +193,9 @@ internal class DataStoreFileWriterTest {
     fun `M call deleteSafe W clearAllData() { for files }`() {
         // Given
         whenever(
-            mockDataStoreFileHelper.createDataStoreDirectoryIfNecessary(
-                fakeFeatureName,
-                mockStorageDir,
-                mockInternalLogger
+            mockDataStoreFileHelper.getDataStoreDirectory(
+                storageDir = mockStorageDir,
+                featureName = fakeFeatureName
             )
         ).thenReturn(mockDataStoreDirectory)
 

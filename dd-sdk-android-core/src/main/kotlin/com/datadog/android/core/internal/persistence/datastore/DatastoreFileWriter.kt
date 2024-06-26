@@ -88,13 +88,14 @@ internal class DatastoreFileWriter(
 
     @WorkerThread
     internal fun clearAllData() {
-        val dataStoreDirectory = dataStoreFileHelper.createDataStoreDirectoryIfNecessary(
+        val dataStoreDirectory = dataStoreFileHelper.getDataStoreDirectory(
             featureName = featureName,
-            storageDir = storageDir,
-            internalLogger = internalLogger
+            storageDir = storageDir
         )
 
-        dataStoreDirectory.deleteDirectoryContentsSafe(internalLogger)
+        if (dataStoreDirectory.existsSafe(internalLogger)) {
+            dataStoreDirectory.deleteDirectoryContentsSafe(internalLogger)
+        }
     }
 
     private fun <T : Any> getDataBlock(
