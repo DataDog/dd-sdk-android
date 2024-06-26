@@ -8,9 +8,12 @@ package com.datadog.android.core.metrics
 
 /**
  * Sampling rates for Method Call telemetry.
- * @param rate the rate to sample at.
+ * @param rate the rate to sample at (between 0 and 100).
  */
 enum class MethodCallSamplingRate(val rate: Float) {
+    ALL(rate = 100.0f),
+    HIGH(rate = 10.0f),
+    MEDIUM(rate = 1.0f),
     DEFAULT(rate = 0.1f),
     REDUCED(rate = 0.01f),
     RARE(rate = 0.001f)

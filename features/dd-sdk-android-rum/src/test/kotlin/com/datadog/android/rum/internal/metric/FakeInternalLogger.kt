@@ -38,10 +38,7 @@ class FakeInternalLogger : InternalLogger {
         // do nothing
     }
 
-    override fun logMetric(
-        messageBuilder: () -> String,
-        additionalProperties: Map<String, Any?>
-    ) {
+    override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>, samplingRate: Float) {
         lastMetric = Pair(messageBuilder(), additionalProperties)
     }
 
