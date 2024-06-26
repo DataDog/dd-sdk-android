@@ -71,14 +71,6 @@ static-analysis:
     include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
     strategy: depend
 
-analysis:licenses:
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
-
 # TODO RUM-1622 cleanup this section
 # TESTS
 
