@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.resources
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.ResourceHashesEntry
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,14 +48,12 @@ internal class ResourceHashesEntryDeserializerTest {
     @Test
     fun `M return ResourceHashesEntry W deserialize() { valid object }`(
         @LongForgery fakeUpdateDate: Long,
-        @StringForgery fakeHash: String
+        forge: Forge
     ) {
         // Given
-        val fakeHashSet = mutableSetOf<String>()
-        fakeHashSet.add(fakeHash)
         val expectedEntry = ResourceHashesEntry(
             lastUpdateDateNs = fakeUpdateDate,
-            resourceHashes = fakeHashSet.toList()
+            resourceHashes = forge.aList { aString() }.distinct()
         )
         val json = expectedEntry.toJson()
 
@@ -62,8 +61,9 @@ internal class ResourceHashesEntryDeserializerTest {
         val actualEntry = testedDeserializer.deserialize(json.toString())
 
         // Then
-        assertThat(actualEntry?.lastUpdateDateNs?.toLong()).isEqualTo(expectedEntry.lastUpdateDateNs)
-        assertThat(actualEntry?.resourceHashes).isEqualTo(expectedEntry.resourceHashes)
+        checkNotNull(actualEntry)
+        assertThat(actualEntry.lastUpdateDateNs.toLong()).isEqualTo(expectedEntry.lastUpdateDateNs)
+        assertThat(actualEntry.resourceHashes).isEqualTo(expectedEntry.resourceHashes)
     }
 
     @Test
@@ -81,7 +81,7 @@ internal class ResourceHashesEntryDeserializerTest {
             messageCaptor.capture(),
             isNull(),
             eq(false),
-            eq(null)
+            isNull()
         )
 
         assertThat(messageCaptor.firstValue()).startsWith("Error while trying to deserialize the ResourceHashesEntry")

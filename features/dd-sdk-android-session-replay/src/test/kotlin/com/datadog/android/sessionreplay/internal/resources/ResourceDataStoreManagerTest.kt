@@ -37,6 +37,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -394,10 +395,16 @@ internal class ResourceDataStoreManagerTest {
         )
 
         // Then
-        verify(mockDataStoreHandler).removeValue(
+        verify(
+            mockDataStoreHandler
+        ).value(
             key = eq(DATASTORE_HASHES_ENTRY_NAME),
-            callback = any()
+            version = anyOrNull(),
+            callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
+            deserializer = any()
         )
+
+        verifyNoMoreInteractions(mockFeatureScope.dataStore)
     }
 
     // endregion

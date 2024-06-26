@@ -64,7 +64,8 @@ internal class ResourceDataStoreManager(
                 }
             },
             onFetchFailure = {
-                deleteStoredHashesEntry(onDeleteDatastoreCallback)
+                // No need to do anything here.
+                // The next time we write to the datastore it will overwrite
             }
         )
     }
