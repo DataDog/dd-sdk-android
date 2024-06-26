@@ -44,6 +44,16 @@ public class com/datadog/android/okhttp/DatadogInterceptor : com/datadog/android
 	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 
+public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;)V
+	public fun build ()Lcom/datadog/android/okhttp/DatadogInterceptor;
+	public synthetic fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
+	public fun getThis ()Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
+	public synthetic fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
+}
+
 public final class com/datadog/android/okhttp/TraceContext {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
 	public final fun component1 ()Ljava/lang/String;
@@ -57,6 +67,13 @@ public final class com/datadog/android/okhttp/TraceContext {
 	public final fun getTraceId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/okhttp/TraceContextInjection : java/lang/Enum {
+	public static final field All Lcom/datadog/android/okhttp/TraceContextInjection;
+	public static final field Sampled Lcom/datadog/android/okhttp/TraceContextInjection;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/okhttp/TraceContextInjection;
+	public static fun values ()[Lcom/datadog/android/okhttp/TraceContextInjection;
 }
 
 public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {
@@ -85,5 +102,24 @@ public class com/datadog/android/okhttp/trace/TracingInterceptor : okhttp3/Inter
 	public fun <init> (Ljava/util/Map;)V
 	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
 	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+}
+
+public abstract class com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
+	public fun <init> (Ljava/util/Map;)V
+	public abstract fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
+	public abstract fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setTraceContextInjection (Lcom/datadog/android/okhttp/TraceContextInjection;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setTracedRequestListener (Lcom/datadog/android/okhttp/trace/TracedRequestListener;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+}
+
+public final class com/datadog/android/okhttp/trace/TracingInterceptor$Builder : com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;)V
+	public fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
+	public synthetic fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$Builder;
+	public final fun setTraceOrigin (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$Builder;
 }
 

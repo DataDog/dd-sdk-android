@@ -157,7 +157,8 @@ internal class DatadogInterceptorWithoutTracesTest {
             tracedHosts = emptyMap(),
             tracedRequestListener = mockRequestListener,
             rumResourceAttributesProvider = mockRumAttributesProvider,
-            traceSampler = mockTraceSampler
+            traceSampler = mockTraceSampler,
+            traceContextInjection = TraceContextInjection.All
         ) { _, _ -> mockLocalTracer }
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()

@@ -74,6 +74,7 @@ internal constructor(
     tracedRequestListener: TracedRequestListener,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler,
+    traceContextInjection: TraceContextInjection,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
     sdkInstanceName,
@@ -81,6 +82,7 @@ internal constructor(
     tracedRequestListener,
     ORIGIN_RUM,
     traceSampler,
+    traceContextInjection,
     localTracerFactory
 ) {
 
@@ -110,6 +112,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+                "Please use the Builder instead.",
+        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
@@ -123,6 +130,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -153,6 +161,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+                "Please use the Builder instead.",
+        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         firstPartyHosts: List<String>,
@@ -171,6 +184,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -193,6 +207,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+                "Please use the Builder instead.",
+        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
@@ -205,6 +224,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -397,12 +417,61 @@ internal constructor(
 
     // endregion
 
+    // region Builder
+
+    /**
+     * A Builder for the [DatadogInterceptor].
+     */
+    class Builder(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) :
+        BaseBuilder<DatadogInterceptor, Builder>(tracedHostsWithHeaderType) {
+
+        private var rumResourceAttributesProvider: RumResourceAttributesProvider = NoOpRumResourceAttributesProvider()
+
+        constructor(tracedHosts: List<String>) : this(tracedHosts.associateWith {
+            setOf(
+                TracingHeaderType.DATADOG,
+                TracingHeaderType.TRACECONTEXT
+            )
+        })
+
+        override fun getThis(): Builder {
+            return this
+        }
+
+        /**
+         * Builds the [DatadogInterceptor].
+         */
+        override fun build(): DatadogInterceptor {
+            return DatadogInterceptor(
+                sdkInstanceName,
+                tracedHostsWithHeaderType,
+                tracedRequestListener,
+                rumResourceAttributesProvider,
+                traceSampler,
+                traceContextInjection,
+                localTracerFactory
+            )
+        }
+
+        /**
+         * Sets the [RumResourceAttributesProvider] to use to provide custom attributes to the RUM.
+         * By default, it is a NoOp.
+         * @param rumResourceAttributesProvider the [RumResourceAttributesProvider] to use.
+         */
+        fun setRumResourceAttributesProvider(rumResourceAttributesProvider: RumResourceAttributesProvider): Builder {
+            this.rumResourceAttributesProvider = rumResourceAttributesProvider
+            return this
+        }
+    }
+
+    // endregion
+
     internal companion object {
 
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
-                "Make sure you initialized the Datadog SDK with a valid Application Id, " +
-                "and that RUM features are enabled."
+                    "Make sure you initialized the Datadog SDK with a valid Application Id, " +
+                    "and that RUM features are enabled."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."

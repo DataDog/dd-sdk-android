@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.TraceContext
+import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
@@ -74,6 +75,7 @@ internal constructor(
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler,
+    internal val traceContextInjection: TraceContextInjection,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : Interceptor {
 
@@ -108,6 +110,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedHosts: List<String>,
@@ -126,7 +133,8 @@ internal constructor(
         traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
+        },
+        traceContextInjection = TraceContextInjection.All
     )
 
     /**
@@ -148,6 +156,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
@@ -161,7 +174,8 @@ internal constructor(
         traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
+        },
+        traceContextInjection = TraceContextInjection.All
     )
 
     /**
@@ -177,6 +191,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
@@ -189,7 +208,8 @@ internal constructor(
         traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
+        },
+        traceContextInjection = TraceContextInjection.All
     )
 
     // region Interceptor
@@ -622,6 +642,123 @@ internal constructor(
                 (span as? MutableSpan)?.drop()
             }
         }
+    }
+
+    // endregion
+
+    // region Builder
+
+    /**
+     * A Builder class for the [TracingInterceptor].
+     */
+    class Builder(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) :
+        BaseBuilder<TracingInterceptor, Builder>(tracedHostsWithHeaderType) {
+
+        constructor(tracedHosts: List<String>) : this(
+            tracedHosts.associateWith {
+                setOf(
+                    TracingHeaderType.DATADOG,
+                    TracingHeaderType.TRACECONTEXT
+                )
+            }
+        )
+
+        override fun getThis(): Builder {
+            return this
+        }
+
+        /**
+         * Set the origin of the trace.
+         * @param traceOrigin the origin of the trace.
+         */
+        fun setTraceOrigin(traceOrigin: String): Builder {
+            this.traceOrigin = traceOrigin
+            return this
+        }
+
+        override fun build(): TracingInterceptor {
+            return TracingInterceptor(
+                sdkInstanceName,
+                tracedHostsWithHeaderType,
+                tracedRequestListener,
+                traceOrigin,
+                traceSampler,
+                traceContextInjection,
+                localTracerFactory
+            )
+        }
+    }
+
+    /**
+     * An abstract Builder class.
+     */
+    abstract class BaseBuilder<out T : TracingInterceptor, out R : BaseBuilder<T, R>>(
+        internal val tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>
+    ) {
+        internal var sdkInstanceName: String? = null
+        internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+        internal var traceOrigin: String? = null
+        internal var traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer =
+            { sdkCore, tracingHeaderTypes ->
+                AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+            }
+        internal var traceContextInjection = TraceContextInjection.All
+
+        /**
+         * Set the SDK instance name to bind to, the default value is null.
+         * @param sdkInstanceName SDK instance name to bind to, the default value is null.
+         * Instrumentation won't be working until SDK instance is ready.
+         */
+        fun setSdkInstanceName(sdkInstanceName: String): R {
+            this.sdkInstanceName = sdkInstanceName
+            return getThis()
+        }
+
+        /**
+         * Set the listener for automatically created [Span]s.
+         * @param tracedRequestListener a listener for automatically created [Span]s
+         */
+        fun setTracedRequestListener(tracedRequestListener: TracedRequestListener): R {
+            this.tracedRequestListener = tracedRequestListener
+            return getThis()
+        }
+
+        /**
+         * Set the trace sampler controlling the sampling of APM traces created for
+         * auto-instrumented requests.
+         * @param traceSampler the trace sampler controlling the sampling of APM traces.
+         * By default it is [RateBasedSampler], which either can accept
+         * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
+         * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+         * be kept (default value is `20.0`).
+         */
+        fun setTraceSampler(traceSampler: Sampler): R {
+            this.traceSampler = traceSampler
+            return getThis()
+        }
+
+        /**
+         * Set the trace context injection behavior for this interceptor in the intercepted requests.
+         * By default this is set to [TraceContextInjection.All] meaning that all the trace context
+         * will be propagated in the intercepted requests no matter if the span created around the request
+         * is sampled or not. In case of [TraceContextInjection.Sampled] only the sampled request will propagate
+         * the trace context.
+         * @param traceContextInjection the trace context injection option.
+         * @see TraceContextInjection.All
+         * @see TraceContextInjection.Sampled
+         */
+        fun setTraceContextInjection(traceContextInjection: TraceContextInjection): R {
+            this.traceContextInjection = traceContextInjection
+            return getThis()
+        }
+
+        abstract fun getThis(): R
+
+        /**
+         * Build the [TracingInterceptor].
+         */
+        abstract fun build(): T
     }
 
     // endregion

@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.TraceContext
+import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
@@ -197,7 +198,8 @@ internal open class TracingInterceptorTest {
             tracedRequestListener = mockRequestListener,
             traceOrigin = fakeOrigin,
             traceSampler = mockTraceSampler,
-            localTracerFactory = factory
+            localTracerFactory = factory,
+            traceContextInjection = TraceContextInjection.All
         )
     }
 
