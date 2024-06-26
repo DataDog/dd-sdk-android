@@ -123,11 +123,15 @@ registerSubModuleAggregationTask("checkThirdPartyLicensesAll", "checkThirdPartyL
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
 
+registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
+
 /**
  * Task necessary to be compliant with the shared Android static analysis pipeline
  */
 tasks.register("checkGeneratedFiles") {
+    dependsOn("checkThirdPartyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")
+    dependsOn("checkTransitiveDependenciesListAll")
 }
 
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
