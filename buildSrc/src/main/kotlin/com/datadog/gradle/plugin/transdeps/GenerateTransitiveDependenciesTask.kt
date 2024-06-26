@@ -14,7 +14,7 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-open class TransitiveDependenciesTask : DefaultTask() {
+open class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @get:Input
     var humanReadableSize: Boolean = true
@@ -23,7 +23,7 @@ open class TransitiveDependenciesTask : DefaultTask() {
     var sortByName: Boolean = true
 
     @get: OutputFile
-    lateinit var outputFile: File
+    lateinit var dependenciesFile: File
 
     init {
         group = "datadog"
@@ -34,7 +34,7 @@ open class TransitiveDependenciesTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-        outputFile.writeText("Dependencies List\n\n")
+        dependenciesFile.writeText("Dependencies List\n\n")
         val implementation = project.configurations.getByName("releaseCompileClasspath")
         listConfigurationDependencies(implementation)
     }
@@ -58,10 +58,10 @@ open class TransitiveDependenciesTask : DefaultTask() {
         var sum = 0L
         sortedArtifacts.forEach {
             sum += it.length()
-            outputFile.appendText(getDependencyFileDescription(it))
+            dependenciesFile.appendText(getDependencyFileDescription(it))
         }
 
-        outputFile.appendText("\n${TOTAL.padEnd(PADDING)}:${size(sum)}\n\n")
+        dependenciesFile.appendText("\n${TOTAL.padEnd(PADDING)}:${size(sum)}\n\n")
     }
 
     private fun getDependencyFileDescription(it: File): String {
