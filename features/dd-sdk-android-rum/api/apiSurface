@@ -452,6 +452,7 @@ data class com.datadog.android.rum.model.ActionEvent
     - REACT_NATIVE
     - ROKU
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ActionEventSource
@@ -720,6 +721,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     - REACT_NATIVE
     - ROKU
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorEventSource
@@ -1005,6 +1007,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
     - REACT_NATIVE
     - ROKU
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTaskEventSource
@@ -1263,6 +1266,7 @@ data class com.datadog.android.rum.model.ResourceEvent
     - REACT_NATIVE
     - ROKU
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ResourceEventSource
@@ -1426,6 +1430,7 @@ data class com.datadog.android.rum.model.ViewContainerSchema
     - REACT_NATIVE
     - ROKU
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
@@ -1638,6 +1643,7 @@ data class com.datadog.android.rum.model.ViewEvent
     - REACT_NATIVE
     - ROKU
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSource
@@ -1809,6 +1815,7 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     - FLUTTER
     - REACT_NATIVE
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
@@ -1907,6 +1914,7 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
     - FLUTTER
     - REACT_NATIVE
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
@@ -1978,6 +1986,7 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     - FLUTTER
     - REACT_NATIVE
     - UNITY
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
