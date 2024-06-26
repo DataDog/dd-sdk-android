@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
@@ -211,6 +212,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 tracedRequestListener = mockRequestListener,
                 traceOrigin = fakeOrigin,
                 traceSampler = mockTraceSampler,
+                traceContextInjection = TraceContextInjection.All,
                 localTracerFactory = factory
             ) {
             override fun canSendSpan(): Boolean {
