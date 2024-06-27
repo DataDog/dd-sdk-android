@@ -112,7 +112,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
+                "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -158,7 +158,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
+                "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -193,7 +193,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
+                "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -228,7 +228,7 @@ internal constructor(
                 InternalLogger.Target.USER,
                 {
                     "$prefix for OkHttp instrumentation is not found, skipping" +
-                        " tracking of request with url=${chain.request().url}"
+                            " tracking of request with url=${chain.request().url}"
                 }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
@@ -299,7 +299,7 @@ internal constructor(
     private fun isRequestTraceable(sdkCore: InternalSdkCore, request: Request): Boolean {
         val url = request.url
         return sdkCore.firstPartyHostResolver.isFirstPartyUrl(url) ||
-            localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
+                localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -412,7 +412,7 @@ internal constructor(
         if (datadogSamplingPriority != null) {
             if (datadogSamplingPriority == PrioritySampling.UNSET) return null
             return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
-                datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
+                    datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
         if (b3MSamplingPriority != null) {
@@ -477,60 +477,93 @@ internal constructor(
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
                 TracingHeaderType.DATADOG -> {
-                    listOf(
-                        DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS,
-                        DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER
-                    ).forEach {
-                        requestBuilder.removeHeader(it)
-                    }
-                    requestBuilder.addHeader(
-                        DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_DROP_SAMPLING_DECISION
-                    )
+                    removeDatadogHeaders(requestBuilder)
+                    handleDatadogSampledOutHeaders(requestBuilder)
                 }
-
                 TracingHeaderType.B3 -> {
                     requestBuilder.removeHeader(B3_HEADER_KEY)
-                    requestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
+                    handleB3SampledOutHeaders(requestBuilder)
                 }
-
                 TracingHeaderType.B3MULTI -> {
-                    listOf(
-                        B3M_TRACE_ID_KEY,
-                        B3M_SPAN_ID_KEY,
-                        B3M_SAMPLING_PRIORITY_KEY
-                    ).forEach {
-                        requestBuilder.removeHeader(it)
-                    }
-                    requestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
+                    removeB3MultiHeaders(requestBuilder)
+                    handleB3MultiNotSampledHeaders(requestBuilder)
                 }
-
                 TracingHeaderType.TRACECONTEXT -> {
-                    requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
-                    requestBuilder.removeHeader(W3C_TRACESTATE_KEY)
-                    val traceId = span.context().traceIdAsHexString()
-                    val spanId = span.context().toSpanId()
-                    requestBuilder.addHeader(
-                        W3C_TRACEPARENT_KEY,
-                        @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
-                        W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
-                            traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
-                            spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
-                        )
-                    )
-                    // TODO RUM-2121 3rd party vendor information will be erased
-                    @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
-                    var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
-                        .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
-                    if (traceOrigin != null) {
-                        traceStateHeader += ";o:$traceOrigin"
-                    }
-                    requestBuilder.addHeader(W3C_TRACESTATE_KEY, traceStateHeader)
+                    removeW3CHeaders(requestBuilder)
+                    handleW3CNotSampledHeaders(span, requestBuilder)
                 }
             }
+        }
+    }
+
+    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            requestBuilder.addHeader(
+                DATADOG_SAMPLING_PRIORITY_HEADER,
+                DATADOG_DROP_SAMPLING_DECISION
+            )
+        }
+    }
+
+    private fun handleB3SampledOutHeaders(requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            requestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
+        }
+    }
+
+    private fun handleB3MultiNotSampledHeaders(requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            requestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
+        }
+    }
+
+    private fun handleW3CNotSampledHeaders(span: Span, requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            val traceId = span.context().traceIdAsHexString()
+            val spanId = span.context().toSpanId()
+            requestBuilder.addHeader(
+                W3C_TRACEPARENT_KEY,
+                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+                W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
+                    traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
+                    spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
+                )
+            )
+            // TODO RUM-2121 3rd party vendor information will be erased
+            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+            var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
+                .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
+            if (traceOrigin != null) {
+                traceStateHeader += ";o:$traceOrigin"
+            }
+            requestBuilder.addHeader(W3C_TRACESTATE_KEY, traceStateHeader)
+        }
+    }
+
+    private fun removeW3CHeaders(requestBuilder: Request.Builder) {
+        requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
+        requestBuilder.removeHeader(W3C_TRACESTATE_KEY)
+    }
+
+    private fun removeB3MultiHeaders(requestBuilder: Request.Builder) {
+        listOf(
+            B3M_TRACE_ID_KEY,
+            B3M_SPAN_ID_KEY,
+            B3M_SAMPLING_PRIORITY_KEY
+        ).forEach {
+            requestBuilder.removeHeader(it)
+        }
+    }
+
+    private fun removeDatadogHeaders(requestBuilder: Request.Builder) {
+        listOf(
+            DATADOG_SAMPLING_PRIORITY_HEADER,
+            DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+            DATADOG_TAGS,
+            DATADOG_SPAN_ID_HEADER,
+            DATADOG_ORIGIN_HEADER
+        ).forEach {
+            requestBuilder.removeHeader(it)
         }
     }
 
@@ -773,18 +806,18 @@ internal constructor(
 
         internal const val WARNING_TRACING_NO_HOSTS =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you did not specify any first party hosts. " +
-                "Your requests won't be traced.\n" +
-                "To set a list of known hosts, you can use the " +
-                "Configuration.Builder::setFirstPartyHosts() method."
+                    "but you did not specify any first party hosts. " +
+                    "Your requests won't be traced.\n" +
+                    "To set a list of known hosts, you can use the " +
+                    "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you did not enable the TracingFeature. " +
-                "Your requests won't be traced."
+                    "but you did not enable the TracingFeature. " +
+                    "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you didn't register any Tracer. " +
-                "We automatically created a local tracer for you."
+                    "but you didn't register any Tracer. " +
+                    "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f
