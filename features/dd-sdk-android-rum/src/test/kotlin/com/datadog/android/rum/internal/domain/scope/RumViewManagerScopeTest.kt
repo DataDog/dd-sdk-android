@@ -32,7 +32,6 @@ import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
@@ -57,7 +56,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -287,7 +285,6 @@ internal class RumViewManagerScopeTest {
 
     @Test
     fun `M send gap message W handleEvent(StopView) + handleEvent(StartView)`(
-        @LongForgery(10, 30) fakeSleepMs: Long,
         forge: Forge
     ) {
         // Given
@@ -298,26 +295,16 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(stopFirstViewEvent, mockWriter)
 
         // When
-        Thread.sleep(fakeSleepMs)
+        Thread.sleep(15)
         val secondViewEvent = forge.startViewEvent()
         testedScope.handleEvent(secondViewEvent, mockWriter)
 
         // Then
-        val messageBuilderCaptor = argumentCaptor<() -> String>()
-        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any?>>()
-
-        verify(mockInternalLogger).logMetric(
-            messageBuilderCaptor.capture(),
-            additionalPropertiesCaptor.capture(),
-            eq(1f)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+            { it.matches(Regex("Gap between views was \\d+ nanoseconds")) }
         )
-
-        assertThat(additionalPropertiesCaptor.firstValue).containsKey(RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS)
-        val gapNs = additionalPropertiesCaptor.firstValue[RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS] as Long
-        val minNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs)
-        val maxNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs + 15)
-        assertThat(gapNs).isBetween(minNs, maxNs)
-        assertThat(messageBuilderCaptor.firstValue()).isEqualTo("[Mobile Metric] Gap between views")
     }
 
     @Test

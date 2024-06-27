@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset.offset
 import org.junit.jupiter.api.BeforeEach
@@ -36,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.mockingDetails
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -166,9 +166,9 @@ internal class SdkInternalLoggerTest {
         val predicate = testedInternalLogger.userLogger.predicate
         for (i in 0..10) {
             if (i >= sdkVerbosity) {
-                assertThat(predicate(i)).isTrue
+                Assertions.assertThat(predicate(i)).isTrue
             } else {
-                assertThat(predicate(i)).isFalse
+                Assertions.assertThat(predicate(i)).isFalse
             }
         }
     }
@@ -458,7 +458,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `M send metric W metric() {sampling 100 percent}`(
+    fun `M send metric W metric()`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -472,8 +472,7 @@ internal class SdkInternalLoggerTest {
         // When
         testedInternalLogger.logMetric(
             mockLambda,
-            fakeAdditionalProperties,
-            100.0f
+            fakeAdditionalProperties
         )
 
         // Then
@@ -488,62 +487,8 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `M send metric W metric() {sampling x percent}`(
-        @StringForgery fakeMessage: String,
-        @FloatForgery(25f, 75f) fakeSampleRate: Float,
-        forge: Forge
-    ) {
-        // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
-        val repeatCount = 100
-        val expectedCallCount = (repeatCount * fakeSampleRate / 100f).toInt()
-        val marginOfError = (repeatCount * 0.25f).toInt()
-
-        // When
-        repeat(100) {
-            testedInternalLogger.logMetric(
-                mockLambda,
-                fakeAdditionalProperties,
-                fakeSampleRate
-            )
-        }
-
-        // Then
-        val count = mockingDetails(mockRumFeatureScope).invocations.filter { it.method.name == "sendEvent" }.size
-        assertThat(count).isCloseTo(expectedCallCount, offset(marginOfError))
-    }
-
-    @Test
-    fun `M send metric W metric() {sampling 0 percent}`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
-        // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
-
-        // When
-        testedInternalLogger.logMetric(
-            mockLambda,
-            fakeAdditionalProperties,
-            0.0f
-        )
-
-        // Then
-        verify(mockRumFeatureScope, never()).sendEvent(any())
-    }
-
-    @Test
     fun `M do nothing metric W metric { rum feature not initialized }`(
         @StringForgery fakeMessage: String,
-        @FloatForgery(0f, 100f) fakeSampleRate: Float,
         forge: Forge
     ) {
         // Given
@@ -556,8 +501,7 @@ internal class SdkInternalLoggerTest {
         assertDoesNotThrow {
             testedInternalLogger.logMetric(
                 mockLambda,
-                fakeAdditionalProperties,
-                fakeSampleRate
+                fakeAdditionalProperties
             )
         }
     }

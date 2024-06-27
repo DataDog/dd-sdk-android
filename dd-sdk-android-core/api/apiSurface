@@ -42,7 +42,7 @@ interface com.datadog.android.api.InternalLogger
     - TELEMETRY
   fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
-  fun logMetric(() -> String, Map<String, Any?>, Float)
+  fun logMetric(() -> String, Map<String, Any?>)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
   companion object 
     val UNBOUND: InternalLogger
@@ -280,9 +280,6 @@ fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
   constructor(Float)
-  - ALL
-  - HIGH
-  - MEDIUM
   - DEFAULT
   - REDUCED
   - RARE

@@ -12,7 +12,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
@@ -22,7 +21,6 @@ import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class RumViewManagerScope(
@@ -62,13 +60,11 @@ internal class RumViewManagerScope(
             startForegroundView(event, writer)
             lastStoppedViewTime?.let {
                 val gap = event.eventTime.nanoTime - it.nanoTime
-                if (gap in 1 until THREE_SECONDS_GAP) {
-                    sdkCore.internalLogger.logMetric(
-                        messageBuilder = { MESSAGE_GAP_BETWEEN_VIEWS.format(Locale.US, gap) },
-                        additionalProperties = mapOf(ATTR_GAP_BETWEEN_VIEWS to gap),
-                        samplingRate = MethodCallSamplingRate.MEDIUM.rate
-                    )
-                }
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+                    { MESSAGE_GAP_BETWEEN_VIEWS.format(Locale.US, gap) }
+                )
             }
             lastStoppedViewTime = null
         } else if (event is RumRawEvent.StopSession) {
@@ -296,9 +292,7 @@ internal class RumViewManagerScope(
         internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
         internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
 
-        private const val MESSAGE_GAP_BETWEEN_VIEWS = "[Mobile Metric] Gap between views"
-        internal const val ATTR_GAP_BETWEEN_VIEWS = "view_gap"
-
+        private const val MESSAGE_GAP_BETWEEN_VIEWS = "Gap between views was %d nanoseconds"
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
                 "To track views automatically, try calling the " +
@@ -308,7 +302,5 @@ internal class RumViewManagerScope(
 
         internal const val MESSAGE_UNKNOWN_MISSED_TYPE = "An RUM event was detected, but no view is active, " +
             "its missed type is unknown"
-
-        internal val THREE_SECONDS_GAP = TimeUnit.SECONDS.toNanos(3)
     }
 }

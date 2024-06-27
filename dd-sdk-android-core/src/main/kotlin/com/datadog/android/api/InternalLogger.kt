@@ -105,15 +105,9 @@ interface InternalLogger {
      * [com.datadog.android.telemetry.model.TelemetryDebugEvent.Telemetry] event.
      * @param messageBuilder the lambda building the metric message
      * @param additionalProperties additional properties to add to the metric
-     * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
-     * metric will be applied in addition to the global telemetry sampling rate.
      */
     @InternalApi
-    fun logMetric(
-        messageBuilder: () -> String,
-        additionalProperties: Map<String, Any?>,
-        samplingRate: Float
-    )
+    fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>)
 
     /**
      * Start measuring a performance metric.
