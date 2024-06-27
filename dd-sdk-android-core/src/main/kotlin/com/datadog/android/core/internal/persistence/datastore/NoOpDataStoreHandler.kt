@@ -17,7 +17,7 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
         key: String,
         data: T,
         version: Int,
-        callback: DataStoreWriteCallback,
+        callback: DataStoreWriteCallback?,
         serializer: Serializer<T>
     ) {
         // NoOp Implementation
@@ -34,7 +34,7 @@ internal class NoOpDataStoreHandler : DataStoreHandler {
 
     override fun removeValue(
         key: String,
-        callback: DataStoreWriteCallback
+        callback: DataStoreWriteCallback?
     ) {
         // NoOp Implementation
     }

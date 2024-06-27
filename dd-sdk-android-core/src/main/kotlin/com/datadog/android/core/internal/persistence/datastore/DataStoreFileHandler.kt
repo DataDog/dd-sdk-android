@@ -26,7 +26,7 @@ internal class DataStoreFileHandler(
         key: String,
         data: T,
         version: Int,
-        callback: DataStoreWriteCallback,
+        callback: DataStoreWriteCallback?,
         serializer: Serializer<T>
     ) {
         executorService.executeSafe("dataStoreWrite", internalLogger) {
@@ -34,7 +34,7 @@ internal class DataStoreFileHandler(
         }
     }
 
-    override fun removeValue(key: String, callback: DataStoreWriteCallback) {
+    override fun removeValue(key: String, callback: DataStoreWriteCallback?) {
         executorService.executeSafe("dataStoreRemove", internalLogger) {
             datastoreFileWriter.delete(key, callback)
         }

@@ -23,14 +23,14 @@ interface DataStoreHandler {
      * @param data to write.
      * @param version optional version for the entry.
      * If not specified will give the entry version 0 - even if that would be a downgrade from the previous version.
-     * @param callback to indicate whether the operation succeeded or not.
+     * @param callback (optional) to indicate whether the operation succeeded or not.
      * @param serializer to use to serialize the data.
      */
     fun <T : Any> setValue(
         key: String,
         data: T,
         version: Int = 0,
-        callback: DataStoreWriteCallback,
+        callback: DataStoreWriteCallback? = null,
         serializer: Serializer<T>
     )
 
@@ -57,11 +57,11 @@ interface DataStoreHandler {
      * This executes on a worker thread and not on the caller thread.
      *
      * @param key name of the datastore entry
-     * @param callback to indicate whether the operation succeeded or not.
+     * @param callback (optional) to indicate whether the operation succeeded or not.
      */
     fun removeValue(
         key: String,
-        callback: DataStoreWriteCallback
+        callback: DataStoreWriteCallback? = null
     )
 
     companion object {

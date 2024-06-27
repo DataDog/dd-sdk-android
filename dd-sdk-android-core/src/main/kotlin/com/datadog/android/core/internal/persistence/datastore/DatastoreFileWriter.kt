@@ -31,7 +31,7 @@ internal class DatastoreFileWriter(
         key: String,
         data: T,
         serializer: Serializer<T>,
-        callback: DataStoreWriteCallback,
+        callback: DataStoreWriteCallback?,
         version: Int
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
@@ -45,7 +45,7 @@ internal class DatastoreFileWriter(
 
         // failed to serialize one or more blocks
         if (versionCodeBlock == null || dataBlock == null) {
-            callback.onFailure()
+            callback?.onFailure()
             return
         }
 
@@ -61,14 +61,14 @@ internal class DatastoreFileWriter(
         )
 
         if (result) {
-            callback.onSuccess()
+            callback?.onSuccess()
         } else {
-            callback.onFailure()
+            callback?.onFailure()
         }
     }
 
     @WorkerThread
-    internal fun delete(key: String, callback: DataStoreWriteCallback) {
+    internal fun delete(key: String, callback: DataStoreWriteCallback?) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
             storageDir = storageDir,
@@ -78,9 +78,9 @@ internal class DatastoreFileWriter(
         if (datastoreFile.existsSafe(internalLogger)) {
             val result = datastoreFile.deleteSafe(internalLogger)
             if (result) {
-                callback.onSuccess()
+                callback?.onSuccess()
             } else {
-                callback.onFailure()
+                callback?.onFailure()
             }
         }
     }

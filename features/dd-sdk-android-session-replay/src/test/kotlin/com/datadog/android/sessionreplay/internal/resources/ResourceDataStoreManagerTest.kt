@@ -19,7 +19,7 @@ import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SES
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager.Companion.DATASTORE_EXPIRATION_NS
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager.Companion.DATASTORE_HASHES_ENTRY_NAME
 import com.datadog.android.sessionreplay.model.ResourceHashesEntry
-import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -36,8 +36,8 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -75,29 +75,11 @@ internal class ResourceDataStoreManagerTest {
 
         whenever(mockFeatureScope.dataStore).thenReturn(mockDataStoreHandler)
 
-        whenever(
-            mockDataStoreHandler.removeValue(any(), any())
-        ).doAnswer {
-            val callback = it.arguments[1] as DataStoreWriteCallback
-            callback.onSuccess()
-        }
-
-        whenever(
-            mockDataStoreHandler.setValue(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                data = any(),
-                version = anyOrNull(),
-                callback = any(),
-                serializer = eq(mockResourceHashesEntrySerializer)
-            )
-        ).doAnswer {
-            val callback = it.arguments[3] as DataStoreWriteCallback
-            callback.onSuccess()
-        }
+        setRemoveDataSuccess()
     }
 
     @Test
-    fun `M return false W isPreviouslySentResource() { resource was not already sent }`() {
+    fun `M return false W isPreviouslySentResource { resource was not already sent }`() {
         // Given
         testedDataStoreManager = ResourceDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
@@ -113,7 +95,7 @@ internal class ResourceDataStoreManagerTest {
     }
 
     @Test
-    fun `M return true W isPreviouslySentResource() { resource was already sent }`() {
+    fun `M return true W isPreviouslySentResource { resource was already sent }`() {
         // Given
         testedDataStoreManager = ResourceDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
@@ -130,7 +112,7 @@ internal class ResourceDataStoreManagerTest {
     }
 
     @Test
-    fun `M write hash to datastore W cacheResourceHash()`() {
+    fun `M write to datastore W cacheResourceHash`() {
         // Given
         testedDataStoreManager = ResourceDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
@@ -146,39 +128,47 @@ internal class ResourceDataStoreManagerTest {
             key = eq(DATASTORE_HASHES_ENTRY_NAME),
             data = any(),
             version = anyOrNull(),
-            callback = any(),
+            callback = anyOrNull(),
             serializer = eq(mockResourceHashesEntrySerializer)
         )
     }
 
     @Test
-    fun `M be threadsafe W cacheResourceHash() { store on one thread, read on another }`() {
+    fun `M do not use expired date W cacheResourceHash { datastore expired }`(
+        forge: Forge
+    ) {
         // Given
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        setFetchDataSuccess(mockDataStoreContent)
+
+        // When
         testedDataStoreManager = ResourceDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
             resourceHashesSerializer = mockResourceHashesEntrySerializer,
             resourceHashesDeserializer = mockResourceHashesEntryDeserializer
         )
-        val writeThread = Runnable {
-            testedDataStoreManager.cacheResourceHash(fakeHash)
-        }
 
-        val readThread = Runnable {
-            assertThat(testedDataStoreManager.isPreviouslySentResource(fakeHash))
-                .isTrue()
-        }
-
-        // When
-        writeThread.run()
+        testedDataStoreManager.cacheResourceHash(fakeHash)
 
         // Then
-        readThread.run()
+        val resourceHashesEntryCaptor = argumentCaptor<ResourceHashesEntry>()
+        verify(mockDataStoreHandler).setValue(
+            key = eq(DATASTORE_HASHES_ENTRY_NAME),
+            data = resourceHashesEntryCaptor.capture(),
+            version = anyOrNull(),
+            callback = anyOrNull(),
+            serializer = eq(mockResourceHashesEntrySerializer)
+        )
+
+        assertThat(
+            resourceHashesEntryCaptor.firstValue.lastUpdateDateNs
+        ).isNotEqualTo(mockDataStoreContent.data?.lastUpdateDateNs)
     }
 
     // region init
 
     @Test
-    fun `M query entry from dataStore W init()`() {
+    fun `M fetch stored entry dataStore W init`() {
         // Given
         testedDataStoreManager = ResourceDataStoreManager(
             featureSdkCore = mockFeatureSdkCore,
@@ -196,110 +186,12 @@ internal class ResourceDataStoreManagerTest {
     }
 
     @Test
-    fun `M overwrite last update date W init() { datastore expired }`(
-        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
-        @Mock mockResourceHashesEntry: ResourceHashesEntry,
-        @IntForgery fakeVersionCode: Int
+    fun `M remove datastore entry W init { datastore expired }`(
+        forge: Forge
     ) {
         // Given
-        val fakeHashes = DataStoreContent(
-            versionCode = fakeVersionCode,
-            data = mockResourceHashesEntry
-        )
-
-        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
-        val expiredTimestamp = System.nanoTime() - (DATASTORE_EXPIRATION_NS * 2)
-        whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(expiredTimestamp)
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onSuccess(mockDataStoreContentEntry)
-        }
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onSuccess(fakeHashes)
-        }
-
-        // When
-        testedDataStoreManager = ResourceDataStoreManager(
-            featureSdkCore = mockFeatureSdkCore,
-            resourceHashesSerializer = mockResourceHashesEntrySerializer,
-            resourceHashesDeserializer = mockResourceHashesEntryDeserializer
-        )
-
-        testedDataStoreManager.cacheResourceHash(fakeHash)
-
-        // Then
-        val resourceHashesEntryCaptor = argumentCaptor<ResourceHashesEntry>()
-        verify(mockDataStoreHandler).setValue(
-            key = eq(DATASTORE_HASHES_ENTRY_NAME),
-            data = resourceHashesEntryCaptor.capture(),
-            version = anyOrNull(),
-            callback = any(),
-            serializer = eq(mockResourceHashesEntrySerializer)
-        )
-
-        assertThat(resourceHashesEntryCaptor.firstValue.lastUpdateDateNs).isNotEqualTo(expiredTimestamp)
-    }
-
-    @Test
-    fun `M remove stored hashes file W init() { datastore expired }`(
-        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
-        @Mock mockResourceHashesEntry: ResourceHashesEntry,
-        @IntForgery fakeVersionCode: Int
-    ) {
-        // Given
-        val fakeHashes = DataStoreContent(
-            versionCode = fakeVersionCode,
-            data = mockResourceHashesEntry
-        )
-
-        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
-        val expiredTime = System.nanoTime() - (DATASTORE_EXPIRATION_NS * 2)
-        whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(expiredTime)
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onSuccess(mockDataStoreContentEntry)
-        }
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onSuccess(fakeHashes)
-        }
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        setFetchDataSuccess(mockDataStoreContent)
 
         // When
         testedDataStoreManager = ResourceDataStoreManager(
@@ -311,53 +203,17 @@ internal class ResourceDataStoreManagerTest {
         // Then
         verify(mockDataStoreHandler).removeValue(
             key = eq(DATASTORE_HASHES_ENTRY_NAME),
-            callback = any()
+            callback = anyOrNull()
         )
     }
 
     @Test
-    fun `M add stored hashes to known set W init() { valid update date }`(
-        @Mock mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry>,
-        @Mock mockResourceHashesEntry: ResourceHashesEntry,
-        @StringForgery fakeString: String,
-        @IntForgery fakeVersionCode: Int
+    fun `M add stored hashes to known set W init { valid update date }`(
+        forge: Forge
     ) {
         // Given
-        val fakeSetStrings = hashSetOf(fakeString)
-        val validTime = System.nanoTime() - (DATASTORE_EXPIRATION_NS / 2)
-        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockDataStoreContentEntry.data).thenReturn(mockResourceHashesEntry)
-        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings.toList())
-        whenever(mockResourceHashesEntry.lastUpdateDateNs).thenReturn(validTime)
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onSuccess(mockDataStoreContentEntry)
-        }
-
-        whenever(mockDataStoreContentEntry.versionCode).thenReturn(fakeVersionCode)
-        whenever(mockResourceHashesEntry.resourceHashes).thenReturn(fakeSetStrings.toList())
-
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onSuccess(mockDataStoreContentEntry)
-        }
+        val mockDataStoreContentEntry = generateDataStoreContent(forge, isExpired = false)
+        setFetchDataSuccess(mockDataStoreContentEntry)
 
         // When
         testedDataStoreManager = ResourceDataStoreManager(
@@ -367,25 +223,15 @@ internal class ResourceDataStoreManagerTest {
         )
 
         // Then
-        assertThat(testedDataStoreManager.isPreviouslySentResource(fakeString))
-            .isTrue()
+        mockDataStoreContentEntry.data?.resourceHashes?.forEach {
+            assertThat(testedDataStoreManager.isPreviouslySentResource(it)).isTrue()
+        }
     }
 
     @Test
-    fun `M do nothing W init() { failed to get datastore entry }`() {
+    fun `M return isReady true W init { no data to fetch }`() {
         // Given
-        whenever(
-            mockDataStoreHandler.value(
-                key = eq(DATASTORE_HASHES_ENTRY_NAME),
-                version = anyOrNull(),
-                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-                deserializer = any()
-            )
-        ) doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val callback = it.arguments[2] as DataStoreReadCallback<ResourceHashesEntry>
-            callback.onFailure()
-        }
+        setFetchDataSuccess(null)
 
         // When
         testedDataStoreManager = ResourceDataStoreManager(
@@ -395,17 +241,153 @@ internal class ResourceDataStoreManagerTest {
         )
 
         // Then
-        verify(
-            mockDataStoreHandler
-        ).value(
-            key = eq(DATASTORE_HASHES_ENTRY_NAME),
-            version = anyOrNull(),
-            callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
-            deserializer = any()
+        assertThat(testedDataStoreManager.isReady()).isTrue()
+    }
+
+    @Test
+    fun `M return isReady true W init { fetched entry }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = false)
+        setFetchDataSuccess(mockDataStoreContent)
+
+        // When
+        testedDataStoreManager = ResourceDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourceHashesDeserializer = mockResourceHashesEntryDeserializer
         )
 
-        verifyNoMoreInteractions(mockFeatureScope.dataStore)
+        // Then
+        assertThat(testedDataStoreManager.isReady()).isTrue()
+    }
+
+    @Test
+    fun `M return isReady true W init { failed to fetch entry }`() {
+        // Given
+        setFetchDataFailure()
+
+        // When
+        testedDataStoreManager = ResourceDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourceHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
+
+        // Then
+        assertThat(testedDataStoreManager.isReady()).isTrue()
+    }
+
+    @Test
+    fun `M return isReady true W init { got expired entry, succeeded deleting }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        setFetchDataSuccess(mockDataStoreContent)
+        setRemoveDataSuccess()
+
+        // When
+        testedDataStoreManager = ResourceDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourceHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
+
+        // Then
+        assertThat(testedDataStoreManager.isReady()).isTrue()
+    }
+
+    @Test
+    fun `M return isReady true W init { got expired entry, failed deleting }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        setFetchDataSuccess(mockDataStoreContent)
+        setRemoveDataFailure()
+
+        // When
+        testedDataStoreManager = ResourceDataStoreManager(
+            featureSdkCore = mockFeatureSdkCore,
+            resourceHashesSerializer = mockResourceHashesEntrySerializer,
+            resourceHashesDeserializer = mockResourceHashesEntryDeserializer
+        )
+
+        // Then
+        assertThat(testedDataStoreManager.isReady()).isTrue()
     }
 
     // endregion
+
+    private fun generateDataStoreContent(
+        forge: Forge,
+        isExpired: Boolean
+    ): DataStoreContent<ResourceHashesEntry> {
+        val resourceHashes = forge.aList { aString() }.distinct()
+        val fakeVersionCode = forge.anInt(min = 0)
+        val entryTime = if (isExpired) {
+            System.nanoTime() - DATASTORE_EXPIRATION_NS
+        } else {
+            System.nanoTime()
+        }
+
+        val mockResourceHashesEntry: ResourceHashesEntry = mock {
+            whenever(it.resourceHashes).thenReturn(resourceHashes)
+            whenever(it.lastUpdateDateNs).thenReturn(entryTime)
+        }
+        val mockDataStoreContentEntry: DataStoreContent<ResourceHashesEntry> = mock {
+            whenever(it.versionCode).thenReturn(fakeVersionCode)
+            whenever(it.data).thenReturn(mockResourceHashesEntry)
+        }
+
+        return mockDataStoreContentEntry
+    }
+
+    private fun setFetchDataSuccess(returnValue: DataStoreContent<ResourceHashesEntry>?) {
+        whenever(
+            mockDataStoreHandler.value(
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
+                version = anyOrNull(),
+                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
+                deserializer = any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<DataStoreReadCallback<ResourceHashesEntry>>(2)
+            callback.onSuccess(returnValue)
+        }
+    }
+
+    private fun setFetchDataFailure() {
+        whenever(
+            mockDataStoreHandler.value(
+                key = eq(DATASTORE_HASHES_ENTRY_NAME),
+                version = anyOrNull(),
+                callback = any<DataStoreReadCallback<ResourceHashesEntry>>(),
+                deserializer = any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<DataStoreReadCallback<ResourceHashesEntry>>(2)
+            callback.onFailure()
+        }
+    }
+
+    private fun setRemoveDataSuccess() {
+        whenever(
+            mockDataStoreHandler.removeValue(any(), any())
+        ).doAnswer {
+            val callback = it.arguments[1] as DataStoreWriteCallback
+            callback.onSuccess()
+        }
+    }
+
+    private fun setRemoveDataFailure() {
+        whenever(
+            mockDataStoreHandler.removeValue(any(), any())
+        ).doAnswer {
+            val callback = it.arguments[1] as DataStoreWriteCallback
+            callback.onFailure()
+        }
+    }
 }

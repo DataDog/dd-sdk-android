@@ -153,9 +153,9 @@ data class com.datadog.android.api.storage.RawBatchEvent
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 interface com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun <T: Any> setValue(String, T, Int = 0, DataStoreWriteCallback, com.datadog.android.core.persistence.Serializer<T>)
+  fun <T: Any> setValue(String, T, Int = 0, DataStoreWriteCallback? = null, com.datadog.android.core.persistence.Serializer<T>)
   fun <T: Any> value(String, Int? = null, DataStoreReadCallback<T>, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
-  fun removeValue(String, DataStoreWriteCallback)
+  fun removeValue(String, DataStoreWriteCallback? = null)
   companion object 
     const val CURRENT_DATASTORE_VERSION: Int
 interface com.datadog.android.api.storage.datastore.DataStoreReadCallback<T: Any>
