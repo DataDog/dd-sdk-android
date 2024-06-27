@@ -92,13 +92,7 @@ internal class SdkInternalLogger(
         }
     }
 
-    override fun logMetric(
-        messageBuilder: () -> String,
-        additionalProperties: Map<String, Any?>,
-        samplingRate: Float
-    ) {
-        if (!RateBasedSampler(samplingRate).sample()) return
-
+    override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>) {
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val message = messageBuilder()
         val telemetryEvent =
