@@ -401,6 +401,12 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vertical
+data class com.datadog.android.sessionreplay.model.ResourceHashesEntry
+  constructor(kotlin.Number, kotlin.collections.List<kotlin.String>)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ResourceHashesEntry
+    fun fromJsonObject(com.google.gson.JsonObject): ResourceHashesEntry
 data class com.datadog.android.sessionreplay.model.ResourceMetadata
   constructor(Application)
   val type: kotlin.String

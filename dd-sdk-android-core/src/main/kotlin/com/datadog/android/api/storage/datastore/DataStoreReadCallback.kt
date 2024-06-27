@@ -9,20 +9,20 @@ package com.datadog.android.api.storage.datastore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 
 /**
- * Callback for asynchronous operations on the datastore.
+ * Callback for asynchronous read operations on the datastore.
  * @param T the datatype being retrieved.
  */
-interface DataStoreCallback<T : Any> {
+interface DataStoreReadCallback<T : Any> {
 
     /**
-     * Triggered on successfully fetching data from the datastore.
+     * Triggered on successfully reading data from the datastore.
      *
      * @param dataStoreContent (nullable) contains the datastore content if there was data to fetch, else null.
      */
     fun onSuccess(dataStoreContent: DataStoreContent<T>?)
 
     /**
-     * Triggered when we failed to get data from the datastore.
+     * Triggered on failing to read data from the datastore.
      */
     fun onFailure()
 }

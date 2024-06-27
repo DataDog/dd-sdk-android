@@ -34,6 +34,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGene
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
 import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
@@ -67,6 +68,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
+    private val resourceDataStoreManager: ResourceDataStoreManager
 
     private val uiHandler: Handler
     private var shouldRecord = false
@@ -81,7 +83,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
-        sdkCore: FeatureSdkCore
+        sdkCore: FeatureSdkCore,
+        resourceDataStoreManager: ResourceDataStoreManager
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -91,6 +94,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         )
 
         val processor = RecordedDataProcessor(
+            resourceDataStoreManager,
             resourcesWriter,
             recordWriter,
             MutationResolver(internalLogger)
@@ -127,6 +131,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             ),
             recordedDataQueue = ConcurrentLinkedQueue()
         )
+        this.resourceDataStoreManager = resourceDataStoreManager
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -213,6 +218,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sessionReplayLifecycleCallback: LifecycleCallback,
         viewOnDrawInterceptor: ViewOnDrawInterceptor,
         recordedDataQueueHandler: RecordedDataQueueHandler,
+        resourceDataStoreManager: ResourceDataStoreManager,
         uiHandler: Handler,
         internalLogger: InternalLogger
     ) {
@@ -230,6 +236,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
+        this.resourceDataStoreManager = resourceDataStoreManager
     }
 
     override fun stopProcessingRecords() {

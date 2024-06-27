@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.datastore
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileWriter
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileWriter.Companion.FAILED_TO_SERIALIZE_DATA_ERROR
@@ -56,6 +57,9 @@ internal class DataStoreFileWriterTest {
 
     @Mock
     lateinit var mockSerializer: Serializer<String>
+
+    @Mock
+    lateinit var mockDataStoreWriteCallback: DataStoreWriteCallback
 
     @Mock
     lateinit var mockDataStoreDirectory: File
@@ -112,6 +116,7 @@ internal class DataStoreFileWriterTest {
             key = fakeKey,
             serializer = mockSerializer,
             data = fakeDataString,
+            callback = mockDataStoreWriteCallback,
             version = 0
         )
 
@@ -129,6 +134,7 @@ internal class DataStoreFileWriterTest {
             key = fakeKey,
             data = fakeDataString,
             serializer = mockSerializer,
+            callback = mockDataStoreWriteCallback,
             version = 0
         )
 
@@ -147,6 +153,7 @@ internal class DataStoreFileWriterTest {
             key = fakeKey,
             data = fakeDataString,
             serializer = mockSerializer,
+            callback = mockDataStoreWriteCallback,
             version = 0
         )
 
@@ -164,7 +171,7 @@ internal class DataStoreFileWriterTest {
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(true)
 
         // When
-        testedDatastoreFileWriter.delete(fakeKey)
+        testedDatastoreFileWriter.delete(fakeKey, mockDataStoreWriteCallback)
 
         // Then
         verify(mockDataStoreFile).deleteSafe(mockInternalLogger)
@@ -176,7 +183,7 @@ internal class DataStoreFileWriterTest {
         whenever(mockDataStoreFile.existsSafe(mockInternalLogger)).thenReturn(false)
 
         // When
-        testedDatastoreFileWriter.delete(fakeKey)
+        testedDatastoreFileWriter.delete(fakeKey, mockDataStoreWriteCallback)
 
         // Then
         verify(mockDataStoreFile, never()).deleteSafe(mockInternalLogger)

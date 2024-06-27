@@ -7,7 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.datastore
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.storage.datastore.DataStoreCallback
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
@@ -61,6 +62,9 @@ internal class DataStoreFileHandlerTest {
     @Mock
     lateinit var mockSerializer: Serializer<String>
 
+    @Mock
+    lateinit var mockDataStoreWriteCallback: DataStoreWriteCallback
+
     @StringForgery
     lateinit var fakeFeatureName: String
 
@@ -70,7 +74,7 @@ internal class DataStoreFileHandlerTest {
     @StringForgery
     lateinit var fakeDataString: String
 
-    private lateinit var fileCallback: DataStoreCallback<ByteArray>
+    private lateinit var fileCallback: DataStoreReadCallback<ByteArray>
 
     @BeforeEach
     fun setup() {
@@ -78,7 +82,7 @@ internal class DataStoreFileHandlerTest {
             it.getArgument<Runnable>(0).run()
         }
 
-        fileCallback = object : DataStoreCallback<ByteArray> {
+        fileCallback = object : DataStoreReadCallback<ByteArray> {
             override fun onSuccess(dataStoreContent: DataStoreContent<ByteArray>?) {}
             override fun onFailure() {}
         }
@@ -138,6 +142,7 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             data = fakeDataString,
             version = fakeVersion,
+            callback = mockDataStoreWriteCallback,
             serializer = mockSerializer
         )
 
@@ -146,6 +151,7 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             data = fakeDataString,
             serializer = mockSerializer,
+            callback = mockDataStoreWriteCallback,
             version = fakeVersion
         )
     }
@@ -154,12 +160,14 @@ internal class DataStoreFileHandlerTest {
     fun `M call dataStoreWriter W removeValue()`() {
         // When
         testedDataStoreHandler.removeValue(
-            key = fakeKey
+            key = fakeKey,
+            callback = mockDataStoreWriteCallback
         )
 
         // Then
         verify(mockDatastoreFileWriter).delete(
-            key = fakeKey
+            key = fakeKey,
+            callback = mockDataStoreWriteCallback
         )
     }
 }

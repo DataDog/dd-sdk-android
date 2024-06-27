@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.datastore
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.datastore.ext.toByteArray
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteSafe
@@ -30,6 +31,7 @@ internal class DatastoreFileWriter(
         key: String,
         data: T,
         serializer: Serializer<T>,
+        callback: DataStoreWriteCallback?,
         version: Int
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
@@ -43,6 +45,7 @@ internal class DatastoreFileWriter(
 
         // failed to serialize one or more blocks
         if (versionCodeBlock == null || dataBlock == null) {
+            callback?.onFailure()
             return
         }
 
@@ -51,15 +54,21 @@ internal class DatastoreFileWriter(
             internalLogger = internalLogger
         )
 
-        fileReaderWriter.writeData(
+        val result = fileReaderWriter.writeData(
             file = datastoreFile,
             data = dataToWrite,
             append = false
         )
+
+        if (result) {
+            callback?.onSuccess()
+        } else {
+            callback?.onFailure()
+        }
     }
 
     @WorkerThread
-    internal fun delete(key: String) {
+    internal fun delete(key: String, callback: DataStoreWriteCallback?) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
             storageDir = storageDir,
@@ -67,7 +76,12 @@ internal class DatastoreFileWriter(
         )
 
         if (datastoreFile.existsSafe(internalLogger)) {
-            datastoreFile.deleteSafe(internalLogger)
+            val result = datastoreFile.deleteSafe(internalLogger)
+            if (result) {
+                callback?.onSuccess()
+            } else {
+                callback?.onFailure()
+            }
         }
     }
 

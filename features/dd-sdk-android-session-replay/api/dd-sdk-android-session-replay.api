@@ -1264,6 +1264,28 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Wirefra
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$WebviewWireframeUpdate;
 }
 
+public final class com/datadog/android/sessionreplay/model/ResourceHashesEntry {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/Number;Ljava/util/List;)Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;Ljava/lang/Number;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;
+	public final fun getLastUpdateDateNs ()Ljava/lang/Number;
+	public final fun getResourceHashes ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/ResourceHashesEntry$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/ResourceHashesEntry;
+}
+
 public final class com/datadog/android/sessionreplay/model/ResourceMetadata {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/ResourceMetadata$Companion;
 	public fun <init> (Lcom/datadog/android/sessionreplay/model/ResourceMetadata$Application;)V

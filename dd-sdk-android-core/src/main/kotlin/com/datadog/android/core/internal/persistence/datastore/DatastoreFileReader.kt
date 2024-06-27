@@ -8,7 +8,7 @@ package com.datadog.android.core.internal.persistence.datastore
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.storage.datastore.DataStoreCallback
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.datastore.ext.toInt
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -31,7 +31,7 @@ internal class DatastoreFileReader(
         key: String,
         deserializer: Deserializer<String, T>,
         version: Int? = null,
-        callback: DataStoreCallback<T>
+        callback: DataStoreReadCallback<T>
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             featureName = featureName,
@@ -53,7 +53,7 @@ internal class DatastoreFileReader(
         deserializer: Deserializer<String, T>,
         tlvBlockFileReader: TLVBlockFileReader,
         requestedVersion: Int?,
-        callback: DataStoreCallback<T>
+        callback: DataStoreReadCallback<T>
     ) {
         val tlvBlocks = tlvBlockFileReader.read(datastoreFile)
 
