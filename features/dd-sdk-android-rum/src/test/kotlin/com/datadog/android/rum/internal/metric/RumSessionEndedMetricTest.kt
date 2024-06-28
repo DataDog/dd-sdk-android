@@ -290,7 +290,7 @@ class RumSessionEndedMetricTest {
         // Given
         val sessionEndedMetric =
             SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        val backgroundViewCount = forge.anInt(min = 1, max = events.size)
+        val backgroundViewCount = forge.anInt(min = 1, max = events.size + 1)
 
         // When
         events.mapIndexed { index, viewEvent ->
@@ -322,7 +322,7 @@ class RumSessionEndedMetricTest {
         // Given
         val sessionEndedMetric =
             SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        val appLaunchViewCount = forge.anInt(min = 1, max = events.size)
+        val appLaunchViewCount = forge.anInt(min = 1, max = events.size + 1)
 
         // When
         events.mapIndexed { index, viewEvent ->
