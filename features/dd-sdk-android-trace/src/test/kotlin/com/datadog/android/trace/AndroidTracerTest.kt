@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
+import com.datadog.android.trace.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.legacy.trace.api.Config
@@ -205,7 +206,7 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
-        val expectedSpanId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
+        val expectedSpanId = BigInteger(AndroidTracer.SPAN_ID_BIT_SIZE, Random(seed))
         val tracer = testedTracerBuilder
             .withRandom(Random(seed))
             .build()
@@ -725,7 +726,7 @@ internal class AndroidTracerTest {
 
                 with(tracingContext.activeContext(threadName)) {
                     assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
-                    assertThat(this["trace_id"]).isEqualTo(parentSpan.context().toTraceId())
+                    assertThat(this["trace_id"]).isEqualTo(parentSpan.context().traceIdAsHexString())
                 }
 
                 // should update the context for the child span
@@ -735,7 +736,7 @@ internal class AndroidTracerTest {
 
                 with(tracingContext.activeContext(threadName)) {
                     assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
-                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().toTraceId())
+                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
                 // should not update the context for the child non-active span
@@ -744,14 +745,14 @@ internal class AndroidTracerTest {
 
                 with(tracingContext.activeContext(threadName)) {
                     assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
-                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().toTraceId())
+                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
                 childNonActiveSpan.finish()
 
                 with(tracingContext.activeContext(threadName)) {
                     assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
-                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().toTraceId())
+                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
                 // should restore context of parent span
@@ -760,7 +761,7 @@ internal class AndroidTracerTest {
 
                 with(tracingContext.activeContext(threadName)) {
                     assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
-                    assertThat(this["trace_id"]).isEqualTo(parentSpan.context().toTraceId())
+                    assertThat(this["trace_id"]).isEqualTo(parentSpan.context().traceIdAsHexString())
                 }
 
                 // should clean everything

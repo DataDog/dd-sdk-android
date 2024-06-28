@@ -71,11 +71,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).setService(fakeService).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -88,7 +90,8 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
                 hasSpanId(spanId)
                 hasService(fakeService)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -111,11 +114,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).addTag(fakeTagKey, fakeTagValue).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -128,7 +133,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -153,11 +161,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).addGlobalTag(fakeTagKey, fakeTagValue).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -170,7 +180,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -203,11 +216,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).setBundleWithRumEnabled(false).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -220,7 +235,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -255,11 +273,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -272,7 +292,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -326,11 +349,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -343,7 +368,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -368,11 +396,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -385,7 +415,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -412,11 +445,13 @@ class AndroidTracerTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: String
+        var leastSignificantTraceId: String
         var spanId: String
+        var mostSignificantTraceId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.finish()
@@ -429,7 +464,10 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)
@@ -452,17 +490,20 @@ class AndroidTracerTest {
 
         // When
         val span = testedTracer.buildSpan(fakeOperation).start()
-        val traceId = span.traceIdAsHexString()
+        val leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+        val mostSignificantTraceId = span.mostSignificant64BitsTraceId()
         val spanId = span.spanIdAsHexString()
         val childSpan = testedTracer.buildSpan(fakeOperation).asChildOf(span).start()
-        val childTraceId = childSpan.traceIdAsHexString()
+        val childLeastSignificantTraceId = childSpan.leastSignificant64BitsTraceId()
+        val childMostSignificantTraceId = childSpan.mostSignificant64BitsTraceId()
         val childSpanId = childSpan.spanIdAsHexString()
         Thread.sleep(OP_DURATION_MS)
         childSpan.finish()
         span.finish()
 
         // Then
-        assertThat(childTraceId).isEqualTo(traceId)
+        assertThat(childLeastSignificantTraceId).isEqualTo(leastSignificantTraceId)
+        assertThat(childMostSignificantTraceId).isEqualTo(mostSignificantTraceId)
         assertThat(childSpanId).isNotEqualTo(spanId)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(2)
@@ -471,13 +512,19 @@ class AndroidTracerTest {
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(traceId)
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
             }
         SpansPayloadAssert.assertThat(payload1)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
-                hasTraceId(childTraceId)
+                hasLeastSignificant64BitsTraceId(childLeastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(childMostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(childSpanId)
             }
     }

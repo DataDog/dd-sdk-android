@@ -37,10 +37,32 @@ internal class SpansPayloadAssert(actual: JsonObject) :
     class SpanAssert(private val actualSpan: JsonObject, private val index: Int) :
         AbstractObjectAssert<SpanAssert, JsonObject>(actualSpan, SpanAssert::class.java) {
 
-        fun hasTraceId(traceId: String): SpanAssert {
+        fun hasLeastSignificant64BitsTraceId(traceId: String): SpanAssert {
             val actualTraceId = actualSpan.getString(TRACE_ID_KEY)
             assertThat(actualTraceId).overridingErrorMessage(
-                "Expected traceId to be $traceId but was $actualTraceId for index $index"
+                "Expected least significant traceId to be $traceId " +
+                    "but was $actualTraceId for index $index"
+            ).isEqualTo(traceId)
+            return this
+        }
+
+        fun hasValidLeastSignificant64BitsTraceId(): SpanAssert {
+            val actualTraceId = actualSpan.getString(TRACE_ID_KEY)
+            assertThat(actualTraceId).matches("[0-9a-f]{16}")
+            return this
+        }
+
+        fun hasValidMostSignificant64BitsTraceId(): SpanAssert {
+            val actualTraceId = actualSpan.getString(TRACE_ID_META_KEY)
+            assertThat(actualTraceId).matches("[0-9a-f]{16}")
+            return this
+        }
+
+        fun hasMostSignificant64BitsTraceId(traceId: String): SpanAssert {
+            val actualTraceId = actualSpan.getString(TRACE_ID_META_KEY)
+            assertThat(actualTraceId).overridingErrorMessage(
+                "Expected the most significant trace id to be $traceId but " +
+                    "was $actualTraceId for index $index"
             ).isEqualTo(traceId)
             return this
         }
@@ -339,6 +361,7 @@ internal class SpansPayloadAssert(actual: JsonObject) :
     }
 
     companion object {
+        private const val TRACE_ID_META_KEY = "meta._dd.p.id"
         private const val SPANS_KEY = "spans"
         private const val ENV_KEY = "env"
         private const val TRACE_ID_KEY = "trace_id"

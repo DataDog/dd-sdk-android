@@ -20,6 +20,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
+import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.DDTags
@@ -458,7 +459,8 @@ internal constructor(
                 TracingHeaderType.DATADOG -> {
                     listOf(
                         DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_TRACE_ID_HEADER,
+                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                        DATADOG_TAGS,
                         DATADOG_SPAN_ID_HEADER,
                         DATADOG_ORIGIN_HEADER
                     ).forEach {
@@ -489,7 +491,7 @@ internal constructor(
                 TracingHeaderType.TRACECONTEXT -> {
                     requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
                     requestBuilder.removeHeader(W3C_TRACESTATE_KEY)
-                    val traceId = span.context().toTraceId()
+                    val traceId = span.context().traceIdAsHexString()
                     val spanId = span.context().toSpanId()
                     requestBuilder.addHeader(
                         W3C_TRACEPARENT_KEY,
@@ -538,7 +540,8 @@ internal constructor(
                     tracedRequestBuilder.removeHeader(key)
                     when (key) {
                         DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_TRACE_ID_HEADER,
+                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                        DATADOG_TAGS,
                         DATADOG_SPAN_ID_HEADER,
                         DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
                             tracedRequestBuilder.addHeader(key, value)
@@ -650,7 +653,8 @@ internal constructor(
         internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f
 
         // taken from DatadogHttpCodec
-        internal const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"
+        internal const val DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER = "x-datadog-trace-id"
+        internal const val DATADOG_TAGS = "x-datadog-tags"
         internal const val DATADOG_SPAN_ID_HEADER = "x-datadog-parent-id"
         internal const val DATADOG_SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
         internal const val DATADOG_DROP_SAMPLING_DECISION = "0"

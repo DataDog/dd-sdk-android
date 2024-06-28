@@ -6,116 +6,167 @@
 
 package com.datadog.opentracing.propagation;
 
+import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
 
+import com.datadog.android.trace.internal.domain.event.BigIntegerUtils;
 import com.datadog.opentracing.DDSpanContext;
 import com.datadog.legacy.trace.api.sampling.PrioritySampling;
+import com.datadog.trace.api.internal.util.LongStringUtils;
+
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;
+
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/** A codec designed for HTTP transport via headers using Datadog headers */
+/**
+ * A codec designed for HTTP transport via headers using Datadog headers
+ */
 class DatadogHttpCodec {
 
-  private static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
-  private static final String TRACE_ID_KEY = "x-datadog-trace-id";
-  private static final String SPAN_ID_KEY = "x-datadog-parent-id";
-  private static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
-  private static final String ORIGIN_KEY = "x-datadog-origin";
+    public static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
+    public static final String LEAST_SIGNIFICANT_TRACE_ID_KEY = "x-datadog-trace-id";
+    public static final String MOST_SIGNIFICANT_TRACE_ID_KEY = "_dd.p.tid";
+    public static final String DATADOG_TAGS_KEY = "x-datadog-tags";
+    public static final String SPAN_ID_KEY = "x-datadog-parent-id";
+    public static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
+    public static final String ORIGIN_KEY = "x-datadog-origin";
 
-  private DatadogHttpCodec() {
-    // This class should not be created. This also makes code coverage checks happy.
-  }
-
-  public static class Injector implements HttpCodec.Injector {
-
-    @Override
-    public void inject(final DDSpanContext context, final TextMapInject carrier) {
-      carrier.put(TRACE_ID_KEY, context.getTraceId().toString());
-      carrier.put(SPAN_ID_KEY, context.getSpanId().toString());
-      final String origin = context.getOrigin();
-      if (origin != null) {
-        carrier.put(ORIGIN_KEY, origin);
-      }
-
-      for (final Map.Entry<String, String> entry : context.baggageItems()) {
-        carrier.put(OT_BAGGAGE_PREFIX + entry.getKey(), HttpCodec.encode(entry.getValue()));
-      }
-
-      // always use max sampling priority for Android traces
-      carrier.put(SAMPLING_PRIORITY_KEY, "1");
-    }
-  }
-
-  public static class Extractor implements HttpCodec.Extractor {
-    private final Map<String, String> taggedHeaders;
-
-    public Extractor(final Map<String, String> taggedHeaders) {
-      this.taggedHeaders = new HashMap<>();
-      for (final Map.Entry<String, String> mapping : taggedHeaders.entrySet()) {
-        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(Locale.US), mapping.getValue());
-      }
+    private DatadogHttpCodec() {
+        // This class should not be created. This also makes code coverage checks happy.
     }
 
-    @Override
-    public SpanContext extract(final TextMapExtract carrier) {
-      try {
-        Map<String, String> baggage = Collections.emptyMap();
-        Map<String, String> tags = Collections.emptyMap();
-        BigInteger traceId = BigInteger.ZERO;
-        BigInteger spanId = BigInteger.ZERO;
-        int samplingPriority = PrioritySampling.UNSET;
-        String origin = null;
+    public static class Injector implements HttpCodec.Injector {
 
-        for (final Map.Entry<String, String> entry : carrier) {
-          final String key = entry.getKey().toLowerCase(Locale.US);
-          final String value = entry.getValue();
+        private final BigIntegerUtils bigIntegerUtils;
 
-          if (value == null) {
-            continue;
-          }
-
-          if (TRACE_ID_KEY.equalsIgnoreCase(key)) {
-            traceId = validateUInt64BitsID(value, 10);
-          } else if (SPAN_ID_KEY.equalsIgnoreCase(key)) {
-            spanId = validateUInt64BitsID(value, 10);
-          } else if (SAMPLING_PRIORITY_KEY.equalsIgnoreCase(key)) {
-            samplingPriority = Integer.parseInt(value);
-          } else if (ORIGIN_KEY.equalsIgnoreCase(key)) {
-            origin = value;
-          } else if (key.startsWith(OT_BAGGAGE_PREFIX)) {
-            if (baggage.isEmpty()) {
-              baggage = new HashMap<>();
-            }
-            baggage.put(key.replace(OT_BAGGAGE_PREFIX, ""), HttpCodec.decode(value));
-          }
-
-          if (taggedHeaders.containsKey(key)) {
-            if (tags.isEmpty()) {
-              tags = new HashMap<>();
-            }
-            tags.put(taggedHeaders.get(key), HttpCodec.decode(value));
-          }
+        public Injector(final BigIntegerUtils bigIntegerUtils) {
+            this.bigIntegerUtils = bigIntegerUtils;
         }
 
-        if (!BigInteger.ZERO.equals(traceId)) {
-          final ExtractedContext context =
-              new ExtractedContext(traceId, spanId, samplingPriority, origin, baggage, tags);
-          context.lockSamplingPriority();
-
-          return context;
-        } else if (origin != null || !tags.isEmpty()) {
-          return new TagContext(origin, tags);
+        public Injector() {
+            this(BigIntegerUtils.INSTANCE);
         }
-      } catch (final RuntimeException e) {
-      }
 
-      return null;
+        @Override
+        public void inject(final DDSpanContext context, final TextMapInject carrier) {
+            final BigInteger traceId = context.getTraceId();
+            final String leastSignificantTraceId = bigIntegerUtils.leastSignificant64BitsAsDecimal(traceId);
+            final String mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(traceId);
+            carrier.put(LEAST_SIGNIFICANT_TRACE_ID_KEY, leastSignificantTraceId);
+            carrier.put(SPAN_ID_KEY, context.getSpanId().toString());
+            final String origin = context.getOrigin();
+            if (origin != null) {
+                carrier.put(ORIGIN_KEY, origin);
+            }
+
+            for (final Map.Entry<String, String> entry : context.baggageItems()) {
+                carrier.put(OT_BAGGAGE_PREFIX + entry.getKey(), HttpCodec.encode(entry.getValue()));
+            }
+            // adding the tags
+            carrier.put(DATADOG_TAGS_KEY, MOST_SIGNIFICANT_TRACE_ID_KEY + "=" + mostSignificantTraceId);
+
+
+            // always use max sampling priority for Android traces
+            carrier.put(SAMPLING_PRIORITY_KEY, "1");
+        }
     }
-  }
+
+    public static class Extractor implements HttpCodec.Extractor {
+        private final Map<String, String> taggedHeaders;
+
+        public Extractor(final Map<String, String> taggedHeaders) {
+            this.taggedHeaders = new HashMap<>();
+            for (final Map.Entry<String, String> mapping : taggedHeaders.entrySet()) {
+                this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(Locale.US), mapping.getValue());
+            }
+        }
+
+        @Override
+        public SpanContext extract(final TextMapExtract carrier) {
+            try {
+                Map<String, String> baggage = Collections.emptyMap();
+                Map<String, String> tags = Collections.emptyMap();
+                BigInteger spanId = BigInteger.ZERO;
+                int samplingPriority = PrioritySampling.UNSET;
+                String origin = null;
+                String mostSignificant64BitsTraceIdAsHex = null;
+                String leastSignificant64BitsTraceIdAsDecimal = null;
+
+
+                for (final Map.Entry<String, String> entry : carrier) {
+                    final String key = entry.getKey().toLowerCase(Locale.US);
+                    final String value = entry.getValue();
+
+                    if (value == null) {
+                        continue;
+                    }
+
+                    if (LEAST_SIGNIFICANT_TRACE_ID_KEY.equalsIgnoreCase(key)) {
+                        leastSignificant64BitsTraceIdAsDecimal = value;
+                    } else if (DATADOG_TAGS_KEY.equalsIgnoreCase(key)) {
+                        mostSignificant64BitsTraceIdAsHex = extractMostSignificant64BitsTraceId(value);
+                    } else if (SPAN_ID_KEY.equalsIgnoreCase(key)) {
+                        spanId = validateUInt64BitsID(value, 10);
+                    } else if (SAMPLING_PRIORITY_KEY.equalsIgnoreCase(key)) {
+                        samplingPriority = Integer.parseInt(value);
+                    } else if (ORIGIN_KEY.equalsIgnoreCase(key)) {
+                        origin = value;
+                    } else if (key.startsWith(OT_BAGGAGE_PREFIX)) {
+                        if (baggage.isEmpty()) {
+                            baggage = new HashMap<>();
+                        }
+                        baggage.put(key.replace(OT_BAGGAGE_PREFIX, ""), HttpCodec.decode(value));
+                    }
+
+                    if (taggedHeaders.containsKey(key)) {
+                        if (tags.isEmpty()) {
+                            tags = new HashMap<>();
+                        }
+                        tags.put(taggedHeaders.get(key), HttpCodec.decode(value));
+                    }
+                }
+                if (leastSignificant64BitsTraceIdAsDecimal == null || mostSignificant64BitsTraceIdAsHex == null) {
+                    return new TagContext(origin, tags);
+                }
+
+                final long leastSignificantTraceId =
+                        LongStringUtils.parseUnsignedLong(leastSignificant64BitsTraceIdAsDecimal);
+                final String traceIdAsHex = mostSignificant64BitsTraceIdAsHex +
+                        LongStringUtils.toHexStringPadded(leastSignificantTraceId, 16);
+                final BigInteger traceId = validateUInt128BitsID(traceIdAsHex, 16);
+                if (!BigInteger.ZERO.equals(traceId)) {
+                    final ExtractedContext context =
+                            new ExtractedContext(traceId, spanId, samplingPriority, origin, baggage, tags);
+                    context.lockSamplingPriority();
+
+                    return context;
+                } else if (origin != null || !tags.isEmpty()) {
+                    return new TagContext(origin, tags);
+                }
+            } catch (final RuntimeException e) {
+            }
+
+            return null;
+        }
+
+        private String extractMostSignificant64BitsTraceId(final String tags) {
+            if (tags == null) {
+                return null;
+            }
+            final String[] tagArray = tags.split(",");
+            for (String tag : tagArray) {
+                final String[] tagKeyValue = tag.split("=");
+                if (tagKeyValue.length >= 2 && MOST_SIGNIFICANT_TRACE_ID_KEY.equals(tagKeyValue[0])) {
+                    return tagKeyValue[1];
+                }
+            }
+            return null;
+        }
+    }
 }
