@@ -49,8 +49,7 @@ public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/d
 	public fun <init> (Ljava/util/Map;)V
 	public fun build ()Lcom/datadog/android/okhttp/DatadogInterceptor;
 	public synthetic fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
-	public fun getThis ()Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
-	public synthetic fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public synthetic fun getThis$dd_sdk_android_okhttp_release ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
 }
 
@@ -107,7 +106,6 @@ public class com/datadog/android/okhttp/trace/TracingInterceptor : okhttp3/Inter
 public abstract class com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
 	public fun <init> (Ljava/util/Map;)V
 	public abstract fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
-	public abstract fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceContextInjection (Lcom/datadog/android/okhttp/TraceContextInjection;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
@@ -118,8 +116,7 @@ public final class com/datadog/android/okhttp/trace/TracingInterceptor$Builder :
 	public fun <init> (Ljava/util/List;)V
 	public fun <init> (Ljava/util/Map;)V
 	public fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
-	public synthetic fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
-	public fun getThis ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$Builder;
+	public synthetic fun getThis$dd_sdk_android_okhttp_release ()Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceOrigin (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$Builder;
 }
 

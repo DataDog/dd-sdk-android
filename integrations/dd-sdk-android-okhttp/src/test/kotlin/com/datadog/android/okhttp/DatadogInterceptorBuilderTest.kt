@@ -51,7 +51,7 @@ internal class DatadogInterceptorBuilderTest {
     @Mock
     lateinit var mockTracedRequestListener: TracedRequestListener
 
-    private lateinit var fakeTracedHosts:List<String>
+    private lateinit var fakeTracedHosts: List<String>
 
     @Mock
     lateinit var mockSampler: Sampler
@@ -95,9 +95,11 @@ internal class DatadogInterceptorBuilderTest {
         val interceptor = builder.build()
 
         // Then
-        assertThat(interceptor.tracedHosts).containsExactlyEntriesOf(fakeTracedHosts.associateWith {
-            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-        })
+        assertThat(interceptor.tracedHosts).containsExactlyEntriesOf(
+            fakeTracedHosts.associateWith {
+                setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+            }
+        )
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(

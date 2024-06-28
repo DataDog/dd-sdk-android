@@ -59,11 +59,16 @@ import java.util.Locale
  *
  * To use:
  * ```
- *     val tracedHosts = listOf("example.com", "example.eu")
+ *    val tracedHostsWithHeaderType = mapOf("example.com" to setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT),
+ *             "example.eu" to  setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT))
  *     val client = OkHttpClient.Builder()
- *         .addInterceptor(DatadogInterceptor(tracedHosts))
+ *         .addInterceptor(DatadogInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+ *         // .addNetworkInterceptor(TracingInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         .build()
  * ```
  */
@@ -114,7 +119,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -163,7 +168,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -209,7 +214,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -418,23 +423,31 @@ internal constructor(
     // endregion
 
     // region Builder
-
     /**
      * A Builder for the [DatadogInterceptor].
+     * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
+     * be automatically tracked by this interceptor. If registering a [com.datadog.trace.api.GlobalTracer],
+     * the tracer must be configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * header types configured for OkHttp tracking.
+     * If no hosts are provided (via this argument or global configuration
+     * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
      */
     class Builder(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) :
         BaseBuilder<DatadogInterceptor, Builder>(tracedHostsWithHeaderType) {
 
         private var rumResourceAttributesProvider: RumResourceAttributesProvider = NoOpRumResourceAttributesProvider()
 
-        constructor(tracedHosts: List<String>) : this(tracedHosts.associateWith {
-            setOf(
-                TracingHeaderType.DATADOG,
-                TracingHeaderType.TRACECONTEXT
-            )
-        })
+        constructor(tracedHosts: List<String>) : this(
+            tracedHosts.associateWith {
+                setOf(
+                    TracingHeaderType.DATADOG,
+                    TracingHeaderType.TRACECONTEXT
+                )
+            }
+        )
 
-        override fun getThis(): Builder {
+        internal override fun getThis(): Builder {
             return this
         }
 
@@ -455,7 +468,7 @@ internal constructor(
 
         /**
          * Sets the [RumResourceAttributesProvider] to use to provide custom attributes to the RUM.
-         * By default, it is a NoOp.
+         * By default it won't attach any custom attributes.
          * @param rumResourceAttributesProvider the [RumResourceAttributesProvider] to use.
          */
         fun setRumResourceAttributesProvider(rumResourceAttributesProvider: RumResourceAttributesProvider): Builder {
@@ -470,8 +483,8 @@ internal constructor(
 
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
-                    "Make sure you initialized the Datadog SDK with a valid Application Id, " +
-                    "and that RUM features are enabled."
+                "Make sure you initialized the Datadog SDK with a valid Application Id, " +
+                "and that RUM features are enabled."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."

@@ -8,7 +8,6 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -54,8 +53,7 @@ internal class TracingInterceptorBuilderTest {
     @StringForgery
     lateinit var fakeOrigin: String
 
-    private lateinit var fakeTracedHosts:List<String>
-
+    private lateinit var fakeTracedHosts: List<String>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -93,9 +91,11 @@ internal class TracingInterceptorBuilderTest {
         val interceptor = builder.build()
 
         // Then
-        assertThat(interceptor.tracedHosts).containsExactlyEntriesOf(fakeTracedHosts.associateWith {
-            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-        })
+        assertThat(interceptor.tracedHosts).containsExactlyEntriesOf(
+            fakeTracedHosts.associateWith {
+                setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+            }
+        )
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)

@@ -52,18 +52,23 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * If you use multiple Interceptors, make sure that this one is called first.
  * If you also want to track network requests as RUM Resources, use the
- * [DatadogInterceptor] instead, which combines the RUM and APM integrations.
+ * [com.datadog.android.okhttp.DatadogInterceptor] instead, which combines the RUM and APM integrations.
  *
  * If you want to get more insights on the network requests (e.g.: redirections), you can also add
  * this interceptor as a Network level interceptor.
  *
  * To use:
  * ```
- *     val tracedHosts = listOf("example.com", "example.eu")
+ *     val tracedHostsWithHeaderType = mapOf("example.com" to setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT),
+ *             "example.eu" to  setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT))
  *     val okHttpClient = OkHttpClient.Builder()
- *         .addInterceptor(TracingInterceptor(tracedHosts)))
+ *         .addInterceptor(TracingInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+ *         // .addNetworkInterceptor(TracingInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         .build()
  * ```
  */
@@ -112,7 +117,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -158,7 +163,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -193,7 +198,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -228,7 +233,7 @@ internal constructor(
                 InternalLogger.Target.USER,
                 {
                     "$prefix for OkHttp instrumentation is not found, skipping" +
-                            " tracking of request with url=${chain.request().url}"
+                        " tracking of request with url=${chain.request().url}"
                 }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
@@ -299,7 +304,7 @@ internal constructor(
     private fun isRequestTraceable(sdkCore: InternalSdkCore, request: Request): Boolean {
         val url = request.url
         return sdkCore.firstPartyHostResolver.isFirstPartyUrl(url) ||
-                localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
+            localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -412,7 +417,7 @@ internal constructor(
         if (datadogSamplingPriority != null) {
             if (datadogSamplingPriority == PrioritySampling.UNSET) return null
             return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
-                    datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
+                datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
         if (b3MSamplingPriority != null) {
@@ -472,22 +477,26 @@ internal constructor(
     private fun setSampledOutHeaders(
         requestBuilder: Request.Builder,
         tracingHeaderTypes: Set<TracingHeaderType>,
-        span: Span
+        span: Span,
+        tracer: Tracer
     ) {
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
                 TracingHeaderType.DATADOG -> {
                     removeDatadogHeaders(requestBuilder)
-                    handleDatadogSampledOutHeaders(requestBuilder)
+                    handleDatadogSampledOutHeaders(requestBuilder, span, tracer)
                 }
+
                 TracingHeaderType.B3 -> {
                     requestBuilder.removeHeader(B3_HEADER_KEY)
                     handleB3SampledOutHeaders(requestBuilder)
                 }
+
                 TracingHeaderType.B3MULTI -> {
                     removeB3MultiHeaders(requestBuilder)
                     handleB3MultiNotSampledHeaders(requestBuilder)
                 }
+
                 TracingHeaderType.TRACECONTEXT -> {
                     removeW3CHeaders(requestBuilder)
                     handleW3CNotSampledHeaders(span, requestBuilder)
@@ -496,8 +505,21 @@ internal constructor(
         }
     }
 
-    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder) {
+    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: Span, tracer: Tracer) {
         if (traceContextInjection == TraceContextInjection.All) {
+            tracer.inject(
+                span.context(),
+                Format.Builtin.TEXT_MAP_INJECT,
+                TextMapInject { key, value ->
+                    requestBuilder.removeHeader(key)
+                    when (key) {
+                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                        DATADOG_TAGS,
+                        DATADOG_SPAN_ID_HEADER,
+                        DATADOG_ORIGIN_HEADER -> requestBuilder.addHeader(key, value)
+                    }
+                }
+            )
             requestBuilder.addHeader(
                 DATADOG_SAMPLING_PRIORITY_HEADER,
                 DATADOG_DROP_SAMPLING_DECISION
@@ -582,7 +604,7 @@ internal constructor(
                 }
 
         if (!isSampled) {
-            setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span)
+            setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span, tracer)
         } else {
             tracer.inject(
                 span.context(),
@@ -683,6 +705,13 @@ internal constructor(
 
     /**
      * A Builder class for the [TracingInterceptor].
+     * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
+     * be automatically tracked by this interceptor. If registering a [GlobalTracer], the tracer must be
+     * configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * header types configured for OkHttp tracking.
+     * If no hosts are provided (via this argument or global configuration
+     * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
      */
     class Builder(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) :
         BaseBuilder<TracingInterceptor, Builder>(tracedHostsWithHeaderType) {
@@ -696,7 +725,7 @@ internal constructor(
             }
         )
 
-        override fun getThis(): Builder {
+        internal override fun getThis(): Builder {
             return this
         }
 
@@ -732,7 +761,7 @@ internal constructor(
         internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
-        internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer =
+        internal var localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer =
             { sdkCore, tracingHeaderTypes ->
                 AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
             }
@@ -786,10 +815,15 @@ internal constructor(
             return getThis()
         }
 
-        abstract fun getThis(): R
+        internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> Tracer): R {
+            this.localTracerFactory = factory
+            return getThis()
+        }
+
+        internal abstract fun getThis(): R
 
         /**
-         * Build the [TracingInterceptor].
+         * Build the interceptor.
          */
         abstract fun build(): T
     }
@@ -806,18 +840,18 @@ internal constructor(
 
         internal const val WARNING_TRACING_NO_HOSTS =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you did not specify any first party hosts. " +
-                    "Your requests won't be traced.\n" +
-                    "To set a list of known hosts, you can use the " +
-                    "Configuration.Builder::setFirstPartyHosts() method."
+                "but you did not specify any first party hosts. " +
+                "Your requests won't be traced.\n" +
+                "To set a list of known hosts, you can use the " +
+                "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you did not enable the TracingFeature. " +
-                    "Your requests won't be traced."
+                "but you did not enable the TracingFeature. " +
+                "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you didn't register any Tracer. " +
-                    "We automatically created a local tracer for you."
+                "but you didn't register any Tracer. " +
+                "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f

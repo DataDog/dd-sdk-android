@@ -214,7 +214,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor()
+        val interceptor = TracingInterceptor.Builder(emptyMap()).build()
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -236,7 +236,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(tracedHosts = hosts)
+        val interceptor = TracingInterceptor.Builder(hosts).build()
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
