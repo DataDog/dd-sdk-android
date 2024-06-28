@@ -18,6 +18,7 @@ import com.bumptech.glide.module.AppGlideModule
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.trace.TracingHeaderType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.InputStream
@@ -48,6 +49,10 @@ constructor(
     private val firstPartyHosts: List<String> = emptyList(),
     private val sampleRate: Float = DEFAULT_SAMPLE_RATE
 ) : AppGlideModule() {
+
+    private val firstPartyHostsWithHeaderType = firstPartyHosts.associateWith {
+        setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+    }
 
     // region AppGlideModule
 
@@ -88,13 +93,10 @@ constructor(
         val builder = OkHttpClient.Builder()
 
         builder.eventListenerFactory(DatadogEventListener.Factory(sdkInstanceName))
-        builder.addInterceptor(
-            DatadogInterceptor(
-                sdkInstanceName,
-                firstPartyHosts,
-                traceSampler = RateBasedSampler(sampleRate)
-            )
-        )
+        val interceptorBuilder = DatadogInterceptor.Builder(firstPartyHostsWithHeaderType)
+            .setTraceSampler(RateBasedSampler(sampleRate))
+        sdkInstanceName?.let { interceptorBuilder.setSdkInstanceName(it) }
+        builder.addInterceptor(interceptorBuilder.build())
         return builder
     }
 

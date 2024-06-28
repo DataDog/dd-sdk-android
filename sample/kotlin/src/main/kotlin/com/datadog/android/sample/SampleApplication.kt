@@ -52,6 +52,7 @@ import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
@@ -81,9 +82,21 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
+    private val tracedHostsWithHeaderTypes = tracedHosts.associateWith {
+        setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+    }
+
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(100f)))
-        .addNetworkInterceptor(TracingInterceptor(traceSampler = RateBasedSampler(100f)))
+        .addInterceptor(
+            DatadogInterceptor.Builder(tracedHostsWithHeaderTypes)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
+        .addNetworkInterceptor(
+            TracingInterceptor.Builder(tracedHostsWithHeaderTypes)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 

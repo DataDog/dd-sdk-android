@@ -194,7 +194,7 @@ internal open class TracingInterceptorContextInjectionSampledTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer,
+        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
             sdkInstanceName = null,

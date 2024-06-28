@@ -112,7 +112,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -158,7 +158,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -193,7 +193,7 @@ internal constructor(
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
-                "Please use the Builder instead.",
+            "Please use the Builder instead.",
         replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
     )
     constructor(
@@ -228,7 +228,7 @@ internal constructor(
                 InternalLogger.Target.USER,
                 {
                     "$prefix for OkHttp instrumentation is not found, skipping" +
-                            " tracking of request with url=${chain.request().url}"
+                        " tracking of request with url=${chain.request().url}"
                 }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
@@ -299,7 +299,7 @@ internal constructor(
     private fun isRequestTraceable(sdkCore: InternalSdkCore, request: Request): Boolean {
         val url = request.url
         return sdkCore.firstPartyHostResolver.isFirstPartyUrl(url) ||
-                localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
+            localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -412,7 +412,7 @@ internal constructor(
         if (datadogSamplingPriority != null) {
             if (datadogSamplingPriority == PrioritySampling.UNSET) return null
             return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
-                    datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
+                datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
         if (b3MSamplingPriority != null) {
@@ -777,7 +777,7 @@ internal constructor(
             return getThis()
         }
 
-        abstract fun getThis(): R
+        internal abstract fun getThis(): R
 
         /**
          * Build the [TracingInterceptor].
@@ -797,18 +797,18 @@ internal constructor(
 
         internal const val WARNING_TRACING_NO_HOSTS =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you did not specify any first party hosts. " +
-                    "Your requests won't be traced.\n" +
-                    "To set a list of known hosts, you can use the " +
-                    "Configuration.Builder::setFirstPartyHosts() method."
+                "but you did not specify any first party hosts. " +
+                "Your requests won't be traced.\n" +
+                "To set a list of known hosts, you can use the " +
+                "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you did not enable the TracingFeature. " +
-                    "Your requests won't be traced."
+                "but you did not enable the TracingFeature. " +
+                "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you didn't register any Tracer. " +
-                    "We automatically created a local tracer for you."
+                "but you didn't register any Tracer. " +
+                "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f
