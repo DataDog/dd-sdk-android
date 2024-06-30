@@ -131,6 +131,7 @@ internal class SdkFeature(
     @AnyThread
     fun clearAllData() {
         storage.dropAll()
+        dataStore.clearAllData()
     }
 
     fun stop() {

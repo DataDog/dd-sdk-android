@@ -30,19 +30,29 @@ internal class DataStoreFileHelper(
         return File(dataStoreDirectory, key)
     }
 
-    private fun createDataStoreDirectoryIfNecessary(
-        featureName: String,
+    internal fun getDataStoreDirectory(
         storageDir: File,
-        internalLogger: InternalLogger
+        featureName: String
     ): File {
         val folderName = DATASTORE_FOLDER_NAME.format(
             Locale.US,
             DataStoreHandler.CURRENT_DATASTORE_VERSION
         )
 
-        val dataStoreDirectory = File(
+        return File(
             storageDir,
             "$folderName/$featureName"
+        )
+    }
+
+    internal fun createDataStoreDirectoryIfNecessary(
+        featureName: String,
+        storageDir: File,
+        internalLogger: InternalLogger
+    ): File {
+        val dataStoreDirectory = getDataStoreDirectory(
+            storageDir = storageDir,
+            featureName = featureName
         )
 
         if (!dataStoreDirectory.existsSafe(internalLogger)) {

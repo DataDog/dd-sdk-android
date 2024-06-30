@@ -64,6 +64,11 @@ interface DataStoreHandler {
         callback: DataStoreWriteCallback? = null
     )
 
+    /**
+     * Removes all saved datastore entries.
+     */
+    fun clearAllData()
+
     companion object {
         /**
          * The current version of the datastore.
