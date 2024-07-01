@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
-import android.text.format.DateUtils
 import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
@@ -49,9 +48,6 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
@@ -114,20 +110,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             processor = processor,
             rumContextDataHandler = rumContextDataHandler,
             internalLogger = internalLogger,
-
-            /**
-             * TODO RUMM-4962 consider changing executor to a core implementation.
-             * if we ever decide to make the poolsize greater than 1, we need to ensure
-             * synchronization works correctly in the triggerProcessingLoop method below
-             */
-            executorService = // all parameters are non-negative and queue is not null
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            ThreadPoolExecutor(
-                CORE_DEFAULT_POOL_SIZE,
-                CORE_DEFAULT_POOL_SIZE,
-                THREAD_POOL_MAX_KEEP_ALIVE_MS,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingDeque()
+            executorService = sdkCore.createSingleThreadExecutorService(
+                "sr-event-processing"
             ),
             recordedDataQueue = ConcurrentLinkedQueue()
         )
@@ -285,10 +269,5 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, privacy)
         }
-    }
-
-    private companion object {
-        private const val THREAD_POOL_MAX_KEEP_ALIVE_MS = DateUtils.SECOND_IN_MILLIS * 5 // 5000ms
-        private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
     }
 }
