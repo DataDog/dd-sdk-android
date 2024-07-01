@@ -52,7 +52,7 @@ internal abstract class CheckableTextViewMapper<T>(
         view: T,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe>? {
+    ): List<MobileSegment.Wireframe> {
         return listOfNotNull(
             createCheckableDrawableWireFrames(
                 view,
