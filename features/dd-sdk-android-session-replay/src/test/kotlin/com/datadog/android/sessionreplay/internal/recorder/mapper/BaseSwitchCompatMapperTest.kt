@@ -6,10 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.Resources
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Drawable.ConstantState
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
@@ -20,17 +23,19 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyVararg
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
+@ForgeConfiguration(value = ForgeConfigurator::class, seed = 0x27e4b032201e5L)
 internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedSwitchCompatMapper: SwitchCompatMapper
@@ -57,6 +62,12 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
     @Mock
     lateinit var mockTrackDrawable: Drawable
 
+    @Mock
+    lateinit var mockConstantState: ConstantState
+
+    @Mock
+    lateinit var mockCloneDrawable: Drawable
+
     @IntForgery(min = 20, max = 200)
     var fakeThumbHeight: Int = 0
 
@@ -81,6 +92,15 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeCurrentTextColorString: String
 
+    lateinit var fakeThumbBounds: Rect
+
+    lateinit var fakeTrackBounds: Rect
+
+    var expectedThumbLeft: Long = 0
+    var expectedThumbTop: Long = 0
+    var expectedTrackLeft: Long = 0
+    var expectedTrackTop: Long = 0
+
     private var normalizedThumbHeight: Long = 0
     protected var normalizedThumbWidth: Long = 0
     private var normalizedTrackWidth: Long = 0
@@ -90,6 +110,8 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeThumbBounds = Rect(forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt())
+        fakeTrackBounds = Rect(forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt())
         fakeTextWireframes = forge.aList(size = 1) { getForgery() }
         normalizedThumbHeight = fakeThumbHeight.toLong()
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
@@ -103,10 +125,15 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         normalizedThumbRightPadding = fakeThumbRightPadding.toLong()
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
+        whenever(mockCloneDrawable.bounds).thenReturn(fakeTrackBounds)
+        whenever(mockConstantState.newDrawable(anyVararg(Resources::class))).thenReturn(mockCloneDrawable)
         whenever(mockThumbDrawable.intrinsicHeight).thenReturn(fakeThumbHeight)
         whenever(mockThumbDrawable.intrinsicWidth).thenReturn(fakeThumbWidth)
         whenever(mockTrackDrawable.intrinsicHeight).thenReturn(fakeTrackHeight)
         whenever(mockTrackDrawable.intrinsicWidth).thenReturn(fakeTrackWidth)
+        whenever(mockTrackDrawable.constantState).thenReturn(mockConstantState)
+        whenever(mockTrackDrawable.bounds).thenReturn(fakeTrackBounds)
+        whenever(mockThumbDrawable.bounds).thenReturn(fakeThumbBounds)
         whenever(mockThumbDrawable.getPadding(any())).thenAnswer {
             val paddingRect = it.getArgument<Rect>(0)
             paddingRect.left = fakeThumbLeftPadding
@@ -130,7 +157,7 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
         ).thenReturn(fakeThumbIdentifier)
-        whenever(mockTextWireframeMapper.map(eq(mockSwitch), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
+        whenever(mockTextWireframeMapper.map(eq(mockSwitch), any(), any(), eq(mockInternalLogger)))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewBoundsResolver.resolveViewGlobalBounds(
@@ -144,6 +171,23 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
         ).thenReturn(fakeCurrentTextColorString)
 
         testedSwitchCompatMapper = setupTestedMapper()
+        val pixelsDensity = fakeMappingContext.systemInformation.screenDensity
+        expectedThumbLeft = (
+            fakeViewGlobalBounds.x * pixelsDensity +
+                fakeThumbBounds.left
+            ).toLong().densityNormalized(density = pixelsDensity)
+        expectedThumbTop = (
+            fakeViewGlobalBounds.y * pixelsDensity +
+                fakeThumbBounds.top
+            ).toLong().densityNormalized(density = pixelsDensity)
+        expectedTrackLeft = (
+            fakeViewGlobalBounds.x * pixelsDensity +
+                fakeTrackBounds.left
+            ).toLong().densityNormalized(density = pixelsDensity)
+        expectedTrackTop = (
+            fakeViewGlobalBounds.y * pixelsDensity +
+                fakeTrackBounds.top
+            ).toLong().densityNormalized(density = pixelsDensity)
     }
 
     internal abstract fun setupTestedMapper(): SwitchCompatMapper
@@ -153,11 +197,12 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
         // Given
         whenever(mockSwitch.thumbDrawable).thenReturn(null)
         whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
+        val allowMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext,
+            allowMappingContext,
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -166,75 +211,22 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
     }
 
-    @Test
+    @RepeatedTest(10)
     fun `M resolve the switch as wireframes W map() { no trackDrawable }`(forge: Forge) {
         // Given
         whenever(mockSwitch.trackDrawable).thenReturn(null)
         whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
+        val allowMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext,
+            allowMappingContext,
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
 
         // Then
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
-    }
-
-    @RepeatedTest(8)
-    @Disabled("TODO RUM-4715, will be immediately fixed in next commit")
-    fun `M resolve the switch as wireframes W map() { can't generate id for trackWireframe }`(
-        forge: Forge
-    ) {
-        // Given
-        whenever(
-            mockViewIdentifierResolver.resolveChildUniqueIdentifier(
-                mockSwitch,
-                SwitchCompatMapper.TRACK_KEY_NAME
-            )
-        ).thenReturn(null)
-        val isChecked = forge.aBool()
-        whenever(mockSwitch.isChecked).thenReturn(isChecked)
-        val expectedThumbWidth =
-            normalizedThumbWidth - normalizedThumbRightPadding - normalizedThumbLeftPadding
-        val expectedTrackWidth = expectedThumbWidth * 2
-        val expectedX = if (isChecked) {
-            fakeViewGlobalBounds.x + fakeViewGlobalBounds.width - expectedThumbWidth
-        } else {
-            fakeViewGlobalBounds.x + fakeViewGlobalBounds.width - expectedTrackWidth
-        }
-        val expectedThumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeThumbIdentifier,
-            x = expectedX,
-            y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - expectedThumbWidth) / 2,
-            width = expectedThumbWidth,
-            height = expectedThumbWidth,
-            border = null,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = fakeCurrentTextColorString,
-                mockSwitch.alpha,
-                cornerRadius = SwitchCompatMapper.THUMB_CORNER_RADIUS
-            )
-        )
-
-        // When
-        val resolvedWireframes = testedSwitchCompatMapper.map(
-            mockSwitch,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback,
-            mockInternalLogger
-        )
-
-        // Then
-        if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
-            assertThat(resolvedWireframes)
-                .isEqualTo(fakeTextWireframes + expectedThumbWireframe)
-        } else {
-            assertThat(resolvedWireframes)
-                .isEqualTo(fakeTextWireframes)
-        }
     }
 }

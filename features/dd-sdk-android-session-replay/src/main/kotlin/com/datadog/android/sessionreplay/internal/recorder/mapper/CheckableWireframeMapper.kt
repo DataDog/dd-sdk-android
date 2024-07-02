@@ -71,5 +71,5 @@ internal abstract class CheckableWireframeMapper<T>(
         view: T,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): List<MobileSegment.Wireframe>?
+    ): List<MobileSegment.Wireframe>
 }

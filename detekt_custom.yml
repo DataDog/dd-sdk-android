@@ -992,6 +992,7 @@ datadog:
       - "kotlin.collections.listOf(kotlin.String)"
       - "kotlin.collections.listOf(okhttp3.ConnectionSpec)"
       - "kotlin.collections.listOfNotNull(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?)"
+      - "kotlin.collections.listOfNotNull(kotlin.Array)"
       - "kotlin.collections.mapOf(kotlin.Array)"
       - "kotlin.collections.mapOf(kotlin.Pair)"
       - "kotlin.collections.mutableListOf()"

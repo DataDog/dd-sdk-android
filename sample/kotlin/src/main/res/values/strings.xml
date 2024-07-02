@@ -154,7 +154,9 @@
     <string name="default_spinner">Default spinner</string>
     <string name="app_compat_spinner">App Compat Spinner</string>
     <string name="app_compat_switch">App Compat Switch</string>
+    <string name="app_compat_switch_disabled">App Compat Switch (Disabled)</string>
     <string name="material_switch">Material Switch</string>
+    <string name="material_switch_disabled">Material Switch (Disabled)</string>
     <string name="dropdowns_and_switchers_components">Dropdowns and Switchers Components</string>
     <string name="planet">Planet</string>
     <string name="sliders_and_steppers_components">Sliders and Steppers Components</string>
