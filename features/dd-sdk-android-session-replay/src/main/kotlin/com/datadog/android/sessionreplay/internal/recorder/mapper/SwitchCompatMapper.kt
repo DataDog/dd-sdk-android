@@ -49,9 +49,10 @@ internal open class SwitchCompatMapper(
 
     @Suppress("ReturnCount")
     @UiThread
-    override fun resolveCheckedCheckable(
+    override fun resolveCheckable(
         view: SwitchCompat,
-        mappingContext: MappingContext
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe>? {
         val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
 
@@ -99,8 +100,10 @@ internal open class SwitchCompatMapper(
         return wireframes
     }
 
+    @Suppress("UnusedPrivateMember")
+    // TODO RUM-4715: Improve SwitchCompatMapper
     @UiThread
-    override fun resolveNotCheckedCheckable(
+    private fun resolveNotCheckedCheckable(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
