@@ -109,7 +109,10 @@ internal class DrawableUtils(
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
         // don't use the original drawable - it will affect the view hierarchy
-        val newDrawable = drawable.constantState?.newDrawable(resources)
+        val newDrawable = drawable.constantState?.newDrawable(resources)?.apply {
+            // `constantState` contains only immutable properties of drawable,the state needs to be set manually
+            setState(drawable.current.state)
+        }
         val canvas = canvasWrapper.createCanvas(bitmap)
 
         if (canvas == null || newDrawable == null) {

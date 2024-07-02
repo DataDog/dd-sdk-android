@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckedTextView
+import androidx.appcompat.widget.AppCompatCheckedTextView
 import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
 
@@ -20,6 +22,13 @@ internal class TextViewComponentsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_text_view_components, container, false)
+        return inflater.inflate(R.layout.fragment_text_view_components, container, false).apply {
+            findViewById<CheckedTextView>(R.id.checked_text_view).apply {
+                setOnClickListener { this.toggle() }
+            }
+            findViewById<AppCompatCheckedTextView>(R.id.app_compat_checked_text_view).apply {
+                setOnClickListener { this.toggle() }
+            }
+        }
     }
 }
