@@ -15,7 +15,7 @@ variables:
   DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=false,dd.jmx.fetch.enabled=false"
 
   KUBERNETES_MEMORY_REQUEST: "8Gi"
-  KUBERNETES_MEMORY_LIMIT: "16Gi"
+  KUBERNETES_MEMORY_LIMIT: "13Gi"
 
   EMULATOR_NAME: "android_emulator"
   ANDROID_ARCH: "arm64-v8a"
@@ -110,15 +110,48 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleLibrariesRelease :tools:detekt:jar"
-    DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
-    DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
     include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
     strategy: depend
+
+analysis:detekt-custom:
+  tags:
+    - "arch:amd64"
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  timeout: 1h
+  script:
+    - ./gradlew assembleLibrariesRelease --stacktrace
+    - ./gradlew unzipAarForDetekt --stacktrace
+    - ./gradlew :tools:detekt:jar --stacktrace
+    - ./gradlew printDetektClasspath --stacktrace
+    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
+    - ./gradlew :dd-sdk-android-core:customDetektRules
+    - ./gradlew :dd-sdk-android-internal:customDetektRules
+    - ./gradlew :features:dd-sdk-android-logs:customDetektRules
+    - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
+    - ./gradlew :features:dd-sdk-android-rum:customDetektRules
+    - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
+    - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
+    - ./gradlew :features:dd-sdk-android-trace:customDetektRules
+    - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
+    - ./gradlew :features:dd-sdk-android-webview:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-glide:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-okhttp:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-rx:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-sqldelight:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-timber:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-tv:customDetektRules
+
 
 # TODO RUM-1622 cleanup this section
 # TESTS
@@ -138,6 +171,7 @@ test:debug:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :dd-sdk-android-core:testDebugUnitTest --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :dd-sdk-android-internal:testDebugUnitTest --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugFeatures --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugIntegrations --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
   artifacts:
@@ -182,6 +216,7 @@ test:kover:
     - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-core:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-internal:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportFeatures  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportIntegrations  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
@@ -779,9 +814,9 @@ notify:dogfood-app:
   stage: notify
   when: on_success
   script:
-  - pip3 install GitPython requests
-  - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
-  - python3 dogfood.py -v $CI_COMMIT_TAG -t app
+    - pip3 install GitPython requests
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
+    - python3 dogfood.py -v $CI_COMMIT_TAG -t app
 
 notify:dogfood-demo:
   tags: [ "arch:amd64" ]
