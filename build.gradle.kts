@@ -138,6 +138,10 @@ registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
 registerSubModuleAggregationTask("koverReportFeatures", "koverXmlReportRelease", ":features:")
 registerSubModuleAggregationTask("koverReportIntegrations", "koverXmlReportRelease", ":integrations:")
 
+registerSubModuleAggregationTask("printDetektClasspathAll", "printDetektClasspath")
+registerSubModuleAggregationTask("printDetektClasspathFeatures", "printDetektClasspath", ":features:")
+registerSubModuleAggregationTask("printDetektClasspathIntegrations", "printDetektClasspath", ":integrations:")
+
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
 }

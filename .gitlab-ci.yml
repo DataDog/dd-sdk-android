@@ -15,7 +15,7 @@ variables:
   DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=false,dd.jmx.fetch.enabled=false"
 
   KUBERNETES_MEMORY_REQUEST: "8Gi"
-  KUBERNETES_MEMORY_LIMIT: "16Gi"
+  KUBERNETES_MEMORY_LIMIT: "13Gi"
 
 stages:
   - ci-image
@@ -61,15 +61,51 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleLibrariesRelease :tools:detekt:jar"
-    DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
-    DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
+    #    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleLibrariesRelease :tools:detekt:jar"
+    #    DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
+    #    DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
     include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
     strategy: depend
+
+analysis:detekt-custom:
+  tags:
+    - "arch:amd64"
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  timeout: 1h
+  script:
+    - ./gradlew assembleLibrariesRelease --stacktrace
+    - ./gradlew :tools:detekt:jar --stacktrace
+    - unzip dd-sdk-android-core/build/outputs/aar/dd-sdk-android-core-release.aar -d dd-sdk-android-core/build/outputs/aar/
+    - unzip features/dd-sdk-android-session-replay/build/outputs/aar/dd-sdk-android-session-replay-release.aar -d features/dd-sdk-android-session-replay/build/outputs/aar/
+    - ./gradlew :dd-sdk-android-core:printDetektClasspath --stacktrace
+    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "dd-sdk-android-core" -ex "**/*.kts" --jvm-target 11 -cp "$(cat dd-sdk-android-core/detekt_classpath)"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-logs" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-logs/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-ndk" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-ndk/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-rum" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-rum/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-session-replay" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-session-replay/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-session-replay-material" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-session-replay-material/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar:features/dd-sdk-android-session-replay/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-trace" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-trace/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-trace-otel" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-trace-otel/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "features/dd-sdk-android-webview" -ex "**/*.kts" --jvm-target 11 -cp "$(cat features/dd-sdk-android-webview/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-coil" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-coil/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-compose" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-compose/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-fresco" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-fresco/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-glide" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-glide/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-okhttp" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-okhttp/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-okhttp-otel" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-okhttp-otel/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-rum-coroutines" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-rum-coroutines/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-rx" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-rx/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-sqldelight" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-sqldelight/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-timber" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-timber/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-trace-coroutines" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-trace-coroutines/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_custom.yml --plugins "tools/detekt/build/libs/detekt.jar" -i "integrations/dd-sdk-android-tv" -ex "**/*.kts" --jvm-target 11 -cp "$(cat integrations/dd-sdk-android-tv/detekt_classpath):dd-sdk-android-core/build/outputs/aar/classes.jar"
+
 
 # TODO RUM-1622 cleanup this section
 # TESTS
@@ -114,7 +150,6 @@ test:tools:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
-
 
 test:kover:
   tags: [ "arch:amd64" ]
@@ -685,9 +720,9 @@ notify:dogfood-app:
   stage: notify
   when: on_success
   script:
-  - pip3 install GitPython requests
-  - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
-  - python3 dogfood.py -v $CI_COMMIT_TAG -t app
+    - pip3 install GitPython requests
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
+    - python3 dogfood.py -v $CI_COMMIT_TAG -t app
 
 notify:dogfood-demo:
   tags: [ "arch:amd64" ]
