@@ -1029,6 +1029,7 @@ datadog:
       - "kotlin.sequences.Sequence.groupBy(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
       - "kotlin.sequences.Sequence.firstOrNull()"
+      - "kotlin.sequences.Sequence.firstOrNull(kotlin.Function1)"
       - "kotlin.sequences.Sequence.flatMap(kotlin.Function1)"
       - "kotlin.sequences.Sequence.fold(com.google.gson.JsonArray, kotlin.Function2)"
       - "kotlin.sequences.Sequence.forEach(kotlin.Function1)"

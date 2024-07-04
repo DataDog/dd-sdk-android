@@ -7,10 +7,13 @@
 package com.datadog.android.sessionreplay.compose.internal.data
 
 import androidx.compose.ui.unit.Density
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 
 internal data class UiContext(
     val parentContentColor: String?,
-    val density: Float
+    val density: Float,
+    val privacy: SessionReplayPrivacy,
+    val isInUserInputLayout: Boolean = false
 ) {
     val composeDensity: Density
         get() = Density(density)
