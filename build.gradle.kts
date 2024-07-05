@@ -15,7 +15,7 @@ import java.util.Properties
 
 plugins {
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin")
+    alias(libs.plugins.nexusPublishGradlePlugin)
 }
 
 version = AndroidConfig.VERSION.name
