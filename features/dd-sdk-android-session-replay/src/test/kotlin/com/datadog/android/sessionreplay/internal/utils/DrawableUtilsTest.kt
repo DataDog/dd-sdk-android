@@ -60,6 +60,9 @@ internal class DrawableUtilsTest {
     private lateinit var mockDrawable: Drawable
 
     @Mock
+    private lateinit var mockCurrentDrawable: Drawable
+
+    @Mock
     private lateinit var mockBitmapWrapper: BitmapWrapper
 
     @Mock
@@ -99,6 +102,8 @@ internal class DrawableUtilsTest {
     fun setup() {
         whenever(mockConstantState.newDrawable(mockResources)).thenReturn(mockSecondDrawable)
         whenever(mockDrawable.constantState).thenReturn(mockConstantState)
+        whenever(mockCurrentDrawable.constantState).thenReturn(mockConstantState)
+        whenever(mockDrawable.current).thenReturn(mockCurrentDrawable)
         whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any()))
             .thenReturn(mockBitmap)
         whenever(mockCanvasWrapper.createCanvas(any()))

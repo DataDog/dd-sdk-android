@@ -6,18 +6,17 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.graphics.Rect
 import androidx.annotation.UiThread
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
-import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -47,107 +46,120 @@ internal open class SwitchCompatMapper(
         return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 
-    @Suppress("ReturnCount")
-    @UiThread
-    override fun resolveCheckedCheckable(
+    private fun createSwitchCompatDrawableWireFrames(
         view: SwitchCompat,
-        mappingContext: MappingContext
-    ): List<MobileSegment.Wireframe>? {
-        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
+        var index = 0
+        val thumbWireframe = createThumbWireframe(view, index, mappingContext, asyncJobStatusCallback)
+        if (thumbWireframe != null) {
+            index++
+        }
+        val trackWireframe = createTrackWireframe(view, index, mappingContext, asyncJobStatusCallback)
+        return listOfNotNull(trackWireframe, thumbWireframe)
+    }
 
-        val wireframes = mutableListOf<MobileSegment.Wireframe>()
-
-        val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
-        val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
-        val thumbHeight = trackThumbDimensions[THUMB_HEIGHT_INDEX]
-        val thumbWidth = trackThumbDimensions[THUMB_WIDTH_INDEX]
-        val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
+    private fun createTrackWireframe(
+        view: SwitchCompat,
+        prevIndex: Int,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): MobileSegment.Wireframe? {
+        val trackBounds = resolveTrackBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
-
-        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
-        if (trackId != null) {
-            val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
-            val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
-                id = trackId,
-                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-                y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
-                width = trackWidth,
-                height = trackHeight,
-                border = null,
-                shapeStyle = trackShapeStyle
-            )
-            wireframes.add(trackWireframe)
+        return trackBounds?.let {
+            return view.trackDrawable.constantState?.newDrawable(view.resources)?.apply {
+                setState(view.trackDrawable.state)
+                bounds = view.trackDrawable.bounds
+                view.trackTintList?.let {
+                    setTintList(it)
+                }
+            }?.let { drawable ->
+                mappingContext.imageWireframeHelper.createImageWireframe(
+                    view = view,
+                    currentWireframeIndex = prevIndex + 1,
+                    x = trackBounds.x.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
+                    y = trackBounds.y.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
+                    width = trackBounds.width,
+                    height = trackBounds.height,
+                    drawable = drawable,
+                    shapeStyle = null,
+                    border = null,
+                    usePIIPlaceholder = true,
+                    asyncJobStatusCallback = asyncJobStatusCallback
+                )
+            }
         }
+    }
 
-        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-        if (thumbId != null) {
-            val thumbShapeStyle = resolveThumbShapeStyle(view, checkableColor)
-            val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
-                id = thumbId,
-                x = viewGlobalBounds.x + viewGlobalBounds.width - thumbWidth,
-                y = viewGlobalBounds.y + (viewGlobalBounds.height - thumbHeight) / 2,
-                width = thumbWidth,
-                height = thumbHeight,
-                border = null,
-                shapeStyle = thumbShapeStyle
-            )
-            wireframes.add(thumbWireframe)
+    private fun createThumbWireframe(
+        view: SwitchCompat,
+        prevIndex: Int,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): MobileSegment.Wireframe? {
+        val thumbBounds = resolveThumbBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
+        return view.thumbDrawable?.let { drawable ->
+            thumbBounds?.let { thumbBounds ->
+                mappingContext.imageWireframeHelper.createImageWireframe(
+                    view = view,
+                    currentWireframeIndex = prevIndex + 1,
+                    x = thumbBounds.x.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
+                    y = thumbBounds.y.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
+                    width = drawable.intrinsicWidth,
+                    height = drawable.intrinsicHeight,
+                    drawable = drawable,
+                    shapeStyle = null,
+                    border = null,
+                    usePIIPlaceholder = true,
+                    clipping = null,
+                    asyncJobStatusCallback = asyncJobStatusCallback
+                )
+            }
         }
-        return wireframes
+    }
+
+    private fun resolveThumbBounds(view: SwitchCompat, pixelsDensity: Float): GlobalBoundsInPx? {
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
+        val thumbDimensions = resolveThumbSizeInPx(view) ?: return null
+        val thumbLeft = (viewGlobalBounds.x * pixelsDensity).toInt() +
+            view.thumbDrawable.bounds.left
+        val thumbTop = (viewGlobalBounds.y * pixelsDensity).toInt() +
+            view.thumbDrawable.bounds.top
+        return GlobalBoundsInPx(
+            x = thumbLeft,
+            y = thumbTop,
+            width = thumbDimensions.first,
+            height = thumbDimensions.second
+        )
+    }
+
+    private fun resolveTrackBounds(view: SwitchCompat, pixelsDensity: Float): GlobalBoundsInPx? {
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
+        val trackSize = resolveTrackSizeInPx(view) ?: return null
+        return view.trackDrawable?.let {
+            GlobalBoundsInPx(
+                x = (viewGlobalBounds.x * pixelsDensity).toInt() + it.bounds.left,
+                y = (viewGlobalBounds.y * pixelsDensity).toInt() + it.bounds.top,
+                width = trackSize.first,
+                height = trackSize.second
+            )
+        }
     }
 
     @UiThread
-    override fun resolveNotCheckedCheckable(
+    override fun resolveCheckable(
         view: SwitchCompat,
-        mappingContext: MappingContext
-    ): List<MobileSegment.Wireframe>? {
-        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
-
-        val wireframes = mutableListOf<MobileSegment.Wireframe>()
-
-        val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
-        val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
-        val thumbHeight = trackThumbDimensions[THUMB_HEIGHT_INDEX]
-        val thumbWidth = trackThumbDimensions[THUMB_WIDTH_INDEX]
-        val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
-            view,
-            mappingContext.systemInformation.screenDensity
-        )
-
-        val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
-        if (trackId != null) {
-            val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
-            val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
-                id = trackId,
-                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-                y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
-                width = trackWidth,
-                height = trackHeight,
-                border = null,
-                shapeStyle = trackShapeStyle
-            )
-            wireframes.add(trackWireframe)
-        }
-
-        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-        if (thumbId != null) {
-            val thumbShapeStyle = resolveThumbShapeStyle(view, checkableColor)
-            val thumbWireframe = MobileSegment.Wireframe.ShapeWireframe(
-                id = thumbId,
-                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-                y = viewGlobalBounds.y + (viewGlobalBounds.height - thumbHeight) / 2,
-                width = thumbWidth,
-                height = thumbHeight,
-                border = null,
-                shapeStyle = thumbShapeStyle
-            )
-            wireframes.add(thumbWireframe)
-        }
-        return wireframes
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
+        return createSwitchCompatDrawableWireFrames(view, mappingContext, asyncJobStatusCallback)
     }
 
     @UiThread
@@ -155,27 +167,20 @@ internal open class SwitchCompatMapper(
         view: SwitchCompat,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, mappingContext.systemInformation) ?: return null
-
+        val pixelsDensity = mappingContext.systemInformation.screenDensity
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
-
-        val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
-        val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
+        val trackBounds = resolveTrackBounds(view, pixelsDensity) ?: return null
         val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
-            view,
-            mappingContext.systemInformation.screenDensity
-        )
 
         val trackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
         if (trackId != null) {
             val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
             val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
                 id = trackId,
-                x = viewGlobalBounds.x + viewGlobalBounds.width - trackWidth,
-                y = viewGlobalBounds.y + (viewGlobalBounds.height - trackHeight) / 2,
-                width = trackWidth,
-                height = trackHeight,
+                x = trackBounds.x.densityNormalized(pixelsDensity).toLong(),
+                y = trackBounds.y.densityNormalized(pixelsDensity).toLong(),
+                width = trackBounds.width.densityNormalized(pixelsDensity).toLong(),
+                height = trackBounds.height.densityNormalized(pixelsDensity).toLong(),
                 border = null,
                 shapeStyle = trackShapeStyle
             )
@@ -189,71 +194,47 @@ internal open class SwitchCompatMapper(
 
     // region Internal
 
-    protected fun resolveCheckableColor(view: SwitchCompat): String {
+    private fun resolveCheckableColor(view: SwitchCompat): String {
         return colorStringFormatter.formatColorAndAlphaAsHexString(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
-    private fun resolveThumbShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = checkBoxColor,
-            view.alpha,
-            cornerRadius = THUMB_CORNER_RADIUS
-        )
-    }
-
-    protected fun resolveTrackShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {
+    private fun resolveTrackShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
             view.alpha
         )
     }
 
-    protected fun resolveThumbAndTrackDimensions(
-        view: SwitchCompat,
-        systemInformation: SystemInformation
-    ): LongArray? {
-        val density = systemInformation.screenDensity
-        val thumbWidth: Long
-        val trackHeight: Long
-        // based on the implementation there is nothing drawn in the switcher area if one of
-        // these are null
-        val thumbDrawable = view.thumbDrawable
-        val trackDrawable = view.trackDrawable
-        if (thumbDrawable == null || trackDrawable == null) {
-            return null
+    private fun resolveThumbSizeInPx(view: SwitchCompat): Pair<Width, Height>? {
+        return view.thumbDrawable?.let {
+            Pair(it.intrinsicWidth, it.intrinsicHeight)
         }
-        val paddingRect = Rect()
-        thumbDrawable.getPadding(paddingRect)
-        val totalHorizontalPadding =
-            paddingRect.left.densityNormalized(systemInformation.screenDensity) +
-                paddingRect.right.densityNormalized(systemInformation.screenDensity)
-        thumbWidth = thumbDrawable.intrinsicWidth.densityNormalized(density).toLong() -
-            totalHorizontalPadding
-        val thumbHeight: Long = thumbWidth
-        // for some reason there is no padding added in the trackDrawable
-        // in order to normalise with the padding applied to the width we will have to
-        // use the horizontal padding applied.
-        trackHeight = trackDrawable.intrinsicHeight.densityNormalized(density).toLong() -
-            totalHorizontalPadding
-        val trackWidth = thumbWidth * 2
-        val dimensions = LongArray(NUMBER_OF_DIMENSIONS)
-        dimensions[THUMB_WIDTH_INDEX] = thumbWidth
-        dimensions[THUMB_HEIGHT_INDEX] = thumbHeight
-        dimensions[TRACK_WIDTH_INDEX] = trackWidth
-        dimensions[TRACK_HEIGHT_INDEX] = trackHeight
-        return dimensions
     }
+
+    private fun resolveTrackSizeInPx(view: SwitchCompat): Pair<Width, Height>? {
+        return view.trackDrawable?.let {
+            // NinePatchDrawable optical size depends on its size
+            Pair(it.bounds.width(), it.bounds.height())
+        }
+    }
+
+    /**
+     * Similar to [GlobalBounds] but in pixel.
+     */
+    data class GlobalBoundsInPx(
+        val x: Int,
+        val y: Int,
+        val width: Int,
+        val height: Int
+    )
 
     // endregion
 
     companion object {
-        private const val NUMBER_OF_DIMENSIONS = 4
-        internal const val THUMB_WIDTH_INDEX = 0
-        internal const val THUMB_HEIGHT_INDEX = 1
-        internal const val TRACK_WIDTH_INDEX = 2
-        internal const val TRACK_HEIGHT_INDEX = 3
         internal const val THUMB_KEY_NAME = "thumb"
         internal const val TRACK_KEY_NAME = "track"
-        internal const val THUMB_CORNER_RADIUS = 10
     }
 }
+
+private typealias Width = Int
+private typealias Height = Int

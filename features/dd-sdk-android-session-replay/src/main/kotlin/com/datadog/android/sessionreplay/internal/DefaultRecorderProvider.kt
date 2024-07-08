@@ -119,7 +119,8 @@ internal class DefaultRecorderProvider(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
-                    drawableToColorMapper
+                    drawableToColorMapper,
+                    internalLogger = sdkCore.internalLogger
                 )
             ),
             MapperTypeWrapper(
@@ -129,7 +130,8 @@ internal class DefaultRecorderProvider(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
-                    drawableToColorMapper
+                    drawableToColorMapper,
+                    internalLogger = sdkCore.internalLogger
                 )
             ),
             MapperTypeWrapper(
