@@ -192,7 +192,6 @@ androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "an
 androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
 
 fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
-nexusPublishGradlePlugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
@@ -305,4 +304,5 @@ traceCore = [
 
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
+nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 

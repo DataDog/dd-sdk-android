@@ -34,7 +34,6 @@ dependencies {
     implementation(libs.versionsGradlePlugin)
     implementation(libs.fuzzyWuzzy)
     implementation(libs.dokkaGradlePlugin)
-    implementation(libs.nexusPublishGradlePlugin)
     implementation(libs.kover)
 
     // check api surface
