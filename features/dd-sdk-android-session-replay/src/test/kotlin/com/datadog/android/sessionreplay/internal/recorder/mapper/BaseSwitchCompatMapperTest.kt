@@ -35,7 +35,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-@ForgeConfiguration(value = ForgeConfigurator::class, seed = 0x27e4b032201e5L)
+@ForgeConfiguration(value = ForgeConfigurator::class)
 internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTest() {
 
     lateinit var testedSwitchCompatMapper: SwitchCompatMapper

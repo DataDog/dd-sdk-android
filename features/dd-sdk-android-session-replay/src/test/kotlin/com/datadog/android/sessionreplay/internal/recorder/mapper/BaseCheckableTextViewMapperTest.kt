@@ -43,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -218,8 +219,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             drawable = eq(mockClonedDrawable),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
             clipping = eq(MobileSegment.WireframeClip()),
-            shapeStyle = eq(null),
-            border = eq(null),
+            shapeStyle = isNull(),
+            border = isNull(),
             prefix = anyString()
         )
     }
@@ -257,8 +258,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             drawable = eq(mockClonedDrawable),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
             clipping = eq(MobileSegment.WireframeClip()),
-            shapeStyle = eq(null),
-            border = eq(null),
+            shapeStyle = isNull(),
+            border = isNull(),
             prefix = anyString()
         )
     }
