@@ -10,9 +10,8 @@ import android.os.SystemClock
 import androidx.compose.runtime.Composer
 import androidx.compose.runtime.tooling.CompositionGroup
 import androidx.compose.ui.platform.ComposeView
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeContext
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeFields
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
@@ -65,7 +64,7 @@ internal class ComposeWireframeMapper(
         return if (composer == null) {
             createPlaceholderWireframe(view, density)
         } else {
-            val wireframes = createComposerWireframes(composer, density)
+            val wireframes = createComposerWireframes(composer, density, internalLogger)
             wireframes
         }
     }
@@ -91,11 +90,15 @@ internal class ComposeWireframeMapper(
         )
     }
 
-    private fun createComposerWireframes(composer: Composer, density: Float): List<MobileSegment.Wireframe> {
+    private fun createComposerWireframes(
+        composer: Composer,
+        density: Float,
+        internalLogger: InternalLogger
+    ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         val startNs = SystemClock.elapsedRealtimeNanos()
-        createComposerWireframes(composer, wireframes, UiContext(null, density))
+        createComposerWireframes(composer, wireframes, UiContext(null, density), internalLogger)
         val stopNs = SystemClock.elapsedRealtimeNanos()
 
         val totalQuery = ComposeContext.contextCache.hitCount() + ComposeContext.contextCache.missCount()
@@ -103,7 +106,7 @@ internal class ComposeWireframeMapper(
         val missRatio = ComposeContext.contextCache.missCount() * HUNDRED / totalQuery
 
         // During development, let's keep this telemetry to ensure we keep track of our performance
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+        internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.TELEMETRY,
             { "Parsed Compose Hierarchy ${System.currentTimeMillis()}" },
@@ -121,23 +124,26 @@ internal class ComposeWireframeMapper(
     private fun createComposerWireframes(
         composer: Composer,
         wireframes: MutableList<MobileSegment.Wireframe>,
-        parentUiContext: UiContext
+        parentUiContext: UiContext,
+        internalLogger: InternalLogger
     ) {
         val compositionGroups = composer.compositionData.compositionGroups
         compositionGroups.forEach {
-            createCompositionGroupWireframes(it, wireframes, parentUiContext)
+            createCompositionGroupWireframes(it, wireframes, parentUiContext, internalLogger)
         }
     }
 
     private fun createCompositionGroupWireframes(
         compositionGroup: CompositionGroup,
         wireframes: MutableList<MobileSegment.Wireframe>,
-        parentUiContext: UiContext
+        parentUiContext: UiContext,
+        internalLogger: InternalLogger
     ) {
         var childrenUiContext = parentUiContext
         val composeContext = ComposeContext.from(compositionGroup)
         if (composeContext != null && !composeContext.name.isNullOrBlank()) {
-            val composeWireframe = mapCompositionGroup(compositionGroup, composeContext, childrenUiContext)
+            val composeWireframe =
+                mapCompositionGroup(compositionGroup, composeContext, childrenUiContext, internalLogger)
             if (composeWireframe != null) {
                 wireframes.add(composeWireframe.wireframe)
                 childrenUiContext = composeWireframe.uiContext ?: parentUiContext
@@ -145,26 +151,35 @@ internal class ComposeWireframeMapper(
         }
 
         compositionGroup.compositionGroups.forEach {
-            createCompositionGroupWireframes(it, wireframes, childrenUiContext)
+            createCompositionGroupWireframes(it, wireframes, childrenUiContext, internalLogger)
         }
 
         compositionGroup.data.asSequence()
             .flatMap { getSubComposers(it) }
-            .forEach { createComposerWireframes(it, wireframes, childrenUiContext) }
+            .forEach { createComposerWireframes(it, wireframes, childrenUiContext, internalLogger) }
     }
 
     private fun mapCompositionGroup(
         compositionGroup: CompositionGroup,
         composeContext: ComposeContext,
-        parentUiContext: UiContext
+        parentUiContext: UiContext,
+        internalLogger: InternalLogger
     ): ComposeWireframe? {
         val mapper = composeMappers[composeContext.name] ?: return null
-        return mapper.map(compositionGroup, composeContext, parentUiContext)
+        return internalLogger.measureMethodCallPerf(
+            mapper.javaClass,
+            "$METHOD_CALL_MAP_PREFIX ${composeContext.name}",
+            METHOD_CALL_SAMPLING_RATE
+        ) {
+            mapper.map(compositionGroup, composeContext, parentUiContext)
+        }
     }
 
     // endregion
 
     companion object {
         private const val HUNDRED: Double = 100.0
+        private const val METHOD_CALL_MAP_PREFIX: String = "[Compose] Map with"
+        const val METHOD_CALL_SAMPLING_RATE = 1f
     }
 }
