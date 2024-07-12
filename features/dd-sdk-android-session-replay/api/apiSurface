@@ -18,6 +18,10 @@ enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
   - MASK
   - MASK_USER_INPUT
+interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
+  fun obfuscate(String): String
+  companion object 
+    fun getStringObfuscator(): StringObfuscator
 data class com.datadog.android.sessionreplay.recorder.MappingContext
   constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean = false)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector

@@ -68,7 +68,7 @@ internal class ButtonCompositionGroupMapper(
                     width = 1
                 )
             ),
-            UiContext(contentColor, uiContext.density)
+            uiContext.copy(parentContentColor = contentColor)
         )
     }
 

@@ -42,15 +42,15 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class AbstractCompositionGroupMapperTest {
+internal open class AbstractCompositionGroupMapperTest {
 
     private lateinit var testedMapper: StubAbstractCompositionGroupMapper
 
     @Forgery
-    private lateinit var fakeComposeContext: ComposeContext
+    lateinit var fakeComposeContext: ComposeContext
 
     @Forgery
-    private lateinit var fakeUiContext: UiContext
+    lateinit var fakeUiContext: UiContext
 
     @Forgery
     private lateinit var fakeWireframe: ComposeWireframe
@@ -102,7 +102,7 @@ internal class AbstractCompositionGroupMapperTest {
         }
     }
 
-    private fun mockGroupWithCoordinates(
+    protected fun mockGroupWithCoordinates(
         forge: Forge
     ): CompositionGroup {
         val fakeOffset = Offset.Zero.copy(forge.aFloat(), forge.aFloat())

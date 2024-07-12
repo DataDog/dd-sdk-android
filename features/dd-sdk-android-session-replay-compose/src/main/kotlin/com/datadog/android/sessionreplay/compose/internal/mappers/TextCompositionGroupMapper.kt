@@ -8,10 +8,12 @@ package com.datadog.android.sessionreplay.compose.internal.mappers
 
 import androidx.compose.ui.text.font.GenericFontFamily
 import androidx.compose.ui.text.style.TextAlign
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.Box
 import com.datadog.android.sessionreplay.compose.internal.data.ComposableParameter
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
@@ -25,7 +27,10 @@ internal class TextCompositionGroupMapper(
         boxWithDensity: Box,
         uiContext: UiContext
     ): ComposeWireframe {
-        var text: String? = null
+        val text: String = resolveCapturedText(
+            parameters = parameters,
+            uiContext = uiContext
+        )
         var textAlign: MobileSegment.Horizontal? = null
         var fontFamily = DEFAULT_FONT_FAMILY
         var textColor: String? = uiContext.parentContentColor
@@ -33,8 +38,6 @@ internal class TextCompositionGroupMapper(
 
         parameters.forEach { param ->
             when (param.name) {
-                // TODO RUM-3634 apply privacy settins to mask/reveal text
-                "text" -> text = param.value as? String
                 "textAlign" -> textAlign = when (param.value as? TextAlign) {
                     TextAlign.Justify,
                     TextAlign.Left,
@@ -63,7 +66,7 @@ internal class TextCompositionGroupMapper(
                 y = boxWithDensity.y,
                 width = boxWithDensity.width,
                 height = boxWithDensity.height,
-                text = text.orEmpty(),
+                text = text,
                 textStyle = MobileSegment.TextStyle(
                     family = fontFamily,
                     size = fontSize?.toLong() ?: DEFAULT_FONT_SIZE,
@@ -77,6 +80,22 @@ internal class TextCompositionGroupMapper(
             ),
             null
         )
+    }
+
+    private fun resolveCapturedText(parameters: Sequence<ComposableParameter>, uiContext: UiContext): String {
+        val originalText = (parameters.firstOrNull { it.name == PARAM_NAME_TEXT }?.value as? String).orEmpty()
+        return when (uiContext.privacy) {
+            SessionReplayPrivacy.ALLOW -> originalText
+            SessionReplayPrivacy.MASK_USER_INPUT ->
+                if (uiContext.isInUserInputLayout) FIXED_INPUT_MASK else originalText
+
+            SessionReplayPrivacy.MASK ->
+                if (uiContext.isInUserInputLayout) {
+                    FIXED_INPUT_MASK
+                } else {
+                    StringObfuscator.getStringObfuscator().obfuscate(originalText)
+                }
+        }
     }
 
     /**
@@ -102,6 +121,8 @@ internal class TextCompositionGroupMapper(
     }
 
     companion object {
+        internal const val FIXED_INPUT_MASK = "***"
+        internal const val PARAM_NAME_TEXT = "text"
 
         internal const val DEFAULT_FONT_FAMILY = "Roboto, sans-serif"
         internal const val DEFAULT_TEXT_COLOR = "#000000FF"

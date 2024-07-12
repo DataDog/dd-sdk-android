@@ -12,6 +12,7 @@ import androidx.compose.runtime.tooling.CompositionGroup
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeContext
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeFields
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
@@ -59,12 +60,17 @@ internal class ComposeWireframeMapper(
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val density = mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
-
+        val privacy = mappingContext.privacy
         val composer = findComposer(view)
         return if (composer == null) {
             createPlaceholderWireframe(view, density)
         } else {
-            val wireframes = createComposerWireframes(composer, density, internalLogger)
+            val wireframes = createComposerWireframes(
+                composer = composer,
+                density = density,
+                privacy = privacy,
+                internalLogger = internalLogger
+            )
             wireframes
         }
     }
@@ -93,12 +99,22 @@ internal class ComposeWireframeMapper(
     private fun createComposerWireframes(
         composer: Composer,
         density: Float,
+        privacy: SessionReplayPrivacy,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         val startNs = SystemClock.elapsedRealtimeNanos()
-        createComposerWireframes(composer, wireframes, UiContext(null, density), internalLogger)
+        createComposerWireframes(
+            composer = composer,
+            wireframes = wireframes,
+            parentUiContext = UiContext(
+                parentContentColor = null,
+                density = density,
+                privacy = privacy
+            ),
+            internalLogger = internalLogger
+        )
         val stopNs = SystemClock.elapsedRealtimeNanos()
 
         val totalQuery = ComposeContext.contextCache.hitCount() + ComposeContext.contextCache.missCount()
