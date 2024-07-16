@@ -170,6 +170,10 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
+class com.datadog.android.rum.resource.ResourceId
+  constructor(String, String?)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
   constructor(java.io.InputStream, String, com.datadog.android.api.SdkCore = Datadog.getInstance())
   override fun read(): Int

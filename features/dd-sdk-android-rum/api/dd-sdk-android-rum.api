@@ -5129,6 +5129,14 @@ public final class com/datadog/android/rum/resource/InputStreamExtKt {
 	public static synthetic fun asRumResource$default (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
 }
 
+public final class com/datadog/android/rum/resource/ResourceId {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getUuid ()Ljava/lang/String;
+	public fun hashCode ()I
+}
+
 public final class com/datadog/android/rum/resource/RumResourceInputStream : java/io/InputStream {
 	public fun <init> (Ljava/io/InputStream;Ljava/lang/String;)V
 	public fun <init> (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
