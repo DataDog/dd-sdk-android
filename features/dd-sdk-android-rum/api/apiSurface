@@ -96,11 +96,11 @@ interface com.datadog.android.rum.RumMonitor
   fun addAction(RumActionType, String, Map<String, Any?>)
   fun startAction(RumActionType, String, Map<String, Any?>)
   fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
-  DEPRECATED fun startResource(String, String, String, Map<String, Any?> = emptyMap())
-  fun startResource(String, RumResourceMethod, String, Map<String, Any?> = emptyMap())
-  fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
-  fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
-  fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+  DEPRECATED fun startResource(Any, String, String, Map<String, Any?> = emptyMap())
+  fun startResource(Any, RumResourceMethod, String, Map<String, Any?> = emptyMap())
+  fun stopResource(Any, Int?, Long?, RumResourceKind, Map<String, Any?>)
+  fun stopResourceWithError(Any, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(Any, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
@@ -164,8 +164,8 @@ interface com.datadog.android.rum.event.ViewEventMapper : com.datadog.android.ev
 data class com.datadog.android.rum.internal.domain.event.ResourceTiming
   constructor(Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L)
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
-  fun waitForResourceTiming(String)
-  fun addResourceTiming(String, com.datadog.android.rum.internal.domain.event.ResourceTiming)
+  fun waitForResourceTiming(Any)
+  fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream

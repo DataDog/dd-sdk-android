@@ -126,7 +126,7 @@ interface RumMonitor {
             " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     fun startResource(
-        key: String,
+        key: Any,
         method: String,
         url: String,
         attributes: Map<String, Any?> = emptyMap()
@@ -144,7 +144,7 @@ interface RumMonitor {
      * @see [stopResourceWithError]
      */
     fun startResource(
-        key: String,
+        key: Any,
         method: RumResourceMethod,
         url: String,
         attributes: Map<String, Any?> = emptyMap()
@@ -163,7 +163,7 @@ interface RumMonitor {
      * @see [stopResourceWithError]
      */
     fun stopResource(
-        key: String,
+        key: Any,
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
@@ -186,7 +186,7 @@ interface RumMonitor {
      * @see [stopResource]
      */
     fun stopResourceWithError(
-        key: String,
+        key: Any,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
@@ -215,7 +215,7 @@ interface RumMonitor {
      */
     @SuppressWarnings("LongParameterList")
     fun stopResourceWithError(
-        key: String,
+        key: Any,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,

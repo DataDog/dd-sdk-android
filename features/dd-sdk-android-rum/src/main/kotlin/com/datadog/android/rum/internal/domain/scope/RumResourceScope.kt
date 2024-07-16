@@ -37,7 +37,7 @@ internal class RumResourceScope(
     internal val sdkCore: InternalSdkCore,
     internal val url: String,
     internal val method: RumResourceMethod,
-    internal val key: String,
+    internal val key: Any,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
@@ -500,16 +500,16 @@ internal class RumResourceScope(
             sampleRate: Float
         ): RumScope {
             return RumResourceScope(
-                parentScope,
-                sdkCore,
-                event.url,
-                event.method,
-                event.key,
-                event.eventTime,
-                event.attributes,
-                timestampOffset,
-                firstPartyHostHeaderTypeResolver,
-                featuresContextResolver,
+                parentScope = parentScope,
+                sdkCore = sdkCore,
+                url = event.url,
+                method = event.method,
+                key = event.key,
+                eventTime = event.eventTime,
+                initialAttributes = event.attributes,
+                serverTimeOffsetInMs = timestampOffset,
+                firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+                featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate
             )
         }

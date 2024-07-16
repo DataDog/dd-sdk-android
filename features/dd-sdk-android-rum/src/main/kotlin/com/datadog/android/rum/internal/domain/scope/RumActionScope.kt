@@ -180,7 +180,7 @@ internal class RumActionScope(
         }
     }
 
-    private fun onResourceError(eventKey: String, now: Long) {
+    private fun onResourceError(eventKey: Any, now: Long) {
         val keyRef = ongoingResourceKeys.firstOrNull { it.get() == eventKey }
         if (keyRef != null) {
             ongoingResourceKeys.remove(keyRef)

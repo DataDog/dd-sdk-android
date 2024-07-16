@@ -17,10 +17,10 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 interface AdvancedNetworkRumMonitor {
 
     @InternalApi
-    fun waitForResourceTiming(key: String)
+    fun waitForResourceTiming(key: Any)
 
     @InternalApi
-    fun addResourceTiming(key: String, timing: ResourceTiming)
+    fun addResourceTiming(key: Any, timing: ResourceTiming)
 
     @InternalApi
     fun notifyInterceptorInstantiated()

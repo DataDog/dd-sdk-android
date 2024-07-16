@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.rum.tests.elmyr.ResourceIdForgeryFactory
 import com.datadog.android.rum.tests.elmyr.RumScopeKeyForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -38,6 +39,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(RumEventMetaForgeryFactory())
         forge.addFactory(ViewEventMetaForgeryFactory())
         forge.addFactory(RumScopeKeyForgeryFactory())
+        forge.addFactory(ResourceIdForgeryFactory())
 
         // Telemetry
         forge.addFactory(TelemetryDebugEventForgeryFactory())

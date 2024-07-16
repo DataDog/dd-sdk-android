@@ -196,7 +196,7 @@ internal class DatadogRumMonitor(
             " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
-        key: String,
+        key: Any,
         method: String,
         url: String,
         attributes: Map<String, Any?>
@@ -230,7 +230,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun startResource(
-        key: String,
+        key: Any,
         method: RumResourceMethod,
         url: String,
         attributes: Map<String, Any?>
@@ -242,7 +242,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun stopResource(
-        key: String,
+        key: Any,
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
@@ -262,7 +262,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun stopResourceWithError(
-        key: String,
+        key: Any,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
@@ -282,7 +282,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun stopResourceWithError(
-        key: String,
+        key: Any,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
@@ -423,13 +423,13 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun waitForResourceTiming(key: String) {
+    override fun waitForResourceTiming(key: Any) {
         handleEvent(
             RumRawEvent.WaitForResourceTiming(key)
         )
     }
 
-    override fun addResourceTiming(key: String, timing: ResourceTiming) {
+    override fun addResourceTiming(key: Any, timing: ResourceTiming) {
         handleEvent(
             RumRawEvent.AddResourceTiming(key, timing)
         )
