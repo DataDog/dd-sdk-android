@@ -13,6 +13,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -50,6 +51,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
 import kotlin.jvm.internal.Intrinsics
+import kotlin.math.pow
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -101,6 +103,9 @@ internal class RecorderWindowCallbackTest {
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
 
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
+
     @BeforeEach
     fun `set up`() {
         val mockResources = mock<Resources> {
@@ -119,6 +124,7 @@ internal class RecorderWindowCallbackTest {
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
             privacy = fakePrivacy,
+            imagePrivacy = fakeImagePrivacy,
             copyEvent = { it },
             motionEventUtils = mockEventUtils,
             motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
@@ -421,7 +427,7 @@ internal class RecorderWindowCallbackTest {
         // Then
         inOrder(mockViewOnDrawInterceptor) {
             verify(mockViewOnDrawInterceptor).stopIntercepting()
-            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakePrivacy)
+            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
         }
     }
 
@@ -498,7 +504,7 @@ internal class RecorderWindowCallbackTest {
     // endregion
 
     companion object {
-        private val FLOAT_MAX_INT_VALUE = Math.pow(2.0, 23.0).toFloat()
+        private val FLOAT_MAX_INT_VALUE = 2.0.pow(23.0).toFloat()
 
         // We need to test with higher threshold values in order to avoid flakiness
         private val TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS: Long =

@@ -12,6 +12,7 @@ import android.graphics.drawable.DrawableContainer
 import android.os.Build
 import android.widget.Checkable
 import android.widget.TextView
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_CHECKED_DRAWABLE_INDEX
@@ -115,6 +116,9 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     @IntForgery
     var mockCloneDrawableIntrinsicWidth: Int = 0
 
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
+
     @BeforeEach
     fun `set up`() {
         mockClonedDrawable = mock {
@@ -191,7 +195,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     @Test
     fun `M create ImageWireFrame W map() { checked, above M }`() {
         // Given
-        val allowedMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        val allowedMappingContext =
+            fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW, imagePrivacy = ImagePrivacy.ALL)
         whenever(mockButtonDrawable.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         whenever(mockCheckableTextView.isChecked).thenReturn(true)
 
@@ -210,6 +215,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Then
         verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
             view = eq(mockCheckableTextView),
+            imagePrivacy = eq(ImagePrivacy.ALL),
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),
@@ -229,7 +235,10 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     @Test
     fun `M create ImageWireFrame W map() { not checked, above M }`() {
         // Given
-        val allowedMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        val allowedMappingContext = fakeMappingContext.copy(
+            privacy = SessionReplayPrivacy.ALLOW,
+            imagePrivacy = ImagePrivacy.ALL
+        )
         whenever(mockButtonDrawable.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         whenever(mockCheckableTextView.isChecked).thenReturn(false)
 
@@ -249,6 +258,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Then
         verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
             view = eq(mockCheckableTextView),
+            imagePrivacy = eq(ImagePrivacy.ALL),
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),

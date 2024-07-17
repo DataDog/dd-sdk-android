@@ -99,6 +99,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
     }
@@ -120,6 +121,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate
@@ -140,6 +142,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate
@@ -172,6 +175,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
 

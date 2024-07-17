@@ -12,6 +12,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -48,7 +49,7 @@ import java.util.LinkedList
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class WindowCallbackInterceptorTest {
 
-    lateinit var testedInterceptor: WindowCallbackInterceptor
+    private lateinit var testedInterceptor: WindowCallbackInterceptor
 
     @Mock
     lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
@@ -65,9 +66,12 @@ internal class WindowCallbackInterceptorTest {
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
 
-    lateinit var fakeWindowsList: List<Window>
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
 
-    lateinit var mockActivity: Activity
+    private lateinit var fakeWindowsList: List<Window>
+
+    private lateinit var mockActivity: Activity
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -78,7 +82,8 @@ internal class WindowCallbackInterceptorTest {
             mockViewOnDrawInterceptor,
             mockTimeProvider,
             mockInternalLogger,
-            fakePrivacy
+            fakePrivacy,
+            fakeImagePrivacy
         )
     }
 

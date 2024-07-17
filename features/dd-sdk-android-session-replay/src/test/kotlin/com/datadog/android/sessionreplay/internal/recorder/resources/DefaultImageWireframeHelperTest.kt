@@ -16,6 +16,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
@@ -28,7 +29,6 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
-import com.datadog.android.utils.isCloseTo
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -134,6 +134,7 @@ internal class DefaultImageWireframeHelperTest {
         val randomXLocation = forge.aLong(min = 1, max = (fakeScreenWidth - fakeDrawableWidth).toLong())
         val randomYLocation = forge.aLong(min = 1, max = (fakeScreenHeight - fakeDrawableHeight).toLong())
         fakeDrawableXY = Pair(randomXLocation, randomYLocation)
+        whenever(mockMappingContext.imagePrivacy).thenReturn(ImagePrivacy.CONTEXTUAL)
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockSystemInformation.screenDensity).thenReturn(0f)
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(mockView, "drawable"))
@@ -177,6 +178,50 @@ internal class DefaultImageWireframeHelperTest {
     // region createImageWireframe
 
     @Test
+    fun `M return content placeholder W createImageWireframe() { ImagePrivacy NONE }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframe(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.NONE,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
+
+    @Test
+    fun `M not return image wireframe W createImageWireframe() { ImagePrivacy ALL }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframe(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.ALL,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
+    }
+
+    @Test
     fun `M return null W createImageWireframe() { application context is null }`() {
         // Given
         whenever(mockView.context.applicationContext).thenReturn(null)
@@ -184,11 +229,12 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = 100,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -208,11 +254,12 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = 100,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -236,11 +283,12 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = 100,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -265,11 +313,12 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = 100,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -283,18 +332,16 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { drawable has no intrinsic width }`() {
-        // Given
-        whenever(mockDrawable.intrinsicWidth).thenReturn(0)
-
+    fun `M return null W createImageWireframe() { drawable has no width }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
             width = 0,
-            height = 0,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -307,17 +354,15 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { drawable has no intrinsic height }`() {
-        // Given
-        whenever(mockDrawable.intrinsicHeight).thenReturn(0)
-
+    fun `M return null W createImageWireframe() { drawable has no height }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
+            width = 100,
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
@@ -370,6 +415,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = fakeDrawableXY.first,
             y = fakeDrawableXY.second,
@@ -547,6 +593,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -578,6 +625,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -615,19 +663,12 @@ internal class DefaultImageWireframeHelperTest {
         // Given
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
 
-        val fakeGlobalX = forge.aPositiveInt()
-        val fakeGlobalY = forge.aPositiveInt()
+        val fakeGlobalX = forge.aPositiveLong()
+        val fakeGlobalY = forge.aPositiveLong()
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         mockDisplayMetrics.density = 1f
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer { location ->
-                val coords = location.arguments[0] as IntArray
-                coords[0] = fakeGlobalX
-                coords[1] = fakeGlobalY
-                null
-            }
-
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.context).thenReturn(mockContext)
         }
@@ -635,9 +676,10 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val result = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = forge.aPositiveInt(),
-            x = forge.aPositiveLong(),
-            y = forge.aPositiveLong(),
+            x = fakeGlobalX,
+            y = fakeGlobalY,
             width = forge.aPositiveInt(),
             height = forge.aPositiveInt(),
             drawable = mockDrawable,
@@ -649,8 +691,8 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         verifyNoInteractions(mockResourceResolver)
-        assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
-        assertThat(isCloseTo(result.y.toInt(), fakeGlobalY)).isTrue
+        assertThat(result.x).isEqualTo(fakeGlobalX)
+        assertThat(result.y).isEqualTo(fakeGlobalY)
     }
 
     @Test
@@ -661,11 +703,12 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = 100,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -693,11 +736,12 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val actualWireframe = testedHelper.createImageWireframe(
             view = mockView,
+            imagePrivacy = ImagePrivacy.CONTEXTUAL,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = 100,
+            height = 100,
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -708,7 +752,7 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         assertThat(actualWireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
         assertThat((actualWireframe as MobileSegment.Wireframe.PlaceholderWireframe).label)
-            .isEqualTo(DefaultImageWireframeHelper.PLACEHOLDER_CONTENT_LABEL)
+            .isEqualTo(DefaultImageWireframeHelper.MASK_CONTEXTUAL_CONTENT_LABEL)
     }
 
     // endregion

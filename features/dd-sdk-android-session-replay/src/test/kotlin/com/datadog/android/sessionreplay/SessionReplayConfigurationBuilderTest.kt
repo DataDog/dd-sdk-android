@@ -59,6 +59,7 @@ internal class SessionReplayConfigurationBuilderTest {
         // Then
         assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.CONTEXTUAL)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
@@ -77,6 +78,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customEndpointUrl)
             .isEqualTo(sessionReplayUrl)
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.CONTEXTUAL)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
@@ -94,6 +96,25 @@ internal class SessionReplayConfigurationBuilderTest {
         // Then
         assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(fakePrivacy)
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.CONTEXTUAL)
+        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
+        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
+        assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M use the given image privacy rule W setImagePrivacy`(
+        @Forgery fakeImagePrivacy: ImagePrivacy
+    ) {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setImagePrivacy(fakeImagePrivacy)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
+        assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(fakeImagePrivacy)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)

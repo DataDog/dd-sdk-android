@@ -22,6 +22,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -57,6 +58,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 internal class DefaultRecorderProvider(
     private val sdkCore: FeatureSdkCore,
     private val privacy: SessionReplayPrivacy,
+    private val imagePrivacy: ImagePrivacy,
     private val customMappers: List<MapperTypeWrapper<*>>,
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>
 ) : RecorderProvider {
@@ -73,6 +75,7 @@ internal class DefaultRecorderProvider(
             resourcesWriter = resourceWriter,
             rumContextProvider = SessionReplayRumContextProvider(sdkCore),
             privacy = privacy,
+            imagePrivacy = imagePrivacy,
             recordWriter = recordWriter,
             timeProvider = SessionReplayTimeProvider(sdkCore),
             mappers = customMappers + builtInMappers(),

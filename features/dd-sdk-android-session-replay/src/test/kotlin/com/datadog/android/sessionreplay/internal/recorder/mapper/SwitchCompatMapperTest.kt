@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.Drawable
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -75,7 +76,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext,
+            fakeMappingContext.copy(imagePrivacy = ImagePrivacy.ALL),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -88,6 +89,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
             verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframe(
                 view = eq(mockSwitch),
+                imagePrivacy = eq(ImagePrivacy.ALL),
                 currentWireframeIndex = ArgumentMatchers.anyInt(),
                 x = xCaptor.capture(),
                 y = yCaptor.capture(),
@@ -145,7 +147,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK),
+            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.ALL),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -170,7 +172,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK),
+            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.ALL),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -179,6 +181,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
         verify(fakeMappingContext.imageWireframeHelper, never()).createImageWireframe(
             view = any(),
+            imagePrivacy = any(),
             currentWireframeIndex = any(),
             x = any(),
             y = any(),

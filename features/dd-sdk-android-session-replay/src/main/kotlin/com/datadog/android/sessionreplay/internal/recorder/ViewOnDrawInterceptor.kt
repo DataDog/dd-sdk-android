@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewTreeObserver.OnDrawListener
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import java.util.WeakHashMap
 
@@ -19,9 +20,13 @@ internal class ViewOnDrawInterceptor(
     internal val decorOnDrawListeners: WeakHashMap<View, OnDrawListener> =
         WeakHashMap()
 
-    fun intercept(decorViews: List<View>, sessionReplayPrivacy: SessionReplayPrivacy) {
+    fun intercept(
+        decorViews: List<View>,
+        sessionReplayPrivacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy
+    ) {
         stopInterceptingAndRemove(decorViews)
-        val onDrawListener = onDrawListenerProducer.create(decorViews, sessionReplayPrivacy)
+        val onDrawListener = onDrawListenerProducer.create(decorViews, sessionReplayPrivacy, imagePrivacy)
         decorViews.forEach { decorView ->
             val viewTreeObserver = decorView.viewTreeObserver
             if (viewTreeObserver != null && viewTreeObserver.isAlive) {
