@@ -15,7 +15,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.utils.identifyRequest
+import com.datadog.android.okhttp.internal.rum.buildResourceId
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
@@ -220,7 +220,7 @@ internal constructor(
             val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
-            val requestId = identifyRequest(request)
+            val requestId = request.buildResourceId(generateUuid = true)
 
             GlobalRumMonitor.get(sdkCore).startResource(requestId, method, url)
         } else {
@@ -288,7 +288,7 @@ internal constructor(
         span: Span?,
         isSampled: Boolean
     ) {
-        val requestId = identifyRequest(request)
+        val requestId = request.buildResourceId(generateUuid = false)
         val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
             null -> RumResourceKind.NATIVE
@@ -317,7 +317,7 @@ internal constructor(
         request: Request,
         throwable: Throwable
     ) {
-        val requestId = identifyRequest(request)
+        val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
         GlobalRumMonitor.get(sdkCore).stopResourceWithError(
