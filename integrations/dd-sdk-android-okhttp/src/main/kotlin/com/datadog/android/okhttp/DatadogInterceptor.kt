@@ -222,7 +222,7 @@ internal constructor(
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
             val requestId = request.buildResourceId(generateUuid = true)
 
-            GlobalRumMonitor.get(sdkCore).startResource(requestId, method, url)
+            (GlobalRumMonitor.get(sdkCore) as AdvancedNetworkRumMonitor).startResource(requestId, method, url)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -303,7 +303,7 @@ internal constructor(
                 RumAttributes.RULE_PSR to traceSampler.getSampleRate()
             )
         }
-        GlobalRumMonitor.get(sdkCore).stopResource(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
@@ -320,7 +320,7 @@ internal constructor(
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
-        GlobalRumMonitor.get(sdkCore).stopResourceWithError(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
             null,
             ERROR_MSG_FORMAT.format(Locale.US, method, url),

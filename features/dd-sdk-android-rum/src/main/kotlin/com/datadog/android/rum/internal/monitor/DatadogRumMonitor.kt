@@ -43,6 +43,7 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
@@ -54,7 +55,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 internal class DatadogRumMonitor(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
@@ -196,7 +197,7 @@ internal class DatadogRumMonitor(
             " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     override fun startResource(
-        key: Any,
+        key: String,
         method: String,
         url: String,
         attributes: Map<String, Any?>
@@ -230,7 +231,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun startResource(
-        key: Any,
+        key: String,
         method: RumResourceMethod,
         url: String,
         attributes: Map<String, Any?>
@@ -242,7 +243,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun stopResource(
-        key: Any,
+        key: String,
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
@@ -262,7 +263,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun stopResourceWithError(
-        key: Any,
+        key: String,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
@@ -282,7 +283,81 @@ internal class DatadogRumMonitor(
     }
 
     override fun stopResourceWithError(
-        key: Any,
+        key: String,
+        statusCode: Int?,
+        message: String,
+        source: RumErrorSource,
+        stackTrace: String,
+        errorType: String?,
+        attributes: Map<String, Any?>
+    ) {
+        handleEvent(
+            RumRawEvent.StopResourceWithStackTrace(
+                key,
+                statusCode?.toLong(),
+                message,
+                source,
+                stackTrace,
+                errorType,
+                attributes.toMap()
+            )
+        )
+    }
+
+    override fun startResource(
+        key: ResourceId,
+        method: RumResourceMethod,
+        url: String,
+        attributes: Map<String, Any?>
+    ) {
+        val eventTime = getEventTime(attributes)
+        handleEvent(
+            RumRawEvent.StartResource(key, url, method, attributes.toMap(), eventTime)
+        )
+    }
+
+    override fun stopResource(
+        key: ResourceId,
+        statusCode: Int?,
+        size: Long?,
+        kind: RumResourceKind,
+        attributes: Map<String, Any?>
+    ) {
+        val eventTime = getEventTime(attributes)
+        handleEvent(
+            RumRawEvent.StopResource(
+                key,
+                statusCode?.toLong(),
+                size,
+                kind,
+                attributes.toMap(),
+                eventTime
+            )
+        )
+    }
+
+    override fun stopResourceWithError(
+        key: ResourceId,
+        statusCode: Int?,
+        message: String,
+        source: RumErrorSource,
+        throwable: Throwable,
+        attributes: Map<String, Any?>
+    ) {
+        handleEvent(
+            RumRawEvent.StopResourceWithError(
+                key,
+                statusCode?.toLong(),
+                message,
+                source,
+                throwable,
+                attributes.toMap()
+            )
+        )
+    }
+
+    override fun stopResourceWithError(
+        key: ResourceId,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,

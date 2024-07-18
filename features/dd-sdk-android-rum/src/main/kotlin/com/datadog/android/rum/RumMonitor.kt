@@ -126,7 +126,7 @@ interface RumMonitor {
             " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
     )
     fun startResource(
-        key: Any,
+        key: String,
         method: String,
         url: String,
         attributes: Map<String, Any?> = emptyMap()
@@ -144,7 +144,7 @@ interface RumMonitor {
      * @see [stopResourceWithError]
      */
     fun startResource(
-        key: Any,
+        key: String,
         method: RumResourceMethod,
         url: String,
         attributes: Map<String, Any?> = emptyMap()
@@ -163,7 +163,7 @@ interface RumMonitor {
      * @see [stopResourceWithError]
      */
     fun stopResource(
-        key: Any,
+        key: String,
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
@@ -181,12 +181,12 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the error. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
      * that want to supply a custom fingerprint for this error can add a value under the key
-     * [RumAttributes.ERROR_CUSTOM_FINGERPRINT]
+     * [RumAttributes.ERROR_FINGERPRINT]
      * @see [startResource]
      * @see [stopResource]
      */
     fun stopResourceWithError(
-        key: Any,
+        key: String,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
@@ -209,13 +209,13 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the error. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
      * that want to supply a custom fingerprint for this error can add a value under the key
-     * [RumAttributes.ERROR_CUSTOM_FINGERPRINT]
+     * [RumAttributes.ERROR_FINGERPRINT]
      * @see [startResource]
      * @see [stopResource]
      */
     @SuppressWarnings("LongParameterList")
     fun stopResourceWithError(
-        key: Any,
+        key: String,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
@@ -232,7 +232,7 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the error. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
      * that want to supply a custom fingerprint for this error can add a value under the key
-     * [RumAttributes.ERROR_CUSTOM_FINGERPRINT]
+     * [RumAttributes.ERROR_FINGERPRINT]
      */
     fun addError(
         message: String,
@@ -253,7 +253,7 @@ interface RumMonitor {
      * @param stacktrace the error stacktrace information
      * @param attributes additional custom attributes to attach to the error. Users
      * that want to supply a custom fingerprint for this error can add a value under the key
-     * [RumAttributes.ERROR_CUSTOM_FINGERPRINT]
+     * [RumAttributes.ERROR_FINGERPRINT]
      */
     fun addErrorWithStacktrace(
         message: String,

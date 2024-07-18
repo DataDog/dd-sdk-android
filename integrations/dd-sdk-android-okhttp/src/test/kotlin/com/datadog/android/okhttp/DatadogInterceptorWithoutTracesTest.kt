@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
@@ -195,7 +196,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<Any> {
+            argumentCaptor<ResourceId> {
                 verify(rumMonitor.mockInstance).startResource(
                     capture(),
                     eq(fakeMethod),
@@ -238,7 +239,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<Any> {
+            argumentCaptor<ResourceId> {
                 verify(rumMonitor.mockInstance).startResource(
                     capture(),
                     eq(RumResourceMethod.GET),
@@ -282,7 +283,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<Any> {
+            argumentCaptor<ResourceId> {
                 verify(rumMonitor.mockInstance).startResource(
                     capture(),
                     eq(fakeMethod),
@@ -318,7 +319,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<Any> {
+            argumentCaptor<ResourceId> {
                 verify(rumMonitor.mockInstance).startResource(
                     capture(),
                     eq(fakeMethod),

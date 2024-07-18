@@ -148,24 +148,24 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun removeAttribute (Ljava/lang/String;)V
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
-	public abstract fun startResource (Ljava/lang/Object;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
-	public abstract fun startResource (Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun startResource (Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun startResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startView (Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
-	public abstract fun stopResource (Ljava/lang/Object;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;)V
-	public abstract fun stopResourceWithError (Ljava/lang/Object;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public abstract fun stopResourceWithError (Ljava/lang/Object;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public abstract fun stopResource (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;)V
+	public abstract fun stopResourceWithError (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun stopResourceWithError (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;)V
 	public abstract fun stopSession ()V
 	public abstract fun stopView (Ljava/lang/Object;Ljava/util/Map;)V
 }
 
 public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
-	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
-	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startView$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopAction$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
-	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
-	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopView$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
@@ -285,7 +285,17 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor {
 	public abstract fun addResourceTiming (Ljava/lang/Object;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public abstract fun notifyInterceptorInstantiated ()V
+	public abstract fun startResource (Lcom/datadog/android/rum/resource/ResourceId;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun stopResource (Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;)V
+	public abstract fun stopResourceWithError (Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun stopResourceWithError (Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;)V
 	public abstract fun waitForResourceTiming (Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor$DefaultImpls {
+	public static synthetic fun startResource$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/rum/model/ActionChildProperties {
