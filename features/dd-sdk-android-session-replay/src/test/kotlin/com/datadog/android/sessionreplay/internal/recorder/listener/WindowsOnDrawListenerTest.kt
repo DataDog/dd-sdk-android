@@ -12,9 +12,9 @@ import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -74,9 +74,6 @@ internal class WindowsOnDrawListenerTest {
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @Mock
-    lateinit var mockSessionReplayFeature: FeatureScope
-
-    @Mock
     lateinit var mockDebouncer: Debouncer
 
     @Mock
@@ -113,6 +110,9 @@ internal class WindowsOnDrawListenerTest {
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
 
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
+
     @FloatForgery
     var fakeMethodCallSamplingRate: Float = 0f
 
@@ -131,6 +131,7 @@ internal class WindowsOnDrawListenerTest {
                     eq(decorView),
                     eq(fakeSystemInformation),
                     eq(fakePrivacy),
+                    eq(fakeImagePrivacy),
                     any()
                 )
             )
@@ -157,6 +158,7 @@ internal class WindowsOnDrawListenerTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             privacy = fakePrivacy,
+            imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
             internalLogger = mockInternalLogger,
@@ -193,6 +195,7 @@ internal class WindowsOnDrawListenerTest {
             rootView = any(),
             systemInformation = any(),
             privacy = eq(fakePrivacy),
+            imagePrivacy = eq(fakeImagePrivacy),
             recordedDataQueueRefs = argCaptor.capture()
         )
         assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
@@ -207,6 +210,7 @@ internal class WindowsOnDrawListenerTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             privacy = fakePrivacy,
+            imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
             internalLogger = mockInternalLogger,
@@ -282,7 +286,7 @@ internal class WindowsOnDrawListenerTest {
                 "Capture Record"
             )
         ).thenReturn(mockPerformanceMetric)
-        whenever(mockSnapshotProducer.produce(any(), any(), any(), any())).thenReturn(null)
+        whenever(mockSnapshotProducer.produce(any(), any(), any(), any(), any())).thenReturn(null)
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
         fakeSnapshotQueueItem.pendingJobs.set(0)

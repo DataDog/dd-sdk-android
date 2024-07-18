@@ -80,6 +80,7 @@ internal open class SwitchCompatMapper(
             }?.let { drawable ->
                 mappingContext.imageWireframeHelper.createImageWireframe(
                     view = view,
+                    imagePrivacy = mappingContext.imagePrivacy,
                     currentWireframeIndex = prevIndex + 1,
                     x = trackBounds.x.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
                     y = trackBounds.y.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
@@ -105,10 +106,12 @@ internal open class SwitchCompatMapper(
             view,
             mappingContext.systemInformation.screenDensity
         )
+
         return view.thumbDrawable?.let { drawable ->
             thumbBounds?.let { thumbBounds ->
                 mappingContext.imageWireframeHelper.createImageWireframe(
                     view = view,
+                    imagePrivacy = mappingContext.imagePrivacy,
                     currentWireframeIndex = prevIndex + 1,
                     x = thumbBounds.x.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
                     y = thumbBounds.y.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),

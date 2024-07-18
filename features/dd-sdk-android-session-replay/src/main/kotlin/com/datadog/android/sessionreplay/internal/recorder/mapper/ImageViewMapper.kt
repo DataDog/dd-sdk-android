@@ -63,6 +63,7 @@ internal class ImageViewMapper(
             // resolve foreground
             mappingContext.imageWireframeHelper.createImageWireframe(
                 view = view,
+                imagePrivacy = mappingContext.imagePrivacy,
                 currentWireframeIndex = wireframes.size,
                 x = contentXPosInDp,
                 y = contentYPosInDp,

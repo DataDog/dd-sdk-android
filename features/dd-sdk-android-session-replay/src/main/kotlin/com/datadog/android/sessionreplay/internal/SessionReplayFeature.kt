@@ -18,6 +18,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
@@ -42,6 +43,7 @@ internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
     private val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
+    internal val imagePrivacy: ImagePrivacy?,
     private val rateBasedSampler: Sampler,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -52,6 +54,7 @@ internal class SessionReplayFeature(
         sdkCore: FeatureSdkCore,
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         sampleRate: Float
@@ -59,10 +62,12 @@ internal class SessionReplayFeature(
         sdkCore,
         customEndpointUrl,
         privacy,
+        imagePrivacy,
         RateBasedSampler(sampleRate),
         DefaultRecorderProvider(
             sdkCore,
             privacy,
+            imagePrivacy,
             customMappers,
             customOptionSelectorDetectors
         )

@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -35,10 +36,11 @@ internal class DefaultImageWireframeHelper(
     private val imageTypeResolver: ImageTypeResolver
 ) : ImageWireframeHelper {
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod")
     @UiThread
     override fun createImageWireframe(
         view: View,
+        imagePrivacy: ImagePrivacy,
         currentWireframeIndex: Int,
         x: Long,
         y: Long,
@@ -53,7 +55,12 @@ internal class DefaultImageWireframeHelper(
         prefix: String?
     ): MobileSegment.Wireframe? {
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
-        val drawableProperties = resolveDrawableProperties(view, drawable)
+        val drawableProperties = resolveDrawableProperties(
+            view = view,
+            drawable = drawable,
+            width = width,
+            height = height
+        )
 
         if (id == null || !drawableProperties.isValid()) return null
 
@@ -84,13 +91,31 @@ internal class DefaultImageWireframeHelper(
 
         val density = displayMetrics.density
 
-        // in case we suspect the image is PII, return a placeholder
-        if (usePIIPlaceholder && imageTypeResolver.isDrawablePII(drawable, density)) {
-            return createContentPlaceholderWireframe(view, id, density)
+        if (imagePrivacy == ImagePrivacy.MASK_ALL) {
+            return createContentPlaceholderWireframe(
+                id = id,
+                x = x,
+                y = y,
+                density = density,
+                drawableProperties = drawableProperties,
+                label = MASK_ALL_CONTENT_LABEL
+            )
         }
 
-        val drawableWidthDp = width.densityNormalized(density).toLong()
-        val drawableHeightDp = height.densityNormalized(density).toLong()
+        // in case we suspect the image is PII, return a placeholder
+        if (shouldMaskContextualImage(imagePrivacy, usePIIPlaceholder, drawable, density)) {
+            return createContentPlaceholderWireframe(
+                id = id,
+                x = x,
+                y = y,
+                density = density,
+                drawableProperties = drawableProperties,
+                label = MASK_CONTEXTUAL_CONTENT_LABEL
+            )
+        }
+
+        val drawableWidthDp = drawableProperties.drawableWidth.densityNormalized(density).toLong()
+        val drawableHeightDp = drawableProperties.drawableHeight.densityNormalized(density).toLong()
 
         val imageWireframe =
             MobileSegment.Wireframe.ImageWireframe(
@@ -161,8 +186,10 @@ internal class DefaultImageWireframeHelper(
                     pixelsDensity = density,
                     position = compoundDrawablePosition
                 )
+
                 createImageWireframe(
                     view = textView,
+                    imagePrivacy = mappingContext.imagePrivacy,
                     currentWireframeIndex = ++wireframeIndex,
                     x = drawableCoordinates.x,
                     y = drawableCoordinates.y,
@@ -183,12 +210,12 @@ internal class DefaultImageWireframeHelper(
         return result
     }
 
-    private fun resolveDrawableProperties(view: View, drawable: Drawable): DrawableProperties {
+    private fun resolveDrawableProperties(view: View, drawable: Drawable, width: Int, height: Int): DrawableProperties {
         return when (drawable) {
             is LayerDrawable -> {
                 if (drawable.numberOfLayers > 0) {
                     @Suppress("UnsafeThirdPartyFunctionCall") // Can't be out of bounds
-                    resolveDrawableProperties(view, drawable.getDrawable(0))
+                    resolveDrawableProperties(view, drawable.getDrawable(0), width, height)
                 } else {
                     DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
                 }
@@ -197,35 +224,37 @@ internal class DefaultImageWireframeHelper(
             is InsetDrawable -> {
                 val internalDrawable = drawable.drawable
                 if (internalDrawable != null) {
-                    resolveDrawableProperties(view, internalDrawable)
+                    resolveDrawableProperties(
+                        view = view,
+                        drawable = internalDrawable,
+                        width = width,
+                        height = height
+                    )
                 } else {
                     DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
                 }
             }
 
             is GradientDrawable -> DrawableProperties(drawable, view.width, view.height)
-            else -> DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
+            else -> DrawableProperties(drawable, width, height)
         }
     }
 
     private fun createContentPlaceholderWireframe(
-        view: View,
         id: Long,
-        density: Float
+        x: Long,
+        y: Long,
+        density: Float,
+        drawableProperties: DrawableProperties,
+        label: String
     ): MobileSegment.Wireframe.PlaceholderWireframe {
-        val coordinates = IntArray(2)
-        @Suppress("UnsafeThirdPartyFunctionCall") // this will always have size >= 2
-        view.getLocationOnScreen(coordinates)
-        val viewX = coordinates[0].densityNormalized(density).toLong()
-        val viewY = coordinates[1].densityNormalized(density).toLong()
-
         return MobileSegment.Wireframe.PlaceholderWireframe(
             id,
-            viewX,
-            viewY,
-            view.width.densityNormalized(density).toLong(),
-            view.height.densityNormalized(density).toLong(),
-            label = PLACEHOLDER_CONTENT_LABEL
+            x,
+            y,
+            drawableProperties.drawableWidth.densityNormalized(density).toLong(),
+            drawableProperties.drawableHeight.densityNormalized(density).toLong(),
+            label = label
         )
     }
 
@@ -239,6 +268,16 @@ internal class DefaultImageWireframeHelper(
             else -> null
         }
     }
+
+    private fun shouldMaskContextualImage(
+        imagePrivacy: ImagePrivacy,
+        usePIIPlaceholder: Boolean,
+        drawable: Drawable,
+        density: Float
+    ): Boolean =
+        imagePrivacy == ImagePrivacy.MASK_CONTENT &&
+            usePIIPlaceholder &&
+            imageTypeResolver.isDrawablePII(drawable, density)
 
     internal enum class CompoundDrawablePositions {
         LEFT,
@@ -268,7 +307,10 @@ internal class DefaultImageWireframeHelper(
     internal companion object {
 
         @VisibleForTesting
-        internal const val PLACEHOLDER_CONTENT_LABEL = "Content Image"
+        internal const val MASK_CONTEXTUAL_CONTENT_LABEL = "Content Image"
+
+        @VisibleForTesting
+        internal const val MASK_ALL_CONTENT_LABEL = "Image"
 
         @VisibleForTesting
         internal const val APPLICATION_CONTEXT_NULL_ERROR = "Application context is null for view %s"
