@@ -841,6 +841,7 @@ datadog:
       - "kotlin.collections.List.sumOf(kotlin.Function1)"
       - "kotlin.collections.List.take(kotlin.Int)"
       - "kotlin.collections.List.toCharArray()"
+      - "kotlin.collections.List.toList()"
       - "kotlin.collections.List.toMap()"
       - "kotlin.collections.List.toMutableList()"
       - "kotlin.collections.List.toMutableMap()"
