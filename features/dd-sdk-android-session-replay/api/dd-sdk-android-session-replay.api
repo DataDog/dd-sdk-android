@@ -4,9 +4,9 @@ public abstract interface class com/datadog/android/sessionreplay/ExtensionSuppo
 }
 
 public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum {
-	public static final field ALL Lcom/datadog/android/sessionreplay/ImagePrivacy;
-	public static final field CONTEXTUAL Lcom/datadog/android/sessionreplay/ImagePrivacy;
-	public static final field NONE Lcom/datadog/android/sessionreplay/ImagePrivacy;
+	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/ImagePrivacy;
+	public static final field MASK_CONTENT Lcom/datadog/android/sessionreplay/ImagePrivacy;
+	public static final field MASK_NONE Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/ImagePrivacy;
 }

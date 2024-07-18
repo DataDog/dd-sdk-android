@@ -76,7 +76,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(imagePrivacy = ImagePrivacy.ALL),
+            fakeMappingContext.copy(imagePrivacy = ImagePrivacy.MASK_CONTENT),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -89,7 +89,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
             verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframe(
                 view = eq(mockSwitch),
-                imagePrivacy = eq(ImagePrivacy.ALL),
+                imagePrivacy = eq(ImagePrivacy.MASK_CONTENT),
                 currentWireframeIndex = ArgumentMatchers.anyInt(),
                 x = xCaptor.capture(),
                 y = yCaptor.capture(),
@@ -147,7 +147,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.ALL),
+            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.MASK_CONTENT),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -172,7 +172,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.ALL),
+            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.MASK_CONTENT),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )

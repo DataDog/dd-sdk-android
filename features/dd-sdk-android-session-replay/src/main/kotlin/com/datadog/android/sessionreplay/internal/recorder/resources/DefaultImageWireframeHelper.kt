@@ -91,7 +91,7 @@ internal class DefaultImageWireframeHelper(
 
         val density = displayMetrics.density
 
-        if (imagePrivacy == ImagePrivacy.NONE) {
+        if (imagePrivacy == ImagePrivacy.MASK_ALL) {
             return createContentPlaceholderWireframe(
                 id = id,
                 x = x,
@@ -275,7 +275,7 @@ internal class DefaultImageWireframeHelper(
         drawable: Drawable,
         density: Float
     ): Boolean =
-        imagePrivacy == ImagePrivacy.CONTEXTUAL &&
+        imagePrivacy == ImagePrivacy.MASK_CONTENT &&
             usePIIPlaceholder &&
             imageTypeResolver.isDrawablePII(drawable, density)
 
