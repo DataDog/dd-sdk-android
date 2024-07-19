@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.TraceContext
+import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
@@ -51,18 +52,23 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * If you use multiple Interceptors, make sure that this one is called first.
  * If you also want to track network requests as RUM Resources, use the
- * [DatadogInterceptor] instead, which combines the RUM and APM integrations.
+ * [com.datadog.android.okhttp.DatadogInterceptor] instead, which combines the RUM and APM integrations.
  *
  * If you want to get more insights on the network requests (e.g.: redirections), you can also add
  * this interceptor as a Network level interceptor.
  *
  * To use:
  * ```
- *     val tracedHosts = listOf("example.com", "example.eu")
+ *     val tracedHostsWithHeaderType = mapOf("example.com" to setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT),
+ *             "example.eu" to  setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT))
  *     val okHttpClient = OkHttpClient.Builder()
- *         .addInterceptor(TracingInterceptor(tracedHosts)))
+ *         .addInterceptor(TracingInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+ *         // .addNetworkInterceptor(TracingInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         .build()
  * ```
  */
@@ -74,6 +80,7 @@ internal constructor(
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler,
+    internal val traceContextInjection: TraceContextInjection,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : Interceptor {
 
@@ -108,6 +115,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedHosts: List<String>,
@@ -126,7 +138,8 @@ internal constructor(
         traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
+        },
+        traceContextInjection = TraceContextInjection.All
     )
 
     /**
@@ -148,6 +161,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
@@ -161,7 +179,8 @@ internal constructor(
         traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
+        },
+        traceContextInjection = TraceContextInjection.All
     )
 
     /**
@@ -177,6 +196,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
@@ -189,7 +213,8 @@ internal constructor(
         traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
+        },
+        traceContextInjection = TraceContextInjection.All
     )
 
     // region Interceptor
@@ -452,65 +477,115 @@ internal constructor(
     private fun setSampledOutHeaders(
         requestBuilder: Request.Builder,
         tracingHeaderTypes: Set<TracingHeaderType>,
-        span: Span
+        span: Span,
+        tracer: Tracer
     ) {
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
                 TracingHeaderType.DATADOG -> {
-                    listOf(
-                        DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS,
-                        DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER
-                    ).forEach {
-                        requestBuilder.removeHeader(it)
-                    }
-                    requestBuilder.addHeader(
-                        DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_DROP_SAMPLING_DECISION
-                    )
+                    removeDatadogHeaders(requestBuilder)
+                    handleDatadogSampledOutHeaders(requestBuilder, span, tracer)
                 }
 
                 TracingHeaderType.B3 -> {
                     requestBuilder.removeHeader(B3_HEADER_KEY)
-                    requestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
+                    handleB3SampledOutHeaders(requestBuilder)
                 }
 
                 TracingHeaderType.B3MULTI -> {
-                    listOf(
-                        B3M_TRACE_ID_KEY,
-                        B3M_SPAN_ID_KEY,
-                        B3M_SAMPLING_PRIORITY_KEY
-                    ).forEach {
-                        requestBuilder.removeHeader(it)
-                    }
-                    requestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
+                    removeB3MultiHeaders(requestBuilder)
+                    handleB3MultiNotSampledHeaders(requestBuilder)
                 }
 
                 TracingHeaderType.TRACECONTEXT -> {
-                    requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
-                    requestBuilder.removeHeader(W3C_TRACESTATE_KEY)
-                    val traceId = span.context().traceIdAsHexString()
-                    val spanId = span.context().toSpanId()
-                    requestBuilder.addHeader(
-                        W3C_TRACEPARENT_KEY,
-                        @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
-                        W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
-                            traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
-                            spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
-                        )
-                    )
-                    // TODO RUM-2121 3rd party vendor information will be erased
-                    @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
-                    var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
-                        .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
-                    if (traceOrigin != null) {
-                        traceStateHeader += ";o:$traceOrigin"
-                    }
-                    requestBuilder.addHeader(W3C_TRACESTATE_KEY, traceStateHeader)
+                    removeW3CHeaders(requestBuilder)
+                    handleW3CNotSampledHeaders(span, requestBuilder)
                 }
             }
+        }
+    }
+
+    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: Span, tracer: Tracer) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            tracer.inject(
+                span.context(),
+                Format.Builtin.TEXT_MAP_INJECT,
+                TextMapInject { key, value ->
+                    requestBuilder.removeHeader(key)
+                    when (key) {
+                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                        DATADOG_TAGS,
+                        DATADOG_SPAN_ID_HEADER,
+                        DATADOG_ORIGIN_HEADER -> requestBuilder.addHeader(key, value)
+                    }
+                }
+            )
+            requestBuilder.addHeader(
+                DATADOG_SAMPLING_PRIORITY_HEADER,
+                DATADOG_DROP_SAMPLING_DECISION
+            )
+        }
+    }
+
+    private fun handleB3SampledOutHeaders(requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            requestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
+        }
+    }
+
+    private fun handleB3MultiNotSampledHeaders(requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            requestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
+        }
+    }
+
+    private fun handleW3CNotSampledHeaders(span: Span, requestBuilder: Request.Builder) {
+        if (traceContextInjection == TraceContextInjection.All) {
+            val traceId = span.context().traceIdAsHexString()
+            val spanId = span.context().toSpanId()
+            requestBuilder.addHeader(
+                W3C_TRACEPARENT_KEY,
+                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+                W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
+                    traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
+                    spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
+                )
+            )
+            // TODO RUM-2121 3rd party vendor information will be erased
+            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+            var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
+                .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
+            if (traceOrigin != null) {
+                traceStateHeader += ";o:$traceOrigin"
+            }
+            requestBuilder.addHeader(W3C_TRACESTATE_KEY, traceStateHeader)
+        }
+    }
+
+    private fun removeW3CHeaders(requestBuilder: Request.Builder) {
+        requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
+        requestBuilder.removeHeader(W3C_TRACESTATE_KEY)
+    }
+
+    private fun removeB3MultiHeaders(requestBuilder: Request.Builder) {
+        listOf(
+            B3M_TRACE_ID_KEY,
+            B3M_SPAN_ID_KEY,
+            B3M_SAMPLING_PRIORITY_KEY
+        ).forEach {
+            requestBuilder.removeHeader(it)
+        }
+    }
+
+    private fun removeDatadogHeaders(requestBuilder: Request.Builder) {
+        listOf(
+            DATADOG_SAMPLING_PRIORITY_HEADER,
+            DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+            DATADOG_TAGS,
+            DATADOG_SPAN_ID_HEADER,
+            DATADOG_ORIGIN_HEADER
+        ).forEach {
+            requestBuilder.removeHeader(it)
         }
     }
 
@@ -529,7 +604,7 @@ internal constructor(
                 }
 
         if (!isSampled) {
-            setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span)
+            setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span, tracer)
         } else {
             tracer.inject(
                 span.context(),
@@ -622,6 +697,135 @@ internal constructor(
                 (span as? MutableSpan)?.drop()
             }
         }
+    }
+
+    // endregion
+
+    // region Builder
+
+    /**
+     * A Builder class for the [TracingInterceptor].
+     * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
+     * be automatically tracked by this interceptor. If registering a [GlobalTracer], the tracer must be
+     * configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * header types configured for OkHttp tracking.
+     * If no hosts are provided (via this argument or global configuration
+     * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
+     */
+    class Builder(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) :
+        BaseBuilder<TracingInterceptor, Builder>(tracedHostsWithHeaderType) {
+
+        constructor(tracedHosts: List<String>) : this(
+            tracedHosts.associateWith {
+                setOf(
+                    TracingHeaderType.DATADOG,
+                    TracingHeaderType.TRACECONTEXT
+                )
+            }
+        )
+
+        internal override fun getThis(): Builder {
+            return this
+        }
+
+        /**
+         * Set the origin of the trace.
+         * @param traceOrigin the origin of the trace.
+         */
+        fun setTraceOrigin(traceOrigin: String): Builder {
+            this.traceOrigin = traceOrigin
+            return this
+        }
+
+        override fun build(): TracingInterceptor {
+            return TracingInterceptor(
+                sdkInstanceName,
+                tracedHostsWithHeaderType,
+                tracedRequestListener,
+                traceOrigin,
+                traceSampler,
+                traceContextInjection,
+                localTracerFactory
+            )
+        }
+    }
+
+    /**
+     * An abstract Builder class.
+     */
+    abstract class BaseBuilder<out T : TracingInterceptor, out R : BaseBuilder<T, R>>(
+        internal val tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>
+    ) {
+        internal var sdkInstanceName: String? = null
+        internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+        internal var traceOrigin: String? = null
+        internal var traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        internal var localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer =
+            { sdkCore, tracingHeaderTypes ->
+                AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+            }
+        internal var traceContextInjection = TraceContextInjection.All
+
+        /**
+         * Set the SDK instance name to bind to, the default value is null.
+         * @param sdkInstanceName SDK instance name to bind to, the default value is null.
+         * Instrumentation won't be working until SDK instance is ready.
+         */
+        fun setSdkInstanceName(sdkInstanceName: String): R {
+            this.sdkInstanceName = sdkInstanceName
+            return getThis()
+        }
+
+        /**
+         * Set the listener for automatically created [Span]s.
+         * @param tracedRequestListener a listener for automatically created [Span]s
+         */
+        fun setTracedRequestListener(tracedRequestListener: TracedRequestListener): R {
+            this.tracedRequestListener = tracedRequestListener
+            return getThis()
+        }
+
+        /**
+         * Set the trace sampler controlling the sampling of APM traces created for
+         * auto-instrumented requests.
+         * @param traceSampler the trace sampler controlling the sampling of APM traces.
+         * By default it is [RateBasedSampler], which either can accept
+         * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
+         * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+         * be kept (default value is `20.0`).
+         */
+        fun setTraceSampler(traceSampler: Sampler): R {
+            this.traceSampler = traceSampler
+            return getThis()
+        }
+
+        /**
+         * Set the trace context injection behavior for this interceptor in the intercepted requests.
+         * By default this is set to [TraceContextInjection.All] meaning that all the trace context
+         * will be propagated in the intercepted requests no matter if the span created around the request
+         * is sampled or not. In case of [TraceContextInjection.Sampled] only the sampled request will propagate
+         * the trace context.
+         * @param traceContextInjection the trace context injection option.
+         * @see TraceContextInjection.All
+         * @see TraceContextInjection.Sampled
+         */
+        fun setTraceContextInjection(traceContextInjection: TraceContextInjection): R {
+            this.traceContextInjection = traceContextInjection
+            return getThis()
+        }
+
+        internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> Tracer): R {
+            this.localTracerFactory = factory
+            return getThis()
+        }
+
+        internal abstract fun getThis(): R
+
+        /**
+         * Build the interceptor.
+         */
+        abstract fun build(): T
     }
 
     // endregion

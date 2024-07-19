@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
@@ -197,6 +198,7 @@ internal open class TracingInterceptorNonDdTracerTest {
             tracedRequestListener = mockRequestListener,
             traceOrigin = fakeOrigin,
             traceSampler = mockTraceSampler,
+            traceContextInjection = TraceContextInjection.All,
             localTracerFactory = factory
         )
     }
@@ -212,7 +214,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor()
+        val interceptor = TracingInterceptor.Builder(emptyMap()).build()
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -234,7 +236,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(tracedHosts = hosts)
+        val interceptor = TracingInterceptor.Builder(hosts).build()
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)

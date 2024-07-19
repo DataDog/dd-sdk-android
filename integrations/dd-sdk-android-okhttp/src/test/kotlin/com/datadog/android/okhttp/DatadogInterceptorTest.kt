@@ -91,6 +91,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             tracedRequestListener = mockRequestListener,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
+            traceContextInjection = TraceContextInjection.All,
             localTracerFactory = factory
         )
     }
@@ -131,7 +132,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Test
     fun `M instantiate with default values W init() { no tracing hosts specified }`() {
         // When
-        val interceptor = DatadogInterceptor()
+        val interceptor = DatadogInterceptor.Builder(emptyMap()).build()
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -152,7 +153,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // When
-        val interceptor = DatadogInterceptor(firstPartyHosts = hosts)
+        val interceptor = DatadogInterceptor.Builder(hosts).build()
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)

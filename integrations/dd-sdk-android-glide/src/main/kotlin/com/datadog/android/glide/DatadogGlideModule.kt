@@ -88,13 +88,10 @@ constructor(
         val builder = OkHttpClient.Builder()
 
         builder.eventListenerFactory(DatadogEventListener.Factory(sdkInstanceName))
-        builder.addInterceptor(
-            DatadogInterceptor(
-                sdkInstanceName,
-                firstPartyHosts,
-                traceSampler = RateBasedSampler(sampleRate)
-            )
-        )
+        val interceptorBuilder = DatadogInterceptor.Builder(firstPartyHosts)
+            .setTraceSampler(RateBasedSampler(sampleRate))
+        sdkInstanceName?.let { interceptorBuilder.setSdkInstanceName(it) }
+        builder.addInterceptor(interceptorBuilder.build())
         return builder
     }
 
