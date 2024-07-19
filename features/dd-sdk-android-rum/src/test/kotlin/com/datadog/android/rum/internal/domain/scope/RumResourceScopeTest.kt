@@ -30,6 +30,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.asTimingsPayload
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -49,7 +50,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import okhttp3.internal.format
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -110,7 +110,9 @@ internal class RumResourceScopeTest {
 
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
-    lateinit var fakeKey: String
+
+    @Forgery
+    lateinit var fakeKey: ResourceId
 
     @Forgery
     lateinit var fakeMethod: RumResourceMethod
@@ -174,7 +176,6 @@ internal class RumResourceScopeTest {
         fakeServerOffset =
             forge.aLong(min = minLimit, max = maxLimit)
         fakeAttributes = forge.exhaustiveAttributes()
-        fakeKey = forge.anAsciiString()
         mockEvent = mockEvent()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 

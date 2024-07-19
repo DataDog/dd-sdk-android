@@ -11,7 +11,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.utils.identifyRequest
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
@@ -21,6 +20,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -51,8 +51,10 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
@@ -189,7 +191,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -201,19 +202,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -234,7 +238,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -246,19 +249,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                RumResourceMethod.GET,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(RumResourceMethod.GET),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
 
         mockInternalLogger.verifyLog(
@@ -278,7 +284,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -290,19 +295,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -326,7 +334,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -338,19 +345,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                emptyMap()
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                null,
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -373,7 +383,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -385,19 +394,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                emptyMap()
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                null,
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -419,7 +431,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -431,19 +442,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                emptyMap()
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                null,
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -464,7 +478,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -476,19 +489,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                emptyMap()
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                null,
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -525,7 +541,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -537,19 +552,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                null,
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -584,7 +602,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -596,19 +613,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                null,
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -624,7 +644,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -636,19 +655,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -662,7 +684,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -674,19 +695,22 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -696,7 +720,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         val expectedStartAttrs = emptyMap<String, Any?>()
-        val requestId = identifyRequest(fakeRequest)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
@@ -707,20 +730,23 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl,
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResourceWithError(
-                requestId,
-                null,
-                "OkHttp request error $fakeMethod $fakeUrl",
-                RumErrorSource.NETWORK,
-                throwable,
-                fakeAttributes
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResourceWithError(
+                    capture(),
+                    eq(null),
+                    eq("OkHttp request error $fakeMethod $fakeUrl"),
+                    eq(RumErrorSource.NETWORK),
+                    eq(throwable),
+                    eq(fakeAttributes)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 }

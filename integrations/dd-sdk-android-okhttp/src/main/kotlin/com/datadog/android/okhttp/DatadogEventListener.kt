@@ -10,10 +10,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.SdkReference
 import com.datadog.android.okhttp.DatadogEventListener.Factory
-import com.datadog.android.okhttp.internal.utils.identifyRequest
+import com.datadog.android.okhttp.internal.rum.buildResourceId
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceId
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Handshake
@@ -47,7 +48,7 @@ import java.net.Proxy
 class DatadogEventListener
 internal constructor(
     internal val sdkCore: SdkCore,
-    internal val key: String
+    internal val key: ResourceId
 ) : EventListener() {
 
     private var callStart = 0L
@@ -243,10 +244,10 @@ internal constructor(
 
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
-            val key = identifyRequest(call.request())
+            val resourceId = call.request().buildResourceId(generateUuid = true)
             val sdkCore = sdkCoreReference.get()
             return if (sdkCore != null) {
-                DatadogEventListener(sdkCore, key)
+                DatadogEventListener(sdkCore, resourceId)
             } else {
                 InternalLogger.UNBOUND.log(
                     InternalLogger.Level.INFO,

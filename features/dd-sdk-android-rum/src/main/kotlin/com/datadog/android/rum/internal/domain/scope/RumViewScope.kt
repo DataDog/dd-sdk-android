@@ -84,7 +84,7 @@ internal open class RumViewScope(
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
 
     internal var activeActionScope: RumScope? = null
-    internal val activeResourceScopes = mutableMapOf<String, RumScope>()
+    internal val activeResourceScopes = mutableMapOf<Any, RumScope>()
 
     private var resourceCount: Long = 0
     private var actionCount: Long = 0

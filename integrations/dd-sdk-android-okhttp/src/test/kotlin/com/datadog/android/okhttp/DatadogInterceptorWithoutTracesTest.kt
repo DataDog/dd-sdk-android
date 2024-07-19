@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.internal.utils.identifyRequest
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
@@ -21,6 +20,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
@@ -48,7 +48,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -59,8 +59,10 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -184,7 +186,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = fakeResourceAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -196,19 +197,22 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl.lowercase(Locale.US),
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -225,7 +229,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = fakeResourceAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -237,19 +240,22 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                RumResourceMethod.GET,
-                fakeUrl.lowercase(Locale.US),
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(RumResourceMethod.GET),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
 
         mockInternalLogger.verifyLog(
@@ -267,7 +273,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = fakeResourceAttributes
-        val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
@@ -279,19 +284,22 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl.lowercase(Locale.US),
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResource(
-                requestId,
-                statusCode,
-                fakeResponseBody.toByteArray().size.toLong(),
-                kind,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -302,7 +310,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         // Given
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = fakeResourceAttributes
-        val requestId = identifyRequest(fakeRequest)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
@@ -313,20 +320,23 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startResource(
-                requestId,
-                fakeMethod,
-                fakeUrl.lowercase(Locale.US),
-                expectedStartAttrs
-            )
-            verify(rumMonitor.mockInstance).stopResourceWithError(
-                requestId,
-                null,
-                "OkHttp request error $fakeMethod ${fakeUrl.lowercase(Locale.US)}",
-                RumErrorSource.NETWORK,
-                throwable,
-                expectedStopAttrs
-            )
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResourceWithError(
+                    capture(),
+                    eq(null),
+                    eq("OkHttp request error $fakeMethod ${fakeUrl.lowercase(Locale.US)}"),
+                    eq(RumErrorSource.NETWORK),
+                    eq(throwable),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
         }
     }
 
@@ -341,7 +351,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
         verify(mockSpan).drop()
-        Assertions.assertThat(response).isSameAs(fakeResponse)
+        assertThat(response).isSameAs(fakeResponse)
     }
 
     @Test
@@ -357,7 +367,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl.lowercase(Locale.US))
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan).drop()
-        Assertions.assertThat(response).isSameAs(fakeResponse)
+        assertThat(response).isSameAs(fakeResponse)
     }
 
     // region Internal
@@ -374,7 +384,9 @@ internal class DatadogInterceptorWithoutTracesTest {
         configure: (Request.Builder) -> Unit = {}
     ): Request {
         val protocol = forge.anElementFrom("http", "https")
-        val host = forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN)
+        // RUMM-2900 host is by definition case insensitive,
+        // and OkHttp lowercases it when building the request
+        val host = forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN).lowercase(Locale.US)
         val path = forge.anAlphaNumericalString()
         fakeUrl = "$protocol://$host/$path"
         val builder = Request.Builder().url(fakeUrl)
