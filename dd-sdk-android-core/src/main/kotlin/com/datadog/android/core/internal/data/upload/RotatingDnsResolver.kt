@@ -28,9 +28,11 @@ internal class RotatingDnsResolver(
         }
 
         fun rotate() {
-            val first = addresses.removeFirstOrNull()
-            if (first != null) {
-                addresses.add(first)
+            synchronized(addresses) {
+                val first = addresses.removeFirstOrNull()
+                if (first != null) {
+                    addresses.add(first)
+                }
             }
         }
     }
@@ -44,12 +46,18 @@ internal class RotatingDnsResolver(
 
         return if (knownHost != null && isValid(knownHost)) {
             knownHost.rotate()
-            knownHost.addresses
+            safeCopy(knownHost.addresses)
         } else {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             val result = delegate.lookup(hostname)
             knownHosts[hostname] = ResolvedHost(hostname, result.toMutableList())
-            result
+            safeCopy(result)
+        }
+    }
+
+    private fun safeCopy(list: List<InetAddress>): List<InetAddress> {
+        return synchronized(list) {
+            list.toList()
         }
     }
 
