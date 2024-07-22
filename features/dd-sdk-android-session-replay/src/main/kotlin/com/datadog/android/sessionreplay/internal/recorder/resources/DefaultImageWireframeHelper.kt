@@ -275,7 +275,7 @@ internal class DefaultImageWireframeHelper(
         drawable: Drawable,
         density: Float
     ): Boolean =
-        imagePrivacy == ImagePrivacy.MASK_CONTENT &&
+        imagePrivacy == ImagePrivacy.MASK_LARGE_ONLY &&
             usePIIPlaceholder &&
             imageTypeResolver.isDrawablePII(drawable, density)
 

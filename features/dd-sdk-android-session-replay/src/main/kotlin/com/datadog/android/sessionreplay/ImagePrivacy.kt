@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay
 /**
  * Defines the Session Replay privacy policy when recording images.
  * @see ImagePrivacy.MASK_NONE
- * @see ImagePrivacy.MASK_CONTENT
+ * @see ImagePrivacy.MASK_LARGE_ONLY
  * @see ImagePrivacy.MASK_ALL
  */
 enum class ImagePrivacy {
@@ -19,10 +19,10 @@ enum class ImagePrivacy {
     MASK_NONE,
 
     /**
-     * Mask images that we consider to be content images.
-     * In the replay images will be replaced with placeholders with the label: Content Image.
+     * Mask images that we consider to be content images based on them being larger than 100x100 dp.
+     * In the replay such images will be replaced with placeholders with the label: Content Image.
      */
-    MASK_CONTENT,
+    MASK_LARGE_ONLY,
 
     /**
      * No images will be recorded.

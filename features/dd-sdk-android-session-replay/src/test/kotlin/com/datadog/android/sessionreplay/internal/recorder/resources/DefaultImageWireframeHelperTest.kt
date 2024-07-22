@@ -134,7 +134,7 @@ internal class DefaultImageWireframeHelperTest {
         val randomXLocation = forge.aLong(min = 1, max = (fakeScreenWidth - fakeDrawableWidth).toLong())
         val randomYLocation = forge.aLong(min = 1, max = (fakeScreenHeight - fakeDrawableHeight).toLong())
         fakeDrawableXY = Pair(randomXLocation, randomYLocation)
-        whenever(mockMappingContext.imagePrivacy).thenReturn(ImagePrivacy.MASK_CONTENT)
+        whenever(mockMappingContext.imagePrivacy).thenReturn(ImagePrivacy.MASK_LARGE_ONLY)
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockSystemInformation.screenDensity).thenReturn(0f)
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(mockView, "drawable"))
@@ -229,7 +229,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -254,7 +254,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -283,7 +283,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -313,7 +313,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -336,7 +336,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -358,7 +358,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -415,7 +415,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = fakeDrawableXY.first,
             y = fakeDrawableXY.second,
@@ -593,7 +593,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -625,7 +625,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -676,7 +676,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val result = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = forge.aPositiveInt(),
             x = fakeGlobalX,
             y = fakeGlobalY,
@@ -703,7 +703,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
@@ -736,7 +736,7 @@ internal class DefaultImageWireframeHelperTest {
         // When
         val actualWireframe = testedHelper.createImageWireframe(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,

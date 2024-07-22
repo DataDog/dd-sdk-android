@@ -30,7 +30,7 @@ data class SessionReplayConfiguration internal constructor(
     class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float) {
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
-        private var imagePrivacy = ImagePrivacy.MASK_CONTENT
+        private var imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
         /**
@@ -68,7 +68,7 @@ data class SessionReplayConfiguration internal constructor(
          * Sets the image recording level for the Session Replay feature.
          * If not specified then all images that are considered to be content images will be masked by default.
          * @see ImagePrivacy.MASK_NONE
-         * @see ImagePrivacy.MASK_CONTENT
+         * @see ImagePrivacy.MASK_LARGE_ONLY
          * @see ImagePrivacy.MASK_ALL
          */
         fun setImagePrivacy(level: ImagePrivacy): Builder {
