@@ -196,7 +196,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     fun `M create ImageWireFrame W map() { checked, above M }`() {
         // Given
         val allowedMappingContext =
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW, imagePrivacy = ImagePrivacy.MASK_CONTENT)
+            fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW, imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY)
         whenever(mockButtonDrawable.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         whenever(mockCheckableTextView.isChecked).thenReturn(true)
 
@@ -215,7 +215,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Then
         verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
             view = eq(mockCheckableTextView),
-            imagePrivacy = eq(ImagePrivacy.MASK_CONTENT),
+            imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),
@@ -237,7 +237,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Given
         val allowedMappingContext = fakeMappingContext.copy(
             privacy = SessionReplayPrivacy.ALLOW,
-            imagePrivacy = ImagePrivacy.MASK_CONTENT
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
         )
         whenever(mockButtonDrawable.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         whenever(mockCheckableTextView.isChecked).thenReturn(false)
@@ -258,7 +258,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Then
         verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
             view = eq(mockCheckableTextView),
-            imagePrivacy = eq(ImagePrivacy.MASK_CONTENT),
+            imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),

@@ -3,7 +3,7 @@ interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
 enum com.datadog.android.sessionreplay.ImagePrivacy
   - MASK_NONE
-  - MASK_CONTENT
+  - MASK_LARGE_ONLY
   - MASK_ALL
 data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.View>
   constructor(Class<T>, com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T>)
