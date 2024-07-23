@@ -20,6 +20,8 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -57,6 +59,13 @@ internal class ConsentAwareStorage(
             TrackingConsent.NOT_GRANTED -> null
         }
 
+        val metric = internalLogger.startPerformanceMeasure(
+            callerClass = ConsentAwareStorage::class.java.name,
+            metric = TelemetryMetricType.MethodCalled,
+            samplingRate = MethodCallSamplingRate.RARE.rate,
+            operationName = "writeCurrentBatch[${orchestrator?.getRootDir()?.nameWithoutExtension}]"
+        )
+
         executorService.submitSafe("Data write", internalLogger) {
             synchronized(writeLock) {
                 val batchFile = orchestrator?.getWritableFile(forceNewBatch)
@@ -78,6 +87,7 @@ internal class ConsentAwareStorage(
                     )
                 }
                 callback.invoke(writer)
+                metric?.stopAndSend(writer !is NoOpEventBatchWriter)
             }
         }
     }
