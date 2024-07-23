@@ -17,7 +17,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -92,16 +91,11 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        val intent = activity.intent
-        val extras = intent.safeExtras
-        val testId = extras?.getString("_dd.synthetics.test_id")
-        val resultId = extras?.getString("_dd.synthetics.result_id")
-        if (!testId.isNullOrBlank() && !resultId.isNullOrBlank()) {
-            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
-                ?.setSyntheticsAttribute(
-                    testId,
-                    resultId
-                )
+        if (::sdkCore.isInitialized) {
+            GlobalRumMonitor
+                .get(sdkCore)
+                ._getInternal()
+                ?.setSyntheticsAttributeFromIntent(activity.intent)
         }
     }
 
