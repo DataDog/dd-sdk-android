@@ -42,6 +42,7 @@ import io.opentracing.SpanContext
 import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapExtract
 import io.opentracing.propagation.TextMapInject
+import io.opentracing.tag.Tags
 import io.opentracing.util.GlobalTracer
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -1136,6 +1137,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1159,6 +1161,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrlWithoutQueryParams.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1177,6 +1180,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -1196,6 +1200,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan, never()).setError(true)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -1212,6 +1217,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         verify(mockSpan).finish()
@@ -1236,6 +1242,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
     }
@@ -1285,6 +1292,7 @@ internal open class TracingInterceptorTest {
         verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
+        verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -1323,12 +1331,14 @@ internal open class TracingInterceptorTest {
         verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
+        verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
@@ -1362,6 +1372,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan).finish()
@@ -1390,6 +1401,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -1439,6 +1451,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan).finish()
     }

@@ -1244,6 +1244,7 @@ datadog:
       - "io.opentracing.Span.setError(kotlin.Throwable)"
       - "io.opentracing.Span.setTag(kotlin.String?, kotlin.Number?)"
       - "io.opentracing.Span.setTag(kotlin.String?, kotlin.String?)"
+      - "io.opentracing.Span.setTag(io.opentracing.tag.Tag?, kotlin.String?)"
       - "io.opentracing.SpanContext.toSpanId()"
       - "io.opentracing.SpanContext.toTraceId()"
       - "io.opentracing.Tracer.SpanBuilder.asChildOf(io.opentracing.Span?)"
