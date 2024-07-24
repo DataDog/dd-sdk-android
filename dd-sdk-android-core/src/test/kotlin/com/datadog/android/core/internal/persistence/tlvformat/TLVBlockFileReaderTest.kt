@@ -96,6 +96,11 @@ internal class TLVBlockFileReaderTest {
         testedReader.read(file = mockFile)
 
         // Then
+        val expectedMessage = if (fakeDataString.length >= 2) {
+            "TLV header corrupt. Invalid type"
+        } else {
+            "Failed to deserialize TLV data length"
+        }
         val captor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
             level = eq(InternalLogger.Level.WARN),
@@ -106,7 +111,7 @@ internal class TLVBlockFileReaderTest {
             anyOrNull()
         )
         assertThat(captor.firstValue.invoke())
-            .startsWith("TLV header corrupt. Invalid type")
+            .startsWith(expectedMessage)
     }
 
     @Test
