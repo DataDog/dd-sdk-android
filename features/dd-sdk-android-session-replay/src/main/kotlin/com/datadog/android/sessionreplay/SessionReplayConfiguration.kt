@@ -71,7 +71,7 @@ data class SessionReplayConfiguration internal constructor(
          * @see ImagePrivacy.MASK_LARGE_ONLY
          * @see ImagePrivacy.MASK_ALL
          */
-        fun setImagePrivacy(level: ImagePrivacy): Builder {
+        internal fun setImagePrivacy(level: ImagePrivacy): Builder {
             this.imagePrivacy = level
             return this
         }

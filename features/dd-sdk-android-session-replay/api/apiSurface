@@ -17,7 +17,6 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun addExtensionSupport(ExtensionSupport): Builder
     fun useCustomEndpoint(String): Builder
     fun setPrivacy(SessionReplayPrivacy): Builder
-    fun setImagePrivacy(ImagePrivacy): Builder
     fun build(): SessionReplayConfiguration
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
