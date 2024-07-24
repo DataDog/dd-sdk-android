@@ -228,6 +228,7 @@ ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
+openTelemetrySdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetry" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 
 [bundles]
