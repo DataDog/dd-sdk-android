@@ -406,6 +406,7 @@ internal constructor(
         (span as? MutableSpan)?.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
         span.setTag(Tags.HTTP_URL.key, url)
         span.setTag(Tags.HTTP_METHOD.key, request.method)
+        span.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         return span
     }

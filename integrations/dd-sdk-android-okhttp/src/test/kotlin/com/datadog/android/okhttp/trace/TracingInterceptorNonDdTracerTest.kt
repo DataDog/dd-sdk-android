@@ -39,6 +39,7 @@ import io.opentracing.SpanContext
 import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapExtract
 import io.opentracing.propagation.TextMapInject
+import io.opentracing.tag.Tags
 import io.opentracing.util.GlobalTracer
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -993,6 +994,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1013,6 +1015,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.url", fakeUrlWithoutQueryParams)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1029,6 +1032,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1045,6 +1049,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1059,6 +1064,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1080,6 +1086,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
     }
 
@@ -1126,6 +1133,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
+        verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
         mockInternalLogger.verifyLog(
@@ -1161,10 +1169,12 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
+        verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(localSpan).finish()
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
@@ -1197,6 +1207,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1223,6 +1234,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1271,6 +1283,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).setTag(tagKey, tagValue)
+        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).finish()
     }
 
