@@ -50,6 +50,7 @@ internal class Configurator :
         forge.addFactory(HttpServerErrorForgeryFactory())
         forge.addFactory(InvalidTokenErrorStatusForgeryFactory())
         forge.addFactory(NetworkErrorStatusForgeryFactory())
+        forge.addFactory(DNSErrorStatusForgeryFactory())
         forge.addFactory(RequestCreationErrorStatusForgeryFactory())
         forge.addFactory(SuccessStatusForgeryFactory())
         forge.addFactory(UnknownErrorStatusForgeryFactory())

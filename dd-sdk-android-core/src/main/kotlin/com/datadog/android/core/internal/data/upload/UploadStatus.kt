@@ -13,6 +13,7 @@ internal sealed class UploadStatus(val shouldRetry: Boolean = false, val code: I
 
     internal class Success(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
     internal object NetworkError : UploadStatus(shouldRetry = true)
+    internal object DNSError : UploadStatus(shouldRetry = true)
     internal object RequestCreationError : UploadStatus(shouldRetry = false)
     internal class InvalidTokenError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
     internal class HttpRedirection(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
@@ -40,6 +41,12 @@ internal sealed class UploadStatus(val shouldRetry: Boolean = false, val code: I
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { "$batchInfo failed because of a network error; we will retry later." }
+            )
+
+            is DNSError -> logger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "$batchInfo failed because of a DNS error; we will retry later." }
             )
 
             is InvalidTokenError -> logger.log(

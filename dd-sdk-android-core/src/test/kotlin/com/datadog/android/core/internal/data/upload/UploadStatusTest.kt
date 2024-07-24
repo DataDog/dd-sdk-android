@@ -87,6 +87,27 @@ internal class UploadStatusTest {
     }
 
     @Test
+    fun `M log DNS_ERROR only to USER W logStatus()`(
+        @Forgery status: UploadStatus.DNSError
+    ) {
+        // When
+        status.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of a DNS error; we will retry later."
+        )
+        verifyNoMoreInteractions(mockLogger)
+    }
+
+    @Test
     fun `M log INVALID_TOKEN_ERROR only to USER W logStatus()`(
         @Forgery status: UploadStatus.InvalidTokenError
     ) {
