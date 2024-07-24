@@ -39,6 +39,9 @@ include(":reliability:single-fit:logs")
 include(":reliability:single-fit:rum")
 include(":reliability:single-fit:trace")
 
+// CORE INTEGRATION TESTS
+include(":reliability:core-it")
+
 // LEGACY TESTS
 include(":instrumented:integration")
 
