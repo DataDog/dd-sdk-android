@@ -31,8 +31,8 @@ dependencies {
 
     implementation(libs.kotlin)
     implementation(libs.okHttp)
-    api(libs.openTelemetrySdk)
-    api(libs.openTelemetryApi)
+    api(libs.openTelemetryApiBenchmark)
+    api(libs.openTelemetrySdkBenchmark)
     implementation(libs.gson)
     compileOnly(libs.detektApi)
     testImplementation(project(":tools:unit")) {
