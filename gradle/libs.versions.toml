@@ -1,7 +1,7 @@
 [versions]
 # Commons
-kotlin = "1.8.22"
-kotlinSP = "1.8.22-1.0.11"
+kotlin = "1.9.10"
+kotlinSP = "1.9.10-1.0.13"
 gson = "2.10.1"
 okHttp = "4.11.0"
 kronosNTP = "0.0.1-alpha11"
@@ -17,7 +17,7 @@ androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
 androidXWorkManager = "2.8.1"
 androidXConstraintLayout = "2.0.4"
-androidXComposeCompiler = "1.4.8"
+androidXComposeCompiler = "1.5.3"
 androidXComposeRuntime = "1.4.3"
 androidXComposeNavigation = "2.6.0"
 androidXComposeUi = "1.4.3"
@@ -69,6 +69,7 @@ kotlinPoet = "1.14.2"
 kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.13.2"
+dependencyLicense = "0.2"
 
 # Integrations
 realm = "1.11.0"
@@ -103,6 +104,7 @@ unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref =
 realmGradlePlugin = { module = "io.realm.kotlin:gradle-plugin", version.ref = "realm" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
+dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
 
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 
