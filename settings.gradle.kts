@@ -46,6 +46,7 @@ include(":instrumented:integration")
 include(":sample:kotlin")
 include(":sample:wear")
 include(":sample:vendor-lib")
+include(":sample:benchmark")
 
 // TOOLCHAIN
 include(":tools:detekt")
