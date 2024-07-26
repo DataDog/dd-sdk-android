@@ -190,7 +190,7 @@ internal class BatchMetricsDispatcher(
         internal const val SR_TRACK_NAME = "sr"
         internal const val SR_RESOURCES_TRACK_NAME = "sr-resources"
 
-        private const val METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE = 15f
+        private const val METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE = 1.5f
 
         internal const val WRONG_FILE_NAME_MESSAGE_FORMAT =
             "Unable to parse the file name as a timestamp: %s"
