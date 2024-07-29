@@ -94,10 +94,8 @@ internal class DefaultImageWireframeHelper(
         if (imagePrivacy == ImagePrivacy.MASK_ALL) {
             return createContentPlaceholderWireframe(
                 id = id,
-                x = x,
-                y = y,
+                view = view,
                 density = density,
-                drawableProperties = drawableProperties,
                 label = MASK_ALL_CONTENT_LABEL
             )
         }
@@ -106,10 +104,8 @@ internal class DefaultImageWireframeHelper(
         if (shouldMaskContextualImage(imagePrivacy, usePIIPlaceholder, drawable, density)) {
             return createContentPlaceholderWireframe(
                 id = id,
-                x = x,
-                y = y,
+                view = view,
                 density = density,
-                drawableProperties = drawableProperties,
                 label = MASK_CONTEXTUAL_CONTENT_LABEL
             )
         }
@@ -241,19 +237,23 @@ internal class DefaultImageWireframeHelper(
     }
 
     private fun createContentPlaceholderWireframe(
+        view: View,
         id: Long,
-        x: Long,
-        y: Long,
         density: Float,
-        drawableProperties: DrawableProperties,
         label: String
     ): MobileSegment.Wireframe.PlaceholderWireframe {
+        val coordinates = IntArray(2)
+        @Suppress("UnsafeThirdPartyFunctionCall") // this will always have size >= 2
+        view.getLocationOnScreen(coordinates)
+        val viewX = coordinates[0].densityNormalized(density).toLong()
+        val viewY = coordinates[1].densityNormalized(density).toLong()
+
         return MobileSegment.Wireframe.PlaceholderWireframe(
             id,
-            x,
-            y,
-            drawableProperties.drawableWidth.densityNormalized(density).toLong(),
-            drawableProperties.drawableHeight.densityNormalized(density).toLong(),
+            viewX,
+            viewY,
+            view.width.densityNormalized(density).toLong(),
+            view.height.densityNormalized(density).toLong(),
             label = label
         )
     }
