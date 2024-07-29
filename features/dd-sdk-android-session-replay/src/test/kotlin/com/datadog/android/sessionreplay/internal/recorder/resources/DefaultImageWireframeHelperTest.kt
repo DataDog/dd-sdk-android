@@ -29,6 +29,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import com.datadog.android.utils.isCloseTo
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -663,12 +664,19 @@ internal class DefaultImageWireframeHelperTest {
         // Given
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
 
-        val fakeGlobalX = forge.aPositiveLong()
-        val fakeGlobalY = forge.aPositiveLong()
+        val fakeGlobalX = forge.aPositiveInt()
+        val fakeGlobalY = forge.aPositiveInt()
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         mockDisplayMetrics.density = 1f
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         val mockView: View = mock {
+            whenever(it.getLocationOnScreen(any())).thenAnswer { location ->
+                val coords = location.arguments[0] as IntArray
+                coords[0] = fakeGlobalX
+                coords[1] = fakeGlobalY
+                null
+            }
+
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.context).thenReturn(mockContext)
         }
@@ -678,8 +686,8 @@ internal class DefaultImageWireframeHelperTest {
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = forge.aPositiveInt(),
-            x = fakeGlobalX,
-            y = fakeGlobalY,
+            x = forge.aPositiveLong(),
+            y = forge.aPositiveLong(),
             width = forge.aPositiveInt(),
             height = forge.aPositiveInt(),
             drawable = mockDrawable,
@@ -691,8 +699,8 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         verifyNoInteractions(mockResourceResolver)
-        assertThat(result.x).isEqualTo(fakeGlobalX)
-        assertThat(result.y).isEqualTo(fakeGlobalY)
+        assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
+        assertThat(isCloseTo(result.y.toInt(), fakeGlobalY)).isTrue
     }
 
     @Test
