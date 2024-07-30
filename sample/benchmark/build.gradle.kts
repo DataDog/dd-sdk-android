@@ -10,6 +10,7 @@ plugins {
     kotlin("kapt")
 }
 
+@Suppress("StringLiteralDuplication")
 android {
     namespace = "com.datadog.sample.benchmark"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -31,12 +32,31 @@ android {
         java17()
     }
 
+    val bmPassword = System.getenv("BM_STORE_PASSWD")
+    signingConfigs {
+        if (bmPassword != null) {
+            create("release") {
+                storeFile = File(project.rootDir, "sample-benchmark.keystore")
+                storePassword = bmPassword
+                keyAlias = "dd-sdk-android"
+                keyPassword = bmPassword
+            }
+        }
+    }
+
     buildTypes {
-        release {
+        getByName("debug") {
             isMinifyEnabled = false
+        }
+
+        getByName("release") {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt")
             )
+            isMinifyEnabled = true
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
         }
     }
 }
