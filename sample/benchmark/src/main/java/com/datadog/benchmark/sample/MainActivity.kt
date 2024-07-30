@@ -7,15 +7,24 @@
 package com.datadog.benchmark.sample
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.NavController
+import androidx.navigation.Navigation
 import com.datadog.sample.benchmark.R
 
 /**
  * MainActivity of benchmark sample application.
  */
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var navController: NavController
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment)
     }
 }

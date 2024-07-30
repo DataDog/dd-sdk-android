@@ -50,6 +50,8 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
+    implementation(libs.googleMaterial)
+    implementation(libs.glideCore)
 }
 
 kotlinConfig()
