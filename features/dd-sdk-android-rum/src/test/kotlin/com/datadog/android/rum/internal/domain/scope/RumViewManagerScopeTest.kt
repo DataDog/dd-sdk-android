@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
@@ -31,6 +32,7 @@ import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
@@ -55,6 +57,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -86,6 +89,9 @@ internal class RumViewManagerScopeTest {
 
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -124,6 +130,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             mockParentScope,
             mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             true,
             fakeTrackFrustrations,
             mockViewChangedListener,
@@ -280,6 +287,7 @@ internal class RumViewManagerScopeTest {
 
     @Test
     fun `M send gap message W handleEvent(StopView) + handleEvent(StartView)`(
+        @LongForgery(10, 30) fakeSleepMs: Long,
         forge: Forge
     ) {
         // Given
@@ -290,16 +298,26 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(stopFirstViewEvent, mockWriter)
 
         // When
-        Thread.sleep(15)
+        Thread.sleep(fakeSleepMs)
         val secondViewEvent = forge.startViewEvent()
         testedScope.handleEvent(secondViewEvent, mockWriter)
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.INFO,
-            listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
-            { it.matches(Regex("Gap between views was \\d+ nanoseconds")) }
+        val messageBuilderCaptor = argumentCaptor<() -> String>()
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any?>>()
+
+        verify(mockInternalLogger).logMetric(
+            messageBuilderCaptor.capture(),
+            additionalPropertiesCaptor.capture(),
+            eq(1f)
         )
+
+        assertThat(additionalPropertiesCaptor.firstValue).containsKey(RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS)
+        val gapNs = additionalPropertiesCaptor.firstValue[RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS] as Long
+        val minNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs)
+        val maxNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs + 15)
+        assertThat(gapNs).isBetween(minNs, maxNs)
+        assertThat(messageBuilderCaptor.firstValue()).isEqualTo("[Mobile Metric] Gap between views")
     }
 
     @Test
@@ -474,6 +492,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -502,6 +521,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -533,6 +553,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -597,6 +618,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,
@@ -629,6 +651,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,

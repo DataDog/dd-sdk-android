@@ -9,12 +9,12 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
-import android.text.format.DateUtils
 import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
@@ -34,6 +34,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGene
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
 import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
@@ -48,15 +49,13 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     private val appContext: Application
     private val rumContextProvider: RumContextProvider
     private val privacy: SessionReplayPrivacy
+    private val imagePrivacy: ImagePrivacy
     private val recordWriter: RecordWriter
     private val timeProvider: TimeProvider
     private val mappers: List<MapperTypeWrapper<*>>
@@ -67,6 +66,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
+    private val resourceDataStoreManager: ResourceDataStoreManager
 
     private val uiHandler: Handler
     private var shouldRecord = false
@@ -76,12 +76,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         resourcesWriter: ResourcesWriter,
         rumContextProvider: RumContextProvider,
         privacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
-        sdkCore: FeatureSdkCore
+        sdkCore: FeatureSdkCore,
+        resourceDataStoreManager: ResourceDataStoreManager
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -91,6 +93,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         )
 
         val processor = RecordedDataProcessor(
+            resourceDataStoreManager,
             resourcesWriter,
             recordWriter,
             MutationResolver(internalLogger)
@@ -101,6 +104,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
         this.privacy = privacy
+        this.imagePrivacy = imagePrivacy
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers
@@ -110,23 +114,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             processor = processor,
             rumContextDataHandler = rumContextDataHandler,
             internalLogger = internalLogger,
-
-            /**
-             * TODO RUMM-4962 consider changing executor to a core implementation.
-             * if we ever decide to make the poolsize greater than 1, we need to ensure
-             * synchronization works correctly in the triggerProcessingLoop method below
-             */
-            executorService = // all parameters are non-negative and queue is not null
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            ThreadPoolExecutor(
-                CORE_DEFAULT_POOL_SIZE,
-                CORE_DEFAULT_POOL_SIZE,
-                THREAD_POOL_MAX_KEEP_ALIVE_MS,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingDeque()
+            executorService = sdkCore.createSingleThreadExecutorService(
+                "sr-event-processing"
             ),
             recordedDataQueue = ConcurrentLinkedQueue()
         )
+        this.resourceDataStoreManager = resourceDataStoreManager
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -191,7 +184,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             viewOnDrawInterceptor,
             timeProvider,
             internalLogger,
-            privacy
+            privacy,
+            imagePrivacy
         )
         this.sessionReplayLifecycleCallback = SessionReplayLifecycleCallback(this)
         this.uiHandler = Handler(Looper.getMainLooper())
@@ -204,6 +198,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         appContext: Application,
         rumContextProvider: RumContextProvider,
         privacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
@@ -213,12 +208,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sessionReplayLifecycleCallback: LifecycleCallback,
         viewOnDrawInterceptor: ViewOnDrawInterceptor,
         recordedDataQueueHandler: RecordedDataQueueHandler,
+        resourceDataStoreManager: ResourceDataStoreManager,
         uiHandler: Handler,
         internalLogger: InternalLogger
     ) {
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
         this.privacy = privacy
+        this.imagePrivacy = imagePrivacy
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers
@@ -230,6 +227,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
+        this.resourceDataStoreManager = resourceDataStoreManager
     }
 
     override fun stopProcessingRecords() {
@@ -250,7 +248,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, privacy)
+            viewOnDrawInterceptor.intercept(decorViews, privacy, imagePrivacy)
         }
     }
 
@@ -267,7 +265,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, privacy)
+            viewOnDrawInterceptor.intercept(decorViews, privacy, imagePrivacy)
         }
     }
 
@@ -276,12 +274,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.stopIntercepting(windows)
-            viewOnDrawInterceptor.intercept(decorViews, privacy)
+            viewOnDrawInterceptor.intercept(decorViews, privacy, imagePrivacy)
         }
-    }
-
-    private companion object {
-        private const val THREAD_POOL_MAX_KEEP_ALIVE_MS = DateUtils.SECOND_IN_MILLIS * 5 // 5000ms
-        private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
     }
 }

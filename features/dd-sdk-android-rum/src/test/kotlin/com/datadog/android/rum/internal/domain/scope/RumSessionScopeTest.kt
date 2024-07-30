@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -14,6 +15,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -83,6 +85,9 @@ internal class RumSessionScopeTest {
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
+
+    @Mock
     lateinit var mockViewChangedListener: RumViewChangedListener
 
     @Forgery
@@ -97,6 +102,9 @@ internal class RumSessionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @Forgery
+    lateinit var fakeTimeInfo: TimeInfo
+
     lateinit var fakeInitialViewEvent: RumRawEvent
 
     @Mock
@@ -110,6 +118,7 @@ internal class RumSessionScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
+        whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
 
         initializeTestedScope()
     }
@@ -1252,6 +1261,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             mockSdkCore,
+            mockSessionEndedMetricDispatcher,
             sampleRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,

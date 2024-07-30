@@ -73,6 +73,14 @@ class StubSDKCore(
     }
 
     /**
+     * Returns the last metric is sent by [StubInternalLogger].
+     */
+    fun lastMetric(): Map<String, Any> {
+        return (internalLogger as StubInternalLogger)
+            .telemetryEventsWritten.lastOrNull { it["type"] == "mobile_metric" }.orEmpty()
+    }
+
+    /**
      * Stubs the user info visible via the SDK Core.
      * @param userInfo the user info
      */
@@ -165,16 +173,7 @@ class StubSDKCore(
             return datadogContext.service
         }
 
-    override val time: TimeInfo
-        get() {
-            val nanos = System.nanoTime()
-            return TimeInfo(
-                deviceTimeNs = nanos,
-                serverTimeNs = nanos,
-                serverTimeOffsetMs = 0L,
-                serverTimeOffsetNs = 0L
-            )
-        }
+    override val time: TimeInfo = mock()
 
     override fun setUserInfo(
         id: String?,

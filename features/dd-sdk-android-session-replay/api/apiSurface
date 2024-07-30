@@ -1,6 +1,10 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
+enum com.datadog.android.sessionreplay.ImagePrivacy
+  - MASK_NONE
+  - MASK_LARGE_ONLY
+  - MASK_ALL
 data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.View>
   constructor(Class<T>, com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T>)
   fun supportsView(android.view.View): Boolean
@@ -19,7 +23,7 @@ enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - MASK
   - MASK_USER_INPUT
 data class com.datadog.android.sessionreplay.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean = false)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, Boolean = false)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -74,7 +78,7 @@ interface com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 data class com.datadog.android.sessionreplay.utils.GlobalBounds
   constructor(Long, Long, Long, Long)
 interface com.datadog.android.sessionreplay.utils.ImageWireframeHelper
-  fun createImageWireframe(android.view.View, Int, Long, Long, Int, Int, Boolean, android.graphics.drawable.Drawable, AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null, String? = DRAWABLE_CHILD_NAME): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
+  fun createImageWireframe(android.view.View, com.datadog.android.sessionreplay.ImagePrivacy, Int, Long, Long, Int, Int, Boolean, android.graphics.drawable.Drawable, AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null, String? = DRAWABLE_CHILD_NAME): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
   fun createCompoundDrawableWireframes(android.widget.TextView, com.datadog.android.sessionreplay.recorder.MappingContext, Int, AsyncJobStatusCallback): MutableList<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   companion object 
 open class com.datadog.android.sessionreplay.utils.LegacyDrawableToColorMapper : DrawableToColorMapper
@@ -401,6 +405,12 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vertical
+data class com.datadog.android.sessionreplay.model.ResourceHashesEntry
+  constructor(kotlin.Number, kotlin.collections.List<kotlin.String>)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ResourceHashesEntry
+    fun fromJsonObject(com.google.gson.JsonObject): ResourceHashesEntry
 data class com.datadog.android.sessionreplay.model.ResourceMetadata
   constructor(Application)
   val type: kotlin.String

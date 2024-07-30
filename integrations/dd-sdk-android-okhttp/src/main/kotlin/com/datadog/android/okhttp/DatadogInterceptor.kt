@@ -15,7 +15,8 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.utils.identifyRequest
+import com.datadog.android.okhttp.internal.rum.buildResourceId
+import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -58,11 +59,16 @@ import java.util.Locale
  *
  * To use:
  * ```
- *     val tracedHosts = listOf("example.com", "example.eu")
+ *    val tracedHostsWithHeaderType = mapOf("example.com" to setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT),
+ *             "example.eu" to  setOf(
+ *                 TracingHeaderType.DATADOG,
+ *                 TracingHeaderType.TRACECONTEXT))
  *     val client = OkHttpClient.Builder()
- *         .addInterceptor(DatadogInterceptor(tracedHosts))
+ *         .addInterceptor(DatadogInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+ *         // .addNetworkInterceptor(TracingInterceptor.Builder(tracedHostsWithHeaderType).build())
  *         .build()
  * ```
  */
@@ -73,6 +79,7 @@ internal constructor(
     tracedRequestListener: TracedRequestListener,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler,
+    traceContextInjection: TraceContextInjection,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
     sdkInstanceName,
@@ -80,6 +87,7 @@ internal constructor(
     tracedRequestListener,
     ORIGIN_RUM,
     traceSampler,
+    traceContextInjection,
     localTracerFactory
 ) {
 
@@ -109,6 +117,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
@@ -122,6 +135,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -152,6 +166,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         firstPartyHosts: List<String>,
@@ -170,6 +189,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -192,6 +212,11 @@ internal constructor(
      * be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Deprecated(
+        message = "This constructor is not going to be accessible anymore in future versions. " +
+            "Please use the Builder instead.",
+        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
+    )
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
@@ -204,6 +229,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -219,9 +245,9 @@ internal constructor(
             val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
-            val requestId = identifyRequest(request)
+            val requestId = request.buildResourceId(generateUuid = true)
 
-            GlobalRumMonitor.get(sdkCore).startResource(requestId, method, url)
+            (GlobalRumMonitor.get(sdkCore) as AdvancedNetworkRumMonitor).startResource(requestId, method, url)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -287,7 +313,7 @@ internal constructor(
         span: Span?,
         isSampled: Boolean
     ) {
-        val requestId = identifyRequest(request)
+        val requestId = request.buildResourceId(generateUuid = false)
         val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
             null -> RumResourceKind.NATIVE
@@ -297,12 +323,12 @@ internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to span.context().toTraceId(),
+                RumAttributes.TRACE_ID to span.context().traceIdAsHexString(),
                 RumAttributes.SPAN_ID to span.context().toSpanId(),
                 RumAttributes.RULE_PSR to traceSampler.getSampleRate()
             )
         }
-        GlobalRumMonitor.get(sdkCore).stopResource(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
@@ -316,10 +342,10 @@ internal constructor(
         request: Request,
         throwable: Throwable
     ) {
-        val requestId = identifyRequest(request)
+        val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
-        GlobalRumMonitor.get(sdkCore).stopResourceWithError(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
             null,
             ERROR_MSG_FORMAT.format(Locale.US, method, url),
@@ -391,6 +417,63 @@ internal constructor(
     private fun ResponseBody.contentLengthOrNull(): Long? {
         return contentLength().let {
             if (it <= 0L) null else it
+        }
+    }
+
+    // endregion
+
+    // region Builder
+    /**
+     * A Builder for the [DatadogInterceptor].
+     * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
+     * be automatically tracked by this interceptor. If registering a [com.datadog.trace.api.GlobalTracer],
+     * the tracer must be configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * header types configured for OkHttp tracking.
+     * If no hosts are provided (via this argument or global configuration
+     * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
+     */
+    class Builder(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) :
+        BaseBuilder<DatadogInterceptor, Builder>(tracedHostsWithHeaderType) {
+
+        private var rumResourceAttributesProvider: RumResourceAttributesProvider = NoOpRumResourceAttributesProvider()
+
+        constructor(tracedHosts: List<String>) : this(
+            tracedHosts.associateWith {
+                setOf(
+                    TracingHeaderType.DATADOG,
+                    TracingHeaderType.TRACECONTEXT
+                )
+            }
+        )
+
+        internal override fun getThis(): Builder {
+            return this
+        }
+
+        /**
+         * Builds the [DatadogInterceptor].
+         */
+        override fun build(): DatadogInterceptor {
+            return DatadogInterceptor(
+                sdkInstanceName,
+                tracedHostsWithHeaderType,
+                tracedRequestListener,
+                rumResourceAttributesProvider,
+                traceSampler,
+                traceContextInjection,
+                localTracerFactory
+            )
+        }
+
+        /**
+         * Sets the [RumResourceAttributesProvider] to use to provide custom attributes to the RUM.
+         * By default it won't attach any custom attributes.
+         * @param rumResourceAttributesProvider the [RumResourceAttributesProvider] to use.
+         */
+        fun setRumResourceAttributesProvider(rumResourceAttributesProvider: RumResourceAttributesProvider): Builder {
+            this.rumResourceAttributesProvider = rumResourceAttributesProvider
+            return this
         }
     }
 

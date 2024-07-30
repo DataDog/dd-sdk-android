@@ -15,18 +15,24 @@ import java.io.File
 class TransitiveDependenciesPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        target.tasks.register(TASK_NAME, TransitiveDependenciesTask::class.java) {
-            outputFile = File(target.projectDir, FILE_NAME)
+        target.tasks.register(TASK_GEN_TRANSITIVE_DEPS, GenerateTransitiveDependenciesTask::class.java) {
+            dependenciesFile = File(target.projectDir, FILE_NAME)
+        }
+
+        target.tasks.register(TASK_CHECK_TRANSITIVE_DEPS, CheckTransitiveDependenciesTask::class.java) {
+            dependenciesFile = File(target.projectDir, FILE_NAME)
+            dependsOn(TASK_GEN_TRANSITIVE_DEPS)
         }
 
         target.taskConfig<KotlinCompile> {
-            finalizedBy(TASK_NAME)
+            finalizedBy(TASK_GEN_TRANSITIVE_DEPS)
         }
     }
 
     companion object {
 
-        const val TASK_NAME = "listTransitiveDependencies"
+        const val TASK_GEN_TRANSITIVE_DEPS = "generateTransitiveDependenciesList"
+        const val TASK_CHECK_TRANSITIVE_DEPS = "checkTransitiveDependenciesList"
         const val FILE_NAME = "transitiveDependencies"
     }
 }

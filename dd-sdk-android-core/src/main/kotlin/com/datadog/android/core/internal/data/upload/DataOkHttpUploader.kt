@@ -16,6 +16,7 @@ import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.net.UnknownHostException
 import java.util.Locale
 import com.datadog.android.api.net.Request as DatadogRequest
 
@@ -53,6 +54,14 @@ internal class DataOkHttpUploader(
 
         val uploadStatus = try {
             executeUploadRequest(request)
+        } catch (e: UnknownHostException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { "Unable to find host for site ${context.site}; we will retry later." },
+                e
+            )
+            UploadStatus.DNSError
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -165,6 +174,7 @@ internal class DataOkHttpUploader(
             HTTP_UNAVAILABLE,
             HTTP_GATEWAY_TIMEOUT,
             HTTP_INSUFFICIENT_STORAGE -> UploadStatus.HttpServerError(code)
+
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,

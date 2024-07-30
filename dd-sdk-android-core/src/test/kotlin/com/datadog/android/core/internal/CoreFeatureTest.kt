@@ -90,7 +90,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
-import java.lang.RuntimeException
 import java.net.Proxy
 import java.util.Locale
 import java.util.UUID

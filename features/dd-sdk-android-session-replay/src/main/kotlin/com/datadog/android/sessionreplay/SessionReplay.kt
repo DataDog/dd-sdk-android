@@ -33,6 +33,7 @@ object SessionReplay {
             sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
             privacy = sessionReplayConfiguration.privacy,
+            imagePrivacy = sessionReplayConfiguration.imagePrivacy,
             customMappers = sessionReplayConfiguration.customMappers,
             customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
             sampleRate = sessionReplayConfiguration.sampleRate

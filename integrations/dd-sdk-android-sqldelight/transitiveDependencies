@@ -6,10 +6,10 @@ com.squareup.okhttp3:okhttp:4.11.0                              :  768 Kb
 com.squareup.okio:okio-jvm:3.2.0                                :  337 Kb
 com.squareup.sqldelight:android-driver:1.5.5                    :   23 Kb
 com.squareup.sqldelight:runtime-jvm:1.5.5                       :   44 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22                :  216 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22                  :  963 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22                  :  969 b 
-org.jetbrains.kotlin:kotlin-stdlib:1.8.22                       : 1631 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
+org.jetbrains.kotlin:kotlin-stdlib:1.9.10                       : 1667 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
 Total transitive dependencies size                              :    3 Mb

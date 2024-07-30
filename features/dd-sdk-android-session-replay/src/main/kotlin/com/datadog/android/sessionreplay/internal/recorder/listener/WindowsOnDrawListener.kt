@@ -12,6 +12,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -25,6 +26,7 @@ internal class WindowsOnDrawListener(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val privacy: SessionReplayPrivacy,
+    private val imagePrivacy: ImagePrivacy,
     private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
     private val internalLogger: InternalLogger,
@@ -58,7 +60,13 @@ internal class WindowsOnDrawListener(
                 val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
                 recordedDataQueueRefs.recordedDataQueueItem = item
                 rootViews.mapNotNull {
-                    snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
+                    snapshotProducer.produce(
+                        rootView = it,
+                        systemInformation = systemInformation,
+                        privacy = privacy,
+                        imagePrivacy = imagePrivacy,
+                        recordedDataQueueRefs = recordedDataQueueRefs
+                    )
                 }
             }
 

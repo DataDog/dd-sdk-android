@@ -50,7 +50,7 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StartResource(
-        val key: String,
+        val key: Any,
         val url: String,
         val method: RumResourceMethod,
         val attributes: Map<String, Any?>,
@@ -58,18 +58,18 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class WaitForResourceTiming(
-        val key: String,
+        val key: Any,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
     internal data class AddResourceTiming(
-        val key: String,
+        val key: Any,
         val timing: ResourceTiming,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
     internal data class StopResource(
-        val key: String,
+        val key: Any,
         val statusCode: Long?,
         val size: Long?,
         val kind: RumResourceKind,
@@ -78,7 +78,7 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StopResourceWithError(
-        val key: String,
+        val key: Any,
         val statusCode: Long?,
         val message: String,
         val source: RumErrorSource,
@@ -88,7 +88,7 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StopResourceWithStackTrace(
-        val key: String,
+        val key: Any,
         val statusCode: Long?,
         val message: String,
         val source: RumErrorSource,

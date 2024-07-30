@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -29,11 +30,17 @@ internal class SnapshotProducer(
         rootView: View,
         systemInformation: SystemInformation,
         privacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
         return convertViewToNode(
             rootView,
-            MappingContext(systemInformation, imageWireframeHelper, privacy),
+            MappingContext(
+                systemInformation = systemInformation,
+                imageWireframeHelper = imageWireframeHelper,
+                privacy = privacy,
+                imagePrivacy = imagePrivacy
+            ),
             LinkedList(),
             recordedDataQueueRefs
         )

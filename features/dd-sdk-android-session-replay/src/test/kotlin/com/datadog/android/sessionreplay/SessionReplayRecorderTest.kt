@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
@@ -61,6 +62,9 @@ internal class SessionReplayRecorderTest {
     @Forgery
     private lateinit var fakePrivacy: SessionReplayPrivacy
 
+    @Forgery
+    private lateinit var fakeImagePrivacy: ImagePrivacy
+
     @Mock
     private lateinit var mockTimeProvider: TimeProvider
 
@@ -79,10 +83,12 @@ internal class SessionReplayRecorderTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    lateinit var fakeActiveWindows: List<Window>
-    lateinit var fakeActiveWindowsDecorViews: List<View>
+    @Mock
+    lateinit var mockDataStoreManager: ResourceDataStoreManager
 
-    lateinit var testedSessionReplayRecorder: SessionReplayRecorder
+    private lateinit var fakeActiveWindows: List<Window>
+    private lateinit var fakeActiveWindowsDecorViews: List<View>
+    private lateinit var testedSessionReplayRecorder: SessionReplayRecorder
 
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
@@ -102,6 +108,7 @@ internal class SessionReplayRecorderTest {
             appContext = appContext.mockInstance,
             rumContextProvider = mockRumContextProvider,
             privacy = fakePrivacy,
+            imagePrivacy = fakeImagePrivacy,
             recordWriter = mockRecordWriter,
             timeProvider = mockTimeProvider,
             mappers = mock(),
@@ -112,7 +119,8 @@ internal class SessionReplayRecorderTest {
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             uiHandler = mockUiHandler,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            resourceDataStoreManager = mockDataStoreManager
         )
     }
 
@@ -142,8 +150,9 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor).intercept(fakeActiveWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor).intercept(
-            fakeActiveWindowsDecorViews,
-            fakePrivacy
+            decorViews = fakeActiveWindowsDecorViews,
+            sessionReplayPrivacy = fakePrivacy,
+            imagePrivacy = fakeImagePrivacy
         )
     }
 
@@ -173,7 +182,7 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockWindowCallbackInterceptor).intercept(fakeAddedWindows, appContext.mockInstance)
-        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, fakePrivacy)
+        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, fakePrivacy, fakeImagePrivacy)
     }
 
     @Test
@@ -195,7 +204,7 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never())
             .intercept(fakeAddedWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, fakePrivacy)
+            .intercept(fakeNewDecorViews, fakePrivacy, fakeImagePrivacy)
     }
 
     @Test
@@ -217,7 +226,7 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never())
             .intercept(fakeAddedWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, fakePrivacy)
+            .intercept(fakeNewDecorViews, fakePrivacy, fakeImagePrivacy)
     }
 
     @Test
@@ -236,7 +245,7 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockWindowCallbackInterceptor).stopIntercepting(fakeAddedWindows)
-        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, fakePrivacy)
+        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, fakePrivacy, fakeImagePrivacy)
     }
 
     @Test
@@ -257,7 +266,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, fakePrivacy)
+            .intercept(fakeNewDecorViews, fakePrivacy, fakeImagePrivacy)
     }
 
     @Test
@@ -276,7 +285,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, fakePrivacy)
+            .intercept(fakeNewDecorViews, fakePrivacy, fakeImagePrivacy)
     }
 
     @Test
@@ -293,6 +302,7 @@ internal class SessionReplayRecorderTest {
 
         @TestConfigurationsProvider
         @JvmStatic
+        @Suppress("unused") // this is actually used
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(appContext)
         }

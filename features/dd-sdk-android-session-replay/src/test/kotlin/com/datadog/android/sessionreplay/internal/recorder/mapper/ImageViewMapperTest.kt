@@ -16,8 +16,8 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageCompression
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -31,6 +31,7 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -72,9 +73,6 @@ internal class ImageViewMapperTest {
 
     @Mock
     lateinit var mockMappingContext: MappingContext
-
-    @Mock
-    lateinit var mockWebPImageCompression: ImageCompression
 
     @Mock
     lateinit var mockDrawable: Drawable
@@ -130,6 +128,9 @@ internal class ImageViewMapperTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
+
     @LongForgery
     var fakeId: Long = 0L
 
@@ -156,6 +157,7 @@ internal class ImageViewMapperTest {
         whenever(mockSystemInformation.screenDensity).thenReturn(forge.aFloat())
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockMappingContext.imageWireframeHelper).thenReturn(mockImageWireframeHelper)
+        whenever(mockMappingContext.imagePrivacy).thenReturn(fakeImagePrivacy)
 
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockImageView.resources).thenReturn(mockResources)
@@ -206,6 +208,7 @@ internal class ImageViewMapperTest {
         whenever(mockImageView.background).thenReturn(null)
         mockImageWireframeHelper(
             expectedView = mockImageView,
+            expectedImagePrivacy = fakeImagePrivacy,
             expectedDrawable = mockDrawable,
             expectedIndex = 0,
             expectedPrefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
@@ -246,6 +249,7 @@ internal class ImageViewMapperTest {
         whenever(mockImageView.background).thenReturn(mockBackgroundDrawable)
         mockImageWireframeHelper(
             expectedView = mockImageView,
+            expectedImagePrivacy = fakeImagePrivacy,
             expectedDrawable = mockBackgroundDrawable,
             expectedIndex = 0,
             expectedPrefix = BaseAsyncBackgroundWireframeMapper.PREFIX_BACKGROUND_DRAWABLE,
@@ -254,6 +258,7 @@ internal class ImageViewMapperTest {
         )
         mockImageWireframeHelper(
             expectedView = mockImageView,
+            expectedImagePrivacy = fakeImagePrivacy,
             expectedDrawable = mockDrawable,
             expectedIndex = 1,
             expectedPrefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
@@ -281,6 +286,7 @@ internal class ImageViewMapperTest {
         whenever(
             mockImageWireframeHelper.createImageWireframe(
                 view = any(),
+                imagePrivacy = any(),
                 currentWireframeIndex = any(),
                 x = any(),
                 y = any(),
@@ -311,6 +317,7 @@ internal class ImageViewMapperTest {
         verify(mockImageWireframeHelper)
             .createImageWireframe(
                 view = any(),
+                imagePrivacy = any(),
                 currentWireframeIndex = any(),
                 x = any(),
                 y = any(),
@@ -346,6 +353,7 @@ internal class ImageViewMapperTest {
 
         mockImageWireframeHelper(
             expectedView = mockImageView,
+            expectedImagePrivacy = fakeImagePrivacy,
             expectedDrawable = mockBackgroundDrawable,
             expectedIndex = 0,
             expectedPrefix = BaseAsyncBackgroundWireframeMapper.PREFIX_BACKGROUND_DRAWABLE,
@@ -354,6 +362,7 @@ internal class ImageViewMapperTest {
         )
         mockImageWireframeHelper(
             expectedView = mockImageView,
+            expectedImagePrivacy = fakeImagePrivacy,
             expectedDrawable = mockDrawable,
             expectedIndex = 1,
             expectedPrefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
@@ -404,6 +413,7 @@ internal class ImageViewMapperTest {
             .thenReturn(null)
         mockImageWireframeHelper(
             expectedView = mockImageView,
+            expectedImagePrivacy = fakeImagePrivacy,
             expectedDrawable = mockDrawable,
             expectedIndex = 0,
             expectedPrefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
@@ -426,6 +436,7 @@ internal class ImageViewMapperTest {
 
     private fun mockImageWireframeHelper(
         expectedView: View,
+        expectedImagePrivacy: ImagePrivacy,
         expectedDrawable: Drawable,
         expectedIndex: Int,
         expectedPrefix: String?,
@@ -435,6 +446,7 @@ internal class ImageViewMapperTest {
         whenever(
             mockImageWireframeHelper.createImageWireframe(
                 view = eq(expectedView),
+                imagePrivacy = eq(expectedImagePrivacy),
                 currentWireframeIndex = eq(expectedIndex),
                 x = any(),
                 y = any(),

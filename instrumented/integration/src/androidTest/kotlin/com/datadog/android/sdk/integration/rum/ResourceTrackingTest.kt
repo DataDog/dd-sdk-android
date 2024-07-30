@@ -50,15 +50,14 @@ internal class ResourceTrackingTest {
 
         okHttpClient = OkHttpClient.Builder()
             .addInterceptor(
-                DatadogInterceptor(
-                    rumResourceAttributesProvider = object : RumResourceAttributesProvider {
+                DatadogInterceptor.Builder(emptyMap())
+                    .setRumResourceAttributesProvider(object : RumResourceAttributesProvider {
                         override fun onProvideAttributes(
                             request: Request,
                             response: Response?,
                             throwable: Throwable?
                         ): Map<String, Any?> = extraAttributes
-                    }
-                )
+                    }).build()
             )
             .build()
     }

@@ -20,8 +20,18 @@
         android:textColor="@color/datadog_violet"
         android:text="@string/app_compat_switch" />
 
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/app_compat_switcher_disabled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="@string/app_compat_switch_disabled"
+        android:textColor="@color/datadog_violet"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/app_compat_switcher" />
+
     <com.google.android.material.switchmaterial.SwitchMaterial
-        app:layout_constraintTop_toBottomOf="@id/app_compat_switcher"
+        app:layout_constraintTop_toBottomOf="@id/app_compat_switcher_disabled"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/material_switcher"
@@ -30,8 +40,19 @@
         android:textColor="@android:color/holo_red_dark"
         android:text="@string/material_switch" />
 
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/material_switcher_disabled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:enabled="false"
+        android:text="@string/material_switch_disabled"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/material_switcher" />
+
     <Spinner
-        app:layout_constraintTop_toBottomOf="@id/material_switcher"
+        app:layout_constraintTop_toBottomOf="@id/material_switcher_disabled"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/default_spinner"

@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.DrawableContainer
 import android.widget.CheckedTextView
 import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -62,5 +64,25 @@ internal open class CheckedTextViewMapper(
         )
     }
 
+    override fun getCheckableDrawable(view: CheckedTextView): Drawable? {
+        // drawable from [CheckedTextView] can not be retrieved according to the state,
+        // so here two hardcoded indexes are used to retrieve "checked" and "not checked" drawables.
+        val checkableDrawableIndex = if (view.isChecked) {
+            CHECK_BOX_CHECKED_DRAWABLE_INDEX
+        } else {
+            CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
+        }
+
+        return (view.checkMarkDrawable?.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
+            checkableDrawableIndex
+        )?.constantState?.newDrawable(view.resources)?.apply {
+            // Set state to make the drawable have correct tint according to the state.
+            setState(view.drawableState)
+            // Set tint list to drawable if the button has declared `checkMarkTint` attribute.
+            view.checkMarkTintList?.let {
+                setTintList(view.checkMarkTintList)
+            }
+        }
+    }
     // endregion
 }

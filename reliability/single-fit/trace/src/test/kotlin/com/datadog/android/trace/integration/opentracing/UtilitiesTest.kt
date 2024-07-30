@@ -18,6 +18,7 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.setError
 import com.datadog.android.trace.withinSpan
+import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.setStaticValue
 import com.google.gson.JsonObject
@@ -75,10 +76,12 @@ class UtilitiesTest {
 
         // When
         var traceId: String
+        val mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsHexString()
+            traceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
             span.setError(fakeThrowable)
@@ -91,6 +94,7 @@ class UtilitiesTest {
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -119,11 +123,15 @@ class UtilitiesTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: Long
+        var leastSignificantTraceId: String
+        val mostSignificantTraceId: String
+        var traceId: String
         var spanId: Long
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsLong()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
+            traceId = (span as? DDSpan)?.traceId?.toString() ?: ""
             spanId = span.spanIdAsLong()
             Thread.sleep(OP_DURATION_MS)
             span.setError(fakeErrorMessage)
@@ -135,7 +143,8 @@ class UtilitiesTest {
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId.toHexString())
+        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(leastSignificantTraceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId.toHexString())
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -153,7 +162,7 @@ class UtilitiesTest {
         assertThat(logEvent0).containsEntry("type", "span_log")
         assertThat(logEvent0).containsEntry("loggerName", "trace")
         assertThat(logEvent0).containsEntry("message", fakeErrorMessage)
-        assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.trace_id", traceId.toString())
+        assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.trace_id", traceId)
         assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.span_id", spanId.toString())
     }
 
@@ -167,12 +176,14 @@ class UtilitiesTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
+        val mostSignificantTraceId: String
         var traceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
             Thread.sleep(OP_DURATION_MS)
-            traceId = span.traceIdAsHexString()
+            traceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             AndroidTracer.Companion.logThrowable(span, fakeThrowable)
             span.finish()
@@ -184,6 +195,7 @@ class UtilitiesTest {
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -212,11 +224,15 @@ class UtilitiesTest {
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
-        var traceId: Long
+        var leastSignificantTraceId: String
+        val traceId: String
+        val mostSignificantTraceId: String
         var spanId: Long
         val fullDuration = measureNanoTime {
             val span = testedTracer.buildSpan(fakeOperation).start()
-            traceId = span.traceIdAsLong()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
+            traceId = (span as? DDSpan)?.traceId?.toString() ?: ""
             spanId = span.spanIdAsLong()
             Thread.sleep(OP_DURATION_MS)
             AndroidTracer.Companion.logErrorMessage(span, fakeErrorMessage)
@@ -228,7 +244,8 @@ class UtilitiesTest {
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId.toHexString())
+        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(leastSignificantTraceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId.toHexString())
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -246,7 +263,7 @@ class UtilitiesTest {
         assertThat(logEvent0).containsEntry("type", "span_log")
         assertThat(logEvent0).containsEntry("loggerName", "trace")
         assertThat(logEvent0).containsEntry("message", fakeErrorMessage)
-        assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.trace_id", traceId.toString())
+        assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.trace_id", traceId)
         assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.span_id", spanId.toString())
     }
 
@@ -261,9 +278,11 @@ class UtilitiesTest {
         // When
         var traceId = ""
         var spanId = ""
+        var mostSignificantTraceId = ""
         val fullDuration = measureNanoTime {
             withinSpan(fakeOperation) {
-                traceId = traceIdAsHexString()
+                traceId = leastSignificant64BitsTraceId()
+                mostSignificantTraceId = mostSignificant64BitsTraceId()
                 spanId = spanIdAsHexString()
                 Thread.sleep(OP_DURATION_MS)
             }
@@ -275,6 +294,7 @@ class UtilitiesTest {
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
@@ -304,14 +324,20 @@ class UtilitiesTest {
         var spanId0 = ""
         var spanId1 = ""
         var spanId2 = ""
+        var mostSignificantTraceId0 = ""
+        var mostSignificantTraceId1 = ""
+        var mostSignificantTraceId2 = ""
         withinSpan(fakeOperation0) {
-            traceId0 = traceIdAsHexString()
+            traceId0 = leastSignificant64BitsTraceId()
+            mostSignificantTraceId0 = mostSignificant64BitsTraceId()
             spanId0 = spanIdAsHexString()
             withinSpan(fakeOperation1) {
-                traceId1 = traceIdAsHexString()
+                traceId1 = leastSignificant64BitsTraceId()
+                mostSignificantTraceId1 = mostSignificant64BitsTraceId()
                 spanId1 = spanIdAsHexString()
                 withinSpan(fakeOperation2) {
-                    traceId2 = traceIdAsHexString()
+                    traceId2 = leastSignificant64BitsTraceId()
+                    mostSignificantTraceId2 = mostSignificant64BitsTraceId()
                     spanId2 = spanIdAsHexString()
                     Thread.sleep(OP_DURATION_MS)
                 }
@@ -325,14 +351,17 @@ class UtilitiesTest {
         val event1 = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
         val event2 = JsonParser.parseString(eventsWritten[2].eventData) as JsonObject
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId0)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId0)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId0)
         assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation0)
         assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation0)
         assertThat(event1.getString("spans[0].trace_id")).isEqualTo(traceId1)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId1)
         assertThat(event1.getString("spans[0].span_id")).isEqualTo(spanId1)
         assertThat(event1.getString("spans[0].name")).isEqualTo(fakeOperation1)
         assertThat(event1.getString("spans[0].resource")).isEqualTo(fakeOperation1)
         assertThat(event2.getString("spans[0].trace_id")).isEqualTo(traceId2)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId2)
         assertThat(event2.getString("spans[0].span_id")).isEqualTo(spanId2)
         assertThat(event2.getString("spans[0].name")).isEqualTo(fakeOperation2)
         assertThat(event2.getString("spans[0].resource")).isEqualTo(fakeOperation2)
@@ -349,12 +378,14 @@ class UtilitiesTest {
 
         // When
         var traceId = ""
+        var mostSignificantTraceId = ""
         var spanId = ""
         var thrown: Throwable? = null
         val fullDuration = measureNanoTime {
             try {
                 withinSpan(fakeOperation) {
-                    traceId = traceIdAsHexString()
+                    traceId = leastSignificant64BitsTraceId()
+                    mostSignificantTraceId = mostSignificant64BitsTraceId()
                     spanId = spanIdAsHexString()
                     Thread.sleep(OP_DURATION_MS)
                     throw fakeThrowable
@@ -371,6 +402,7 @@ class UtilitiesTest {
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
         assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)

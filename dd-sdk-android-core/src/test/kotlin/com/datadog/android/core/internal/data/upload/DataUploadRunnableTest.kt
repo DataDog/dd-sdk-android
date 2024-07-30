@@ -817,6 +817,62 @@ internal class DataUploadRunnableTest {
         }
     }
 
+    @Test
+    fun `M increase delay between runs W batch fails because of DNS`(
+        @IntForgery(1, 10) runCount: Int,
+        forge: Forge,
+        @Forgery fakeConfiguration: DataUploadConfiguration
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            fakeFeatureName,
+            mockThreadPoolExecutor,
+            mockStorage,
+            mockDataUploader,
+            mockContextProvider,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            fakeConfiguration,
+            mockInternalLogger
+        )
+        val batches = forge.aList(size = runCount * fakeConfiguration.maxBatchesPerUploadJob) {
+            aList { getForgery<RawBatchEvent>() }
+        }
+        val batchIds: List<BatchId> = batches.map { mock() }
+        val batchMetadata = forge.aList(size = batches.size) {
+            aNullable { aString().toByteArray() }
+        }
+        stubStorage(batchIds, batches, batchMetadata)
+        batches.forEachIndexed { index, batch ->
+            whenever(
+                mockDataUploader.upload(
+                    fakeContext,
+                    batch,
+                    batchMetadata[index]
+                )
+            ) doReturn UploadStatus.DNSError
+        }
+
+        // When
+        repeat(runCount) {
+            testedRunnable.run()
+        }
+
+        // Then
+        argumentCaptor<Long> {
+            verify(mockThreadPoolExecutor, times(runCount))
+                .schedule(
+                    same(testedRunnable),
+                    capture(),
+                    eq(TimeUnit.MILLISECONDS)
+                )
+
+            allValues.forEach { delay ->
+                assertThat(delay).isEqualTo(testedRunnable.maxDelayMs * DataUploadRunnable.DNS_DELAY_MULTIPLIER)
+            }
+        }
+    }
+
     // region maxBatchesPerJob
 
     @Test
