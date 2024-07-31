@@ -304,7 +304,7 @@ test-pyramid:publish-benchmark-synthetics:
     - mkdir -p ./config/
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-benchmark.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_config_json --with-decryption --query "Parameter.Value" --out text > ./config/benchmark.json
     - export BM_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
     - export BM_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_api_key --with-decryption --query "Parameter.Value" --out text)
     - export BM_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_app_key --with-decryption --query "Parameter.Value" --out text)

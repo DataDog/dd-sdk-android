@@ -122,7 +122,7 @@ internal class DatadogHttpClient(
                     )
                 }
             } else {
-                Result.failure(IOException("Request failed: ${request.method} ${request.url}"))
+                Result.failure(IOException("Request failed: ${response.code} - ${response.message}"))
             }
         } catch (e: Exception) {
             return Result.failure(e)

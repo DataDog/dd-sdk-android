@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.config
 
+import com.android.build.api.dsl.ApplicationDefaultConfig
 import com.android.build.api.dsl.ApplicationProductFlavor
 import com.google.gson.Gson
 import org.gradle.api.Project
@@ -21,6 +22,33 @@ fun sampleAppConfig(filePath: String): SampleAppConfig {
         val jsonString = it.readText()
         return Gson().fromJson(jsonString, SampleAppConfig::class.java)
     }
+}
+
+@Suppress("UnstableApiUsage")
+fun ApplicationDefaultConfig.configureFlavorForBenchmark(
+    rootDir: File
+) {
+    val config = sampleAppConfig("${rootDir.absolutePath}/config/benchmark.json")
+    buildConfigField(
+        "String",
+        "BM_RUM_APPLICATION_ID",
+        "\"${config.rumApplicationId}\""
+    )
+    buildConfigField(
+        "String",
+        "BM_CLIENT_TOKEN",
+        "\"${config.token}\""
+    )
+    buildConfigField(
+        "String",
+        "BM_API_KEY",
+        "\"${config.apiKey}\""
+    )
+    buildConfigField(
+        "String",
+        "BM_APPLICATION_KEY",
+        "\"${config.applicationKey}\""
+    )
 }
 
 @Suppress("UnstableApiUsage")
