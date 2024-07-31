@@ -101,7 +101,7 @@
         "width": 395,
         "height": 44,
         "type": "text",
-        "text": "***",
+        "text": "xxxx xxxx xxxx",
         "textStyle": {
           "family": "roboto, sans-serif",
           "size": 17,
@@ -130,7 +130,7 @@
         "width": 395,
         "height": 44,
         "type": "text",
-        "text": "***",
+        "text": "xxxxxxx xxxx xxxxxxxx xxxx xxxx",
         "textStyle": {
           "family": "roboto, sans-serif",
           "size": 17,
@@ -159,7 +159,7 @@
         "width": 395,
         "height": 44,
         "type": "text",
-        "text": "***",
+        "text": "xxx xxxxxx xxxx xxxx xxxx",
         "textStyle": {
           "family": "roboto, sans-serif",
           "size": 17,
@@ -188,7 +188,7 @@
         "width": 395,
         "height": 44,
         "type": "text",
-        "text": "***",
+        "text": "xxx xxxxxx xxxx xxxxxxxx xxxx xxxx",
         "textStyle": {
           "family": "roboto, sans-serif",
           "size": 17,
@@ -217,7 +217,7 @@
         "width": 395,
         "height": 44,
         "type": "text",
-        "text": "***",
+        "text": "xxxxxxxx xxxx xxxxxxxx xxxx xxxx",
         "textStyle": {
           "family": "roboto, sans-serif",
           "size": 17,
@@ -303,8 +303,34 @@
       {
         "width": 411,
         "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
+        "shapeStyle": {
+          "backgroundColor": "#212121ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 356,
+        "height": 27,
+        "type": "text",
+        "text": "xxxxxxx xxxxxx xxxx xxxxxx xxxx xx xxxx",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 20,
+          "color": "#ffffffff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 0,
+            "bottom": 0,
+            "left": 0,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "top"
+          }
+        }
       }
     ]
   }

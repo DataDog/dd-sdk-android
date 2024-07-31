@@ -46,13 +46,10 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "border": {
-          "color": "#a538afff",
-          "width": 1
-        },
-        "type": "shape"
+        "width": 32,
+        "height": 32,
+        "type": "image",
+        "isEmpty": false
       },
       {
         "width": 395,
@@ -78,13 +75,10 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "border": {
-          "color": "#cc0000ff",
-          "width": 1
-        },
-        "type": "shape"
+        "width": 32,
+        "height": 32,
+        "type": "image",
+        "isEmpty": false
       },
       {
         "width": 395,
@@ -110,13 +104,10 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "border": {
-          "color": "#ffbb33ff",
-          "width": 1
-        },
-        "type": "shape"
+        "width": 32,
+        "height": 32,
+        "type": "image",
+        "isEmpty": false
       },
       {
         "width": 395,
@@ -142,17 +133,10 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "shapeStyle": {
-          "opacity": 1.0,
-          "cornerRadius": 10
-        },
-        "border": {
-          "color": "#a538afff",
-          "width": 1
-        },
-        "type": "shape"
+        "width": 32,
+        "height": 32,
+        "type": "image",
+        "isEmpty": false
       },
       {
         "width": 395,
@@ -178,17 +162,10 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "shapeStyle": {
-          "opacity": 1.0,
-          "cornerRadius": 10
-        },
-        "border": {
-          "color": "#cc0000ff",
-          "width": 1
-        },
-        "type": "shape"
+        "width": 32,
+        "height": 32,
+        "type": "image",
+        "isEmpty": false
       },
       {
         "width": 395,
@@ -214,23 +191,42 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "shapeStyle": {
-          "opacity": 1.0,
-          "cornerRadius": 10
-        },
-        "border": {
-          "color": "#ffbb33ff",
-          "width": 1
-        },
-        "type": "shape"
+        "width": 32,
+        "height": 32,
+        "type": "image",
+        "isEmpty": false
       },
       {
         "width": 411,
         "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
+        "shapeStyle": {
+          "backgroundColor": "#212121ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 371,
+        "height": 27,
+        "type": "text",
+        "text": "Session Replay Sensitive Fields (End to End)",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 20,
+          "color": "#ffffffff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 0,
+            "bottom": 0,
+            "left": 0,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "top"
+          }
+        }
       }
     ]
   }
