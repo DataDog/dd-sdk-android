@@ -14,9 +14,11 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
+import com.datadog.android.sdk.utils.getSessionReplayImagePrivacy
 import com.datadog.android.sdk.utils.getSessionReplayPrivacy
 import com.datadog.android.sdk.utils.getSrSampleRate
 import com.datadog.android.sdk.utils.getTrackingConsent
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
@@ -29,6 +31,7 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
         val sessionReplayPrivacy = intent.getSessionReplayPrivacy()
+        val sessionReplayImagePrivacy = intent.getSessionReplayImagePrivacy()
         val sessionReplaySampleRate = intent.getSrSampleRate()
         Datadog.setVerbosity(Log.VERBOSE)
         // make sure the previous instance is stopped
@@ -46,8 +49,9 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
             },
             {
                 val sessionReplayConfig = sessionReplayConfiguration(
-                    sessionReplayPrivacy,
-                    sessionReplaySampleRate
+                    privacy = sessionReplayPrivacy,
+                    sampleRate = sessionReplaySampleRate,
+                    imagePrivacy = sessionReplayImagePrivacy
                 )
                 SessionReplay.enable(sessionReplayConfig, sdkCore)
             }
@@ -56,9 +60,14 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
             .forEach { it() }
     }
 
-    open fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
+    open fun sessionReplayConfiguration(
+        privacy: SessionReplayPrivacy,
+        sampleRate: Float,
+        imagePrivacy: ImagePrivacy
+    ): SessionReplayConfiguration {
         return RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
             .setPrivacy(privacy)
+            .setImagePrivacy(imagePrivacy)
             .build()
     }
 }

@@ -18,6 +18,14 @@
         android:contentDescription="@string/image_view"
         android:src="@drawable/ic_dd_icon_rgb" />
 
+    <ImageView
+        android:id="@+id/largeImageView"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/image_view"
+        android:src="@drawable/ic_dd_icon_red" />
+
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/appCompatImageView"
         android:layout_width="80dp"

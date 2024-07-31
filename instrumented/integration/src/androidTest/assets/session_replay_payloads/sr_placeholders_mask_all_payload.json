@@ -24,39 +24,21 @@
       },
       {
         "width": 80,
-        "height": 84,
-        "clip": {
-          "top": 2,
-          "bottom": 2,
-          "left": 0,
-          "right": 0
-        },
-        "type": "image",
-        "isEmpty": false
+        "height": 80,
+        "type": "placeholder",
+        "label": "Image"
       },
       {
         "width": 80,
-        "height": 90,
-        "clip": {
-          "top": 5,
-          "bottom": 5,
-          "left": 0,
-          "right": 0
-        },
-        "type": "image",
-        "isEmpty": false
+        "height": 80,
+        "type": "placeholder",
+        "label": "Image"
       },
       {
         "width": 80,
-        "height": 84,
-        "clip": {
-          "top": 2,
-          "bottom": 2,
-          "left": 0,
-          "right": 0
-        },
-        "type": "image",
-        "isEmpty": false
+        "height": 80,
+        "type": "placeholder",
+        "label": "Image"
       },
       {
         "width": 411,

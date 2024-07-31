@@ -36,6 +36,18 @@
       },
       {
         "width": 80,
+        "height": 90,
+        "clip": {
+          "top": 5,
+          "bottom": 5,
+          "left": 0,
+          "right": 0
+        },
+        "type": "image",
+        "isEmpty": false
+      },
+      {
+        "width": 80,
         "height": 84,
         "clip": {
           "top": 2,

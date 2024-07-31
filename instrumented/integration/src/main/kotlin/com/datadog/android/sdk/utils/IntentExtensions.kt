@@ -9,10 +9,12 @@ package com.datadog.android.sdk.utils
 import android.content.Intent
 import android.os.Build
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 
 internal const val TRACKING_CONSENT_KEY = "tracking_consent"
 internal const val SR_PRIVACY_LEVEL = "sr_privacy_level"
+internal const val SR_IMAGE_PRIVACY_LEVEL = "sr_image_privacy_level"
 internal const val SR_SAMPLE_RATE = "sr_sample_rate"
 private const val SAMPLE_IN_ALL_SESSIONS = 100f
 
@@ -24,6 +26,17 @@ internal fun Intent.getTrackingConsent(): TrackingConsent {
         @Suppress("DEPRECATION")
         extras?.getSerializable(TRACKING_CONSENT_KEY) as? TrackingConsent
             ?: TrackingConsent.NOT_GRANTED
+    }
+}
+
+internal fun Intent.getSessionReplayImagePrivacy(): ImagePrivacy {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        extras?.getSerializable(SR_IMAGE_PRIVACY_LEVEL, ImagePrivacy::class.java)
+            ?: ImagePrivacy.MASK_NONE
+    } else {
+        @Suppress("DEPRECATION")
+        extras?.getSerializable(SR_IMAGE_PRIVACY_LEVEL) as? ImagePrivacy
+            ?: ImagePrivacy.MASK_NONE
     }
 }
 
