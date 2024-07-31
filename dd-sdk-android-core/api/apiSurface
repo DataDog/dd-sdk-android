@@ -42,7 +42,7 @@ interface com.datadog.android.api.InternalLogger
     - TELEMETRY
   fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
-  fun logMetric(() -> String, Map<String, Any?>)
+  fun logMetric(() -> String, Map<String, Any?>, Float)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
   companion object 
     val UNBOUND: InternalLogger
@@ -102,6 +102,7 @@ interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
 interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
+  val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
   fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
@@ -151,6 +152,19 @@ data class com.datadog.android.api.storage.RawBatchEvent
   constructor(ByteArray, ByteArray = EMPTY_BYTE_ARRAY)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+interface com.datadog.android.api.storage.datastore.DataStoreHandler
+  fun <T: Any> setValue(String, T, Int = 0, DataStoreWriteCallback? = null, com.datadog.android.core.persistence.Serializer<T>)
+  fun <T: Any> value(String, Int? = null, DataStoreReadCallback<T>, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
+  fun removeValue(String, DataStoreWriteCallback? = null)
+  fun clearAllData()
+  companion object 
+    const val CURRENT_DATASTORE_VERSION: Int
+interface com.datadog.android.api.storage.datastore.DataStoreReadCallback<T: Any>
+  fun onSuccess(com.datadog.android.core.persistence.datastore.DataStoreContent<T>?)
+  fun onFailure()
+interface com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+  fun onSuccess()
+  fun onFailure()
 interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.feature.FeatureSdkCore
   val networkInfo: com.datadog.android.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
@@ -270,7 +284,10 @@ fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
   constructor(Float)
-  - DEFAULT
+  - ALL
+  - HIGH
+  - MEDIUM
+  - LOW
   - REDUCED
   - RARE
 interface com.datadog.android.core.metrics.PerformanceMetric
@@ -295,6 +312,8 @@ interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
+data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
+  constructor(Int, T?)
 class com.datadog.android.core.sampling.RateBasedSampler : Sampler
   constructor(() -> Float)
   constructor(Float)

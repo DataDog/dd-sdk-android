@@ -82,8 +82,16 @@ class SampleApplication : Application() {
     )
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(100f)))
-        .addNetworkInterceptor(TracingInterceptor(traceSampler = RateBasedSampler(100f)))
+        .addInterceptor(
+            DatadogInterceptor.Builder(tracedHosts)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
+        .addNetworkInterceptor(
+            TracingInterceptor.Builder(tracedHosts)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 

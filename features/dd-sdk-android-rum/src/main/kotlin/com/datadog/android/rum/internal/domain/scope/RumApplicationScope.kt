@@ -17,6 +17,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.util.concurrent.TimeUnit
 
@@ -31,6 +32,7 @@ internal class RumApplicationScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
+    private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val sessionListener: RumSessionListener?
 ) : RumScope, RumViewChangedListener {
 
@@ -40,6 +42,7 @@ internal class RumApplicationScope(
         RumSessionScope(
             this,
             sdkCore,
+            sessionEndedMetricDispatcher,
             sampleRate,
             backgroundTrackingEnabled,
             trackFrustrations,
@@ -131,6 +134,7 @@ internal class RumApplicationScope(
         val newSession = RumSessionScope(
             this,
             sdkCore,
+            sessionEndedMetricDispatcher,
             sampleRate,
             backgroundTrackingEnabled,
             trackFrustrations,

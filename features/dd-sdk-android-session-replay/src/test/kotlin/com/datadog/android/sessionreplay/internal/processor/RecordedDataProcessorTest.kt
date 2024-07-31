@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
@@ -39,8 +40,10 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
@@ -87,6 +90,9 @@ internal class RecordedDataProcessorTest {
 
     @Mock
     lateinit var mockResourcesFeature: ResourcesFeature
+
+    @Mock
+    lateinit var mockResourceDataStoreManager: ResourceDataStoreManager
 
     private val invalidRumContext = SessionReplayRumContext()
 
@@ -152,7 +158,8 @@ internal class RecordedDataProcessorTest {
             resourcesWriter = mockResourcesWriter,
             writer = mockWriter,
             mutationResolver = mockMutationResolver,
-            nodeFlattener = mockNodeFlattener
+            nodeFlattener = mockNodeFlattener,
+            resourceDataStoreManager = mockResourceDataStoreManager
         )
     }
 
@@ -1214,7 +1221,7 @@ internal class RecordedDataProcessorTest {
     // region resources
 
     @Test
-    fun `M write resource data W processResources`(forge: Forge) {
+    fun `M write resource data W processResources { resource not previously seen }`(forge: Forge) {
         // Given
         val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
@@ -1236,24 +1243,58 @@ internal class RecordedDataProcessorTest {
         assertThat(itemFilename).isEqualTo(fakeIdentifier)
     }
 
+    @Test
+    fun `M not store resource in datastore W processResources { resource not previously seen by manager not ready }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
+        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.isReady()).thenReturn(false)
+
+        // When
+        testedProcessor.processResources(fakeResourceItem)
+
+        // Then
+        verify(mockResourceDataStoreManager, never()).cacheResourceHash(fakeIdentifier)
+    }
+
+    @Test
+    fun `M store resource in datastore W processResources { resource not previously seen and manager ready }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
+        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.isReady()).thenReturn(true)
+
+        // When
+        testedProcessor.processResources(fakeResourceItem)
+
+        // Then
+        verify(mockResourceDataStoreManager, times(1)).cacheResourceHash(fakeIdentifier)
+    }
+
+    @Test
+    fun `M not write resource data W processResources { resource was previously seen }`(
+        @StringForgery fakeString: String
+    ) {
+        // Given
+        val fakeByteArray = fakeString.toByteArray()
+        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.isPreviouslySentResource(fakeIdentifier))
+            .thenReturn(true)
+
+        // When
+        testedProcessor.processResources(fakeResourceItem)
+
+        // Then
+        verifyNoInteractions(mockResourcesWriter)
+    }
+
     // endregion
 
     // region Internal
-
-    private fun MobileSegment.Wireframe.copy(id: Long): MobileSegment.Wireframe {
-        return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.TextWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.ImageWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.PlaceholderWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.WebviewWireframe ->
-                this.copy(id = id)
-        }
-    }
 
     private fun Forge.aSingleLevelSnapshot(): Node {
         return Node(

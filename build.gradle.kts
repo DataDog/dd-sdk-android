@@ -15,7 +15,7 @@ import java.util.Properties
 
 plugins {
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin")
+    alias(libs.plugins.nexusPublishGradlePlugin)
 }
 
 version = AndroidConfig.VERSION.name
@@ -119,15 +119,19 @@ tasks.register("unitTestAll") {
 registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
     dependsOn(":tools:lint:lint")
 }
-registerSubModuleAggregationTask("checkThirdPartyLicensesAll", "checkThirdPartyLicences")
+registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyLicences")
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
+
+registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
 /**
  * Task necessary to be compliant with the shared Android static analysis pipeline
  */
 tasks.register("checkGeneratedFiles") {
+    dependsOn("checkDependencyLicencesAll")
     dependsOn("checkApiSurfaceChangesAll")
+    dependsOn("checkTransitiveDependenciesListAll")
 }
 
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")

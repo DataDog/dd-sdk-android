@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -55,13 +56,22 @@ internal class ViewOnDrawInterceptorTest {
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
 
-    lateinit var fakeDecorViews: List<View>
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
+
+    private lateinit var fakeDecorViews: List<View>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeDecorViews = forge.aMockedDecorViewsList()
 
-        whenever(mockOnDrawListenerProducer.create(fakeDecorViews, fakePrivacy)) doReturn mockOnDrawListener
+        whenever(
+            mockOnDrawListenerProducer.create(
+                fakeDecorViews,
+                fakePrivacy,
+                fakeImagePrivacy
+            )
+        ) doReturn mockOnDrawListener
 
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
@@ -72,7 +82,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M register the OnDrawListener W intercept()`() {
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         fakeDecorViews.forEach {
@@ -88,7 +98,7 @@ internal class ViewOnDrawInterceptorTest {
         // Given
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
-            onDrawListenerProducer = { _, privacy ->
+            onDrawListenerProducer = { _, privacy, _ ->
                 check(privacy == fakePrivacy) {
                     "Expected to create an OnDrawListener with privacy $fakePrivacy but was $privacy"
                 }
@@ -97,7 +107,7 @@ internal class ViewOnDrawInterceptorTest {
         )
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         fakeDecorViews.forEach {
@@ -111,10 +121,10 @@ internal class ViewOnDrawInterceptorTest {
         val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger
-        ) { _, _ -> mockOnDrawListener }
+        ) { _, _, _ -> mockOnDrawListener }
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         fakeDecorViews.forEach {
@@ -126,7 +136,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M register one single listener instance W intercept()`() {
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
@@ -148,7 +158,7 @@ internal class ViewOnDrawInterceptorTest {
         }
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         assertThat(testedInterceptor.decorOnDrawListeners).isEmpty()
@@ -162,7 +172,7 @@ internal class ViewOnDrawInterceptorTest {
         }
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         assertThat(testedInterceptor.decorOnDrawListeners).isEmpty()
@@ -171,7 +181,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister and clean the listeners W stopIntercepting(decorViews)`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // When
         testedInterceptor.stopIntercepting(fakeDecorViews)
@@ -188,7 +198,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister the listeners safely W stopIntercepting(decorViews)`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
         fakeDecorViews.forEach {
             whenever(it.viewTreeObserver.removeOnDrawListener(any())) doThrow IllegalStateException()
         }
@@ -208,7 +218,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister and clean the listeners W stopIntercepting()`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // When
         testedInterceptor.stopIntercepting()
@@ -226,10 +236,10 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister first and clean the listeners W intercepting()`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
 
         // Then
         fakeDecorViews.forEach {
@@ -245,7 +255,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister the listeners safely W stopIntercepting()`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, fakePrivacy)
+        testedInterceptor.intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
         fakeDecorViews.forEach {
             whenever(it.viewTreeObserver.removeOnDrawListener(any())) doThrow IllegalStateException()
         }

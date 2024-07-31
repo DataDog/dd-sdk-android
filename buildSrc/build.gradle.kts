@@ -34,7 +34,7 @@ dependencies {
     implementation(libs.versionsGradlePlugin)
     implementation(libs.fuzzyWuzzy)
     implementation(libs.dokkaGradlePlugin)
-    implementation(libs.nexusPublishGradlePlugin)
+    implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)
 
     // check api surface
@@ -58,10 +58,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("thirdPartyLicences") {
-            id = "thirdPartyLicences" // the alias
-            implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
-        }
         register("apiSurface") {
             id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"

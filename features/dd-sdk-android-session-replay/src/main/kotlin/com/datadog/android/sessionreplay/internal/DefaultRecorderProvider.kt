@@ -22,6 +22,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -37,6 +38,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMap
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
@@ -56,20 +58,24 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 internal class DefaultRecorderProvider(
     private val sdkCore: FeatureSdkCore,
     private val privacy: SessionReplayPrivacy,
+    private val imagePrivacy: ImagePrivacy,
     private val customMappers: List<MapperTypeWrapper<*>>,
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
+        resourceDataStoreManager: ResourceDataStoreManager,
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         application: Application
     ): Recorder {
         return SessionReplayRecorder(
             application,
+            resourceDataStoreManager = resourceDataStoreManager,
             resourcesWriter = resourceWriter,
             rumContextProvider = SessionReplayRumContextProvider(sdkCore),
             privacy = privacy,
+            imagePrivacy = imagePrivacy,
             recordWriter = recordWriter,
             timeProvider = SessionReplayTimeProvider(sdkCore),
             mappers = customMappers + builtInMappers(),
@@ -116,7 +122,8 @@ internal class DefaultRecorderProvider(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
-                    drawableToColorMapper
+                    drawableToColorMapper,
+                    internalLogger = sdkCore.internalLogger
                 )
             ),
             MapperTypeWrapper(
@@ -126,7 +133,8 @@ internal class DefaultRecorderProvider(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
-                    drawableToColorMapper
+                    drawableToColorMapper,
+                    internalLogger = sdkCore.internalLogger
                 )
             ),
             MapperTypeWrapper(

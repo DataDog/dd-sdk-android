@@ -61,7 +61,7 @@ internal class DataUploadRunnable(
             } else {
                 // there was no batch left or there was a problem reading the next batch
                 // in the storage so we increase the interval
-                increaseInterval()
+                increaseInterval(lastBatchUploadStatus)
             }
         }
 
@@ -74,7 +74,7 @@ internal class DataUploadRunnable(
 
     private fun handleBatchConsumingJobFrequency(lastBatchUploadStatus: UploadStatus) {
         if (lastBatchUploadStatus.shouldRetry) {
-            increaseInterval()
+            increaseInterval(lastBatchUploadStatus)
         } else {
             decreaseInterval()
         }
@@ -147,12 +147,18 @@ internal class DataUploadRunnable(
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
-    private fun increaseInterval() {
-        currentDelayIntervalMs = min(
-            maxDelayMs,
-            @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
-            (currentDelayIntervalMs * INCREASE_PERCENT).roundToLong()
-        )
+    private fun increaseInterval(status: UploadStatus?) {
+        currentDelayIntervalMs = if (status is UploadStatus.DNSError) {
+            // A DNS error will likely not be a fluke, so we use a longer delay to avoid infinite looping
+            // and prevent battery draining
+            maxDelayMs * DNS_DELAY_MULTIPLIER
+        } else {
+            min(
+                maxDelayMs,
+                @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
+                (currentDelayIntervalMs * INCREASE_PERCENT).roundToLong()
+            )
+        }
     }
 
     // endregion
@@ -161,5 +167,7 @@ internal class DataUploadRunnable(
         internal const val LOW_BATTERY_THRESHOLD = 10
         const val DECREASE_PERCENT = 0.90
         const val INCREASE_PERCENT = 1.10
+
+        internal const val DNS_DELAY_MULTIPLIER = 100
     }
 }

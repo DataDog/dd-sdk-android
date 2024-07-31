@@ -11,6 +11,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.api.DDSpanId
+import com.datadog.trace.api.internal.util.LongStringUtils
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
@@ -28,10 +29,9 @@ internal class CoreTracerSpanToSpanEventMapper(
         val serverOffset = datadogContext.time.serverTimeOffsetNs
         val metrics = resolveMetrics(model)
         val metadata = resolveMeta(datadogContext, model)
+        val lessSignificantTraceId = LongStringUtils.toHexStringPadded(model.traceId.toLong(), TRACE_ID_HEXA_SIZE)
         return SpanEvent(
-            // we remove the first part as we specifically set an IdGeneratorStrategy with
-            // 64bits length. Our current endpoint does not accept trace ids longer than 64bits
-            traceId = resolveTraceId(model),
+            traceId = lessSignificantTraceId,
             spanId = resolveSpanId(model),
             parentId = resolveParentId(model),
             resource = model.resourceName.toString(),
@@ -48,13 +48,6 @@ internal class CoreTracerSpanToSpanEventMapper(
     // endregion
 
     // region internal
-
-    private fun resolveTraceId(model: DDSpan): String {
-        // because the backend endpoint does not support 32 hex characters trace ids we are going to take only the
-        // least significant 64 bits of the trace id. Later on when we will introduce the 128 bits support
-        // the most significant bits will be reported in a separated dedicated meta tag.
-        return model.traceId.toHexString().takeLeastSignificant64Bits()
-    }
 
     private fun resolveSpanId(model: DDSpan): String {
         // the span id is always 64 bits long so we can pad it with zeros
@@ -103,10 +96,13 @@ internal class CoreTracerSpanToSpanEventMapper(
             session = event.tags[LogAttributes.RUM_SESSION_ID]?.let { SpanEvent.Session(it as? String) },
             view = event.tags[LogAttributes.RUM_VIEW_ID]?.let { SpanEvent.View(it as? String) }
         )
+        val mostSignificantTraceId =
+            LongStringUtils.toHexStringPadded(event.traceId.toHighOrderLong(), TRACE_ID_HEXA_SIZE)
         val tags = event.tags.mapValues { it.value.toString() }
         val meta = mutableMapOf<String, String>()
         meta.putAll(event.baggage)
         meta.putAll(tags)
+        meta[TRACE_ID_META_KEY] = mostSignificantTraceId
         resolveSpanLinks(event)?.let { meta[SPAN_LINKS_KEY] = it }
         return SpanEvent.Meta(
             version = datadogContext.version,
@@ -168,12 +164,6 @@ internal class CoreTracerSpanToSpanEventMapper(
             .toMutableMap()
     }
 
-    private fun String.takeLeastSignificant64Bits(): String {
-        // n is always positive so we can suppress the warning
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        return this.takeLast(LEAST_SIGNIFICANT_64_BITS_AS_HEX_LENGTH)
-    }
-
     private fun toJson(map: Map<String, String>): JsonObject {
         val jsonObject = JsonObject()
         map.forEach { (key, value) ->
@@ -185,7 +175,7 @@ internal class CoreTracerSpanToSpanEventMapper(
     // endregion
 
     companion object {
-        private const val LEAST_SIGNIFICANT_64_BITS_AS_HEX_LENGTH = 16
+        private const val TRACE_ID_HEXA_SIZE = 16
         private const val ATTRIBUTES_KEY = "attributes"
         private const val SPAN_ID_KEY = "span_id"
         private const val TRACE_ID_KEY = "trace_id"

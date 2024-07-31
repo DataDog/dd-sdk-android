@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Spinner
+import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
 
@@ -19,6 +20,20 @@ internal class DropDownSwitchersFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.fragment_drop_down_switchers_components, container, false)
+        val disabledSwitchCompat = root.findViewById<SwitchCompat>(R.id.app_compat_switcher_disabled)
+        root.findViewById<SwitchCompat>(R.id.app_compat_switcher).apply {
+            setOnCheckedChangeListener { _, isChecked ->
+                disabledSwitchCompat.isEnabled = isChecked
+            }
+        }
+
+        val disabledSwitchMaterial = root.findViewById<SwitchCompat>(R.id.material_switcher_disabled)
+        root.findViewById<SwitchCompat>(R.id.material_switcher).apply {
+            setOnCheckedChangeListener { _, isChecked ->
+                disabledSwitchMaterial.isEnabled = isChecked
+            }
+        }
+
         root.findViewById<Spinner>(R.id.default_spinner)?.let { spinner ->
             ArrayAdapter.createFromResource(
                 requireContext(),

@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.UiThread
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 
@@ -21,6 +22,7 @@ interface ImageWireframeHelper {
     /**
      * Asks the helper to create an image wireframe, and process the provided drawable in the background.
      * @param view the view owning the drawable
+     * @param imagePrivacy defines which images should be hidden
      * @param currentWireframeIndex the index of the wireframe in the list of wireframes for the view
      * @param x the x position of the image
      * @param y the y position of the image
@@ -37,6 +39,7 @@ interface ImageWireframeHelper {
     // TODO RUM-3666 limit the number of params to this function
     fun createImageWireframe(
         view: View,
+        imagePrivacy: ImagePrivacy,
         currentWireframeIndex: Int,
         x: Long,
         y: Long,

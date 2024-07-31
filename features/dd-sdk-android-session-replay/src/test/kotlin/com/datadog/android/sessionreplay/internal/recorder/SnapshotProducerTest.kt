@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -45,7 +46,7 @@ import java.util.LinkedList
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SnapshotProducerTest {
 
-    lateinit var testedSnapshotProducer: SnapshotProducer
+    private lateinit var testedSnapshotProducer: SnapshotProducer
 
     @Mock
     lateinit var mockTreeViewTraversal: TreeViewTraversal
@@ -67,6 +68,9 @@ internal class SnapshotProducerTest {
 
     @Forgery
     lateinit var fakePrivacy: SessionReplayPrivacy
+
+    @Forgery
+    lateinit var fakeImagePrivacy: ImagePrivacy
 
     @BeforeEach
     fun `set up`() {
@@ -93,6 +97,7 @@ internal class SnapshotProducerTest {
             mockRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -119,6 +124,7 @@ internal class SnapshotProducerTest {
             fakeRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -145,6 +151,7 @@ internal class SnapshotProducerTest {
             fakeRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -171,6 +178,7 @@ internal class SnapshotProducerTest {
             fakeRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -201,6 +209,7 @@ internal class SnapshotProducerTest {
             mockRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -237,6 +246,7 @@ internal class SnapshotProducerTest {
             mockRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -271,6 +281,7 @@ internal class SnapshotProducerTest {
             mockRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -314,6 +325,7 @@ internal class SnapshotProducerTest {
             fakeRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 
@@ -346,6 +358,7 @@ internal class SnapshotProducerTest {
             fakeRoot,
             fakeSystemInformation,
             fakePrivacy,
+            fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
 

@@ -71,14 +71,6 @@ static-analysis:
     include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
     strategy: depend
 
-analysis:licenses:
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
-
 # TODO RUM-1622 cleanup this section
 # TESTS
 
@@ -272,6 +264,34 @@ test-pyramid:publish-webview-synthetics:
     expire_in: 1 week
     paths:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
+
+
+test-pyramid:publish-staging-synthetics:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  only:
+    - develop
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_config_json --with-decryption --query "Parameter.Value" --out text > ./config/staging.json
+    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageStagingRelease --stacktrace --no-daemon
+    - npm update -g @datadog/datadog-ci
+    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
+    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk
 
 # PUBLISH ARTIFACTS ON MAVEN
 

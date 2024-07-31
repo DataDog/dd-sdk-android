@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.metrics
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
 
@@ -36,7 +37,8 @@ internal class MethodCalledTelemetry(
 
         internalLogger.logMetric(
             messageBuilder = { METHOD_CALLED_METRIC_NAME },
-            additionalProperties = additionalProperties
+            additionalProperties = additionalProperties,
+            samplingRate = MethodCallSamplingRate.ALL.rate // sampling is performed on start
         )
     }
 

@@ -252,7 +252,8 @@ internal class RecordedDataQueueHandlerTest {
         val item = testedHandler.addSnapshotItem(mockSystemInformation)
 
         // Then
-        assertThat(item!!.recordedQueuedItemContext).isEqualTo(currentRumContextData)
+        checkNotNull(item)
+        assertThat(item.recordedQueuedItemContext).isEqualTo(currentRumContextData)
         assertThat(item.systemInformation).isEqualTo(mockSystemInformation)
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(1)
     }
@@ -269,7 +270,8 @@ internal class RecordedDataQueueHandlerTest {
             testedHandler.addTouchEventItem(fakeTouchData)
 
         // Then
-        assertThat(item!!.recordedQueuedItemContext).isEqualTo(currentRumContextData)
+        checkNotNull(item)
+        assertThat(item.recordedQueuedItemContext).isEqualTo(currentRumContextData)
         assertThat(item.touchData).isEqualTo(fakeTouchData)
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(1)
     }
@@ -485,9 +487,9 @@ internal class RecordedDataQueueHandlerTest {
     @Test
     fun `M consume items in the correct order W tryToConsumeItems() { spawn multiple threads }`() {
         // Given
-        val item1 = createFakeSnapshotItemWithDelayMs(1)
-        val item2 = createFakeSnapshotItemWithDelayMs(2)
-        val item3 = createFakeSnapshotItemWithDelayMs(3)
+        val item1 = addSnapshotItemToQueue()
+        val item2 = addSnapshotItemToQueue()
+        val item3 = addSnapshotItemToQueue()
 
         item1.isFinishedTraversal = true
         item2.isFinishedTraversal = true
@@ -565,9 +567,9 @@ internal class RecordedDataQueueHandlerTest {
     @Test
     fun `M clear pending queue and stop processor W clearAndStopProcessing() { pending items }`() {
         // Given
-        createFakeSnapshotItemWithDelayMs(1)
-        createFakeSnapshotItemWithDelayMs(2)
-        createFakeSnapshotItemWithDelayMs(3)
+        addSnapshotItemToQueue()
+        addSnapshotItemToQueue()
+        addSnapshotItemToQueue()
 
         // When
         testedHandler.clearAndStopProcessingQueue()
@@ -670,9 +672,9 @@ internal class RecordedDataQueueHandlerTest {
 
     // endregion
 
-    private fun createFakeSnapshotItemWithDelayMs(delay: Int): SnapshotRecordedDataQueueItem {
+    private fun addSnapshotItemToQueue(): SnapshotRecordedDataQueueItem {
         val newRumContext = RecordedQueuedItemContext(
-            timestamp = System.nanoTime() + delay,
+            timestamp = System.currentTimeMillis(),
             newRumContext = fakeRecordedQueuedItemContext.newRumContext
         )
 
@@ -680,7 +682,8 @@ internal class RecordedDataQueueHandlerTest {
             .thenReturn(newRumContext)
 
         val item = testedHandler.addSnapshotItem(mockSystemInformation)
-        item!!.nodes = fakeNodeData
+        checkNotNull(item)
+        item.nodes = fakeNodeData
         return item
     }
 

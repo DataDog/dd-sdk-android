@@ -33,11 +33,15 @@ include(":integrations:dd-sdk-android-trace-coroutines")
 
 // TESTING UTILS
 include(":reliability:stub-core")
+include(":reliability:stub-feature")
 
 // SINGLE FEATURE INTEGRATION TESTS
 include(":reliability:single-fit:logs")
 include(":reliability:single-fit:rum")
 include(":reliability:single-fit:trace")
+
+// CORE INTEGRATION TESTS
+include(":reliability:core-it")
 
 // LEGACY TESTS
 include(":instrumented:integration")

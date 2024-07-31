@@ -39,7 +39,9 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
@@ -130,6 +132,9 @@ internal class DatadogRumMonitorTest {
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
     @Mock
+    lateinit var sessionEndedMetricDispatcher: SessionMetricDispatcher
+
+    @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
@@ -178,6 +183,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -199,6 +205,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -257,6 +264,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -293,6 +301,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -585,6 +594,162 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W stopResourceWithError() {without status code}`(
         @StringForgery key: String,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        testedMonitor.stopResourceWithError(key, null, message, source, throwable, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResourceWithError
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isNull()
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W startResource()`(
+        @Forgery key: ResourceId,
+        @Forgery method: RumResourceMethod,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
+    ) {
+        testedMonitor.startResource(key, method, url, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StartResource
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.method).isEqualTo(method)
+            assertThat(event.url).isEqualTo(url)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResource()`(
+        @Forgery key: ResourceId,
+        @IntForgery(200, 600) statusCode: Int,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery kind: RumResourceKind
+    ) {
+        testedMonitor.stopResource(key, statusCode, size, kind, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResource
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isEqualTo(statusCode.toLong())
+            assertThat(event.kind).isEqualTo(kind)
+            assertThat(event.size).isEqualTo(size)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResource() {without status code nor size}`(
+        @Forgery key: ResourceId,
+        @Forgery kind: RumResourceKind
+    ) {
+        testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResource
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isNull()
+            assertThat(event.kind).isEqualTo(kind)
+            assertThat(event.size).isNull()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResourceWithError() {throwable}`(
+        @Forgery key: ResourceId,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @IntForgery(200, 600) statusCode: Int,
+        @Forgery throwable: Throwable
+    ) {
+        testedMonitor.stopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            throwable,
+            fakeAttributes
+        )
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResourceWithError
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isEqualTo(statusCode.toLong())
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResourceWithError() {stacktrace}`(
+        @Forgery key: ResourceId,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @IntForgery(200, 600) statusCode: Int,
+        @StringForgery(type = StringForgeryType.ASCII_EXTENDED) stackTrace: String,
+        @StringForgery errorType: String
+    ) {
+        testedMonitor.stopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            fakeAttributes
+        )
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResourceWithStackTrace
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isEqualTo(statusCode.toLong())
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.stackTrace).isEqualTo(stackTrace)
+            assertThat(event.errorType).isEqualTo(errorType)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResourceWithError() {without status code}`(
+        @Forgery key: ResourceId,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -1452,6 +1617,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1496,6 +1662,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1527,6 +1694,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
