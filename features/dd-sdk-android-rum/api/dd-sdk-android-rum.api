@@ -224,6 +224,7 @@ public abstract interface class com/datadog/android/rum/RumSessionListener {
 public final class com/datadog/android/rum/_RumInternalProxy {
 	public static final field Companion Lcom/datadog/android/rum/_RumInternalProxy$Companion;
 	public final fun addLongTask (JLjava/lang/String;)V
+	public final fun setSyntheticsAttribute (Ljava/lang/String;Ljava/lang/String;)V
 	public final fun updatePerformanceMetric (Lcom/datadog/android/rum/RumPerformanceMetric;D)V
 }
 
