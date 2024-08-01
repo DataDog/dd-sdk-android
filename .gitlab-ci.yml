@@ -17,6 +17,11 @@ variables:
   KUBERNETES_MEMORY_REQUEST: "8Gi"
   KUBERNETES_MEMORY_LIMIT: "16Gi"
 
+  EMULATOR_NAME: "android_emulator"
+  ANDROID_ARCH: "arm64-v8a"
+  ANDROID_API: "34"
+  ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
+
 stages:
   - ci-image
   - security
@@ -25,6 +30,33 @@ stages:
   - test-pyramid
   - publish
   - notify
+
+.snippets:
+  install-android-sdk:
+    - curl -sSL -o commandlinetools.zip https://dl.google.com/android/repository/$ANDROID_SDK_VERSION.zip
+    - rm -rf ~/android_sdk
+    - rm -rf ~/cmdline-tools
+    - unzip -q commandlinetools -d ~/
+    - mkdir -p ~/android_sdk/cmdline-tools/latest
+    - mv ~/cmdline-tools/* ~/android_sdk/cmdline-tools/latest
+    - rm ./commandlinetools.zip
+    - export ANDROID_HOME="$HOME/android_sdk/"
+    - export ANDROID_SDK_ROOT="$HOME/android_sdk/"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_BUILD_TOOLS"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
+    - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+    - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+  run-instrumented-integration:
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon
+    - set +e
+    - $ANDROID_HOME/platform-tools/adb install -t -d -g -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
+    - $ANDROID_HOME/platform-tools/adb install -t -d -g -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
+    - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner
+    - $ANDROID_HOME/platform-tools/adb emu kill
 
 # CI IMAGE
 
@@ -114,7 +146,6 @@ test:tools:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
-
 
 test:kover:
   tags: [ "arch:amd64" ]
@@ -210,6 +241,50 @@ test-pyramid:single-fit-trace:
     expire_in: 1 week
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
+# RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
+
+test-pyramid:instrumented-legacy-min-api:
+  tags: [ "macos:sonoma" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "21"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-instrumented-integration]
+
+test-pyramid:instrumented-legacy-latest-api:
+  tags: [ "macos:sonoma" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "34"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-instrumented-integration]
+
+test-pyramid:instrumented-legacy-median-api:
+  tags: [ "macos:sonoma" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "28"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-instrumented-integration]
 
 test-pyramid:publish-e2e-synthetics:
   tags: [ "arch:amd64" ]
