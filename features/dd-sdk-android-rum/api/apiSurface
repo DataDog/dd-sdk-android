@@ -1767,6 +1767,9 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
   data class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -1811,11 +1814,17 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
       fun fromJson(kotlin.String): Os
       fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Configuration
-    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TraceContextInjection? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TrackingConsent? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<SelectedTracingPropagator>? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null)
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TraceContextInjection? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TrackingConsent? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<SelectedTracingPropagator>? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.collections.List<Plugin>? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
+  data class Plugin
+    constructor(kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Plugin
+      fun fromJsonObject(com.google.gson.JsonObject): Plugin
   enum Source
     constructor(kotlin.String)
     - ANDROID
@@ -1871,6 +1880,9 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
   data class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -1937,6 +1949,9 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
   data class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -1999,3 +2014,152 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
+data class com.datadog.android.telemetry.model.TelemetryUsageEvent
+  constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.collections.List<kotlin.String>? = null, Telemetry)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): TelemetryUsageEvent
+    fun fromJsonObject(com.google.gson.JsonObject): TelemetryUsageEvent
+  class Dd
+    val formatVersion: kotlin.Long
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
+  data class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+      fun fromJsonObject(com.google.gson.JsonObject): Action
+  data class Telemetry
+    constructor(Device? = null, Os? = null, Usage, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    val type: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Telemetry
+      fun fromJsonObject(com.google.gson.JsonObject): Telemetry
+  data class Device
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
+  sealed class Usage
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class TelemetryCommonFeaturesUsage_0 : Usage
+      constructor(TrackingConsent)
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_0
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_0
+    class TelemetryCommonFeaturesUsage_1 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_1
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_1
+    class TelemetryCommonFeaturesUsage_2 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_2
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_2
+    class TelemetryCommonFeaturesUsage_3 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_3
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_3
+    class TelemetryCommonFeaturesUsage_4 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_4
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_4
+    class TelemetryCommonFeaturesUsage_5 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_5
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_5
+    class TelemetryCommonFeaturesUsage_6 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_6
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_6
+    class TelemetryCommonFeaturesUsage_7 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryCommonFeaturesUsage_7
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryCommonFeaturesUsage_7
+    data class TelemetryBrowserFeaturesUsage_0 : Usage
+      constructor(kotlin.Boolean? = null)
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryBrowserFeaturesUsage_0
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryBrowserFeaturesUsage_0
+    class TelemetryBrowserFeaturesUsage_1 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryBrowserFeaturesUsage_1
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryBrowserFeaturesUsage_1
+    class TelemetryBrowserFeaturesUsage_2 : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TelemetryBrowserFeaturesUsage_2
+        fun fromJsonObject(com.google.gson.JsonObject): TelemetryBrowserFeaturesUsage_2
+    companion object 
+      fun fromJson(kotlin.String): Usage
+      fun fromJsonObject(com.google.gson.JsonObject): Usage
+  enum Source
+    constructor(kotlin.String)
+    - ANDROID
+    - IOS
+    - BROWSER
+    - FLUTTER
+    - REACT_NATIVE
+    - UNITY
+    - KOTLIN_MULTIPLATFORM
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
+  enum TrackingConsent
+    constructor(kotlin.String)
+    - GRANTED
+    - NOT_GRANTED
+    - PENDING
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TrackingConsent

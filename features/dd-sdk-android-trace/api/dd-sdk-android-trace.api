@@ -314,9 +314,17 @@ public final class com/datadog/android/trace/model/SpanEvent$SimCarrier$Companio
 }
 
 public final class com/datadog/android/trace/model/SpanEvent$Span {
+	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Span$Companion;
 	public fun <init> ()V
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Span;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent$Span;
 	public final fun getKind ()Ljava/lang/String;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
+}
+
+public final class com/datadog/android/trace/model/SpanEvent$Span$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Span;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent$Span;
 }
 
 public final class com/datadog/android/trace/model/SpanEvent$Tracer {
