@@ -11,7 +11,6 @@ import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
@@ -225,14 +224,7 @@ internal class DatadogCoreTest {
         testedCore.setUserInfo(id, name, email, fakeUserProperties)
 
         // Then
-        verify(mockUserInfoProvider).setUserInfo(
-            UserInfo(
-                id = id,
-                name = name,
-                email = email,
-                additionalProperties = fakeUserProperties
-            )
-        )
+        verify(mockUserInfoProvider).setUserInfo(id, name, email, fakeUserProperties)
     }
 
     @Test
@@ -258,11 +250,10 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockUserInfoProvider).setUserInfo(
-            UserInfo(
-                id,
-                name,
-                email
-            )
+            id,
+            name,
+            email,
+            emptyMap()
         )
         verify(mockUserInfoProvider).addUserProperties(
             properties = mapOf(
