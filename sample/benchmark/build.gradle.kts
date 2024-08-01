@@ -1,4 +1,5 @@
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.configureFlavorForBenchmark
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
@@ -27,6 +28,7 @@ android {
             buildConfig = true
         }
         vectorDrawables.useSupportLibrary = true
+        configureFlavorForBenchmark(project.rootDir)
     }
     compileOptions {
         java17()
@@ -51,7 +53,8 @@ android {
 
         getByName("release") {
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt")
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
             )
             isMinifyEnabled = true
             signingConfigs.findByName("release")?.let {
@@ -72,6 +75,16 @@ dependencies {
     implementation(libs.androidXConstraintLayout)
     implementation(libs.googleMaterial)
     implementation(libs.glideCore)
+    implementation(libs.timber)
+    implementation(project(":features:dd-sdk-android-logs"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-webview"))
+    implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":tools:benchmark"))
 }
 
 kotlinConfig()
