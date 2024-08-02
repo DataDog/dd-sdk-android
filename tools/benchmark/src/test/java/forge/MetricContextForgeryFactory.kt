@@ -17,7 +17,8 @@ internal class MetricContextForgeryFactory : ForgeryFactory<MetricContext> {
             osVersion = forge.aString(),
             run = forge.aString(),
             applicationId = forge.aString(),
-            intervalInSeconds = forge.aLong()
+            intervalInSeconds = forge.aLong(),
+            scenario = forge.aString()
         )
     }
 }

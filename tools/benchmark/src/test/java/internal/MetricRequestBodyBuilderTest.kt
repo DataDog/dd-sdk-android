@@ -66,6 +66,7 @@ class MetricRequestBodyBuilderTest {
                         "device_model:${metricContext.deviceModel}",
                         "os_version:${metricContext.osVersion}",
                         "run:${metricContext.run}",
+                        "scenario:${metricContext.scenario}",
                         "application_id:${metricContext.applicationId}"
                     )
                 )

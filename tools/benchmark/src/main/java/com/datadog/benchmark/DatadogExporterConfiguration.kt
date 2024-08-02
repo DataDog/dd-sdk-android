@@ -15,6 +15,7 @@ package com.datadog.benchmark
  * @param applicationId the id of the host application.
  * @param apiKey the api key for submitting metrics to datadog end points.
  * @param run the run description of benchmark test.
+ * @param scenario the scenario of benchmark.
  * @param endPoint the endpoint to submit the metrics.
  * @param intervalInSeconds the interval of seconds of sampling and uploading vital data.
  */
@@ -26,6 +27,7 @@ data class DatadogExporterConfiguration internal constructor(
     val applicationId: String? = null,
     val apiKey: String,
     val run: String? = null,
+    val scenario: String? = null,
     val endPoint: EndPoint = EndPoint.US1,
     val intervalInSeconds: Long = DEFAULT_INTERVAL_IN_SECONDS
 ) {
@@ -41,6 +43,7 @@ data class DatadogExporterConfiguration internal constructor(
         private var applicationVersion: String? = null
         private var applicationId: String? = null
         private var run: String? = null
+        private var scenario: String? = null
         private var endPoint: EndPoint = EndPoint.US1
         private var intervalInSeconds: Long = DEFAULT_INTERVAL_IN_SECONDS
 
@@ -115,6 +118,16 @@ data class DatadogExporterConfiguration internal constructor(
         }
 
         /**
+         * Sets the benchmark scenario.
+         *
+         * @param scenario benchmark scenario.
+         */
+        fun setScenario(scenario: String): Builder {
+            this.scenario = scenario
+            return this
+        }
+
+        /**
          * Sets the end point which the metric should be uploaded to.
          *
          * @param endPoint endpoint of the metric upload.
@@ -136,6 +149,7 @@ data class DatadogExporterConfiguration internal constructor(
                 applicationId = applicationId,
                 apiKey = apiKey,
                 run = run,
+                scenario = scenario,
                 endPoint = endPoint,
                 intervalInSeconds = intervalInSeconds
             )
