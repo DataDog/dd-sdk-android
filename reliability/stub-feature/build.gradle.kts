@@ -31,14 +31,6 @@ dependencies {
     implementation(libs.kotlin)
 
     // Testing
-    implementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
     implementation(libs.bundles.jUnit5)
     implementation(libs.bundles.testTools)
     implementation(libs.okHttp)
