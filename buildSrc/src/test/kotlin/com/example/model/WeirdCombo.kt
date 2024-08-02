@@ -17,19 +17,13 @@ import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-public data class Household(
-    public val pets: List<Animal>? = null,
-    public val situation: Situation? = null,
+public data class WeirdCombo(
+    public val anything: Anything? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        pets?.let { petsNonNull ->
-            val petsArray = JsonArray(petsNonNull.size)
-            petsNonNull.forEach { petsArray.add(it.toJson()) }
-            json.add("pets", petsArray)
-        }
-        situation?.let { situationNonNull ->
-            json.add("situation", situationNonNull.toJson())
+        anything?.let { anythingNonNull ->
+            json.add("anything", anythingNonNull.toJson())
         }
         return json
     }
@@ -37,13 +31,13 @@ public data class Household(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(jsonString: String): Household {
+        public fun fromJson(jsonString: String): WeirdCombo {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 return fromJsonObject(jsonObject)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(
-                    "Unable to parse json into type Household",
+                    "Unable to parse json into type WeirdCombo",
                     e
                 )
             }
@@ -51,48 +45,38 @@ public data class Household(
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonObject(jsonObject: JsonObject): Household {
+        public fun fromJsonObject(jsonObject: JsonObject): WeirdCombo {
             try {
-                val pets = jsonObject.get("pets")?.asJsonArray?.let { jsonArray ->
-                    val collection = ArrayList<Animal>(jsonArray.size())
-                    jsonArray.forEach {
-                        collection.add(Animal.fromJsonObject(it.asJsonObject))
-                    }
-                    collection
+                val anything = jsonObject.get("anything")?.asJsonObject?.let {
+                    Anything.fromJsonObject(it)
                 }
-                val situation = jsonObject.get("situation")?.asJsonObject?.let {
-                    Situation.fromJsonObject(it)
-                }
-                return Household(pets, situation)
+                return WeirdCombo(anything)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(
-                    "Unable to parse json into type Household",
+                    "Unable to parse json into type WeirdCombo",
                     e
                 )
             } catch (e: NumberFormatException) {
                 throw JsonParseException(
-                    "Unable to parse json into type Household",
+                    "Unable to parse json into type WeirdCombo",
                     e
                 )
             } catch (e: NullPointerException) {
                 throw JsonParseException(
-                    "Unable to parse json into type Household",
+                    "Unable to parse json into type WeirdCombo",
                     e
                 )
             }
         }
     }
 
-    /**
-     * A representation of the animal kingdom
-     */
-    public sealed class Animal {
+    public sealed class Anything {
         public abstract fun toJson(): JsonElement
 
         public data class Fish(
             public val water: Water,
             public val size: Long? = null,
-        ) : Animal() {
+        ) : Anything() {
             override fun toJson(): JsonElement {
                 val json = JsonObject()
                 json.add("water", water.toJson())
@@ -147,7 +131,7 @@ public data class Household(
         public data class Bird(
             public val food: Food,
             public val canFly: Boolean,
-        ) : Animal() {
+        ) : Anything() {
             override fun toJson(): JsonElement {
                 val json = JsonObject()
                 json.add("food", food.toJson())
@@ -197,16 +181,77 @@ public data class Household(
             }
         }
 
+        public data class Paper(
+            public val title: String,
+            public val author: List<String>,
+        ) : Anything() {
+            override fun toJson(): JsonElement {
+                val json = JsonObject()
+                json.addProperty("title", title)
+                val authorArray = JsonArray(author.size)
+                author.forEach { authorArray.add(it) }
+                json.add("author", authorArray)
+                return json
+            }
+
+            public companion object {
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJson(jsonString: String): Paper {
+                    try {
+                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                        return fromJsonObject(jsonObject)
+                    } catch (e: IllegalStateException) {
+                        throw JsonParseException(
+                            "Unable to parse json into type Paper",
+                            e
+                        )
+                    }
+                }
+
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJsonObject(jsonObject: JsonObject): Paper {
+                    try {
+                        val title = jsonObject.get("title").asString
+                        val author = jsonObject.get("author").asJsonArray.let { jsonArray ->
+                            val collection = ArrayList<String>(jsonArray.size())
+                            jsonArray.forEach {
+                                collection.add(it.asString)
+                            }
+                            collection
+                        }
+                        return Paper(title, author)
+                    } catch (e: IllegalStateException) {
+                        throw JsonParseException(
+                            "Unable to parse json into type Paper",
+                            e
+                        )
+                    } catch (e: NumberFormatException) {
+                        throw JsonParseException(
+                            "Unable to parse json into type Paper",
+                            e
+                        )
+                    } catch (e: NullPointerException) {
+                        throw JsonParseException(
+                            "Unable to parse json into type Paper",
+                            e
+                        )
+                    }
+                }
+            }
+        }
+
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(jsonString: String): Animal {
+            public fun fromJson(jsonString: String): Anything {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     return fromJsonObject(jsonObject)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(
-                        "Unable to parse json into one of type Animal",
+                        "Unable to parse json into one of type Anything",
                         e
                     )
                 }
@@ -214,7 +259,7 @@ public data class Household(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Animal {
+            public fun fromJsonObject(jsonObject: JsonObject): Anything {
                 val errors = mutableListOf<Throwable>()
                 val asFish = try {
                     Fish.fromJsonObject(jsonObject)
@@ -228,176 +273,19 @@ public data class Household(
                     errors.add(e)
                     null
                 }
+                val asPaper = try {
+                    Paper.fromJsonObject(jsonObject)
+                } catch (e: JsonParseException) {
+                    errors.add(e)
+                    null
+                }
                 val result = arrayOf(
                     asFish,
                     asBird,
+                    asPaper,
                 ).firstOrNull { it != null }
                 if (result == null) {
-                    val message = "Unable to parse json into one of type \n" + "Animal\n" +
-                        errors.joinToString("\n") { it.message.toString() }
-                    throw JsonParseException(message)
-                }
-                return result
-            }
-        }
-    }
-
-    public sealed class Situation {
-        public abstract fun toJson(): JsonElement
-
-        public data class Marriage(
-            public val spouses: List<String>,
-        ) : Situation() {
-            override fun toJson(): JsonElement {
-                val json = JsonObject()
-                val spousesArray = JsonArray(spouses.size)
-                spouses.forEach { spousesArray.add(it) }
-                json.add("spouses", spousesArray)
-                return json
-            }
-
-            public companion object {
-                @JvmStatic
-                @Throws(JsonParseException::class)
-                public fun fromJson(jsonString: String): Marriage {
-                    try {
-                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                        return fromJsonObject(jsonObject)
-                    } catch (e: IllegalStateException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Marriage",
-                            e
-                        )
-                    }
-                }
-
-                @JvmStatic
-                @Throws(JsonParseException::class)
-                public fun fromJsonObject(jsonObject: JsonObject): Marriage {
-                    try {
-                        val spouses = jsonObject.get("spouses").asJsonArray.let { jsonArray ->
-                            val collection = ArrayList<String>(jsonArray.size())
-                            jsonArray.forEach {
-                                collection.add(it.asString)
-                            }
-                            collection
-                        }
-                        return Marriage(spouses)
-                    } catch (e: IllegalStateException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Marriage",
-                            e
-                        )
-                    } catch (e: NumberFormatException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Marriage",
-                            e
-                        )
-                    } catch (e: NullPointerException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Marriage",
-                            e
-                        )
-                    }
-                }
-            }
-        }
-
-        public data class Cotenancy(
-            public val roommates: List<String>,
-        ) : Situation() {
-            override fun toJson(): JsonElement {
-                val json = JsonObject()
-                val roommatesArray = JsonArray(roommates.size)
-                roommates.forEach { roommatesArray.add(it) }
-                json.add("roommates", roommatesArray)
-                return json
-            }
-
-            public companion object {
-                @JvmStatic
-                @Throws(JsonParseException::class)
-                public fun fromJson(jsonString: String): Cotenancy {
-                    try {
-                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                        return fromJsonObject(jsonObject)
-                    } catch (e: IllegalStateException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Cotenancy",
-                            e
-                        )
-                    }
-                }
-
-                @JvmStatic
-                @Throws(JsonParseException::class)
-                public fun fromJsonObject(jsonObject: JsonObject): Cotenancy {
-                    try {
-                        val roommates = jsonObject.get("roommates").asJsonArray.let { jsonArray ->
-                            val collection = ArrayList<String>(jsonArray.size())
-                            jsonArray.forEach {
-                                collection.add(it.asString)
-                            }
-                            collection
-                        }
-                        return Cotenancy(roommates)
-                    } catch (e: IllegalStateException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Cotenancy",
-                            e
-                        )
-                    } catch (e: NumberFormatException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Cotenancy",
-                            e
-                        )
-                    } catch (e: NullPointerException) {
-                        throw JsonParseException(
-                            "Unable to parse json into type Cotenancy",
-                            e
-                        )
-                    }
-                }
-            }
-        }
-
-        public companion object {
-            @JvmStatic
-            @Throws(JsonParseException::class)
-            public fun fromJson(jsonString: String): Situation {
-                try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                    return fromJsonObject(jsonObject)
-                } catch (e: IllegalStateException) {
-                    throw JsonParseException(
-                        "Unable to parse json into one of type Situation",
-                        e
-                    )
-                }
-            }
-
-            @JvmStatic
-            @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Situation {
-                val errors = mutableListOf<Throwable>()
-                val asMarriage = try {
-                    Marriage.fromJsonObject(jsonObject)
-                } catch (e: JsonParseException) {
-                    errors.add(e)
-                    null
-                }
-                val asCotenancy = try {
-                    Cotenancy.fromJsonObject(jsonObject)
-                } catch (e: JsonParseException) {
-                    errors.add(e)
-                    null
-                }
-                val result = arrayOf(
-                    asMarriage,
-                    asCotenancy,
-                ).firstOrNull { it != null }
-                if (result == null) {
-                    val message = "Unable to parse json into one of type \n" + "Situation\n" +
+                    val message = "Unable to parse json into one of type \n" + "Anything\n" +
                         errors.joinToString("\n") { it.message.toString() }
                     throw JsonParseException(message)
                 }

@@ -24,7 +24,7 @@ public sealed class Animal {
         public val water: Water,
         public val size: Long? = null,
     ) : Animal() {
-        public override fun toJson(): JsonElement {
+        override fun toJson(): JsonElement {
             val json = JsonObject()
             json.add("water", water.toJson())
             size?.let { sizeNonNull ->
@@ -79,7 +79,7 @@ public sealed class Animal {
         public val food: Food,
         public val canFly: Boolean,
     ) : Animal() {
-        public override fun toJson(): JsonElement {
+        override fun toJson(): JsonElement {
             val json = JsonObject()
             json.add("food", food.toJson())
             json.addProperty("can_fly", canFly)

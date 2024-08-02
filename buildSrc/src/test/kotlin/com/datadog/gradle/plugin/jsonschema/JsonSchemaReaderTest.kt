@@ -62,6 +62,7 @@ class JsonSchemaReaderTest(
                 arrayOf("additional_props_merged", AdditionalPropsMerged),
                 arrayOf("additional_props_single_merge", AdditionalPropsSingleMerge),
                 arrayOf("definition_name_conflict", Conflict),
+                arrayOf("root_schema_with_no_type", Country),
                 arrayOf("definition", Customer),
                 arrayOf("definition_with_id", Customer),
                 arrayOf("nested_enum", DateTime),
@@ -84,7 +85,7 @@ class JsonSchemaReaderTest(
                 arrayOf("all_of_merged", UserMerged),
                 arrayOf("constant_number", Version),
                 arrayOf("sets", Video),
-                arrayOf("root_schema_with_no_type", Country)
+                arrayOf("one_of_nested", WeirdCombo)
             )
         }
     }
