@@ -110,3 +110,18 @@ private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, An
             .toMap(mutableMapOf())
     }
 }
+
+/**
+ * Adds all the tools factories to the Forge instance.
+ */
+fun <T : Forge> T.useToolsFactories(): T {
+    addFactory(GsonJsonObjectForgeryFactory())
+    addFactory(GsonJsonArrayForgeryFactory())
+    addFactory(OrgJSONArrayForgeryFactory())
+    addFactory(OrgJSONObjectForgeryFactory())
+    addFactory(ThrowableForgeryFactory())
+    addFactory(ExceptionForgeryFactory())
+    addFactory(ErrorForgeryFactory())
+    addFactory(GsonJsonPrimitiveForgeryFactory())
+    return this
+}

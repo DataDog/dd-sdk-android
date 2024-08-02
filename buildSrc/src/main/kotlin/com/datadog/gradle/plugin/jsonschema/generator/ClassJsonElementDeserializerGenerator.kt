@@ -6,7 +6,9 @@
 
 package com.datadog.gradle.plugin.jsonschema.generator
 
+import com.datadog.gradle.plugin.jsonschema.JsonType
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
+import com.datadog.gradle.plugin.jsonschema.TypeProperty
 import com.datadog.gradle.plugin.jsonschema.variableName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -24,35 +26,31 @@ class ClassJsonElementDeserializerGenerator(
 ) {
 
     override fun generate(definition: TypeDefinition.Class, rootTypeName: String): FunSpec {
-        val isConstantClass = definition.isConstantClass()
         val returnType = ClassName.bestGuess(definition.name)
 
         val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .returns(returnType)
 
-        if (!isConstantClass) {
-            funBuilder.throws(ClassNameRef.JsonParseException)
-            funBuilder.addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
-            funBuilder.beginControlFlow("try")
-        }
+        funBuilder.throws(ClassNameRef.JsonParseException)
+        funBuilder.addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
+        funBuilder.beginControlFlow("try")
 
         funBuilder.appendDeserializerFunctionBlock(definition, rootTypeName)
 
-        if (!isConstantClass) {
-            caughtExceptions.forEach {
-                funBuilder.nextControlFlow(
-                    "catch (%L: %T)",
-                    Identifier.CAUGHT_EXCEPTION,
-                    it
-                )
-                funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
-                funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
-                funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
-                funBuilder.addStatement(")")
-            }
-            funBuilder.endControlFlow()
+        caughtExceptions.forEach {
+            funBuilder.nextControlFlow(
+                "catch (%L: %T)",
+                Identifier.CAUGHT_EXCEPTION,
+                it
+            )
+            funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
+            funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+            funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
+            funBuilder.addStatement(")")
         }
+        funBuilder.endControlFlow()
+
         return funBuilder.build()
     }
 
@@ -63,11 +61,7 @@ class ClassJsonElementDeserializerGenerator(
         definition: TypeDefinition.Class,
         rootTypeName: String
     ) {
-        val nonConstantProperties = definition.properties.filter {
-            it.type !is TypeDefinition.Constant
-        }
-
-        nonConstantProperties.forEach { p ->
+        definition.properties.forEach { p ->
             appendDeserializedProperty(
                 propertyType = p.type,
                 assignee = "val ${p.name.variableName()}",
@@ -76,7 +70,6 @@ class ClassJsonElementDeserializerGenerator(
                 rootTypeName = rootTypeName
             )
         }
-
         definition.additionalProperties?.let {
             appendAdditionalPropertiesDeserialization(
                 it,
@@ -85,10 +78,44 @@ class ClassJsonElementDeserializerGenerator(
             )
         }
 
-        val arguments = nonConstantProperties.map { it.name.variableName() } +
+        definition.properties
+            .filter { it.type is TypeDefinition.Constant }
+            .forEach { appendConstantPropertyCheck(it) }
+
+        val nonConstantProperties = definition.properties
+            .filter { it.type !is TypeDefinition.Constant }
+            .map { it.name.variableName() }
+        val arguments = nonConstantProperties +
             definition.additionalProperties?.let { Identifier.PARAM_ADDITIONAL_PROPS }
         val constructorArguments = arguments.filterNotNull().joinToString(", ")
         addStatement("return %L($constructorArguments)", definition.name)
+    }
+
+    private fun FunSpec.Builder.appendConstantPropertyCheck(property: TypeProperty) {
+        val constant = property.type as TypeDefinition.Constant
+        val variableName = property.name.variableName()
+
+        if (property.optional) {
+            beginControlFlow("if (%L != null)", variableName)
+        }
+
+        when (constant.type) {
+            JsonType.NULL -> {
+                addStatement("check(%L == null)", variableName)
+            }
+
+            JsonType.BOOLEAN -> addStatement("check(%L == ${constant.value})", variableName)
+            JsonType.STRING -> addStatement("check(%L == %S)", variableName, constant.value)
+            JsonType.INTEGER -> addStatement("check(%L == ${constant.value}.toLong())", variableName)
+            JsonType.NUMBER -> addStatement("check(%L.toDouble() == ${constant.value})", variableName)
+
+            JsonType.OBJECT -> TODO()
+            JsonType.ARRAY -> TODO()
+            null -> TODO()
+        }
+        if (property.optional) {
+            endControlFlow()
+        }
     }
 
     private fun FunSpec.Builder.appendDeserializedProperty(
@@ -103,6 +130,7 @@ class ClassJsonElementDeserializerGenerator(
             is TypeDefinition.Primitive -> addStatement(
                 "$assignee = $getter${if (nullable) "?" else ""}.${propertyType.asPrimitiveTypeFun()}"
             )
+
             is TypeDefinition.Array -> appendArrayDeserialization(
                 propertyType,
                 assignee,
@@ -110,25 +138,17 @@ class ClassJsonElementDeserializerGenerator(
                 nullable,
                 rootTypeName
             )
+
             is TypeDefinition.Class -> {
-                if (propertyType.isConstantClass()) {
-                    appendDeserializationForConstantProperty(
-                        propertyType,
-                        assignee,
-                        getter,
-                        nullable,
-                        rootTypeName
-                    )
-                } else {
-                    appendObjectDeserialization(
-                        propertyType,
-                        assignee,
-                        getter,
-                        nullable,
-                        rootTypeName
-                    )
-                }
+                appendObjectDeserialization(
+                    propertyType,
+                    assignee,
+                    getter,
+                    nullable,
+                    rootTypeName
+                )
             }
+
             is TypeDefinition.OneOfClass -> {
                 appendObjectDeserialization(
                     propertyType,
@@ -138,6 +158,7 @@ class ClassJsonElementDeserializerGenerator(
                     rootTypeName
                 )
             }
+
             is TypeDefinition.Enum -> appendEnumDeserialization(
                 propertyType,
                 assignee,
@@ -145,9 +166,10 @@ class ClassJsonElementDeserializerGenerator(
                 nullable,
                 rootTypeName
             )
-            is TypeDefinition.Constant -> {
-                // No Op
-            }
+
+            is TypeDefinition.Constant -> addStatement(
+                "$assignee = $getter${if (nullable) "?" else ""}.${propertyType.asPrimitiveTypeFun()}"
+            )
         }
     }
 
@@ -193,6 +215,7 @@ class ClassJsonElementDeserializerGenerator(
                 "%L.add(it.${arrayType.items.asPrimitiveTypeFun()})",
                 Identifier.PARAM_COLLECTION
             )
+
             is TypeDefinition.OneOfClass,
             is TypeDefinition.Class -> addStatement(
                 "%L.add(%T.%L(it.asJsonObject))",
@@ -200,39 +223,16 @@ class ClassJsonElementDeserializerGenerator(
                 arrayType.items.asKotlinTypeName(rootTypeName),
                 Identifier.FUN_FROM_JSON_OBJ
             )
+
             is TypeDefinition.Enum -> addStatement(
                 "%L.add(%T.%L(it.asString))",
                 Identifier.PARAM_COLLECTION,
                 arrayType.items.asKotlinTypeName(rootTypeName),
                 Identifier.FUN_FROM_JSON
             )
+
             else -> error(
                 "Unable to deserialize an array of ${arrayType.items}"
-            )
-        }
-    }
-
-    @Suppress("FunctionMaxLength")
-    private fun FunSpec.Builder.appendDeserializationForConstantProperty(
-        propertyType: TypeDefinition.Class,
-        assignee: String,
-        getter: String,
-        nullable: Boolean,
-        rootTypeName: String
-    ) {
-        if (nullable) {
-            val opt = if (nullable) "?" else ""
-            beginControlFlow("$assignee = $getter$opt.toString()$opt.let")
-            addStatement(
-                "%T()",
-                propertyType.asKotlinTypeName(rootTypeName)
-            )
-            endControlFlow()
-        } else {
-            addStatement(
-                "%L = %T()",
-                assignee,
-                propertyType.asKotlinTypeName(rootTypeName)
             )
         }
     }
@@ -246,15 +246,10 @@ class ClassJsonElementDeserializerGenerator(
     ) {
         val opt = if (nullable) "?" else ""
         beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
-        val codeBlockFormat = if (propertyType.isConstantClass()) {
-            "%T.%L()"
-        } else {
-            "%T.%L(it)"
-        }
         addStatement(
-            codeBlockFormat,
+            "%T.%L(it)",
             propertyType.asKotlinTypeName(rootTypeName),
-            if (propertyType.isConstantClass()) Identifier.FUN_FROM_JSON else Identifier.FUN_FROM_JSON_OBJ
+            Identifier.FUN_FROM_JSON_OBJ
         )
         endControlFlow()
     }

@@ -905,3 +905,67 @@ val Video = TypeDefinition.Class(
         )
     )
 )
+
+val WeirdCombo = TypeDefinition.Class(
+    name = "WeirdCombo",
+    properties = listOf(
+        TypeProperty(
+            name = "anything",
+            type = TypeDefinition.OneOfClass(
+                name = "Anything",
+                options = listOf(
+                    TypeDefinition.Class(
+                        name = "Fish",
+                        properties = listOf(
+                            TypeProperty(
+                                name = "water",
+                                type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
+                                optional = false
+                            ),
+                            TypeProperty(
+                                name = "size",
+                                type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                optional = true
+                            )
+                        )
+                    ),
+                    TypeDefinition.Class(
+                        name = "Bird",
+                        properties = listOf(
+                            TypeProperty(
+                                name = "food",
+                                type = TypeDefinition.Enum(
+                                    name = "Food",
+                                    type = JsonType.STRING,
+                                    values = listOf(
+                                        "fish",
+                                        "bird",
+                                        "rodent",
+                                        "insect",
+                                        "fruit",
+                                        "seeds",
+                                        "pollen"
+                                    )
+                                ),
+                                optional = false
+                            ),
+                            TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+                        )
+                    ),
+                    TypeDefinition.Class(
+                        name = "Paper",
+                        properties = listOf(
+                            TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+                            TypeProperty(
+                                "author",
+                                TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+                                false
+                            )
+                        )
+                    )
+                )
+            ),
+            optional = true
+        )
+    )
+)

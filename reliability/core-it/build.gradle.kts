@@ -4,8 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -26,10 +28,43 @@ plugins {
 
 android {
     namespace = "com.datadog.android.core.integration"
+    defaultConfig {
+        minSdk = AndroidConfig.MIN_SDK
+        multiDexEnabled = true
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
+    compileOptions {
+        java17()
+    }
+
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/jvm.kotlin_module",
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            )
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            testProguardFile("test-proguard-rules.pro")
+        }
+        getByName("debug") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            testProguardFile("test-proguard-rules.pro")
+        }
     }
 }
 
@@ -38,25 +73,26 @@ dependencies {
     implementation(libs.kotlin)
 
     // Testing
-    testImplementation(project(":tools:unit")) {
+    androidTestImplementation(project(":tools:unit")) {
         attributes {
             attribute(
                 com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
+                objects.named("art")
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttp)
-    testImplementation(libs.gson)
-    unmock(libs.robolectric)
-}
-
-unMock {
-    keepStartingWith("android.os")
-    keepStartingWith("org.json")
+    androidTestImplementation(project(":reliability:stub-feature"))
+    androidTestImplementation(libs.assertJ)
+    androidTestImplementation(libs.mockitoAndroid)
+    androidTestImplementation(libs.bundles.integrationTests)
+    androidTestImplementation(libs.elmyrJVM)
+    androidTestImplementation(libs.okHttp)
+    androidTestImplementation(libs.okHttpMock)
+    androidTestImplementation(libs.gson)
+    if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
+        // this is needed to make AssertJ working on APIs <24
+        androidTestImplementation(project(":tools:javabackport"))
+    }
 }
 
 androidLibraryConfig()

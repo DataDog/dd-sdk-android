@@ -50,6 +50,7 @@ espresso = "3.5.1"
 assertJ = "3.18.1"
 elmyr = "1.3.1"
 mockitoKotlin = "5.1.0"
+mockitoAndroid = "5.12.0"
 kover = "0.7.6"
 kspTesting = "1.5.0"
 
@@ -177,6 +178,7 @@ elmyrInject = { module = "com.github.xgouchet.Elmyr:inject", version.ref = "elmy
 elmyrJUnit4 = { module = "com.github.xgouchet.Elmyr:junit4", version.ref = "elmyr" }
 elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmyr" }
 elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
+mockitoAndroid = { module = "org.mockito:mockito-android", version.ref = "mockitoAndroid" }
 mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kover = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }

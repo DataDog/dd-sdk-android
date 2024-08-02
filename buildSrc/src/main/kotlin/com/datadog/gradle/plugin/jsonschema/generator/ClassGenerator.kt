@@ -75,9 +75,7 @@ class ClassGenerator(
 
         typeBuilder.addFunction(generateClassSerializer(definition))
 
-        if (!definition.isConstantClass()) {
-            typeBuilder.addType(generateCompanionObject(definition, rootTypeName))
-        }
+        typeBuilder.addType(generateCompanionObject(definition, rootTypeName))
 
         return typeBuilder
     }
@@ -155,10 +153,12 @@ class ClassGenerator(
                 property.type,
                 property.name
             )
+
             is TypeDefinition.Primitive -> appendPrimitiveSerialization(
                 property,
                 refName
             )
+
             is TypeDefinition.Null -> appendNullSerialization(property)
             is TypeDefinition.Array -> appendArraySerialization(property, property.type, refName)
             is TypeDefinition.Class,
@@ -227,6 +227,7 @@ class ClassGenerator(
                 propertyName,
                 resultArrayName
             )
+
             is TypeDefinition.Class,
             is TypeDefinition.OneOfClass,
             is TypeDefinition.Enum -> addStatement(
@@ -235,6 +236,7 @@ class ClassGenerator(
                 resultArrayName,
                 Identifier.FUN_TO_JSON
             )
+
             is TypeDefinition.Array -> throw UnsupportedOperationException(
                 "Unable to serialize an array of arrays: $propertyType"
             )
@@ -273,14 +275,17 @@ class ClassGenerator(
                 ClassName(Identifier.PACKAGE_UTILS, Identifier.OBJECT_JSON_SERIALIZER),
                 Identifier.FUN_TO_JSON_ELT
             )
+
             is TypeDefinition.Enum -> addStatement("json.add(k, v.%L()) }", Identifier.FUN_TO_JSON)
             is TypeDefinition.Null -> addStatement("json.add(k, null) }")
             is TypeDefinition.Array -> error(
                 "Unable to generate custom serialization for Array type $additionalProperties"
             )
+
             is TypeDefinition.Constant -> error(
                 "Unable to generate custom serialization for constant type $additionalProperties"
             )
+
             else -> error(
                 "Unable to generate custom serialization for unknown type $additionalProperties"
             )
@@ -366,17 +371,21 @@ class ClassGenerator(
                     "Unable to get Kotlin Value from $value with type $type"
                 )
             }
+
             value is String -> "\"$value\""
             value is Double &&
                 (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
                 "${value.toLong()}L"
             }
+
             value is Double -> {
                 "$value"
             }
+
             value is Boolean -> {
                 "$value"
             }
+
             else -> error("Unable to get Kotlin Value from $value with type $type")
         }
     }
@@ -425,6 +434,7 @@ class ClassGenerator(
                         p.type.type
                     )
                 )
+
                 is TypeDefinition.Enum -> defaultValue(
                     "%T.%L",
                     p.type.asKotlinTypeName(rootTypeName),
@@ -436,6 +446,7 @@ class ClassGenerator(
                         }
                     )
                 )
+
                 else -> throw IllegalArgumentException(
                     "Unable to generate default value for class: ${p.type}. " +
                         "This feature is not supported yet"
