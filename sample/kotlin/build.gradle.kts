@@ -8,6 +8,7 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -18,9 +19,8 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     id("com.github.ben-manes.versions")
-    id("thirdPartyLicences")
     id("org.jetbrains.dokka")
-    id("realm-android")
+    id("io.realm.kotlin")
     id("com.squareup.sqldelight")
     id("com.google.devtools.ksp")
 }
@@ -33,16 +33,21 @@ sqldelight {
     }
 }
 
+@Suppress("StringLiteralDuplication")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK_FOR_COMPOSE
+        minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
         multiDexEnabled = true
+
+        buildFeatures {
+            buildConfig = true
+        }
 
         vectorDrawables.useSupportLibrary = true
         externalNativeBuild {
@@ -54,12 +59,17 @@ android {
 
     namespace = "com.datadog.android.sample"
 
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+        java17()
+    }
+
     buildFeatures {
         compose = true
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompiler.get()
     }
 
     testOptions {
@@ -74,7 +84,7 @@ android {
             register(region) {
                 isDefault = index == 0
                 dimension = "site"
-                configureFlavorForSampleApp(this, project.rootDir)
+                configureFlavorForSampleApp(project, this, project.rootDir)
             }
         }
     }
@@ -89,12 +99,7 @@ android {
         java.srcDir("src/androidTest/kotlin")
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    packagingOptions {
+    packaging {
         resources {
             excludes += "META-INF/*"
         }
@@ -107,20 +112,64 @@ android {
         }
     }
     ndkVersion = Dependencies.Versions.Ndk
+
+    val e2ePassword = System.getenv("E2E_STORE_PASSWD")
+    signingConfigs {
+        if (e2ePassword != null) {
+            create("release") {
+                storeFile = File(project.rootDir, "sample-android.keystore")
+                storePassword = e2ePassword
+                keyAlias = "dd-sdk-android"
+                keyPassword = e2ePassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = false
+        }
+
+        getByName("release") {
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            isMinifyEnabled = false
+            if (e2ePassword != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
 }
 
 dependencies {
+    // Datadog Libraries
+    implementation(project(":features:dd-sdk-android-logs"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-webview"))
+    implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":integrations:dd-sdk-android-trace-coroutines"))
+    implementation(project(":integrations:dd-sdk-android-rum-coroutines"))
+    implementation(project(":integrations:dd-sdk-android-rx"))
+    implementation(project(":integrations:dd-sdk-android-timber"))
+    implementation(project(":integrations:dd-sdk-android-coil"))
+    implementation(project(":integrations:dd-sdk-android-glide"))
+    implementation(project(":integrations:dd-sdk-android-fresco"))
+    implementation(project(":integrations:dd-sdk-android-sqldelight"))
+    implementation(project(":integrations:dd-sdk-android-compose"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
 
-    implementation(project(":dd-sdk-android"))
-    implementation(project(":dd-sdk-android-ktx"))
-    implementation(project(":dd-sdk-android-ndk"))
-    implementation(project(":dd-sdk-android-rx"))
-    implementation(project(":dd-sdk-android-timber"))
-    implementation(project(":dd-sdk-android-coil"))
-    implementation(project(":dd-sdk-android-glide"))
-    implementation(project(":dd-sdk-android-fresco"))
-    implementation(project(":dd-sdk-android-sqldelight"))
-    implementation(project(":dd-sdk-android-compose"))
+    // Desugaring SDK
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
+
+    // Sample Vendor Library
+    implementation(project(":sample:vendor-lib"))
 
     implementation(libs.kotlin)
 
@@ -146,9 +195,6 @@ dependencies {
         exclude(group = "io.opentracing")
     }
 
-    // Ktor (local web server)
-    implementation(libs.bundles.ktor)
-
     // Image Loading Library
     implementation(libs.coil)
     implementation(libs.bundles.fresco)
@@ -158,6 +204,7 @@ dependencies {
 
     // Local Storage
     implementation(libs.sqlDelight)
+    implementation(libs.realm)
     implementation(libs.room)
     ksp(libs.roomCompiler)
 
@@ -165,7 +212,7 @@ dependencies {
     implementation(libs.rxJava3)
     implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
     implementation(libs.rxJava3Android)
-    implementation(libs.bundles.coroutines)
+    implementation(libs.coroutinesCore)
 
     // Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -180,8 +227,8 @@ dependencies {
 
 kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()

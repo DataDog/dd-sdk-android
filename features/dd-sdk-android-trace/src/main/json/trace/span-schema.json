@@ -1,0 +1,252 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "span-schema.json",
+  "title": "SpanEvent",
+  "type": "object",
+  "description": "Structure holding information about a Span",
+  "required": [
+    "trace_id",
+    "span_id",
+    "parent_id",
+    "resource",
+    "name",
+    "service",
+    "duration",
+    "start",
+    "error",
+    "type",
+    "meta",
+    "metrics"
+  ],
+  "properties": {
+    "trace_id": {
+      "type": "string",
+      "description": "The id of the trace this Span belongs to",
+      "readOnly": true
+    },
+    "span_id": {
+      "type": "string",
+      "description": "The unique id of this Span",
+      "readOnly": true
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "The id this Span's parent or 0 if this is the root Span",
+      "readOnly": true
+    },
+    "resource": {
+      "type": "string",
+      "description": "The resource name",
+      "readOnly": false
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of this Span",
+      "readOnly": false
+    },
+    "service": {
+      "type": "string",
+      "description": "The service name",
+      "readOnly": true
+    },
+    "duration": {
+      "type": "integer",
+      "description": "The duration of this Span in nanoseconds",
+      "readOnly": true
+    },
+    "start": {
+      "type": "integer",
+      "description": "The Span start time in nanoseconds",
+      "readOnly": true
+    },
+    "error": {
+      "type": "integer",
+      "description": "Span error flag. If 1 that means there was an error thrown during the duration of the Span",
+      "readOnly": true,
+      "default": 0
+    },
+    "type": {
+      "type": "string",
+      "description": "The type of the Span. For Mobile this will always be 'CUSTOM'",
+      "const": "custom",
+      "readOnly": true
+    },
+    "metrics": {
+      "type": "object",
+      "description": "The metrics data of this Span event",
+      "properties": {
+        "_top_level": {
+          "type": "integer",
+          "description": "Top level flag. If 1 means that this Span is the root of this Trace",
+          "readOnly": true
+        }
+      },
+      "additionalProperties": {
+        "type": "number",
+        "description": "additional metrics",
+        "readOnly": true
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "The metadata of this Span event",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "The client application package version",
+          "readOnly": true
+        },
+        "_dd": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "description": "The trace source",
+              "default": "android",
+              "readOnly": true
+            },
+            "application": {
+              "type": "object",
+              "description": "The RUM Application attributes",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "RUM Application ID",
+                  "readOnly": true
+                }
+              }
+            },
+            "session": {
+              "type": "object",
+              "description": "The active RUM Session attributes",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The RUM Session ID",
+                  "readOnly": true
+                }
+              }
+            },
+            "view": {
+              "type": "object",
+              "description": "The active RUM View attributes",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The RUM View ID",
+                  "readOnly": true
+                }
+              }
+            }
+          },
+          "readOnly": true
+        },
+        "span": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "description": "The type of the Span",
+              "const": "client"
+            }
+          },
+          "readOnly": true
+        },
+        "tracer": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string",
+              "description": "The SDK version name",
+              "readOnly": true
+            }
+          },
+          "readOnly": true,
+          "required": [
+            "version"
+          ]
+        },
+        "usr": {
+          "type": "object",
+          "description": "User properties",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Identifier of the user",
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the user",
+              "readOnly": true
+            },
+            "email": {
+              "type": "string",
+              "description": "Email of the user",
+              "readOnly": true
+            }
+          },
+          "additionalProperties": {
+            "type": "object"
+          },
+          "readOnly": true
+        },
+        "network": {
+          "type": "object",
+          "description": "The network information in the moment the Span was created",
+          "properties": {
+            "client": {
+              "type": "object",
+              "properties": {
+                "sim_carrier": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "readOnly": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "readOnly": true
+                    }
+                  }
+                },
+                "signal_strength": {
+                  "type": "string"
+                },
+                "downlink_kbps": {
+                  "type": "string",
+                  "readOnly": true
+                },
+                "uplink_kbps": {
+                  "type": "string",
+                  "readOnly": true
+                },
+                "connectivity": {
+                  "type": "string",
+                  "description": "The active network",
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        }
+      },
+      "required": [
+        "version",
+        "_dd",
+        "span",
+        "tracer",
+        "usr"
+      ],
+      "additionalProperties": {
+        "type": "string",
+        "description": "additional metadata attributes",
+        "readOnly": true
+      },
+      "readOnly": true
+    }
+  }
+}

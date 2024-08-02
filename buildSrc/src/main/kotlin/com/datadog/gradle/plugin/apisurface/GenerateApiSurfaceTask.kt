@@ -7,20 +7,21 @@
 package com.datadog.gradle.plugin.apisurface
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 open class GenerateApiSurfaceTask : DefaultTask() {
-    @get:InputDirectory
-    lateinit var srcDir: File
+    @get:Input
+    lateinit var srcDirPath: String
 
-    @get:InputDirectory
-    lateinit var genDir: File
+    @get:Input
+    lateinit var genDirPath: String
 
     @get: OutputFile
     lateinit var surfaceFile: File
+
     private lateinit var visitor: KotlinFileVisitor
 
     init {
@@ -33,8 +34,8 @@ open class GenerateApiSurfaceTask : DefaultTask() {
     @TaskAction
     fun applyTask() {
         visitor = KotlinFileVisitor()
-        visitDirectoryRecursively(srcDir)
-        visitDirectoryRecursively(genDir)
+        visitDirectoryRecursively(File(srcDirPath))
+        visitDirectoryRecursively(File(genDirPath))
 
         surfaceFile.printWriter().use {
             it.print(visitor.description.toString())
@@ -45,12 +46,13 @@ open class GenerateApiSurfaceTask : DefaultTask() {
 
     private fun visitDirectoryRecursively(file: File) {
         when {
+            !file.exists() -> logger.info("File $file doesn't exist, ignoring")
             file.isDirectory ->
                 file.listFiles().orEmpty()
                     .sortedBy { it.absolutePath }
                     .forEach { visitDirectoryRecursively(it) }
             file.isFile -> visitFile(file)
-            else -> System.err.println("${file.path} is neither file nor directory")
+            else -> logger.error("${file.path} is neither file nor directory")
         }
     }
 

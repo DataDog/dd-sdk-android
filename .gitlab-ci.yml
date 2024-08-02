@@ -4,24 +4,59 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "1"
+  CURRENT_CI_IMAGE: "9"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
-  DD_AGENT_HOST: "$BUILDENV_HOST_IP"
   DD_SERVICE: "dd-sdk-android"
   DD_ENV_TESTS: "ci"
-  DD_INTEGRATION_JUNIT_5_ENABLED: "true"
   DD_CIVISIBILITY_ENABLED: "true"
   DD_INSIDE_CI: "true"
+  DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=false,dd.jmx.fetch.enabled=false"
+
+  KUBERNETES_MEMORY_REQUEST: "8Gi"
+  KUBERNETES_MEMORY_LIMIT: "16Gi"
+
+  EMULATOR_NAME: "android_emulator"
+  ANDROID_ARCH: "arm64-v8a"
+  ANDROID_API: "34"
+  ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
 
 stages:
   - ci-image
   - security
   - analysis
-  - test
+  - test # TODO RUM-1622 cleanup eventually
+  - test-pyramid
   - publish
   - notify
+
+.snippets:
+  install-android-sdk:
+    - curl -sSL -o commandlinetools.zip https://dl.google.com/android/repository/$ANDROID_SDK_VERSION.zip
+    - rm -rf ~/android_sdk
+    - rm -rf ~/cmdline-tools
+    - unzip -q commandlinetools -d ~/
+    - mkdir -p ~/android_sdk/cmdline-tools/latest
+    - mv ~/cmdline-tools/* ~/android_sdk/cmdline-tools/latest
+    - rm ./commandlinetools.zip
+    - export ANDROID_HOME="$HOME/android_sdk/"
+    - export ANDROID_SDK_ROOT="$HOME/android_sdk/"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_BUILD_TOOLS"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
+    - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+    - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+  run-instrumented-integration:
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon
+    - set +e
+    - $ANDROID_HOME/platform-tools/adb install -t -d -g -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
+    - $ANDROID_HOME/platform-tools/adb install -t -d -g -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
+    - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner
+    - $ANDROID_HOME/platform-tools/adb emu kill
 
 # CI IMAGE
 
@@ -29,18 +64,17 @@ ci-image:
   stage: ci-image
   when: manual
   except: [ tags, schedules ]
-  tags: [ "runner:docker" ]
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:18.03.1
+  tags: [ "arch:amd64" ]
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-gbi-focal
   script:
-    - docker build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab .
-    - docker push $CI_IMAGE_DOCKER
+    - docker buildx build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab --push .
 
 # SECURITY
 
 create_key:
   stage: security
   when: manual
-  tags: [ "runner:docker" ]
+  tags: [ "arch:amd64" ]
   variables:
     PROJECT_NAME: "dd-sdk-android"
     EXPORT_TO_KEYSERVER: "true"
@@ -59,41 +93,21 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_CUSTOM_RULES_BUILD_TASK: ":tools:detekt:jar"
+    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleLibrariesRelease :tools:detekt:jar"
     DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
+    DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
+    DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
+    FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v13971524-c0282e65/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
     strategy: depend
 
-analysis:android-lint:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
-
-analysis:licenses:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
-
-analysis:nightly-tests-coverage:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
-
+# TODO RUM-1622 cleanup this section
 # TESTS
 
 test:debug:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -105,25 +119,20 @@ test:debug:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/
-
-test:release:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: test
-  timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :dd-sdk-android-core:testDebugUnitTest --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugFeatures --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugIntegrations --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testDebugUnitTest/*.xml"
     paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
-  script:
-    - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+      - "*.hprof"
 
 test:tools:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -135,10 +144,11 @@ test:tools:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:kover:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -150,17 +160,218 @@ test:kover:
   script:
     - pip3 install datadog
     - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
     - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
-    - python3 ddcoverage.py --prefix dd-sdk-android
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-core:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportFeatures  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportIntegrations  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG -Dorg.gradle.jvmargs=-XX:+HeapDumpOnOutOfMemoryError
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+    paths:
+      - "*.hprof"
+
+# TEST PYRAMID
+# the steps in this section should reflect our test pyramid strategy
+
+test-pyramid:single-fit-logs:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
+test-pyramid:single-fit-rum:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
+test-pyramid:single-fit-trace:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
+# RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
+
+test-pyramid:instrumented-legacy-min-api:
+  tags: [ "macos:sonoma" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "21"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-instrumented-integration]
+
+test-pyramid:instrumented-legacy-latest-api:
+  tags: [ "macos:sonoma" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "34"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-instrumented-integration]
+
+test-pyramid:instrumented-legacy-median-api:
+  tags: [ "macos:sonoma" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "28"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-instrumented-integration]
+
+test-pyramid:publish-e2e-synthetics:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  only:
+    - develop
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
+    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
+    - npm update -g @datadog/datadog-ci
+    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
+    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
+
+test-pyramid:publish-webview-synthetics:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  only:
+    - develop
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
+    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
+    - npm update -g @datadog/datadog-ci
+    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
+    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
+
+
+test-pyramid:publish-staging-synthetics:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  only:
+    - develop
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_config_json --with-decryption --query "Parameter.Value" --out text > ./config/staging.json
+    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageStagingRelease --stacktrace --no-daemon
+    - npm update -g @datadog/datadog-ci
+    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
+    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk
 
 # PUBLISH ARTIFACTS ON MAVEN
 
-publish:release:
-  tags: [ "runner:main" ]
+publish:release-core:
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -173,10 +384,10 @@ publish:release:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-core:publishToSonatype --stacktrace --no-daemon
 
 publish:release-coil:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -189,10 +400,10 @@ publish:release-coil:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
 
 publish:release-compose:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -206,10 +417,10 @@ publish:release-compose:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
 
 publish:release-fresco:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -222,10 +433,10 @@ publish:release-fresco:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
 
 publish:release-glide:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -238,10 +449,10 @@ publish:release-glide:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
 
-publish:release-ktx:
-  tags: [ "runner:main" ]
+publish:release-trace-coroutines:
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -254,10 +465,26 @@ publish:release-ktx:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-ktx:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype --stacktrace --no-daemon
+
+publish:release-rum-coroutines:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ndk:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -270,10 +497,10 @@ publish:release-ndk:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rx:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -286,10 +513,10 @@ publish:release-rx:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-sqldelight:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -302,10 +529,10 @@ publish:release-sqldelight:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
 
 publish:release-timber:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -318,10 +545,10 @@ publish:release-timber:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
 
 publish:release-android-tv:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -334,10 +561,10 @@ publish:release-android-tv:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
 
 publish:release-session-replay:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
@@ -350,22 +577,171 @@ publish:release-session-replay:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
+
+publish:release-session-replay-material:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
+
+publish:release-logs:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :features:dd-sdk-android-logs:publishToSonatype --stacktrace --no-daemon
+
+publish:release-okhttp:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype --stacktrace --no-daemon
+
+publish:release-okhttp-otel:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:publishToSonatype --stacktrace --no-daemon
+
+publish:release-trace:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :features:dd-sdk-android-trace:publishToSonatype --stacktrace --no-daemon
+
+publish:release-trace-otel:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :features:dd-sdk-android-trace-otel:publishToSonatype --stacktrace --no-daemon
+
+publish:release-webview:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :features:dd-sdk-android-webview:publishToSonatype --stacktrace --no-daemon
+
+publish:release-rum:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :features:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 
-notify:release:
+notify:publish-develop-success:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_success
+  only:
+    - develop
+  script:
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME develop $CI_COMMIT_TAG: Snapshot published on :maven:, Sample app published on :synthetics:"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+
+notify:publish-develop-failure:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_failure
+  only:
+    - develop
+  script:
+    - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
+    - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG develop pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+
+notify:publish-release-success:
   extends: .slack-notifier-base
   stage: notify
   when: on_success
   only:
     - tags
   script:
-    - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android/$CI_COMMIT_TAG/aar"
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
-    - postmessage "#mobile-rum" "$MESSAGE_TEXT"
+    - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android-core/$CI_COMMIT_TAG/aar"
+    - 'MESSAGE_TEXT=":rocket: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
-notify:failure:
+notify:publish-release-failure:
   extends: .slack-notifier-base
   stage: notify
   when: on_failure
@@ -374,10 +750,10 @@ notify:failure:
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
     - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
-    - postmessage "#mobile-rum" "$MESSAGE_TEXT"
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -389,7 +765,7 @@ notify:dogfood-app:
   - python3 dogfood.py -v $CI_COMMIT_TAG -t app
 
 notify:dogfood-demo:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -400,20 +776,8 @@ notify:dogfood-demo:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
     - python3 dogfood.py -v $CI_COMMIT_TAG -t demo
 
-notify:dogfood-bridge:
-  tags: [ "runner:main" ]
-  only:
-    - tags
-  image: $CI_IMAGE_DOCKER
-  stage: notify
-  when: on_success
-  script:
-    - pip3 install GitPython requests
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
-    - python3 dogfood.py -v $CI_COMMIT_TAG -t bridge
-
 notify:dogfood-gradle-plugin:
-  tags: [ "runner:main" ]
+  tags: [ "arch:amd64" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER

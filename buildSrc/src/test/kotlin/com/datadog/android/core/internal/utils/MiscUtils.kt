@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.`internal`.utils
+package com.datadog.android.core.internal.utils
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -54,7 +54,7 @@ internal fun Any?.fromJsonElement(): Any? {
                 this
             }
         }
-        is JsonObject -> this.asMap()
+        is JsonObject -> this.asDeepMap()
         else -> this
     }
 }
@@ -67,7 +67,7 @@ internal fun Iterable<*>.toJsonArray(): JsonElement {
     return array
 }
 
-internal fun JsonObject.asMap(): Map<String, Any?> {
+internal fun JsonObject.asDeepMap(): Map<String, Any?> {
     val map = mutableMapOf<String, Any?>()
     entrySet().forEach {
         map[it.key] = it.value.fromJsonElement()
@@ -75,9 +75,9 @@ internal fun JsonObject.asMap(): Map<String, Any?> {
     return map
 }
 
-internal fun JsonElement?.asMap(): Map<String, Any?> {
+internal fun JsonElement?.asDeepMap(): Map<String, Any?> {
     return if (this is JsonObject) {
-        this.asMap()
+        this.asDeepMap()
     } else {
         emptyMap()
     }

@@ -7,7 +7,8 @@
 package com.datadog.android.sample.data.db.realm
 
 import android.content.Context
-import com.datadog.android.ktx.rum.useMonitored
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.sample.data.db.DataSource
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sample.data.model.Log
@@ -15,15 +16,13 @@ import com.datadog.android.sample.data.model.LogAttributes
 import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
-import io.realm.Realm
+import io.realm.kotlin.Realm
+import io.realm.kotlin.RealmConfiguration
+import io.realm.kotlin.UpdatePolicy
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
 internal class RealmDataSource(val context: Context) : DataSource {
-
-    init {
-        RealmFeature.initialise(context)
-    }
 
     // region LocalDataSource
 
@@ -47,9 +46,8 @@ internal class RealmDataSource(val context: Context) : DataSource {
         // purge data first
         purgeLogs(minTtlRequired)
         // add new data
-        Realm.getDefaultInstance().useMonitored { realm ->
-            realm.beginTransaction()
-            realm.insertOrUpdate(
+        Realm.open().use {
+            writeBlocking {
                 logs.map {
                     LogRealm(
                         id = it.id,
@@ -57,21 +55,21 @@ internal class RealmDataSource(val context: Context) : DataSource {
                         timestamp = it.attributes.timestamp,
                         ttl = currentTimeInMillis
                     )
+                }.forEach {
+                    copyToRealm(it, UpdatePolicy.ALL)
                 }
-            )
-            realm.commitTransaction()
+            }
         }
     }
 
-    private val fetchLogsCallable = Callable<List<Log>> {
-        Realm.getDefaultInstance().useMonitored { realm ->
+    private val fetchLogsCallable = Callable {
+        Realm.open().use {
             val minTtlRequired =
                 System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS
-            realm.where(LogRealm::class.java)
-                .greaterThanOrEqualTo(DatadogDbContract.Logs.COLUMN_NAME_TTL, minTtlRequired)
-                .findAll()
+            query(LogRealm::class, "${DatadogDbContract.Logs.COLUMN_NAME_TTL} >= $0", minTtlRequired)
+                .find()
                 .map {
-                    realm.copyFromRealm(it)
+                    copyFromRealm(it)
                 }
                 .map {
                     Log(
@@ -83,17 +81,51 @@ internal class RealmDataSource(val context: Context) : DataSource {
     }
 
     private fun purgeLogs(minTtlRequired: Long) {
-        Realm.getDefaultInstance().useMonitored { realm ->
-            realm.beginTransaction()
-            realm.where(LogRealm::class.java)
-                .lessThan(DatadogDbContract.Logs.COLUMN_NAME_TTL, minTtlRequired)
-                .findAll()
-                .deleteAllFromRealm()
-            realm.commitTransaction()
+        Realm.open().use {
+            writeBlocking {
+                query(
+                    LogRealm::class,
+                    "${DatadogDbContract.Logs.COLUMN_NAME_TTL} < $0",
+                    minTtlRequired
+                )
+                    .find()
+                    .forEach {
+                        delete(it)
+                    }
+            }
         }
     }
 
     // endregion
+
+    private fun Realm.Companion.open(): Realm {
+        val realmConfiguration = RealmConfiguration.create(schema = setOf(LogRealm::class))
+        return open(realmConfiguration)
+    }
+
+    private fun <T> Realm.use(block: Realm.() -> T): T {
+        try {
+            return block(this)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            handleRealmException(e)
+            throw e
+        } finally {
+            try {
+                close()
+            } catch (@Suppress("TooGenericExceptionCaught") closeException: Exception) {
+                handleRealmException(closeException)
+            }
+        }
+    }
+
+    private fun handleRealmException(exception: Exception) {
+        GlobalRumMonitor.get().addError(
+            "Error while working with Realm",
+            RumErrorSource.SOURCE,
+            exception,
+            emptyMap()
+        )
+    }
 
     companion object {
         val LOGS_EXPIRING_TTL_IN_MS = TimeUnit.HOURS.toMillis(2)

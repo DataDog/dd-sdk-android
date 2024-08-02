@@ -9,4 +9,8 @@ interface AnyGenericInterface<T : Any> {
     fun map(event: T): T
 
     fun map(event: T, additionalParameters: Map<String, Any?>): T
+
+    val immutableProperty: T?
+
+    var mutableProperty: T?
 }

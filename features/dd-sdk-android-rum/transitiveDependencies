@@ -1,0 +1,37 @@
+Dependencies List
+
+androidx.activity:activity:1.1.0                                :   13 Kb
+androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
+androidx.annotation:annotation:1.3.0                            :   30 Kb
+androidx.arch.core:core-common:2.1.0                            :   10 Kb
+androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
+androidx.collection:collection:1.1.0                            :   41 Kb
+androidx.core:core:1.6.0                                        :  905 Kb
+androidx.customview:customview:1.0.0                            :   32 Kb
+androidx.fragment:fragment:1.2.4                                :  221 Kb
+androidx.lifecycle:lifecycle-common:2.2.0                       :   21 Kb
+androidx.lifecycle:lifecycle-livedata-core:2.2.0                :    8 Kb
+androidx.lifecycle:lifecycle-livedata:2.1.0                     :   10 Kb
+androidx.lifecycle:lifecycle-runtime:2.2.0                      :   10 Kb
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.2.0         :   13 Kb
+androidx.lifecycle:lifecycle-viewmodel:2.2.0                    :    9 Kb
+androidx.loader:loader:1.0.0                                    :   32 Kb
+androidx.metrics:metrics-performance:1.0.0-alpha04              :   47 Kb
+androidx.navigation:navigation-common:2.3.0                     :   54 Kb
+androidx.navigation:navigation-fragment:2.3.0                   :   18 Kb
+androidx.navigation:navigation-runtime:2.3.0                    :   46 Kb
+androidx.recyclerview:recyclerview:1.1.0                        :  349 Kb
+androidx.savedstate:savedstate:1.0.0                            :    9 Kb
+androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
+androidx.viewpager:viewpager:1.0.0                              :   52 Kb
+com.google.code.gson:gson:2.10.1                                :  276 Kb
+com.squareup.okhttp3:okhttp:4.11.0                              :  768 Kb
+com.squareup.okio:okio-jvm:3.2.0                                :  337 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10                :  219 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
+org.jetbrains.kotlin:kotlin-stdlib:1.9.10                       : 1667 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              :    5 Mb
+

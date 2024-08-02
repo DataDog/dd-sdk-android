@@ -6,15 +6,20 @@
 package com.datadog.android.sample.logs
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 
+@Suppress("DEPRECATION")
 internal class LogsFragment :
     Fragment(),
     View.OnClickListener {
@@ -22,9 +27,13 @@ internal class LogsFragment :
     private var interactionsCount = 0
     private lateinit var viewModel: LogsViewModel
 
+    private lateinit var messageInput: EditText
+    private lateinit var levelSpinner: Spinner
+
+    @Suppress("CheckInternal")
     private val logger: Logger by lazy {
         Logger.Builder()
-            .setLoggerName("logs_fragment")
+            .setName("logs_fragment")
             .setLogcatLogsEnabled(true)
             .build()
             .apply {
@@ -41,12 +50,23 @@ internal class LogsFragment :
         savedInstanceState: Bundle?
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_logs, container, false)
-        rootView.findViewById<View>(R.id.log_warning).setOnClickListener(this)
-        rootView.findViewById<View>(R.id.log_error).setOnClickListener(this)
-        rootView.findViewById<View>(R.id.log_critical).setOnClickListener(this)
+        messageInput = rootView.findViewById(R.id.message)
+        levelSpinner = rootView.findViewById(R.id.level_spinner)
+        rootView.findViewById<View>(R.id.send_log).setOnClickListener(this)
+
+        ArrayAdapter.createFromResource(
+            requireContext(),
+            R.array.log_levels,
+            android.R.layout.simple_spinner_item
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            levelSpinner.adapter = adapter
+        }
+
         return rootView
     }
 
+    @Deprecated("Deprecated in parent Java class")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(LogsViewModel::class.java)
@@ -58,17 +78,14 @@ internal class LogsFragment :
 
     override fun onClick(v: View) {
         interactionsCount++
-        when (v.id) {
-            R.id.log_warning -> logger.w("User triggered a warning")
-            R.id.log_error -> logger.e(
-                "User triggered an error",
-                IllegalStateException("Oops")
-            )
-            R.id.log_critical -> logger.wtf(
-                "User triggered a critical event",
-                UnsupportedOperationException("Oops")
-            )
+        val message = messageInput.text.toString()
+        val level = levelSpinner.selectedItemPosition + Log.VERBOSE
+        val exception = if (level >= Log.ERROR) {
+            UnsupportedOperationException("Oops")
+        } else {
+            null
         }
+        logger.log(level, message, exception)
     }
 
     //endregion

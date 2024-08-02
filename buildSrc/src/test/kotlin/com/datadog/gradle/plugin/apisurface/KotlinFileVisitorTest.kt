@@ -122,6 +122,28 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
+    fun `describes public annotation`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            annotation class Spam(
+                val A: String,
+                val B: String,
+                val C: String
+            )
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "annotation foo.bar.Spam\n" +
+                "  constructor(String, String, String)\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
     fun `describes public sealed class`() {
         tempFile.writeText(
             """
@@ -467,6 +489,29 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
+    fun `describes wildcard generics in functions`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            import java.io.IOException
+            class Spam {
+                fun <K, V> doSomethingElse(map : Map<*, *>) : Pair<List<*>, List<*>> {
+                    TODO()
+                }
+            }
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  fun <K, V> doSomethingElse(Map<*, *>): Pair<List<*>, List<*>>\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
     fun `describes parent class and interfaces in class types`() {
         tempFile.writeText(
             """
@@ -735,7 +780,7 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
-    fun `describes type alias`() {
+    fun `describes function type alias`() {
         tempFile.writeText(
             """
             typealias StringTransform = (String) -> String?
@@ -748,6 +793,22 @@ internal class KotlinFileVisitorTest {
         assertEquals(
             "typealias StringTransform = (String) -> String?\n" +
                 "typealias StringRepeat = (String, Int) -> String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes class type alias`() {
+        tempFile.writeText(
+            """
+            typealias PowerfulString = String
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "typealias PowerfulString = String\n",
             testedVisitor.description.toString()
         )
     }
@@ -899,6 +960,22 @@ internal class KotlinFileVisitorTest {
         assertEquals(
             "class foo.bar.internal.Spam\n" +
                 "  val data: String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes extension functions`() {
+        tempFile.writeText(
+            """
+            fun String.withFooBar(): String = this + "foobar"
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "fun String.withFooBar(): String\n",
             testedVisitor.description.toString()
         )
     }

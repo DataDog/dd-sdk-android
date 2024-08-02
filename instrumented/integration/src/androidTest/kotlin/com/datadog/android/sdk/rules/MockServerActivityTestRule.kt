@@ -15,20 +15,23 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
-import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonParser
+import fr.xgouchet.elmyr.Forge
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.mockwebserver.SocketPolicy
+import org.junit.runner.Description
+import org.junit.runners.model.Statement
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
+import java.net.HttpURLConnection
 import java.util.zip.GZIPInputStream
 
 internal open class MockServerActivityTestRule<T : Activity>(
@@ -41,6 +44,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
     private val requests = mutableListOf<HandledRequest>()
 
+    val forge = Forge()
+
     // region ActivityTestRule
 
     override fun getActivityIntent(): Intent {
@@ -49,6 +54,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             activityClass
         ).apply {
             addTrackingConsent(trackingConsent)
+            addForgeSeed(forge.seed)
         }
     }
 
@@ -56,18 +62,13 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively {
-                Log.i("MockServerActivityTestRule", "Before activity launched, deleting file $it")
-            }
+            .cacheDir.deleteRecursively()
         requests.clear()
         mockWebServer.start()
-        mockWebServer.setDispatcher(
+        mockWebServer.dispatcher =
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
-                    val requestUrl = request.requestUrl.toString()
-                    if (keepRequests &&
-                        !requestUrl.startsWith(RuntimeConfig.sessionReplayEndpointUrl)
-                    ) {
+                    if (keepRequests) {
                         // for now the SR requests will be dropped as we do not support them
                         // in our integration tests
                         handleRequest(request)
@@ -77,12 +78,13 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
                     return if (request.path == CONNECTION_ISSUE_PATH) {
                         MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)
-                    } else {
+                    } else if (request.path?.endsWith("nyan-cat.gif") == true) {
                         mockResponse(200)
+                    } else {
+                        mockResponse(HttpURLConnection.HTTP_ACCEPTED)
                     }
                 }
             }
-        )
 
         getConnectionUrl().let {
             RuntimeConfig.logsEndpointUrl = "$it/$LOGS_URL_SUFFIX"
@@ -97,21 +99,32 @@ internal open class MockServerActivityTestRule<T : Activity>(
     override fun afterActivityFinished() {
         mockWebServer.shutdown()
 
-        val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
-        instance.isAccessible = true
-
-        val method = Datadog.javaClass.declaredMethods.first { it.name.contains("stop") }
-        method.isAccessible = true
-        method.invoke(instance.get(null))
-
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively {
-                Log.i("MockServerActivityTestRule", "After activity finished, deleting file $it")
-            }
-        GlobalRum.getFieldValue<AtomicBoolean, GlobalRum>("isRegistered").set(false)
+            .cacheDir.deleteRecursively()
+        GlobalRumMonitor.get().stopSession()
+        Datadog.stopInstance()
+
         super.afterActivityFinished()
+    }
+
+    // endregion
+
+    // region TestRule
+
+    override fun apply(base: Statement, description: Description): Statement {
+        val original = super.apply(base, description)
+        return object : Statement() {
+            override fun evaluate() {
+                try {
+                    original.evaluate()
+                } catch (t: Throwable) {
+                    Log.e(TAG, "Test run failed with Forge seed = ${forge.seed}")
+                    throw t
+                }
+            }
+        }
     }
 
     // endregion
@@ -121,6 +134,12 @@ internal open class MockServerActivityTestRule<T : Activity>(
     fun getRequests(): List<HandledRequest> {
         Log.i(TAG, "Caught ${requests.size} requests")
         return requests.toList()
+    }
+
+    fun getRequests(endpoint: String): List<HandledRequest> {
+        val filteredRequests = requests.filter { it.url?.startsWith(endpoint) ?: false }.toList()
+        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
+        return filteredRequests
     }
 
     fun getConnectionUrl(): String = mockWebServer.url("/").toString().removeSuffix("/")
@@ -142,7 +161,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         val content = if (encoding == "gzip") {
             request.unzip()
         } else {
-            String(request.body.readByteArray(), Charsets.UTF_8)
+            String(request.body.clone().readByteArray(), Charsets.UTF_8)
         }
 
         val jsonBody = if (contentType == "application/json") {
@@ -157,13 +176,14 @@ internal open class MockServerActivityTestRule<T : Activity>(
                 headers = request.headers,
                 method = request.method,
                 jsonBody = jsonBody,
-                textBody = content
+                textBody = content,
+                requestBuffer = request.body.clone()
             )
         )
     }
 
     private fun RecordedRequest.unzip(): String {
-        if (body.size() <= 0) {
+        if (body.size <= 0) {
             return ""
         }
         val gzipInputStream =
@@ -190,6 +210,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // endregion
 
     companion object {
+        const val UI_THREAD_DELAY_IN_MS = 1000L
+        const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private const val TAG = "MockServerActivityTestRule"
 
         const val HEADER_CONTENT_TYPE = "Content-Type"

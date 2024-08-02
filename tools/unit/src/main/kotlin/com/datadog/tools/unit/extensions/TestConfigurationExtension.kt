@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import java.lang.reflect.Method
 
 /**
  * A JUnit Jupiter extension that can ensure a test configuration state is properly handled with
@@ -34,11 +35,8 @@ class TestConfigurationExtension :
     /** @inheritdoc */
     override fun beforeAll(context: ExtensionContext?) {
         checkNotNull(context)
-        val methods = context.requiredTestClass
-            .methods
-            .filter {
-                it.isAnnotationPresent(TestConfigurationsProvider::class.java)
-            }
+        val methods = mutableListOf<Method>()
+        collectProviderMethods(context.requiredTestClass, methods)
 
         val configs = methods.flatMap { it.invoke(null) as List<*> }
             .filterIsInstance<TestConfiguration>()
@@ -62,7 +60,15 @@ class TestConfigurationExtension :
 
     /** @inheritdoc */
     override fun afterEach(context: ExtensionContext?) {
-        context?.callTestConfigurations { forge -> tearDown(forge) }
+        // reverse here is needed, because of the following example:
+        // say there is test class A, and test class B : A.
+        // both declare InternalLoggerTestExtension, which saves original logger in setUp
+        // and restores it during tearDown.
+        // that means that during setup we will save original logger in B, and then mocked
+        // logger in A. But during tear down we will restore first original logger in B, and then
+        // mocked logger in A if we don't reverse the call order. So reversing the order to follow
+        // the same call sequence as JUnit is doing.
+        context?.callTestConfigurations(reverseCallOrder = true) { forge -> tearDown(forge) }
     }
 
     // endregion
@@ -81,30 +87,53 @@ class TestConfigurationExtension :
 
     @Suppress("CheckInternal") // not an issue in unit tests
     private fun ExtensionContext.callTestConfigurations(
+        reverseCallOrder: Boolean = false,
         operation: TestConfiguration.(Forge) -> Unit
     ) {
         val forge = getForge()
         checkNotNull(forge) { "Unable to get the active Forge instance from the global store." }
-        callTestConfigurations(forge, operation)
+        callTestConfigurations(forge, reverseCallOrder, operation)
     }
 
     @SuppressLint("NewApi")
     private fun ExtensionContext.callTestConfigurations(
         forge: Forge,
+        reverseCallOrder: Boolean,
         operation: TestConfiguration.(Forge) -> Unit
     ) {
-        testConfigurations[uniqueId]?.forEach {
+        val configs = testConfigurations[uniqueId]?.let {
+            if (reverseCallOrder) {
+                it.reversed()
+            } else {
+                it
+            }
+        }
+        configs?.forEach {
             it.operation(forge)
         }
 
         if (parent.isPresent) {
-            parent.get().callTestConfigurations(forge, operation)
+            parent.get().callTestConfigurations(forge, reverseCallOrder, operation)
         }
     }
 
     @SuppressLint("NewApi")
     private fun ExtensionContext.getForge(): Forge? {
         return ForgeExtension.getForge(this)
+    }
+
+    private fun collectProviderMethods(clazz: Class<*>, accumulator: MutableList<Method>) {
+        // GesturesListenerScrollSwipeTest <- child of abstract AbstractGesturesListenerTest.
+        // Only AbstractGesturesListenerTest has getTestConfigurations.
+        // GesturesListenerScrollSwipeTest::class.java.methods returns only parent one, as expected.
+        // So to solve this we will use declaredMethods with parent traversal.
+        accumulator += clazz.declaredMethods
+            .filter {
+                it.isAnnotationPresent(TestConfigurationsProvider::class.java)
+            }
+        if (clazz.superclass != null) {
+            collectProviderMethods(clazz.superclass, accumulator)
+        }
     }
 
     // endregion

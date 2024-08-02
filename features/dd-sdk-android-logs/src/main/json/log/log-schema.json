@@ -1,0 +1,249 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "log-schema.json",
+  "title": "LogEvent",
+  "type": "object",
+  "description": "Structure holding information about a Log",
+  "properties": {
+    "status": {
+      "type": "string",
+      "description": "The severity of this log",
+      "enum": [
+        "critical",
+        "error",
+        "warn",
+        "info",
+        "debug",
+        "trace",
+        "emergency"
+      ],
+      "readOnly": false
+    },
+    "service": {
+      "type": "string",
+      "description": "The service name",
+      "readOnly": true
+    },
+    "message": {
+      "type": "string",
+      "description": "The log message",
+      "readOnly": false
+    },
+    "date": {
+      "type": "string",
+      "description": "The date when the log is fired as an ISO-8601 String",
+      "readOnly": true
+    },
+    "logger": {
+      "type": "object",
+      "description": "Information about the logger that produced this log.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the logger",
+          "readOnly": false
+        },
+        "thread_name": {
+          "type": "string",
+          "description": "The thread name on which the log event was created",
+          "readOnly": true
+        },
+        "version": {
+          "type": "string",
+          "description": "The SDK version name",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "readOnly": true
+    },
+    "_dd": {
+      "type": "object",
+      "description": "Datadog internal information",
+      "properties": {
+        "device": {
+          "type": "object",
+          "description": "Information about the device that produced this log.",
+          "properties": {
+            "architecture": {
+              "type": "string",
+              "description": "The CPU architecture of the device",
+              "readOnly": true
+            }
+          },
+          "required": [
+            "architecture"
+          ],
+          "readOnly": true
+        }
+      },
+      "required": [
+        "device"
+      ],
+      "readOnly": true
+    },
+    "usr": {
+      "type": "object",
+      "description": "User properties",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the user",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the user",
+          "readOnly": true
+        },
+        "email": {
+          "type": "string",
+          "description": "Email of the user",
+          "readOnly": true
+        }
+      },
+      "additionalProperties": {
+        "type": "object"
+      },
+      "readOnly": true
+    },
+    "network": {
+      "type": "object",
+      "description": "The network information in the moment the log was created",
+      "properties": {
+        "client": {
+          "type": "object",
+          "properties": {
+            "sim_carrier": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "readOnly": true
+                },
+                "name": {
+                  "type": "string",
+                  "readOnly": true
+                }
+              }
+            },
+            "signal_strength": {
+              "type": "string"
+            },
+            "downlink_kbps": {
+              "type": "string",
+              "readOnly": true
+            },
+            "uplink_kbps": {
+              "type": "string",
+              "readOnly": true
+            },
+            "connectivity": {
+              "type": "string",
+              "description": "The active network",
+              "readOnly": true
+            }
+          },
+          "readOnly": true,
+          "required": [
+            "connectivity"
+          ]
+        }
+      },
+      "readOnly": true,
+      "required": [
+        "client"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "description": "The additional error information in case this log is marked as an error",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of this error. It is resolved from the throwable class name",
+          "readOnly": false
+        },
+        "message": {
+          "type": "string",
+          "description": "The error message",
+          "readOnly": false
+        },
+        "stack": {
+          "type": "string",
+          "description": "The error stack trace",
+          "readOnly": false
+        },
+        "source_type": {
+          "type": "string",
+          "description": "The source_type of the error (e.g. 'android', 'flutter', 'react-native')",
+          "readOnly": false
+        },
+        "fingerprint": {
+          "type": "string",
+          "description": "A custom fingerprint for this error",
+          "readOnly": false
+        },
+        "threads": {
+          "type": "array",
+          "description": "Description of each thread in the process when error happened.",
+          "items": {
+            "type": "object",
+            "description": "Description of the thread in the process when error happened.",
+            "required": ["name", "crashed", "stack"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the thread (e.g. 'Thread 0').",
+                "readOnly": true
+              },
+              "crashed": {
+                "type": "boolean",
+                "description": "Tells if the thread crashed.",
+                "readOnly": true
+              },
+              "stack": {
+                "type": "string",
+                "description": "Unsymbolicated stack trace of the given thread.",
+                "readOnly": true
+              },
+              "state": {
+                "type": "string",
+                "description": "Platform-specific state of the thread when its state was captured (CPU registers dump for iOS, thread state enum for Android, etc.).",
+                "readOnly": true
+              }
+            }
+          }
+        }
+      },
+      "readOnly": true
+    },
+    "build_id": {
+      "type": "string",
+      "description": "Generated unique ID of the application build. Unlike version or build_version this field is not meant to be coming from the user, but rather generated by the tooling for each build.",
+      "readOnly": true
+    },
+    "ddtags": {
+      "type": "string",
+      "description": "The list of tags joined into a String and divided by ',' ",
+      "readOnly": false
+    }
+  },
+  "required": [
+    "message",
+    "status",
+    "date",
+    "service",
+    "logger",
+    "_dd",
+    "ddtags"
+  ],
+  "additionalProperties": {
+    "type": "object",
+    "description": "additional log attributes"
+  }
+}
+

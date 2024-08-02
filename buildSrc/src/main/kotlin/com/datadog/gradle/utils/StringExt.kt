@@ -24,7 +24,17 @@ fun List<String>.joinToCamelCaseAsVar(): String = when (size) {
 fun String.toCamelCase(): String {
     val split = this.split("_")
     if (split.size == 0) return ""
-    if (split.size == 1) return split[0].capitalize(Locale.US)
+    if (split.size == 1) {
+        return split[0].replaceFirstChar {
+            if (it.isLowerCase()) {
+                it.titlecase(
+                    Locale.US
+                )
+            } else {
+                it.toString()
+            }
+        }
+    }
     return split.joinToCamelCase()
 }
 

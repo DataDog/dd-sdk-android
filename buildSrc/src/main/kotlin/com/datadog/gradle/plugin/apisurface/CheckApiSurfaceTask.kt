@@ -40,7 +40,7 @@ open class CheckApiSurfaceTask : DefaultTask() {
 
         if (additions.isNotEmpty() || removals.isNotEmpty()) {
             error(
-                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task" +
+                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE} task" +
                     " before you push your PR.\n" +
                     additions.joinToString("\n") + removals.joinToString("\n")
             )

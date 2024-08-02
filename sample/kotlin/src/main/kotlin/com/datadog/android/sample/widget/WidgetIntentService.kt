@@ -13,7 +13,7 @@ import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.widget.RemoteViews
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
@@ -35,18 +35,19 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                 val hasRumContext = widgetId != 0 && widgetName != null
 
                 if (hasRumContext) {
-                    GlobalRum.get().startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
+                    GlobalRumMonitor.get()
+                        .startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
                     val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
                     if (clickedTargetName != null) {
-                        GlobalRum.get()
-                            .addUserAction(RumActionType.CLICK, clickedTargetName, emptyMap())
+                        GlobalRumMonitor.get()
+                            .addAction(RumActionType.CLICK, clickedTargetName, emptyMap())
                     }
                 }
 
                 performRequest()
 
                 if (hasRumContext) {
-                    GlobalRum.get().stopView(widgetId)
+                    GlobalRumMonitor.get().stopView(widgetId)
                 }
             }
             else -> {
@@ -64,7 +65,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
         val request = builder.build()
         try {
             val response = okHttpClient.newCall(request).execute()
-            val body = response.body()
+            val body = response.body
             if (body != null) {
                 val content: String = body.string()
                 // Necessary to consume the response

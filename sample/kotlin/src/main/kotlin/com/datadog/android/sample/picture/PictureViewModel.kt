@@ -8,20 +8,20 @@ package com.datadog.android.sample.picture
 
 import android.widget.ImageView
 import androidx.lifecycle.ViewModel
-import java.security.SecureRandom
 
 internal class PictureViewModel : ViewModel() {
 
-    val random = SecureRandom()
-    var loader: ImageLoader = GlideImageLoader()
+    private var loader: ImageLoader = GlideImageLoader()
+    private var useFailingUrl = false
 
     fun loadPictureInto(picture: ImageView) {
-        val url = if (random.nextBoolean()) {
+        val url = if (useFailingUrl) {
             RANDOM_URL
         } else {
             FAILING_URL
         }
         loader.load(url, picture)
+        useFailingUrl = !useFailingUrl
     }
 
     fun selectImageLoader(type: ImageLoaderType) {
@@ -40,7 +40,7 @@ internal class PictureViewModel : ViewModel() {
     }
 
     companion object {
-        private const val RANDOM_URL = "https://source.unsplash.com/random/800x450"
-        private const val FAILING_URL = "https://s0urce.unsplash.com/random/800x450"
+        private const val RANDOM_URL = "https://picsum.photos/800/450"
+        private const val FAILING_URL = "https://p1csum.photos/800/450"
     }
 }

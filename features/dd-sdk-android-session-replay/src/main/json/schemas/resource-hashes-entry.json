@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "resource-hashes-entry.json",
+  "title": "ResourceHashesEntry",
+  "type": "object",
+  "description": "Schema of all properties of a ResourceHashesEntry.",
+  "required": [
+    "last_update_date_ns",
+    "resource_hashes"
+  ],
+  "properties": {
+    "last_update_date_ns": {
+      "description": "The last time we updated the date for the datastore.",
+      "type": "number",
+      "readOnly": true
+    },
+    "resource_hashes": {
+      "description": "The collection of resource hashes.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "readOnly": true
+}

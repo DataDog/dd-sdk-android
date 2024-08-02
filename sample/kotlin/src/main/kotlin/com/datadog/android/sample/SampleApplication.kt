@@ -5,25 +5,33 @@
  */
 package com.datadog.android.sample
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
-import com.datadog.android.Datadog.setUserInfo
-import com.datadog.android.DatadogEventListener
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
-import com.datadog.android.ndk.NdkCrashReportsPlugin
-import com.datadog.android.plugin.Feature
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumInterceptor
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.ndk.NdkCrashReports
+import com.datadog.android.okhttp.DatadogEventListener
+import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -36,13 +44,24 @@ import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
+import com.datadog.android.sessionreplay.SessionReplay
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.opentelemetry.OtelTracerProvider
+import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.trace.TracerProvider
+import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentracing.rxjava3.TracingRxJava3Utils
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
@@ -62,30 +81,30 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
-    private val webViewTrackingHosts = listOf(
-        "datadoghq.dev"
-    )
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(
+            DatadogInterceptor.Builder(tracedHosts)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
+        .addNetworkInterceptor(
+            TracingInterceptor.Builder(tracedHosts)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
+        .eventListenerFactory(DatadogEventListener.Factory())
+        .build()
 
-    // TODO RUMM-0000 lazy is needed here, because without it global first party host resolver is
-    //  not available yet at the interceptor construction time
-    private val okHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
-            .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
-            .eventListenerFactory(DatadogEventListener.Factory())
-            .build()
-    }
+    private val retrofitClient = Retrofit.Builder()
+        .baseUrl("https://api.datadoghq.com/api/v2/")
+        .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+        .client(okHttpClient)
+        .build()
 
-    private val retrofitClient by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://api.datadoghq.com/api/v2/")
-            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
-            .client(okHttpClient)
-            .build()
-    }
+    private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
-    private val retrofitBaseDataSource by lazy { retrofitClient.create(RemoteDataSource::class.java) }
+    private val localServer = LocalServer()
 
     override fun onCreate() {
         super.onCreate()
@@ -95,6 +114,28 @@ class SampleApplication : Application() {
         initializeTimber()
 
         initializeImageLoaders()
+
+        localServer.init(this)
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        GlobalRumMonitor.get().addError(
+            "Low Memory warning",
+            RumErrorSource.SOURCE,
+            null,
+            emptyMap()
+        )
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        GlobalRumMonitor.get().addError(
+            "Low Memory warning",
+            RumErrorSource.SOURCE,
+            null,
+            mapOf("trim.level" to level)
+        )
     }
 
     private fun initializeImageLoaders() {
@@ -106,19 +147,48 @@ class SampleApplication : Application() {
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
 
+        Datadog.setVerbosity(Log.VERBOSE)
         Datadog.initialize(
             this,
-            createDatadogCredentials(),
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
         )
-        Datadog.setVerbosity(Log.VERBOSE)
-        Datadog.enableRumDebugging(true)
-        setUserInfo(
-            preferences.getUserId(),
-            preferences.getUserName(),
-            preferences.getUserEmail(),
-            mapOf(
+
+        val rumConfig = createRumConfiguration()
+        Rum.enable(rumConfig)
+
+        val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
+                }
+            }
+            .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+            .addExtensionSupport(MaterialExtensionSupport())
+            .build()
+        SessionReplay.enable(sessionReplayConfig)
+
+        val logsConfig = LogsConfiguration.Builder().apply {
+            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+            }
+        }.build()
+        Logs.enable(logsConfig)
+
+        val tracesConfig = TraceConfiguration.Builder().apply {
+            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+            }
+        }.build()
+        Trace.enable(tracesConfig)
+
+        NdkCrashReports.enable()
+
+        Datadog.setUserInfo(
+            id = preferences.getUserId(),
+            name = preferences.getUserName(),
+            email = preferences.getUserEmail(),
+            extraInfo = mapOf(
                 UserFragment.GENDER_KEY to preferences.getUserGender(),
                 UserFragment.AGE_KEY to preferences.getUserAge()
             )
@@ -126,34 +196,33 @@ class SampleApplication : Application() {
 
         GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder()
-                .setServiceName(BuildConfig.APPLICATION_ID)
+                .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        GlobalOpenTelemetry.set(object : OpenTelemetry {
+            private val tracerProvider = OtelTracerProvider.Builder()
+                .setService(BuildConfig.APPLICATION_ID)
+                .build()
+
+            override fun getTracerProvider(): TracerProvider {
+                return tracerProvider
+            }
+
+            override fun getPropagators(): ContextPropagators {
+                return ContextPropagators.noop()
+            }
+        })
+        GlobalRumMonitor.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
-    private fun createDatadogCredentials(): Credentials {
-        return Credentials(
-            clientToken = BuildConfig.DD_CLIENT_TOKEN,
-            envName = BuildConfig.BUILD_TYPE,
-            variant = BuildConfig.FLAVOR,
-            rumApplicationId = BuildConfig.DD_RUM_APPLICATION_ID
-        )
-    }
-
-    private fun createDatadogConfiguration(): Configuration {
-        @Suppress("DEPRECATION")
-        val configBuilder = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-            .sampleTelemetry(100f)
-            .setFirstPartyHosts(tracedHosts)
-            .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
-            .setWebViewTrackingHosts(webViewTrackingHosts)
+    private fun createRumConfiguration(): RumConfiguration {
+        return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+                }
+            }
             .useViewTrackingStrategy(
                 NavigationViewTrackingStrategy(
                     R.id.nav_host_fragment,
@@ -161,40 +230,53 @@ class SampleApplication : Application() {
                     SampleNavigationPredicate()
                 )
             )
-            .trackInteractions()
+            .setTelemetrySampleRate(100f)
+            .trackUserInteractions()
             .trackLongTasks(250L)
-
-        configBuilder
-            .setRumViewEventMapper(object : ViewEventMapper {
+            .trackNonFatalAnrs(true)
+            .setViewEventMapper(object : ViewEventMapper {
                 override fun map(event: ViewEvent): ViewEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumActionEventMapper(object : EventMapper<ActionEvent> {
+            .setActionEventMapper(object : EventMapper<ActionEvent> {
                 override fun map(event: ActionEvent): ActionEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumResourceEventMapper(object : EventMapper<ResourceEvent> {
+            .setResourceEventMapper(object : EventMapper<ResourceEvent> {
                 override fun map(event: ResourceEvent): ResourceEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumErrorEventMapper(object : EventMapper<ErrorEvent> {
+            .setErrorEventMapper(object : EventMapper<ErrorEvent> {
                 override fun map(event: ErrorEvent): ErrorEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
+            .setLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
                 override fun map(event: LongTaskEvent): LongTaskEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
+            .build()
+    }
+
+    @SuppressLint("LogNotTimber")
+    private fun createDatadogConfiguration(): Configuration {
+        val configBuilder = Configuration.Builder(
+            clientToken = BuildConfig.DD_CLIENT_TOKEN,
+            env = BuildConfig.BUILD_TYPE,
+            variant = BuildConfig.FLAVOR
+        )
+            .setFirstPartyHosts(tracedHosts)
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
@@ -202,23 +284,22 @@ class SampleApplication : Application() {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
 
-        if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
-            configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-            configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
-            configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-            configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
-        }
+        configBuilder.setBackpressureStrategy(
+            BackPressureStrategy(
+                32,
+                { Log.w("BackPressure", "THRESHOLD REACHED!") },
+                { Log.e("BackPressure", "ITEM DROPPED $it!") },
+                BackPressureMitigation.IGNORE_NEWEST
+            )
+        )
+
         return configBuilder.build()
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "CheckInternal")
     private fun initializeTimber() {
         val logger = Logger.Builder()
-            .setLoggerName("timber")
+            .setName("timber")
             .setNetworkInfoEnabled(true)
             .build()
 
@@ -229,10 +310,8 @@ class SampleApplication : Application() {
             device.addProperty("brand", Build.BRAND)
             device.addProperty("manufacturer", Build.MANUFACTURER)
             device.addProperty("model", Build.MODEL)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                for (abi in Build.SUPPORTED_ABIS) {
-                    abis.add(abi)
-                }
+            for (abi in Build.SUPPORTED_ABIS) {
+                abis.add(abi)
             }
         } catch (t: Throwable) {
             Timber.e(t, "Error setting device and abi properties")
@@ -247,6 +326,8 @@ class SampleApplication : Application() {
     }
 
     companion object {
+        private const val SAMPLE_IN_ALL_SESSIONS = 100f
+
         init {
             System.loadLibrary("datadog-native-sample-lib")
         }
@@ -257,7 +338,8 @@ class SampleApplication : Application() {
             return ViewModelFactory(
                 getOkHttpClient(context),
                 getRemoteDataSource(context),
-                LocalDataSource(context)
+                LocalDataSource(context),
+                getLocalServer(context)
             )
         }
 
@@ -269,6 +351,11 @@ class SampleApplication : Application() {
         private fun getRemoteDataSource(context: Context): RemoteDataSource {
             val application = context.applicationContext as SampleApplication
             return application.retrofitBaseDataSource
+        }
+
+        internal fun getLocalServer(context: Context): LocalServer {
+            val application = context.applicationContext as SampleApplication
+            return application.localServer
         }
     }
 }

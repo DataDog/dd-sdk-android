@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    @Suppress("DSL_SCOPE_VIOLATION", "UnstableApiUsage")
     alias(libs.plugins.versionsGradlePlugin)
 }
 
@@ -34,8 +34,7 @@ dependencies {
     implementation(libs.versionsGradlePlugin)
     implementation(libs.fuzzyWuzzy)
     implementation(libs.dokkaGradlePlugin)
-    implementation(libs.mavenModel)
-    implementation(libs.nexusPublishGradlePlugin)
+    implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)
 
     // check api surface
@@ -59,10 +58,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("thirdPartyLicences") {
-            id = "thirdPartyLicences" // the alias
-            implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
-        }
         register("apiSurface") {
             id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
@@ -78,8 +73,13 @@ gradlePlugin {
     }
 }
 
+java.targetCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_17
+
 tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 tasks {

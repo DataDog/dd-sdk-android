@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "rum/long_task-schema.json",
+  "title": "RumLongTaskEvent",
+  "type": "object",
+  "description": "Schema of all properties of a Long Task event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "$ref": "_action-child-schema.json"
+    },
+    {
+      "$ref": "_view-container-schema.json"
+    },
+    {
+      "required": ["type", "long_task"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "RUM event type",
+          "const": "long_task",
+          "readOnly": true
+        },
+        "long_task": {
+          "type": "object",
+          "description": "Long Task properties",
+          "required": ["duration"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "UUID of the long task",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Duration in ns of the long task",
+              "minimum": 0,
+              "readOnly": true
+            },
+            "is_frozen_frame": {
+              "type": "boolean",
+              "description": "Whether this long task is considered a frozen frame",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
+        "_dd": {
+          "type": "object",
+          "description": "Internal properties",
+          "properties": {
+            "discarded": {
+              "type": "boolean",
+              "description": "Whether the long task should be discarded or indexed",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}

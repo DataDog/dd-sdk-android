@@ -22,6 +22,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.detektTest)
+    testImplementation(libs.robolectric)
 }
 
 kotlinConfig()

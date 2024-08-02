@@ -9,9 +9,10 @@ package com.datadog.android.sdk.integration.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
@@ -19,7 +20,6 @@ import com.datadog.android.sdk.utils.exhaustiveAttributes
 import com.datadog.android.sdk.utils.isRumUrl
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
-import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -41,27 +41,23 @@ internal class ResourceTrackingTest {
         trackingConsent = TrackingConsent.GRANTED
     )
 
-    @get:Rule
-    val forge = ForgeRule()
-
     private lateinit var okHttpClient: OkHttpClient
     private lateinit var extraAttributes: Map<String, Any?>
 
     @Before
     fun setUp() {
-        extraAttributes = forge.exhaustiveAttributes()
+        extraAttributes = mockServerRule.forge.exhaustiveAttributes()
 
         okHttpClient = OkHttpClient.Builder()
             .addInterceptor(
-                RumInterceptor(
-                    rumResourceAttributesProvider = object : RumResourceAttributesProvider {
+                DatadogInterceptor.Builder(emptyMap())
+                    .setRumResourceAttributesProvider(object : RumResourceAttributesProvider {
                         override fun onProvideAttributes(
                             request: Request,
                             response: Response?,
                             throwable: Throwable?
                         ): Map<String, Any?> = extraAttributes
-                    }
-                )
+                    }).build()
             )
             .build()
     }
@@ -78,7 +74,7 @@ internal class ResourceTrackingTest {
 
         ConditionWatcher {
             val resourceRequests =
-                mockServerRule.getRequests()
+                mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl)
                     .rumEventsBy { it.has("resource") && it.get("type").asString == "resource" }
 
             resourceRequests.verifyEventMatches(
@@ -109,7 +105,7 @@ internal class ResourceTrackingTest {
 
         ConditionWatcher {
             val resourceRequests =
-                mockServerRule.getRequests()
+                mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl)
                     .rumEventsBy { it.has("error") && it.get("type").asString == "error" }
 
             resourceRequests.verifyEventMatches(

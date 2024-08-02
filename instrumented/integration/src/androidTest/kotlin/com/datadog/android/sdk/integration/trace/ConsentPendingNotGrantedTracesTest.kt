@@ -11,8 +11,8 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
-import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -41,9 +41,7 @@ internal class ConsentPendingNotGrantedTracesTest : TracesTest() {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         ConditionWatcher {
-            val tracePayloads = mockServerRule
-                .getRequests()
-                .filter { it.url?.isTracesUrl() ?: false }
+            val tracePayloads = mockServerRule.getRequests(RuntimeConfig.tracesEndpointUrl)
             assertThat(tracePayloads).isEmpty()
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)

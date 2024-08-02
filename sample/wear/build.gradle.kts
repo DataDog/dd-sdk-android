@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
+import com.datadog.gradle.config.java17
 
 plugins {
     id("com.android.application")
@@ -22,9 +23,18 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
+
+        buildFeatures {
+            buildConfig = true
+        }
     }
 
     namespace = "com.datadog.android.wear.sample"
+
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+        java17()
+    }
 
     flavorDimensions += listOf("site")
     productFlavors {
@@ -34,7 +44,7 @@ android {
             register(region) {
                 isDefault = index == 0
                 dimension = "site"
-                configureFlavorForSampleApp(this, project.rootDir)
+                configureFlavorForSampleApp(project, this, project.rootDir)
             }
         }
     }
@@ -54,8 +64,13 @@ android {
 }
 
 dependencies {
-
-    implementation(project(":dd-sdk-android"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-logs"))
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
+    implementation(libs.timber)
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")

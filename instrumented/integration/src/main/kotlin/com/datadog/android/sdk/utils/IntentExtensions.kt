@@ -7,17 +7,47 @@
 package com.datadog.android.sdk.utils
 
 import android.content.Intent
+import android.os.Build
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 
 internal const val TRACKING_CONSENT_KEY = "tracking_consent"
-internal const val PENDING = 1
-internal const val GRANTED = 2
-internal const val NOT_GRANTED = 3
+internal const val SR_PRIVACY_LEVEL = "sr_privacy_level"
+internal const val SR_SAMPLE_RATE = "sr_sample_rate"
+private const val SAMPLE_IN_ALL_SESSIONS = 100f
 
 internal fun Intent.getTrackingConsent(): TrackingConsent {
-    return when (getIntExtra(TRACKING_CONSENT_KEY, PENDING)) {
-        PENDING -> TrackingConsent.PENDING
-        GRANTED -> TrackingConsent.GRANTED
-        else -> TrackingConsent.NOT_GRANTED
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        extras?.getSerializable(TRACKING_CONSENT_KEY, TrackingConsent::class.java)
+            ?: TrackingConsent.NOT_GRANTED
+    } else {
+        @Suppress("DEPRECATION")
+        extras?.getSerializable(TRACKING_CONSENT_KEY) as? TrackingConsent
+            ?: TrackingConsent.NOT_GRANTED
     }
+}
+
+internal fun Intent.getSessionReplayPrivacy(): SessionReplayPrivacy {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        extras?.getSerializable(SR_PRIVACY_LEVEL, SessionReplayPrivacy::class.java)
+            ?: SessionReplayPrivacy.ALLOW
+    } else {
+        @Suppress("DEPRECATION")
+        extras?.getSerializable(SR_PRIVACY_LEVEL) as? SessionReplayPrivacy
+            ?: SessionReplayPrivacy.ALLOW
+    }
+}
+
+internal fun Intent.getSrSampleRate(): Float {
+    return getFloatExtra(SR_SAMPLE_RATE, SAMPLE_IN_ALL_SESSIONS)
+}
+
+internal const val FORGE_SEED_KEY = "forge_seed"
+
+@Suppress("CheckInternal")
+internal fun Intent.getForgeSeed(): Long {
+    check(hasExtra(FORGE_SEED_KEY)) {
+        "$FORGE_SEED_KEY value should be provided."
+    }
+    return getLongExtra(FORGE_SEED_KEY, -1)
 }

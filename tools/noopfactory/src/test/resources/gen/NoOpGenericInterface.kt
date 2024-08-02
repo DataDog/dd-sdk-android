@@ -1,3 +1,5 @@
+@file:Suppress("ktlint")
+
 package com.example
 
 import kotlin.CharSequence
@@ -9,22 +11,31 @@ import kotlin.collections.emptyList
 import kotlin.collections.emptyMap
 import kotlin.collections.emptySet
 
-@Suppress("RedundantUnitReturnType")
 internal class NoOpGenericInterface<T : CharSequence> : GenericInterface<T> {
-    public override fun doSomething() {
+    override val immutableProperty: T? = null
+
+    override var mutableProperty: T? = null
+
+    override var listProperty: List<T> = emptyList()
+
+    override val mapProperty: Map<T, T> = emptyMap()
+
+    override var setProperty: Set<T> = emptySet()
+
+    override fun doSomething() {
     }
 
-    public override fun doSomethingWithParams(t: T) {
+    override fun doSomethingWithParams(t: T) {
     }
 
-    public override fun doSomethingWithNullableParams(t: T?) {
+    override fun doSomethingWithNullableParams(t: T?) {
     }
 
-    public override fun doSomethingWithNullableReturn(): T? = null
+    override fun doSomethingWithNullableReturn(): T? = null
 
-    public override fun doSomethingWithListReturn(): List<T> = emptyList()
+    override fun doSomethingWithListReturn(): List<T> = emptyList()
 
-    public override fun doSomethingWithMapReturn(): Map<T, T> = emptyMap()
+    override fun doSomethingWithMapReturn(): Map<T, T> = emptyMap()
 
-    public override fun doSomethingWithSetReturn(): Set<T> = emptySet()
+    override fun doSomethingWithSetReturn(): Set<T> = emptySet()
 }

@@ -92,6 +92,7 @@ class KotlinFileVisitor {
         when {
             node.hasChildTerminal("INTERFACE") -> description.append("interface ")
             node.isEnum() -> description.append("enum ")
+            node.isAnnotation() -> description.append("annotation ")
             else -> description.append("$type ")
         }
 
@@ -173,6 +174,11 @@ class KotlinFileVisitor {
         visitTypeParameters(node)
         if (node.hasChildNode("typeParameters")) {
             description.append(" ")
+        }
+
+        visitReceiver(node)
+        if (node.hasChildNode("receiverType")) {
+            description.append(".")
         }
 
         // Name
@@ -264,6 +270,11 @@ class KotlinFileVisitor {
         )
     }
 
+    private fun visitReceiver(node: AstNode) {
+        val receiverType = node.firstChildNodeOrNull("receiverType") ?: return
+        description.append(receiverType.typeName())
+    }
+
     private fun visitFunctionParameters(node: AstNode) {
         description.append("(")
         description.append(
@@ -309,7 +320,12 @@ class KotlinFileVisitor {
         val type = node.firstChildNode("type")
 
         description.append(INDENT.repeat(level))
-        description.append("typealias $name = ${type.lambdaName()}\n")
+        val rootTypeName = if (type.hasChildNode("functionType")) {
+            type.lambdaName()
+        } else {
+            type.typeName()
+        }
+        description.append("typealias $name = $rootTypeName\n")
     }
 
     private fun ignoreNode() {
@@ -330,6 +346,10 @@ class KotlinFileVisitor {
 
     private fun AstNode.isEnum(): Boolean {
         return hasModifier("classModifier", "ENUM")
+    }
+
+    private fun AstNode.isAnnotation(): Boolean {
+        return hasModifier("classModifier", "ANNOTATION")
     }
 
     private fun AstNode.isProtected(): Boolean {
@@ -450,7 +470,8 @@ class KotlinFileVisitor {
             val generics = userType.firstChildNodeOrNull("typeArguments")
                 ?.childrenNodes("typeProjection")
                 ?.joinToString(", ", prefix = "<", postfix = ">") {
-                    it.firstChildNode("type").typeName()
+                    it.firstChildNodeOrNull("type")?.typeName()
+                        ?: it.firstChildTerminalOrNull("MULT")?.text.toString()
                 } ?: ""
             if (aggr.isEmpty()) {
                 (imports[typeName] ?: typeName) + generics

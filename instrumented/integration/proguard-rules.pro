@@ -10,14 +10,15 @@
 -keepnames class com.datadog.android.Datadog {
     *;
 }
-# Required because we need access to GlobalRum.isRegistered by reflection
--keepnames class com.datadog.android.rum.GlobalRum {
-    private java.util.concurrent.atomic.AtomicBoolean isRegistered;
-}
 
 # Required because we need access to GlobalTracer isRegistered property to reset it through reflection
 -keepnames class io.opentracing.util.GlobalTracer {
     private boolean isRegistered;
+}
+
+# Required because we need access to GlobalRumMonitor reset method to reset it through reflection
+-keepnames class com.datadog.android.rum.GlobalRumMonitor {
+    private void reset();
 }
 
 # Required because we need access to RumContext fields by reflection
@@ -29,3 +30,6 @@
 -keepnames class com.datadog.android.rum.internal.monitor.DatadogRumMonitor {
     *;
 }
+
+-dontwarn kotlin.Experimental$Level
+-dontwarn kotlin.Experimental

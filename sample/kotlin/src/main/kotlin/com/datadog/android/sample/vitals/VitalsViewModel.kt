@@ -10,10 +10,12 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import androidx.lifecycle.ViewModel
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumActionType
 import timber.log.Timber
 import java.security.SecureRandom
 
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "TooManyFunctions")
 internal class VitalsViewModel : ViewModel() {
 
     private val rng = SecureRandom()
@@ -24,6 +26,7 @@ internal class VitalsViewModel : ViewModel() {
     private var isResumed = false
     private var isCpuUsageEnabled = false
     private var isMemoryUsageEnabled = false
+    private var isStressTestEnabled = false
     private var isForegroundTasksEnabled = false
 
     private val foregroundRunnable = object : Runnable {
@@ -79,6 +82,13 @@ internal class VitalsViewModel : ViewModel() {
         }
     }
 
+    fun toggleStressTest(enabled: Boolean) {
+        isStressTestEnabled = enabled
+        if (enabled) {
+            stressTestRumEvents()
+        }
+    }
+
     private fun startCpuThread() {
         Thread {
             while (isResumed && isCpuUsageEnabled) {
@@ -106,6 +116,26 @@ internal class VitalsViewModel : ViewModel() {
                 Thread.sleep(10)
             }
             Timber.i("Allocated ${bitmapList.size} bitmaps")
+        }.start()
+    }
+
+    private fun stressTestRumEvents() {
+        val fflags = (0..128).associate {
+            "ff.flag_$it" to rng.nextInt(4096)
+        }
+        Thread {
+            while (isResumed && isStressTestEnabled) {
+//                fflags.forEach { (k, v) ->
+//                    GlobalRumMonitor.get().addFeatureFlagEvaluation(k, v)
+//                }
+                GlobalRumMonitor.get().addFeatureFlagEvaluations(fflags)
+                GlobalRumMonitor.get().addAction(
+                    RumActionType.CUSTOM,
+                    "custom action",
+                    emptyMap()
+                )
+                Thread.sleep(1)
+            }
         }.start()
     }
 }

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/default_padding"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <CheckBox
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:id="@+id/default_checkbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/default_checkbox" />
+
+    <CheckBox
+        android:id="@+id/checkbox_disabled_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:enabled="false"
+        android:text="@string/default_checkbox_disabled_checked"
+        android:textColor="@color/datadog_violet"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/default_checkbox" />
+
+    <CheckBox
+        android:id="@+id/checkbox_disabled_not_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:enabled="false"
+        android:text="@string/default_checkbox_disabled_not_checked"
+        android:textColor="@color/datadog_violet"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/checkbox_disabled_checked" />
+
+    <androidx.appcompat.widget.AppCompatCheckBox
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_checkbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintTop_toBottomOf="@+id/checkbox_disabled_not_checked"
+        android:text="@string/app_compat_checkbox" />
+
+    <androidx.appcompat.widget.AppCompatCheckBox
+        android:id="@+id/app_compat_checkbox_disabled_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:checked="true"
+        android:enabled="false"
+        android:text="@string/app_compat_checkbox_disabled_checked"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox" />
+
+
+    <androidx.appcompat.widget.AppCompatCheckBox
+        android:id="@+id/app_compat_checkbox_disabled_unchecked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:checked="false"
+        android:enabled="false"
+        android:text="@string/app_compat_checkbox_disabled_not_checked"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox_disabled_checked" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/material_checkbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_orange_light"
+        android:buttonTint="@color/checkbox_state_tint"
+        android:text="@string/material_checkbox"
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox_disabled_unchecked"
+        app:useMaterialThemeColors="false" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/material_checkbox_disabled_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:buttonTint="@color/checkbox_state_tint"
+        android:checked="true"
+        android:enabled="false"
+        android:text="@string/material_checkbox_disabled_checked"
+        android:textColor="@android:color/holo_orange_light"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox"
+        app:useMaterialThemeColors="false" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/material_checkbox_disabled_not_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:buttonTint="@color/checkbox_state_tint"
+        android:checked="false"
+        android:enabled="false"
+        android:text="@string/material_checkbox_disabled_not_checked"
+        android:textColor="@android:color/holo_orange_light"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox_disabled_checked"
+        app:useMaterialThemeColors="false" />
+
+    <RadioButton
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox_disabled_not_checked"
+        app:layout_constraintStart_toStartOf="parent"
+        android:id="@+id/radio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/default_radio" />
+
+    <androidx.appcompat.widget.AppCompatRadioButton
+        app:layout_constraintTop_toBottomOf="@+id/radio"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_radio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:text="@string/app_compat_radio" />
+
+    <com.google.android.material.radiobutton.MaterialRadioButton
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_radio"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/material_radio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_orange_light"
+        android:text="@string/material_radio"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

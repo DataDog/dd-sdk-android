@@ -1,0 +1,1308 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.core.internal.persistence.file.batch
+
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.BatchClosedMetadata
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.RemovalReason
+import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
+import java.io.File
+import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@ForgeConfiguration(Configurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+internal class BatchFileOrchestratorTest {
+
+    private lateinit var testedOrchestrator: FileOrchestrator
+
+    @TempDir
+    lateinit var tempDir: File
+
+    @Mock
+    lateinit var mockLogger: InternalLogger
+
+    @StringForgery
+    lateinit var fakeRootDirName: String
+
+    lateinit var fakeRootDir: File
+
+    @Mock
+    lateinit var mockMetricsDispatcher: MetricsDispatcher
+
+    @BeforeEach
+    fun `set up`() {
+        fakeRootDir = File(tempDir, fakeRootDirName)
+        fakeRootDir.mkdirs()
+        testedOrchestrator = BatchFileOrchestrator(
+            fakeRootDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+    }
+
+    // region getWritableFile
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M not send batch_closed metric W getWritableFile() {no prev file}`(
+        forceNewFile: Boolean
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        checkNotNull(result)
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M sent batch_closed metric W getWritableFile() { forceNewFile=true }`(
+        @IntForgery(min = 2, max = 10) iterations: Int,
+        @StringForgery data: String
+    ) {
+        // When
+        val files = mutableListOf<File>()
+        val startTimestamps = mutableListOf<Long>()
+        val endTimestamps = mutableListOf<Long>()
+        repeat(iterations) {
+            startTimestamps.add(System.currentTimeMillis())
+            val file = testedOrchestrator.getWritableFile(true)
+            file?.writeText(data)
+            files.add(file!!)
+            endTimestamps.add(System.currentTimeMillis())
+        }
+
+        // Then
+        val fileArgumentCaptor = argumentCaptor<File>()
+        val metadataArgumentCaptor = argumentCaptor<BatchClosedMetadata>()
+        verify(mockMetricsDispatcher, times(files.size - 1)).sendBatchClosedMetric(
+            fileArgumentCaptor.capture(),
+            metadataArgumentCaptor.capture()
+        )
+
+        assertThat(fileArgumentCaptor.allValues).isEqualTo(files.dropLast(1))
+        metadataArgumentCaptor.allValues.forEachIndexed { index, metadata ->
+            assertThat(metadata.forcedNew).isTrue()
+            assertThat(metadata.eventsCount).isEqualTo(1L)
+            assertThat(metadata.lastTimeWasUsedInMs)
+                .isBetween(startTimestamps[index], endTimestamps[index])
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M sent batch_closed metric W getWritableFile() { forceNewFile false, true }`(
+        @IntForgery(min = 2, max = 10) iterations: Int,
+        @StringForgery(size = 10) data: String
+    ) {
+        // Given
+        var previousFile: File? = null
+        val startTimestamp = System.currentTimeMillis()
+        repeat(iterations) {
+            previousFile = testedOrchestrator.getWritableFile(false)
+            previousFile?.writeText(data)
+        }
+        val endTimestamp = System.currentTimeMillis()
+
+        // When
+        testedOrchestrator.getWritableFile(true)
+
+        // Then
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(
+                eq(previousFile!!),
+                capture()
+            )
+            assertThat(firstValue.forcedNew).isTrue
+            assertThat(firstValue.eventsCount).isEqualTo(iterations.toLong())
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(startTimestamp, endTimestamp)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M warn W getWritableFile() {root is not a dir}`(
+        forceNewFile: Boolean,
+        @StringForgery fileName: String
+    ) {
+        // Given
+        val notADir = File(fakeRootDir, fileName)
+        notADir.createNewFile()
+        testedOrchestrator = BatchFileOrchestrator(
+            notADir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+        )
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M warn W getWritableFile() {root can't be created}`(forceNewFile: Boolean) {
+        // Given
+        val corruptedDir = mock<File>()
+        whenever(corruptedDir.exists()).thenReturn(false)
+        whenever(corruptedDir.mkdirs()).thenReturn(false)
+        whenever(corruptedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            corruptedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+        )
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M warn W getWritableFile() {root is not writeable}`(forceNewFile: Boolean) {
+        // Given
+        val restrictedDir = mock<File>()
+        whenever(restrictedDir.exists()).thenReturn(true)
+        whenever(restrictedDir.isDirectory).thenReturn(true)
+        whenever(restrictedDir.canWrite()).thenReturn(false)
+        whenever(restrictedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            restrictedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+        )
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M create the rootDirectory W getWritableFile() {root does not exist}`(
+        forceNewFile: Boolean
+    ) {
+        // Given
+        fakeRootDir.deleteRecursively()
+
+        // When
+        testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        assertThat(fakeRootDir).exists().isDirectory()
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M delete obsolete files W getWritableFile()`(
+        forceNewFile: Boolean,
+        @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val oldFile = File(fakeRootDir, oldTimestamp.toString())
+        oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
+        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngFile = File(fakeRootDir, youngTimestamp.toString())
+        youngFile.createNewFile()
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
+        assertThat(youngFile).exists()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M respect time threshold to delete obsolete files W getWritableFile() { below threshold }`(
+        forceNewFile: Boolean,
+        @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val oldFile = File(fakeRootDir, oldTimestamp.toString())
+        oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
+        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngFile = File(fakeRootDir, youngTimestamp.toString())
+        youngFile.createNewFile()
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+        // let's add very old file after the previous cleanup call. If threshold is respected,
+        // cleanup shouldn't be performed during the next getWritableFile call
+        val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
+        evenOlderFile.createNewFile()
+        testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
+        assertThat(youngFile).exists()
+        assertThat(evenOlderFile).exists()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M respect time threshold to delete obsolete files W getWritableFile() { above threshold }`(
+        forceNewFile: Boolean,
+        @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val oldFile = File(fakeRootDir, oldTimestamp.toString())
+        oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+        Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
+        val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
+        evenOlderFile.createNewFile()
+        testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
+        assertThat(evenOlderFile).doesNotExist()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(evenOlderFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(
+                eq(result),
+                capture()
+            )
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(start, end)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M return new File W getWritableFile() {no available file}`(forceNewFile: Boolean) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M return existing File W getWritableFile() {recent file exist with spare space}`(
+        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val previousFile = testedOrchestrator.getWritableFile()
+        checkNotNull(previousFile)
+        previousFile.writeText(previousData)
+        Thread.sleep(1)
+
+        // When
+        val result = testedOrchestrator.getWritableFile()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result).isEqualTo(previousFile)
+        assertThat(previousFile.readText()).isEqualTo(previousData)
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M return new File W getWritableFile() {previous file is too old}`(
+        forceNewFile: Boolean,
+        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val previousFile = testedOrchestrator.getWritableFile()
+        val afterFileCreateTimestamp = System.currentTimeMillis()
+
+        checkNotNull(previousFile)
+        previousFile.writeText(previousData)
+        Thread.sleep(RECENT_DELAY_MS + 1)
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(previousFile.readText()).isEqualTo(previousData)
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M return new File W getWritableFile() {previous file is unknown}`(
+        forceNewFile: Boolean,
+        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val previousFile = File(fakeRootDir, System.currentTimeMillis().toString())
+        previousFile.writeText(previousData)
+        Thread.sleep(1)
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(previousFile.readText()).isEqualTo(previousData)
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M return new File W getWritableFile() {previous file is deleted}`(forceNewFile: Boolean) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val previousFile = testedOrchestrator.getWritableFile()
+        val afterFileCreateTimestamp = System.currentTimeMillis()
+        checkNotNull(previousFile)
+        previousFile.createNewFile()
+        previousFile.delete()
+        Thread.sleep(1)
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(previousFile).doesNotExist()
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M return new File W getWritableFile() {previous file is too large}`(
+        forceNewFile: Boolean,
+        @StringForgery(size = MAX_BATCH_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val previousFile = testedOrchestrator.getWritableFile()
+        val afterFileCreateTimestamp = System.currentTimeMillis()
+        checkNotNull(previousFile)
+        previousFile.writeText(previousData)
+        Thread.sleep(1)
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(previousFile.readText()).isEqualTo(previousData)
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M return new File W getWritableFile() {previous file has too many items}`(
+        forceNewFile: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        var previousFile = testedOrchestrator.getWritableFile()
+
+        repeat(4) {
+            checkNotNull(previousFile)
+
+            val previousData = forge.aList(MAX_ITEM_PER_BATCH) {
+                forge.anAlphabeticalString()
+            }
+
+            previousFile?.writeText(previousData[0])
+
+            for (i in 1 until MAX_ITEM_PER_BATCH) {
+                val file = testedOrchestrator.getWritableFile()
+                assumeTrue(file == previousFile)
+                file?.appendText(previousData[i])
+            }
+            val afterLastFileUsageTimestamp = System.currentTimeMillis()
+
+            // When
+            val start = System.currentTimeMillis()
+            val nextFile = testedOrchestrator.getWritableFile(forceNewFile)
+            val end = System.currentTimeMillis()
+
+            // Then
+            checkNotNull(nextFile)
+            assertThat(nextFile)
+                .doesNotExist()
+                .hasParent(fakeRootDir)
+            assertThat(nextFile.name.toLong())
+                .isBetween(start, end)
+            assertThat(previousFile?.readText())
+                .isEqualTo(previousData.joinToString(separator = ""))
+
+            argumentCaptor<BatchClosedMetadata>() {
+                verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile!!), capture())
+                assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+                assertThat(firstValue.lastTimeWasUsedInMs)
+                    .isBetween(beforeFileCreateTimestamp, afterLastFileUsageTimestamp)
+                assertThat(firstValue.eventsCount).isEqualTo(MAX_ITEM_PER_BATCH.toLong())
+            }
+            previousFile = nextFile
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M discard File W getWritableFile() {previous files take too much disk space}`(
+        forceNewFile: Boolean,
+        @StringForgery(size = MAX_BATCH_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val filesCount = MAX_DISK_SPACE / MAX_BATCH_SIZE
+        val files = (0..filesCount).map {
+            val file = testedOrchestrator.getWritableFile()
+            checkNotNull(file)
+            file.writeText(previousData)
+            Thread.sleep(1)
+            file
+        }
+
+        // When
+        Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(files.first()).doesNotExist()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_DISK_FULL.format(
+                Locale.US,
+                files.size * previousData.length,
+                MAX_DISK_SPACE,
+                (files.size * previousData.length) - MAX_DISK_SPACE
+            )
+        )
+    }
+
+    // endregion
+
+    // region getNewWritableFile
+
+    @Test
+    fun `M return new File W getWritableFile() {forceNewFile=true}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFirstFileStart = System.currentTimeMillis()
+        val firstFile = testedOrchestrator.getWritableFile()
+        val afterFirstFileStart = System.currentTimeMillis()
+
+        // When
+        val start = System.currentTimeMillis()
+        val secondFile = testedOrchestrator.getWritableFile(forceNewFile = true)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(firstFile)
+        assertThat(firstFile)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        checkNotNull(secondFile)
+        assertThat(secondFile)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(secondFile.name.toLong())
+            .isBetween(start, end)
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(firstFile), capture())
+            assertThat(firstValue.forcedNew).isTrue
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFirstFileStart, afterFirstFileStart)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    // endregion
+
+    // region getReadableFile
+
+    @Test
+    fun `M warn W getReadableFile() {root is not a dir}`(
+        @StringForgery fileName: String
+    ) {
+        // Given
+        val notADir = File(fakeRootDir, fileName)
+        notADir.createNewFile()
+        testedOrchestrator = BatchFileOrchestrator(
+            notADir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+        )
+    }
+
+    @Test
+    fun `M warn W getReadableFile() {root can't be created}`() {
+        // Given
+        val corruptedDir = mock<File>()
+        whenever(corruptedDir.exists()).thenReturn(false)
+        whenever(corruptedDir.mkdirs()).thenReturn(false)
+        whenever(corruptedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            corruptedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M warn W getReadableFile() {root is not writeable}`() {
+        // Given
+        val restrictedDir = mock<File>()
+        whenever(restrictedDir.exists()).thenReturn(true)
+        whenever(restrictedDir.isDirectory).thenReturn(true)
+        whenever(restrictedDir.canWrite()).thenReturn(false)
+        whenever(restrictedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            restrictedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M delete obsolete files W getReadableFile()`(
+        @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val oldFile = File(fakeRootDir, oldTimestamp.toString())
+        oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
+        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngFile = File(fakeRootDir, youngTimestamp.toString())
+        youngFile.createNewFile()
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
+        assertThat(youngFile).exists()
+    }
+
+    @Test
+    fun `M create the rootDirectory W getReadableFile() {root does not exist}`() {
+        // Given
+        fakeRootDir.deleteRecursively()
+
+        // When
+        testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(fakeRootDir).exists().isDirectory()
+    }
+
+    @Test
+    fun `M return null W getReadableFile() {empty dir}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return file W getReadableFile() {existing old enough file}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val file = File(fakeRootDir, timestamp.toString())
+        file.createNewFile()
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result)
+            .isEqualTo(file)
+            .exists()
+            .hasContent("")
+    }
+
+    @Test
+    fun `M return null W getReadableFile() {file is too recent}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val file = File(fakeRootDir, timestamp.toString())
+        file.createNewFile()
+
+        // When
+        val result = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W getReadableFile() {file is in exclude list}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val file = File(fakeRootDir, timestamp.toString())
+        file.createNewFile()
+
+        // When
+        val result = testedOrchestrator.getReadableFile(setOf(file))
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    // endregion
+
+    // region getAllFiles
+
+    @Test
+    fun `M warn W getAllFiles() {root is not a dir}`(
+        @StringForgery fileName: String
+    ) {
+        // Given
+        val notADir = File(fakeRootDir, fileName)
+        notADir.createNewFile()
+        testedOrchestrator = BatchFileOrchestrator(
+            notADir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+        )
+    }
+
+    @Test
+    fun `M warn W getAllFiles() {root can't be created}`() {
+        // Given
+        val corruptedDir = mock<File>()
+        whenever(corruptedDir.exists()).thenReturn(false)
+        whenever(corruptedDir.mkdirs()).thenReturn(false)
+        whenever(corruptedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            corruptedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M warn W getAllFiles() {root is not writeable}`() {
+        // Given
+        val restrictedDir = mock<File>()
+        whenever(restrictedDir.exists()).thenReturn(true)
+        whenever(restrictedDir.isDirectory).thenReturn(true)
+        whenever(restrictedDir.canWrite()).thenReturn(false)
+        whenever(restrictedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            restrictedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M create the rootDirectory W getAllFiles() {root does not exist}`() {
+        // Given
+        fakeRootDir.deleteRecursively()
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+        assertThat(fakeRootDir).exists().isDirectory()
+    }
+
+    @Test
+    fun `M return empty list W getAllFiles() {dir is empty}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M return all files W getAllFiles() {dir is not empty}`(
+        @IntForgery(1, 32) count: Int
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val old = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val new = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val expectedFiles = mutableListOf<File>()
+        for (i in 1..count) {
+            // create both non readable and non writable files
+            expectedFiles.add(
+                File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
+            )
+            expectedFiles.add(
+                File(fakeRootDir, (old - i).toString()).also { it.createNewFile() }
+            )
+        }
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).containsAll(expectedFiles)
+    }
+
+    @Test
+    fun `M return empty list W getAllFiles() {dir files don't match pattern}`(
+        @StringForgery fileName: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val file = File(fakeRootDir, fileName)
+        file.createNewFile()
+
+        // When
+        val result = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    // endregion
+
+    // region getAllFlushableFiles
+
+    @Test
+    fun `M return all files W getAllFlushableFiles() {dir is not empty}`(
+        @IntForgery(1, 32) count: Int
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val old = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val new = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val expectedFiles = mutableListOf<File>()
+        for (i in 1..count) {
+            // create both non readable and non writable files
+            expectedFiles.add(
+                File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
+            )
+            expectedFiles.add(
+                File(fakeRootDir, (old - i).toString()).also { it.createNewFile() }
+            )
+        }
+
+        // When
+        val result = testedOrchestrator.getFlushableFiles()
+
+        // Then
+        assertThat(result).containsAll(expectedFiles)
+    }
+
+    @Test
+    fun `M return empty list W getAllFlushableFiles() {dir is empty}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val result = testedOrchestrator.getFlushableFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    // endregion
+
+    // region getRootDir
+
+    @Test
+    fun `M warn W getRootDir() {root is not a dir}`(
+        @StringForgery fileName: String
+    ) {
+        // Given
+        val notADir = File(fakeRootDir, fileName)
+        notADir.createNewFile()
+        testedOrchestrator = BatchFileOrchestrator(
+            notADir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getRootDir()
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+        )
+    }
+
+    @Test
+    fun `M warn W getRootDir() {root can't be created}`() {
+        // Given
+        val corruptedDir = mock<File>()
+        whenever(corruptedDir.exists()).thenReturn(false)
+        whenever(corruptedDir.mkdirs()).thenReturn(false)
+        whenever(corruptedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            corruptedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getRootDir()
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M warn W getRootDir() {root is not writeable}`() {
+        // Given
+        val restrictedDir = mock<File>()
+        whenever(restrictedDir.exists()).thenReturn(true)
+        whenever(restrictedDir.isDirectory).thenReturn(true)
+        whenever(restrictedDir.canWrite()).thenReturn(false)
+        whenever(restrictedDir.path) doReturn fakeRootDir.path
+        testedOrchestrator = BatchFileOrchestrator(
+            restrictedDir,
+            TEST_PERSISTENCE_CONFIG,
+            mockLogger,
+            mockMetricsDispatcher
+        )
+
+        // When
+        val result = testedOrchestrator.getRootDir()
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M return root dir`() {
+        // When
+        val result = testedOrchestrator.getRootDir()
+
+        // Then
+        assertThat(result).isEqualTo(fakeRootDir)
+        verifyNoInteractions(mockLogger)
+    }
+
+    @Test
+    fun `M return root dir { multithreaded }`(
+        @IntForgery(4, 8) repeatCount: Int
+    ) {
+        // since getRootDir involves the creation of the directory structure,
+        // we need to make sure that other threads won't try to create it again when it is already
+        // created by some thread
+
+        // Given
+        fakeRootDir.deleteRecursively()
+        val countDownLatch = CountDownLatch(repeatCount)
+        val results = mutableListOf<File?>()
+
+        // When
+        repeat(repeatCount) {
+            Thread {
+                val result = testedOrchestrator.getRootDir()
+                synchronized(results) { results.add(result) }
+                countDownLatch.countDown()
+            }.start()
+        }
+        countDownLatch.await(5, TimeUnit.SECONDS)
+
+        // Then
+        assertThat(countDownLatch.count).isZero()
+        assertThat(results)
+            .hasSize(repeatCount)
+            .containsOnly(fakeRootDir)
+        verifyNoInteractions(mockLogger)
+    }
+
+    // endregion
+
+    // region getMetadataFile
+
+    @Test
+    fun `M return metadata file W getMetadataFile()`() {
+        // Given
+        val fakeFileName = System.currentTimeMillis().toString()
+        val fakeFile = File(fakeRootDir.path, fakeFileName)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.name).isEqualTo("${fakeFileName}_metadata")
+    }
+
+    @Test
+    fun `M log debug file W getMetadataFile() { file is from another folder }`(
+        @StringForgery fakeSuffix: String
+    ) {
+        // Given
+        val fakeFileName = System.currentTimeMillis().toString()
+        val fakeFile = File("${fakeRootDir.parent}$fakeSuffix", fakeFileName)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNotNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.DEBUG_DIFFERENT_ROOT
+                .format(Locale.US, fakeFile.path, fakeRootDir.path)
+        )
+    }
+
+    @Test
+    fun `M log error file W getMetadataFile() { not batch file argument }`(
+        @StringForgery fakeFileName: String
+    ) {
+        // Given
+        val fakeFile = File(fakeRootDir.path, fakeFileName)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
+        )
+    }
+
+    // endregion
+
+    companion object {
+
+        private const val RECENT_DELAY_MS = 250L
+
+        private const val MAX_ITEM_PER_BATCH: Int = 32
+        private const val MAX_ITEM_SIZE: Int = 256
+        private const val MAX_BATCH_SIZE: Int = MAX_ITEM_PER_BATCH * (MAX_ITEM_SIZE + 1)
+        private const val SMALL_ITEM_SIZE: Int = 32
+
+        private const val OLD_FILE_THRESHOLD: Long = RECENT_DELAY_MS * 4
+        private const val MAX_DISK_SPACE = MAX_BATCH_SIZE * 4
+
+        private const val CLEANUP_FREQUENCY_THRESHOLD_MS = 50L
+
+        private val TEST_PERSISTENCE_CONFIG = FilePersistenceConfig(
+            RECENT_DELAY_MS,
+            MAX_BATCH_SIZE.toLong(),
+            MAX_ITEM_SIZE.toLong(),
+            MAX_ITEM_PER_BATCH,
+            OLD_FILE_THRESHOLD,
+            MAX_DISK_SPACE.toLong(),
+            CLEANUP_FREQUENCY_THRESHOLD_MS
+        )
+    }
+}

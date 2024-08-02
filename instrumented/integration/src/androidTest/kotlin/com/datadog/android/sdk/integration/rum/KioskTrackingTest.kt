@@ -14,6 +14,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.R
+import com.datadog.android.sdk.rules.KioskTrackingActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
@@ -23,11 +24,13 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 internal class KioskTrackingTest :
-    RumTest<KioskSplashPlaygroundActivity,
-        RumMockServerActivityTestRule<KioskSplashPlaygroundActivity>>() {
+    RumTest<
+        KioskSplashPlaygroundActivity,
+        RumMockServerActivityTestRule<KioskSplashPlaygroundActivity>
+        >() {
 
     @get:Rule
-    val mockServerRule = RumMockServerActivityTestRule(
+    val mockServerRule = KioskTrackingActivityTestRule(
         KioskSplashPlaygroundActivity::class.java,
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
@@ -65,11 +68,7 @@ internal class KioskTrackingTest :
         waitForPendingRUMEvents()
 
         expectedEvents.add(ExpectedApplicationStartActionEvent())
-        expectedEvents.add(
-            ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
-            )
-        )
+        // ignore first view event for application launch, it will be reduced
 
         // Stop launch view
         expectedEvents.add(
@@ -79,10 +78,11 @@ internal class KioskTrackingTest :
         )
 
         // No events on this view - one for view stop view / stop session
+        // ignore first view event, it will be reduced
         expectedEvents.add(
             ExpectedViewEvent(
                 firstViewUrl,
-                docVersion = 2,
+                docVersion = 3,
                 viewArguments = mapOf(),
                 sessionIsActive = false
             )
@@ -97,14 +97,7 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
 
         // one for view start
-        expectedEvents.add(
-            ExpectedViewEvent(
-                secondViewUrl,
-                docVersion = 2,
-                viewArguments = mapOf(),
-                sessionIsActive = true
-            )
-        )
+        // ignore first view event, it will be reduced
 
         // one for view stop
         expectedEvents.add(
@@ -122,10 +115,12 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
 
         // No events on this view - one for view stop view / stop session
+        // ignore first view event, it will be reduced
+
         expectedEvents.add(
             ExpectedViewEvent(
                 firstViewUrl,
-                docVersion = 2,
+                docVersion = 3,
                 viewArguments = mapOf(),
                 sessionIsActive = false
             )

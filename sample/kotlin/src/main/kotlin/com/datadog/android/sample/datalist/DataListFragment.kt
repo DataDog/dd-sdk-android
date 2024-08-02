@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.android.sample.datalist
 
 import android.os.Bundle
@@ -13,7 +19,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.Datadog
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 import com.datadog.android.sample.data.model.Log
@@ -55,7 +62,7 @@ internal class DataListFragment : Fragment() {
                 when (it) {
                     is DataListViewModel.UIResponse.Success -> {
                         if (!firstDataWasLoaded) {
-                            GlobalRum.get().addTiming("logs_data_loaded")
+                            GlobalRumMonitor.get(Datadog.getInstance()).addTiming("logs_data_loaded")
                             firstDataWasLoaded = true
                         }
                         adapter.updateData(it.data)

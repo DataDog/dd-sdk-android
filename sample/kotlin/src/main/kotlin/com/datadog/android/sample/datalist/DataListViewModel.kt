@@ -1,13 +1,14 @@
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-2019 Datadog, Inc.
+ * Copyright 2016-Present Datadog, Inc.
  */
 package com.datadog.android.sample.datalist
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.datadog.android.Datadog
 import com.datadog.android.rx.sendErrorToDatadog
 import com.datadog.android.sample.data.DataRepository
 import com.datadog.android.sample.data.model.Log
@@ -24,16 +25,17 @@ internal class DataListViewModel(val repository: DataRepository) : ViewModel() {
         uiRequestSubject
             .switchMap { request ->
                 when (request) {
-                    is UIRequest.FetchData ->
-                        repository.getLogs("source:android")
-                            .sendErrorToDatadog()
-                            .toObservable()
+                    is UIRequest.FetchData -> {
+                        val flowable = repository.getLogs("source:android")
+                        flowable.sendErrorToDatadog(Datadog.getInstance())
+                        flowable.toObservable()
                             .map<UIResponse> {
                                 UIResponse.Success(it)
                             }
                             .onErrorReturn {
                                 UIResponse.Error(it.message ?: "Unknown Error")
                             }
+                    }
                 }
             }
     private val liveData = MutableLiveData<UIResponse>()

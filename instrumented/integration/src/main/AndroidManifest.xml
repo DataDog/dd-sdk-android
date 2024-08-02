@@ -18,12 +18,8 @@
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
         <activity
-            android:name=".log.ActivityLifecycleLogs"
-            android:label="@string/activity_logs_end_to_end"
-            android:windowSoftInputMode="adjustResize"/>
-        <activity
             android:name=".trace.ActivityLifecycleTrace"
-            android:label="@string/activity_logs_end_to_end"
+            android:label="@string/activity_traces_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
             android:name=".rum.GesturesTrackingPlaygroundActivity"
@@ -48,6 +44,34 @@
         <activity
             android:name=".telemetry.TelemetryPlaygroundActivity"
             android:label="@string/activity_telemetry_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayPlaygroundActivity"
+            android:label="@string/session_replay_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayTextFieldsActivity"
+            android:label="@string/session_replay_text_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplaySensitiveFieldsActivity"
+            android:label="@string/session_replay_sensitive_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayRadioCheckboxFieldsActivity"
+            android:label="@string/session_replay_sensitive_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayTextFieldsWithInputActivity"
+            android:label="@string/session_replay_text_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayImageButtonsActivity"
+            android:label="@string/session_replay_image_buttons_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayImagesActivity"
+            android:label="@string/session_replay_images_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
             android:exported="true"

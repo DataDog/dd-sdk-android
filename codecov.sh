@@ -72,7 +72,7 @@ pr="$VCS_PULL_REQUEST"
 slug="$VCS_SLUG"
 tag="$VCS_TAG"
 build_url="$CI_BUILD_URL"
-build="$CI_BUILD_ID"
+build="$CI_JOB_ID"
 job="$CI_JOB_ID"
 
 beta_xcode_partials=""
@@ -1315,7 +1315,7 @@ $PWD/coverage.xml"
                      -or -name 'luacov.report.out' \
                      -or -name 'naxsi.info' \
                      -or -name 'nosetests.xml' \
-                     -or -name 'report.xml' \
+                     -or -name 'report*.xml' \
                      $include_cov \) \
                     $exclude_cov \
                     -not -name '*.am' \

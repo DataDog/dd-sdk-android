@@ -8,10 +8,11 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.ApplicationProductFlavor
 import com.google.gson.Gson
+import org.gradle.api.Project
 import java.io.File
 import java.util.Locale
 
-private fun sampleAppConfig(filePath: String): SampleAppConfig {
+fun sampleAppConfig(filePath: String): SampleAppConfig {
     val file = File(filePath)
     if (!file.exists()) {
         return SampleAppConfig()
@@ -23,9 +24,13 @@ private fun sampleAppConfig(filePath: String): SampleAppConfig {
 }
 
 @Suppress("UnstableApiUsage")
-fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File) {
+fun configureFlavorForSampleApp(
+    project: Project,
+    flavor: ApplicationProductFlavor,
+    rootDir: File
+) {
     val config = sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
-    println("Configuring flavor: [${flavor.name}] with config: [$config]")
+    project.logger.info("Configuring flavor: [${flavor.name}] with config: [$config]")
     flavor.buildConfigField(
         "String",
         "DD_OVERRIDE_LOGS_URL",
@@ -69,6 +74,6 @@ fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File)
     flavor.buildConfigField(
         "String",
         "DD_SITE_NAME",
-        "\"${flavor.name.toUpperCase(Locale.US)}\""
+        "\"${flavor.name.uppercase(Locale.US)}\""
     )
 }

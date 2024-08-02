@@ -1,0 +1,37 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.webview.internal.storage
+
+import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
+import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.core.persistence.serializeToByteArray
+import com.google.gson.JsonObject
+
+internal class WebViewDataWriter(
+    private val serializer: Serializer<JsonObject>,
+    private val internalLogger: InternalLogger
+) : DataWriter<JsonObject> {
+
+    @WorkerThread
+    override fun write(writer: EventBatchWriter, element: JsonObject, eventType: EventType): Boolean {
+        // TODO RUM-374 If event is RUM ViewEvent (as Json), we need to store it as last view
+        //  event for more precise NDK crash reporting
+        val serialized = serializer.serializeToByteArray(element, internalLogger) ?: return false
+        return synchronized(this) {
+            writer.write(
+                event = RawBatchEvent(data = serialized),
+                batchMetadata = null,
+                eventType = eventType
+            )
+        }
+    }
+}

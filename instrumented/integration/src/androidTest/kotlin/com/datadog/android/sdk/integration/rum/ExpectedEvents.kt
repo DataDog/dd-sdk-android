@@ -7,8 +7,7 @@
 package com.datadog.android.sdk.integration.rum
 
 import com.datadog.android.Datadog
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.google.gson.JsonElement
 
 internal data class ExpectedRumContext(
@@ -77,8 +76,18 @@ internal enum class ErrorSource(val sourceName: String) {
     NETWORK("network")
 }
 
+private val registryField = Datadog::class.java.getDeclaredField("registry").apply {
+    isAccessible = true
+}
+private val registryGetInstanceMethod = registryField.type.getMethod(
+    "getInstance",
+    String::class.java
+)
+
 private fun rumContextValues(): Triple<String, String, String> {
-    val sdkCore: SdkCore = Datadog::class.java.getStaticValue("globalSdkCore")
+    val sdkCore: FeatureSdkCore? = registryGetInstanceMethod
+        .invoke(registryField.get(null), null) as? FeatureSdkCore
+    checkNotNull(sdkCore)
     val rumContext: Map<String, Any?> = sdkCore.getFeatureContext("rum")
     val appId: String = rumContext["application_id"] as String
     val sessionId: String = rumContext["session_id"] as String

@@ -19,8 +19,10 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.rules.GesturesTrackingActivityTestRule
 
 internal abstract class GesturesTrackingTest :
-    RumTest<GesturesTrackingPlaygroundActivity,
-        GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>>() {
+    RumTest<
+        GesturesTrackingPlaygroundActivity,
+        GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>
+        >() {
 
     // region RumTest
 
@@ -73,14 +75,14 @@ internal abstract class GesturesTrackingTest :
         activity: GesturesTrackingPlaygroundActivity
     ): List<ExpectedEvent> {
         return listOf(
+            ExpectedApplicationStartActionEvent(),
+            // ignore first view event for application launch, it will be reduced
+            ExpectedApplicationLaunchViewEvent(docVersion = 3),
+            // ignore first view event, it will be reduced
             ExpectedGestureEvent(
                 Gesture.TAP,
                 activity.button.targetName(),
                 "button"
-            ),
-            ExpectedViewEvent(
-                viewUrl,
-                2
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
@@ -102,6 +104,10 @@ internal abstract class GesturesTrackingTest :
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_GESTURE_DIRECTION to "down"
                 )
+            ),
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 5
             )
         )
     }

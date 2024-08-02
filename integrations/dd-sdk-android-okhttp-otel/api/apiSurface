@@ -1,0 +1,1 @@
+fun okhttp3.Request.Builder.addParentSpan(io.opentelemetry.api.trace.Span): okhttp3.Request.Builder

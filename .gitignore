@@ -23,4 +23,8 @@ config/*
 # MacOS garbage
 .DS_Store
 
+# .log
+*.log
+
 gh_token
+sdk_classpath

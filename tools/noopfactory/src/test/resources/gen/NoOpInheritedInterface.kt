@@ -1,15 +1,21 @@
+@file:Suppress("ktlint")
+
 package com.example
 
+import kotlin.String
 import kotlin.Suppress
 
-@Suppress("RedundantUnitReturnType")
 internal class NoOpInheritedInterface : InheritedInterface {
-    public override fun doSomething() {
+    override var mutableProperty: String = ""
+
+    override val immutableProperty: String = ""
+
+    override fun doSomething() {
     }
 
-    public override fun parentMethod() {
+    override fun parentMethod() {
     }
 
-    public override fun rootMethod() {
+    override fun rootMethod() {
     }
 }

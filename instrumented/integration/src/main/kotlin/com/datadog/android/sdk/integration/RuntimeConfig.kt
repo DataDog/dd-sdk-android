@@ -7,11 +7,16 @@
 package com.datadog.android.sdk.integration
 
 import android.os.Build
+import com.datadog.android._InternalProxy
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TraceConfiguration
 import java.util.UUID
 
 internal object RuntimeConfig {
@@ -31,9 +36,9 @@ internal object RuntimeConfig {
 
     val LONG_TASK_LARGE_THRESHOLD = Long.MAX_VALUE
 
-    fun logger(): Logger {
+    fun logger(sdkCore: SdkCore): Logger {
         // Initialise Logger
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(sdkCore)
             .setNetworkInfoEnabled(true)
             .build()
 
@@ -48,30 +53,39 @@ internal object RuntimeConfig {
         return logger
     }
 
-    fun tracer(): AndroidTracer {
-        return AndroidTracer.Builder().build()
-    }
-
-    fun credentials(): Credentials {
-        return Credentials(
-            DD_TOKEN,
-            INTEGRATION_TESTS_ENVIRONMENT,
-            Credentials.NO_VARIANT,
-            APP_ID
-        )
+    fun tracer(sdkCore: SdkCore): AndroidTracer {
+        return AndroidTracer.Builder(sdkCore).build()
     }
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
+            clientToken = DD_TOKEN,
+            env = INTEGRATION_TESTS_ENVIRONMENT
         )
-            .useCustomLogsEndpoint(logsEndpointUrl)
-            .useCustomRumEndpoint(rumEndpointUrl)
-            .useCustomTracesEndpoint(tracesEndpointUrl)
+            .apply {
+                _InternalProxy.allowClearTextHttp(this)
+            }
             .setUploadFrequency(UploadFrequency.FREQUENT)
+    }
+
+    fun rumConfigBuilder(): RumConfiguration.Builder {
+        return RumConfiguration.Builder(APP_ID)
+            .useCustomEndpoint(rumEndpointUrl)
+    }
+
+    fun sessionReplayConfigBuilder(sampleRate: Float): SessionReplayConfiguration.Builder {
+        return SessionReplayConfiguration.Builder(sampleRate)
+            .useCustomEndpoint(sessionReplayEndpointUrl)
+    }
+
+    fun logsConfigBuilder(): LogsConfiguration.Builder {
+        return LogsConfiguration.Builder()
+            .useCustomEndpoint(logsEndpointUrl)
+    }
+
+    fun tracesConfigBuilder(): TraceConfiguration.Builder {
+        return TraceConfiguration.Builder()
+            .useCustomEndpoint(tracesEndpointUrl)
     }
 
     val keyValuePairsTags = mapOf(

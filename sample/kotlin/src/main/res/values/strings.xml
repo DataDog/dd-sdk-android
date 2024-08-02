@@ -12,10 +12,13 @@
     <string name="title_logs">Logs</string>
     <string name="title_crash">Crash</string>
     <string name="title_webview">WebView</string>
-    <string name="title_traces">"Traces"</string>
+    <string name="title_traces">"OpenTracing Traces"</string>
     <string name="title_unknown">"?"</string>
     <string name="title_data_list">Data List</string>
     <string name="title_view_pager">View Pager</string>
+    <string name="title_unsupported_views">Unsupported views</string>
+    <string name="title_image_components">Image Components</string>
+    <string name="title_image_scaling">Image Scaling</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
@@ -25,6 +28,17 @@
     <string name="title_gdpr">GDPR</string>
     <string name="title_clear_all_data">Clear All Data</string>
     <string name="title_compose">Jetpack Compose</string>
+    <string name="title_textviews">TextViews</string>
+    <string name="title_buttons">Buttons</string>
+    <string name="title_imageviews">ImageViews</string>
+    <string name="title_imagebuttons">ImageButtons</string>
+    <string name="title_views">Views</string>
+
+    <string name="category_system">System</string>
+    <string name="category_bundled">Bundled</string>
+    <string name="category_ninepatch">Ninepatch</string>
+    <string name="category_remote">Remote</string>
+    <string name="category_multiple">Multiple</string>
 
     <string name="msg_native_crash">Native Crash</string>
     <string name="msg_java_crash">Java Crash</string>
@@ -34,12 +48,12 @@
     <string name="msg_network_request">Network Request (~1s)</string>
     <string name="msg_coroutine_operation">Coroutine operations (~5s)</string>
     <string name="msg_rum_use_cases">RUM use cases</string>
-    <string name="msg_clear_all_data">Are you sure you want to clear all unsent data. You’ll lose any data still on disk. Note that this won’t delete data already sent to Datadog servers.</string>
+    <string name="msg_clear_all_data">Are you sure you want to clear all unsent data. You’ll lose any data still on
+        disk. Note that this won’t delete data already sent to Datadog servers.
+    </string>
     <string name="msg_all_data_cleared">All unsent data has been cleared.</string>
 
-    <string name="button_warning">⚠️</string>
-    <string name="button_error">🚨</string>
-    <string name="button_critical">💥</string>
+    <string name="button_send">Send</string>
     <string name="button_anr">Simulate ANR</string>
     <string name="button_oom">Simulate OOM</string>
     <string name="button_crash">Crash</string>
@@ -53,6 +67,7 @@
     <string name="button_slow_frame_rate">Slow frame rate</string>
     <string name="button_high_cpu_usage">High CPU usage</string>
     <string name="button_high_memory_usage">High RAM usage</string>
+    <string name="button_stress_test_events">Stress Test Events</string>
 
     <string name="group_image_loader">Image Loader</string>
     <string name="group_data_source">Data Source</string>
@@ -66,6 +81,18 @@
     <string name="choice_sqlite">SQLite</string>
     <string name="choice_sqldelight">SQLDelight</string>
 
+    <string name="webview_show">Show</string>
+    <string name="webview_hide">Hide</string>
+
+    <string-array name="log_levels">
+        <item>💬 Verbose</item>
+        <item>⚙️ Debug</item>
+        <item>ℹ️ Info</item>
+        <item>⚠️ Warn</item>
+        <item>🚨 Error</item>
+        <item>💥 Assert</item>
+    </string-array>
+
 
     <string name="foreground_service_title">Sample App Logs Foreground Service</string>
     <string name="foreground_service_desc">Used to send logs from a different process</string>
@@ -77,14 +104,85 @@
     <string name="hint_user_email">User email</string>
     <string name="hint_user_gender">Gender</string>
     <string name="hint_user_age">Age</string>
+    <string name="hint_message">Message</string>
 
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>
     <string name="add_widget">Add widget</string>
+    <string name="legacy_toolbar_title">Legacy toolbar</string>
+    <string name="appcompat_toolbar_title">Appcompat toolbar</string>
     <string name="loading">Loading…</string>
     <string name="load_resource">Perform http request</string>
     <string name="set_tracking_consent">Set tracking consent</string>
     <string name="pending">PENDING</string>
     <string name="granted">GRANTED</string>
     <string name="not_granted">NOT GRANTED</string>
+    <string name="text_view">Default Text View</string>
+    <string name="ellipsize_text_view">Default Text View with some super long text for ellipsis. Default Text View with
+        some super long text. Default Text View with some super long text. Default Text View with some super long text.
+        Default Text View with some super long text. Default Text View with some super long text. Default Text View with
+        some super long text.
+    </string>
+    <string name="material_text_view">Material Text View</string>
+    <string name="app_compat_text_view">App Compat Text View</string>
+    <string name="auto_complete_text_view">Default Auto Complete Text View</string>
+    <string name="edit_text_view">Edit Text View</string>
+    <string name="edit_text_view_multiline">Edit Text View on 2 lines</string>
+    <string name="app_compat_edit_text_view">App Compat Edit Text View</string>
+    <string name="app_compat_auto_complete_text_view">App Compat Auto Complete Text View</string>
+    <string name="material_auto_complete_text_view">Material Auto Complete Text View</string>
+    <string name="text_view_components">Text View Components</string>
+    <string name="checked_text_view">Checked Text View</string>
+    <string name="app_compat_checked_text_view">App Compat Checked Text View</string>
+    <string name="picker_components">Picker Components</string>
+    <string name="pick_current_time">Pick Current Time</string>
+    <string name="pick_current_date">Pick Current Date</string>
+    <string name="session_replay">Session Replay</string>
+    <string name="default_checkbox">Default CheckBox (Controls two check boxes below)</string>
+    <string name="default_checkbox_disabled_checked">Default CheckBox Disabled Checked</string>
+    <string name="default_checkbox_disabled_not_checked">Default CheckBox Disabled Not Checked</string>
+    <string name="app_compat_checkbox">App Compat CheckBox  (Controls two check boxes below)</string>
+    <string name="app_compat_checkbox_disabled_checked">App Compat CheckBox Disabled Checked</string>
+    <string name="app_compat_checkbox_disabled_not_checked">App Compat CheckBox Disabled Not checked</string>
+    <string name="material_checkbox">Material CheckBox With custom tint</string>
+    <string name="material_checkbox_disabled_checked">Material CheckBox Disabled Checked With custom tint</string>
+    <string name="material_checkbox_disabled_not_checked">Material CheckBox With  Disabled Not Checked custom tint</string>
+    <string name="radio_and_check_box_components">Radio and CheckBox Components</string>
+    <string name="default_radio">Default Radio</string>
+    <string name="app_compat_radio">App Compat Radio</string>
+    <string name="material_radio">Material Radio</string>
+    <string name="default_spinner">Default spinner</string>
+    <string name="app_compat_spinner">App Compat Spinner</string>
+    <string name="app_compat_switch">App Compat Switch</string>
+    <string name="app_compat_switch_disabled">App Compat Switch (Disabled)</string>
+    <string name="material_switch">Material Switch</string>
+    <string name="material_switch_disabled">Material Switch (Disabled)</string>
+    <string name="dropdowns_and_switchers_components">Dropdowns and Switchers Components</string>
+    <string name="planet">Planet</string>
+    <string name="sliders_and_steppers_components">Sliders and Steppers Components</string>
+    <string name="random_text_value">Pellentesque pretium non urna ut laoreet. Vestibulum finibus porttitor sem, id
+        dictum elit.
+    </string>
+    <string name="different_fonts">Different Fonts</string>
+    <string name="default_typeface_label">Default Typeface</string>
+    <string name="sans_serif_typeface_label">Sans Serif Typeface</string>
+    <string name="monospace_typeface_label">Monospace Typeface</string>
+    <string name="sans_typeface_label">Sans Typeface</string>
+    <string name="password_input_components">Password input components</string>
+    <string name="postal_address_label">Postal Address</string>
+    <string name="web_email_label">Web Email</string>
+    <string name="email_label">Email</string>
+    <string name="web_password_label">Web Password</string>
+    <string name="number_password_label">Number Password</string>
+    <string name="visible_password_label">Visible Password</string>
+    <string name="default_password_label">Default password</string>
+    <string name="title_otel_traces">OpenTelemetry Traces</string>
+    <string name="start_chained_contexts_test">Start Chained Contexts Test</string>
+    <string name="start_async_operation">Start Async Operation</string>
+    <string name="chained_contexts_test">Chained Otel Contexts Test</string>
+    <string name="web_view_recording">Web View Recording</string>
+    <string name="start_custom_rum_view">Start Custom Rum View</string>
+    <string name="webview_recording">WebView Recording</string>
+    <string name="linked_spans_test">Linked Spans Test</string>
+    <string name="start_linked_spans_test">Start Linked Spans Test</string>
 </resources>

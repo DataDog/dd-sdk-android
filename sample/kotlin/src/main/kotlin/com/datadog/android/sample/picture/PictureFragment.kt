@@ -14,7 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 
@@ -43,9 +43,9 @@ internal class PictureFragment :
         return rootView
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(PictureViewModel::class.java)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel = ViewModelProvider(this).get(PictureViewModel::class.java)
         context?.let {
             viewModel.selectImageLoader(
                 Preferences.defaultPreferences(it).getImageLoader()
@@ -53,6 +53,7 @@ internal class PictureFragment :
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         val currentType = viewModel.getImageLoader()
         inflater.inflate(R.menu.image_loader, menu)
@@ -65,6 +66,7 @@ internal class PictureFragment :
         menu.findItem(disabled).isEnabled = false
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val type = when (item.itemId) {
             R.id.image_loader_coil -> ImageLoaderType.COIL

@@ -6,12 +6,13 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import android.app.ActivityManager
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -19,23 +20,32 @@ import com.datadog.android.sdk.utils.getTrackingConsent
 
 internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         // we will use a large long task threshold to make sure we will not have LongTask events
         // noise in our integration tests.
-        val config = RuntimeConfig.configBuilder()
-            .trackInteractions()
+        val config = RuntimeConfig.configBuilder().build()
+        val trackingConsent = intent.getTrackingConsent()
+
+        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
+        checkNotNull(sdkCore)
+
+        DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
+            it.name == "overrideProcessImportance"
+        }?.apply {
+            isAccessible = true
+            invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+        }
+
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .trackUserInteractions()
             .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
-        val trackingConsent = intent.getTrackingConsent()
-
-        Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.setVerbosity(Log.VERBOSE)
-
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        Rum.enable(rumConfig, sdkCore)
         setContentView(R.layout.fragment_tracking_layout)
     }
 }

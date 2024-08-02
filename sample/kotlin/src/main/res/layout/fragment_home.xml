@@ -63,6 +63,17 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/navigation_crash"/>
 
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_otel_traces"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_otel_traces"
+                android:drawableStart="@drawable/baseline_radio_button_unchecked_24"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_traces"/>
+
         <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/rum_section"
                 android:layout_width="0dp"
@@ -74,7 +85,7 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/navigation_traces"/>
+                app:layout_constraintTop_toBottomOf="@id/navigation_otel_traces"/>
 
 
         <androidx.appcompat.widget.AppCompatButton
@@ -144,6 +155,17 @@
             app:layout_constraintTop_toBottomOf="@id/navigation_picture"/>
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_session_replay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/session_replay"
+            android:drawableStart="@drawable/baseline_emergency_recording_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_compose"/>
+
+        <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/navigation_about"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -152,7 +174,7 @@
                 android:drawableStart="@drawable/ic_info_black_24"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/navigation_compose"/>
+                app:layout_constraintTop_toBottomOf="@id/navigation_session_replay"/>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

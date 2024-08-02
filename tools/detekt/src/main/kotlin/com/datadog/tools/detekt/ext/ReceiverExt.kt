@@ -18,25 +18,44 @@ import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.lowerIfFlexible
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
-@Suppress("ReturnCount")
-internal fun Receiver?.type(bindingContext: BindingContext): String? {
-    if (this == null) return null
-    if (this is ExpressionReceiver) {
-        val resolvedType = expression.getType(bindingContext)
-        return if (resolvedType is FlexibleType) {
-            // types from java are flexible because the Kotlin Compiler doesn't know whether
-            // they're nullable or not.Using the lowerBound makes it nonNullable
-            resolvedType.lowerIfFlexible().fullType()
-        } else {
-            // Convert all types to nonNullable
-            resolvedType?.makeNotNullable()?.fullType()
+internal fun Receiver.type(
+    bindingContext: BindingContext,
+    treatGenericAsSuper: Boolean,
+    includeTypeArguments: Boolean
+): String? {
+    return when (this) {
+        is ExpressionReceiver -> {
+            val resolvedType = expression.getType(bindingContext)
+            if (resolvedType is FlexibleType) {
+                // types from java are flexible because the Kotlin Compiler doesn't know whether
+                // they're nullable or not. Using the lowerBound makes it nonNullable
+                resolvedType.lowerIfFlexible()
+                    .makeNotNullable()
+                    .fqTypeName(
+                        treatGenericAsSuper = treatGenericAsSuper,
+                        includeTypeArguments = includeTypeArguments
+                    )
+            } else {
+                // Convert all types to nonNullable
+                resolvedType?.makeNotNullable()
+                    ?.fqTypeName(
+                        treatGenericAsSuper = treatGenericAsSuper,
+                        includeTypeArguments = includeTypeArguments
+                    )
+            }
         }
-    } else if (this is ClassQualifier) {
-        return descriptor.fqNameOrNull()?.toString()
-    } else if (this is ImplicitReceiver) {
-        return type.fqNameOrNull()?.toString()
-    } else {
-        println("DD: Unknown receiver type ${this.javaClass}")
-        return null
+
+        is ClassQualifier -> {
+            descriptor.fqNameOrNull()?.toString()
+        }
+
+        is ImplicitReceiver -> {
+            type.fqNameOrNull()?.toString()
+        }
+
+        else -> {
+            println("DD: Unknown receiver type ${this.javaClass}")
+            null
+        }
     }
 }

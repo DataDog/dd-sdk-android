@@ -1,3 +1,490 @@
+# 2.11.0 / 2024-06-20
+
+* [FEATURE] Trace: Bundle `dd-trace-core` code into the `dd-sdk-android-trace` module. See [#1907](https://github.com/DataDog/dd-sdk-android/pull/1907)
+* [FEATURE] Trace: Provide the correct sampling priority for our Span events based on APM new rules. See [#1913](https://github.com/DataDog/dd-sdk-android/pull/1913)
+* [FEATURE] Trace: Add the `CoreTracer` tests. See [#1924](https://github.com/DataDog/dd-sdk-android/pull/1924)
+* [FEATURE] Trace: Provide core tracer logger implementation. See [#1953](https://github.com/DataDog/dd-sdk-android/pull/1953)
+* [FEATURE] Trace: Provide the `bundleWithRum` capability for `OtelTracer`. See [#1960](https://github.com/DataDog/dd-sdk-android/pull/1960)
+* [FEATURE] Trace: Provide the `DatadogContextStorage` for OpenTelemetry. See [#1970](https://github.com/DataDog/dd-sdk-android/pull/1970)
+* [FEATURE] Trace: Provide Otel bundle with logs feature. See [#1979](https://github.com/DataDog/dd-sdk-android/pull/1979)
+* [FEATURE] Trace: Setup the trace end tests environment for Otel API. See [#1983](https://github.com/DataDog/dd-sdk-android/pull/1983)
+* [FEATURE] Trace: Add the `SpanLink` support for Otel API implementation. See [#1993](https://github.com/DataDog/dd-sdk-android/pull/1993)
+* [FEATURE] Trace: Add the Otel API feature integration tests. See [#1995](https://github.com/DataDog/dd-sdk-android/pull/1995)
+* [FEATURE] Trace: Report OpenTelemetry data in the configuration telemetry. See [#2006](https://github.com/DataDog/dd-sdk-android/pull/2006)
+* [FEATURE] Trace: Extract OpenTelemetry support SDK into a dedicated module. See [#2021](https://github.com/DataDog/dd-sdk-android/pull/2021)
+* [FEATURE] Trace: Setup the CI and Gradle tests for the new `dd-sdk-android-trace-otel` module. See [#2035](https://github.com/DataDog/dd-sdk-android/pull/2035)
+* [FEATURE] Trace: Enable desugaring for sample and single-fit apps. See [#2036](https://github.com/DataDog/dd-sdk-android/pull/2036)
+* [FEATURE] Session Replay: Add support for progress bars. See [#2047](https://github.com/DataDog/dd-sdk-android/pull/2047)
+* [FEATURE] Trace: Add OpenTelemetry use case into the Wear sample app. See [#2068](https://github.com/DataDog/dd-sdk-android/pull/2068)
+* [FEATURE] Trace: Add OpenTelemetry use case into the `vendor-lib` sample. See [#2069](https://github.com/DataDog/dd-sdk-android/pull/2069)
+* [FEATURE] Trace: Add the OkHttp Otel extensions module. See [#2073](https://github.com/DataDog/dd-sdk-android/pull/2073)
+* [FEATURE] Trace: `OtelTraceProvider.Builder`: introduce the trace rate limit property. See [#2086](https://github.com/DataDog/dd-sdk-android/pull/2086)
+* [BUGFIX] Session Replay: Fix time drift in `RecordedDataQueueHandler`. See [#2075](https://github.com/DataDog/dd-sdk-android/pull/2075)
+* [IMPROVEMENT] Trace: Remove some unused IAST/CI Visibility classes. See [#2000](https://github.com/DataDog/dd-sdk-android/pull/2000)
+* [IMPROVEMENT] Trace: Remove `moshi` dependency from trace module. See [#2003](https://github.com/DataDog/dd-sdk-android/pull/2003)
+* [IMPROVEMENT] Fix some detekt issues. See [#2043](https://github.com/DataDog/dd-sdk-android/pull/2043)
+* [IMPROVEMENT] Session Replay: Delegate `Drawable` copy to background thread. See [#2048](https://github.com/DataDog/dd-sdk-android/pull/2048)
+* [IMPROVEMENT] Trace: Make `CoreTracer` code Java 7 compatible. See [#2051](https://github.com/DataDog/dd-sdk-android/pull/2051)
+* [IMPROVEMENT] Session Replay: Improve telemetry from `RecordedDataQueueHandler`. See [#2053](https://github.com/DataDog/dd-sdk-android/pull/2053)
+* [IMPROVEMENT] Global: Fix thread safety warnings. See [#2056](https://github.com/DataDog/dd-sdk-android/pull/2056)
+* [IMPROVEMENT] Trace: Remove the `dd-sketches` dependency and related logic. See [#2062](https://github.com/DataDog/dd-sdk-android/pull/2062)
+* [IMPROVEMENT] Trace: Fix the `jctools` Proguard rules. See [#2063](https://github.com/DataDog/dd-sdk-android/pull/2063)
+* [IMPROVEMENT] Add ProGuard rules to sample app. See [#2067](https://github.com/DataDog/dd-sdk-android/pull/2067)
+* [IMPROVEMENT] Session Replay: Improve `ButtonMapper`. See [#2070](https://github.com/DataDog/dd-sdk-android/pull/2070)
+* [IMPROVEMENT] Trace: Remove some unused code from tracing module. See [#2079](https://github.com/DataDog/dd-sdk-android/pull/2079)
+* [IMPROVEMENT] Trace: Add OpenTelemetry Proguard rules for compile-only annotations. See [#2080](https://github.com/DataDog/dd-sdk-android/pull/2080)
+* [IMPROVEMENT] Trace: Fix the `CoreTracer` flaky tests. See [#2081](https://github.com/DataDog/dd-sdk-android/pull/2081)
+* [IMPROVEMENT] Trace: Remove System and Environment config source in the `CoreTracer`. See [#2084](https://github.com/DataDog/dd-sdk-android/pull/2084)
+* [IMPROVEMENT] Remove duplicated Proguard configuration in the sample app. See [#2088](https://github.com/DataDog/dd-sdk-android/pull/2088)
+* [IMPROVEMENT] Session Replay: Granular telemetry sampling for mappers. See [#2087](https://github.com/DataDog/dd-sdk-android/pull/2087)
+* [MAINTENANCE] Merge develop branch. See [#1948](https://github.com/DataDog/dd-sdk-android/pull/1948)
+* [MAINTENANCE] Merge `develop` branch into `feature/otel-support` branch. See [#1998](https://github.com/DataDog/dd-sdk-android/pull/1998)
+* [MAINTENANCE] Next dev iteration 2.11.0. See [#2050](https://github.com/DataDog/dd-sdk-android/pull/2050)
+* [MAINTENANCE] Merge `release/2.10.0` branch into `develop` branch. See [#2054](https://github.com/DataDog/dd-sdk-android/pull/2054)
+* [MAINTENANCE] Merge `develop` branch into `feature/otel-support` branch. See [#2058](https://github.com/DataDog/dd-sdk-android/pull/2058)
+* [MAINTENANCE] Merge release `2.10.1` into `develop` branch. See [#2065](https://github.com/DataDog/dd-sdk-android/pull/2065)
+* [MAINTENANCE] Merge develop branch. See [#2076](https://github.com/DataDog/dd-sdk-android/pull/2076)
+* [MAINTENANCE] Merge Otel feature branch. See [#2077](https://github.com/DataDog/dd-sdk-android/pull/2077)
+
+# 2.10.1 / 2024-05-30
+
+* [IMPROVEMENT] Reduce Method Call Sample Rate. See [#2060](https://github.com/DataDog/dd-sdk-android/pull/2060)
+* [IMPROVEMENT] Limit total telemetry events sent per session. See [#2061](https://github.com/DataDog/dd-sdk-android/pull/2061)
+
+# 2.10.0 / 2024-05-23
+
+* [FEATURE] Global: Add Method Call Telemetry. See [#1940](https://github.com/DataDog/dd-sdk-android/pull/1940)
+* [FEATURE] Session Replay: Add support to the `Toolbar` in Session Replay. See [#2024](https://github.com/DataDog/dd-sdk-android/pull/2024)
+* [IMPROVEMENT] Session Replay: Improve masking arch. See [#2011](https://github.com/DataDog/dd-sdk-android/pull/2011)
+* [IMPROVEMENT] Session Replay: Simplify generic type in mappers. See [#2015](https://github.com/DataDog/dd-sdk-android/pull/2015)
+* [IMPROVEMENT] Global: Support additional properties in Telemetry Error events. See [#2025](https://github.com/DataDog/dd-sdk-android/pull/2025)
+* [IMPROVEMENT] Session Replay: Add telemetry on SR resources track. See [#2027](https://github.com/DataDog/dd-sdk-android/pull/2027)
+* [IMPROVEMENT] Session Replay: Add telemetry to detect uncovered View/Drawable in Session Replay. See [#2028](https://github.com/DataDog/dd-sdk-android/pull/2028)
+* [IMPROVEMENT] Session Replay: Improve `SeekBarMapper`. See [#2037](https://github.com/DataDog/dd-sdk-android/pull/2037)
+* [IMPROVEMENT] RUM: Flag critical events in custom persistence. See [#2044](https://github.com/DataDog/dd-sdk-android/pull/2044)
+* [IMPROVEMENT] Delegate Drawable copy to background thread. See [#2048](https://github.com/DataDog/dd-sdk-android/pull/2048)
+* [MAINTENANCE] Next dev iteration. See [#2020](https://github.com/DataDog/dd-sdk-android/pull/2020)
+* [MAINTENANCE] Merge release `2.9.0` into `develop` branch. See [#2023](https://github.com/DataDog/dd-sdk-android/pull/2023)
+* [MAINTENANCE] Session Replay: Improve UT for SR Obfuscators. See [#2031](https://github.com/DataDog/dd-sdk-android/pull/2031)
+* [MAINTENANCE] Create package name consistency rule. See [#2032](https://github.com/DataDog/dd-sdk-android/pull/2032)
+* [MAINTENANCE] Session Replay: Improve the `TextViewMapper` unit tests. See [#2034](https://github.com/DataDog/dd-sdk-android/pull/2034)
+* [MAINTENANCE] Fix KtLint version in `local_ci` script. See [#2039](https://github.com/DataDog/dd-sdk-android/pull/2039)
+* [MAINTENANCE] Session Replay: Fix SR flaky test. See [#2042](https://github.com/DataDog/dd-sdk-android/pull/2042)
+* [MAINTENANCE] Global: Update the Method Call metric usage. See [#2040](https://github.com/DataDog/dd-sdk-android/pull/2040)
+* [MAINTENANCE] Update static analysis pipeline version. See [#2045](https://github.com/DataDog/dd-sdk-android/pull/2045)
+* [MAINTENANCE] Fix flaky test regarding `PerformanceMeasure` sampling rate. See [#2046](https://github.com/DataDog/dd-sdk-android/pull/2046)
+
+# 2.9.0 / 2024-05-02
+
+* [BUGFIX] RUM: Prevent crash in `JankStats` listener. See [#1981](https://github.com/DataDog/dd-sdk-android/pull/1981)
+* [BUGFIX] RUM: Unregister vital listeners when view is stopped. See [#2009](https://github.com/DataDog/dd-sdk-android/pull/2009)
+* [BUGFIX] Core: Fix `ConcurrentModificationException` during features iteration. See [#2012](https://github.com/DataDog/dd-sdk-android/pull/2012)
+* [IMPROVEMENT] RUM: Optimise `BatchFileOrchestator` performance. See [#1968](https://github.com/DataDog/dd-sdk-android/pull/1968)
+* [IMPROVEMENT] Use custom naming for threads created inside SDK. See [#1987](https://github.com/DataDog/dd-sdk-android/pull/1987)
+* [IMPROVEMENT] Synchronize SR info with webviews. See [#1990](https://github.com/DataDog/dd-sdk-android/pull/1990)
+* [IMPROVEMENT] Core: Start sending batches immediately after feature is initialized. See [#1991](https://github.com/DataDog/dd-sdk-android/pull/1991)
+* [IMRPOVEMENT] Create RUM Feature Integration Tests. See [#2004](https://github.com/DataDog/dd-sdk-android/pull/2004)
+* [IMRROVEMENT] Make constructors of `DatadogSite` private. See [#2010](https://github.com/DataDog/dd-sdk-android/pull/2010)
+* [IMRROVEMENT] Log warning about tag modification only once. See [#2017](https://github.com/DataDog/dd-sdk-android/pull/2017)
+* [IMRROVEMENT] Add status code in user-facing message in case of `UnknownError` during batch upload. See [#2018](https://github.com/DataDog/dd-sdk-android/pull/2018)
+* [MAINTENANCE] Next dev iteration. See [#1972](https://github.com/DataDog/dd-sdk-android/pull/1972)
+* [MAINTENANCE] Remove non-ASCII characters from test names. See [#1973](https://github.com/DataDog/dd-sdk-android/pull/1973)
+* [MAINTENANCE] Update Kotlin to 1.8.22, Gradle to 8.2.1, update related tooling. See [#1974](https://github.com/DataDog/dd-sdk-android/pull/1974)
+* [MAINTENANCE] Merge `release/2.8.0` branch into `develop` branch. See [#1977](https://github.com/DataDog/dd-sdk-android/pull/1977)
+* [MAINTENANCE] Switch to the Golden Base Image for Docker. See [#1982](https://github.com/DataDog/dd-sdk-android/pull/1982)
+* [MAINTENANCE] Remove unused Maven Model dependency. See [#1989](https://github.com/DataDog/dd-sdk-android/pull/1989)
+* [MAINTENANCE] Update testing ci steps to limit OOM and memory usage. See [#1986](https://github.com/DataDog/dd-sdk-android/pull/1986)
+* [MAINTENANCE] Upload sample app to rum playground. See [#1994](https://github.com/DataDog/dd-sdk-android/pull/1994)
+* [MAINTENANCE] Update copyright. See [#1992](https://github.com/DataDog/dd-sdk-android/pull/1992)
+* [MAINTENANCE] Don't mark internal extension functions for 3rd party types as 3rd party. See [#1996](https://github.com/DataDog/dd-sdk-android/pull/1996)
+* [MAINTENANCE] Use credentials for the right org. See [#1997](https://github.com/DataDog/dd-sdk-android/pull/1997)
+* [MAINTENANCE] Update Detekt API version used to 1.23.0. See [#1988](https://github.com/DataDog/dd-sdk-android/pull/1988)
+* [MAINTENANCE] Remove the usage of deprecated `TestConfig` constructor. See [#1999](https://github.com/DataDog/dd-sdk-android/pull/1999)
+* [MAINTENANCE] Fix flakyness in SR unit tests. See [#2001](https://github.com/DataDog/dd-sdk-android/pull/2001)
+* [MAINTENANCE] Remove legacy nightly tests. See [#2005](https://github.com/DataDog/dd-sdk-android/pull/2005)
+* [MAINTENANCE] Redirect slack notif to mobile-sdk-ops channel. See [#2007](https://github.com/DataDog/dd-sdk-android/pull/2007)
+
+# 2.8.0 / 2024-04-09
+
+* [FEATURE] Add `buildId` to the RUM error and Log events. See [#1756](https://github.com/DataDog/dd-sdk-android/pull/1756)
+* [FEATURE] WebView Session Replay: Implement WebView bridge getCapabilities. See [#1871](https://github.com/DataDog/dd-sdk-android/pull/1871)
+* [FEATURE] RUM: Call RUM error mapper even for crashes. See [#1945](https://github.com/DataDog/dd-sdk-android/pull/1945)
+* [FEATURE] RUM: Report time since the application start for crashes in RUM. See [#1961](https://github.com/DataDog/dd-sdk-android/pull/1961)
+* [BUGFIX] RUM: Fix application startup time regression. See [#1935](https://github.com/DataDog/dd-sdk-android/pull/1935)
+* [BUGFIX] Session Replay: Prevent crashing the host app in the `ViewOnDrawInterceptor`. See [#1951](https://github.com/DataDog/dd-sdk-android/pull/1951)
+* [BUGFIX] Session Replay: Prevent crash in Canvas Wrapper. See [#1954](https://github.com/DataDog/dd-sdk-android/pull/1954)
+* [BUGFIX] RUM: Safe getting of Intent extras. See [#1950](https://github.com/DataDog/dd-sdk-android/pull/1950)
+* [BUGFIX] RUM: Don't traverse non-visible ViewGroups for searching user interaction targets. See [#1969](https://github.com/DataDog/dd-sdk-android/pull/1969)
+* [IMPROVEMENT] WebView Session Replay: Introduce the `FeatureContextUpdateListener` API. See [#1829](https://github.com/DataDog/dd-sdk-android/pull/1829)
+* [IMPROVEMENT] WebView Session Replay: Provide the parent container information for browser rum events. See [#1831](https://github.com/DataDog/dd-sdk-android/pull/1831)
+* [IMPROVEMENT] WebView Session Replay: Detect full snapshot from WebView session replay. See [#1908](https://github.com/DataDog/dd-sdk-android/pull/1908)
+* [IMPROVEMENT] Session Replay: Refactor and split classes. See [#1873](https://github.com/DataDog/dd-sdk-android/pull/1873)
+* [IMPROVEMENT] WebView Session Replay: Keep WebView wireframe hidden. See [#1949](https://github.com/DataDog/dd-sdk-android/pull/1949)
+* [IMPROVEMENT] Remove Runtime shutdown hook when SDK instance is stopped. See [#1956](https://github.com/DataDog/dd-sdk-android/pull/1956)
+* [IMPROVEMENT] Fix message when writer is NoOp. See [#1963](https://github.com/DataDog/dd-sdk-android/pull/1963)
+* [IMPROVEMENT] Global: Make sure `error.threads` always have content from `error.stack`. See [#1964](https://github.com/DataDog/dd-sdk-android/pull/1964)
+* [MAINTENANCE] Merge develop branch. See [#1849](https://github.com/DataDog/dd-sdk-android/pull/1849)
+* [MAINTENANCE] Merge develop. See [#1915](https://github.com/DataDog/dd-sdk-android/pull/1915)
+* [MAINTENANCE] Merge develop into Session Replay WebView feature branch. See [#1917](https://github.com/DataDog/dd-sdk-android/pull/1917)
+* [MAINTENANCE] Merge develop into `feature/sr-webview`. See [#1922](https://github.com/DataDog/dd-sdk-android/pull/1922)
+* [MAINTENANCE] Next dev iteration. See [#1928](https://github.com/DataDog/dd-sdk-android/pull/1928)
+* [MAINTENANCE] Merge release 2.7.0 into `develop` branch. See [#1930](https://github.com/DataDog/dd-sdk-android/pull/1930)
+* [MAINTENANCE] Address some flaky tests. See [#1934](https://github.com/DataDog/dd-sdk-android/pull/1934)
+* [MAINTENANCE] Add a test for the safe events serialization produced by `RumViewScope` in multi-threaded environment. See [#1933](https://github.com/DataDog/dd-sdk-android/pull/1933)
+* [MAINTENANCE] Fix mime type for nightly tests. See [#1936](https://github.com/DataDog/dd-sdk-android/pull/1936)
+* [MAINTENANCE] Disable some Session Replay integration tests temporarily due to flakiness. See [#1941](https://github.com/DataDog/dd-sdk-android/pull/1941)
+* [MAINTENANCE] Merge 2.7.1 on develop. See [#1947](https://github.com/DataDog/dd-sdk-android/pull/1947)
+* [MAINTENANCE] Improve TODO detekt rule. See [#1955](https://github.com/DataDog/dd-sdk-android/pull/1955)
+* [MAINTENANCE] Disable flaky Session Replay test. See [#1957](https://github.com/DataDog/dd-sdk-android/pull/1957)
+* [MAINTENANCE] Merge develop. See [#1958](https://github.com/DataDog/dd-sdk-android/pull/1958)
+* [MAINTENANCE] Merge `feature/sr-web-view-support`. See [#1959](https://github.com/DataDog/dd-sdk-android/pull/1959)
+* [MAINTENANCE] Fix flaky `TodoWithoutTask` tests. See [#1962](https://github.com/DataDog/dd-sdk-android/pull/1962)
+* [MAINTENANCE] Fix flaky `DatadogCore` test. See [#1965](https://github.com/DataDog/dd-sdk-android/pull/1965)
+* [MAINTENANCE] Update actions for running CodeQL workflow. See [#1966](https://github.com/DataDog/dd-sdk-android/pull/1966)
+* [MAINTENANCE] Fix flaky tests. See [#1967](https://github.com/DataDog/dd-sdk-android/pull/1967)
+
+# 2.7.1 / 2024-03-27
+
+* [BUGFIX] RUM: Improve adding Feature Flag evaluation(s) performance.
+  See [#1932](https://github.com/DataDog/dd-sdk-android/pull/1932)
+* [MAINTENANCE] Core: add a BackPressure strategy to limit the load on background threads and get notified when capacity is reached.
+  See [#1938](https://github.com/DataDog/dd-sdk-android/pull/1938) and [#1939](https://github.com/DataDog/dd-sdk-android/pull/1939)
+
+# 2.7.0 / 2024-03-21
+
+* [FEATURE] Session Replay: Add a request builder for resources. See [#1827](https://github.com/DataDog/dd-sdk-android/pull/1827)
+* [FEATURE] Session Replay: Add Resources feature. See [#1840](https://github.com/DataDog/dd-sdk-android/pull/1840)
+* [FEATURE] Session Replay: Implement resource capture during traversal. See [#1854](https://github.com/DataDog/dd-sdk-android/pull/1854)
+* [FEATURE] Add `source_type` when sent from cross platform logs. See [#1895](https://github.com/DataDog/dd-sdk-android/pull/1895)
+* [FEATURE] Session Replay: Enable Resource Endpoint by default. See [#1858](https://github.com/DataDog/dd-sdk-android/pull/1858)
+* [FEATURE] Logs: Add support for global attributes on logs. See [#1900](https://github.com/DataDog/dd-sdk-android/pull/1900)
+* [FEATURE] RUM: Allow setting custom error fingerprint. See [#1911](https://github.com/DataDog/dd-sdk-android/pull/1911)
+* [FEATURE] RUM: Report all threads for non-fatal ANRs. See [#1912](https://github.com/DataDog/dd-sdk-android/pull/1912)
+* [FEATURE] RUM: Report fatal ANRs. See [#1909](https://github.com/DataDog/dd-sdk-android/pull/1909)
+* [BUGFIX] Session Replay: Avoid crash when `applicationContext` is `null`. See [#1864](https://github.com/DataDog/dd-sdk-android/pull/1864)
+* [BUGFIX] Session Replay: Fix image resizing issue. See [#1897](https://github.com/DataDog/dd-sdk-android/pull/1897)
+* [BUGFIX] Fix typo in source type. See [#1904](https://github.com/DataDog/dd-sdk-android/pull/1904)
+* [BUGFIX] RUM: Prevent `ConcurrentModificationException` when reading feature flags. See [#1925](https://github.com/DataDog/dd-sdk-android/pull/1925)
+* [IMPROVEMENT] RUM: Disable non-fatal ANR reporting by default. See [#1914](https://github.com/DataDog/dd-sdk-android/pull/1914)
+* [IMPROVEMENT] RUM: Introduce `error.category` attribute for exceptions, categorize ANRs separately. See [#1918](https://github.com/DataDog/dd-sdk-android/pull/1918)
+* [MAINTENANCE] Next dev iteration. See [#1861](https://github.com/DataDog/dd-sdk-android/pull/1861)
+* [MAINTENANCE] Merge `release/2.6.0` in `develop`. See [#1862](https://github.com/DataDog/dd-sdk-android/pull/1862)
+* [MAINTENANCE] Merge `release/2.6.1` changes into `develop` branch. See [#1868](https://github.com/DataDog/dd-sdk-android/pull/1868)
+* [MAINTENANCE] Update telemetry schema. See [#1874](https://github.com/DataDog/dd-sdk-android/pull/1874)
+* [MAINTENANCE] Merge Hotfix 2.6.2. See [#1890](https://github.com/DataDog/dd-sdk-android/pull/1890)
+* [MAINTENANCE] Add signed commits requirement to `CONTRIBUTING.md`. See [#1905](https://github.com/DataDog/dd-sdk-android/pull/1905)
+* [MAINTENANCE] Session Replay: Cleanup SR code. See [#1910](https://github.com/DataDog/dd-sdk-android/pull/1910)
+* [MAINTENANCE] Session Replay: Fix integration tests post Session Replay refactoring. See [#1916](https://github.com/DataDog/dd-sdk-android/pull/1916)
+* [MAINTENANCE] Session Replay: Fix `SrImageButtonsMaskUserInputTest`. See [#1920](https://github.com/DataDog/dd-sdk-android/pull/1920)
+* [MAINTENANCE] Adjust `ktlint` formatting rules. See [#1919](https://github.com/DataDog/dd-sdk-android/pull/1919)
+* [MAINTENANCE] Fix formatting. See [#1921](https://github.com/DataDog/dd-sdk-android/pull/1921)
+
+# 2.6.2 / 2024-02-23
+
+* [BUGFIX] RUM: Fix crash in frame rate vital detection. See [#1872](https://github.com/DataDog/dd-sdk-android/pull/1872)
+
+# 2.6.1 / 2024-02-21
+
+* [BUGFIX] RUM: Fix missing source in telemetry json schema. See [#1865](https://github.com/DataDog/dd-sdk-android/pull/1865)
+* [MAINTENANCE] RUM: Remove stale json schema file. See [#1866](https://github.com/DataDog/dd-sdk-android/pull/1866)
+
+# 2.6.0 / 2024-02-19
+
+* [FEATURE] RUM\Logs: Report all threads in case of crash. See [#1848](https://github.com/DataDog/dd-sdk-android/pull/1848)
+* [BUGFIX] RUM: Make a copy of attributes before passing them to RUM event. See [#1830](https://github.com/DataDog/dd-sdk-android/pull/1830)
+* [BUGFIX] Session Replay: Add traversal flag to snapshot items. See [#1837](https://github.com/DataDog/dd-sdk-android/pull/1837)
+* [BUGFIX] Drop batch telemetry where duration or age have negative values. See [#1850](https://github.com/DataDog/dd-sdk-android/pull/1850)
+* [BUGFIX] RUM: Do not update RUM View global properties after the view is stopped. See [#1851](https://github.com/DataDog/dd-sdk-android/pull/1851)
+* [IMPROVEMENT] RUM: Improve vital support for higher refresh rate devices. See [#1806](https://github.com/DataDog/dd-sdk-android/pull/1806)
+* [IMPROVEMENT] RUM: Add more HTTP methods to RUM. See [#1826](https://github.com/DataDog/dd-sdk-android/pull/1826)
+* [IMPROVEMENT] RUM: Start session when RUM is initialized. See [#1832](https://github.com/DataDog/dd-sdk-android/pull/1832)
+* [IMPROVEMENT] RUM: Add new error source types to RUM schema. See [#1855](https://github.com/DataDog/dd-sdk-android/pull/1855)
+* [IMPROVEMENT] RUM: Set `source_type` on native crashes to `ndk`. See [#1856](https://github.com/DataDog/dd-sdk-android/pull/1856)
+* [MAINTENANCE] Next dev iteration 2.6.0. See [#1823](https://github.com/DataDog/dd-sdk-android/pull/1823)
+* [MAINTENANCE] Merge `release/2.5.0` branch into `develop` branch. See [#1825](https://github.com/DataDog/dd-sdk-android/pull/1825)
+* [MAINTENANCE] Update RUM Schema. See [#1828](https://github.com/DataDog/dd-sdk-android/pull/1828)
+* [MAINTENANCE] Merge 2.5.1 into develop. See [#1842](https://github.com/DataDog/dd-sdk-android/pull/1842)
+* [MAINTENANCE] Introduce github issue forms. See [#1852](https://github.com/DataDog/dd-sdk-android/pull/1852)
+
+# 2.5.1 / 2024-01-24
+
+* [BUGFIX] RUM: Prevent crash due to concurrent modification of custom attributes. See [#1838](https://github.com/DataDog/dd-sdk-android/pull/1838)
+
+# 2.5.0 / 2024-01-15
+
+* [FEATURE] Add accessor for current session id. See [#1810](https://github.com/DataDog/dd-sdk-android/pull/1810)
+* [BUGFIX] Session Replay: Enable recording session if first RUM message happened before init. See [#1777](https://github.com/DataDog/dd-sdk-android/pull/1777)
+* [BUGFIX] RUM: Fix view url in case of `NavigationViewTrackingStrategy` usage. See [#1791](https://github.com/DataDog/dd-sdk-android/pull/1791)
+* [BUGFIX] Session Replay: Fix `ConcurrentModificationException` in `BitmapPool`. See [#1798](https://github.com/DataDog/dd-sdk-android/pull/1798)
+* [BUGFIX] RUM: Use internal key for View Scopes. See [#1812](https://github.com/DataDog/dd-sdk-android/pull/1812)
+* [BUGFIX] `getCurrentSessionId` returns correct value. See [#1817](https://github.com/DataDog/dd-sdk-android/pull/1817)
+* [IMPROVEMENT] RUM: Better handling of event write errors in RUM. See [#1766](https://github.com/DataDog/dd-sdk-android/pull/1766)
+* [IMPROVEMENT] Single Feature Integration Tests: Trace. See [#1786](https://github.com/DataDog/dd-sdk-android/pull/1786)
+* [IMPROVEMENT] Optimize response body length reporting in OkHttp instrumentation. See [#1790](https://github.com/DataDog/dd-sdk-android/pull/1790)
+* [IMPROVEMENT] RUM/Synthetics: Make synthetics logs more verbose. See [#1813](https://github.com/DataDog/dd-sdk-android/pull/1813)
+* [IMPROVEMENT] Prevent false positive warning. See [#1815](https://github.com/DataDog/dd-sdk-android/pull/1815)
+* [IMPROVEMENT] RUM: Safe serialization of user-provided attributes. See [#1818](https://github.com/DataDog/dd-sdk-android/pull/1818)
+* [IMPROVEMENT] RUM: Add additional status codes as retryable. See [#1819](https://github.com/DataDog/dd-sdk-android/pull/1819)
+* [MAINTENANCE] Merge `release/2.4.0` into `develop` branch. See [#1784](https://github.com/DataDog/dd-sdk-android/pull/1784)
+* [MAINTENANCE] Add delay before executors are flushed and stopped in nightly tests. See [#1783](https://github.com/DataDog/dd-sdk-android/pull/1783)
+* [MAINTENANCE] Upgrade shared CI pipeline. See [#1789](https://github.com/DataDog/dd-sdk-android/pull/1789)
+* [MAINTENANCE] Add telemetry point for null file content. See [#1792](https://github.com/DataDog/dd-sdk-android/pull/1792)
+* [MAINTENANCE] RUM: Migrate Realm from KAPT to KSP. See [#1794](https://github.com/DataDog/dd-sdk-android/pull/1794)
+* [MAINTENANCE] Fix OOM in CI jobs. See [#1796](https://github.com/DataDog/dd-sdk-android/pull/1796)
+* [MAINTENANCE] Increase wait time in NightlyTestRule. See [#1799](https://github.com/DataDog/dd-sdk-android/pull/1799)
+* [MAINTENANCE] Use Datadog Agent 1.26.1. See [#1800](https://github.com/DataDog/dd-sdk-android/pull/1800)
+* [MAINTENANCE] Move reading `BUILDENV_HOST_IP` variable to the job script definition. See [#1801](https://github.com/DataDog/dd-sdk-android/pull/1801)
+* [MAINTENANCE] Use automatic Gradle daemon instrumentation with CI Visibility instead of manual test tasks instrumentation. See [#1804](https://github.com/DataDog/dd-sdk-android/pull/1804)
+
+# 2.4.0 / 2023-12-21
+
+* [FEATURE] Global: Create `PersistenceStrategy` interface. See [#1745](https://github.com/DataDog/dd-sdk-android/pull/1745)
+* [FEATURE] Global: Let customer set custom persistence strategy in configuration. See [#1746](https://github.com/DataDog/dd-sdk-android/pull/1746)
+* [FEATURE] Global: Implement `AbstractStorage`. See [#1747](https://github.com/DataDog/dd-sdk-android/pull/1747)
+* [FEATURE] Global: Use `AbstractStorage` when custom persistence strategy provided. See [#1748](https://github.com/DataDog/dd-sdk-android/pull/1748)
+* [FEATURE] RUM: Print RUM app, session and view ID in LogCat. See [#1760](https://github.com/DataDog/dd-sdk-android/pull/1760)
+* [BUGFIX] Session Replay: Fix duplicate wireframes issue. See [#1761](https://github.com/DataDog/dd-sdk-android/pull/1761)
+* [BUGFIX] Global: Fix `ConcurrentModificationException` during `ConsentAwareStorage.dropAll` call. See [#1764](https://github.com/DataDog/dd-sdk-android/pull/1764)
+* [BUGFIX] RUM: Convert pending resource to pending error when Resource scope completes with an error. See [#1776](https://github.com/DataDog/dd-sdk-android/pull/1776)
+* [BUGFIX] RUM: Fix leak caused by repeated calls to `WeakReference.get()`. See [#1779](https://github.com/DataDog/dd-sdk-android/pull/1779)
+* [IMPROVEMENT] Session Replay: Add `resourceId` to `ImageWireframe`. See [#1690](https://github.com/DataDog/dd-sdk-android/pull/1690)
+* [IMPROVEMENT] `Logger` integration tests. See [#1735](https://github.com/DataDog/dd-sdk-android/pull/1735)
+* [IMPROVEMENT] Add regression test for `Gson#toString` method. See [#1742](https://github.com/DataDog/dd-sdk-android/pull/1742)
+* [IMPROVEMENT] Create Stub Core module. See [#1740](https://github.com/DataDog/dd-sdk-android/pull/1740)
+* [IMPROVEMENT] Fix flaky test in `WireframeUtils`. See [#1743](https://github.com/DataDog/dd-sdk-android/pull/1743)
+* [IMPROVEMENT] Session Replay: Remove `resourceId` field from e2e payloads. See [#1754](https://github.com/DataDog/dd-sdk-android/pull/1754)
+* [IMPROVEMENT] RUM: Add session start reason to events. See [#1755](https://github.com/DataDog/dd-sdk-android/pull/1755)
+* [IMPROVEMENT] Session Replay: Open text masking classes for extension. See [#1757](https://github.com/DataDog/dd-sdk-android/pull/1757)
+* [IMPROVEMENT] Tracing: Update RUM attributes in spans. See [#1758](https://github.com/DataDog/dd-sdk-android/pull/1758)
+* [IMPROVEMENT] Add the synchronous equivalent of `readNextBatch` and `confirmBatchRead` in Storage API. See [#1768](https://github.com/DataDog/dd-sdk-android/pull/1768)
+* [IMPROVEMENT] Add all Logs Feature integration tests. See [#1769](https://github.com/DataDog/dd-sdk-android/pull/1769)
+* [IMPROVEMENT] Remove the v1 data upload components. See [#1774](https://github.com/DataDog/dd-sdk-android/pull/1774)
+* [IMPROVEMENT] Add text overflow examples in sample app. See [#1775](https://github.com/DataDog/dd-sdk-android/pull/1775)
+* [IMPROVEMENT] Remove data store/upload config from feature configuration. See [#1778](https://github.com/DataDog/dd-sdk-android/pull/1778)
+* [MAINTENANCE] Bump dev version to 2.4.0. See [#1738](https://github.com/DataDog/dd-sdk-android/pull/1738)
+* [MAINTENANCE] Merge `release/2.3.0` branch into `develop` branch. See [#1739](https://github.com/DataDog/dd-sdk-android/pull/1739)
+* [MAINTENANCE] Update RUM schema. See [#1752](https://github.com/DataDog/dd-sdk-android/pull/1752)
+* [MAINTENANCE] Remove obsolete integration tests. See [#1770](https://github.com/DataDog/dd-sdk-android/pull/1770)
+* [MAINTENANCE] Update obsolete nightly logs test. See [#1771](https://github.com/DataDog/dd-sdk-android/pull/1771)
+* [MAINTENANCE] Add artifacts in Gitlab test jobs. See [#1772](https://github.com/DataDog/dd-sdk-android/pull/1772)
+* [DOCS] Mention `DatadogTree` in README.md. See [#1744](https://github.com/DataDog/dd-sdk-android/pull/1744)
+
+# 2.3.0 / 2023-11-21
+
+* [FEATURE] Global: Support returning event metadata to the readers. See [#1670](https://github.com/DataDog/dd-sdk-android/pull/1670)
+* [FEATURE] Add mapper interface for traversing all children. See [#1684](https://github.com/DataDog/dd-sdk-android/pull/1684)
+* [FEATURE] Global: Introduce the `BatchProcessingLevel` API. See [#1686](https://github.com/DataDog/dd-sdk-android/pull/1686)
+* [FEATURE] Session Replay: Support `ImageView` views. See [#1677](https://github.com/DataDog/dd-sdk-android/pull/1677)
+* [FEATURE] RUM: Create a `SetSyntheticsTestAttribute` event. See [#1714](https://github.com/DataDog/dd-sdk-android/pull/1714)
+* [FEATURE] Add synthetics information to the RUM Context. See [#1715](https://github.com/DataDog/dd-sdk-android/pull/1715)
+* [FEATURE] Store the synthetics test info in the RUM Context. See [#1716](https://github.com/DataDog/dd-sdk-android/pull/1716)
+* [FEATURE] Add synthetics info to RUM Views. See [#1717](https://github.com/DataDog/dd-sdk-android/pull/1717)
+* [FEATURE] Add synthetics info to RUM Actions. See [#1718](https://github.com/DataDog/dd-sdk-android/pull/1718)
+* [FEATURE] Add synthetics info to RUM Errors. See [#1719](https://github.com/DataDog/dd-sdk-android/pull/1719)
+* [FEATURE] Add synthetics info to RUM Resources. See [#1720](https://github.com/DataDog/dd-sdk-android/pull/1720)
+* [FEATURE] Add synthetics info to RUM Long Tasks. See [#1721](https://github.com/DataDog/dd-sdk-android/pull/1721)
+* [FEATURE] RUM: Track synthetics info from activity extras. See [#1722](https://github.com/DataDog/dd-sdk-android/pull/1722)
+* [BUGFIX] Fix the issue of missing cpu/memory info with RUM view events. See [#1693](https://github.com/DataDog/dd-sdk-android/pull/1693)
+* [BUGFIX] Fix batch processing level reporting in core configuration telemetry. See [#1698](https://github.com/DataDog/dd-sdk-android/pull/1698)
+* [BUGFIX] Unregister RUM monitor when associated RUM feature is stopped. See [#1725](https://github.com/DataDog/dd-sdk-android/pull/1725)
+* [BUGFIX] Session Replay: Generate wireframe IDs as 32bit integer. See [#1736](https://github.com/DataDog/dd-sdk-android/pull/1736)
+* [IMPROVEMENT] Unit test to confirm Session Replay records order is kept when having same timestamps. See [#1659](https://github.com/DataDog/dd-sdk-android/pull/1659)
+* [IMPROVEMENT] Global: Handle Android Strict Mode. See [#1663](https://github.com/DataDog/dd-sdk-android/pull/1663)
+* [IMPROVEMENT] Make sure we use try-locks in our NDK signal catcher. See [#1665](https://github.com/DataDog/dd-sdk-android/pull/1665)
+* [IMPROVEMENT] RUM: Introduce view event filtering in upload pipeline, remove view event throttling in write pipeline. See [#1678](https://github.com/DataDog/dd-sdk-android/pull/1678)
+* [IMPROVEMENT] Make NDK stack traces more standard. See [#1683](https://github.com/DataDog/dd-sdk-android/pull/1683)
+* [IMPROVEMENT] Have more consistent results when using the load picture sample screen. See [#1692](https://github.com/DataDog/dd-sdk-android/pull/1692)
+* [IMPROVEMENT] Add the `batchProcessingLevel` value to the Configuration Telemetry. See [#1691](https://github.com/DataDog/dd-sdk-android/pull/1691)
+* [IMPROVEMENT] Tracing: Update default propagation style from `Datadog` to `Datadog`+`TraceContext`. See [#1696](https://github.com/DataDog/dd-sdk-android/pull/1696)
+* [IMPROVEMENT] Tracing: Use `tracestate` header to supply vendor-specific information. See [#1694](https://github.com/DataDog/dd-sdk-android/pull/1694)
+* [IMPROVEMENT] Global: Lower the upload frequency and batch size enum values. See [#1733](https://github.com/DataDog/dd-sdk-android/pull/1733)
+* [MAINTENANCE] Prepare release 2.2.0. See [#1650](https://github.com/DataDog/dd-sdk-android/pull/1650)
+* [MAINTENANCE] Next dev iteration. See [#1651](https://github.com/DataDog/dd-sdk-android/pull/1651)
+* [MAINTENANCE] Merge release 2.2.0 branch into develop. See [#1657](https://github.com/DataDog/dd-sdk-android/pull/1657)
+* [MAINTENANCE] Fix Session Replay functional tests payloads after develop rollback. See [#1660](https://github.com/DataDog/dd-sdk-android/pull/1660)
+* [MAINTENANCE] Create core `testFixtures` source set. See [#1666](https://github.com/DataDog/dd-sdk-android/pull/1666)
+* [MAINTENANCE] Refactor shared android library build script. See [#1667](https://github.com/DataDog/dd-sdk-android/pull/1667)
+* [MAINTENANCE] Let all modules use the shared fixtures. See [#1668](https://github.com/DataDog/dd-sdk-android/pull/1668)
+* [MAINTENANCE] Update testing conventions. See [#1661](https://github.com/DataDog/dd-sdk-android/pull/1661)
+* [MAINTENANCE] Disable warning as errors locally. See [#1664](https://github.com/DataDog/dd-sdk-android/pull/1664)
+* [MAINTENANCE] Add test pyramid scaffolding. See [#1674](https://github.com/DataDog/dd-sdk-android/pull/1674)
+* [MAINTENANCE] Share `RawBatchEvent` forgery for tests between the modules. See [#1680](https://github.com/DataDog/dd-sdk-android/pull/1680)
+* [MAINTENANCE] Calculate API coverage. See [#1681](https://github.com/DataDog/dd-sdk-android/pull/1681)
+* [MAINTENANCE] Improve `LogsFragment` in sample app. See [#1685](https://github.com/DataDog/dd-sdk-android/pull/1685)
+* [MAINTENANCE] Add CI task to update E2E sample app. See [#1688](https://github.com/DataDog/dd-sdk-android/pull/1688)
+* [MAINTENANCE] Include `rum-mobile-android` as codeowner. See [#1695](https://github.com/DataDog/dd-sdk-android/pull/1695)
+* [MAINTENANCE] Fix flaky test in `WebViewRumEventConsumerTest`. See [#1724](https://github.com/DataDog/dd-sdk-android/pull/1724)
+* [MAINTENANCE] Fix flaky test in RumEventDeserializer. See [#1727](https://github.com/DataDog/dd-sdk-android/pull/1727)
+* [MAINTENANCE] Fix flaky test in DatadogContextProvider. See [#1726](https://github.com/DataDog/dd-sdk-android/pull/1726)
+* [MAINTENANCE] Fix flaky test in `TelemetryEventHandlerTest`. See [#1729](https://github.com/DataDog/dd-sdk-android/pull/1729)
+* [MAINTENANCE] Fix flaky test in `BatchFileOrchestratorTest`. See [#1732](https://github.com/DataDog/dd-sdk-android/pull/1732)
+* [MAINTENANCE] Reduce noise in logs when building the project. See [#1731](https://github.com/DataDog/dd-sdk-android/pull/1731)
+* [MAINTENANCE] Fix flaky test in `MainLooperLongTaskStrategyTest`. See [#1730](https://github.com/DataDog/dd-sdk-android/pull/1730)
+* [MAINTENANCE] Create `SDKCore` stub classes. See [#1734](https://github.com/DataDog/dd-sdk-android/pull/1734)
+
+# 2.2.0 / 2023-10-04
+
+* [FEATURE] Session Replay: Serialize TextViews/Buttons to base64. See [#1592](https://github.com/DataDog/dd-sdk-android/pull/1592)
+* [FEATURE] WebView Tracking: Add sampler to `WebViewLogEventConsumer`. See [#1629](https://github.com/DataDog/dd-sdk-android/pull/1629)
+* [FEATURE] RUM: Add cross platform GraphQL attributes. See [#1631](https://github.com/DataDog/dd-sdk-android/pull/1631)
+* [FEATURE] Trace: Add `networkInfoEnabled` option in `TraceConfiguration`. See [#1636](https://github.com/DataDog/dd-sdk-android/pull/1636)
+* [FEATURE] Logs: Add `isEnabled` to Logs. See [#1648](https://github.com/DataDog/dd-sdk-android/pull/1648)
+* [BUGFIX] Session Replay: Fix `RippleDrawables`. See [#1600](https://github.com/DataDog/dd-sdk-android/pull/1600)
+* [BUGFIX] Session Replay: Fix Base64 issues with multithreading. See [#1613](https://github.com/DataDog/dd-sdk-android/pull/1613)
+* [BUGFIX] RUM: Treat scroll on non-scrollable view as tap. See [#1622](https://github.com/DataDog/dd-sdk-android/pull/1622)
+* [BUGFIX] Trace: Fix `PendingTrace` `ConcurrentModificationException`. See [#1623](https://github.com/DataDog/dd-sdk-android/pull/1623)
+* [BUGFIX] RUM: Propagate session state and view type as Strings. See [#1625](https://github.com/DataDog/dd-sdk-android/pull/1625)
+* [BUGFIX] Fix the WebView fragment in sample app. See [#1627](https://github.com/DataDog/dd-sdk-android/pull/1627)
+* [BUGFIX] RUM: Prevent NPE in `GestureListener`. See [#1634](https://github.com/DataDog/dd-sdk-android/pull/1634)
+* [BUGFIX] RUM: Fix duplicate views in `MixedViewTrackingStrategy`. See [#1639](https://github.com/DataDog/dd-sdk-android/pull/1639)
+* [BUGFIX] Telemetry: Fix the batch duration value in `batch_close` telemetry event. See [#1633](https://github.com/DataDog/dd-sdk-android/pull/1633)
+* [BUGFIX] Global: Make `FeatureFileOrchesrator` use file persistence config created from user/feature settings. See [#1643](https://github.com/DataDog/dd-sdk-android/pull/1643)
+* [BUGFIX] Telemetry: Fix RegEx in `FeatureFileOrchestrator` to resolve file consent type. See [#1645](https://github.com/DataDog/dd-sdk-android/pull/1645)
+* [IMPROVEMENT] Session Replay: Base64 Caching Mechanism. See [#1534](https://github.com/DataDog/dd-sdk-android/pull/1534)
+* [IMPROVEMENT] Session Replay: Implement bitmap downscaling. See [#1546](https://github.com/DataDog/dd-sdk-android/pull/1546)
+* [IMPROVEMENT] Session Replay: Implement pool of reusable bitmaps. See [#1554](https://github.com/DataDog/dd-sdk-android/pull/1554)
+* [IMPROVEMENT] Session Replay: Refactor caches from singletons to class instances. See [#1564](https://github.com/DataDog/dd-sdk-android/pull/1564)
+* [IMPROVEMENT] Session Replay: Optimize bitmap processing. See [#1576](https://github.com/DataDog/dd-sdk-android/pull/1576)
+* [IMPROVEMENT] Session Replay: Add the Session Replay functional tests for sensitive input fields. See [#1601](https://github.com/DataDog/dd-sdk-android/pull/1601)
+* [IMPROVEMENT] Session Replay: Add the Session Replay functional tests for checkboxes and radiobuttons. See [#1609](https://github.com/DataDog/dd-sdk-android/pull/1609)
+* [IMPROVEMENT] Add sample showing how to listen to memory events. See [#1621](https://github.com/DataDog/dd-sdk-android/pull/1621))
+* [IMPROVEMENT] WebView Tracking: Only send Webview RUM events when Native Session exists and is tracked. See [#1626](https://github.com/DataDog/dd-sdk-android/pull/1626)
+* [IMPROVEMENT] Session Replay: Fix the async image loading logic inside the Session Replay view mappers. See [#1619](https://github.com/DataDog/dd-sdk-android/pull/1619)
+* [IMPROVEMENT] RUM: Let exceptions from `Window.Callback` to propagate. See [#1632](https://github.com/DataDog/dd-sdk-android/pull/1632)
+* [IMPROVEMENT] Session Replay: Add Session Replay functional tests for `ImageButtons` and `ImageViews`. See [#1630](https://github.com/DataDog/dd-sdk-android/pull/1630)
+* [IMPROVEMENT] Trace: Make network info optional in span schema. See [#1635](https://github.com/DataDog/dd-sdk-android/pull/1635)
+* [IMPROVEMENT] Trace: Use `networkInfoEnabled` to serialize or not network info in spans. See [#1637](https://github.com/DataDog/dd-sdk-android/pull/1637)
+* [IMPROVEMENT] Telemetry: Add more information into the batch telemetry. See [#1641](https://github.com/DataDog/dd-sdk-android/pull/1641)
+* [IMPROVEMENT] Session Replay: Implement heuristic image classification. See [#1640](https://github.com/DataDog/dd-sdk-android/pull/1640)
+* [IMPROVEMENT] Global: `DataUploadWorker` is scheduled every time and on non-roaming network. See [#1647](https://github.com/DataDog/dd-sdk-android/pull/1647)
+* [IMPROVEMENT] RUM: Use enum for HTTP method parameter of `RumMonitor#startResource API`. See [#1653](https://github.com/DataDog/dd-sdk-android/pull/1653)
+* [MAINTENANCE] Align the Base64 feature branch with develop. See [#1594](https://github.com/DataDog/dd-sdk-android/pull/1594)
+* [MAINTENANCE] Integrate latest changes from develop into base64 feature. See [#1599](https://github.com/DataDog/dd-sdk-android/pull/1599)
+* [MAINTENANCE] Base64 feature branch integration. See [#1597](https://github.com/DataDog/dd-sdk-android/pull/1597)
+* [MAINTENANCE] Session Replay: Implement the Session Replay payloads update `local_ci` task. See [#1598](https://github.com/DataDog/dd-sdk-android/pull/1598)
+* [MAINTENANCE] Fix Android Studio 'Rebuild Project'. See [#1602](https://github.com/DataDog/dd-sdk-android/pull/1602)
+* [MAINTENANCE] Next dev iteration 2.2.0. See [#1604](https://github.com/DataDog/dd-sdk-android/pull/1604)
+* [MAINTENANCE] Merge release 2.1.0 into develop branch. See [#1607](https://github.com/DataDog/dd-sdk-android/pull/1607)
+* [MAINTENANCE] Use shared Android Lint check. See [#1608](https://github.com/DataDog/dd-sdk-android/pull/1608)
+* [MAINTENANCE] Provide session replay data in configuration telemetry. See [#1611](https://github.com/DataDog/dd-sdk-android/pull/1611)
+* [MAINTENANCE] Fix unit test issues caused by git merge. See [#1618](https://github.com/DataDog/dd-sdk-android/pull/1618)
+* [MAINTENANCE] Session Replay: Update functional tests due to `ImageView` support. See [#1646](https://github.com/DataDog/dd-sdk-android/pull/1646)
+* [MAINTENANCE] Target Android 14 (API 34). See [#1649](https://github.com/DataDog/dd-sdk-android/pull/1649)
+
+# 2.1.0 / 2023-09-07
+
+* [BUGFIX] Session Replay: Do not resolve `WindowManager` from `Application` context. See [#1558](https://github.com/DataDog/dd-sdk-android/pull/1558)
+* [BUGFIX] RUM: Report `ApplicationLaunch` view even if first RUM event is not interaction. See [#1591](https://github.com/DataDog/dd-sdk-android/pull/1591)
+* [BUGFIX] RUM: Fix crash when disabling `JankStats` tracking. See [#1596](https://github.com/DataDog/dd-sdk-android/pull/1596)
+* [IMPROVEMENT] RUM: Add sample rate to reported RUM events. See [#1566](https://github.com/DataDog/dd-sdk-android/pull/1566)
+* [IMPROVEMENT] Session Replay: Remove the query parameters from SR requests. See [#1568](https://github.com/DataDog/dd-sdk-android/pull/1568)
+* [IMPROVEMENT] Session Replay: Use `internalLogger` in SR modules. See [#1574](https://github.com/DataDog/dd-sdk-android/pull/1574)
+* [IMPROVEMENT] Add the `additionalProperties` capability to telemetry debug log event. See [#1575](https://github.com/DataDog/dd-sdk-android/pull/1575)
+* [IMPROVEMENT] Global: Collect the `batch_deleted` telemetry. See [#1577](https://github.com/DataDog/dd-sdk-android/pull/1577)
+* [IMPROVEMENT] RUM: Fix view tracking gap. See [#1578](https://github.com/DataDog/dd-sdk-android/pull/1578)
+* [IMPROVEMENT] Fix tests around `InternalLogger`. See [#1579](https://github.com/DataDog/dd-sdk-android/pull/1579)
+* [IMPROVEMENT] Introduce the new `InternalLogger#metric` API. See [#1581](https://github.com/DataDog/dd-sdk-android/pull/1581)
+* [IMPROVEMENT] Global: Collect the `batch_closed` telemetry. See [#1586](https://github.com/DataDog/dd-sdk-android/pull/1586)
+* [IMPROVEMENT] Add multiple instance sample. See [#1587](https://github.com/DataDog/dd-sdk-android/pull/1587)
+* [IMPROVEMENT] Global: Provide the `inBackground` property for `batch_delete` metric. See [#1588](https://github.com/DataDog/dd-sdk-android/pull/1588)
+* [IMPROVEMENT] Global: Unregister process lifecycle monitor in core instance stop. See [#1589](https://github.com/DataDog/dd-sdk-android/pull/1589)
+* [IMPROVEMENT] Session Replay: Add SR integration tests for `TextView` and `EditText` view type. See [#1593](https://github.com/DataDog/dd-sdk-android/pull/1593)
+* [MAINTENANCE] Mention Datadog SDK explicitly in dogfood script. See [#1557](https://github.com/DataDog/dd-sdk-android/pull/1557)
+* [MAINTENANCE] Remove redundant `sqlite` product flavour folder in the sample app. See [#1559](https://github.com/DataDog/dd-sdk-android/pull/1559)
+* [MAINTENANCE] Next dev cycle 2.1.0. See [#1562](https://github.com/DataDog/dd-sdk-android/pull/1562)
+* [MAINTENANCE] Remove the bridge dogfooding step, bridge repo is archived. See [#1571](https://github.com/DataDog/dd-sdk-android/pull/1571)
+* [MAINTENANCE] Update gitlab CI env variables for gitlab 16. See [#1595](https://github.com/DataDog/dd-sdk-android/pull/1595)
+* [DOCS] Session Replay: Add the `README` files for SR modules. See [#1567](https://github.com/DataDog/dd-sdk-android/pull/1567)
+
+# 2.0.0 / 2023-07-31
+
+This is the first official production version of SDK v2 containing the new architecture for features initialisation and dependencies distribution. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/62aac79c3c68c4da02c96ab1071fb5e63f1b8b89/MIGRATION.MD) for details.
+
+Below you can find the change logs in comparison with out last stable version `1.19.3`:
+
+* [FEATURE] RUM: Introduce Mobile Session Replay (in Beta).
+* [IMPROVEMENT] RUM: Remove tracking of view loading time and fix unit tests. See [#1545](https://github.com/DataDog/dd-sdk-android/pull/1545)
+* [IMPROVEMENT] Don't report OkHttp throwables to telemetry. See [#1548](https://github.com/DataDog/dd-sdk-android/pull/1548)
+* [IMPROVEMENT] Use `implementation` dependency for features in integrations modules. See [#1552](https://github.com/DataDog/dd-sdk-android/pull/1552)
+* [IMPROVEMENT] Remove `dd-sdk-android-ktx` module. See [#1555](https://github.com/DataDog/dd-sdk-android/pull/1555)
+* [BUGFIX] RUM: Fix memory leak in `JankStats` usage. See [#1553](https://github.com/DataDog/dd-sdk-android/pull/1553)
+* [DOCS] Remove redundant docs. See [#1540](https://github.com/DataDog/dd-sdk-android/pull/1540)
+* [DOCS] Update documentation for SDK v2. See [#1549](https://github.com/DataDog/dd-sdk-android/pull/1549)
+* [IMPROVEMENT] Global: Provide the `uploadFrequency` per feature. See [#1533](https://github.com/DataDog/dd-sdk-android/pull/1533)
+* [IMPROVEMENT] RUM: Update documentation of `ViewEventMapper`. See [#1537](https://github.com/DataDog/dd-sdk-android/pull/1537)
+* [IMPROVEMENT] RUM: Support `navHost` hosted by `FragmentContainerView` for `NavigationViewTrackingStrategy`. See [#1538](https://github.com/DataDog/dd-sdk-android/pull/1538)
+* [IMPROVEMENT] Session Replay: Always listen and react to RUM session state. See [#1539](https://github.com/DataDog/dd-sdk-android/pull/1539)
+* [IMPROVEMENT] Session Replay: Remove explicit dependency on RUM module from Session Replay. See [#1541](https://github.com/DataDog/dd-sdk-android/pull/1541)
+* [IMPROVEMENT] Update Compose Navigation version to 2.6.0. See [#1542](https://github.com/DataDog/dd-sdk-android/pull/1542)
+* [IMPROVEMENT] Don't reexport `OkHttp` from `Glide`. See [#1543](https://github.com/DataDog/dd-sdk-android/pull/1543)
+* [IMPROVEMENT] Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+* [IMPROVEMENT] Logs: Alter public API of `Logger` to receive `Any` data type. See [#1324](https://github.com/DataDog/dd-sdk-android/pull/1324)
+* [IMPROVEMENT] RUM: Use `JankStats` for FPS measuring. See [#1405](https://github.com/DataDog/dd-sdk-android/pull/1405)
+* [IMPROVEMENT] RUM: Fix `JankStats` usage. See [#1512](https://github.com/DataDog/dd-sdk-android/pull/1512)
+* [BUGFIX] RUM: Keep old `viewId`s for view scope. See [#1448](https://github.com/DataDog/dd-sdk-android/pull/1448)
+
+# 2.0.0-beta3 / 2023-07-26
+
+This is a beta release of SDK v2. Compared to SDK v1 it contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/5c9feb900856a6d7b3623820dade1eaead1498b9/CHANGELOG.md) for details.
+
+Changes in comparison with `2.0.0-beta2`:
+
+* [IMPROVEMENT] RUM: Remove tracking of view loading time and fix unit tests. See [#1545](https://github.com/DataDog/dd-sdk-android/pull/1545)
+* [IMPROVEMENT] Don't report OkHttp throwables to telemetry. See [#1548](https://github.com/DataDog/dd-sdk-android/pull/1548)
+* [IMPROVEMENT] Use `implementation` dependency for features in integrations modules. See [#1552](https://github.com/DataDog/dd-sdk-android/pull/1552)
+* [IMPROVEMENT] Remove `dd-sdk-android-ktx` module. See [#1555](https://github.com/DataDog/dd-sdk-android/pull/1555)
+* [BUGFIX] RUM: Fix memory leak in `JankStats` usage. See [#1553](https://github.com/DataDog/dd-sdk-android/pull/1553)
+* [DOCS] Remove redundant docs. See [#1540](https://github.com/DataDog/dd-sdk-android/pull/1540)
+* [DOCS] Update documentation for SDK v2. See [#1549](https://github.com/DataDog/dd-sdk-android/pull/1549)
+
+# 2.0.0-beta2 / 2023-07-17
+
+This is a beta release of SDK v2. Compared to SDK v1 it contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/8d1f9abb101039abcd44ffed2823655c33e5129f/MIGRATION.MD) for details.
+
+Changes in comparison with `2.0.0-beta1`:
+
+* [IMPROVEMENT] Global: Provide the `uploadFrequency` per feature. See [#1533](https://github.com/DataDog/dd-sdk-android/pull/1533)
+* [IMPROVEMENT] RUM: Update documentation of `ViewEventMapper`. See [#1537](https://github.com/DataDog/dd-sdk-android/pull/1537)
+* [IMPROVEMENT] RUM: Support `navHost` hosted by `FragmentContainerView` for `NavigationViewTrackingStrategy`. See [#1538](https://github.com/DataDog/dd-sdk-android/pull/1538)
+* [IMPROVEMENT] Session Replay: Always listen and react to RUM session state. See [#1539](https://github.com/DataDog/dd-sdk-android/pull/1539)
+* [IMPROVEMENT] Session Replay: Remove explicit dependency on RUM module from Session Replay. See [#1541](https://github.com/DataDog/dd-sdk-android/pull/1541)
+* [IMPROVEMENT] Update Compose Navigation version to 2.6.0. See [#1542](https://github.com/DataDog/dd-sdk-android/pull/1542)
+* [IMPROVEMENT] Don't reexport `OkHttp` from `Glide`. See [#1543](https://github.com/DataDog/dd-sdk-android/pull/1543)
+
+# 1.19.3 / 2023-07-11
+
+* [IMPROVEMENT] RUM: Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+
+# 2.0.0-beta1 / 2023-07-07
+
+This is the first release of SDK v2. It contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/026fc30f5c28226b244a0f6884841cbcac9c864b/MIGRATION.MD) for details.
+
+Functional changes in comparison with `1.19.2`:
+
+* [IMPROVEMENT] Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+* [IMPROVEMENT] Logs: Alter public API of `Logger` to receive `Any` data type. See [#1324](https://github.com/DataDog/dd-sdk-android/pull/1324)
+* [IMPROVEMENT] RUM: Use `JankStats` for FPS measuring. See [#1405](https://github.com/DataDog/dd-sdk-android/pull/1405)
+* [IMPROVEMENT] RUM: Fix `JankStats` usage. See [#1512](https://github.com/DataDog/dd-sdk-android/pull/1512)
+* [BUGFIX] RUM: Keep old `viewId`s for view scope. See [#1448](https://github.com/DataDog/dd-sdk-android/pull/1448)
+
+# 1.19.2 / 2023-06-05
+
+* [REVERT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
+
+# 1.19.1 / 2023-05-30
+
+* [IMPROVEMENT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
+* [BUGFIX] RUM: Ignore adding custom timings and feature flags for the stopped view. See [#1433](https://github.com/DataDog/dd-sdk-android/pull/1433)
+
+# 1.19.0 / 2023-04-24
+
+* [FEATURE] RUM: Allow users to stop a RUM session. See [#1356](https://github.com/DataDog/dd-sdk-android/pull/1356)
+* [FEATURE] APM: Add tracer sampling rate. See [#1393](https://github.com/DataDog/dd-sdk-android/pull/1393)
+* [IMPROVEMENT] Create a minimal WearOS sample to test compatibility. See [#1384](https://github.com/DataDog/dd-sdk-android/pull/1384)
+* [BUGFIX] RUM: Fix stopped `RUMViewManager` from being able to start new views. See [#1381](https://github.com/DataDog/dd-sdk-android/pull/1381)
+* [MAINTENANCE] Update RUM Event Schema. See [#1383](https://github.com/DataDog/dd-sdk-android/pull/1383)
+* [DOCS] Delete referenced docs and update README. See [#1376](https://github.com/DataDog/dd-sdk-android/pull/1376)
+
 # 1.18.1 / 2023-03-30
 
 * [IMPROVEMENT] RUM: Remove extra telemetry sent when detecting refresh rate scale. See [#1358](https://github.com/DataDog/dd-sdk-android/pull/1358)
@@ -329,7 +816,7 @@
 
 * [BUGFIX] Global: Fix crash when using old OkHttp dependency [#658](https://github.com/DataDog/dd-sdk-android/issues/658) (Thanks [@JessicaYeh](https://github.com/VladBytsyuk))
 * [BUGFIX] Global: Prevent retrying endlessly data upload when Client Token is invalid
-* [BUGFIX] Global: Support using DD Android SDK with Java 11 
+* [BUGFIX] Global: Support using DD Android SDK with Java 11
 * [BUGFIX] Global: Support proper serialization of nested maps for custom attributes
 * [BUGFIX] RUM: Ensure all crashes are reported to RUM
 * [FEATURE] APM: Add Data Scrubbing for Spans
@@ -346,14 +833,14 @@
 # 1.9.0 / 2021-06-07
 
 * [BUGFIX] APM: Fix network tracing inconsistencies
-* [BUGFIX] APM: Fix span  with custom `MESSAGE` field [#522](https://github.com/DataDog/dd-sdk-android/issues/522) (Thanks [@JessicaYeh](https://github.com/JessicaYeh))
+* [BUGFIX] APM: Fix span with custom `MESSAGE` field [#522](https://github.com/DataDog/dd-sdk-android/issues/522) (Thanks [@JessicaYeh](https://github.com/JessicaYeh))
 * [BUGFIX] Logs: Fix tag name in Timber `DatadogTree` [#483](https://github.com/DataDog/dd-sdk-android/issues/483) (Thanks [@cfa-eric](https://github.com/cfa-eric))
 * [BUGFIX] RUM: Ensure View linked events count is correct when events are discarded
 * [BUGFIX] RUM: Fix Resource network timings
 * [BUGFIX] APM: Fix span logs timestamp conversion
 * [FEATURE] RUM: Detect Long Tasks (tasks blocking the main thread)
 * [FEATURE] RUM: add a callback to enrich RUM Resources created from OkHttp Requests
-* [IMPROVEMENT] RUM: Remove the "Application crash detected" prefix and ensure the message  is kept
+* [IMPROVEMENT] RUM: Remove the "Application crash detected" prefix and ensure the message is kept
 * [IMPROVEMENT] RUM: Add warning when a RUM Action is dropped
 
 # 1.8.1 / 2021-03-04
@@ -464,7 +951,6 @@
 * [BUGFIX] Logs: Fix rare crash on upload requests
 * [BUGFIX] Global: Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks [@alparp27](https://github.com/alparp27))
 
-
 # 1.3.1 / 2020-04-30
 
 ### Changes
@@ -523,7 +1009,7 @@
 
 * [BUGFIX] Make the packageVersion field optional in the SDK initialisation
 * [BUGFIX] Fix timestamp formatting in logs
-* [FEATURE] Add a developer targeted logger 
+* [FEATURE] Add a developer targeted logger
 * [FEATURE] Add user info in logs
 * [FEATURE] Create automatic Tags / Attribute (app / sdk version)
 * [FEATURE] Integrate SDK with Timber

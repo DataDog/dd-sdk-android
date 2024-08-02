@@ -17,29 +17,36 @@ class ApiSurfacePlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val srcDir = File(File(target.projectDir, "src"), "main")
         val genDir = File(File(target.buildDir, "generated"), "json2kotlin")
-        val surfaceFile = File(target.projectDir, FILE_NAME)
-        genDir.mkdirs()
+        val apiDir = File(target.projectDir, "api")
+        val surfaceFile = File(apiDir, FILE_NAME)
 
         target.tasks
-            .register(TASK_GEN_API_SURFACE, GenerateApiSurfaceTask::class.java) {
-                this.srcDir = srcDir
-                this.genDir = genDir
+            .register(TASK_GEN_KOTLIN_API_SURFACE, GenerateApiSurfaceTask::class.java) {
+                this.srcDirPath = srcDir.absolutePath
+                this.genDirPath = genDir.absolutePath
                 this.surfaceFile = surfaceFile
             }
         target.tasks
             .register(TASK_CHECK_API_SURFACE, CheckApiSurfaceTask::class.java) {
                 this.surfaceFile = surfaceFile
-                dependsOn(TASK_GEN_API_SURFACE)
+                dependsOn(TASK_GEN_KOTLIN_API_SURFACE)
             }
 
         target.taskConfig<KotlinCompile> {
-            finalizedBy(TASK_GEN_API_SURFACE)
+            // Java API generation task does a clean-up of all files in the output
+            // folder, so let it run first
+            if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
+                finalizedBy(TASK_GEN_JAVA_API_SURFACE)
+            }
+            finalizedBy(TASK_GEN_KOTLIN_API_SURFACE)
         }
     }
 
     companion object {
-        const val TASK_GEN_API_SURFACE = "generateApiSurface"
+        const val TASK_GEN_KOTLIN_API_SURFACE = "generateApiSurface"
+        const val TASK_GEN_JAVA_API_SURFACE = "apiDump"
         const val TASK_CHECK_API_SURFACE = "checkApiSurfaceChanges"
         const val FILE_NAME = "apiSurface"
+        const val GEN_JAVA_API_LAYOUT_PLUGIN = "binary-compatibility-validator"
     }
 }

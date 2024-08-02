@@ -17,15 +17,13 @@ fun Intent.addExtras(map: Map<String, Any?>) {
             is String -> putExtra(key, value)
             is Number -> putExtra(key, value)
             is Boolean -> putExtra(key, value)
+            is Enum<*> -> putExtra(key, value)
         }
     }
 }
 
 fun Intent.addTrackingConsent(consent: TrackingConsent) {
-    val consentToInt = when (consent) {
-        TrackingConsent.PENDING -> PENDING
-        TrackingConsent.GRANTED -> GRANTED
-        else -> NOT_GRANTED
-    }
-    this.putExtra(TRACKING_CONSENT_KEY, consentToInt)
+    this.putExtra(TRACKING_CONSENT_KEY, consent)
 }
+
+fun Intent.addForgeSeed(seed: Long) = this.putExtra(FORGE_SEED_KEY, seed)

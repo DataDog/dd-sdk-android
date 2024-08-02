@@ -7,11 +7,12 @@
 package com.datadog.android.sdk.rules
 
 import android.app.Activity
+import android.app.ActivityManager
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
 
@@ -23,24 +24,28 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
 
     override fun beforeActivityLaunched() {
         super.beforeActivityLaunched()
-        // attach the gestures tracker
-        // we will use a large long task threshold to make sure we will not have LongTask events
-        // noise in our integration tests.
         val config = RuntimeConfig.configBuilder()
-            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
-            .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
-            .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .trackInteractions()
-            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
             .build()
 
-        Datadog.initialize(
+        val sdkCore = Datadog.initialize(
             InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
-            RuntimeConfig.credentials(),
             config,
             trackingConsent
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        checkNotNull(sdkCore)
+        // we will use a large long task threshold to make sure we will not have LongTask events
+        // noise in our integration tests.
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .trackUserInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
+        DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
+            it.name == "overrideProcessImportance"
+        }?.apply {
+            isAccessible = true
+            invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+        }
     }
 }

@@ -1,25 +1,29 @@
 [versions]
 # Commons
-kotlin = "1.6.10"
-kotlinSP = "1.6.10-1.0.4"
-gson = "2.8.8"
-okHttp = "3.12.13"
+kotlin = "1.9.10"
+kotlinSP = "1.9.10-1.0.13"
+gson = "2.10.1"
+okHttp = "4.11.0"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
-androidToolsPlugin = "7.4.0"
+androidToolsPlugin = "8.2.2"
+androidDesugaringSdk = "2.0.4"
 androidXAnnotations = "1.1.0"
 androidXAppCompat = "1.3.0"
 androidXCore = "1.3.1"
 androidXMultidex = "2.0.1"
 androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
-androidXWorkManager = "2.7.0"
+androidXWorkManager = "2.8.1"
 androidXConstraintLayout = "2.0.4"
-androidXComposeRuntime = "1.1.1"
-androidXComposeNavigation = "2.4.0-rc01"
-androidXComposeUi = "1.1.1"
-androidXComposeMaterial = "1.1.1"
+androidXComposeCompiler = "1.5.3"
+androidXComposeRuntime = "1.4.3"
+androidXComposeNavigation = "2.6.0"
+androidXComposeUi = "1.4.3"
+androidXComposeMaterial = "1.4.3"
+androidXMetrics = "1.0.0-alpha04"
+androidXCollection = "1.1.0"
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 androidXLeanback = "1.0.0"
@@ -29,55 +33,64 @@ openTracing = "0.32.0"
 
 # JUnit
 jUnit4 = "4.13.2"
-jUnitJupiter = "5.7.1"
-jUnitPlatform = "1.7.1"
-jUnitVintage = "5.7.1"
-jUnitMockitoExt = "3.4.6"
+jUnitJupiter = "5.9.3"
+jUnitPlatform = "1.9.3"
+jUnitVintage = "5.9.3"
+jUnitMockitoExt = "5.4.0"
+systemStubsJupiter = "2.1.6"
 
 # Android JUnit
 androidXJunitRunner = "1.5.0"
 androidXJunitRules = "1.5.0"
-androidXExtJunit = "1.1.4"
+androidXExtJunit = "1.1.5"
 androidXJunitCore = "1.5.0"
-espresso = "3.5.0"
+espresso = "3.5.1"
 
 # Tests Tools
 assertJ = "3.18.1"
 elmyr = "1.3.1"
-mockitoKotlin = "2.2.0"
-kover="0.5.0"
-kspTesting="1.4.7"
+mockitoKotlin = "5.1.0"
+kover = "0.7.6"
+kspTesting = "1.5.0"
 
 # Tools
-detekt = "1.22.0"
-dokka = "1.6.10"
+detekt = "1.23.0"
+dokka = "1.8.20"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"
+androidLint = "31.0.2"
 
 fuzzyWuzzy = "1.2.0"
-mavenModel = "3.6.3"
 
-versionsGradlePlugin = "0.27.0"
+versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
 
-kotlinPoet = "1.11.0"
+kotlinPoet = "1.14.2"
 kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
+binaryCompatibility = "0.13.2"
+dependencyLicense = "0.2"
 
 # Integrations
-realm = "10.12.0"
-sqlDelight = "1.5.1"
+realm = "1.11.0"
+sqlDelight = "1.5.5"
 coil = "1.0.0"
 fresco = "2.3.0"
 glide = "4.11.0"
 picasso = "2.8"
-room = "2.4.2"
+room = "2.5.1"
 rxJava3 = "3.0.0"
-timber = "4.7.1"
+timber = "5.0.1"
 coroutines = "1.4.2"
 
 # Local Server
 ktor = "1.6.0"
+
+# Otel
+jctools = "3.3.0"
+openTelemetry = "1.4.0"
+re2j = "1.7"
+
 
 [libraries]
 
@@ -88,8 +101,10 @@ kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ver
 kotlinSPGradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
-realmGradlePlugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
+realmGradlePlugin = { module = "io.realm.kotlin:gradle-plugin", version.ref = "realm" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
+binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
+dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
 
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 
@@ -107,12 +122,13 @@ kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNT
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 
 # Android libs
+androidDesugaringSdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugaringSdk" }
 androidXMultidex = { module = "androidx.multidex:multidex", version.ref = "androidXMultidex" }
 androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidXAnnotations" }
 androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
 androidXCore = { module = "androidx.core:core", version.ref = "androidXCore" }
 androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment", version.ref = "androidXNavigation" }
-androidXNavigationRuntimeKtx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "androidXNavigation" }
+androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
 androidXConstraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidXConstraintLayout" }
@@ -121,6 +137,8 @@ androidXComposeNavigation = { module = "androidx.navigation:navigation-compose",
 androidXComposeUi = { module = "androidx.compose.ui:ui", version.ref = "androidXComposeUi" }
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "androidXComposeUi" }
 androidXComposeMaterial = { module = "androidx.compose.material:material", version.ref = "androidXComposeMaterial" }
+androidXMetrics = { module = "androidx.metrics:metrics-performance", version.ref = "androidXMetrics" }
+androidXCollection = { module = "androidx.collection:collection", version.ref = "androidXCollection" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
 googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", version.ref = "googleAccompanist" }
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
@@ -159,10 +177,12 @@ elmyrInject = { module = "com.github.xgouchet.Elmyr:inject", version.ref = "elmy
 elmyrJUnit4 = { module = "com.github.xgouchet.Elmyr:junit4", version.ref = "elmyr" }
 elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmyr" }
 elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
-mockitoKotlin = { module = "com.nhaarman.mockitokotlin2:mockito-kotlin", version.ref = "mockitoKotlin" }
+mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-kover = { module = "org.jetbrains.kotlinx:kover", version.ref = "kover" }
+kover = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
 kspTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "kspTesting" }
+androidLintTests = { module = "com.android.tools.lint:lint-tests", version.ref = "androidLint" }
+systemStubsJupiter = { module = "uk.org.webcompere:system-stubs-jupiter", version.ref = "systemStubsJupiter" }
 
 # Tools
 detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
@@ -170,10 +190,10 @@ detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "
 detektTest = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 okHttpMock = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okHttp" }
 robolectric = { module = "org.robolectric:android-all", version.ref = "robolectric" }
+androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "androidLint" }
+androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
 
 fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
-mavenModel = { module = "org.apache.maven:maven-model", version.ref = "mavenModel" }
-nexusPublishGradlePlugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
@@ -194,18 +214,23 @@ glideOkHttp3 = { module = "com.github.bumptech.glide:okhttp3-integration", versi
 
 picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
 
+realm = { module = "io.realm.kotlin:library-base", version.ref = "realm" }
 room = { module = "androidx.room:room-runtime", version.ref = "room" }
 rxJava3 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxJava3" }
 rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJava3" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
 ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
+
+# Otel
+jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
+openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
+re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 
 [bundles]
 
@@ -228,7 +253,7 @@ testTools = [
 
 androidXNavigation = [
     "androidXNavigationFragment",
-    "androidXNavigationRuntimeKtx"
+    "androidXNavigationRuntime"
 ]
 
 androidXSupportBase = [
@@ -268,16 +293,18 @@ glide = [
     "glideOkHttp3",
 ]
 
-coroutines = [
-    "coroutinesCore",
-    "coroutinesAndroid"
-]
-
 ktor = [
     "ktorCore",
     "ktorNetty",
     "ktorGson"
 ]
 
+traceCore = [
+    "jctools",
+    "re2j"
+]
+
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
+nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
+
