@@ -19,8 +19,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
-import com.datadog.benchmark.DatadogExporterConfiguration
-import com.datadog.benchmark.DatadogMeter
 import com.datadog.sample.benchmark.BuildConfig
 import com.datadog.sample.benchmark.R
 
@@ -28,23 +26,10 @@ internal class BenchmarkApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-
-        initDatadogSessionReplay()
-        enableDatadogMeter()
+        initDatadogSdk()
     }
 
-    private fun enableDatadogMeter() {
-        DatadogMeter.create(
-            DatadogExporterConfiguration.Builder(BuildConfig.BM_API_KEY)
-                .setApplicationId(BuildConfig.APPLICATION_ID)
-                .setApplicationName("Benchmark Application")
-                .setApplicationVersion(BuildConfig.VERSION_NAME)
-                .setIntervalInSeconds(METER_INTERVAL_IN_SECONDS)
-                .build()
-        ).startGauges()
-    }
-
-    private fun initDatadogSessionReplay() {
+    private fun initDatadogSdk() {
         Datadog.initialize(
             this,
             createDatadogConfiguration(),
@@ -112,8 +97,6 @@ internal class BenchmarkApplication : Application() {
     }
 
     companion object {
-        private const val METER_INTERVAL_IN_SECONDS = 10L
-
         private const val ATTR_IS_MAPPED = "is_mapped"
         private const val SAMPLE_RATE_TELEMETRY = 100f
         private const val THRESHOLD_LONG_TASK_INTERVAL = 250L
