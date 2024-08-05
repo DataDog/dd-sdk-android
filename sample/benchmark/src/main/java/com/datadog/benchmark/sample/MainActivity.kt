@@ -10,10 +10,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
-import com.datadog.android.sessionreplay.SessionReplay
-import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
+import com.datadog.benchmark.sample.benchmark.DatadogBenchmark
 import com.datadog.sample.benchmark.R
 
 /**
@@ -22,27 +19,27 @@ import com.datadog.sample.benchmark.R
 class MainActivity : AppCompatActivity() {
 
     private lateinit var navController: NavController
+    private lateinit var datadogBenchmark: DatadogBenchmark
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        enableSessionReplay()
+        datadogBenchmark = DatadogBenchmark(
+            DatadogBenchmark.Config.resolveSyntheticsBundle(intent.extras)
+        )
     }
 
-    private fun enableSessionReplay() {
-        val sessionReplayConfig = SessionReplayConfiguration
-            .Builder(SAMPLE_IN_ALL_SESSIONS)
-            .setPrivacy(SessionReplayPrivacy.ALLOW)
-            .addExtensionSupport(MaterialExtensionSupport())
-            .build()
-        SessionReplay.enable(sessionReplayConfig)
+    override fun onStart() {
+        super.onStart()
+        datadogBenchmark.start()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        datadogBenchmark.stop()
     }
 
     override fun onResume() {
         super.onResume()
         navController = Navigation.findNavController(this, R.id.nav_host_fragment)
-    }
-
-    companion object {
-        private const val SAMPLE_IN_ALL_SESSIONS = 100f
     }
 }
