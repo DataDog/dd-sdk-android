@@ -23,6 +23,7 @@ internal class LogsMetricExporter(datadogExporterConfiguration: DatadogExporterC
         deviceModel = Build.MODEL,
         osVersion = Build.VERSION.RELEASE,
         run = datadogExporterConfiguration.run ?: DEFAULT_RUN_NAME,
+        scenario = datadogExporterConfiguration.scenario,
         applicationId = datadogExporterConfiguration.applicationId ?: DEFAULT_APPLICATION_ID,
         intervalInSeconds = datadogExporterConfiguration.intervalInSeconds
     )

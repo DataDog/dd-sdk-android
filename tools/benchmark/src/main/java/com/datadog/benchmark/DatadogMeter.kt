@@ -45,7 +45,7 @@ class DatadogMeter private constructor(private val meter: Meter) {
     /**
      * Stops cpu, memory and fps gauges.
      */
-    fun stopAllGauges() {
+    fun stopGauges() {
         stopGauge(cpuVitalReader)
         stopGauge(memoryVitalReader)
         stopGauge(fpsVitalReader)

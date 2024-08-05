@@ -10,6 +10,7 @@ internal data class MetricContext(
     val deviceModel: String,
     val osVersion: String,
     val run: String,
+    val scenario: String?,
     val applicationId: String,
     val intervalInSeconds: Long
 )

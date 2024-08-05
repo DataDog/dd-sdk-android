@@ -56,10 +56,13 @@ internal class MetricRequestBodyBuilder(private val metricContext: MetricContext
     }
 
     private fun resolveTags(): List<String> {
-        return listOf(
+        return listOfNotNull(
             "$KEY_TAG_DEVICE_MODEL:${metricContext.deviceModel}",
             "$KEY_TAG_OS_VERSION:${metricContext.osVersion}",
             "$KEY_TAG_RUN:${metricContext.run}",
+            metricContext.scenario?.let {
+                "$KEY_SCENARIO:$it"
+            },
             "$KEY_TAG_APPLICATION_ID:${metricContext.applicationId}"
         )
     }
@@ -101,6 +104,7 @@ internal class MetricRequestBodyBuilder(private val metricContext: MetricContext
         private const val KEY_METRIC = "metric"
         private const val KEY_TAGS = "tags"
         private const val KEY_POINTS = "points"
+        private const val KEY_SCENARIO = "scenario"
         private const val KEY_RESOURCES = "resources"
         private const val KEY_TYPE = "type"
         private const val KEY_UNIT = "unit"
