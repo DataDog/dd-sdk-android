@@ -13,11 +13,11 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter
 internal class DatadogMetricExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : MetricExporter {
 
     private val metricContext: MetricContext = MetricContext(
-        deviceModel = Build.MODEL,
-        osVersion = Build.VERSION.RELEASE,
-        run = datadogExporterConfiguration.run ?: DEFAULT_RUN_NAME,
+        deviceModel = Build.MODEL ?: UNKNOWN_TAG_VALUE,
+        osVersion = Build.VERSION.RELEASE ?: UNKNOWN_TAG_VALUE,
+        run = datadogExporterConfiguration.run ?: UNKNOWN_TAG_VALUE,
         scenario = datadogExporterConfiguration.scenario,
-        applicationId = datadogExporterConfiguration.applicationId ?: DEFAULT_APPLICATION_ID,
+        applicationId = datadogExporterConfiguration.applicationId ?: UNKNOWN_TAG_VALUE,
         intervalInSeconds = datadogExporterConfiguration.intervalInSeconds
     )
     private val metricHttpClient: DatadogHttpClient = DatadogHttpClient(
@@ -46,7 +46,6 @@ internal class DatadogMetricExporter(datadogExporterConfiguration: DatadogExport
     }
 
     companion object {
-        private const val DEFAULT_RUN_NAME = "unknown run"
-        private const val DEFAULT_APPLICATION_ID = "unassigned application id"
+        private const val UNKNOWN_TAG_VALUE = "unknown"
     }
 }

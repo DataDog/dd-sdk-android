@@ -85,6 +85,10 @@ dependencies {
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
     implementation(project(":tools:benchmark"))
+
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.systemStubsJupiter)
 }
 
 kotlinConfig()
