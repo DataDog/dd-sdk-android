@@ -123,4 +123,4 @@ Pull requests are welcome. First, open an issue to discuss what you would like t
 [3]: https://app.datadoghq.com/logs
 [4]: https://app.datadoghq.com/apm/services
 [5]: https://app.datadoghq.com/rum/explorer
-[6]: https://docs.datadoghq.com/real_user_monitoring/android/troubleshooting/
+[6]: https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/troubleshooting/android/
