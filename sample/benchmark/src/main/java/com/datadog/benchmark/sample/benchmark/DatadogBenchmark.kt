@@ -34,9 +34,11 @@ internal class DatadogBenchmark(config: Config) {
     )
 
     init {
-        when (config.scenario) {
-            SyntheticsScenario.SessionReplay -> enableSessionReplay()
-            else -> {} // do nothing for now
+        if (config.run == SyntheticsRun.Instrumented) {
+            when (config.scenario) {
+                SyntheticsScenario.SessionReplay -> enableSessionReplay()
+                else -> {} // do nothing for now
+            }
         }
     }
 
