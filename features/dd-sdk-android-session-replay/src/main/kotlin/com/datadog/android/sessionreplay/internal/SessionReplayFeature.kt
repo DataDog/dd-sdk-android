@@ -45,6 +45,7 @@ internal class SessionReplayFeature(
     internal val privacy: SessionReplayPrivacy,
     internal val imagePrivacy: ImagePrivacy?,
     private val rateBasedSampler: Sampler,
+    private val startRecordingImmediately: Boolean,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
 
@@ -57,13 +58,15 @@ internal class SessionReplayFeature(
         imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
-        sampleRate: Float
+        sampleRate: Float,
+        startRecordingImmediately: Boolean
     ) : this(
         sdkCore,
         customEndpointUrl,
         privacy,
         imagePrivacy,
         RateBasedSampler(sampleRate),
+        startRecordingImmediately,
         DefaultRecorderProvider(
             sdkCore,
             privacy,
@@ -117,10 +120,7 @@ internal class SessionReplayFeature(
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
             it[SESSION_REPLAY_PRIVACY_KEY] = privacy.toString().lowercase(Locale.US)
-            // False by default. This will be changed once we will conform to the browser SR
-            // implementation where a parameter will be passed in the Configuration constructor
-            // to enable manual recording.
-            it[SESSION_REPLAY_MANUAL_RECORDING_KEY] = false
+            it[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] = startRecordingImmediately
         }
     }
 
@@ -205,7 +205,9 @@ internal class SessionReplayFeature(
             return
         }
 
-        if (keepSession && rateBasedSampler.sample()) {
+        val shouldRecord = startRecordingImmediately || isRecording.get()
+
+        if (shouldRecord && keepSession && rateBasedSampler.sample()) {
             startRecording()
         } else {
             sdkCore.internalLogger.log(
@@ -312,8 +314,8 @@ internal class SessionReplayFeature(
         const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
         internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
-        internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
-            "session_replay_requires_manual_recording"
+        internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
+            "session_replay_start_immediate_recording"
         internal const val SESSION_REPLAY_ENABLED_KEY =
             "session_replay_is_enabled"
     }
