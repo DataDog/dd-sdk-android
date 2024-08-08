@@ -34,7 +34,7 @@ data class DatadogExporterConfiguration internal constructor(
     /**
      * A Builder class for a [DatadogExporterConfiguration].
      *
-     * @param apiKey api key to submit metrics to Datadog endpoint
+     * @param apiKey api key to submit metrics to the Datadog endpoint
      */
     class Builder(private val apiKey: String) {
         private var serviceName: String? = null
