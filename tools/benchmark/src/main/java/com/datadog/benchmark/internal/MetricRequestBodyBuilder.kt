@@ -98,7 +98,6 @@ internal class MetricRequestBodyBuilder(private val metricContext: MetricContext
     companion object {
 
         private const val RESOURCE_ATTRIBUTE_NAME_KEY = "service.name"
-
         private const val KEY_SERIES = "series"
         private const val KEY_INTERVAL = "interval"
         private const val KEY_METRIC = "metric"
