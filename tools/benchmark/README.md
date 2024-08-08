@@ -40,7 +40,7 @@ meter.stopGauges()
 ## Observe Metrics
 
 All the metrics are uploaded
-through [Datadog submit metrics API](https://docs.datadoghq.com/api/latest/metrics/#submit-metrics).
+through the [Datadog metric submission API](https://docs.datadoghq.com/api/latest/metrics/#submit-metrics).
 The metric names for each gauge:
 
 * [android.benchmark.cpu]: CPU ticks
