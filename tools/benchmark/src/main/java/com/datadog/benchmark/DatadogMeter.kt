@@ -82,7 +82,7 @@ class DatadogMeter private constructor(private val meter: Meter) {
     companion object {
 
         /**
-         * Creates an instance of [DatadogMeter] with given configuration.
+         * Creates an instance of [DatadogMeter] with the given configuration.
          */
         fun create(datadogExporterConfiguration: DatadogExporterConfiguration): DatadogMeter {
             val sdkMeterProvider = SdkMeterProvider.builder()
