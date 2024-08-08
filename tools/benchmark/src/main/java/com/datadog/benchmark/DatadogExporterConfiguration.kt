@@ -14,7 +14,7 @@ package com.datadog.benchmark
  * @param applicationVersion the version of the host application.
  * @param applicationId the id of the host application.
  * @param apiKey the api key for submitting metrics to datadog endpoints.
- * @param run the run description of benchmark test.
+ * @param run the run description of the benchmark test.
  * @param scenario the scenario of benchmark.
  * @param endPoint the endpoint to submit the metrics.
  * @param intervalInSeconds the interval of seconds of sampling and uploading vital data.
