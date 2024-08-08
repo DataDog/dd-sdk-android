@@ -11,7 +11,7 @@ package com.datadog.benchmark
  * @param serviceName the name of the service.
  * @param resource the name of the resource.
  * @param applicationName the name of the host application.
- * @param applicationVersion the version of host application.
+ * @param applicationVersion the version of the host application.
  * @param applicationId the id of the host application.
  * @param apiKey the api key for submitting metrics to datadog end points.
  * @param run the run description of benchmark test.
