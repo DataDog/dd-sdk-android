@@ -9,7 +9,7 @@ package com.datadog.benchmark
 /**
  * Describes the configuration to be used in Datadog open telemetry exporter.
  * @param serviceName the name of the service.
- * @param resource the name of resource.
+ * @param resource the name of the resource.
  * @param applicationName the name of host application.
  * @param applicationVersion the version of host application.
  * @param applicationId the id of the host application.
