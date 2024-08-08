@@ -56,7 +56,7 @@ internal open class AbstractCompositionGroupMapperTest {
     private lateinit var fakeWireframe: ComposeWireframe
 
     @LongForgery
-    private var fakeGroupId: Long = 0L
+    var fakeGroupId: Long = 0L
 
     @Mock
     lateinit var mockColorStringFormatter: ColorStringFormatter

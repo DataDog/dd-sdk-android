@@ -45,10 +45,9 @@ internal class ComposeWireframeMapper(
 
     private val composeMappers = mapOf<String, CompositionGroupMapper>(
         "Text" to TextCompositionGroupMapper(colorStringFormatter),
-        "Button" to ButtonCompositionGroupMapper(colorStringFormatter)
-        // TODO RUM-4738 Implement mappers for different Composable groups
-        // "TabRow" : holds the tab row bg color
-        //  "Tab": holds selected tab info
+        "Button" to ButtonCompositionGroupMapper(colorStringFormatter),
+        "Tab" to TabCompositionGroupMapper(colorStringFormatter),
+        "TabRow" to TabRowCompositionGroupMapper(colorStringFormatter)
     )
 
     // region WireframeMapper

@@ -42,7 +42,7 @@ internal abstract class AbstractCompositionGroupMapper(
         )
     }
 
-    protected abstract fun map(
+    abstract fun map(
         stableGroupId: Long,
         parameters: Sequence<ComposableParameter>,
         boxWithDensity: Box,
