@@ -50,6 +50,7 @@ include(":instrumented:integration")
 include(":sample:kotlin")
 include(":sample:wear")
 include(":sample:vendor-lib")
+include(":sample:benchmark")
 
 // TOOLCHAIN
 include(":tools:detekt")
@@ -57,3 +58,4 @@ include(":tools:unit")
 include(":tools:noopfactory")
 include(":tools:javabackport")
 include(":tools:lint")
+include(":tools:benchmark")

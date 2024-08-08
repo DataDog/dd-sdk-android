@@ -90,6 +90,8 @@ ktor = "1.6.0"
 # Otel
 jctools = "3.3.0"
 openTelemetry = "1.4.0"
+# Only for internal benchmark use
+openTelemetryBenchmark = "1.40.0"
 re2j = "1.7"
 
 
@@ -232,6 +234,8 @@ ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
+openTelemetryApiBenchmark = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetryBenchmark" }
+openTelemetrySdkBenchmark = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetryBenchmark" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 
 [bundles]
