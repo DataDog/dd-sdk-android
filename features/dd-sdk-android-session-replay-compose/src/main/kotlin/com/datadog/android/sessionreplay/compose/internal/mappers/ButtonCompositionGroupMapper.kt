@@ -33,13 +33,19 @@ internal class ButtonCompositionGroupMapper(
         var cornerRadius: Number? = null
         var colors: ButtonColors? = null
 
+        // Size of the button must be specified in order to calculate the corner radius,
+        // when [CornerSize] is a percentage.
+        val size = Size.Unspecified.copy(
+            width = boxWithDensity.width.toFloat() * uiContext.density,
+            height = boxWithDensity.height.toFloat() * uiContext.density
+        )
         parameters.forEach { param ->
             when (param.name) {
                 "colors" -> colors = param.value as? ButtonColors
                 "shape" -> cornerRadius = (param.value as? RoundedCornerShape)?.let {
                     // We only have a single value for corner radius, so we default to using the
                     // top left (i.e.: topStart) corner's value and apply it to all corners
-                    it.topStart.toPx(Size.Unspecified, uiContext.composeDensity) / uiContext.density
+                    it.topStart.toPx(size, uiContext.composeDensity) / uiContext.density
                 }
             }
         }
