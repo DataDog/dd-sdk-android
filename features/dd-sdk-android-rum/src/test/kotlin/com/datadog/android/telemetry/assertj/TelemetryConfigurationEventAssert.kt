@@ -269,6 +269,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
             .isEqualTo(expected)
         return this
     }
+
     fun hasBatchProcessingLevel(expected: Int?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.batchProcessingLevel)
             .overridingErrorMessage(
@@ -359,12 +360,12 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
-    fun hasSessionReplayStartManually(expected: Boolean?): TelemetryConfigurationEventAssert {
+    fun hasStartRecordingImmediately(expected: Boolean?): TelemetryConfigurationEventAssert {
         val assertErrorMessage = "Expected event data to have" +
-            " telemetry.configuration.startSessionReplayRecordingManually" +
+            " telemetry.configuration.startRecordingImmediately" +
             " $expected " +
-            "but was ${actual.telemetry.configuration.startSessionReplayRecordingManually}"
-        assertThat(actual.telemetry.configuration.startSessionReplayRecordingManually)
+            "but was ${actual.telemetry.configuration.startRecordingImmediately}"
+        assertThat(actual.telemetry.configuration.startRecordingImmediately)
             .overridingErrorMessage(assertErrorMessage)
             .isEqualTo(expected)
         return this

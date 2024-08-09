@@ -100,6 +100,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            startRecordingImmediately = true,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
     }
@@ -124,6 +125,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
+            startRecordingImmediately = true,
             sampleRate = fakeConfiguration.sampleRate
         )
 
@@ -145,7 +147,8 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
-            sampleRate = fakeConfiguration.sampleRate
+            sampleRate = fakeConfiguration.sampleRate,
+            startRecordingImmediately = true
         )
 
         // When
@@ -163,8 +166,8 @@ internal class SessionReplayFeatureTest {
                 .isEqualTo(fakeConfiguration.sampleRate.toLong())
             assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_PRIVACY_KEY])
                 .isEqualTo(fakeConfiguration.privacy.toString().lowercase(Locale.US))
-            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_MANUAL_RECORDING_KEY])
-                .isEqualTo(false)
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY])
+                .isEqualTo(true)
         }
     }
 
@@ -176,6 +179,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            startRecordingImmediately = true,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
 

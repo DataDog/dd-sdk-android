@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay
 
+import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
@@ -64,5 +66,41 @@ internal class SessionReplayTest {
             assertThat((lastValue.requestFactory as SegmentRequestFactory).customEndpointUrl)
                 .isEqualTo(fakeSessionReplayConfiguration.customEndpointUrl)
         }
+    }
+
+    @Test
+    fun `M call startRecording on feature W startRecording`(
+        @Mock mockFeatureScope: FeatureScope,
+        @Mock mockSessionReplayFeature: SessionReplayFeature
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(mockFeatureScope)
+
+        whenever(mockFeatureScope.unwrap<SessionReplayFeature>()) doReturn mockSessionReplayFeature
+
+        // When
+        SessionReplay.startRecording(mockSdkCore)
+
+        // Then
+        verify(mockSessionReplayFeature).startRecording()
+    }
+
+    @Test
+    fun `M call stopRecording on feature W stopRecording`(
+        @Mock mockFeatureScope: FeatureScope,
+        @Mock mockSessionReplayFeature: SessionReplayFeature
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(mockFeatureScope)
+
+        whenever(mockFeatureScope.unwrap<SessionReplayFeature>()) doReturn mockSessionReplayFeature
+
+        // When
+        SessionReplay.stopRecording(mockSdkCore)
+
+        // Then
+        verify(mockSessionReplayFeature).stopRecording()
     }
 }

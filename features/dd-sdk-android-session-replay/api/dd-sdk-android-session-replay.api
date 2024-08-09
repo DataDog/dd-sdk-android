@@ -26,7 +26,12 @@ public final class com/datadog/android/sessionreplay/SessionReplay {
 	public static final field INSTANCE Lcom/datadog/android/sessionreplay/SessionReplay;
 	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/api/SdkCore;)V
-	public static synthetic fun enable$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/api/SdkCore;Z)V
+	public static synthetic fun enable$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/api/SdkCore;ZILjava/lang/Object;)V
+	public final fun startRecording (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun startRecording$default (Lcom/datadog/android/sessionreplay/SessionReplay;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public final fun stopRecording (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun stopRecording$default (Lcom/datadog/android/sessionreplay/SessionReplay;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {

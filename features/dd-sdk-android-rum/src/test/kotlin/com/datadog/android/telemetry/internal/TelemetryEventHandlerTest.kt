@@ -478,7 +478,7 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
             assertThat(firstValue).hasSessionReplaySampleRate(null)
-            assertThat(firstValue).hasSessionReplayStartManually(null)
+            assertThat(firstValue).hasStartRecordingImmediately(null)
             assertThat(firstValue).hasSessionReplayPrivacy(null)
         }
     }
@@ -490,11 +490,11 @@ internal class TelemetryEventHandlerTest {
         // Given
         val fakeSampleRate = forge.aPositiveLong()
         val fakeSessionReplayPrivacy = forge.aString()
-        val fakeSessionReplayIsStartManually = forge.aBool()
+        val fakeSessionReplayIsStartImmediately = forge.aBool()
         val fakeSessionReplayContext = mutableMapOf<String, Any?>(
             TelemetryEventHandler.SESSION_REPLAY_PRIVACY_KEY to fakeSessionReplayPrivacy,
-            TelemetryEventHandler.SESSION_REPLAY_MANUAL_RECORDING_KEY to
-                fakeSessionReplayIsStartManually,
+            TelemetryEventHandler.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY to
+                fakeSessionReplayIsStartImmediately,
             TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate
         )
         whenever(mockSdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
@@ -509,7 +509,7 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
             assertThat(firstValue).hasSessionReplaySampleRate(fakeSampleRate)
-            assertThat(firstValue).hasSessionReplayStartManually(fakeSessionReplayIsStartManually)
+            assertThat(firstValue).hasStartRecordingImmediately(fakeSessionReplayIsStartImmediately)
             assertThat(firstValue).hasSessionReplayPrivacy(fakeSessionReplayPrivacy)
         }
     }
@@ -521,11 +521,11 @@ internal class TelemetryEventHandlerTest {
         // Given
         val fakeSampleRate = forge.aNullable { aString() }
         val fakeSessionReplayPrivacy = forge.aNullable { aLong() }
-        val fakeSessionReplayIsStartManually = forge.aNullable { aString() }
+        val fakeSessionReplayIsStartedImmediatley = forge.aNullable { aString() }
         val fakeSessionReplayContext = mutableMapOf<String, Any?>(
             TelemetryEventHandler.SESSION_REPLAY_PRIVACY_KEY to fakeSessionReplayPrivacy,
-            TelemetryEventHandler.SESSION_REPLAY_MANUAL_RECORDING_KEY to
-                fakeSessionReplayIsStartManually,
+            TelemetryEventHandler.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY to
+                fakeSessionReplayIsStartedImmediatley,
             TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate
         )
         whenever(mockSdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
@@ -540,7 +540,7 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
             assertThat(firstValue).hasSessionReplaySampleRate(null)
-            assertThat(firstValue).hasSessionReplayStartManually(null)
+            assertThat(firstValue).hasStartRecordingImmediately(null)
             assertThat(firstValue).hasSessionReplayPrivacy(null)
         }
     }
