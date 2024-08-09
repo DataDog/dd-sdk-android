@@ -122,7 +122,7 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override var isDeveloperModeEnabled: Boolean = false
-        private set
+        internal set
 
     /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
@@ -545,6 +545,7 @@ internal class DatadogCore(
         }
 
         coreFeature.stop()
+        isDeveloperModeEnabled = false
 
         removeShutdownHook()
     }
