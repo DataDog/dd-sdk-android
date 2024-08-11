@@ -77,6 +77,7 @@ internal class SessionReplayFeature(
     )
 
     private lateinit var appContext: Context
+    private var manualRecordingWasStarted = AtomicBoolean(false)
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
@@ -161,6 +162,20 @@ internal class SessionReplayFeature(
 
     // endregion
 
+    // region Manual Recording
+
+    internal fun manuallyStopRecording() {
+        manualRecordingWasStarted.set(false)
+        stopRecording()
+    }
+
+    internal fun manuallyStartRecording() {
+        manualRecordingWasStarted.set(true)
+        startRecording()
+    }
+
+    // endregion
+
     // region Internal
 
     private fun handleRumSession(sessionMetadata: Map<*, *>) {
@@ -205,16 +220,18 @@ internal class SessionReplayFeature(
             return
         }
 
-        val shouldRecord = startRecordingImmediately || isRecording.get()
+        val sessionReplayRecordingEnabled = startRecordingImmediately || manualRecordingWasStarted.get()
 
-        if (shouldRecord && keepSession && rateBasedSampler.sample()) {
+        if (sessionReplayRecordingEnabled && keepSession && rateBasedSampler.sample()) {
             startRecording()
         } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { SESSION_SAMPLED_OUT_MESSAGE }
-            )
+            if (sessionReplayRecordingEnabled) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    { SESSION_SAMPLED_OUT_MESSAGE }
+                )
+            }
             stopRecording()
         }
 

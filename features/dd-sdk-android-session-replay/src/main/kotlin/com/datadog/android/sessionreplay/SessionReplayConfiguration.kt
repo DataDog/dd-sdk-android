@@ -19,7 +19,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val customMappers: List<MapperTypeWrapper<*>>,
     internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     internal val sampleRate: Float,
-    internal val imagePrivacy: ImagePrivacy
+    internal val imagePrivacy: ImagePrivacy,
+    internal val startRecordingImmediately: Boolean
 ) {
 
     /**
@@ -31,6 +32,7 @@ data class SessionReplayConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
         private var imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+        private var startRecordingImmediately = true
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
         /**
@@ -77,6 +79,16 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Should recording start automatically (or be manually started).
+         * If not specified then by default it starts automatically.
+         * @param enabled whether recording should start automatically or not.
+         */
+        fun startRecordingImmediately(enabled: Boolean): Builder {
+            this.startRecordingImmediately = enabled
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -86,7 +98,8 @@ data class SessionReplayConfiguration internal constructor(
                 imagePrivacy = imagePrivacy,
                 customMappers = customMappers(),
                 customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                startRecordingImmediately = startRecordingImmediately
             )
         }
 
