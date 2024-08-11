@@ -23,15 +23,12 @@ object SessionReplay {
      * @param sessionReplayConfiguration Configuration to use for the feature.
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
      * will be used.
-     * @param startRecordingImmediately whether to start recording immediately or wait for manual start.
-     * If not provided, the default is to start immediately.
      */
     @JvmOverloads
     @JvmStatic
     fun enable(
         sessionReplayConfiguration: SessionReplayConfiguration,
-        sdkCore: SdkCore = Datadog.getInstance(),
-        startRecordingImmediately: Boolean = true
+        sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val sessionReplayFeature = SessionReplayFeature(
             sdkCore = sdkCore as FeatureSdkCore,
@@ -41,7 +38,7 @@ object SessionReplay {
             customMappers = sessionReplayConfiguration.customMappers,
             customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
             sampleRate = sessionReplayConfiguration.sampleRate,
-            startRecordingImmediately = startRecordingImmediately
+            startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately
         )
 
         sdkCore.registerFeature(sessionReplayFeature)
@@ -60,7 +57,7 @@ object SessionReplay {
                 it.unwrap() as? SessionReplayFeature
             }
 
-        sessionReplayFeature?.startRecording()
+        sessionReplayFeature?.manuallyStartRecording()
     }
 
     /**
@@ -76,6 +73,6 @@ object SessionReplay {
                 it.unwrap() as? SessionReplayFeature
             }
 
-        sessionReplayFeature?.stopRecording()
+        sessionReplayFeature?.manuallyStopRecording()
     }
 }

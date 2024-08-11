@@ -26,6 +26,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -960,6 +961,65 @@ internal class SessionReplayFeatureTest {
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(SessionReplayFeature.STORAGE_CONFIGURATION)
     }
+
+    // region manual recording
+
+    @Test
+    fun `M call resumeRecorders W manuallyStartRecording`(
+        @Mock fakeContext: Application
+    ) {
+        // Given
+        whenever(mockSampler.sample()).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            startRecordingImmediately = false,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.manuallyStartRecording()
+
+        // Then
+        verify(mockRecorder).resumeRecorders()
+    }
+
+    @Test
+    fun `M call stopRecorders W manuallyStopRecording { if already recording }`(
+        @Mock fakeContext: Application,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
+        )
+
+        whenever(mockSampler.sample()).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            startRecordingImmediately = true,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.onReceive(event)
+        testedFeature.manuallyStopRecording()
+
+        // Then
+        verify(mockRecorder).stopRecorders()
+    }
+
+    // endregion
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)

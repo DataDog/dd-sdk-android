@@ -69,7 +69,7 @@ internal class SessionReplayTest {
     }
 
     @Test
-    fun `M call startRecording on feature W startRecording`(
+    fun `M call manuallyStartRecording on feature W startRecording`(
         @Mock mockFeatureScope: FeatureScope,
         @Mock mockSessionReplayFeature: SessionReplayFeature
     ) {
@@ -83,11 +83,11 @@ internal class SessionReplayTest {
         SessionReplay.startRecording(mockSdkCore)
 
         // Then
-        verify(mockSessionReplayFeature).startRecording()
+        verify(mockSessionReplayFeature).manuallyStartRecording()
     }
 
     @Test
-    fun `M call stopRecording on feature W stopRecording`(
+    fun `M call manuallyStopRecording on feature W stopRecording`(
         @Mock mockFeatureScope: FeatureScope,
         @Mock mockSessionReplayFeature: SessionReplayFeature
     ) {
@@ -101,6 +101,6 @@ internal class SessionReplayTest {
         SessionReplay.stopRecording(mockSdkCore)
 
         // Then
-        verify(mockSessionReplayFeature).stopRecording()
+        verify(mockSessionReplayFeature).manuallyStopRecording()
     }
 }

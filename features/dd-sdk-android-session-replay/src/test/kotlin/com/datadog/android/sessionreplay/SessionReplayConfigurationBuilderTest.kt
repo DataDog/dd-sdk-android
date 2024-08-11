@@ -121,6 +121,17 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
+    fun `M pass startRecordingImmediately W startRecordingImmediately`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .startRecordingImmediately(true)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.startRecordingImmediately).isTrue()
+    }
+
+    @Test
     fun `M use the provided custom Mappers W addExtensionSupport()`() {
         // Given
         val sessionReplayConfiguration = testedBuilder
