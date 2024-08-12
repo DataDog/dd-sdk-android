@@ -4,11 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -17,19 +15,14 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
-
-    // Tests
-    id("de.mobilej.unmock")
 }
 
 android {
     namespace = "com.datadog.android.core.integration"
     defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK
         multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -98,5 +91,4 @@ dependencies {
 androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
-javadocConfig()
 dependencyUpdateConfig()
