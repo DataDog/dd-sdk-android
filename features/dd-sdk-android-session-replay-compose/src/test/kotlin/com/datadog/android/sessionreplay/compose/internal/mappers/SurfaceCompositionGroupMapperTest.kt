@@ -34,9 +34,9 @@ import kotlin.math.roundToInt
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class TabRowCompositionGroupMapperTest : AbstractCompositionGroupMapperTest() {
+internal class SurfaceCompositionGroupMapperTest : AbstractCompositionGroupMapperTest() {
 
-    private lateinit var tabRowCompositionGroupMapper: TabRowCompositionGroupMapper
+    private lateinit var surfaceCompositionGroupMapper: SurfaceCompositionGroupMapper
 
     private lateinit var mockCompositionGroup: CompositionGroup
 
@@ -44,7 +44,7 @@ internal class TabRowCompositionGroupMapperTest : AbstractCompositionGroupMapper
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        tabRowCompositionGroupMapper = TabRowCompositionGroupMapper(colorStringFormatter = mockColorStringFormatter)
+        surfaceCompositionGroupMapper = SurfaceCompositionGroupMapper(colorStringFormatter = mockColorStringFormatter)
         mockCompositionGroup = mockGroupWithCoordinates(forge)
         fakeBoxWithDensity = Box(
             left = forge.aLong(),
@@ -67,7 +67,7 @@ internal class TabRowCompositionGroupMapperTest : AbstractCompositionGroupMapper
         ).thenReturn(contentColorHexStr)
 
         // When
-        val actual = tabRowCompositionGroupMapper.map(
+        val actual = surfaceCompositionGroupMapper.map(
             stableGroupId = fakeGroupId,
             parameters = listOf(
                 ComposableParameter(
@@ -98,7 +98,7 @@ internal class TabRowCompositionGroupMapperTest : AbstractCompositionGroupMapper
                 convertColorIntAlpha(backgroundColor).second
             )
         ).thenReturn(backgroundColorHexStr)
-        val actual = tabRowCompositionGroupMapper.map(
+        val actual = surfaceCompositionGroupMapper.map(
             stableGroupId = fakeGroupId,
             parameters = listOf(
                 ComposableParameter(

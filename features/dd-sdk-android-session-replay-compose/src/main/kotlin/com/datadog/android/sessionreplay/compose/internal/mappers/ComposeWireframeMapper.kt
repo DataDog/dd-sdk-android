@@ -44,10 +44,13 @@ internal class ComposeWireframeMapper(
 ) {
 
     private val composeMappers = mapOf<String, CompositionGroupMapper>(
-        "Text" to TextCompositionGroupMapper(colorStringFormatter),
-        "Button" to ButtonCompositionGroupMapper(colorStringFormatter),
+        "BottomNavigation" to SurfaceCompositionGroupMapper(colorStringFormatter),
+        "BottomNavigationItem" to TabCompositionGroupMapper(colorStringFormatter),
+        "TopAppBar" to SurfaceCompositionGroupMapper(colorStringFormatter),
+        "TabRow" to SurfaceCompositionGroupMapper(colorStringFormatter),
         "Tab" to TabCompositionGroupMapper(colorStringFormatter),
-        "TabRow" to TabRowCompositionGroupMapper(colorStringFormatter)
+        "Text" to TextCompositionGroupMapper(colorStringFormatter),
+        "Button" to ButtonCompositionGroupMapper(colorStringFormatter)
     )
 
     // region WireframeMapper
