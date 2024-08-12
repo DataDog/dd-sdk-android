@@ -252,7 +252,6 @@ test-pyramid:single-fit-trace:
 
 test-pyramid:instrumented-legacy-min-api:
   tags: [ "macos:sonoma" ]
-  image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -266,7 +265,6 @@ test-pyramid:instrumented-legacy-min-api:
 
 test-pyramid:instrumented-legacy-latest-api:
   tags: [ "macos:sonoma" ]
-  image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -280,7 +278,6 @@ test-pyramid:instrumented-legacy-latest-api:
 
 test-pyramid:instrumented-legacy-median-api:
   tags: [ "macos:sonoma" ]
-  image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
   variables:
