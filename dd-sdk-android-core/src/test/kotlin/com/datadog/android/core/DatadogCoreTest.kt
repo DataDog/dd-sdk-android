@@ -801,6 +801,18 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M reset developer mode when stop()`() {
+        // Given
+        testedCore.isDeveloperModeEnabled = true
+
+        // When
+        testedCore.stop()
+
+        // Then
+        assertThat(testedCore.isDeveloperModeEnabled).isFalse()
+    }
+
+    @Test
     fun `M unregister process lifecycle monitor W stop()`() {
         // Given
         val expectedInvocations = if (fakeConfiguration.crashReportsEnabled) 2 else 1
