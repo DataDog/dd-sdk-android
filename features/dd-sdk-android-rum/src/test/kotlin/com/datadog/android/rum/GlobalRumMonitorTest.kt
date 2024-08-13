@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
@@ -131,7 +132,7 @@ internal class GlobalRumMonitorTest {
     }
 
     @Test
-    fun `M return NoOpRumMonitor W registerIfAbsent(monitor) + get() {distinct cores}`() {
+    fun `M return NoOpAdvancedRumMonitor W registerIfAbsent(monitor) + get() {distinct cores}`() {
         // Given
         val mockSdkCore2 = mock<SdkCore>()
 
@@ -140,7 +141,7 @@ internal class GlobalRumMonitorTest {
         val result = GlobalRumMonitor.get(mockSdkCore2)
 
         // Then
-        assertThat(result).isInstanceOf(NoOpRumMonitor::class.java)
+        assertThat(result).isInstanceOf(NoOpAdvancedRumMonitor::class.java)
     }
 
     @Test
@@ -154,7 +155,7 @@ internal class GlobalRumMonitorTest {
         val result = GlobalRumMonitor.get(mockSdkCore)
 
         // Then
-        check(result is NoOpRumMonitor)
+        check(result is NoOpAdvancedRumMonitor)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,

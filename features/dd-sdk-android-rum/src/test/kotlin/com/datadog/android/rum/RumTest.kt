@@ -15,6 +15,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
@@ -172,7 +173,7 @@ internal class RumTest {
             Rum.UNEXPECTED_SDK_CORE_TYPE
         )
         verify(mockSdkCore, never()).registerFeature(any())
-        check(GlobalRumMonitor.get(mockSdkCore) is NoOpRumMonitor)
+        check(GlobalRumMonitor.get(mockSdkCore) is NoOpAdvancedRumMonitor)
     }
 
     @Test
@@ -197,7 +198,7 @@ internal class RumTest {
             Rum.INVALID_APPLICATION_ID_ERROR_MESSAGE
         )
         verify(mockSdkCore, never()).registerFeature(any())
-        check(GlobalRumMonitor.get(mockSdkCore) is NoOpRumMonitor)
+        check(GlobalRumMonitor.get(mockSdkCore) is NoOpAdvancedRumMonitor)
     }
 
     @Test
