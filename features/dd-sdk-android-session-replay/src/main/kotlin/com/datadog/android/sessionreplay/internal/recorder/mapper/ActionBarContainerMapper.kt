@@ -31,6 +31,8 @@ internal class ActionBarContainerMapper(
     drawableToColorMapper
 ) {
 
+    // Error: ActionBarContainer can only be accessed from within the same library group prefix
+    @Suppress("RestrictedApi")
     @UiThread
     override fun map(
         view: ActionBarContainer,

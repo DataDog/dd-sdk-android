@@ -7,7 +7,7 @@ okHttp = "4.12.0"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
-androidToolsPlugin = "8.2.2"
+androidToolsPlugin = "8.5.2"
 androidDesugaringSdk = "2.0.4"
 androidXAnnotations = "1.1.0"
 androidXAppCompat = "1.3.0"
