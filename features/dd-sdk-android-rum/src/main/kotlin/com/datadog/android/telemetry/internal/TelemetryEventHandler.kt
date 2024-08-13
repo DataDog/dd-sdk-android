@@ -250,7 +250,7 @@ internal class TelemetryEventHandler(
             sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
             as? Long
-        val startSessionReplayImmediately =
+        val startRecordingImmediately =
             sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
         val sessionReplayPrivacy = sessionReplayFeatureContext[SESSION_REPLAY_PRIVACY_KEY]
             as? String
@@ -315,7 +315,7 @@ internal class TelemetryEventHandler(
                     trackNetworkRequests = trackNetworkRequests,
                     sessionReplaySampleRate = sessionReplaySampleRate,
                     defaultPrivacyLevel = sessionReplayPrivacy,
-                    startRecordingImmediately = startSessionReplayImmediately,
+                    startRecordingImmediately = startRecordingImmediately,
                     batchProcessingLevel = coreConfiguration.batchProcessingLevel.toLong()
                 )
             )

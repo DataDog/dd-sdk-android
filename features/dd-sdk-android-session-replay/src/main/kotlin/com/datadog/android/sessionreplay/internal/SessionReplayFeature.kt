@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
  */
+@Suppress("TooManyFunctions")
 internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
     private val customEndpointUrl: String?,
@@ -77,8 +78,10 @@ internal class SessionReplayFeature(
     )
 
     private lateinit var appContext: Context
-    private var manualRecordingWasStarted = AtomicBoolean(false)
+    private var shouldRecord = AtomicBoolean(false)
+    private var recordingStateChanged = AtomicBoolean(false)
     private var isRecording = AtomicBoolean(false)
+    private var isSessionSampledIn = AtomicBoolean(false)
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
@@ -97,6 +100,9 @@ internal class SessionReplayFeature(
             return
         }
 
+        if (startRecordingImmediately) {
+            shouldRecord.set(true)
+        }
         this.appContext = appContext
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
 
@@ -165,13 +171,17 @@ internal class SessionReplayFeature(
     // region Manual Recording
 
     internal fun manuallyStopRecording() {
-        manualRecordingWasStarted.set(false)
-        stopRecording()
+        if (shouldRecord.get()) {
+            recordingStateChanged.set(true)
+            shouldRecord.set(false)
+        }
     }
 
     internal fun manuallyStartRecording() {
-        manualRecordingWasStarted.set(true)
-        startRecording()
+        if (!shouldRecord.get()) {
+            recordingStateChanged.set(true)
+            shouldRecord.set(true)
+        }
     }
 
     // endregion
@@ -182,7 +192,12 @@ internal class SessionReplayFeature(
         if (sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] ==
             RUM_SESSION_RENEWED_BUS_MESSAGE
         ) {
-            checkStatusAndApplySample(sessionMetadata)
+            parseSessionMetadata(sessionMetadata)
+                ?.let { sessionData ->
+                    if (shouldHandleEvent(sessionData)) {
+                        handleRecording(sessionData)
+                    }
+                }
         } else {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -197,8 +212,12 @@ internal class SessionReplayFeature(
         }
     }
 
-    @Suppress("ReturnCount")
-    private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
+    private data class SessionData(
+        val keepSession: Boolean,
+        val sessionId: String
+    )
+
+    private fun parseSessionMetadata(sessionMetadata: Map<*, *>): SessionData? {
         val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
         val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
 
@@ -208,34 +227,52 @@ internal class SessionReplayFeature(
                 InternalLogger.Target.USER,
                 { EVENT_MISSING_MANDATORY_FIELDS }
             )
-            return
+            return null
         }
 
-        if (currentRumSessionId.get() == sessionId) {
-            // we already handled this session
-            return
+        return SessionData(keepSession, sessionId)
+    }
+
+    @Suppress("ReturnCount")
+    private fun shouldHandleEvent(sessionData: SessionData): Boolean {
+        if (currentRumSessionId.get() != sessionData.sessionId) {
+            // sessionId changed so resample
+            isSessionSampledIn.set(rateBasedSampler.sample())
+        } else {
+            if (!recordingStateChanged.get()) {
+                // sessionId was already seen and recordingState did not change
+                return false
+            }
         }
 
         if (!checkIfInitialized()) {
-            return
+            return false
         }
 
-        val sessionReplayRecordingEnabled = startRecordingImmediately || manualRecordingWasStarted.get()
+        val isSampledIn = sessionData.keepSession && isSessionSampledIn.get()
 
-        if (sessionReplayRecordingEnabled && keepSession && rateBasedSampler.sample()) {
-            startRecording()
-        } else {
-            if (sessionReplayRecordingEnabled) {
+        if (!isSampledIn) {
+            if (shouldRecord.getAndSet(false)) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     { SESSION_SAMPLED_OUT_MESSAGE }
                 )
             }
+        }
+
+        recordingStateChanged.set(false)
+        return true
+    }
+
+    private fun handleRecording(sessionData: SessionData) {
+        if (shouldRecord.get()) {
+            startRecording()
+        } else {
             stopRecording()
         }
 
-        currentRumSessionId.set(sessionId)
+        currentRumSessionId.set(sessionData.sessionId)
     }
 
     private fun checkIfInitialized(): Boolean {
