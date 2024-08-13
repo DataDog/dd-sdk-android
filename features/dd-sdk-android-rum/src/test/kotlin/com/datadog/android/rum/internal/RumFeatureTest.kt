@@ -20,13 +20,13 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -604,7 +604,7 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(GlobalRumMonitor.isRegistered(mockSdkCore)).isFalse
-        assertThat(GlobalRumMonitor.get(mockSdkCore)).isInstanceOf(NoOpRumMonitor::class.java)
+        assertThat(GlobalRumMonitor.get(mockSdkCore)).isInstanceOf(NoOpAdvancedRumMonitor::class.java)
     }
 
     @ParameterizedTest
