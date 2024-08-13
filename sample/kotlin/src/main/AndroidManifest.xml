@@ -45,7 +45,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".compose.JetpackComposeActivity" />
+        <activity
+            android:name=".compose.JetpackComposeActivity"
+            android:theme="@style/Sample.Theme.Compose" />
+        <activity
+            android:name="com.datadog.android.sample.compose.LegacyComposeActivity"
+            android:theme="@style/Sample.Theme.Compose" />
 
         <service
             android:name=".service.LogsForegroundService"
