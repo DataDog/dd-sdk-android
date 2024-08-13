@@ -1,3 +1,7 @@
+# 2.12.1 / 2024-08-13
+
+* [BUGFIX] RUM: Make no-op RUM monitor implementation returned by default to be `NoOpAdvancedRumMonitor`. See [#2185](https://github.com/DataDog/dd-sdk-android/pull/2185)
+
 # 2.12.0 / 2024-07-30
 
 * [FEATURE] Trace: Add the `SessionEndedMetric` into sdk core. See [#2090](https://github.com/DataDog/dd-sdk-android/pull/2090)
