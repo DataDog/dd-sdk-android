@@ -13,9 +13,14 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
-internal class TabRowCompositionGroupMapper(
-    colorStringFormatter: ColorStringFormatter
-) : AbstractCompositionGroupMapper(colorStringFormatter) {
+/**
+ * This class is responsible for the mapping of the Jetpack Compose components which have "backgroundColor"
+ * & "contentColor" in the parameter list. These components are mostly container components such as
+ * [BottomNavigation], [TopAppBar] and [TabRow], etc. They usually have a [Surface] implementation under the hood,
+ * and can take other composable inside.
+ */
+internal open class SurfaceCompositionGroupMapper(colorStringFormatter: ColorStringFormatter) :
+    AbstractCompositionGroupMapper(colorStringFormatter) {
     override fun map(
         stableGroupId: Long,
         parameters: Sequence<ComposableParameter>,
