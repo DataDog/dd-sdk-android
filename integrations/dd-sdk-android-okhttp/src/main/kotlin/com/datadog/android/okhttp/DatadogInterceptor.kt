@@ -247,7 +247,7 @@ internal constructor(
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
             val requestId = request.buildResourceId(generateUuid = true)
 
-            (GlobalRumMonitor.get(sdkCore) as AdvancedNetworkRumMonitor).startResource(requestId, method, url)
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
