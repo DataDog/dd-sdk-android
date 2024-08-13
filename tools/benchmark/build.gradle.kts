@@ -31,10 +31,9 @@ dependencies {
 
     implementation(libs.kotlin)
     implementation(libs.okHttp)
-    api(libs.openTelemetryApiBenchmark)
-    api(libs.openTelemetrySdkBenchmark)
+    implementation(libs.openTelemetryApiBenchmark)
+    implementation(libs.openTelemetrySdkBenchmark)
     implementation(libs.gson)
-    compileOnly(libs.detektApi)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -46,8 +45,6 @@ dependencies {
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation(libs.detektTest)
-    testImplementation(libs.robolectric)
 }
 
 kotlinConfig()

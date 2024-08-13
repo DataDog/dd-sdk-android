@@ -6,9 +6,6 @@
 
 package com.datadog.benchmark.internal.reader
 
-import com.datadog.benchmark.ext.canReadSafe
-import com.datadog.benchmark.ext.existsSafe
-import com.datadog.benchmark.ext.readTextSafe
 import java.io.File
 
 /**
@@ -23,11 +20,11 @@ internal class CPUVitalReader(
 
     @Suppress("ReturnCount")
     override fun readVitalData(): Double? {
-        if (!(statFile.existsSafe() && statFile.canReadSafe())) {
+        if (!(statFile.exists() && statFile.canRead())) {
             return null
         }
 
-        val stat = statFile.readTextSafe() ?: return null
+        val stat = statFile.readText()
         val tokens = stat.split(' ')
         val utime = if (tokens.size > UTIME_IDX) {
             tokens[UTIME_IDX].toLong()

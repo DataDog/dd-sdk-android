@@ -31,22 +31,22 @@ fun ApplicationDefaultConfig.configureFlavorForBenchmark(
     val config = sampleAppConfig("${rootDir.absolutePath}/config/benchmark.json")
     buildConfigField(
         "String",
-        "BM_RUM_APPLICATION_ID",
+        "BENCHMARK_RUM_APPLICATION_ID",
         "\"${config.rumApplicationId}\""
     )
     buildConfigField(
         "String",
-        "BM_CLIENT_TOKEN",
+        "BENCHMARK_CLIENT_TOKEN",
         "\"${config.token}\""
     )
     buildConfigField(
         "String",
-        "BM_API_KEY",
+        "BENCHMARK_API_KEY",
         "\"${config.apiKey}\""
     )
     buildConfigField(
         "String",
-        "BM_APPLICATION_KEY",
+        "BENCHMARK_APPLICATION_KEY",
         "\"${config.applicationKey}\""
     )
 }

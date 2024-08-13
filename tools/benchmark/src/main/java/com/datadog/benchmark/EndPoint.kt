@@ -30,9 +30,9 @@ enum class EndPoint(
         metrics = "https://api.datadoghq.eu/",
         traces = "https://public-trace-http-intake.logs.datadoghq.eu/"
     ),
-    US1_FED(
-        metrics = "https://api.ddog-gov.com/",
-        traces = "https://trace.browser-intake-ddog-gov.com/"
+    AP1(
+        metrics = "https://ap1.datadoghq.com",
+        traces = "https://browser-intake-ap1-datadoghq.com"
     );
 
     /**

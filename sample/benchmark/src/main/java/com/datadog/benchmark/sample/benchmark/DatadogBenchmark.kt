@@ -23,7 +23,7 @@ import com.datadog.sample.benchmark.BuildConfig
 internal class DatadogBenchmark(config: Config) {
 
     private var meter: DatadogMeter = DatadogMeter.create(
-        DatadogExporterConfiguration.Builder(BuildConfig.BM_API_KEY)
+        DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
             .setApplicationId(BuildConfig.APPLICATION_ID)
             .setApplicationName(BENCHMARK_APPLICATION_NAME)
             .setRun(config.getRun())
