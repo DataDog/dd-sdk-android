@@ -17,7 +17,7 @@ import io.opentelemetry.sdk.metrics.data.AggregationTemporality
 import io.opentelemetry.sdk.metrics.data.MetricData
 import io.opentelemetry.sdk.metrics.export.MetricExporter
 
-internal class LogsMetricExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : MetricExporter {
+internal class LogcatMetricExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : MetricExporter {
 
     private val metricContext: MetricContext = MetricContext(
         deviceModel = Build.MODEL,
@@ -33,14 +33,10 @@ internal class LogsMetricExporter(datadogExporterConfiguration: DatadogExporterC
     }
 
     override fun export(metrics: Collection<MetricData>): CompletableResultCode {
-        print(metrics)
-        return CompletableResultCode.ofSuccess()
-    }
-
-    private fun print(metrics: Collection<MetricData>) {
         MetricRequestBodyBuilder(metricContext).buildJsonElement(metrics.toList()).toString().apply {
             Log.i("LogsMetricExporter", this)
         }
+        return CompletableResultCode.ofSuccess()
     }
 
     override fun flush(): CompletableResultCode {

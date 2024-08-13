@@ -6,9 +6,6 @@
 
 package com.datadog.benchmark.internal.reader
 
-import com.datadog.benchmark.ext.canReadSafe
-import com.datadog.benchmark.ext.existsSafe
-import com.datadog.benchmark.ext.readLinesSafe
 import java.io.File
 
 /**
@@ -20,16 +17,13 @@ internal class MemoryVitalReader(
 ) : VitalReader {
 
     override fun readVitalData(): Double? {
-        if (!(statusFile.existsSafe() && statusFile.canReadSafe())) {
+        if (!(statusFile.exists() && statusFile.canRead())) {
             return null
         }
 
-        val memorySizeKb = statusFile.readLinesSafe()
-            ?.mapNotNull { line ->
-                VM_RSS_REGEX.matchEntire(line)?.groupValues?.getOrNull(1)
-            }
-            ?.firstOrNull()
-            ?.toDoubleOrNull()
+        val memorySizeKb = statusFile.readLines().firstNotNullOfOrNull { line ->
+            VM_RSS_REGEX.matchEntire(line)?.groupValues?.getOrNull(1)
+        }?.toDoubleOrNull()
 
         return if (memorySizeKb == null) {
             null

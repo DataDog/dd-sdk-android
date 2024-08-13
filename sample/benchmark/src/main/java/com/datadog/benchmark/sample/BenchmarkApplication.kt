@@ -40,7 +40,7 @@ internal class BenchmarkApplication : Application() {
     }
 
     private fun createRumConfiguration(): RumConfiguration {
-        return RumConfiguration.Builder(BuildConfig.BM_RUM_APPLICATION_ID)
+        return RumConfiguration.Builder(BuildConfig.BENCHMARK_RUM_APPLICATION_ID)
             .useViewTrackingStrategy(
                 NavigationViewTrackingStrategy(
                     R.id.nav_host_fragment,
@@ -78,7 +78,7 @@ internal class BenchmarkApplication : Application() {
     @SuppressLint("LogNotTimber")
     private fun createDatadogConfiguration(): Configuration {
         val configBuilder = Configuration.Builder(
-            clientToken = BuildConfig.BM_CLIENT_TOKEN,
+            clientToken = BuildConfig.BENCHMARK_CLIENT_TOKEN,
             env = BuildConfig.BUILD_TYPE
         )
             .setBatchSize(BatchSize.SMALL)
