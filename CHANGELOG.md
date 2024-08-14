@@ -1,3 +1,31 @@
+# 2.12.1 / 2024-08-13
+
+* [BUGFIX] RUM: Make no-op RUM monitor implementation returned by default to be `NoOpAdvancedRumMonitor`. See [#2185](https://github.com/DataDog/dd-sdk-android/pull/2185)
+
+# 2.12.0 / 2024-07-30
+
+* [FEATURE] Trace: Add the `SessionEndedMetric` into sdk core. See [#2090](https://github.com/DataDog/dd-sdk-android/pull/2090)
+* [FEATURE] SessionReplay: Use the datastore for Session Replay resources. See [#2041](https://github.com/DataDog/dd-sdk-android/pull/2041)
+* [FEATURE] Trace: Provide 128 bits support for the trace ids in the Tracing sdk. See [#2089](https://github.com/DataDog/dd-sdk-android/pull/2089)
+* [FEATURE] SessionReplay: Add api to clear all datastore data. See [#2096](https://github.com/DataDog/dd-sdk-android/pull/2096)
+* [FEATURE] SessionReplay: Add `CompoundButton` mapper. See [#2120](https://github.com/DataDog/dd-sdk-android/pull/2120)
+* [FEATURE] SessionReplay: Add API to configure the Image Privacy. See [#2125](https://github.com/DataDog/dd-sdk-android/pull/2125)
+* [FEATURE] Trace: Introduce the `TraceContextInjection` to handle sampling in distributed traces. See [#2111](https://github.com/DataDog/dd-sdk-android/pull/2111)
+* [IMPROVEMENT] Trace: Improve unit tests in Session metrics. See [#2095](https://github.com/DataDog/dd-sdk-android/pull/2095)
+* [IMPROVEMENT] SessionReplay: Fix flaky test in `SeekBarWireframeMapperTest`. See [#2099](https://github.com/DataDog/dd-sdk-android/pull/2099)
+* [IMPROVEMENT] Trace: Fix the Okhttp Otel parent span feature when not using RUM. See [#2100](https://github.com/DataDog/dd-sdk-android/pull/2100)
+* [IMPROVEMENT] SessionReplay: Fix units for dropped nodes. See [#2107](https://github.com/DataDog/dd-sdk-android/pull/2107)
+* [IMPROVEMENT] SessionReplay: Add TLVFormat DataStore persistence. See [#2038](https://github.com/DataDog/dd-sdk-android/pull/2038)
+* [IMPROVEMENT] InternalMetrics: Add sampling rate to internal metrics. See [#2108](https://github.com/DataDog/dd-sdk-android/pull/2108)
+* [IMPROVEMENT] SessionReplay: Fix `RumSessionEnded` metric flaky test. See [#2114](https://github.com/DataDog/dd-sdk-android/pull/2114)
+* [IMPROVEMENT] SessionReplay: Use `BackpressureExecutor` for SessionReplay event processing. See [#2116](https://github.com/DataDog/dd-sdk-android/pull/2116)
+* [IMPROVEMENT] SessionReplay: Improve CheckableTextViewMapper. See [#2115](https://github.com/DataDog/dd-sdk-android/pull/2115)
+* [IMPROVEMENT] SessionReplay: `SwitchCompat` mapper improvement. See [#2117](https://github.com/DataDog/dd-sdk-android/pull/2117)
+* [IMPROVEMENT] RUM: Fix the racing condition in the `RotatingDnsResolver` logic. See [#2127](https://github.com/DataDog/dd-sdk-android/pull/2127)
+* [IMPROVEMENT] RUM: Add request id in okhttp request. See [#2126](https://github.com/DataDog/dd-sdk-android/pull/2126)
+* [IMPROVEMENT] Trace: Make sure network local spans have `kind:client` tag. See [#2136](https://github.com/DataDog/dd-sdk-android/pull/2136)
+* [IMPROVEMENT] Core: Increase retry delay on DNS error. See [#2135](https://github.com/DataDog/dd-sdk-android/pull/2135)
+
 # 2.11.0 / 2024-06-20
 
 * [FEATURE] Trace: Bundle `dd-trace-core` code into the `dd-sdk-android-trace` module. See [#1907](https://github.com/DataDog/dd-sdk-android/pull/1907)
