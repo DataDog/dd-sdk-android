@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "9"
+  CURRENT_CI_IMAGE: "10"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
