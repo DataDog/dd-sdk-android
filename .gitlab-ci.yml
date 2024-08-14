@@ -53,8 +53,8 @@ stages:
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon
     - set +e
-    - $ANDROID_HOME/platform-tools/adb install -t -d -g -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
-    - $ANDROID_HOME/platform-tools/adb install -t -d -g -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
+    - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
+    - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
     - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner
     - $ANDROID_HOME/platform-tools/adb emu kill
   set-publishing-credentials:
