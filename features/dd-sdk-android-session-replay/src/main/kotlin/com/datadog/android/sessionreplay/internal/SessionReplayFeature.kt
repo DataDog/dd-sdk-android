@@ -78,10 +78,20 @@ internal class SessionReplayFeature(
     )
 
     private lateinit var appContext: Context
-    private var shouldRecord = AtomicBoolean(false)
+
+    // should we record the session - a combination of rum sampling, sr sampling
+    // and sr stop/start state
+    private var shouldRecord = AtomicBoolean(startRecordingImmediately)
+
+    // used to monitor changes to an active session due to manual stop/start
     private var recordingStateChanged = AtomicBoolean(false)
+
+    // are we recording at the moment
     private var isRecording = AtomicBoolean(false)
+
+    // is the current session sampled in
     private var isSessionSampledIn = AtomicBoolean(false)
+
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
@@ -92,17 +102,10 @@ internal class SessionReplayFeature(
 
     override fun onInitialize(appContext: Context) {
         if (appContext !is Application) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
-            )
+            logMissingApplicationContextError()
             return
         }
 
-        if (startRecordingImmediately) {
-            shouldRecord.set(true)
-        }
         this.appContext = appContext
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
 
@@ -163,6 +166,10 @@ internal class SessionReplayFeature(
             return
         }
 
+        if (!checkIfInitialized()) {
+            return
+        }
+
         handleRumSession(event)
     }
 
@@ -171,16 +178,14 @@ internal class SessionReplayFeature(
     // region Manual Recording
 
     internal fun manuallyStopRecording() {
-        if (shouldRecord.get()) {
+        if (shouldRecord.compareAndSet(true, false)) {
             recordingStateChanged.set(true)
-            shouldRecord.set(false)
         }
     }
 
     internal fun manuallyStartRecording() {
-        if (!shouldRecord.get()) {
+        if (shouldRecord.compareAndSet(false, true)) {
             recordingStateChanged.set(true)
-            shouldRecord.set(true)
         }
     }
 
@@ -194,7 +199,10 @@ internal class SessionReplayFeature(
         ) {
             parseSessionMetadata(sessionMetadata)
                 ?.let { sessionData ->
-                    if (shouldHandleEvent(sessionData)) {
+                    val alreadySeenSession = currentRumSessionId.get() == sessionData.sessionId
+                    if (shouldHandleSession(alreadySeenSession)) {
+                        applySampling(alreadySeenSession)
+                        modifyShouldRecordState(sessionData)
                         handleRecording(sessionData)
                     }
                 }
@@ -222,47 +230,62 @@ internal class SessionReplayFeature(
         val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
 
         if (keepSession == null || sessionId == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { EVENT_MISSING_MANDATORY_FIELDS }
-            )
+            logEventMissingMandatoryFieldsError()
             return null
         }
 
         return SessionData(keepSession, sessionId)
     }
 
-    @Suppress("ReturnCount")
-    private fun shouldHandleEvent(sessionData: SessionData): Boolean {
-        if (currentRumSessionId.get() != sessionData.sessionId) {
-            // sessionId changed so resample
+    private fun shouldHandleSession(alreadySeenSession: Boolean): Boolean {
+        return !alreadySeenSession || recordingStateChanged.get()
+    }
+
+    private fun applySampling(alreadySeenSession: Boolean) {
+        if (!alreadySeenSession) {
             isSessionSampledIn.set(rateBasedSampler.sample())
-        } else {
-            if (!recordingStateChanged.get()) {
-                // sessionId was already seen and recordingState did not change
-                return false
-            }
         }
+    }
 
-        if (!checkIfInitialized()) {
-            return false
-        }
-
+    private fun modifyShouldRecordState(sessionData: SessionData) {
         val isSampledIn = sessionData.keepSession && isSessionSampledIn.get()
-
         if (!isSampledIn) {
-            if (shouldRecord.getAndSet(false)) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    InternalLogger.Target.USER,
-                    { SESSION_SAMPLED_OUT_MESSAGE }
-                )
+            if (shouldRecord.compareAndSet(true, false)) {
+                logSampledOutMessage()
             }
         }
+    }
 
-        recordingStateChanged.set(false)
-        return true
+    private fun logMissingApplicationContextError() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
+        )
+    }
+
+    private fun logEventMissingMandatoryFieldsError() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { EVENT_MISSING_MANDATORY_FIELDS }
+        )
+    }
+
+    private fun logSampledOutMessage() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            { SESSION_SAMPLED_OUT_MESSAGE }
+        )
+    }
+
+    private fun logNotInitializedError() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { CANNOT_START_RECORDING_NOT_INITIALIZED }
+        )
     }
 
     private fun handleRecording(sessionData: SessionData) {
@@ -272,16 +295,13 @@ internal class SessionReplayFeature(
             stopRecording()
         }
 
+        recordingStateChanged.set(false)
         currentRumSessionId.set(sessionData.sessionId)
     }
 
     private fun checkIfInitialized(): Boolean {
         if (!initialized.get()) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { CANNOT_START_RECORDING_NOT_INITIALIZED }
-            )
+            logNotInitializedError()
             return false
         }
         return true
