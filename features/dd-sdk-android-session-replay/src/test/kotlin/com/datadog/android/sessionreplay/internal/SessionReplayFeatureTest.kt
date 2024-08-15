@@ -107,6 +107,7 @@ internal class SessionReplayFeatureTest {
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
     }
@@ -129,6 +130,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             startRecordingImmediately = true,
@@ -151,6 +153,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate,
@@ -186,6 +189,7 @@ internal class SessionReplayFeatureTest {
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
 
@@ -1003,6 +1007,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
@@ -1040,6 +1045,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
@@ -1070,6 +1076,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
@@ -1102,6 +1109,7 @@ internal class SessionReplayFeatureTest {
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }

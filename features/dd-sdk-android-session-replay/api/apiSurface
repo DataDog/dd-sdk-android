@@ -20,12 +20,16 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun useCustomEndpoint(String): Builder
     fun setPrivacy(SessionReplayPrivacy): Builder
     fun setImagePrivacy(ImagePrivacy): Builder
+    fun setTouchPrivacy(TouchPrivacy): Builder
     fun startRecordingImmediately(Boolean): Builder
     fun build(): SessionReplayConfiguration
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
   - MASK
   - MASK_USER_INPUT
+enum com.datadog.android.sessionreplay.TouchPrivacy
+  - SHOW
+  - HIDE
 data class com.datadog.android.sessionreplay.recorder.MappingContext
   constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, Boolean = false)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
