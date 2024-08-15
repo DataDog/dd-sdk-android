@@ -829,7 +829,8 @@ internal class SessionReplayFeatureTest {
 
     @Test
     fun `M log warning and do nothing W onReceive() { unknown type property value }`(
-        forge: Forge
+        forge: Forge,
+        @Mock fakeContext: Application
     ) {
         // Given
         val event = mapOf(
@@ -838,6 +839,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -849,11 +851,13 @@ internal class SessionReplayFeatureTest {
             expectedMessage
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
-    fun `M log warning and do nothing W onReceive() { missing mandatory fields }`() {
+    fun `M log warning and do nothing W onReceive() { missing mandatory fields }`(
+        @Mock fakeContext: Application
+    ) {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -861,6 +865,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -870,11 +875,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
-    fun `M log warning and do nothing W onReceive() { missing keep  state field }`() {
+    fun `M log warning and do nothing W onReceive() { missing keep  state field }`(
+        @Mock fakeContext: Application
+    ) {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -883,6 +890,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -892,12 +900,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
     fun `M log warning and do nothing W onReceive() { missing session id field }`(
-        @BoolForgery fakeKeep: Boolean
+        @BoolForgery fakeKeep: Boolean,
+        @Mock fakeContext: Application
     ) {
         // Given
         val event = mapOf(
@@ -907,6 +916,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -916,12 +926,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
     fun `M log warning and do nothing W onReceive() { mandatory fields have wrong format }`(
-        forge: Forge
+        forge: Forge,
+        @Mock fakeContext: Application
     ) {
         // Given
         val event = mapOf(
@@ -934,6 +945,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -943,7 +955,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
