@@ -17,6 +17,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -56,6 +57,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val rumContextProvider: RumContextProvider
     private val privacy: SessionReplayPrivacy
     private val imagePrivacy: ImagePrivacy
+    private val touchPrivacy: TouchPrivacy
     private val recordWriter: RecordWriter
     private val timeProvider: TimeProvider
     private val mappers: List<MapperTypeWrapper<*>>
@@ -77,6 +79,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         rumContextProvider: RumContextProvider,
         privacy: SessionReplayPrivacy,
         imagePrivacy: ImagePrivacy,
+        touchPrivacy: TouchPrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
@@ -105,6 +108,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.rumContextProvider = rumContextProvider
         this.privacy = privacy
         this.imagePrivacy = imagePrivacy
+        this.touchPrivacy = touchPrivacy
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers
@@ -185,7 +189,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             timeProvider,
             internalLogger,
             privacy,
-            imagePrivacy
+            imagePrivacy,
+            touchPrivacy
         )
         this.sessionReplayLifecycleCallback = SessionReplayLifecycleCallback(this)
         this.uiHandler = Handler(Looper.getMainLooper())
@@ -199,6 +204,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         rumContextProvider: RumContextProvider,
         privacy: SessionReplayPrivacy,
         imagePrivacy: ImagePrivacy,
+        touchPrivacy: TouchPrivacy,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
@@ -216,6 +222,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.rumContextProvider = rumContextProvider
         this.privacy = privacy
         this.imagePrivacy = imagePrivacy
+        this.touchPrivacy = touchPrivacy
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers

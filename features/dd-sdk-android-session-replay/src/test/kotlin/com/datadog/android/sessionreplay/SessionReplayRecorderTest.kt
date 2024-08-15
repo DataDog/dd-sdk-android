@@ -65,6 +65,9 @@ internal class SessionReplayRecorderTest {
     @Forgery
     private lateinit var fakeImagePrivacy: ImagePrivacy
 
+    @Forgery
+    private lateinit var fakeTouchPrivacy: TouchPrivacy
+
     @Mock
     private lateinit var mockTimeProvider: TimeProvider
 
@@ -109,6 +112,7 @@ internal class SessionReplayRecorderTest {
             rumContextProvider = mockRumContextProvider,
             privacy = fakePrivacy,
             imagePrivacy = fakeImagePrivacy,
+            touchPrivacy = fakeTouchPrivacy,
             recordWriter = mockRecordWriter,
             timeProvider = mockTimeProvider,
             mappers = mock(),

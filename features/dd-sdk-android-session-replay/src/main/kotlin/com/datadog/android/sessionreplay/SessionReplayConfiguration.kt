@@ -20,7 +20,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     internal val sampleRate: Float,
     internal val imagePrivacy: ImagePrivacy,
-    internal val startRecordingImmediately: Boolean
+    internal val startRecordingImmediately: Boolean,
+    internal val touchPrivacy: TouchPrivacy
 ) {
 
     /**
@@ -33,6 +34,7 @@ data class SessionReplayConfiguration internal constructor(
         private var privacy = SessionReplayPrivacy.MASK
         private var imagePrivacy = ImagePrivacy.MASK_ALL
         private var startRecordingImmediately = true
+        private var touchPrivacy = TouchPrivacy.HIDE
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
         /**
@@ -79,6 +81,17 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Sets the touch recording level for the Session Replay feature.
+         * If not specified then all touches will be hidden by default.
+         * @see TouchPrivacy.HIDE
+         * @see TouchPrivacy.SHOW
+         */
+        fun setTouchPrivacy(level: TouchPrivacy): Builder {
+            this.touchPrivacy = level
+            return this
+        }
+
+        /**
          * Should recording start automatically (or be manually started).
          * If not specified then by default it starts automatically.
          * @param enabled whether recording should start automatically or not.
@@ -96,6 +109,7 @@ data class SessionReplayConfiguration internal constructor(
                 customEndpointUrl = customEndpointUrl,
                 privacy = privacy,
                 imagePrivacy = imagePrivacy,
+                touchPrivacy = touchPrivacy,
                 customMappers = customMappers(),
                 customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
                 sampleRate = sampleRate,
