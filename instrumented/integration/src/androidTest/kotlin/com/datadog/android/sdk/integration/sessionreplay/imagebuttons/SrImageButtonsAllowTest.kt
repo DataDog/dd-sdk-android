@@ -27,6 +27,7 @@ internal class SrImageButtonsAllowTest :
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.ALLOW)
     )
 
+    // TODO: RUM-5873 Fix these tests and remove the @Ignore annotation
     @Ignore("Flakiness in CI, unsolved yet")
     @Test
     fun assessRecordedScreenPayload() {
