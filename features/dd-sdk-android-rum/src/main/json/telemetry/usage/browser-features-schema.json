@@ -34,6 +34,16 @@
       "properties": {
         "feature": {
           "type": "string",
+          "description": "stopDurationVital API",
+          "const": "stop-duration-vital"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "properties": {
+        "feature": {
+          "type": "string",
           "description": "addDurationVital API",
           "const": "add-duration-vital"
         }
