@@ -250,8 +250,8 @@ internal class TelemetryEventHandler(
             sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
             as? Long
-        val startSessionReplayManually =
-            sessionReplayFeatureContext[SESSION_REPLAY_MANUAL_RECORDING_KEY] as? Boolean
+        val startRecordingImmediately =
+            sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
         val sessionReplayPrivacy = sessionReplayFeatureContext[SESSION_REPLAY_PRIVACY_KEY]
             as? String
         val rumConfig = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
@@ -315,7 +315,7 @@ internal class TelemetryEventHandler(
                     trackNetworkRequests = trackNetworkRequests,
                     sessionReplaySampleRate = sessionReplaySampleRate,
                     defaultPrivacyLevel = sessionReplayPrivacy,
-                    startSessionReplayRecordingManually = startSessionReplayManually,
+                    startRecordingImmediately = startRecordingImmediately,
                     batchProcessingLevel = coreConfiguration.batchProcessingLevel.toLong()
                 )
             )
@@ -394,7 +394,7 @@ internal class TelemetryEventHandler(
         internal const val OPENTELEMETRY_API_VERSION_CONTEXT_KEY = "opentelemetry_api_version"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
         internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
-        internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
-            "session_replay_requires_manual_recording"
+        internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
+            "session_replay_start_immediate_recording"
     }
 }

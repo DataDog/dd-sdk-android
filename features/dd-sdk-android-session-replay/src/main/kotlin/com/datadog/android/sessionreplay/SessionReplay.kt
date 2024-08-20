@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 
@@ -36,9 +37,42 @@ object SessionReplay {
             imagePrivacy = sessionReplayConfiguration.imagePrivacy,
             customMappers = sessionReplayConfiguration.customMappers,
             customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
-            sampleRate = sessionReplayConfiguration.sampleRate
+            sampleRate = sessionReplayConfiguration.sampleRate,
+            startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately
         )
 
         sdkCore.registerFeature(sessionReplayFeature)
+    }
+
+    /**
+     * Start recording session replay data.
+     * @param sdkCore SDK instance to get the feature from. If not provided, default SDK instance
+     * will be used.
+     */
+    fun startRecording(
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        val sessionReplayFeature = (sdkCore as? FeatureSdkCore)
+            ?.getFeature(SESSION_REPLAY_FEATURE_NAME)?.let {
+                it.unwrap() as? SessionReplayFeature
+            }
+
+        sessionReplayFeature?.manuallyStartRecording()
+    }
+
+    /**
+     * Stop recording session replay data.
+     * @param sdkCore SDK instance to get the feature from. If not provided, default SDK instance
+     * will be used.
+     */
+    fun stopRecording(
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        val sessionReplayFeature = (sdkCore as? FeatureSdkCore)
+            ?.getFeature(SESSION_REPLAY_FEATURE_NAME)?.let {
+                it.unwrap() as? SessionReplayFeature
+            }
+
+        sessionReplayFeature?.manuallyStopRecording()
     }
 }

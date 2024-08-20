@@ -21,6 +21,7 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             imagePrivacy = forge.aValueFrom(ImagePrivacy::class.java),
             customMappers = forge.aList { mock() },
             customOptionSelectorDetectors = forge.aList { mock() },
+            startRecordingImmediately = forge.aBool(),
             sampleRate = forge.aFloat(min = 0f, max = 100f)
         )
     }
