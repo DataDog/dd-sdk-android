@@ -31,7 +31,7 @@ data class SessionReplayConfiguration internal constructor(
     class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float) {
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
-        private var imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+        private var imagePrivacy = ImagePrivacy.MASK_ALL
         private var startRecordingImmediately = true
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
@@ -73,7 +73,7 @@ data class SessionReplayConfiguration internal constructor(
          * @see ImagePrivacy.MASK_LARGE_ONLY
          * @see ImagePrivacy.MASK_ALL
          */
-        internal fun setImagePrivacy(level: ImagePrivacy): Builder {
+        fun setImagePrivacy(level: ImagePrivacy): Builder {
             this.imagePrivacy = level
             return this
         }
