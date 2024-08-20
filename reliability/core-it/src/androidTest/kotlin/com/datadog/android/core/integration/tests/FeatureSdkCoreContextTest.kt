@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.integration
+package com.datadog.android.core.integration.tests
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.stub.StubFeatureEventReceiver
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.integration.tests.MockServerTest
 import com.datadog.android.core.integration.tests.forge.factories.ConfigurationCoreForgeryFactory
 import com.datadog.android.core.integration.tests.utils.removeRandomEntries
 import com.datadog.android.core.thread.FlushableExecutorService
@@ -317,7 +316,8 @@ class FeatureSdkCoreContextTest : MockServerTest() {
                 }
             }
         }.start()
-        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        // we need to wait 3 times the SHORT_WAIT_MS because the last update is done after the first two
+        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
 
         // When
         val context = testedFeatureSdkCore.getFeatureContext(stubFeature.name)
@@ -372,7 +372,8 @@ class FeatureSdkCoreContextTest : MockServerTest() {
                 }
             }
         }.start()
-        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        // we need to wait 3 times the SHORT_WAIT_MS because the last update is done after the first two
+        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
 
         // When
         val context = testedFeatureSdkCore.getFeatureContext(stubFeature.name)
@@ -518,7 +519,7 @@ class FeatureSdkCoreContextTest : MockServerTest() {
 
         // When
         assertThat(stubRegisteredFeature).isNotNull
-        stubRegisteredFeature.sendEvent(fakeEvent)
+        stubRegisteredFeature?.sendEvent(fakeEvent)
 
         // Then
         assertThat(stubFeatureEventReceiver.getReceivedEvents()).containsOnly(fakeEvent)
@@ -562,7 +563,7 @@ class FeatureSdkCoreContextTest : MockServerTest() {
 
         // When
         assertThat(otherRegisteredFeature).isNotNull
-        otherRegisteredFeature.sendEvent(fakeEvent)
+        otherRegisteredFeature?.sendEvent(fakeEvent)
 
         // Then
         assertThat(stubFeatureEventReceiver.getReceivedEvents()).isEmpty()

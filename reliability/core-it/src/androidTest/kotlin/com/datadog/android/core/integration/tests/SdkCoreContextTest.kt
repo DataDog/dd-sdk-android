@@ -171,7 +171,7 @@ class SdkCoreContextTest : MockServerTest() {
         testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
 
         // When
-        repeat(forge.anInt(1, 10)) {
+        repeat(forge.anInt(1, fakeMutableProperties.size / 2)) {
             fakeMutableProperties.remove(fakeMutableProperties.keys.random())
         }
 
@@ -254,7 +254,7 @@ class SdkCoreContextTest : MockServerTest() {
         testedSdkCore?.addUserProperties(fakeExtraProperties)
 
         // When
-        repeat(forge.anInt(1, 10)) {
+        repeat(forge.anInt(1, fakeExtraProperties.size / 2)) {
             fakeExtraProperties.remove(fakeExtraProperties.keys.random())
         }
 

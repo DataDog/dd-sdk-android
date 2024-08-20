@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
-    id("com.android.library")
+    id("com.android.application")
     kotlin("android")
 
     // Analysis tools
@@ -21,13 +21,22 @@ plugins {
 }
 
 android {
+
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
     namespace = "com.datadog.android.core.integration"
+
     defaultConfig {
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
         multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
+        if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
+            isCoreLibraryDesugaringEnabled = true
+        }
         java17()
     }
 
@@ -54,6 +63,9 @@ android {
 }
 
 dependencies {
+    if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
+        coreLibraryDesugaring(libs.androidDesugaringSdk)
+    }
     implementation(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
 
@@ -80,7 +92,6 @@ dependencies {
     }
 }
 
-androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 dependencyUpdateConfig()
