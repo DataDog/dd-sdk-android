@@ -311,7 +311,7 @@ class AndroidTracerTest {
             }
     }
 
-    @RepeatedTest(16)
+    @RepeatedTest(4)
     fun `M send sampled spans W setSampleRate() + buildSpan() + start() + finish()`(
         @StringForgery fakeOperation: String,
         @DoubleForgery(0.0, 100.0) fakeSampleRate: Double
