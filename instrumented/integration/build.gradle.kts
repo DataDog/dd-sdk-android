@@ -77,14 +77,6 @@ android {
             )
             testProguardFile("test-proguard-rules.pro")
         }
-        getByName("debug") {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            testProguardFile("test-proguard-rules.pro")
-        }
     }
 }
 
