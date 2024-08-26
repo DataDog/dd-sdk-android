@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.integration
+package com.datadog.android.core.integration.tests
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -15,7 +15,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.integration.tests.MockServerTest
 import com.datadog.android.core.integration.tests.forge.factories.ConfigurationCoreForgeryFactory
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
