@@ -299,48 +299,6 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
-public final class com/datadog/android/rum/model/ActionChildProperties {
-	public static final field Companion Lcom/datadog/android/rum/model/ActionChildProperties$Companion;
-	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/ActionChildProperties$Action;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ActionChildProperties$Action;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public final fun copy (Lcom/datadog/android/rum/model/ActionChildProperties$Action;)Lcom/datadog/android/rum/model/ActionChildProperties;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionChildProperties;Lcom/datadog/android/rum/model/ActionChildProperties$Action;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionChildProperties;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionChildProperties;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionChildProperties;
-	public final fun getAction ()Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/ActionChildProperties$Action {
-	public static final field Companion Lcom/datadog/android/rum/model/ActionChildProperties$Action$Companion;
-	public fun <init> (Ljava/util/List;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionChildProperties$Action;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public final fun getId ()Ljava/util/List;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/ActionChildProperties$Action$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionChildProperties$Action;
-}
-
-public final class com/datadog/android/rum/model/ActionChildProperties$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionChildProperties;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionChildProperties;
-}
-
 public final class com/datadog/android/rum/model/ActionEvent {
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$Companion;
 	public fun <init> (JLcom/datadog/android/rum/model/ActionEvent$Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;Lcom/datadog/android/rum/model/ActionEvent$ActionEventView;Lcom/datadog/android/rum/model/ActionEvent$Usr;Lcom/datadog/android/rum/model/ActionEvent$Connectivity;Lcom/datadog/android/rum/model/ActionEvent$Display;Lcom/datadog/android/rum/model/ActionEvent$Synthetics;Lcom/datadog/android/rum/model/ActionEvent$CiTest;Lcom/datadog/android/rum/model/ActionEvent$Os;Lcom/datadog/android/rum/model/ActionEvent$Device;Lcom/datadog/android/rum/model/ActionEvent$Dd;Lcom/datadog/android/rum/model/ActionEvent$Context;Lcom/datadog/android/rum/model/ActionEvent$Container;Lcom/datadog/android/rum/model/ActionEvent$ActionEventAction;)V
@@ -3933,117 +3891,6 @@ public final class com/datadog/android/rum/model/ResourceEvent$Viewport$Companio
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent$Viewport;
 }
 
-public final class com/datadog/android/rum/model/RumPerfMetric {
-	public static final field Companion Lcom/datadog/android/rum/model/RumPerfMetric$Companion;
-	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;)V
-	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Number;
-	public final fun component2 ()Ljava/lang/Number;
-	public final fun component3 ()Ljava/lang/Number;
-	public final fun component4 ()Ljava/lang/Number;
-	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/RumPerfMetric;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/RumPerfMetric;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/RumPerfMetric;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumPerfMetric;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/RumPerfMetric;
-	public final fun getAverage ()Ljava/lang/Number;
-	public final fun getMax ()Ljava/lang/Number;
-	public final fun getMetricMax ()Ljava/lang/Number;
-	public final fun getMin ()Ljava/lang/Number;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/RumPerfMetric$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumPerfMetric;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/RumPerfMetric;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema {
-	public static final field Companion Lcom/datadog/android/rum/model/ViewContainerSchema$Companion;
-	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/ViewContainerSchema$Container;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewContainerSchema$Container;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public final fun copy (Lcom/datadog/android/rum/model/ViewContainerSchema$Container;)Lcom/datadog/android/rum/model/ViewContainerSchema;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewContainerSchema;Lcom/datadog/android/rum/model/ViewContainerSchema$Container;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewContainerSchema;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewContainerSchema;
-	public final fun getContainer ()Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewContainerSchema;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$Container {
-	public static final field Companion Lcom/datadog/android/rum/model/ViewContainerSchema$Container$Companion;
-	public fun <init> (Lcom/datadog/android/rum/model/ViewContainerSchema$View;Lcom/datadog/android/rum/model/ViewContainerSchema$Source;)V
-	public final fun component1 ()Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public final fun component2 ()Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public final fun copy (Lcom/datadog/android/rum/model/ViewContainerSchema$View;Lcom/datadog/android/rum/model/ViewContainerSchema$Source;)Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewContainerSchema$Container;Lcom/datadog/android/rum/model/ViewContainerSchema$View;Lcom/datadog/android/rum/model/ViewContainerSchema$Source;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public final fun getSource ()Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public final fun getView ()Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$Container$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewContainerSchema$Container;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$Source : java/lang/Enum {
-	public static final field ANDROID Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field BROWSER Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field Companion Lcom/datadog/android/rum/model/ViewContainerSchema$Source$Companion;
-	public static final field FLUTTER Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field IOS Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field REACT_NATIVE Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field ROKU Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final field UNITY Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-	public static fun values ()[Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$Source$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$Source;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$View {
-	public static final field Companion Lcom/datadog/android/rum/model/ViewContainerSchema$View$Companion;
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewContainerSchema$View;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public final fun getId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/ViewContainerSchema$View$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewContainerSchema$View;
-}
-
 public final class com/datadog/android/rum/model/ViewEvent {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Companion;
 	public fun <init> (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;Lcom/datadog/android/rum/model/ViewEvent$ViewEventView;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Container;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Privacy;)V
@@ -5382,8 +5229,8 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 public final class com/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Long;
 	public final fun component10 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;
 	public final fun component11 ()Ljava/lang/Boolean;
@@ -5407,53 +5254,56 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public final fun component28 ()Ljava/util/List;
 	public final fun component29 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/Long;
-	public final fun component30 ()Ljava/lang/Boolean;
-	public final fun component31 ()Ljava/lang/Boolean;
-	public final fun component32 ()Ljava/lang/Boolean;
+	public final fun component30 ()Ljava/lang/String;
+	public final fun component31 ()Ljava/lang/String;
+	public final fun component32 ()Ljava/lang/String;
 	public final fun component33 ()Ljava/lang/Boolean;
 	public final fun component34 ()Ljava/lang/Boolean;
 	public final fun component35 ()Ljava/lang/Boolean;
 	public final fun component36 ()Ljava/lang/Boolean;
 	public final fun component37 ()Ljava/lang/Boolean;
 	public final fun component38 ()Ljava/lang/Boolean;
-	public final fun component39 ()Ljava/util/List;
+	public final fun component39 ()Ljava/lang/Boolean;
 	public final fun component4 ()Ljava/lang/Long;
-	public final fun component40 ()Ljava/util/List;
+	public final fun component40 ()Ljava/lang/Boolean;
 	public final fun component41 ()Ljava/lang/Boolean;
-	public final fun component42 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
-	public final fun component43 ()Ljava/lang/Boolean;
-	public final fun component44 ()Ljava/lang/Long;
-	public final fun component45 ()Ljava/lang/Boolean;
+	public final fun component42 ()Ljava/util/List;
+	public final fun component43 ()Ljava/util/List;
+	public final fun component44 ()Ljava/lang/Boolean;
+	public final fun component45 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
 	public final fun component46 ()Ljava/lang/Boolean;
-	public final fun component47 ()Ljava/lang/Boolean;
+	public final fun component47 ()Ljava/lang/Long;
 	public final fun component48 ()Ljava/lang/Boolean;
 	public final fun component49 ()Ljava/lang/Boolean;
 	public final fun component5 ()Ljava/lang/Long;
 	public final fun component50 ()Ljava/lang/Boolean;
 	public final fun component51 ()Ljava/lang/Boolean;
 	public final fun component52 ()Ljava/lang/Boolean;
-	public final fun component53 ()Ljava/lang/String;
+	public final fun component53 ()Ljava/lang/Boolean;
 	public final fun component54 ()Ljava/lang/Boolean;
-	public final fun component55 ()Ljava/lang/Long;
-	public final fun component56 ()Ljava/lang/Long;
-	public final fun component57 ()Ljava/lang/Long;
-	public final fun component58 ()Ljava/lang/Boolean;
-	public final fun component59 ()Ljava/lang/String;
+	public final fun component55 ()Ljava/lang/Boolean;
+	public final fun component56 ()Ljava/lang/String;
+	public final fun component57 ()Ljava/lang/Boolean;
+	public final fun component58 ()Ljava/lang/Long;
+	public final fun component59 ()Ljava/lang/Long;
 	public final fun component6 ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;
-	public final fun component60 ()Ljava/lang/String;
-	public final fun component61 ()Ljava/lang/String;
+	public final fun component60 ()Ljava/lang/Long;
+	public final fun component61 ()Ljava/lang/Boolean;
 	public final fun component62 ()Ljava/lang/String;
-	public final fun component63 ()Ljava/lang/Long;
-	public final fun component64 ()Ljava/lang/Boolean;
+	public final fun component63 ()Ljava/lang/String;
+	public final fun component64 ()Ljava/lang/String;
 	public final fun component65 ()Ljava/lang/String;
-	public final fun component66 ()Ljava/lang/String;
+	public final fun component66 ()Ljava/lang/Long;
 	public final fun component67 ()Ljava/lang/Boolean;
-	public final fun component68 ()Ljava/util/List;
+	public final fun component68 ()Ljava/lang/String;
+	public final fun component69 ()Ljava/lang/String;
 	public final fun component7 ()Ljava/lang/Long;
+	public final fun component70 ()Ljava/lang/Boolean;
+	public final fun component71 ()Ljava/util/List;
 	public final fun component8 ()Ljava/lang/Long;
 	public final fun component9 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;IIILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
+	public final fun copy (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;IIILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Configuration;
@@ -5472,6 +5322,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public final fun getForwardConsoleLogs ()Ljava/util/List;
 	public final fun getForwardErrorsToLogs ()Ljava/lang/Boolean;
 	public final fun getForwardReports ()Ljava/util/List;
+	public final fun getImagePrivacyLevel ()Ljava/lang/String;
 	public final fun getInitializationType ()Ljava/lang/String;
 	public final fun getMobileVitalsUpdatePeriod ()Ljava/lang/Long;
 	public final fun getPlugins ()Ljava/util/List;
@@ -5490,6 +5341,8 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public final fun getTelemetryConfigurationSampleRate ()Ljava/lang/Long;
 	public final fun getTelemetrySampleRate ()Ljava/lang/Long;
 	public final fun getTelemetryUsageSampleRate ()Ljava/lang/Long;
+	public final fun getTextAndInputPrivacyLevel ()Ljava/lang/String;
+	public final fun getTouchPrivacyLevel ()Ljava/lang/String;
 	public final fun getTraceContextInjection ()Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;
 	public final fun getTraceSampleRate ()Ljava/lang/Long;
 	public final fun getTracerApi ()Ljava/lang/String;
@@ -5529,6 +5382,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public final fun setDartVersion (Ljava/lang/String;)V
 	public final fun setDefaultPrivacyLevel (Ljava/lang/String;)V
 	public final fun setEnablePrivacyForActionName (Ljava/lang/Boolean;)V
+	public final fun setImagePrivacyLevel (Ljava/lang/String;)V
 	public final fun setInitializationType (Ljava/lang/String;)V
 	public final fun setMobileVitalsUpdatePeriod (Ljava/lang/Long;)V
 	public final fun setReactNativeVersion (Ljava/lang/String;)V
@@ -5537,6 +5391,8 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public final fun setSessionReplaySampleRate (Ljava/lang/Long;)V
 	public final fun setStartRecordingImmediately (Ljava/lang/Boolean;)V
 	public final fun setStartSessionReplayRecordingManually (Ljava/lang/Boolean;)V
+	public final fun setTextAndInputPrivacyLevel (Ljava/lang/String;)V
+	public final fun setTouchPrivacyLevel (Ljava/lang/String;)V
 	public final fun setTraceContextInjection (Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;)V
 	public final fun setTracerApi (Ljava/lang/String;)V
 	public final fun setTracerApiVersion (Ljava/lang/String;)V
@@ -6300,437 +6156,5 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$View 
 public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$View$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$View;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$View;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Companion;
-	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;JLjava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;Ljava/util/List;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;)V
-	public synthetic fun <init> (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;JLjava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;Ljava/util/List;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;
-	public final fun component10 ()Ljava/util/List;
-	public final fun component11 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public final fun component2 ()J
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public final fun component7 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public final fun component8 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public final fun component9 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;JLjava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;Ljava/util/List;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;JLjava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;Ljava/lang/String;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;Ljava/util/List;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;
-	public final fun getAction ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public final fun getApplication ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public final fun getDate ()J
-	public final fun getDd ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;
-	public final fun getExperimentalFeatures ()Ljava/util/List;
-	public final fun getService ()Ljava/lang/String;
-	public final fun getSession ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public final fun getSource ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public final fun getTelemetry ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public final fun getType ()Ljava/lang/String;
-	public final fun getVersion ()Ljava/lang/String;
-	public final fun getView ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Action {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action$Companion;
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public final fun getId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Action$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Action;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Application {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application$Companion;
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public final fun getId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Application$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Application;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Dd {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;
-	public final fun getFormatVersion ()J
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Dd$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Dd;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Device {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public final fun getArchitecture ()Ljava/lang/String;
-	public final fun getBrand ()Ljava/lang/String;
-	public final fun getModel ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Device$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Os {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public final fun getBuild ()Ljava/lang/String;
-	public final fun getName ()Ljava/lang/String;
-	public final fun getVersion ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Os$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Session {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session$Companion;
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public final fun getId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Session$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Session;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Source : java/lang/Enum {
-	public static final field ANDROID Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final field BROWSER Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source$Companion;
-	public static final field FLUTTER Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final field IOS Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final field REACT_NATIVE Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Source$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry$Companion;
-	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public final fun component2 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public final fun component3 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;Ljava/util/Map;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public final fun getAdditionalProperties ()Ljava/util/Map;
-	public final fun getDevice ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Device;
-	public final fun getOs ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Os;
-	public final fun getType ()Ljava/lang/String;
-	public final fun getUsage ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Telemetry;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent : java/lang/Enum {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent$Companion;
-	public static final field GRANTED Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public static final field NOT_GRANTED Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public static final field PENDING Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-}
-
-public abstract class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$Companion;
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public abstract fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun isForced ()Ljava/lang/Boolean;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_0;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_1;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryBrowserFeaturesUsage_2;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0$Companion;
-	public fun <init> (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;)V
-	public final fun component1 ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public final fun copy (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;
-	public final fun getFeature ()Ljava/lang/String;
-	public final fun getTrackingConsent ()Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
-	public fun hashCode ()I
-	public fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_0;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_1;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_2;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_3;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_4;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_5;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_6;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7 : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7$Companion;
-	public fun <init> ()V
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7;
-	public final fun getFeature ()Ljava/lang/String;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TelemetryCommonFeaturesUsage_7;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$View {
-	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View$Companion;
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public static synthetic fun copy$default (Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public final fun getId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$View$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
 }
 

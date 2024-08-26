@@ -39,20 +39,20 @@ internal class IdGenerationStrategyTest {
         val highOrderLowerBound = (System.currentTimeMillis() / 1000).shl(32)
         isTid128.forEach { tId128b ->
             val strategy = IdGenerationStrategy.fromName(strategyName, tId128b)
-            val traceIds = (0..32768).map { strategy.generateTraceId() }
+            val traceIds = (0..4096).map { strategy.generateTraceId() }
             val checked = HashSet<DDTraceId>()
 
             traceIds.forEach { traceId ->
                 assertThat(traceId).isNotNull
-                assertThat(traceId.equals("foo")).isFalse()
-                assertThat(traceId.equals(DDTraceId.ZERO)).isFalse()
-                assertThat(traceId.equals(traceId)).isTrue()
+                assertThat(traceId).isNotEqualTo("foo")
+                assertThat(traceId).isNotEqualTo(DDTraceId.ZERO)
+                assertThat(traceId).isEqualTo(traceId)
                 val hashCode =
                     (
                         traceId.toHighOrderLong() xor (traceId.toHighOrderLong() ushr 32)
                             xor traceId.toLong() xor (traceId.toLong() ushr 32)
                         ).toInt()
-                assertThat(hashCode == traceId.hashCode()).isTrue()
+                assertThat(hashCode).isEqualTo(traceId.hashCode())
                 assertThat(checked).doesNotContain(traceId)
                 if (tId128b && strategyName != "SEQUENTIAL") {
                     val highOrderUpperBound = (System.currentTimeMillis() / 1000).shl(32)

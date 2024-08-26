@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.GlobalRumMonitor.get
+import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import java.util.Locale
 
 /**
@@ -64,7 +65,7 @@ object GlobalRumMonitor {
                         InternalLogger.Target.USER,
                         { NO_MONITOR_REGISTERED_MESSAGE.format(Locale.US, sdkCore.name) }
                     )
-                NoOpRumMonitor()
+                NoOpAdvancedRumMonitor()
             } else {
                 monitor
             }
