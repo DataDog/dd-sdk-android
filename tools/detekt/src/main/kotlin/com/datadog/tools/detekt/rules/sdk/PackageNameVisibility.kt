@@ -46,10 +46,12 @@ class PackageNameVisibility(
 
     private var currentPackageName: String = ""
     private var isCurrentPackageInternal: Boolean = false
+    private var isEscapePackage: Boolean = false
 
     override fun visitPackageDirective(directive: KtPackageDirective) {
         currentPackageName = directive.fqName.asString()
         isCurrentPackageInternal = currentPackageName.split('.').any { it == INTERNAL_PACKAGE }
+        isEscapePackage = currentPackageName.startsWith(ESCAPE_PACKAGE)
         super.visitPackageDirective(directive)
     }
 
@@ -74,7 +76,7 @@ class PackageNameVisibility(
                     )
                 )
             }
-        } else if (isCurrentPackageInternal && !isDeclarationInternal) {
+        } else if (isCurrentPackageInternal && !isDeclarationInternal && !isEscapePackage) {
             if (withBreakingChanges && !isIgnoredAnnotation) {
                 report(
                     CodeSmell(
@@ -97,5 +99,12 @@ class PackageNameVisibility(
 
     companion object {
         private const val INTERNAL_PACKAGE = "internal"
+
+        /**
+         * This package name refers to the package in `dd-sdk-android-internal` module, all the classes should not be
+         * declared with internal modifier so that they can be used by other modules, in this case, all the packages
+         * under it should escape from this check rule.
+         */
+        private const val ESCAPE_PACKAGE = "com.datadog.android.internal"
     }
 }
