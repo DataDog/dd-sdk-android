@@ -6,13 +6,17 @@
 
 package com.datadog.android.core.internal.user
 
-import com.datadog.android.api.context.UserInfo
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface MutableUserInfoProvider : UserInfoProvider {
 
-    fun setUserInfo(userInfo: UserInfo)
+    fun setUserInfo(
+        id: String?,
+        name: String?,
+        email: String?,
+        extraInfo: Map<String, Any?>
+    )
 
     fun addUserProperties(properties: Map<String, Any?>)
 }

@@ -166,7 +166,7 @@ if [[ $ANALYSIS == 1 ]]; then
   ./gradlew :lintCheckAll
 
   echo "---- 3rd Party License"
-  ./gradlew checkThirdPartyLicensesAll
+  ./gradlew checkDependencyLicenses
 fi
 
 if [[ $COMPILE == 1 ]]; then

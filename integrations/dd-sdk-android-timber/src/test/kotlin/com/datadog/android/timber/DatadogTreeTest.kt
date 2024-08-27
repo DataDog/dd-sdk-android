@@ -95,4 +95,17 @@ class DatadogTreeTest {
         verify(mockLogger)
             .log(Log.ASSERT, fakeMessage, null, emptyMap())
     }
+
+    @Test
+    fun `tree logs message with tag`(
+        @StringForgery fakeTag: String
+    ) {
+        // When
+        Timber.tag(fakeTag)
+        Timber.d(fakeMessage)
+
+        // Then
+        verify(mockLogger)
+            .log(Log.DEBUG, fakeMessage, null, mapOf("timber.tag" to fakeTag))
+    }
 }
