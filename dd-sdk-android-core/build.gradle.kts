@@ -104,6 +104,8 @@ dependencies {
     implementation(libs.androidXCollection)
     implementation(libs.androidXWorkManager)
 
+    implementation(project(":dd-sdk-android-internal"))
+
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 

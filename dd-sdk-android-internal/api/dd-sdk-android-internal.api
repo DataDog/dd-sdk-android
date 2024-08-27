@@ -1,0 +1,4 @@
+public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
+	public abstract fun publicNoOpImplementation ()Z
+}
+

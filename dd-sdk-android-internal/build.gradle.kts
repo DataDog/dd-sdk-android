@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
     kotlin("android")
+    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -38,6 +39,9 @@ android {
 
 dependencies {
     implementation(libs.kotlin)
+
+    // Generate NoOp implementations
+    ksp(project(":tools:noopfactory"))
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
