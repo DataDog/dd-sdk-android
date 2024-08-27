@@ -118,7 +118,7 @@ tasks.register("unitTestAll") {
 registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
     dependsOn(":tools:lint:lint")
 }
-registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyLicences")
+registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyLicenses")
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
 

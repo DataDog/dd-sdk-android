@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Benchmark Sample</string>
+
+
+    <string name="session_replay_material_title">
+        [Benchmark] Session Replay Material Components</string>
+    <string name="session_replay_compat_title">
+        [Benchmark] Session Replay AppCompat Components</string>
+    <string name="edit_text">User input text</string>
+    <string name="checked_text_view">Checked TextView</string>
+    <string name="checkbox">Checkbox</string>
+    <string name="radio_button">Radio Button</string>
+    <string name="switch_button">Switch Button</string>
+    <string name="spinner">Spinner</string>
+    <string name="pick_current_time">Pick Current Time</string>
+    <string name="pick_current_date">Pick Current Date</string>
+    <string name="button_nav_material">Go to Material component screen</string>
+    <string name="button_nav_appcompat">Go to Compat component screen</string>
+</resources>

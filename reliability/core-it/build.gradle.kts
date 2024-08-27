@@ -5,36 +5,38 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
-    id("com.android.library")
+    id("com.android.application")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
-
-    // Tests
-    id("de.mobilej.unmock")
 }
 
 android {
+
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
     namespace = "com.datadog.android.core.integration"
+
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
         multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
+        if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
+            isCoreLibraryDesugaringEnabled = true
+        }
         java17()
     }
 
@@ -57,18 +59,13 @@ android {
             )
             testProguardFile("test-proguard-rules.pro")
         }
-        getByName("debug") {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            testProguardFile("test-proguard-rules.pro")
-        }
     }
 }
 
 dependencies {
+    if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
+        coreLibraryDesugaring(libs.androidDesugaringSdk)
+    }
     implementation(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
 
@@ -95,8 +92,6 @@ dependencies {
     }
 }
 
-androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
-javadocConfig()
 dependencyUpdateConfig()

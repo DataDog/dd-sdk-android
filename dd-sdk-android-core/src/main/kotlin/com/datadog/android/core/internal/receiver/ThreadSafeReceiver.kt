@@ -18,13 +18,16 @@ internal abstract class ThreadSafeReceiver : BroadcastReceiver() {
 
     val isRegistered = AtomicBoolean(false)
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    // We suppress the warning here as this method is not available on all Android versions
+    @SuppressLint("WrongConstant", "UnspecifiedRegisterReceiverFlag")
     fun registerReceiver(
         context: Context,
         filter: IntentFilter
     ): Intent? {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.registerReceiver(this, filter, RECEIVER_NOT_EXPORTED_COMPAT)
         } else {
             context.registerReceiver(this, filter)
         }
@@ -36,5 +39,9 @@ internal abstract class ThreadSafeReceiver : BroadcastReceiver() {
         if (isRegistered.compareAndSet(true, false)) {
             context.unregisterReceiver(this)
         }
+    }
+
+    companion object {
+        internal const val RECEIVER_NOT_EXPORTED_COMPAT: Int = 0x4
     }
 }

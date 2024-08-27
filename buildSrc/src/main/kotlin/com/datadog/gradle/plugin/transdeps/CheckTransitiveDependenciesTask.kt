@@ -42,7 +42,9 @@ open class CheckTransitiveDependenciesTask : DefaultTask() {
             error(
                 "Make sure you run the ${TransitiveDependenciesPlugin.TASK_GEN_TRANSITIVE_DEPS} task" +
                     " before you push your PR.\n" +
-                    additions.joinToString("\n") + removals.joinToString("\n")
+                    additions.joinToString("\n") +
+                    "\n" +
+                    removals.joinToString("\n")
             )
         }
     }

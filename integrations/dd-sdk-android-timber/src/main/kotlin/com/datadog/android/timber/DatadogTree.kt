@@ -48,6 +48,15 @@ class DatadogTree(
         message: String,
         t: Throwable?
     ) {
-        logger.log(priority, message, t)
+        val attributes = if (tag != null) {
+            mapOf(TIMBER_TAG_ATTRIBUTE to tag)
+        } else {
+            emptyMap()
+        }
+        logger.log(priority, message, t, attributes)
+    }
+
+    private companion object {
+        const val TIMBER_TAG_ATTRIBUTE = "timber.tag"
     }
 }

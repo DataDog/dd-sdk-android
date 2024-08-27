@@ -42,7 +42,9 @@ open class CheckApiSurfaceTask : DefaultTask() {
             error(
                 "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE} task" +
                     " before you push your PR.\n" +
-                    additions.joinToString("\n") + removals.joinToString("\n")
+                    additions.joinToString("\n") +
+                    "\n" +
+                    removals.joinToString("\n")
             )
         }
     }

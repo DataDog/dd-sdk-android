@@ -60,7 +60,7 @@ class SdkCoreContextTest : MockServerTest() {
     private lateinit var fakeTrackingConsent: TrackingConsent
 
     private var featureSdkCore: FeatureSdkCore? = null
-    private var sdkCore: SdkCore? = null
+    private var testedSdkCore: SdkCore? = null
 
     @Before
     fun setUp() {
@@ -72,12 +72,12 @@ class SdkCoreContextTest : MockServerTest() {
         fakeTrackingConsent = forge.aValueFrom(TrackingConsent::class.java)
         fakeUserAdditionalProperties = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
         val configuration: Configuration = forge.getForgery()
-        sdkCore = Datadog.initialize(
+        testedSdkCore = Datadog.initialize(
             ApplicationProvider.getApplicationContext(),
             configuration,
             fakeTrackingConsent
         )
-        featureSdkCore = sdkCore as? FeatureSdkCore
+        featureSdkCore = testedSdkCore as? FeatureSdkCore
         featureSdkCore?.registerFeature(stubFeature)
     }
 
@@ -91,7 +91,7 @@ class SdkCoreContextTest : MockServerTest() {
     @Test
     fun must_addUserInformationIntoEvents_when_setUserInformation() {
         // When
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
 
         // Then
         val countDownLatch = CountDownLatch(1)
@@ -115,11 +115,11 @@ class SdkCoreContextTest : MockServerTest() {
     @Test
     fun must_addUserExtraProperties_when_addUserProperties() {
         // Given
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
         val expectedUserExtraProperties = forge.exhaustiveAttributes()
 
         // When
-        sdkCore?.addUserProperties(expectedUserExtraProperties)
+        testedSdkCore?.addUserProperties(expectedUserExtraProperties)
 
         // Then
         val countDownLatch = CountDownLatch(1)
@@ -141,7 +141,7 @@ class SdkCoreContextTest : MockServerTest() {
         // Given
         val fakeMutableProperties = forge.exhaustiveAttributes()
         val expectedMutableProperties = fakeMutableProperties.toMap()
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
 
         // When
         fakeMutableProperties.keys.forEach { key ->
@@ -168,10 +168,10 @@ class SdkCoreContextTest : MockServerTest() {
         // Given
         val fakeMutableProperties = forge.exhaustiveAttributes()
         val expectedMutableProperties = fakeMutableProperties.toMap()
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
 
         // When
-        repeat(forge.anInt(1, 10)) {
+        repeat(forge.anInt(1, fakeMutableProperties.size / 2)) {
             fakeMutableProperties.remove(fakeMutableProperties.keys.random())
         }
 
@@ -195,7 +195,7 @@ class SdkCoreContextTest : MockServerTest() {
         // Given
         val fakeMutableProperties = forge.exhaustiveAttributes()
         val expectedMutableProperties = fakeMutableProperties.toMap()
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
 
         // When
         repeat(forge.anInt(1, 10)) {
@@ -222,8 +222,8 @@ class SdkCoreContextTest : MockServerTest() {
         // Given
         val fakeExtraProperties = forge.exhaustiveAttributes()
         val expectedExtraProperties = fakeExtraProperties.toMap()
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
-        sdkCore?.addUserProperties(fakeExtraProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.addUserProperties(fakeExtraProperties)
 
         // When
         fakeExtraProperties.keys.forEach { key ->
@@ -250,11 +250,11 @@ class SdkCoreContextTest : MockServerTest() {
         // Given
         val fakeExtraProperties = forge.exhaustiveAttributes()
         val expectedExtraProperties = fakeExtraProperties.toMap()
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
-        sdkCore?.addUserProperties(fakeExtraProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.addUserProperties(fakeExtraProperties)
 
         // When
-        repeat(forge.anInt(1, 10)) {
+        repeat(forge.anInt(1, fakeExtraProperties.size / 2)) {
             fakeExtraProperties.remove(fakeExtraProperties.keys.random())
         }
 
@@ -278,8 +278,8 @@ class SdkCoreContextTest : MockServerTest() {
         // Given
         val fakeExtraProperties = forge.exhaustiveAttributes()
         val expectedExtraProperties = fakeExtraProperties.toMap()
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
-        sdkCore?.addUserProperties(fakeExtraProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.addUserProperties(fakeExtraProperties)
 
         // When
         repeat(forge.anInt(1, 10)) {
@@ -304,16 +304,16 @@ class SdkCoreContextTest : MockServerTest() {
     @Test
     fun must_resetUserProperties_when_setUserPropertiesCalledSecondTime() {
         // Given
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
         val expectedUserExtraProperties = forge.exhaustiveAttributes()
-        sdkCore?.addUserProperties(expectedUserExtraProperties)
+        testedSdkCore?.addUserProperties(expectedUserExtraProperties)
         val fakeUserId2 = forge.anAlphabeticalString()
         val fakeUserName2 = forge.anAlphabeticalString()
         val fakeUserEmail2 = forge.anAlphabeticalString()
         val fakeUserAdditionalProperties2 = forge.exhaustiveAttributes()
 
         // When
-        sdkCore?.setUserInfo(fakeUserId2, fakeUserName2, fakeUserEmail2, fakeUserAdditionalProperties2)
+        testedSdkCore?.setUserInfo(fakeUserId2, fakeUserName2, fakeUserEmail2, fakeUserAdditionalProperties2)
 
         // Then
         val countDownLatch = CountDownLatch(1)
@@ -334,10 +334,10 @@ class SdkCoreContextTest : MockServerTest() {
     fun must_resetUserProperties_when_setUserPropertiesCalled_afterAddUserProperties() {
         // Given
         val expectedUserExtraProperties = forge.exhaustiveAttributes()
-        sdkCore?.addUserProperties(expectedUserExtraProperties)
+        testedSdkCore?.addUserProperties(expectedUserExtraProperties)
 
         // When
-        sdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
 
         // Then
         val countDownLatch = CountDownLatch(1)
@@ -376,7 +376,7 @@ class SdkCoreContextTest : MockServerTest() {
         val expectedTrackingConsent = forge.aValueFrom(TrackingConsent::class.java)
 
         // When
-        sdkCore?.setTrackingConsent(expectedTrackingConsent)
+        testedSdkCore?.setTrackingConsent(expectedTrackingConsent)
 
         // Then
         val countDownLatch = CountDownLatch(1)

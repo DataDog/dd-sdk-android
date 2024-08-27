@@ -11,7 +11,8 @@ import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 
 // We need to stay in the `androidx.appcompat.widget` package to access package private fields
-@Suppress("PackageNameVisibility")
+// Error: ActionBarContainer can only be accessed from within the same library group prefix
+@Suppress("PackageNameVisibility", "RestrictedApi")
 internal class DatadogActionBarContainerAccessor(
     val container: ActionBarContainer
 ) {

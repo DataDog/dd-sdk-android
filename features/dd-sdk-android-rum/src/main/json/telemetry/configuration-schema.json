@@ -171,6 +171,21 @@
                   "description": "Session replay default privacy level",
                   "readOnly": false
                 },
+                "text_and_input_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay text and input privacy level",
+                  "readOnly": false
+                },
+                "image_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay image privacy level",
+                  "readOnly": false
+                },
+                "touch_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay touch privacy level",
+                  "readOnly": false
+                },
                 "enable_privacy_for_action_name": {
                   "type": "boolean",
                   "description": "Privacy control for action name",
