@@ -35,7 +35,7 @@ import org.junit.runner.RunWith
 /**
  * Instrumentation tests for the feature scope.
  * This test class is used to validate the correct behavior of the feature scope.
- * **Note**: The send event API was already tested on the [FeatureSdkCoreContextTest].
+ * **Note**: The send event API was already tested on the [FeatureSdkCoreTest].
  */
 @RunWith(AndroidJUnit4::class)
 class FeatureScopeTest : MockServerTest() {
@@ -80,7 +80,7 @@ class FeatureScopeTest : MockServerTest() {
 
     @After
     fun tearDown() {
-        cleanupStorage()
+        cleanStorage()
         Datadog.stopInstance()
         cleanMockWebServer()
     }
@@ -88,7 +88,7 @@ class FeatureScopeTest : MockServerTest() {
     // region Consent Granted
 
     @Test
-    fun mustWriteTheEvents_whenFeatureWrite_trackingConsentGranted() {
+    fun mustReceiveTheEvents_whenFeatureWrite_trackingConsentGranted() {
         // Given
         trackingConsent = TrackingConsent.GRANTED
         testedInternalSdkCore = Datadog.initialize(
@@ -102,7 +102,7 @@ class FeatureScopeTest : MockServerTest() {
         // When
         checkNotNull(featureScope)
         featureScope.withWriteContext { _, eventBatchWriter ->
-            fakeBatchData.forEachIndexed { index, rawBatchEvent ->
+            fakeBatchData.forEach { rawBatchEvent ->
                 eventBatchWriter.write(
                     rawBatchEvent,
                     fakeBatchMetadata,
@@ -121,12 +121,46 @@ class FeatureScopeTest : MockServerTest() {
         }.doWait(LONG_WAIT_MS)
     }
 
+    @Test
+    fun mustReceiveTheEvents_whenFeatureWrite_trackingConsentGranted_metadataIsNull() {
+        // Given
+        trackingConsent = TrackingConsent.GRANTED
+        testedInternalSdkCore = Datadog.initialize(
+            context = ApplicationProvider.getApplicationContext(),
+            configuration = fakeConfiguration,
+            trackingConsent = trackingConsent
+        ) as InternalSdkCore
+        testedInternalSdkCore.registerFeature(stubFeature)
+        val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+
+        // When
+        checkNotNull(featureScope)
+        featureScope.withWriteContext { _, eventBatchWriter ->
+            fakeBatchData.forEach { rawBatchEvent ->
+                eventBatchWriter.write(
+                    rawBatchEvent,
+                    null,
+                    eventType
+                )
+            }
+        }
+
+        // Then
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .receivedData(fakeBatchData, null)
+            true
+        }.doWait(LONG_WAIT_MS)
+    }
+
     // endregion
 
     // region Consent Pending
 
     @Test
-    fun mustNotWriteTheEvents_whenFeatureWrite_trackingConsentPending() {
+    fun mustNotReceiveAnyEvent_whenFeatureWrite_trackingConsentPending() {
         // Given
         val trackingConsent = TrackingConsent.PENDING
         testedInternalSdkCore = Datadog.initialize(
@@ -140,7 +174,7 @@ class FeatureScopeTest : MockServerTest() {
         // When
         checkNotNull(featureScope)
         featureScope.withWriteContext { _, eventBatchWriter ->
-            fakeBatchData.forEachIndexed { index, rawBatchEvent ->
+            fakeBatchData.forEach { rawBatchEvent ->
                 eventBatchWriter.write(
                     rawBatchEvent,
                     fakeBatchMetadata,
@@ -162,7 +196,7 @@ class FeatureScopeTest : MockServerTest() {
     // region Consent Not Granted
 
     @Test
-    fun mustNotWriteTheEvents_whenFeatureWrite_trackingConsentNotGranted() {
+    fun mustNotReceiveAnyEvent_whenFeatureWrite_trackingConsentNotGranted() {
         // Given
         val trackingConsent = TrackingConsent.NOT_GRANTED
         testedInternalSdkCore = Datadog.initialize(
@@ -176,7 +210,7 @@ class FeatureScopeTest : MockServerTest() {
         // When
         checkNotNull(featureScope)
         featureScope.withWriteContext { _, eventBatchWriter ->
-            fakeBatchData.forEachIndexed { index, rawBatchEvent ->
+            fakeBatchData.forEach { rawBatchEvent ->
                 eventBatchWriter.write(
                     rawBatchEvent,
                     fakeBatchMetadata,
@@ -197,7 +231,7 @@ class FeatureScopeTest : MockServerTest() {
 
     // region Internal
 
-    private fun cleanupStorage() {
+    private fun cleanStorage() {
         val storageFolder = testedInternalSdkCore.rootStorageDir
         storageFolder?.deleteRecursively()
     }

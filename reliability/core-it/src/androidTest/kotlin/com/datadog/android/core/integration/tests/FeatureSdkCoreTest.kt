@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
  * Provides the tests for the InternalSdkCore API not related with the writing operations.
  */
 @RunWith(AndroidJUnit4::class)
-class FeatureSdkCoreContextTest : MockServerTest() {
+class FeatureSdkCoreTest : MockServerTest() {
 
     @get:Rule
     var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())

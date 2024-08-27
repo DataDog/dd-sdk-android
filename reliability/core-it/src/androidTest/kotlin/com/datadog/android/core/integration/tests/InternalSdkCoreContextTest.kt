@@ -477,7 +477,7 @@ class InternalSdkCoreContextTest : MockServerTest() {
         val appStartTimeNs = testedInternalSdkCore.appStartTimeNs
 
         // Then
-        assertThat(appStartTimeNs).isPositive()
+        assertThat(appStartTimeNs).isBetween(0, APPLICATION_START_TIME_UPPER_BOUND_NS)
     }
 
     // endregion
@@ -602,6 +602,7 @@ class InternalSdkCoreContextTest : MockServerTest() {
     // endregion
 
     companion object {
+        private val APPLICATION_START_TIME_UPPER_BOUND_NS = System.nanoTime()
         private val DEVICE_TIME_OFFSET_NS = TimeUnit.SECONDS.toNanos(6)
         private const val ANDROID_SOURCE = "android"
         private const val BUILD_ID = "core_it_build_id"
