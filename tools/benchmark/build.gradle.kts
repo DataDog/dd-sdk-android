@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
@@ -28,7 +29,7 @@ android {
 }
 
 dependencies {
-
+    implementation(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.openTelemetryApiBenchmark)
@@ -47,6 +48,9 @@ dependencies {
     testImplementation(libs.bundles.testTools)
 }
 
+apply(from = "generate_trace_models.gradle.kts")
+
 kotlinConfig()
 junitConfig()
 dependencyUpdateConfig()
+androidLibraryConfig()
