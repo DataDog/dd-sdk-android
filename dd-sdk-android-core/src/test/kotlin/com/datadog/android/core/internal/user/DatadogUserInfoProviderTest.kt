@@ -142,7 +142,7 @@ internal class DatadogUserInfoProviderTest {
         testedProvider.addUserProperties(fakeMutableProperties)
 
         // When
-        repeat(forge.anInt(1, fakeMutableProperties.size)) {
+        repeat(forge.anInt(1, fakeMutableProperties.size + 1)) {
             fakeMutableProperties.remove(fakeMutableProperties.keys.random())
         }
 
@@ -240,7 +240,7 @@ internal class DatadogUserInfoProviderTest {
         testedProvider.setUserInfo(id, name, email, fakeMutableUserProperties)
 
         // When
-        repeat(forge.anInt(1, fakeMutableUserProperties.size)) {
+        repeat(forge.anInt(1, fakeMutableUserProperties.size + 1)) {
             fakeMutableUserProperties.remove(fakeMutableUserProperties.keys.random())
         }
 
