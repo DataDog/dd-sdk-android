@@ -403,5 +403,3 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
-annotation com.datadog.tools.annotation.NoOpImplementation
-  constructor(Boolean = false)

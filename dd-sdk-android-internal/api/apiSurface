@@ -1,0 +1,2 @@
+annotation com.datadog.tools.annotation.NoOpImplementation
+  constructor(Boolean = false)

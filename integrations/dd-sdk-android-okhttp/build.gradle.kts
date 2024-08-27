@@ -49,6 +49,7 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
