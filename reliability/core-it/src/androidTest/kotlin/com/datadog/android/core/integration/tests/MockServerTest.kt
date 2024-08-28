@@ -44,5 +44,9 @@ abstract class MockServerTest : BaseTest() {
                 }
             }
         }
+
+        fun cleanMockWebServer() {
+            mockServerWrapper.clearData()
+        }
     }
 }

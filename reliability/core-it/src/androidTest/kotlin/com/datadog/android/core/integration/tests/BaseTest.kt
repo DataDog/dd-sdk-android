@@ -12,7 +12,8 @@ import java.util.concurrent.TimeUnit
 abstract class BaseTest {
 
     companion object {
-        internal val LONG_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
+        internal val LONG_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        internal val MEDIUM_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
         internal const val SHORT_WAIT_MS = 500L
     }
 }

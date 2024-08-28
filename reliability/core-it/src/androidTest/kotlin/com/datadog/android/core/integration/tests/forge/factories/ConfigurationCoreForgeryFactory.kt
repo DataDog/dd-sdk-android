@@ -8,7 +8,10 @@ package com.datadog.android.core.integration.tests.forge.factories
 
 import com.datadog.android.DatadogSite
 import com.datadog.android._InternalProxy
+import com.datadog.android.core.configuration.BatchProcessingLevel
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.trace.TracingHeaderType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -26,6 +29,8 @@ internal class ConfigurationCoreForgeryFactory :
             }
         )
             .setUseDeveloperModeWhenDebuggable(forge.aBool())
+            // this needs to be before allowing the clear text traffic as it invalidates this option
+            .useSite(forge.aValueFrom(DatadogSite::class.java))
             .setFirstPartyHostsWithHeaderType(
                 forge.aMap {
                     val fakeUrl = forge.aStringMatching("https://[a-z0-9]+\\.com")
@@ -39,9 +44,9 @@ internal class ConfigurationCoreForgeryFactory :
             .apply {
                 _InternalProxy.allowClearTextHttp(this)
             }
-            .setBatchSize(forge.getForgery())
-            .setUploadFrequency(forge.getForgery())
-            .useSite(forge.aValueFrom(DatadogSite::class.java))
+            .setBatchSize(forge.aValueFrom(BatchSize::class.java))
+            .setUploadFrequency(forge.aValueFrom(UploadFrequency::class.java))
+            .setBatchProcessingLevel(forge.aValueFrom(BatchProcessingLevel::class.java))
             .build()
     }
 }

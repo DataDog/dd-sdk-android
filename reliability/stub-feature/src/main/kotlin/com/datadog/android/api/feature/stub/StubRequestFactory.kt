@@ -12,10 +12,14 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import fr.xgouchet.elmyr.Forge
+import org.json.JSONObject
 import org.mockito.kotlin.mock
 import java.util.UUID
 
-internal class StubRequestFactory(
+/**
+ * A [RequestFactory] implementation that creates [Request] objects with a custom endpoint URL to be used in tests.
+ */
+class StubRequestFactory(
     private val forge: Forge,
     private val customEndpointUrl: String
 ) : RequestFactory {
@@ -26,6 +30,7 @@ internal class StubRequestFactory(
         batchMetadata: ByteArray?
     ): Request {
         val requestId = UUID.randomUUID().toString()
+        val batchDataAsByteArrayList = batchData.map { it.toJson(batchMetadata).toByteArray() }
         return Request(
             id = requestId,
             description = forge.anAlphabeticalString(),
@@ -36,15 +41,24 @@ internal class StubRequestFactory(
                 context.source,
                 context.sdkVersion
             ),
-            body = batchData.map { it.data }
-                .join(
-                    separator = PAYLOAD_SEPARATOR,
-                    prefix = PAYLOAD_PREFIX,
-                    suffix = PAYLOAD_SUFFIX,
-                    internalLogger = mock()
-                ),
+            body = batchDataAsByteArrayList.join(
+                separator = PAYLOAD_SEPARATOR,
+                prefix = PAYLOAD_PREFIX,
+                suffix = PAYLOAD_SUFFIX,
+                internalLogger = mock()
+            ),
             contentType = RequestFactory.CONTENT_TYPE_JSON
         )
+    }
+
+    private fun RawBatchEvent.toJson(batchMetadata: ByteArray?): String {
+        return JSONObject().apply {
+            put(DATA_KEY, String(data))
+            put(METADATA_KEY, String(metadata))
+            if (batchMetadata != null) {
+                put(BATCH_METADATA, String(batchMetadata))
+            }
+        }.toString()
     }
 
     private fun buildHeaders(
@@ -62,6 +76,20 @@ internal class StubRequestFactory(
     }
 
     companion object {
+        /**
+         * The key used to store the data in the JSON payload.
+         */
+        const val DATA_KEY = "data"
+
+        /**
+         * The key used to store the metadata in the JSON payload.
+         */
+        const val METADATA_KEY = "metadata"
+
+        /**
+         * The key used to store the batch metadata in the JSON payload.
+         */
+        const val BATCH_METADATA = "batch_metadata"
         private val PAYLOAD_SEPARATOR = ",".toByteArray(Charsets.UTF_8)
         private val PAYLOAD_PREFIX = "[".toByteArray(Charsets.UTF_8)
         private val PAYLOAD_SUFFIX = "]".toByteArray(Charsets.UTF_8)

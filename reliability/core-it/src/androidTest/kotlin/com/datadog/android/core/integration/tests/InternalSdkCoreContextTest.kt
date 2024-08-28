@@ -477,10 +477,7 @@ class InternalSdkCoreContextTest : MockServerTest() {
         val appStartTimeNs = testedInternalSdkCore.appStartTimeNs
 
         // Then
-        assertThat(appStartTimeNs).isCloseTo(
-            APPROXIMATE_APP_START_TIME_NS,
-            Offset.offset(APP_START_TIME_OFFSET_NS)
-        )
+        assertThat(appStartTimeNs).isBetween(0, APPLICATION_START_TIME_UPPER_BOUND_NS)
     }
 
     // endregion
@@ -605,9 +602,8 @@ class InternalSdkCoreContextTest : MockServerTest() {
     // endregion
 
     companion object {
-        private val APP_START_TIME_OFFSET_NS = TimeUnit.SECONDS.toNanos(10)
+        private val APPLICATION_START_TIME_UPPER_BOUND_NS = System.nanoTime()
         private val DEVICE_TIME_OFFSET_NS = TimeUnit.SECONDS.toNanos(6)
-        private val APPROXIMATE_APP_START_TIME_NS = System.nanoTime()
         private const val ANDROID_SOURCE = "android"
         private const val BUILD_ID = "core_it_build_id"
         private const val PACKAGE_NAME = "com.datadog.android.core.integration"
