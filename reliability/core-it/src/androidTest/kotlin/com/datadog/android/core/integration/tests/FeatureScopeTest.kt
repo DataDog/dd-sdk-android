@@ -122,6 +122,41 @@ class FeatureScopeTest : MockServerTest() {
     }
 
     @Test
+    fun mustReceiveTheEvents_whenFeatureWrite_trackingConsentPendingToGranted() {
+        // Given
+        trackingConsent = TrackingConsent.PENDING
+        testedInternalSdkCore = Datadog.initialize(
+            context = ApplicationProvider.getApplicationContext(),
+            configuration = fakeConfiguration,
+            trackingConsent = trackingConsent
+        ) as InternalSdkCore
+        testedInternalSdkCore.registerFeature(stubFeature)
+        val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+
+        // When
+        checkNotNull(featureScope)
+        featureScope.withWriteContext { _, eventBatchWriter ->
+            fakeBatchData.forEach { rawBatchEvent ->
+                eventBatchWriter.write(
+                    rawBatchEvent,
+                    fakeBatchMetadata,
+                    eventType
+                )
+            }
+        }
+        Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+
+        // Then
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .receivedData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(LONG_WAIT_MS)
+    }
+
+    @Test
     fun mustReceiveTheEvents_whenFeatureWrite_trackingConsentGranted_metadataIsNull() {
         // Given
         trackingConsent = TrackingConsent.GRANTED
@@ -227,9 +262,115 @@ class FeatureScopeTest : MockServerTest() {
             .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
     }
 
+    @Test
+    fun mustNotReceiveAnyEvent_whenFeatureWrite_trackingConsentPendingToNotGranted() {
+        // Given
+        val trackingConsent = TrackingConsent.PENDING
+        testedInternalSdkCore = Datadog.initialize(
+            context = ApplicationProvider.getApplicationContext(),
+            configuration = fakeConfiguration,
+            trackingConsent = trackingConsent
+        ) as InternalSdkCore
+        testedInternalSdkCore.registerFeature(stubFeature)
+        val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+
+        // When
+        checkNotNull(featureScope)
+        featureScope.withWriteContext { _, eventBatchWriter ->
+            fakeBatchData.forEach { rawBatchEvent ->
+                eventBatchWriter.write(
+                    rawBatchEvent,
+                    fakeBatchMetadata,
+                    eventType
+                )
+            }
+        }
+        Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+
+        // Then
+        Thread.sleep(MEDIUM_WAIT_MS)
+        MockWebServerAssert.assertThat(getMockServerWrapper())
+            .withConfiguration(fakeConfiguration)
+            .withTrackingConsent(trackingConsent)
+            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+    }
+
     // endregion
 
-    // region Internal
+    // region Clear Data
+
+    @Test
+    fun mustNotReceiveAnyEvent_whenFeatureWrite_clearDataCalled() {
+        // Given
+        trackingConsent = TrackingConsent.PENDING
+        testedInternalSdkCore = Datadog.initialize(
+            context = ApplicationProvider.getApplicationContext(),
+            configuration = fakeConfiguration,
+            trackingConsent = trackingConsent
+        ) as InternalSdkCore
+        testedInternalSdkCore.registerFeature(stubFeature)
+        val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+
+        // When
+        checkNotNull(featureScope)
+        featureScope.withWriteContext { _, eventBatchWriter ->
+            fakeBatchData.forEach { rawBatchEvent ->
+                eventBatchWriter.write(
+                    rawBatchEvent,
+                    fakeBatchMetadata,
+                    eventType
+                )
+            }
+        }
+        Datadog.clearAllData()
+        Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+
+        // Then
+        Thread.sleep(MEDIUM_WAIT_MS)
+        MockWebServerAssert.assertThat(getMockServerWrapper())
+            .withConfiguration(fakeConfiguration)
+            .withTrackingConsent(trackingConsent)
+            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+    }
+
+    // endregion
+
+    // region Stop Instance
+
+    @Test
+    fun mustNotReceiveAnyEvent_whenFeatureWrite_stopInstanceCalled() {
+        // Given
+        trackingConsent = TrackingConsent.PENDING
+        testedInternalSdkCore = Datadog.initialize(
+            context = ApplicationProvider.getApplicationContext(),
+            configuration = fakeConfiguration,
+            trackingConsent = trackingConsent
+        ) as InternalSdkCore
+        testedInternalSdkCore.registerFeature(stubFeature)
+        val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+
+        // When
+        checkNotNull(featureScope)
+        Datadog.stopInstance()
+        featureScope.withWriteContext { _, eventBatchWriter ->
+            fakeBatchData.forEach { rawBatchEvent ->
+                eventBatchWriter.write(
+                    rawBatchEvent,
+                    fakeBatchMetadata,
+                    eventType
+                )
+            }
+        }
+
+        // Then
+        Thread.sleep(MEDIUM_WAIT_MS)
+        MockWebServerAssert.assertThat(getMockServerWrapper())
+            .withConfiguration(fakeConfiguration)
+            .withTrackingConsent(trackingConsent)
+            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+    }
+
+    // endregion
 
     private fun cleanStorage() {
         val storageFolder = testedInternalSdkCore.rootStorageDir
