@@ -6,11 +6,12 @@
 
 package com.datadog.benchmark.internal.model
 
-internal data class MetricContext(
+internal data class BenchmarkContext(
     val deviceModel: String,
     val osVersion: String,
     val run: String,
     val scenario: String?,
     val applicationId: String,
-    val intervalInSeconds: Long
+    val intervalInSeconds: Long,
+    val env: String
 )

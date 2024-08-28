@@ -1,17 +1,23 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.benchmark.exporter
 
 import android.os.Build
+import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.benchmark.DatadogExporterConfiguration
+import com.datadog.benchmark.internal.BenchmarkSpanToSpanEventMapper
 import com.datadog.benchmark.internal.DatadogHttpClient
 import com.datadog.benchmark.internal.model.BenchmarkContext
 import io.opentelemetry.sdk.common.CompletableResultCode
-import io.opentelemetry.sdk.metrics.InstrumentType
-import io.opentelemetry.sdk.metrics.data.AggregationTemporality
-import io.opentelemetry.sdk.metrics.data.MetricData
-import io.opentelemetry.sdk.metrics.export.MetricExporter
+import io.opentelemetry.sdk.trace.data.SpanData
+import io.opentelemetry.sdk.trace.export.SpanExporter
 
-internal class DatadogMetricExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : MetricExporter {
+internal class DatadogSpanExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : SpanExporter {
 
     private val benchmarkContext: BenchmarkContext = BenchmarkContext(
         deviceModel = Build.MODEL ?: UNKNOWN_TAG_VALUE,
@@ -22,28 +28,32 @@ internal class DatadogMetricExporter(datadogExporterConfiguration: DatadogExport
         intervalInSeconds = datadogExporterConfiguration.intervalInSeconds,
         env = BuildConfig.BUILD_TYPE
     )
-    private val metricHttpClient: DatadogHttpClient = DatadogHttpClient(
+
+    private val httpClient: DatadogHttpClient = DatadogHttpClient(
         benchmarkContext,
         datadogExporterConfiguration
     )
 
-    override fun getAggregationTemporality(instrumentType: InstrumentType): AggregationTemporality {
-        return AggregationTemporality.DELTA
-    }
+    private val benchmarkSpanToSpanEventMapper = BenchmarkSpanToSpanEventMapper()
 
-    override fun export(metrics: MutableCollection<MetricData>): CompletableResultCode {
-        // currently no aggregation is required
-        metricHttpClient.uploadMetric(metrics.toList())
+    override fun export(spans: MutableCollection<SpanData>): CompletableResultCode {
+        Log.i("DatadogSpanExporter", "Span exported!")
+        Log.i("DatadogSpanExporter", spans.toString())
+        spans.map {
+            benchmarkSpanToSpanEventMapper.map(benchmarkContext, it)
+        }.apply {
+            httpClient.uploadSpanEvent(this)
+        }
         return CompletableResultCode.ofSuccess()
     }
 
     override fun flush(): CompletableResultCode {
-        // currently do nothing
+        // do nothing
         return CompletableResultCode.ofSuccess()
     }
 
     override fun shutdown(): CompletableResultCode {
-        // currently do nothing
+        // do nothing
         return CompletableResultCode.ofSuccess()
     }
 
