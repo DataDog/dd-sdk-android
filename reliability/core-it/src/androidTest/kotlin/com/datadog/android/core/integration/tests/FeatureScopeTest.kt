@@ -132,8 +132,6 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
-
-        // When
         checkNotNull(featureScope)
         featureScope.withWriteContext { _, eventBatchWriter ->
             fakeBatchData.forEach { rawBatchEvent ->
@@ -144,6 +142,8 @@ class FeatureScopeTest : MockServerTest() {
                 )
             }
         }
+
+        // When
         Datadog.setTrackingConsent(TrackingConsent.GRANTED)
 
         // Then
@@ -273,8 +273,6 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
-
-        // When
         checkNotNull(featureScope)
         featureScope.withWriteContext { _, eventBatchWriter ->
             fakeBatchData.forEach { rawBatchEvent ->
@@ -285,6 +283,8 @@ class FeatureScopeTest : MockServerTest() {
                 )
             }
         }
+
+        // When
         Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
 
         // Then
@@ -310,8 +310,6 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
-
-        // When
         checkNotNull(featureScope)
         featureScope.withWriteContext { _, eventBatchWriter ->
             fakeBatchData.forEach { rawBatchEvent ->
@@ -322,6 +320,8 @@ class FeatureScopeTest : MockServerTest() {
                 )
             }
         }
+
+        // When
         Datadog.clearAllData()
         Datadog.setTrackingConsent(TrackingConsent.GRANTED)
 
@@ -348,10 +348,10 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
-
-        // When
         checkNotNull(featureScope)
         Datadog.stopInstance()
+
+        // When
         featureScope.withWriteContext { _, eventBatchWriter ->
             fakeBatchData.forEach { rawBatchEvent ->
                 eventBatchWriter.write(

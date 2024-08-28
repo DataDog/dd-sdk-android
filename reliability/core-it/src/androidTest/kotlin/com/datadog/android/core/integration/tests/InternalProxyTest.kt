@@ -24,6 +24,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Provides the tests for the InternalProxy API.
+ */
 @RunWith(AndroidJUnit4::class)
 class InternalProxyTest {
 
