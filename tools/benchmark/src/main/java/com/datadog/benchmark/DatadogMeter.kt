@@ -7,17 +7,21 @@
 package com.datadog.benchmark
 
 import com.datadog.benchmark.exporter.DatadogMetricExporter
+import com.datadog.benchmark.exporter.DatadogSpanExporter
 import com.datadog.benchmark.internal.reader.CPUVitalReader
 import com.datadog.benchmark.internal.reader.FpsVitalReader
 import com.datadog.benchmark.internal.reader.MemoryVitalReader
 import com.datadog.benchmark.internal.reader.VitalReader
 import com.datadog.benchmark.noop.NoOpObservableDoubleGauge
+import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleGauge
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.metrics.SdkMeterProvider
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader
+import io.opentelemetry.sdk.trace.SdkTracerProvider
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -85,17 +89,22 @@ class DatadogMeter private constructor(private val meter: Meter) {
          * Creates an instance of [DatadogMeter] with the given configuration.
          */
         fun create(datadogExporterConfiguration: DatadogExporterConfiguration): DatadogMeter {
+            val datadogExporter = DatadogMetricExporter(datadogExporterConfiguration)
             val sdkMeterProvider = SdkMeterProvider.builder()
                 .registerMetricReader(
-                    PeriodicMetricReader.builder(DatadogMetricExporter(datadogExporterConfiguration))
+                    PeriodicMetricReader.builder(datadogExporter)
                         .setInterval(datadogExporterConfiguration.intervalInSeconds, TimeUnit.SECONDS)
                         .build()
                 )
                 .build()
-
+            val traceProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(BatchSpanProcessor.builder(DatadogSpanExporter(datadogExporterConfiguration)).build())
+                .build()
             val openTelemetry: OpenTelemetry = OpenTelemetrySdk.builder()
+                .setTracerProvider(traceProvider)
                 .setMeterProvider(sdkMeterProvider)
                 .build()
+            GlobalOpenTelemetry.set(openTelemetry)
             val meter = openTelemetry.getMeter(METER_INSTRUMENTATION_SCOPE_NAME)
             return DatadogMeter(meter)
         }

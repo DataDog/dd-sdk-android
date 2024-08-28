@@ -8,9 +8,10 @@ package com.datadog.benchmark.exporter
 
 import android.os.Build
 import android.util.Log
+import com.datadog.android.BuildConfig
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.internal.MetricRequestBodyBuilder
-import com.datadog.benchmark.internal.model.MetricContext
+import com.datadog.benchmark.internal.model.BenchmarkContext
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.metrics.InstrumentType
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality
@@ -19,13 +20,14 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter
 
 internal class LogcatMetricExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : MetricExporter {
 
-    private val metricContext: MetricContext = MetricContext(
+    private val benchmarkContext: BenchmarkContext = BenchmarkContext(
         deviceModel = Build.MODEL,
         osVersion = Build.VERSION.RELEASE,
         run = datadogExporterConfiguration.run ?: DEFAULT_RUN_NAME,
         scenario = datadogExporterConfiguration.scenario,
         applicationId = datadogExporterConfiguration.applicationId ?: DEFAULT_APPLICATION_ID,
-        intervalInSeconds = datadogExporterConfiguration.intervalInSeconds
+        intervalInSeconds = datadogExporterConfiguration.intervalInSeconds,
+        env = BuildConfig.BUILD_TYPE
     )
 
     override fun getAggregationTemporality(instrumentType: InstrumentType): AggregationTemporality {
@@ -33,7 +35,7 @@ internal class LogcatMetricExporter(datadogExporterConfiguration: DatadogExporte
     }
 
     override fun export(metrics: Collection<MetricData>): CompletableResultCode {
-        MetricRequestBodyBuilder(metricContext).buildJsonElement(metrics.toList()).toString().apply {
+        MetricRequestBodyBuilder(benchmarkContext).build(metrics.toList()).apply {
             Log.i("LogsMetricExporter", this)
         }
         return CompletableResultCode.ofSuccess()

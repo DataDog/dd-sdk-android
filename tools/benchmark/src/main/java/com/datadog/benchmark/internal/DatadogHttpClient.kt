@@ -8,10 +8,11 @@ package com.datadog.benchmark.internal
 
 import android.util.Log
 import com.datadog.benchmark.DatadogExporterConfiguration
-import com.datadog.benchmark.internal.model.MetricContext
-import com.google.gson.JsonElement
+import com.datadog.benchmark.internal.model.BenchmarkContext
+import com.datadog.benchmark.internal.model.SpanEvent
 import io.opentelemetry.sdk.metrics.data.MetricData
 import okhttp3.CacheControl
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,36 +23,43 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 internal class DatadogHttpClient(
-    private val context: MetricContext,
-    private val exporterConfiguration: DatadogExporterConfiguration
-) {
-
-    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+    private val context: BenchmarkContext,
+    private val exporterConfiguration: DatadogExporterConfiguration,
+    private val callFactory: Call.Factory = OkHttpClient.Builder()
         .callTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
         .connectTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
         .cache(null)
-        .build()
+        .build(),
+    private val metricRequestBodyBuilder: MetricRequestBodyBuilder = MetricRequestBodyBuilder(context),
+    private val spanRequestBuilder: SpanRequestBodyBuilder = SpanRequestBodyBuilder(context)
+) {
 
-    private val metricRequestBodyBuilder = MetricRequestBodyBuilder(context)
-
-    fun uploadMetric(metrics: List<MetricData>) {
-        val response = postRequest(
+    internal fun uploadMetric(metrics: List<MetricData>) {
+        postRequest(
+            operationName = OPERATION_NAME_METRICS,
+            url = exporterConfiguration.endPoint.metricUrl(),
             exporterConfiguration = exporterConfiguration,
-            metricRequestBodyBuilder.buildJsonElement(metrics)
+            metricRequestBodyBuilder.build(metrics)
         )
-        if (response.isSuccess) {
-            Log.i(BENCHMARK_LOGCAT_TAG, "${metrics.size} Metrics data uploaded.")
-        } else {
-            Log.e(BENCHMARK_LOGCAT_TAG, "Metrics data failed to upload. ${response.exceptionOrNull()}")
-        }
+    }
+
+    internal fun uploadSpanEvent(spanEvents: List<SpanEvent>) {
+        postRequest(
+            operationName = OPERATION_NAME_TRACES,
+            url = exporterConfiguration.endPoint.metricUrl(),
+            exporterConfiguration = exporterConfiguration,
+            body = spanRequestBuilder.build(spanEvents)
+        )
     }
 
     private fun postRequest(
+        operationName: String,
+        url: String,
         exporterConfiguration: DatadogExporterConfiguration,
-        body: JsonElement
-    ): Result<ResponseBody> {
+        body: String
+    ) {
         val headers = buildHeaders(
             requestId = UUID.randomUUID().toString(),
             clientToken = exporterConfiguration.apiKey,
@@ -65,12 +73,17 @@ internal class DatadogHttpClient(
                 }
                 addHeader(HEADER_USER_AGENT, getUserAgent())
             }
-            .post(body.toString().toRequestBody(TYPE_JSON))
+            .post(body.toRequestBody(TYPE_JSON))
             .cacheControl(CacheControl.Builder().noCache().build())
-            .url(exporterConfiguration.endPoint.metricUrl())
+            .url(url)
             .build()
 
-        return processRequest(request)
+        val result = processRequest(request)
+        if (result.isSuccess) {
+            Log.i(BENCHMARK_LOGCAT_TAG, "$operationName data uploaded.")
+        } else {
+            Log.e(BENCHMARK_LOGCAT_TAG, "$operationName data failed to upload. ${result.exceptionOrNull()}")
+        }
     }
 
     private fun getUserAgent(): String {
@@ -108,7 +121,7 @@ internal class DatadogHttpClient(
     @Suppress("TooGenericExceptionCaught")
     private fun processRequest(request: Request): Result<ResponseBody> {
         try {
-            val response = okHttpClient.newCall(request).execute()
+            val response = callFactory.newCall(request).execute()
             return if (response.isSuccessful) {
                 val body = response.body
                 if (body != null) {
@@ -140,24 +153,28 @@ internal class DatadogHttpClient(
 
         private val TYPE_JSON = "application/json".toMediaTypeOrNull()
 
+        private const val OPERATION_NAME_METRICS = "metrics"
+
+        private const val OPERATION_NAME_TRACES = "traces"
+
         /**
          * Datadog API key header.
          */
-        const val HEADER_API_KEY: String = "DD-API-KEY"
+        private const val HEADER_API_KEY: String = "DD-API-KEY"
 
         /**
          * Datadog Event Platform Origin header, e.g. android, flutter, etc.
          */
-        const val HEADER_EVP_ORIGIN: String = "DD-EVP-ORIGIN"
+        private const val HEADER_EVP_ORIGIN: String = "DD-EVP-ORIGIN"
 
         /**
          * Datadog Event Platform Origin version header, e.g. SDK version.
          */
-        const val HEADER_EVP_ORIGIN_VERSION: String = "DD-EVP-ORIGIN-VERSION"
+        private const val HEADER_EVP_ORIGIN_VERSION: String = "DD-EVP-ORIGIN-VERSION"
 
         /**
          * Datadog Request ID header, used for debugging purposes.
          */
-        const val HEADER_REQUEST_ID: String = "DD-REQUEST-ID"
+        private const val HEADER_REQUEST_ID: String = "DD-REQUEST-ID"
     }
 }

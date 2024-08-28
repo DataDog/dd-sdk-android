@@ -5,10 +5,9 @@
  */
 package com.datadog.benchmark.internal
 
-import com.datadog.benchmark.internal.model.MetricContext
+import com.datadog.benchmark.internal.model.BenchmarkContext
 import com.datadog.benchmark.internal.model.MetricType
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonElement
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.metrics.data.DoublePointData
 import io.opentelemetry.sdk.metrics.data.LongPointData
@@ -18,12 +17,13 @@ import io.opentelemetry.sdk.metrics.data.PointData
 import io.opentelemetry.sdk.resources.Resource
 import java.util.concurrent.TimeUnit
 
-internal class MetricRequestBodyBuilder(private val metricContext: MetricContext) : RequestBodyBuilder<MetricData> {
+internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkContext) :
+    RequestBodyBuilder<MetricData> {
 
     private val gson = GsonBuilder().create()
 
-    override fun buildJsonElement(data: List<MetricData>): JsonElement {
-        return gson.toJsonTree(resolveMetrics(data))
+    override fun build(data: List<MetricData>): String {
+        return gson.toJsonTree(resolveMetrics(data)).toString()
     }
 
     private fun resolveMetrics(metrics: List<MetricData>): Map<String, Any> {
@@ -37,7 +37,7 @@ internal class MetricRequestBodyBuilder(private val metricContext: MetricContext
     private fun resolveMetricData(metric: MetricData): Map<String, Any> {
         return mapOf(
             // only available for rate or count metric
-            KEY_INTERVAL to metricContext.intervalInSeconds,
+            KEY_INTERVAL to benchmarkContext.intervalInSeconds,
             KEY_METRIC to metric.name,
             KEY_POINTS to resolvePoints(metric),
             KEY_RESOURCES to resolveResources(metric.resource),
@@ -57,13 +57,13 @@ internal class MetricRequestBodyBuilder(private val metricContext: MetricContext
 
     private fun resolveTags(): List<String> {
         return listOfNotNull(
-            "$KEY_TAG_DEVICE_MODEL:${metricContext.deviceModel}",
-            "$KEY_TAG_OS_VERSION:${metricContext.osVersion}",
-            "$KEY_TAG_RUN:${metricContext.run}",
-            metricContext.scenario?.let {
+            "$KEY_TAG_DEVICE_MODEL:${benchmarkContext.deviceModel}",
+            "$KEY_TAG_OS_VERSION:${benchmarkContext.osVersion}",
+            "$KEY_TAG_RUN:${benchmarkContext.run}",
+            benchmarkContext.scenario?.let {
                 "$KEY_SCENARIO:$it"
             },
-            "$KEY_TAG_APPLICATION_ID:${metricContext.applicationId}"
+            "$KEY_TAG_APPLICATION_ID:${benchmarkContext.applicationId}"
         )
     }
 

@@ -16,10 +16,14 @@ internal class ForgeConfigurator : BaseConfigurator() {
         super.configure(forge)
 
         // Session Replay
-        forge.addFactory(MetricContextForgeryFactory())
+        forge.addFactory(BenchmarkContextForgeryFactory())
         forge.addFactory(MetricDataForgeryFactory())
         forge.addFactory(GaugeDataForgeryFactory())
         forge.addFactory(PointDataForgeryFactory())
+        forge.addFactory(DatadogExporterConfigurationForgeryFactory())
+        forge.addFactory(SpanEventForgeryFactory())
+        forge.addFactory(NetworkInfoForgeryFactory())
+        forge.addFactory(UserInfoForgeryFactory())
         forge.useJvmFactories()
     }
 }
