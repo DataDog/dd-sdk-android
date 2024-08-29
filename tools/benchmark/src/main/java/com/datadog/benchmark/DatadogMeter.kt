@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark
 
+import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.benchmark.exporter.DatadogMetricExporter
 import com.datadog.benchmark.exporter.DatadogSpanExporter
 import com.datadog.benchmark.internal.reader.CPUVitalReader
@@ -13,6 +14,7 @@ import com.datadog.benchmark.internal.reader.FpsVitalReader
 import com.datadog.benchmark.internal.reader.MemoryVitalReader
 import com.datadog.benchmark.internal.reader.VitalReader
 import com.datadog.benchmark.noop.NoOpObservableDoubleGauge
+import com.datadog.benchmark.profiler.DDBenchmarkProfiler
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.metrics.Meter
@@ -105,6 +107,7 @@ class DatadogMeter private constructor(private val meter: Meter) {
                 .setMeterProvider(sdkMeterProvider)
                 .build()
             GlobalOpenTelemetry.set(openTelemetry)
+            GlobalBenchmark.register(DDBenchmarkProfiler())
             val meter = openTelemetry.getMeter(METER_INSTRUMENTATION_SCOPE_NAME)
             return DatadogMeter(meter)
         }

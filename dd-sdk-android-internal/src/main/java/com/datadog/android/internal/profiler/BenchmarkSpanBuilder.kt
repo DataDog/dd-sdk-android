@@ -9,17 +9,13 @@ package com.datadog.android.internal.profiler
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
- * Interface of benchmark tracer to be implemented to provide [BenchmarkSpan].
- * This should only used by internal benchmarking.
+ * Interface of benchmark span builder. This should only used by internal benchmarking.
  */
 @NoOpImplementation
-interface BenchmarkTracer {
+interface BenchmarkSpanBuilder {
 
     /**
-     * Returns a new [BenchmarkSpanBuilder].
-     *
-     * @param spanName The name of the returned span.
-     * @return a new [BenchmarkSpanBuilder].
+     * Returns a new [BenchmarkSpan] and start the span.
      */
-    fun spanBuilder(spanName: String): BenchmarkSpanBuilder
+    fun startSpan(): BenchmarkSpan
 }
