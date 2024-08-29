@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.forge.anException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -850,7 +851,7 @@ internal class DataUploadRunnableTest {
                     batch,
                     batchMetadata[index]
                 )
-            ) doReturn UploadStatus.DNSError
+            ) doReturn UploadStatus.DNSError(forge.anException())
         }
 
         // When
@@ -1025,9 +1026,10 @@ internal class DataUploadRunnableTest {
             }
 
             return listOf(
-                forge.getForgery(UploadStatus.HttpServerError::class.java),
                 forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
-                forge.getForgery(UploadStatus.NetworkError::class.java)
+                forge.getForgery(UploadStatus.HttpServerError::class.java),
+                forge.getForgery(UploadStatus.NetworkError::class.java),
+                forge.getForgery(UploadStatus.UnknownException::class.java)
             )
         }
 
@@ -1040,7 +1042,7 @@ internal class DataUploadRunnableTest {
             return listOf(
                 forge.getForgery(UploadStatus.HttpClientError::class.java),
                 forge.getForgery(UploadStatus.HttpRedirection::class.java),
-                forge.getForgery(UploadStatus.UnknownError::class.java),
+                forge.getForgery(UploadStatus.UnknownHttpError::class.java),
                 forge.getForgery(UploadStatus.UnknownStatus::class.java)
             )
         }
