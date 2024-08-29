@@ -13,7 +13,7 @@ import com.datadog.benchmark.internal.model.SpanEvent
 import io.opentelemetry.sdk.metrics.data.MetricData
 import okhttp3.CacheControl
 import okhttp3.Call
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -48,7 +48,7 @@ internal class DatadogHttpClient(
     internal fun uploadSpanEvent(spanEvents: List<SpanEvent>) {
         postRequest(
             operationName = OPERATION_NAME_TRACES,
-            url = exporterConfiguration.endPoint.metricUrl(),
+            url = exporterConfiguration.endPoint.tracesUrl(),
             exporterConfiguration = exporterConfiguration,
             body = spanRequestBuilder.build(spanEvents)
         )
@@ -73,7 +73,7 @@ internal class DatadogHttpClient(
                 }
                 addHeader(HEADER_USER_AGENT, getUserAgent())
             }
-            .post(body.toRequestBody(TYPE_JSON))
+            .post(body.toRequestBody(CONTENT_TYPE_TEXT_UTF8))
             .cacheControl(CacheControl.Builder().noCache().build())
             .url(url)
             .build()
@@ -151,8 +151,6 @@ internal class DatadogHttpClient(
 
         private const val SYSTEM_UA = "http.agent"
 
-        private val TYPE_JSON = "application/json".toMediaTypeOrNull()
-
         private const val OPERATION_NAME_METRICS = "metrics"
 
         private const val OPERATION_NAME_TRACES = "traces"
@@ -176,5 +174,10 @@ internal class DatadogHttpClient(
          * Datadog Request ID header, used for debugging purposes.
          */
         private const val HEADER_REQUEST_ID: String = "DD-REQUEST-ID"
+
+        /**
+         * text/plain;charset=UTF-8 content type.
+         */
+        private val CONTENT_TYPE_TEXT_UTF8 = "text/plain;charset=UTF-8".toMediaType()
     }
 }

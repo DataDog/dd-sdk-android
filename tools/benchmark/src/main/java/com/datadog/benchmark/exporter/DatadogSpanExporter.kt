@@ -7,7 +7,6 @@
 package com.datadog.benchmark.exporter
 
 import android.os.Build
-import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.internal.BenchmarkSpanToSpanEventMapper
@@ -37,8 +36,6 @@ internal class DatadogSpanExporter(datadogExporterConfiguration: DatadogExporter
     private val benchmarkSpanToSpanEventMapper = BenchmarkSpanToSpanEventMapper()
 
     override fun export(spans: MutableCollection<SpanData>): CompletableResultCode {
-        Log.i("DatadogSpanExporter", "Span exported!")
-        Log.i("DatadogSpanExporter", spans.toString())
         spans.map {
             benchmarkSpanToSpanEventMapper.map(benchmarkContext, it)
         }.apply {
