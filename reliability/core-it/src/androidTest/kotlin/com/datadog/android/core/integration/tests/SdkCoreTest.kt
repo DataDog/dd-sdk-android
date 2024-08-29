@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit
  * etc.
  */
 @RunWith(AndroidJUnit4::class)
-class SdkCoreContextTest : MockServerTest() {
+class SdkCoreTest : MockServerTest() {
 
     @get:Rule
     var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
