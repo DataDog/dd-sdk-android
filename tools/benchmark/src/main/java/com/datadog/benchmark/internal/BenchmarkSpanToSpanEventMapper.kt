@@ -8,7 +8,6 @@ package com.datadog.benchmark.internal
 
 import com.datadog.benchmark.internal.model.BenchmarkContext
 import com.datadog.benchmark.internal.model.SpanEvent
-import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 
 internal class BenchmarkSpanToSpanEventMapper {
@@ -20,7 +19,7 @@ internal class BenchmarkSpanToSpanEventMapper {
         val durationNanos = spanData.endEpochNanos - spanData.startEpochNanos
 
         return SpanEvent(
-            traceId = spanData.traceId,
+            traceId = spanData.traceId.take(SPAN_EVENT_TRACE_ID_LENGTH),
             spanId = spanData.spanId,
             parentId = spanData.parentSpanId,
             resource = resolveResource(spanData),
@@ -30,7 +29,7 @@ internal class BenchmarkSpanToSpanEventMapper {
             start = spanData.startEpochNanos,
             error = 0, // error is not needed in benchmark
             meta = resolveMeta(),
-            metrics = resolveMetrics(spanData)
+            metrics = resolveMetrics()
         )
     }
 
@@ -46,15 +45,19 @@ internal class BenchmarkSpanToSpanEventMapper {
     }
 
     private fun resolveOperationName(spanData: SpanData): String {
-        return spanData.attributes.get(AttributeKey.stringKey("operation.name")) ?: ""
+        return spanData.name ?: ""
     }
 
     private fun resolveResource(spanData: SpanData): String {
-        return spanData.resource.getAttribute(AttributeKey.stringKey("service.name")) ?: ""
+        return spanData.name ?: ""
     }
 
-    private fun resolveMetrics(spanData: SpanData) = SpanEvent.Metrics(
-        topLevel = if (spanData.parentSpanId.toLong() == 0L) 1 else null,
+    private fun resolveMetrics() = SpanEvent.Metrics(
+        topLevel = null,
         additionalProperties = mutableMapOf()
     )
+
+    companion object {
+        private const val SPAN_EVENT_TRACE_ID_LENGTH = 16
+    }
 }

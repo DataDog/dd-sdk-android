@@ -14,15 +14,17 @@ internal class SpanEventSerializer {
     // region Serializer
 
     fun serialize(env: String, spanEvents: List<SpanEvent>): String {
-        val spans = JsonArray(spanEvents.size)
-        spanEvents.forEach {
-            spans.add(it.toJson())
+        val stringBuilder = StringBuilder()
+        spanEvents.forEach { spanEvent ->
+            val spans = JsonArray(1)
+            spans.add(spanEvent.toJson())
+            val jsonObject = JsonObject()
+            jsonObject.add(TAG_SPANS, spans)
+            jsonObject.addProperty(TAG_ENV, env)
+            stringBuilder.append(jsonObject.toString())
+            stringBuilder.append("\n")
         }
-        val jsonObject = JsonObject()
-        jsonObject.add(TAG_SPANS, spans)
-        jsonObject.addProperty(TAG_ENV, env)
-
-        return jsonObject.toString()
+        return stringBuilder.toString()
     }
 
     // end region
