@@ -608,6 +608,10 @@ public final class com/datadog/android/core/configuration/UploadFrequency : java
 	public static fun values ()[Lcom/datadog/android/core/configuration/UploadFrequency;
 }
 
+public abstract interface class com/datadog/android/core/configuration/UploadSchedulerStrategy {
+	public abstract fun getMsDelayUntilNextUpload (Ljava/lang/String;ILjava/lang/Integer;Ljava/lang/Throwable;)J
+}
+
 public abstract interface class com/datadog/android/core/constraints/DataConstraints {
 	public abstract fun validateAttributes (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)Ljava/util/Map;
 	public abstract fun validateTags (Ljava/util/List;)Ljava/util/List;

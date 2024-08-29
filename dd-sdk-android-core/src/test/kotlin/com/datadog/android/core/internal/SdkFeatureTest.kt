@@ -24,6 +24,7 @@ import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.DataUploadRunnable
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrategy
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -181,15 +182,11 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        assertThat(testedFeature.uploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
+        assertThat(testedFeature.uploadScheduler).isInstanceOf(DataUploadScheduler::class.java)
         val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
-        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
-        assertThat(dataUploadRunnable.currentDelayIntervalMs)
-            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
-        assertThat(dataUploadRunnable.maxBatchesPerJob)
-            .isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
+        val uploadSchedulerStrategy = (dataUploadRunnable.uploadSchedulerStrategy as? DefaultUploadSchedulerStrategy)
+        assertThat(uploadSchedulerStrategy?.uploadConfiguration).isEqualTo(expectedUploadConfiguration)
+        assertThat(dataUploadRunnable.maxBatchesPerJob).isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
         argumentCaptor<Runnable> {
             verify(coreFeature.mockUploadExecutor).execute(
                 argThat { this is DataUploadRunnable }
