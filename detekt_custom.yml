@@ -612,6 +612,7 @@ datadog:
       - "java.util.concurrent.ConcurrentLinkedQueue.isNotEmpty()"
       - "java.util.concurrent.ConcurrentLinkedQueue.peek()"
       - "java.util.concurrent.ConcurrentLinkedQueue.poll()"
+      - "java.util.concurrent.ConcurrentHashMap.getOrPut(kotlin.String?, kotlin.Function0)"
       - "java.util.concurrent.CopyOnWriteArraySet.add(kotlin.String?)"
       - "java.util.concurrent.CopyOnWriteArraySet.constructor()"
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.String?)"
@@ -928,6 +929,7 @@ datadog:
       - "kotlin.collections.MutableMap.filterValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableMap.get(kotlin.String)"
+      - "kotlin.collections.MutableMap.getOrPut(kotlin.String, kotlin.Function0)"
       - "kotlin.collections.MutableMap.isEmpty()"
       - "kotlin.collections.MutableMap.isNotEmpty()"
       - "kotlin.collections.MutableMap.iterator()"
@@ -1073,6 +1075,7 @@ datadog:
       - "kotlin.math.max(kotlin.Int, kotlin.Int)"
       - "kotlin.math.max(kotlin.Long, kotlin.Long)"
       - "kotlin.math.min(kotlin.Double, kotlin.Double)"
+      - "kotlin.math.min(kotlin.Long, kotlin.Long)"
       - "kotlin.math.sqrt(kotlin.Double)"
       - "kotlin.String.trim(kotlin.Function1)"
       # endregion

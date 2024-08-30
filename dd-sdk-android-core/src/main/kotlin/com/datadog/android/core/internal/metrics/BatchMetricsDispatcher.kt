@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 internal class BatchMetricsDispatcher(
     featureName: String,
-    private val uploadConfiguration: DataUploadConfiguration,
+    private val uploadConfiguration: DataUploadConfiguration?,
     private val filePersistenceConfig: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
     private val dateTimeProvider: TimeProvider,
@@ -104,8 +104,8 @@ internal class BatchMetricsDispatcher(
             TYPE_KEY to BATCH_DELETED_TYPE_VALUE,
             BATCH_AGE_KEY to fileAgeInMillis,
             UPLOADER_DELAY_KEY to mapOf(
-                UPLOADER_DELAY_MIN_KEY to uploadConfiguration.minDelayMs,
-                UPLOADER_DELAY_MAX_KEY to uploadConfiguration.maxDelayMs
+                UPLOADER_DELAY_MIN_KEY to uploadConfiguration?.minDelayMs,
+                UPLOADER_DELAY_MAX_KEY to uploadConfiguration?.maxDelayMs
             ),
             UPLOADER_WINDOW_KEY to filePersistenceConfig.recentDelayMs,
 

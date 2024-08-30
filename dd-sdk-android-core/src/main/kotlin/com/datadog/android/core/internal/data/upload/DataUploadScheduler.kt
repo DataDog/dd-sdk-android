@@ -7,8 +7,8 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
-import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -22,20 +22,22 @@ internal class DataUploadScheduler(
     contextProvider: ContextProvider,
     networkInfoProvider: NetworkInfoProvider,
     systemInfoProvider: SystemInfoProvider,
-    uploadConfiguration: DataUploadConfiguration,
+    uploadSchedulerStrategy: UploadSchedulerStrategy,
+    maxBatchesPerJob: Int,
     private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
     private val internalLogger: InternalLogger
 ) : UploadScheduler {
 
     internal val runnable = DataUploadRunnable(
-        featureName,
-        scheduledThreadPoolExecutor,
-        storage,
-        dataUploader,
-        contextProvider,
-        networkInfoProvider,
-        systemInfoProvider,
-        uploadConfiguration,
+        featureName = featureName,
+        threadPoolExecutor = scheduledThreadPoolExecutor,
+        storage = storage,
+        dataUploader = dataUploader,
+        contextProvider = contextProvider,
+        networkInfoProvider = networkInfoProvider,
+        systemInfoProvider = systemInfoProvider,
+        uploadSchedulerStrategy = uploadSchedulerStrategy,
+        maxBatchesPerJob = maxBatchesPerJob,
         internalLogger = internalLogger
     )
 
