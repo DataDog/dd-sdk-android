@@ -6,6 +6,7 @@
 
 // CORE LIBRARY
 include(":dd-sdk-android-core")
+include(":dd-sdk-android-internal")
 
 // MAIN FEATURE LIBRARIES
 include(":features:dd-sdk-android-rum")

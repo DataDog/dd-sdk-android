@@ -462,6 +462,18 @@ publish:release-core:
     - !reference [.snippets, set-publishing-credentials]
     - ./gradlew :dd-sdk-android-core:publishToSonatype --stacktrace --no-daemon
 
+publish:release-internal:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [ .snippets, set-publishing-credentials ]
+    - ./gradlew :dd-sdk-android-internal:publishToSonatype --stacktrace --no-daemon
+
 publish:release-coil:
   tags: [ "arch:amd64" ]
   only:

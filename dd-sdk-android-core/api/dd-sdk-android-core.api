@@ -970,7 +970,3 @@ public final class com/datadog/android/trace/TracingHeaderType : java/lang/Enum 
 	public static fun values ()[Lcom/datadog/android/trace/TracingHeaderType;
 }
 
-public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
-	public abstract fun publicNoOpImplementation ()Z
-}
-

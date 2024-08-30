@@ -6,8 +6,7 @@
 
 package com.datadog.benchmark.internal
 
-import com.google.gson.JsonElement
-
 internal interface RequestBodyBuilder<T> {
-    fun buildJsonElement(data: List<T>): JsonElement
+
+    fun build(data: List<T>): String
 }
