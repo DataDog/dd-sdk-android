@@ -7,13 +7,12 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.data.upload.UploadStatus
-import com.datadog.tools.unit.forge.anException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class RequestCreationErrorStatusForgeryFactory : ForgeryFactory<UploadStatus.RequestCreationError> {
+internal class UnknownHttpErrorStatusForgeryFactory : ForgeryFactory<UploadStatus.UnknownHttpError> {
 
-    override fun getForgery(forge: Forge): UploadStatus.RequestCreationError {
-        return UploadStatus.RequestCreationError(forge.anException())
+    override fun getForgery(forge: Forge): UploadStatus.UnknownHttpError {
+        return UploadStatus.UnknownHttpError(responseCode = forge.aPositiveInt())
     }
 }

@@ -687,15 +687,16 @@ internal class UploadWorkerTest {
             }
 
             return listOf(
-                forge.getForgery(UploadStatus.HttpServerError::class.java),
-                forge.getForgery(UploadStatus.NetworkError::class.java),
-                forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
                 forge.getForgery(UploadStatus.HttpClientError::class.java),
-                forge.getForgery(UploadStatus.UnknownStatus::class.java),
-                forge.getForgery(UploadStatus.UnknownError::class.java),
+                forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
                 forge.getForgery(UploadStatus.HttpRedirection::class.java),
+                forge.getForgery(UploadStatus.HttpServerError::class.java),
                 forge.getForgery(UploadStatus.InvalidTokenError::class.java),
-                forge.getForgery(UploadStatus.RequestCreationError::class.java)
+                forge.getForgery(UploadStatus.NetworkError::class.java),
+                forge.getForgery(UploadStatus.RequestCreationError::class.java),
+                forge.getForgery(UploadStatus.UnknownException::class.java),
+                forge.getForgery(UploadStatus.UnknownHttpError::class.java),
+                forge.getForgery(UploadStatus.UnknownStatus::class.java)
             )
         }
     }

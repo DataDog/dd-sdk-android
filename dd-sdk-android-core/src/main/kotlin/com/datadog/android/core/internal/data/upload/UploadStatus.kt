@@ -8,114 +8,133 @@ package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
 
-@Suppress("StringLiteralDuplication")
-internal sealed class UploadStatus(val shouldRetry: Boolean = false, val code: Int = UNKNOWN_RESPONSE_CODE) {
+internal sealed class UploadStatus(
+    val shouldRetry: Boolean = false,
+    val code: Int = UNKNOWN_RESPONSE_CODE,
+    val throwable: Throwable? = null
+) {
 
     internal class Success(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
-    internal object NetworkError : UploadStatus(shouldRetry = true)
-    internal object DNSError : UploadStatus(shouldRetry = true)
-    internal object RequestCreationError : UploadStatus(shouldRetry = false)
+    internal class NetworkError(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
+    internal class DNSError(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
+    internal class RequestCreationError(throwable: Throwable?) :
+        UploadStatus(shouldRetry = false, throwable = throwable)
+
     internal class InvalidTokenError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
     internal class HttpRedirection(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
     internal class HttpClientError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
     internal class HttpServerError(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
     internal class HttpClientRateLimiting(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
-    internal class UnknownError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+    internal class UnknownHttpError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+    internal class UnknownException(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
 
     internal object UnknownStatus : UploadStatus(shouldRetry = false, code = UNKNOWN_RESPONSE_CODE)
 
-    @SuppressWarnings("LongMethod")
     fun logStatus(
         context: String,
         byteSize: Int,
         logger: InternalLogger,
         requestId: String? = null
     ) {
-        val batchInfo = if (requestId == null) {
-            "Batch [$byteSize bytes] ($context)"
-        } else {
-            "Batch $requestId [$byteSize bytes] ($context)"
+        val level = when (this) {
+            is HttpClientError,
+            is HttpServerError,
+            is InvalidTokenError,
+            is RequestCreationError,
+            is UnknownException,
+            is UnknownHttpError -> InternalLogger.Level.ERROR
+
+            is DNSError,
+            is HttpClientRateLimiting,
+            is HttpRedirection,
+            is NetworkError -> InternalLogger.Level.WARN
+
+            is Success -> InternalLogger.Level.INFO
+
+            else -> InternalLogger.Level.VERBOSE
         }
-        when (this) {
-            is NetworkError -> logger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "$batchInfo failed because of a network error; we will retry later." }
-            )
 
-            is DNSError -> logger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "$batchInfo failed because of a DNS error; we will retry later." }
-            )
+        val targets = when (this) {
+            is HttpClientError,
+            is HttpClientRateLimiting -> listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)
 
-            is InvalidTokenError -> logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                {
-                    "$batchInfo failed because your token is invalid; the batch was dropped. " +
-                        "Make sure that the provided token still exists " +
+            is DNSError,
+            is HttpRedirection,
+            is HttpServerError,
+            is InvalidTokenError,
+            is NetworkError,
+            is RequestCreationError,
+            is Success,
+            is UnknownException,
+            is UnknownHttpError -> listOf(InternalLogger.Target.USER)
+
+            else -> emptyList()
+        }
+
+        logger.log(
+            level,
+            targets,
+            {
+                buildStatusMessage(requestId, byteSize, context, throwable)
+            }
+        )
+    }
+
+    private fun buildStatusMessage(
+        requestId: String?,
+        byteSize: Int,
+        context: String,
+        throwable: Throwable?
+    ): String {
+        return buildString {
+            if (requestId == null) {
+                append("Batch [$byteSize bytes] ($context)")
+            } else {
+                append("Batch $requestId [$byteSize bytes] ($context)")
+            }
+
+            if (this@UploadStatus is Success) {
+                append(" sent successfully.")
+            } else if (this@UploadStatus is UnknownStatus) {
+                append(" status is unknown")
+            } else {
+                append(" failed because ")
+                when (this@UploadStatus) {
+                    is DNSError -> append("of a DNS error")
+                    is HttpClientError -> append("of a processing error or invalid data")
+                    is HttpClientRateLimiting -> append("of an intake rate limitation")
+                    is HttpRedirection -> append("of a network redirection")
+                    is HttpServerError -> append("of a server processing error")
+                    is InvalidTokenError -> append("your token is invalid")
+                    is NetworkError -> append("of a network error")
+                    is RequestCreationError -> append("of an error when creating the request")
+                    is UnknownException -> append("of an unknown error")
+                    is UnknownHttpError -> append("of an unexpected HTTP error (status code = $code)")
+                    else -> {}
+                }
+
+                if (throwable != null) {
+                    append(" (")
+                    append(throwable.message)
+                    append(")")
+                }
+
+                if (shouldRetry) {
+                    append("; we will retry later.")
+                } else {
+                    append("; the batch was dropped.")
+                }
+            }
+
+            if (this@UploadStatus is InvalidTokenError) {
+                append(
+                    " Make sure that the provided token still exists " +
                         "and you're targeting the relevant Datadog site."
-                }
-            )
-
-            is HttpRedirection -> logger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "$batchInfo failed because of a network redirection; the batch was dropped." }
-            )
-
-            is HttpClientError -> {
-                logger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    {
-                        "$batchInfo failed because of a processing error or invalid data; " +
-                            "the batch was dropped."
-                    }
                 )
-            }
-
-            is HttpClientRateLimiting -> {
-                logger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    { "$batchInfo not uploaded due to rate limitation; we will retry later." }
-                )
-            }
-
-            is HttpServerError -> logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "$batchInfo failed because of a server processing error; we will retry later." }
-            )
-
-            is UnknownError -> logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "$batchInfo failed because of an unknown error (status code = $code); the batch was dropped." }
-            )
-
-            is RequestCreationError -> logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                {
-                    "$batchInfo failed because of an error when creating the request; " +
-                        "the batch was dropped."
-                }
-            )
-
-            is Success -> logger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { "$batchInfo sent successfully." }
-            )
-
-            else -> {
-                // no-op
             }
         }
     }
+
     companion object {
         internal const val UNKNOWN_RESPONSE_CODE = 0
     }

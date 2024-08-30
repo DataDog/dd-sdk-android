@@ -16,6 +16,7 @@ import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 import java.net.UnknownHostException
 import java.util.Locale
 import com.datadog.android.api.net.Request as DatadogRequest
@@ -38,7 +39,7 @@ internal class DataOkHttpUploader(
     ): UploadStatus {
         val request = try {
             requestFactory.create(context, batch, batchMeta)
-                ?: return UploadStatus.RequestCreationError
+                ?: return UploadStatus.RequestCreationError(null)
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -49,7 +50,7 @@ internal class DataOkHttpUploader(
                 },
                 e
             )
-            return UploadStatus.RequestCreationError
+            return UploadStatus.RequestCreationError(e)
         }
 
         val uploadStatus = try {
@@ -61,7 +62,15 @@ internal class DataOkHttpUploader(
                 { "Unable to find host for site ${context.site}; we will retry later." },
                 e
             )
-            UploadStatus.DNSError
+            UploadStatus.DNSError(e)
+        } catch (e: IOException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { "Unable to execute the request; we will retry later." },
+                e
+            )
+            UploadStatus.NetworkError(e)
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -69,7 +78,7 @@ internal class DataOkHttpUploader(
                 { "Unable to execute the request; we will retry later." },
                 e
             )
-            UploadStatus.NetworkError
+            UploadStatus.UnknownException(throwable = e)
         }
 
         uploadStatus.logStatus(
@@ -181,7 +190,7 @@ internal class DataOkHttpUploader(
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     { "Unexpected status code $code on upload request: ${request.description}" }
                 )
-                UploadStatus.UnknownError(code)
+                UploadStatus.UnknownHttpError(code)
             }
         }
     }
