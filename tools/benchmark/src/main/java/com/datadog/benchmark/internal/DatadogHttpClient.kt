@@ -13,6 +13,7 @@ import com.datadog.benchmark.internal.model.SpanEvent
 import io.opentelemetry.sdk.metrics.data.MetricData
 import okhttp3.CacheControl
 import okhttp3.Call
+import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -41,7 +42,8 @@ internal class DatadogHttpClient(
             operationName = OPERATION_NAME_METRICS,
             url = exporterConfiguration.endPoint.metricUrl(),
             exporterConfiguration = exporterConfiguration,
-            metricRequestBodyBuilder.build(metrics)
+            metricRequestBodyBuilder.build(metrics),
+            mediaType = CONTENT_TYPE_JSON
         )
     }
 
@@ -50,7 +52,8 @@ internal class DatadogHttpClient(
             operationName = OPERATION_NAME_TRACES,
             url = exporterConfiguration.endPoint.tracesUrl(),
             exporterConfiguration = exporterConfiguration,
-            body = spanRequestBuilder.build(spanEvents)
+            body = spanRequestBuilder.build(spanEvents),
+            mediaType = CONTENT_TYPE_TEXT_UTF8
         )
     }
 
@@ -58,7 +61,8 @@ internal class DatadogHttpClient(
         operationName: String,
         url: String,
         exporterConfiguration: DatadogExporterConfiguration,
-        body: String
+        body: String,
+        mediaType: MediaType
     ) {
         val headers = buildHeaders(
             requestId = UUID.randomUUID().toString(),
@@ -73,7 +77,7 @@ internal class DatadogHttpClient(
                 }
                 addHeader(HEADER_USER_AGENT, getUserAgent())
             }
-            .post(body.toRequestBody(CONTENT_TYPE_TEXT_UTF8))
+            .post(body.toRequestBody(mediaType))
             .cacheControl(CacheControl.Builder().noCache().build())
             .url(url)
             .build()
@@ -179,5 +183,10 @@ internal class DatadogHttpClient(
          * text/plain;charset=UTF-8 content type.
          */
         private val CONTENT_TYPE_TEXT_UTF8 = "text/plain;charset=UTF-8".toMediaType()
+
+        /**
+         * application/json;charset=UTF-8 content type.
+         */
+        private val CONTENT_TYPE_JSON = "application/json".toMediaType()
     }
 }
