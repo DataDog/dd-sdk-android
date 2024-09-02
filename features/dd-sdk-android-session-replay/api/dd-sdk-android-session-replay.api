@@ -34,8 +34,8 @@ public final class com/datadog/android/sessionreplay/SessionReplay {
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -47,6 +47,7 @@ public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$
 	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public final fun setImagePrivacy (Lcom/datadog/android/sessionreplay/ImagePrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun setTouchPrivacy (Lcom/datadog/android/sessionreplay/TouchPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun startRecordingImmediately (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
@@ -57,6 +58,13 @@ public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java
 	public static final field MASK_USER_INPUT Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+}
+
+public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/Enum {
+	public static final field HIDE Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static final field SHOW Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/TouchPrivacy;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment {

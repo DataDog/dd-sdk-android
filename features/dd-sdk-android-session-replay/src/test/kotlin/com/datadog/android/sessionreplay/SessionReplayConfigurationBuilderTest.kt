@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay
 
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -34,12 +33,11 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(value = ForgeConfigurator::class)
 internal class SessionReplayConfigurationBuilderTest {
 
-    lateinit var testedBuilder: SessionReplayConfiguration.Builder
+    private lateinit var testedBuilder: SessionReplayConfiguration.Builder
 
     @Mock
     lateinit var mockExtensionSupport: ExtensionSupport
-    lateinit var fakeCustomViewMappers: Map<Class<*>, WireframeMapper<*>>
-    lateinit var fakeExpectedCustomMappers: List<MapperTypeWrapper<*>>
+    private lateinit var fakeExpectedCustomMappers: List<MapperTypeWrapper<*>>
 
     @FloatForgery
     var fakeSampleRate: Float = 0f
@@ -60,6 +58,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
         assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
@@ -79,6 +78,7 @@ internal class SessionReplayConfigurationBuilderTest {
             .isEqualTo(sessionReplayUrl)
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
         assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
@@ -97,6 +97,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(fakePrivacy)
         assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
@@ -112,12 +113,20 @@ internal class SessionReplayConfigurationBuilderTest {
             .build()
 
         // Then
-        assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
-        assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
         assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(fakeImagePrivacy)
-        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
-        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
-        assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M use the given touch privacy rule W setTouchPrivacy`(
+        @Forgery fakeTouchPrivacy: TouchPrivacy
+    ) {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setTouchPrivacy(fakeTouchPrivacy)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(fakeTouchPrivacy)
     }
 
     @Test

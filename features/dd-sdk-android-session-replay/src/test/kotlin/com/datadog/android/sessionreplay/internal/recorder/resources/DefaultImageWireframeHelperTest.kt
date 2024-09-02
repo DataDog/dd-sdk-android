@@ -179,7 +179,7 @@ internal class DefaultImageWireframeHelperTest {
     // region createImageWireframe
 
     @Test
-    fun `M return content placeholder W createImageWireframe() { ImagePrivacy NONE }`() {
+    fun `M return content placeholder W createImageWireframe() { ImagePrivacy MASK_ALL }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
@@ -201,7 +201,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not return image wireframe W createImageWireframe() { ImagePrivacy ALL }`() {
+    fun `M return image wireframe W createImageWireframe() { ImagePrivacy MASK_NONE }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,

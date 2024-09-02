@@ -14,6 +14,7 @@ import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
@@ -69,6 +70,9 @@ internal class WindowCallbackInterceptorTest {
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
 
+    @Forgery
+    lateinit var fakeTouchPrivacy: TouchPrivacy
+
     private lateinit var fakeWindowsList: List<Window>
 
     private lateinit var mockActivity: Activity
@@ -83,7 +87,8 @@ internal class WindowCallbackInterceptorTest {
             mockTimeProvider,
             mockInternalLogger,
             fakePrivacy,
-            fakeImagePrivacy
+            fakeImagePrivacy,
+            fakeTouchPrivacy
         )
     }
 
