@@ -714,6 +714,18 @@ publish:release-rum:
     - !reference [.snippets, set-publishing-credentials]
     - ./gradlew :features:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
 
+publish:release-benchmark:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :tools:benchmark:publishToSonatype --stacktrace --no-daemon
+
 # SLACK NOTIFICATIONS
 
 notify:publish-develop-success:

@@ -10,11 +10,15 @@ import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.publishingConfig
 
 plugins {
     id("com.android.library")
     kotlin("android")
     id("com.github.ben-manes.versions")
+
+    `maven-publish`
+    signing
 }
 
 android {
@@ -55,3 +59,4 @@ kotlinConfig()
 junitConfig()
 dependencyUpdateConfig()
 androidLibraryConfig()
+publishingConfig("An internal benchmarking tool to measure the overhead of Datadog SDK")
