@@ -63,7 +63,8 @@ internal class MemoryVitalReaderTest {
     fun `set up`() {
         fakeFile = File(tempDir, "stat")
         fakeStatusContent = generateStatusContent(fakeVmRss)
-        testedReader = MemoryVitalReader(fakeFile)
+        testedReader = MemoryVitalReader(fakeFile, 50)
+        testedReader.start()
     }
 
     @Test
@@ -81,6 +82,7 @@ internal class MemoryVitalReaderTest {
         fakeFile.writeText(fakeStatusContent)
 
         // When
+        Thread.sleep(100L)
         val result = testedReader.readVitalData()
 
         // Then
@@ -88,20 +90,22 @@ internal class MemoryVitalReaderTest {
     }
 
     @Test
-    fun `M read correct data W readVitalData() {multiple times}`(
+    fun `M read maximum data W readVitalData() during memory file updates`(
         @IntForgery(1) vmRssValuesKb: List<Int>
     ) {
-        // Given
-        val results = mutableListOf<Double>()
+        // Given: Set a memory update interval longer than file reader interval to make sure every update data is read.
+        val memoryUpdateIntervalMs = 100L
+
         // When
         vmRssValuesKb.forEach { vmRss ->
+            // Set a Longer
+            Thread.sleep(memoryUpdateIntervalMs)
             fakeFile.writeText(generateStatusContent(vmRss))
-            val result = testedReader.readVitalData()
-            results.add(result!!)
         }
+        val result = testedReader.readVitalData()
 
         // Then
-        assertThat(results).isEqualTo(vmRssValuesKb.map { vmRssKb -> vmRssKb.toDouble() * 1000 })
+        assertThat(result).isEqualTo(vmRssValuesKb.max().toDouble() * 1000)
     }
 
     @Test
@@ -110,7 +114,7 @@ internal class MemoryVitalReaderTest {
         val result = testedReader.readVitalData()
 
         // Then
-        assertThat(result).isNull()
+        assertThat(result).isZero()
     }
 
     @Test
@@ -124,7 +128,7 @@ internal class MemoryVitalReaderTest {
         val result = testedReader.readVitalData()
 
         // Then
-        assertThat(result).isNull()
+        assertThat(result).isZero()
     }
 
     @Test
@@ -138,7 +142,7 @@ internal class MemoryVitalReaderTest {
         val result = testedReader.readVitalData()
 
         // Then
-        assertThat(result).isNull()
+        assertThat(result).isZero()
     }
 
     private fun generateStatusContent(vmRss: Int): String {
