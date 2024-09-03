@@ -1,3 +1,30 @@
+# 2.13.0 / 2024-09-03
+
+* [FEATURE] Create Benchmark module to collect performance metrics. See [#2141](https://github.com/DataDog/dd-sdk-android/pull/2141)
+* [BUGFIX] Use NO_EXPORT_FLAG for BroadcastReceiver on API above 26. See [#2170](https://github.com/DataDog/dd-sdk-android/pull/2170)
+* [BUGFIX] Fix integration tests pipeline for API 21. See [#2197](https://github.com/DataDog/dd-sdk-android/pull/2197)
+* [IMPROVEMENT] Added setSyntheticsAttribute in RumInternalProxy. See [#2133](https://github.com/DataDog/dd-sdk-android/pull/2133)
+* [IMPROVEMENT] Use macos runner. See [#2154](https://github.com/DataDog/dd-sdk-android/pull/2154)
+* [IMPROVEMENT] Remove obsolete nightly test references. See [#2157](https://github.com/DataDog/dd-sdk-android/pull/2157)
+* [IMPROVEMENT] Add the integration tests for the SdkCore APIs. See [#2145](https://github.com/DataDog/dd-sdk-android/pull/2145)
+* [IMPROVEMENT] Update link to troubleshooting documentation. See [#2164](https://github.com/DataDog/dd-sdk-android/pull/2164) (Thanks [@mateo-villa](https://github.com/mateo-villa))
+* [IMPROVEMENT] Reset developerMode status when Datadog stop. See [#2174](https://github.com/DataDog/dd-sdk-android/pull/2174)
+* [IMPROVEMENT] Extract logic to pull publishing credentials into a dedicated snippet. See [#2176](https://github.com/DataDog/dd-sdk-android/pull/2176)
+* [IMPROVEMENT] Remove redundant build configuration in new reliability modules. See [#2178](https://github.com/DataDog/dd-sdk-android/pull/2178)
+* [IMPROVEMENT] Remove image property from macOS-based jobs. See [#2181](https://github.com/DataDog/dd-sdk-android/pull/2181)
+* [IMPROVEMENT] Update OkHttp to 4.12.0. See [#1975](https://github.com/DataDog/dd-sdk-android/pull/1975)
+* [IMPROVEMENT] Speed up `IdGenerationStrategy` test. See [#2187](https://github.com/DataDog/dd-sdk-android/pull/2187)
+* [IMPROVEMENT] Add integration tests for internal sdk core. See [#2177](https://github.com/DataDog/dd-sdk-android/pull/2177)
+* [IMPROVEMENT] Update Gradle to 8.9 and AGP to 8.5.2. See [#2192](https://github.com/DataDog/dd-sdk-android/pull/2192)
+* [IMPROVEMENT] Speed up generated files/licenses checks. See [#2188](https://github.com/DataDog/dd-sdk-android/pull/2188)
+* [IMPROVEMENT] Log Timber tag. See [#2202](https://github.com/DataDog/dd-sdk-android/pull/2202)
+* [IMPROVEMENT] Make sure user properties are immutable when setUserInfo. See [#2203](https://github.com/DataDog/dd-sdk-android/pull/2203)
+* [IMPROVEMENT] Add the integration tests for FeatureScope public API. See [#2209](https://github.com/DataDog/dd-sdk-android/pull/2209)
+* [IMPROVEMENT] Include optional exception in Upload Status. See [#2221](https://github.com/DataDog/dd-sdk-android/pull/2221)
+* [IMPROVEMENT] Create UploadSchedulerStrategy interface and default implementation. See [#2222](https://github.com/DataDog/dd-sdk-android/pull/2222)
+* [IMPROVEMENT] Add configuration to set uploadSchedulerStrategy. See [#2224](https://github.com/DataDog/dd-sdk-android/pull/2224)
+* [IMPROVEMENT] Update `kotlinx.ast` dependency. See [#2231](https://github.com/DataDog/dd-sdk-android/pull/2231)
+
 # 2.12.1 / 2024-08-13
 
 * [BUGFIX] RUM: Make no-op RUM monitor implementation returned by default to be `NoOpAdvancedRumMonitor`. See [#2185](https://github.com/DataDog/dd-sdk-android/pull/2185)
