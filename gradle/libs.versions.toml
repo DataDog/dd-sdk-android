@@ -67,7 +67,7 @@ versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
 
 kotlinPoet = "1.14.2"
-kotlinGrammarParser = "9b264ee"
+kotlinGrammarParser = "0.1.0"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.13.2"
 dependencyLicense = "0.3"
