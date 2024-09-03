@@ -7,16 +7,44 @@
 package com.datadog.benchmark.internal.reader
 
 import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
 
 /**
  * Reads the device's `VmRSS` based on the `/proc/self/status` file.
  * cf. documentation https://man7.org/linux/man-pages/man5/procfs.5.html
  */
 internal class MemoryVitalReader(
-    internal val statusFile: File = STATUS_FILE
+    internal val statusFile: File = STATUS_FILE,
+    private val readerDelay: Long = STATUS_FILE_READ_INTERVAL_MS
 ) : VitalReader {
 
-    override fun readVitalData(): Double? {
+    @Volatile
+    private var maxMemory: Double = 0.0
+    private val executorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
+    private val readRunnable: Runnable = Runnable {
+        maxMemory = maxMemory.coerceAtLeast(readStatusFile() ?: 0.0)
+        maxMemory = max(readStatusFile() ?: 0.0, maxMemory)
+    }
+
+    override fun readVitalData(): Double {
+        val current = maxMemory
+        maxMemory = 0.0
+        return current
+    }
+
+    override fun start() {
+        executorService.scheduleWithFixedDelay(readRunnable, 0L, readerDelay, TimeUnit.MILLISECONDS)
+    }
+
+    override fun stop() {
+        executorService.shutdownNow()
+    }
+
+    private fun readStatusFile(): Double? {
         if (!(statusFile.exists() && statusFile.canRead())) {
             return null
         }
@@ -39,6 +67,8 @@ internal class MemoryVitalReader(
     companion object {
 
         private const val BYTES_IN_KB = 1000
+
+        private const val STATUS_FILE_READ_INTERVAL_MS = 500L
 
         private const val STATUS_PATH = "/proc/self/status"
         internal val STATUS_FILE = File(STATUS_PATH)
