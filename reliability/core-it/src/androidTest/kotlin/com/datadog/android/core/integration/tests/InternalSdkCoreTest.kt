@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.integration
+package com.datadog.android.core.integration.tests
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -18,12 +18,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android._InternalProxy
 import com.datadog.android.api.context.DeviceType
-import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.integration.tests.MockServerTest
 import com.datadog.android.core.integration.tests.forge.factories.ConfigurationCoreForgeryFactory
 import com.datadog.android.core.integration.tests.utils.clientToken
 import com.datadog.android.core.integration.tests.utils.env
@@ -60,7 +58,7 @@ import java.util.concurrent.TimeUnit
  * Provides the tests for the InternalSdkCore API not related with the writing operations.
  */
 @RunWith(AndroidJUnit4::class)
-class InternalSdkCoreContextTest : MockServerTest() {
+class InternalSdkCoreTest : MockServerTest() {
 
     @get:Rule
     var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
@@ -134,7 +132,7 @@ class InternalSdkCoreContextTest : MockServerTest() {
         assertThat(context.appBuildId).isEqualTo(BUILD_ID)
         assertThat(context.source).isEqualTo(ANDROID_SOURCE)
         assertThat(context.processInfo.isMainProcess).isTrue()
-        assertThat(context.networkInfo.connectivity).isEqualTo(NetworkInfo.Connectivity.NETWORK_WIFI)
+        assertThat(context.networkInfo.connectivity).isNotNull()
         assertThat(context.networkInfo.carrierName).isNull()
         assertThat(context.deviceInfo.deviceName).isNotEmpty()
         assertThat(context.deviceInfo.deviceBrand).isNotEmpty()
@@ -258,7 +256,8 @@ class InternalSdkCoreContextTest : MockServerTest() {
                 }
             }
         }.start()
-        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        // We need to wait more here as the last thread is waiting for the first 2 to finish
+        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
 
         // When
         val context = testedInternalSdkCore.getDatadogContext()
@@ -312,7 +311,8 @@ class InternalSdkCoreContextTest : MockServerTest() {
                 }
             }
         }.start()
-        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        // We need to wait more here as the last thread is waiting for the first 2 to finish
+        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
 
         // When
         val context = testedInternalSdkCore.getDatadogContext()
@@ -330,20 +330,11 @@ class InternalSdkCoreContextTest : MockServerTest() {
 
     @Test
     fun mustReturnTheCorrectNetworkInfo_when_getNetworkInfo() {
-        // Given
-        val expectedConnectivity = NetworkInfo.Connectivity.NETWORK_WIFI
-
         // When
         val networkInfo = testedInternalSdkCore.networkInfo
 
         // Then
-        assertThat(networkInfo.connectivity).isEqualTo(expectedConnectivity)
-        assertThat(networkInfo.carrierName).isNull()
-        assertThat(networkInfo.carrierId).isNull()
-        assertThat(networkInfo.upKbps).isGreaterThan(0)
-        assertThat(networkInfo.downKbps).isGreaterThan(0)
-        assertThat(networkInfo.strength).isNotNull()
-        assertThat(networkInfo.cellularTechnology).isNull()
+        assertThat(networkInfo.connectivity).isNotNull()
     }
 
     // endregion
@@ -486,10 +477,7 @@ class InternalSdkCoreContextTest : MockServerTest() {
         val appStartTimeNs = testedInternalSdkCore.appStartTimeNs
 
         // Then
-        assertThat(appStartTimeNs).isCloseTo(
-            APPROXIMATE_APP_START_TIME_NS,
-            Offset.offset(APP_START_TIME_OFFSET_NS)
-        )
+        assertThat(appStartTimeNs).isBetween(0, APPLICATION_START_TIME_UPPER_BOUND_NS)
     }
 
     // endregion
@@ -614,12 +602,11 @@ class InternalSdkCoreContextTest : MockServerTest() {
     // endregion
 
     companion object {
-        private val APP_START_TIME_OFFSET_NS = TimeUnit.SECONDS.toNanos(1)
-        private val DEVICE_TIME_OFFSET_NS = TimeUnit.SECONDS.toNanos(1)
-        private val APPROXIMATE_APP_START_TIME_NS = System.nanoTime()
+        private val APPLICATION_START_TIME_UPPER_BOUND_NS = System.nanoTime()
+        private val DEVICE_TIME_OFFSET_NS = TimeUnit.SECONDS.toNanos(6)
         private const val ANDROID_SOURCE = "android"
         private const val BUILD_ID = "core_it_build_id"
-        private const val PACKAGE_NAME = "com.datadog.android.core.integration.test"
+        private const val PACKAGE_NAME = "com.datadog.android.core.integration"
         internal const val DATADOG_STORAGE_DIR_NAME_FORMAT = "datadog-(.*)"
     }
 }

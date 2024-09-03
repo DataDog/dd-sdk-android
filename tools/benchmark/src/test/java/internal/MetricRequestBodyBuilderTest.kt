@@ -8,6 +8,7 @@ package internal
 
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.google.gson.JsonParser
 import forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -39,21 +40,21 @@ class MetricRequestBodyBuilderTest {
     private lateinit var metricRequestBodyBuilder: com.datadog.benchmark.internal.MetricRequestBodyBuilder
 
     @Forgery
-    private lateinit var metricContext: com.datadog.benchmark.internal.model.MetricContext
+    private lateinit var benchmarkContext: com.datadog.benchmark.internal.model.BenchmarkContext
 
     @BeforeEach
     fun `set up`() {
-        metricRequestBodyBuilder = com.datadog.benchmark.internal.MetricRequestBodyBuilder(metricContext)
+        metricRequestBodyBuilder = com.datadog.benchmark.internal.MetricRequestBodyBuilder(benchmarkContext)
     }
 
     @Test
     fun `M create a proper request W buildJsonElement()`(@Forgery metricData: List<MetricData>) {
-        val jsonElement = metricRequestBodyBuilder.buildJsonElement(
+        val json = metricRequestBodyBuilder.build(
             metricData
         )
 
         MetricRequestAssert
-            .assertThat(jsonElement.asJsonObject)
+            .assertThat(JsonParser.parseString(json).asJsonObject)
             .hasMetricDataArray("series", metricData.size) { metricIndex ->
                 hasMetric(metricData[metricIndex].name)
                 hasPoints(metricData[metricIndex].data.points.size) { pointIndex ->
@@ -63,11 +64,11 @@ class MetricRequestBodyBuilderTest {
                 }
                 hasTags(
                     listOf(
-                        "device_model:${metricContext.deviceModel}",
-                        "os_version:${metricContext.osVersion}",
-                        "run:${metricContext.run}",
-                        "scenario:${metricContext.scenario}",
-                        "application_id:${metricContext.applicationId}"
+                        "device_model:${benchmarkContext.deviceModel}",
+                        "os_version:${benchmarkContext.osVersion}",
+                        "run:${benchmarkContext.run}",
+                        "scenario:${benchmarkContext.scenario}",
+                        "application_id:${benchmarkContext.applicationId}"
                     )
                 )
                 hasMetricType(resolveMetricType(metricData[metricIndex].type).value)

@@ -216,6 +216,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
     fun setCrashReportsEnabled(Boolean): Builder
     fun setBackpressureStrategy(BackPressureStrategy): Builder
+    fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -224,6 +225,8 @@ enum com.datadog.android.core.configuration.UploadFrequency
   - FREQUENT
   - AVERAGE
   - RARE
+interface com.datadog.android.core.configuration.UploadSchedulerStrategy
+  fun getMsDelayUntilNextUpload(String, Int, Int?, Throwable?): Long
 interface com.datadog.android.core.constraints.DataConstraints
   fun <T: Any?> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
   fun validateTags(List<String>): List<String>
@@ -403,5 +406,3 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
-annotation com.datadog.tools.annotation.NoOpImplementation
-  constructor(Boolean = false)

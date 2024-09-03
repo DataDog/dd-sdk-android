@@ -49,14 +49,25 @@ stages:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
     - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
     - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
-  run-instrumented-integration:
+  run-legacy-integration-instrumented:
+    - set +e
+    - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" )
-    - set +e
     - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
     - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
-    - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner
+    - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
+  run-core-it-instrumented:
+    - set +e
+    - exit_code=0
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:core-it:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - $ANDROID_HOME/platform-tools/adb emu kill
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
   set-publishing-credentials:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
@@ -185,6 +196,45 @@ test:kover:
 # TEST PYRAMID
 # the steps in this section should reflect our test pyramid strategy
 
+test-pyramid:core-it-min-api:
+  tags: [ "macos:sonoma" ]
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "21"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-core-it-instrumented]
+
+test-pyramid:core-it-latest-api:
+  tags: [ "macos:sonoma" ]
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "34"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-core-it-instrumented]
+
+test-pyramid:core-it-median-api:
+  tags: [ "macos:sonoma" ]
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "28"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, run-core-it-instrumented]
+
 test-pyramid:single-fit-logs:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -250,7 +300,7 @@ test-pyramid:single-fit-trace:
 
 # RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
 
-test-pyramid:instrumented-legacy-min-api:
+test-pyramid:legacy-integration-instrumented-min-api:
   tags: [ "macos:sonoma" ]
   stage: test-pyramid
   timeout: 1h
@@ -261,9 +311,9 @@ test-pyramid:instrumented-legacy-min-api:
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, install-android-sdk]
-    - !reference [.snippets, run-instrumented-integration]
+    - !reference [.snippets, run-legacy-integration-instrumented]
 
-test-pyramid:instrumented-legacy-latest-api:
+test-pyramid:legacy-integration-instrumented-latest-api:
   tags: [ "macos:sonoma" ]
   stage: test-pyramid
   timeout: 1h
@@ -274,9 +324,9 @@ test-pyramid:instrumented-legacy-latest-api:
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, install-android-sdk]
-    - !reference [.snippets, run-instrumented-integration]
+    - !reference [.snippets, run-legacy-integration-instrumented]
 
-test-pyramid:instrumented-legacy-median-api:
+test-pyramid:legacy-integration-instrumented-median-api:
   tags: [ "macos:sonoma" ]
   stage: test-pyramid
   timeout: 1h
@@ -287,7 +337,7 @@ test-pyramid:instrumented-legacy-median-api:
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, install-android-sdk]
-    - !reference [.snippets, run-instrumented-integration]
+    - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:publish-e2e-synthetics:
   tags: [ "arch:amd64" ]
@@ -411,6 +461,18 @@ publish:release-core:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - ./gradlew :dd-sdk-android-core:publishToSonatype --stacktrace --no-daemon
+
+publish:release-internal:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [ .snippets, set-publishing-credentials ]
+    - ./gradlew :dd-sdk-android-internal:publishToSonatype --stacktrace --no-daemon
 
 publish:release-coil:
   tags: [ "arch:amd64" ]
@@ -651,6 +713,18 @@ publish:release-rum:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - ./gradlew :features:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
+
+publish:release-benchmark:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :tools:benchmark:publishToSonatype --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 

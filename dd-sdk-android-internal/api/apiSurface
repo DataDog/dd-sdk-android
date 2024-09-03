@@ -1,0 +1,14 @@
+interface com.datadog.android.internal.profiler.BenchmarkProfiler
+  fun getTracer(String): BenchmarkTracer
+interface com.datadog.android.internal.profiler.BenchmarkSpan
+  fun stop()
+interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
+  fun startSpan(): BenchmarkSpan
+fun <T: Any?> withinBenchmarkSpan(String, BenchmarkSpan.() -> T): T
+interface com.datadog.android.internal.profiler.BenchmarkTracer
+  fun spanBuilder(String): BenchmarkSpanBuilder
+object com.datadog.android.internal.profiler.GlobalBenchmark
+  fun register(BenchmarkProfiler)
+  fun get(): BenchmarkProfiler
+annotation com.datadog.tools.annotation.NoOpImplementation
+  constructor(Boolean = false)

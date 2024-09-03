@@ -1,9 +1,10 @@
 package com.datadog.benchmark.exporter
 
 import android.os.Build
+import com.datadog.android.BuildConfig
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.internal.DatadogHttpClient
-import com.datadog.benchmark.internal.model.MetricContext
+import com.datadog.benchmark.internal.model.BenchmarkContext
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.metrics.InstrumentType
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality
@@ -12,16 +13,17 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter
 
 internal class DatadogMetricExporter(datadogExporterConfiguration: DatadogExporterConfiguration) : MetricExporter {
 
-    private val metricContext: MetricContext = MetricContext(
+    private val benchmarkContext: BenchmarkContext = BenchmarkContext(
         deviceModel = Build.MODEL ?: UNKNOWN_TAG_VALUE,
         osVersion = Build.VERSION.RELEASE ?: UNKNOWN_TAG_VALUE,
         run = datadogExporterConfiguration.run ?: UNKNOWN_TAG_VALUE,
         scenario = datadogExporterConfiguration.scenario,
         applicationId = datadogExporterConfiguration.applicationId ?: UNKNOWN_TAG_VALUE,
-        intervalInSeconds = datadogExporterConfiguration.intervalInSeconds
+        intervalInSeconds = datadogExporterConfiguration.intervalInSeconds,
+        env = BuildConfig.BUILD_TYPE
     )
     private val metricHttpClient: DatadogHttpClient = DatadogHttpClient(
-        metricContext,
+        benchmarkContext,
         datadogExporterConfiguration
     )
 

@@ -588,6 +588,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public final fun setPersistenceStrategyFactory (Lcom/datadog/android/core/persistence/PersistenceStrategy$Factory;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setProxy (Ljava/net/Proxy;Lokhttp3/Authenticator;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUploadFrequency (Lcom/datadog/android/core/configuration/UploadFrequency;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setUploadSchedulerStrategy (Lcom/datadog/android/core/configuration/UploadSchedulerStrategy;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUseDeveloperModeWhenDebuggable (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun useSite (Lcom/datadog/android/DatadogSite;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 }
@@ -606,6 +607,10 @@ public final class com/datadog/android/core/configuration/UploadFrequency : java
 	public static final field RARE Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static fun values ()[Lcom/datadog/android/core/configuration/UploadFrequency;
+}
+
+public abstract interface class com/datadog/android/core/configuration/UploadSchedulerStrategy {
+	public abstract fun getMsDelayUntilNextUpload (Ljava/lang/String;ILjava/lang/Integer;Ljava/lang/Throwable;)J
 }
 
 public abstract interface class com/datadog/android/core/constraints/DataConstraints {
@@ -964,9 +969,5 @@ public final class com/datadog/android/trace/TracingHeaderType : java/lang/Enum 
 	public final fun getHeaderType ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/TracingHeaderType;
 	public static fun values ()[Lcom/datadog/android/trace/TracingHeaderType;
-}
-
-public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
-	public abstract fun publicNoOpImplementation ()Z
 }
 

@@ -11,8 +11,11 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -29,7 +32,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogUserInfoProviderTest {
 
-    lateinit var testedProvider: DatadogUserInfoProvider
+    private lateinit var testedProvider: DatadogUserInfoProvider
 
     @Mock
     lateinit var mockWriter: DataWriter<UserInfo>
@@ -53,7 +56,7 @@ internal class DatadogUserInfoProviderTest {
         @Forgery userInfo: UserInfo
     ) {
         // When
-        testedProvider.setUserInfo(userInfo)
+        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, userInfo.additionalProperties)
         val result = testedProvider.getUserInfo()
 
         // Then
@@ -63,24 +66,20 @@ internal class DatadogUserInfoProviderTest {
     @Test
     fun `M delegate to persister W setUserInfo`(@Forgery userInfo: UserInfo) {
         // When
-        testedProvider.setUserInfo(userInfo)
+        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, userInfo.additionalProperties)
 
         // Then
         verify(mockWriter).write(userInfo)
     }
 
     @Test
-    fun `M keep existing properties W setExtraProperties() is called`(
+    fun `M keep existing properties W addUserProperties() is called`(
         @Forgery userInfo: UserInfo,
         @StringForgery forge: Forge
     ) {
         // Given
         val customProperties = forge.exhaustiveAttributes()
-        testedProvider.setUserInfo(
-            userInfo.copy(
-                additionalProperties = customProperties
-            )
-        )
+        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, customProperties)
 
         // When
         testedProvider.addUserProperties(customProperties)
@@ -91,16 +90,77 @@ internal class DatadogUserInfoProviderTest {
     }
 
     @Test
-    fun `M keep new property key W setExtraProperties() is called and the key already exists`(
+    fun `M use immutable properties W addUserProperties() is called { changing properties values }`(
+        @StringForgery forge: Forge
+    ) {
+        // Given
+        val fakeProperties = forge.exhaustiveAttributes()
+        val fakeExpectedProperties = fakeProperties.toMap()
+        val fakeMutableProperties = fakeProperties.toMutableMap()
+        testedProvider.addUserProperties(fakeMutableProperties)
+
+        // When
+        fakeMutableProperties.keys.forEach {
+            fakeMutableProperties[it] = forge.anAlphabeticalString()
+        }
+
+        // Then
+        assertThat(
+            testedProvider.getUserInfo().additionalProperties
+        ).isEqualTo(fakeExpectedProperties)
+    }
+
+    @Test
+    fun `M use immutable properties W addUserProperties() is called { adding properties }`(
+        @StringForgery forge: Forge
+    ) {
+        // Given
+        val fakeProperties = forge.exhaustiveAttributes()
+        val fakeExpectedProperties = fakeProperties.toMap()
+        val fakeMutableProperties = fakeProperties.toMutableMap()
+        testedProvider.addUserProperties(fakeMutableProperties)
+
+        // When
+        repeat(forge.anInt(1, 10)) {
+            fakeMutableProperties[forge.anAlphabeticalString()] = forge.anAlphabeticalString()
+        }
+
+        // Then
+        assertThat(
+            testedProvider.getUserInfo().additionalProperties
+        ).isEqualTo(fakeExpectedProperties)
+    }
+
+    @Test
+    fun `M use immutable properties W addUserProperties() is called { removing properties }`(
+        @StringForgery forge: Forge
+    ) {
+        // Given
+        val fakeProperties = forge.exhaustiveAttributes()
+        val fakeExpectedProperties = fakeProperties.toMap()
+        val fakeMutableProperties = fakeProperties.toMutableMap()
+        testedProvider.addUserProperties(fakeMutableProperties)
+
+        // When
+        repeat(forge.anInt(1, fakeMutableProperties.size + 1)) {
+            fakeMutableProperties.remove(fakeMutableProperties.keys.random())
+        }
+
+        // Then
+        assertThat(
+            testedProvider.getUserInfo().additionalProperties
+        ).isEqualTo(fakeExpectedProperties)
+    }
+
+    @Test
+    fun `M keep new property key W addUserProperties() is called and the key already exists`(
         @Forgery userInfo: UserInfo,
         @StringForgery key: String,
         @StringForgery value1: String,
         @StringForgery value2: String
     ) {
         // Given
-        testedProvider.setUserInfo(
-            userInfo.copy(additionalProperties = mutableMapOf(key to value1))
-        )
+        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, mutableMapOf(key to value1))
 
         // When
         testedProvider.addUserProperties(mapOf(key to value2))
@@ -111,5 +171,80 @@ internal class DatadogUserInfoProviderTest {
         ).isEqualTo(
             mapOf(key to value2)
         )
+    }
+
+    @Test
+    fun `M use immutable values W setUserInfo { changing properties values }()`(
+        forge: Forge,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        val fakeMutableUserProperties = fakeUserProperties.toMutableMap()
+        val fakeExpectedUserProperties = fakeUserProperties.toMap()
+        testedProvider.setUserInfo(id, name, email, fakeMutableUserProperties)
+
+        // When
+        fakeMutableUserProperties.keys.forEach { key ->
+            fakeMutableUserProperties[key] = forge.anAlphaNumericalString()
+        }
+
+        // Then
+        assertThat(testedProvider.getUserInfo().additionalProperties).isEqualTo(fakeExpectedUserProperties)
+    }
+
+    @Test
+    fun `M use immutable values W setUserInfo { adding properties }()`(
+        forge: Forge,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        val fakeMutableUserProperties = fakeUserProperties.toMutableMap()
+        val fakeExpectedUserProperties = fakeUserProperties.toMap()
+        testedProvider.setUserInfo(id, name, email, fakeMutableUserProperties)
+
+        // When
+        repeat(forge.anInt(1, 10)) {
+            fakeMutableUserProperties[forge.anAlphabeticalString()] = forge.anAlphabeticalString()
+        }
+
+        // Then
+        assertThat(testedProvider.getUserInfo().additionalProperties).isEqualTo(fakeExpectedUserProperties)
+    }
+
+    @Test
+    fun `M use immutable values W setUserInfo { removing properties }()`(
+        forge: Forge,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        val fakeMutableUserProperties = fakeUserProperties.toMutableMap()
+        val fakeExpectedUserProperties = fakeUserProperties.toMap()
+        testedProvider.setUserInfo(id, name, email, fakeMutableUserProperties)
+
+        // When
+        repeat(forge.anInt(1, fakeMutableUserProperties.size + 1)) {
+            fakeMutableUserProperties.remove(fakeMutableUserProperties.keys.random())
+        }
+
+        // Then
+        assertThat(testedProvider.getUserInfo().additionalProperties).isEqualTo(fakeExpectedUserProperties)
     }
 }

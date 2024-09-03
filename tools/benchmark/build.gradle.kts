@@ -5,15 +5,20 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.publishingConfig
 
 plugins {
     id("com.android.library")
     kotlin("android")
     id("com.github.ben-manes.versions")
+
+    `maven-publish`
+    signing
 }
 
 android {
@@ -28,7 +33,8 @@ android {
 }
 
 dependencies {
-
+    implementation(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.openTelemetryApiBenchmark)
@@ -47,6 +53,10 @@ dependencies {
     testImplementation(libs.bundles.testTools)
 }
 
+apply(from = "generate_trace_models.gradle.kts")
+
 kotlinConfig()
 junitConfig()
 dependencyUpdateConfig()
+androidLibraryConfig()
+publishingConfig("An internal benchmarking tool to measure the overhead of Datadog SDK")

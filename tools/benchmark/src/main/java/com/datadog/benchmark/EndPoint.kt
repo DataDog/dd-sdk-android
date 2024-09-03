@@ -16,23 +16,23 @@ enum class EndPoint(
 
     US1(
         metrics = "https://api.datadoghq.com/",
-        traces = "https://trace.browser-intake-datadoghq.com/"
+        traces = "https://browser-intake-datadoghq.com/"
     ),
     US3(
         metrics = "https://api.us3.datadoghq.com/",
-        traces = "https://trace.browser-intake-us3-datadoghq.com/"
+        traces = "https://browser-intake-us3-datadoghq.com/"
     ),
     US5(
         metrics = "https://api.us5.datadoghq.com/",
-        traces = "https://trace.browser-intake-us5-datadoghq.com/"
+        traces = "https://browser-intake-us5-datadoghq.com/"
     ),
     EU1(
         metrics = "https://api.datadoghq.eu/",
         traces = "https://public-trace-http-intake.logs.datadoghq.eu/"
     ),
     AP1(
-        metrics = "https://ap1.datadoghq.com",
-        traces = "https://browser-intake-ap1-datadoghq.com"
+        metrics = "https://ap1.datadoghq.com/",
+        traces = "https://browser-intake-ap1-datadoghq.com/"
     );
 
     /**

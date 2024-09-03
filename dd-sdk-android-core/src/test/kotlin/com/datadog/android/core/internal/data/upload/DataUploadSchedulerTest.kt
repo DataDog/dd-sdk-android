@@ -6,9 +6,11 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -45,17 +47,24 @@ internal class DataUploadSchedulerTest {
     @StringForgery
     lateinit var fakeFeatureName: String
 
+    @Mock
+    lateinit var mockUploadSchedulerStrategy: UploadSchedulerStrategy
+
+    @IntForgery(min = 1, max = 4)
+    var fakeMaxBatchesPerJob: Int = 0
+
     @BeforeEach
     fun `set up`() {
         testedScheduler = DataUploadScheduler(
-            fakeFeatureName,
+            featureName = fakeFeatureName,
             storage = mock(),
             dataUploader = mock(),
             contextProvider = mock(),
             networkInfoProvider = mock(),
             systemInfoProvider = mock(),
-            fakeUploadConfiguration,
-            mockExecutor,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            scheduledThreadPoolExecutor = mockExecutor,
             internalLogger = mock()
         )
     }

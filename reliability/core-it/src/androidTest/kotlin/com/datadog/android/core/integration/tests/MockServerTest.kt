@@ -9,6 +9,7 @@ package com.datadog.android.core.integration.tests
 import com.datadog.android.core.integration.tests.utils.MockWebServerWrapper
 import org.junit.AfterClass
 import org.junit.BeforeClass
+import org.mockito.internal.matchers.Any
 import java.util.concurrent.atomic.AtomicBoolean
 
 abstract class MockServerTest : BaseTest() {
@@ -19,13 +20,16 @@ abstract class MockServerTest : BaseTest() {
 
     companion object {
         private val mockServerStarted = AtomicBoolean(false)
-        protected val mockServerWrapper: MockWebServerWrapper = MockWebServerWrapper()
+        private val MOCK_SERVER_LOCK = Any()
+        protected var mockServerWrapper: MockWebServerWrapper = MockWebServerWrapper()
 
         @BeforeClass
         @JvmStatic
         fun setupTestSuite() {
             if (mockServerStarted.compareAndSet(false, true)) {
-                mockServerWrapper.start()
+                synchronized(MOCK_SERVER_LOCK) {
+                    mockServerWrapper.start()
+                }
             }
         }
 
@@ -33,8 +37,16 @@ abstract class MockServerTest : BaseTest() {
         @JvmStatic
         fun tearDown() {
             if (mockServerStarted.compareAndSet(true, false)) {
-                mockServerWrapper.shutdown()
+                // we reinitialize the mock server as it cannot be reused
+                synchronized(MOCK_SERVER_LOCK) {
+                    mockServerWrapper.shutdown()
+                    mockServerWrapper = MockWebServerWrapper()
+                }
             }
+        }
+
+        fun cleanMockWebServer() {
+            mockServerWrapper.clearData()
         }
     }
 }

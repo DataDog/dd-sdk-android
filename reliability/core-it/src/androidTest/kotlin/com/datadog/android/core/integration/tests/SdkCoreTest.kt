@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.integration
+package com.datadog.android.core.integration.tests
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -15,7 +15,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.integration.tests.MockServerTest
 import com.datadog.android.core.integration.tests.forge.factories.ConfigurationCoreForgeryFactory
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -38,7 +37,7 @@ import java.util.concurrent.TimeUnit
  * etc.
  */
 @RunWith(AndroidJUnit4::class)
-class SdkCoreContextTest : MockServerTest() {
+class SdkCoreTest : MockServerTest() {
 
     @get:Rule
     var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
@@ -171,7 +170,7 @@ class SdkCoreContextTest : MockServerTest() {
         testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeMutableProperties)
 
         // When
-        repeat(forge.anInt(1, 10)) {
+        repeat(forge.anInt(1, fakeMutableProperties.size / 2)) {
             fakeMutableProperties.remove(fakeMutableProperties.keys.random())
         }
 
@@ -254,7 +253,7 @@ class SdkCoreContextTest : MockServerTest() {
         testedSdkCore?.addUserProperties(fakeExtraProperties)
 
         // When
-        repeat(forge.anInt(1, 10)) {
+        repeat(forge.anInt(1, fakeExtraProperties.size / 2)) {
             fakeExtraProperties.remove(fakeExtraProperties.keys.random())
         }
 
