@@ -49,10 +49,6 @@ android {
         )
     }
     namespace = "com.datadog.android.trace.opentelemetry"
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
 }
 
 dependencies {

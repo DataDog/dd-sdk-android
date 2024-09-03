@@ -64,11 +64,6 @@ fun Project.androidLibraryConfig() {
             unitTests.isReturnDefaultValues = true
         }
 
-        @Suppress("UnstableApiUsage")
-        testFixtures {
-            enable = true
-        }
-
         lint {
             warningsAsErrors = true
             abortOnError = true
