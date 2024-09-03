@@ -216,6 +216,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
     fun setCrashReportsEnabled(Boolean): Builder
     fun setBackpressureStrategy(BackPressureStrategy): Builder
+    fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>

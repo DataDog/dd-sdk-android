@@ -98,7 +98,8 @@ internal class SdkFeature(
                 uploadFrequency,
                 batchProcessingLevel.maxBatchesPerUploadJob
             )
-            val uploadSchedulerStrategy = DefaultUploadSchedulerStrategy(dataUploadConfiguration)
+            val uploadSchedulerStrategy = coreFeature.customUploadSchedulerStrategy
+                ?: DefaultUploadSchedulerStrategy(dataUploadConfiguration)
             storage = prepareStorage(
                 dataUploadConfiguration,
                 wrappedFeature,
