@@ -32,6 +32,7 @@ import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.WebViewRumEventMapper
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.android.webview.internal.rum.domain.NoOpNativeRumViewsCache
+import java.util.Locale
 
 /**
  * An entry point to Datadog WebView Tracking feature.
@@ -80,8 +81,7 @@ object WebViewTracking {
         }
         val featureSdkCore = sdkCore as FeatureSdkCore
         val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
-        val privacyLevel = (featureContext[SESSION_REPLAY_PRIVACY_KEY] as? String)
-            ?: SESSION_REPLAY_MASK_ALL_PRIVACY
+        val privacyLevel = resolvePrivacy(featureContext)
         val webViewEventConsumer = buildWebViewEventConsumer(
             featureSdkCore,
             logsSampleRate,
@@ -91,6 +91,36 @@ object WebViewTracking {
             DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel),
             DATADOG_EVENT_BRIDGE_NAME
         )
+    }
+
+    private fun resolvePrivacy(featureContext: Map<String, Any?>): String {
+        val imagePrivacy = featureContext[SESSION_REPLAY_IMAGE_PRIVACY_KEY] as? String
+            ?: SESSION_REPLAY_MASK_ALL_IMAGE_PRIVACY
+        val touchPrivacy = featureContext[SESSION_REPLAY_TOUCH_PRIVACY_KEY] as? String
+            ?: SESSION_REPLAY_MASK_ALL_TOUCH_PRIVACY
+        val textAndInputPrivacy =
+            featureContext[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] as? String
+                ?: SESSION_REPLAY_MASK_ALL_TEXT_PRIVACY
+
+        return if (isMaskNone(imagePrivacy, touchPrivacy, textAndInputPrivacy)) {
+            SESSION_REPLAY_MASK_NONE_PRIVACY
+        } else if (isMaskInputs(imagePrivacy, touchPrivacy, textAndInputPrivacy)) {
+            SESSION_REPLAY_MASK_INPUTS_PRIVACY
+        } else {
+            SESSION_REPLAY_MASK_ALL_PRIVACY
+        }
+    }
+
+    private fun isMaskNone(imagePrivacy: String, touchPrivacy: String, textAndInputPrivacy: String): Boolean {
+        return touchPrivacy.lowercase(Locale.US) == SESSION_REPLAY_MASK_NONE_TOUCH_PRIVACY &&
+            imagePrivacy.lowercase(Locale.US) == SESSION_REPLAY_MASK_NONE_IMAGE_PRIVACY &&
+            textAndInputPrivacy.lowercase(Locale.US) == SESSION_REPLAY_MASK_NONE_TEXT_PRIVACY
+    }
+
+    private fun isMaskInputs(imagePrivacy: String, touchPrivacy: String, textAndInputPrivacy: String): Boolean {
+        return touchPrivacy.lowercase(Locale.US) == SESSION_REPLAY_MASK_NONE_TOUCH_PRIVACY &&
+            imagePrivacy.lowercase(Locale.US) == SESSION_REPLAY_MASK_NONE_IMAGE_PRIVACY &&
+            textAndInputPrivacy.lowercase(Locale.US) == SESSION_REPLAY_MASK_INPUTS_TEXT_PRIVACY
     }
 
     private fun buildWebViewEventConsumer(
@@ -161,6 +191,7 @@ object WebViewTracking {
             null
         }
     }
+
     private fun resolveReplayFeature(sdkCore: FeatureSdkCore): WebViewReplayFeature? {
         (
             sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
@@ -182,6 +213,7 @@ object WebViewTracking {
             null
         }
     }
+
     private fun resolveLogsFeature(sdkCore: FeatureSdkCore): WebViewLogsFeature? {
         (
             sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
@@ -224,7 +256,22 @@ object WebViewTracking {
     }
 
     internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
+
+    internal const val SESSION_REPLAY_MASK_NONE_PRIVACY = "allow"
+    internal const val SESSION_REPLAY_MASK_INPUTS_PRIVACY = "mask_user_input"
     internal const val SESSION_REPLAY_MASK_ALL_PRIVACY = "mask"
+
+    internal const val SESSION_REPLAY_MASK_NONE_TOUCH_PRIVACY = "show"
+    internal const val SESSION_REPLAY_MASK_ALL_TOUCH_PRIVACY = "hide"
+    internal const val SESSION_REPLAY_MASK_NONE_IMAGE_PRIVACY = "mask_none"
+    internal const val SESSION_REPLAY_MASK_ALL_IMAGE_PRIVACY = "mask_all"
+    internal const val SESSION_REPLAY_MASK_NONE_TEXT_PRIVACY = "mask_sensitive_inputs"
+    internal const val SESSION_REPLAY_MASK_INPUTS_TEXT_PRIVACY = "mask_all_inputs"
+    internal const val SESSION_REPLAY_MASK_ALL_TEXT_PRIVACY = "mask_all"
+
+    internal const val SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY = "session_replay_text_and_input_privacy"
+    internal const val SESSION_REPLAY_IMAGE_PRIVACY_KEY = "session_replay_image_privacy"
+    internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
 
     internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =
         "You are trying to enable the WebView" +

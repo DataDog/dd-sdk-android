@@ -21,6 +21,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
@@ -45,8 +46,9 @@ internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
     private val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
-    internal val imagePrivacy: ImagePrivacy,
+    internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val touchPrivacy: TouchPrivacy,
+    internal val imagePrivacy: ImagePrivacy,
     private val rateBasedSampler: Sampler,
     private val startRecordingImmediately: Boolean,
     private val recorderProvider: RecorderProvider
@@ -58,8 +60,9 @@ internal class SessionReplayFeature(
         sdkCore: FeatureSdkCore,
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
-        imagePrivacy: ImagePrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         touchPrivacy: TouchPrivacy,
+        imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         sampleRate: Float,
@@ -68,13 +71,14 @@ internal class SessionReplayFeature(
         sdkCore,
         customEndpointUrl,
         privacy,
-        imagePrivacy,
+        textAndInputPrivacy,
         touchPrivacy,
+        imagePrivacy,
         RateBasedSampler(sampleRate),
         startRecordingImmediately,
         DefaultRecorderProvider(
             sdkCore,
-            privacy,
+            textAndInputPrivacy,
             imagePrivacy,
             touchPrivacy,
             customMappers,
@@ -136,6 +140,9 @@ internal class SessionReplayFeature(
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
             it[SESSION_REPLAY_PRIVACY_KEY] = privacy.toString().lowercase(Locale.US)
             it[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] = startRecordingImmediately
+            it[SESSION_REPLAY_TOUCH_PRIVACY_KEY] = touchPrivacy.toString().lowercase(Locale.US)
+            it[SESSION_REPLAY_IMAGE_PRIVACY_KEY] = imagePrivacy.toString().lowercase(Locale.US)
+            it[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] = textAndInputPrivacy.toString().lowercase(Locale.US)
         }
     }
 
@@ -393,6 +400,9 @@ internal class SessionReplayFeature(
         const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
         internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
+        internal const val SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY = "session_replay_text_and_input_privacy"
+        internal const val SESSION_REPLAY_IMAGE_PRIVACY_KEY = "session_replay_image_privacy"
+        internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
         internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
             "session_replay_start_immediate_recording"
         internal const val SESSION_REPLAY_ENABLED_KEY =

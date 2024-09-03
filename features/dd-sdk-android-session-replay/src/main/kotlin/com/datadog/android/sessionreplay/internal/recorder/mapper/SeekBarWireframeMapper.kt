@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.SeekBar
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -55,7 +55,7 @@ internal open class SeekBarWireframeMapper(
             normalizedProgress
         )
 
-        if (mappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+        if (mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
             val screenDensity = mappingContext.systemInformation.screenDensity
             val trackHeight = ProgressBarWireframeMapper.TRACK_HEIGHT_IN_PX.densityNormalized(screenDensity)
             val thumbColor = getColor(view.thumbTintList, view.drawableState) ?: getDefaultColor(view)

@@ -14,7 +14,7 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
@@ -102,7 +102,7 @@ internal class RecorderWindowCallbackTest {
     lateinit var mockEventUtils: MotionEventUtils
 
     @Forgery
-    lateinit var fakePrivacy: SessionReplayPrivacy
+    lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
 
     @BeforeEach
     fun `set up`() {
@@ -121,9 +121,9 @@ internal class RecorderWindowCallbackTest {
             timeProvider = mockTimeProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
-            privacy = fakePrivacy,
             imagePrivacy = ImagePrivacy.MASK_NONE,
             touchPrivacy = TouchPrivacy.SHOW,
+            privacy = fakeTextAndInputPrivacy,
             copyEvent = { it },
             motionEventUtils = mockEventUtils,
             motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
@@ -426,7 +426,7 @@ internal class RecorderWindowCallbackTest {
         // Then
         inOrder(mockViewOnDrawInterceptor) {
             verify(mockViewOnDrawInterceptor).stopIntercepting()
-            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakePrivacy, ImagePrivacy.MASK_NONE)
+            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakeTextAndInputPrivacy, ImagePrivacy.MASK_NONE)
         }
     }
 
@@ -466,7 +466,7 @@ internal class RecorderWindowCallbackTest {
             timeProvider = mockTimeProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
-            privacy = fakePrivacy,
+            privacy = fakeTextAndInputPrivacy,
             imagePrivacy = ImagePrivacy.MASK_NONE,
             touchPrivacy = TouchPrivacy.SHOW,
             copyEvent = { it },
@@ -507,7 +507,7 @@ internal class RecorderWindowCallbackTest {
             timeProvider = mockTimeProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
-            privacy = fakePrivacy,
+            privacy = fakeTextAndInputPrivacy,
             imagePrivacy = ImagePrivacy.MASK_NONE,
             touchPrivacy = TouchPrivacy.HIDE,
             copyEvent = { it },

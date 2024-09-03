@@ -3,7 +3,7 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.Horizontal.LEFT
 import com.datadog.android.sessionreplay.model.MobileSegment.Horizontal.RIGHT
@@ -51,7 +51,7 @@ internal abstract class TextViewMapperTest :
             )
         ) doReturn fakeTextColorHexString
 
-        withPrivacy(privacyOption())
+        withTextAndInputPrivacy(privacyOption())
 
         testedWireframeMapper = TextViewMapper(
             mockViewIdentifierResolver,
@@ -63,7 +63,7 @@ internal abstract class TextViewMapperTest :
 
     abstract fun expectedPrivacyCompliantText(text: String): String
 
-    abstract fun privacyOption(): SessionReplayPrivacy
+    abstract fun privacyOption(): TextAndInputPrivacy
 
     @ParameterizedTest(name = "{index} (typeface: {0}, align:{2}, gravity:{3})")
     @MethodSource("parametersMatrix")

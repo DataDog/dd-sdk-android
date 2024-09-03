@@ -36,6 +36,7 @@ object SessionReplay {
             privacy = sessionReplayConfiguration.privacy,
             imagePrivacy = sessionReplayConfiguration.imagePrivacy,
             touchPrivacy = sessionReplayConfiguration.touchPrivacy,
+            textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
             customMappers = sessionReplayConfiguration.customMappers,
             customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
             sampleRate = sessionReplayConfiguration.sampleRate,
