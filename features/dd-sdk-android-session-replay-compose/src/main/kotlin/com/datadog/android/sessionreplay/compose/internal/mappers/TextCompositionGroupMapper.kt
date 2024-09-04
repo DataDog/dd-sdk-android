@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers
 
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.GenericFontFamily
 import androidx.compose.ui.text.style.TextAlign
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
@@ -36,23 +37,28 @@ internal class TextCompositionGroupMapper(
         var textColor: String? = uiContext.parentContentColor
         var fontSize: Float? = null
 
+        // Resolve text style first, because it can be overridden if the color and font size are specified directly.
+        (parameters.firstOrNull { it.name == PARAM_NAME_STYLE }?.value as? TextStyle)?.let {
+            fontSize = it.fontSize.value
+            textColor = convertColor(it.color.value.toLong()) ?: textColor
+            textAlign = resolveTextAlign(it.textAlign)
+        }
+
         parameters.forEach { param ->
             when (param.name) {
-                "textAlign" -> textAlign = when (param.value as? TextAlign) {
-                    TextAlign.Justify,
-                    TextAlign.Left,
-                    TextAlign.Start -> MobileSegment.Horizontal.LEFT
-
-                    TextAlign.Right,
-                    TextAlign.End -> MobileSegment.Horizontal.RIGHT
-
-                    TextAlign.Center -> MobileSegment.Horizontal.CENTER
-                    else -> null
+                PARAM_NAME_TEXT_ALIGN -> resolveTextAlign(param.value as? TextAlign)?.let {
+                    textAlign = it
                 }
 
-                "textColor" -> textColor = (param.value as? Long)?.let { convertColor(it) }
-                "fontSize" -> fontSize = (param.value as? Long)?.let { convertTextUnit(it) }
-                "fontFamily" -> fontFamily = when (param.value) {
+                PARAM_NAME_COLOR -> (param.value as? Long)?.let { convertColor(it) }?.let {
+                    textColor = it
+                }
+
+                PARAM_NAME_FONT_SIZE -> (param.value as? Long)?.let { convertTextUnit(it) }?.let {
+                    fontSize = it
+                }
+
+                PARAM_NAME_FONT_FAMILY -> fontFamily = when (param.value) {
                     is GenericFontFamily -> param.value.name
                     else -> DEFAULT_FONT_FAMILY
                 }
@@ -82,6 +88,20 @@ internal class TextCompositionGroupMapper(
         )
     }
 
+    private fun resolveTextAlign(textAlign: TextAlign?): MobileSegment.Horizontal? {
+        return when (textAlign) {
+            TextAlign.Justify,
+            TextAlign.Left,
+            TextAlign.Start -> MobileSegment.Horizontal.LEFT
+
+            TextAlign.Right,
+            TextAlign.End -> MobileSegment.Horizontal.RIGHT
+
+            TextAlign.Center -> MobileSegment.Horizontal.CENTER
+            else -> null
+        }
+    }
+
     private fun resolveCapturedText(parameters: Sequence<ComposableParameter>, uiContext: UiContext): String {
         val originalText = (parameters.firstOrNull { it.name == PARAM_NAME_TEXT }?.value as? String).orEmpty()
         return when (uiContext.privacy) {
@@ -104,7 +124,8 @@ internal class TextCompositionGroupMapper(
     private fun convertTextUnit(dimen: Long): Float? {
         val dimenType = dimen and DIMEN_TYPE_MASK
         val dimenValue = dimen and DIMEN_VALUE_MASK
-
+        // TODO: RUM-6058 Support system font scale in Text mapper
+        val fontScale = 1f
         return if (dimenValue == DIMEN_VALUE_NAN) {
             null
         } else {
@@ -112,9 +133,10 @@ internal class TextCompositionGroupMapper(
 
             when (dimenType) {
                 DIMEN_TYPE_UNSPECIFIED,
-                DIMEN_TYPE_SP -> value // RUM-3633 scale by density ?
+                // "em" is relative font size, it should not be applied on font size it self, it should be used in letterSpacing, lineHeight, etc.
+                DIMEN_TYPE_EM -> value
 
-                DIMEN_TYPE_EM -> value // TODO RUM-3633 find the proper way to scale em to px
+                DIMEN_TYPE_SP -> value * fontScale
                 else -> value
             }
         }
@@ -136,5 +158,11 @@ internal class TextCompositionGroupMapper(
         private const val DIMEN_TYPE_UNSPECIFIED = 0x00L shl 32 // 0x00_0000_0000
         private const val DIMEN_TYPE_SP = 0x01L shl 32 // 0x01_0000_0000
         private const val DIMEN_TYPE_EM = 0x02L shl 32 // 0x02_0000_0000
+
+        private const val PARAM_NAME_STYLE = "style"
+        private const val PARAM_NAME_TEXT_ALIGN = "textAlign"
+        private const val PARAM_NAME_FONT_SIZE = "fontSize"
+        private const val PARAM_NAME_FONT_FAMILY = "fontFamily"
+        private const val PARAM_NAME_COLOR = "color"
     }
 }
