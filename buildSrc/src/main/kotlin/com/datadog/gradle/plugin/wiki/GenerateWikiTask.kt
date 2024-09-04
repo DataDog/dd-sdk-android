@@ -199,6 +199,7 @@ open class GenerateWikiTask : DefaultTask() {
                     builder.append('-')
                     builder.append(it.toLowerCase())
                 }
+
                 else -> builder.append(it)
             }
         }
@@ -215,6 +216,7 @@ open class GenerateWikiTask : DefaultTask() {
                     builder.append(if (upperCaseNext) it.toUpperCase() else it)
                     upperCaseNext = false
                 }
+
                 else -> builder.append(it)
             }
         }
@@ -237,6 +239,7 @@ open class GenerateWikiTask : DefaultTask() {
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun convertHrefLink(
         href: String,
         typeName: String,
@@ -283,6 +286,7 @@ open class GenerateWikiTask : DefaultTask() {
         }
     }
 
+    @Suppress("ReturnCount")
     private fun findExistingFile(type: String): String {
         if (type.isBlank()) {
             logger.warn("Trying to link to a blank type?")
@@ -301,7 +305,7 @@ open class GenerateWikiTask : DefaultTask() {
             } else {
                 logger.error(
                     "No matching file found for type '$type'. " +
-                            "Try running the task again."
+                        "Try running the task again."
                 )
                 return ""
             }
@@ -324,14 +328,18 @@ open class GenerateWikiTask : DefaultTask() {
 
         private val noise = listOf("[androidJvm]\\", "androidJvm")
 
-        private val codeLineRegex =
-            Regex("^(open )?(override )?(object|class|enum|data class|interface|annotation class|abstract class|fun|var|val) (.+)$")
-        private val apiTypeSignatureRegex =
-            Regex("^(DEPRECATED )?(open )?(object|class|enum|data class|interface|annotation class|abstract class) ([\\w\\d.]+)(<[\\w:\\s<>]+)?( .+)?")
+        private val codeLineRegex = Regex(
+            "^(open )?(override )?" +
+                "(object|class|enum|data class|interface|annotation class|abstract class|fun|var|val) (.+)$"
+        )
+        private val apiTypeSignatureRegex = Regex(
+            "^(DEPRECATED )?(open )?" +
+                "(object|class|enum|data class|interface|annotation class|abstract class) " +
+                "([\\w\\d.]+)(<[\\w:\\s<>]+)?( .+)?"
+        )
         private val markdownLinkRegex = Regex("\\[([^]]+)]\\(([^)]+)\\)")
         private val typeHrefRegex = Regex("^([\\w\\-/.]+/)?([\\w\\-]+).md(#[\\w%-]+)?$")
         private val contentLinkRegex = Regex("\\| \\[[\\w_\\-&;]+]\\(([\\w_-]+.md)\\) \\| (.*) \\|")
-        private val subTypeLinkRegex =
-            Regex("\\| \\[([\\w_\\-&;]+)]\\(([\\w_-]+/index\\.md)\\) \\| .* \\|")
+        private val subTypeLinkRegex = Regex("\\| \\[([\\w_\\-&;]+)]\\(([\\w_-]+/index\\.md)\\) \\| .* \\|")
     }
 }
