@@ -93,7 +93,7 @@ public data class Household(
             public val water: Water,
             public val size: Long? = null,
         ) : Animal() {
-            public override fun toJson(): JsonElement {
+            override fun toJson(): JsonElement {
                 val json = JsonObject()
                 json.add("water", water.toJson())
                 size?.let { sizeNonNull ->
@@ -148,7 +148,7 @@ public data class Household(
             public val food: Food,
             public val canFly: Boolean,
         ) : Animal() {
-            public override fun toJson(): JsonElement {
+            override fun toJson(): JsonElement {
                 val json = JsonObject()
                 json.add("food", food.toJson())
                 json.addProperty("can_fly", canFly)
@@ -248,7 +248,7 @@ public data class Household(
         public data class Marriage(
             public val spouses: List<String>,
         ) : Situation() {
-            public override fun toJson(): JsonElement {
+            override fun toJson(): JsonElement {
                 val json = JsonObject()
                 val spousesArray = JsonArray(spouses.size)
                 spouses.forEach { spousesArray.add(it) }
@@ -306,7 +306,7 @@ public data class Household(
         public data class Cotenancy(
             public val roommates: List<String>,
         ) : Situation() {
-            public override fun toJson(): JsonElement {
+            override fun toJson(): JsonElement {
                 val json = JsonObject()
                 val roommatesArray = JsonArray(roommates.size)
                 roommates.forEach { roommatesArray.add(it) }

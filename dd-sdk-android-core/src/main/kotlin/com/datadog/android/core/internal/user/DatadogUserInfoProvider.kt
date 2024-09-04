@@ -20,8 +20,13 @@ internal class DatadogUserInfoProvider(
             dataWriter.write(field)
         }
 
-    override fun setUserInfo(userInfo: UserInfo) {
-        internalUserInfo = userInfo
+    override fun setUserInfo(id: String?, name: String?, email: String?, extraInfo: Map<String, Any?>) {
+        internalUserInfo = internalUserInfo.copy(
+            id = id,
+            name = name,
+            email = email,
+            additionalProperties = extraInfo.toMap()
+        )
     }
 
     override fun addUserProperties(properties: Map<String, Any?>) {

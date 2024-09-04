@@ -1,0 +1,30 @@
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkProfiler {
+	public abstract fun getTracer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkTracer;
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkSpan {
+	public abstract fun stop ()V
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkSpanBuilder {
+	public abstract fun startSpan ()Lcom/datadog/android/internal/profiler/BenchmarkSpan;
+}
+
+public final class com/datadog/android/internal/profiler/BenchmarkSpanExtKt {
+	public static final fun withinBenchmarkSpan (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkTracer {
+	public abstract fun spanBuilder (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkSpanBuilder;
+}
+
+public final class com/datadog/android/internal/profiler/GlobalBenchmark {
+	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
+	public final fun get ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
+	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
+}
+
+public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
+	public abstract fun publicNoOpImplementation ()Z
+}
+

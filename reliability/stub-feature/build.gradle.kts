@@ -13,13 +13,9 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
-
-    // Tests
-    id("de.mobilej.unmock")
 }
 
 android {
@@ -31,18 +27,8 @@ dependencies {
     implementation(libs.kotlin)
 
     // Testing
-    implementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
     implementation(libs.bundles.jUnit5)
     implementation(libs.bundles.testTools)
-    implementation(libs.okHttp)
-    implementation(libs.gson)
 }
 
 androidLibraryConfig()

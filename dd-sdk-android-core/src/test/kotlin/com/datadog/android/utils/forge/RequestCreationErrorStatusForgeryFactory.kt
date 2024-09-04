@@ -7,12 +7,13 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.data.upload.UploadStatus
+import com.datadog.tools.unit.forge.anException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class RequestCreationErrorStatusForgeryFactory : ForgeryFactory<UploadStatus.RequestCreationError> {
 
     override fun getForgery(forge: Forge): UploadStatus.RequestCreationError {
-        return UploadStatus.RequestCreationError
+        return UploadStatus.RequestCreationError(forge.anException())
     }
 }

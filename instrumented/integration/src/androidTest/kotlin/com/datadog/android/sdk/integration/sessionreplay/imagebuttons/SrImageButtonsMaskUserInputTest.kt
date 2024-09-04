@@ -27,6 +27,7 @@ internal class SrImageButtonsMaskUserInputTest :
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.MASK_USER_INPUT)
     )
 
+    // TODO: RUM-5873 Fix these tests and remove the @Ignore annotation
     @Ignore("Flakiness in CI, unsolved yet")
     @Test
     fun assessRecordedScreenPayload() {
