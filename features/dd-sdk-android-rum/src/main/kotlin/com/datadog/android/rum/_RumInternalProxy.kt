@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.content.Intent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -31,6 +32,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     "VariableNaming"
 )
 class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRumMonitor) {
+    @Volatile private var handledSyntheticsAttribute = false
 
     fun addLongTask(durationNs: Long, target: String) {
         rumMonitor.addLongTask(durationNs, target)
@@ -38,6 +40,28 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         rumMonitor.updatePerformanceMetric(metric, value)
+    }
+
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun setSyntheticsAttribute(testId: String?, resultId: String?) {
+        if (this.handledSyntheticsAttribute) {
+            return
+        }
+
+        this.handledSyntheticsAttribute = true
+        if (testId.isNullOrBlank() || resultId.isNullOrBlank()) {
+            return
+        }
+
+        rumMonitor.setSyntheticsAttribute(testId, resultId)
+    }
+
+    internal fun setSyntheticsAttributeFromIntent(intent: Intent) {
+        @Suppress("TooGenericExceptionCaught")
+        val extras = try { intent.extras } catch (_: Exception) { null }
+        val testId = extras?.getString("_dd.synthetics.test_id")
+        val resultId = extras?.getString("_dd.synthetics.result_id")
+        this.setSyntheticsAttribute(testId, resultId)
     }
 
     companion object {

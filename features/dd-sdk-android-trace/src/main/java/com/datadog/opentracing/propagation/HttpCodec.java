@@ -9,7 +9,7 @@ package com.datadog.opentracing.propagation;
 import com.datadog.opentracing.DDSpanContext;
 import com.datadog.opentracing.DDTracer;
 import com.datadog.opentracing.StringCachingBigInteger;
-import com.datadog.trace.api.Config;
+import com.datadog.legacy.trace.api.Config;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;
@@ -138,9 +138,30 @@ public class HttpCodec {
       throws IllegalArgumentException {
     final BigInteger parsedValue = new StringCachingBigInteger(value, radix);
     if (parsedValue.compareTo(DDTracer.TRACE_ID_MIN) < 0
-        || parsedValue.compareTo(DDTracer.TRACE_ID_MAX) > 0) {
+        || parsedValue.compareTo(DDTracer.TRACE_ID_64_BITS_MAX) > 0) {
       throw new IllegalArgumentException(
           "ID out of range, must be between 0 and 2^64-1, got: " + value);
+    }
+
+    return parsedValue;
+  }
+
+  /**
+   * Helper method to validate an ID String to verify within range
+   *
+   * @param value the String that contains the ID
+   * @param radix radix to use to parse the ID
+   * @return the parsed ID
+   * @throws IllegalArgumentException if value cannot be converted to integer or doesn't conform to
+   *     required boundaries
+   */
+  static BigInteger validateUInt128BitsID(final String value, final int radix)
+      throws IllegalArgumentException {
+    final BigInteger parsedValue = new StringCachingBigInteger(value, radix);
+    if (parsedValue.compareTo(DDTracer.TRACE_ID_MIN) < 0
+        || parsedValue.compareTo(DDTracer.TRACE_ID_128_BITS_MAX) > 0) {
+      throw new IllegalArgumentException(
+          "ID out of range, must be between 0 and 2^128-1, got: " + value);
     }
 
     return parsedValue;

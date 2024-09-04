@@ -6,10 +6,10 @@
 
 package com.datadog.opentracing;
 
-import com.datadog.trace.api.DDTags;
-import com.datadog.trace.api.interceptor.MutableSpan;
-import com.datadog.trace.api.sampling.PrioritySampling;
-import com.datadog.trace.common.util.Clock;
+import com.datadog.legacy.trace.api.DDTags;
+import com.datadog.legacy.trace.api.interceptor.MutableSpan;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.common.util.Clock;
 import io.opentracing.Span;
 import io.opentracing.tag.Tag;
 import java.io.PrintWriter;

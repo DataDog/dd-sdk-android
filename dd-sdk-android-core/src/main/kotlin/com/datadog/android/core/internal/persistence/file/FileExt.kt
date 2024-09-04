@@ -139,6 +139,12 @@ internal fun File.renameToSafe(dest: File, internalLogger: InternalLogger): Bool
     }
 }
 
+internal fun File.deleteDirectoryContentsSafe(internalLogger: InternalLogger) {
+    this.listFilesSafe(internalLogger)?.forEach {
+        it.deleteSafe(internalLogger)
+    }
+}
+
 /**
  * Non-throwing version of [File.readText]. If exception happens, null is returned.
  */

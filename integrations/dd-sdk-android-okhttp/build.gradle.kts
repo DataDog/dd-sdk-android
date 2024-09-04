@@ -31,7 +31,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
-    id("thirdPartyLicences")
+    id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
@@ -44,6 +44,7 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
@@ -59,6 +60,7 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)

@@ -7,7 +7,6 @@
 
 import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.nightlyTestsCoverageConfig
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
@@ -15,7 +14,7 @@ import java.util.Properties
 
 plugins {
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin")
+    alias(libs.plugins.nexusPublishGradlePlugin)
 }
 
 version = AndroidConfig.VERSION.name
@@ -76,11 +75,19 @@ registerSubModuleAggregationTask("assembleLibrariesDebug", "assembleDebug")
 registerSubModuleAggregationTask("assembleLibrariesRelease", "assembleRelease")
 
 registerSubModuleAggregationTask("unitTestRelease", "testReleaseUnitTest")
-registerSubModuleAggregationTask("unitTestReleaseFeatures", "testReleaseUnitTest", ":features:")
+registerSubModuleAggregationTask(
+    "unitTestReleaseFeatures",
+    "testReleaseUnitTest",
+    ":features:"
+)
 registerSubModuleAggregationTask("unitTestReleaseIntegrations", "testReleaseUnitTest", ":integrations:")
 
 registerSubModuleAggregationTask("unitTestDebug", "testDebugUnitTest")
-registerSubModuleAggregationTask("unitTestDebugFeatures", "testDebugUnitTest", ":features:")
+registerSubModuleAggregationTask(
+    "unitTestDebugFeatures",
+    "testDebugUnitTest",
+    ":features:"
+)
 registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
 
 tasks.register("assembleSampleRelease") {
@@ -111,15 +118,19 @@ tasks.register("unitTestAll") {
 registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
     dependsOn(":tools:lint:lint")
 }
-registerSubModuleAggregationTask("checkThirdPartyLicensesAll", "checkThirdPartyLicences")
+registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyLicenses")
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
+
+registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
 /**
  * Task necessary to be compliant with the shared Android static analysis pipeline
  */
 tasks.register("checkGeneratedFiles") {
+    dependsOn("checkDependencyLicencesAll")
     dependsOn("checkApiSurfaceChangesAll")
+    dependsOn("checkTransitiveDependenciesListAll")
 }
 
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
@@ -140,8 +151,6 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     // we need this artifact to trick Bitrise
     dependsOn(":instrumented:integration:assembleDebug")
 }
-
-nightlyTestsCoverageConfig(threshold = 0.85f)
 
 tasks.register("printSdkDebugRuntimeClasspath") {
     val fileTreeClassPathCollector = UnionFileTree(

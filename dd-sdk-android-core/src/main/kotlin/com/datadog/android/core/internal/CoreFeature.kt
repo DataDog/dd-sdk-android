@@ -25,6 +25,7 @@ import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
@@ -139,6 +140,7 @@ internal class CoreFeature(
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
     internal var site: DatadogSite = DatadogSite.US1
     internal var appBuildId: String? = null
+    internal var customUploadSchedulerStrategy: UploadSchedulerStrategy? = null
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
@@ -504,6 +506,7 @@ internal class CoreFeature(
         persistenceStrategyFactory = configuration.persistenceStrategyFactory
         site = configuration.site
         backpressureStrategy = configuration.backpressureStrategy
+        customUploadSchedulerStrategy = configuration.uploadSchedulerStrategy
     }
 
     private fun setupInfoProviders(

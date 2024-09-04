@@ -90,6 +90,11 @@
                   "description": "Whether the session replay start is handled manually",
                   "readOnly": false
                 },
+                "start_recording_immediately": {
+                  "type": "boolean",
+                  "description": "Whether Session Replay should automatically start a recording when enabled",
+                  "readOnly": false
+                },
                 "use_proxy": {
                   "type": "boolean",
                   "description": "Whether a proxy is used",
@@ -164,6 +169,21 @@
                 "default_privacy_level": {
                   "type": "string",
                   "description": "Session replay default privacy level",
+                  "readOnly": false
+                },
+                "text_and_input_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay text and input privacy level",
+                  "readOnly": false
+                },
+                "image_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay image privacy level",
+                  "readOnly": false
+                },
+                "touch_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay touch privacy level",
                   "readOnly": false
                 },
                 "enable_privacy_for_action_name": {
@@ -364,6 +384,26 @@
                   "type": "string",
                   "description": "The version of the tracer API used by the SDK. Eg. '0.1.0'",
                   "readOnly": false
+                },
+                "send_logs_after_session_expiration": {
+                  "type": "boolean",
+                  "description": "Whether logs are sent after the session expiration",
+                  "readOnly": false
+                },
+                "plugins": {
+                  "type": "array",
+                  "description": "The list of plugins enabled",
+                  "items": {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "The name of the plugin"
+                      }
+                    },
+                    "additionalProperties": true
+                  }
                 }
               }
             }

@@ -416,6 +416,24 @@ internal class ConfigurationBuilderTest {
         )
     }
 
+    @Test
+    fun `M build config with UploadScheduler strategy W setUploadSchedulerStrategy() and build()`() {
+        // Given
+        val mockUploadSchedulerStrategy: UploadSchedulerStrategy = mock()
+
+        // When
+        val config = testedBuilder
+            .setUploadSchedulerStrategy(mockUploadSchedulerStrategy)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                uploadSchedulerStrategy = mockUploadSchedulerStrategy
+            )
+        )
+    }
+
     companion object {
         val logger = InternalLoggerTestConfiguration()
 

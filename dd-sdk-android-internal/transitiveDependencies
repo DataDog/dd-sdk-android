@@ -1,0 +1,7 @@
+Dependencies List
+
+org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              : 1695 Kb
+

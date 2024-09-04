@@ -81,10 +81,10 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @StringForgery(regex = "#[0-9A-Fa-f]{8}")
     lateinit var fakeActiveTrackHtmlColor: String
 
-    @IntForgery(min = 2, max = 512)
+    @IntForgery(min = 32, max = 512)
     var fakeThumbHRadius: Int = 0
 
-    @IntForgery(min = 2, max = 512)
+    @IntForgery(min = 32, max = 512)
     var fakeThumbWRadius: Int = 0
 
     @Mock

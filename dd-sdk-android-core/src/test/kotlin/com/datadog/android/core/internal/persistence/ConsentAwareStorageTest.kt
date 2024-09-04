@@ -18,6 +18,8 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -26,6 +28,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -98,8 +101,32 @@ internal class ConsentAwareStorageTest {
     @Forgery
     lateinit var fakeEventType: EventType
 
+    @Mock
+    lateinit var mockMetric: PerformanceMetric
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
+    lateinit var fakeRootDirName: String
+
+    @Forgery
+    lateinit var mockPendingRootParentFile: File
+
+    @Forgery
+    lateinit var mockGrantedRootParentFile: File
+
     @BeforeEach
     fun `set up`() {
+        whenever(mockPendingOrchestrator.getRootDir()) doReturn File(mockPendingRootParentFile, fakeRootDirName)
+        whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
+
+        whenever(
+            mockInternalLogger.startPerformanceMeasure(
+                "com.datadog.android.core.internal.persistence.ConsentAwareStorage",
+                TelemetryMetricType.MethodCalled,
+                0.001f,
+                "writeCurrentBatch[$fakeRootDirName]"
+            )
+        ) doReturn mockMetric
+
         testedStorage = ConsentAwareStorage(
             // same thread executor
             executorService = FakeSameThreadExecutorService(),
@@ -135,16 +162,18 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockGrantedOrchestrator).getWritableFile(forceNewBatch)
         verify(mockGrantedOrchestrator).getMetadataFile(file)
+        verify(mockGrantedOrchestrator).getRootDir()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
         }
-
+        verify(mockMetric).stopAndSend(true)
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
-            mockMetaReaderWriter
+            mockMetaReaderWriter,
+            mockMetric
         )
     }
 
@@ -162,16 +191,18 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile(forceNewBatch)
+        verify(mockGrantedOrchestrator).getRootDir()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
         }
-
+        verify(mockMetric).stopAndSend(false)
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
-            mockMetaReaderWriter
+            mockMetaReaderWriter,
+            mockMetric
         )
     }
 
@@ -194,16 +225,18 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockPendingOrchestrator).getWritableFile(forceNewBatch)
         verify(mockPendingOrchestrator).getMetadataFile(file)
+        verify(mockPendingOrchestrator).getRootDir()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
         }
-
+        verify(mockMetric).stopAndSend(true)
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
-            mockMetaReaderWriter
+            mockMetaReaderWriter,
+            mockMetric
         )
     }
 
@@ -221,16 +254,18 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockPendingOrchestrator).getWritableFile(forceNewBatch)
+        verify(mockPendingOrchestrator).getRootDir()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
         }
-
+        verify(mockMetric).stopAndSend(false)
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
-            mockMetaReaderWriter
+            mockMetaReaderWriter,
+            mockMetric
         )
     }
 
@@ -241,6 +276,14 @@ internal class ConsentAwareStorageTest {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
+        whenever(
+            mockInternalLogger.startPerformanceMeasure(
+                "com.datadog.android.core.internal.persistence.ConsentAwareStorage",
+                TelemetryMetricType.MethodCalled,
+                0.001f,
+                "writeCurrentBatch[null]"
+            )
+        ) doReturn mockMetric
 
         // When
         testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = mockCallback)
@@ -250,11 +293,13 @@ internal class ConsentAwareStorageTest {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
         }
-        verifyNoInteractions(
+        verify(mockMetric).stopAndSend(false)
+        verifyNoMoreInteractions(
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
             mockBatchReaderWriter,
             mockMetaReaderWriter,
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator
+            mockMetric
         )
     }
 
@@ -292,6 +337,18 @@ internal class ConsentAwareStorageTest {
             "Unable to schedule Data write task on the executor",
             RejectedExecutionException::class.java,
             false
+        )
+        if (fakeDatadogContext.trackingConsent == TrackingConsent.PENDING) {
+            verify(mockPendingOrchestrator).getRootDir()
+        } else if (fakeDatadogContext.trackingConsent == TrackingConsent.GRANTED) {
+            verify(mockGrantedOrchestrator).getRootDir()
+        }
+        verifyNoMoreInteractions(
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockMetric
         )
     }
 

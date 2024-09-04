@@ -12,6 +12,8 @@ import com.datadog.android.core.metrics.TelemetryMetricType
 
 @Suppress("UnsafeThirdPartyFunctionCall")
 internal class StubInternalLogger : InternalLogger {
+
+    val telemetryEventsWritten = mutableListOf<Map<String, Any>>()
     override fun log(
         level: InternalLogger.Level,
         target: InternalLogger.Target,
@@ -38,12 +40,17 @@ internal class StubInternalLogger : InternalLogger {
         throwable?.printStackTrace()
     }
 
-    override fun logMetric(
-        messageBuilder: () -> String,
-        additionalProperties: Map<String, Any?>
-    ) {
-        println("M [T]: ${messageBuilder()}")
+    override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>, samplingRate: Float) {
+        println("M [T]: ${messageBuilder()} | $samplingRate%")
         additionalProperties.log()
+        val message = messageBuilder()
+        val telemetryEvent =
+            mapOf(
+                "type" to "mobile_metric",
+                "message" to message,
+                "additionalProperties" to additionalProperties
+            )
+        telemetryEventsWritten.add(telemetryEvent)
     }
 
     override fun startPerformanceMeasure(

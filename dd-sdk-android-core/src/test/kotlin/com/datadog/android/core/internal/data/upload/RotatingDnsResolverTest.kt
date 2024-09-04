@@ -14,6 +14,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Dns
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -109,6 +110,35 @@ internal class RotatingDnsResolverTest {
         // Then
         assertThat(result).isEmpty()
         assertThat(result2).containsExactlyElementsOf(fakeInetAddresses)
+    }
+
+    @RepeatedTest(30)
+    fun `M not throw exception W concurrent access to lookup`(forge: Forge) {
+        // Given
+        // we need to keep the list of addresses low as it can only be reproduced with low number and it reflects
+        // the real use case where we have a small number of addresses to rotate
+        fakeInetAddresses = forge.aList(size = forge.anInt(min = 1, max = 3)) { mock() }
+        whenever(mockDelegate.lookup(fakeHostname)) doReturn fakeInetAddresses
+        // just wait the TTL time to make sure all threads are concurrently accessing the lookup
+        Thread.sleep(TEST_TTL_MS.inWholeMilliseconds)
+        var exceptionThrown: Exception? = null
+
+        // When
+        List(100) {
+            Thread {
+                Thread.sleep(forge.aLong(min = 0, max = 100))
+                try {
+                    testedDns.lookup(fakeHostname)
+                } catch (e: Exception) {
+                    exceptionThrown = e
+                }
+            }.apply {
+                start()
+            }
+        }.forEach { it.join() }
+
+        // Then
+        assertThat(exceptionThrown).isNull()
     }
 
     companion object {

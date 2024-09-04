@@ -6,10 +6,11 @@
 
 package com.datadog.opentracing.propagation;
 
+import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 
 import java.math.BigInteger;
 import java.util.Collections;
@@ -152,7 +153,7 @@ class W3CHttpCodec {
             } else {
               trimmedValue = valueParts[1];
             }
-            traceId = validateUInt64BitsID(trimmedValue, HEX_RADIX);
+            traceId = validateUInt128BitsID(trimmedValue, HEX_RADIX);
 
             spanId = validateUInt64BitsID(valueParts[2], HEX_RADIX);
 

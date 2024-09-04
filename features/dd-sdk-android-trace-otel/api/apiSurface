@@ -1,0 +1,15 @@
+class com.datadog.android.trace.opentelemetry.OtelTracerProvider : io.opentelemetry.api.trace.TracerProvider
+  override fun get(String): io.opentelemetry.api.trace.Tracer
+  override fun get(String, String): io.opentelemetry.api.trace.Tracer
+  override fun tracerBuilder(String): io.opentelemetry.api.trace.TracerBuilder
+  class Builder
+    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun build(): io.opentelemetry.api.trace.TracerProvider
+    fun setTracingHeaderTypes(Set<com.datadog.android.trace.TracingHeaderType>): Builder
+    fun setService(String): Builder
+    fun setPartialFlushThreshold(Int): Builder
+    fun addTag(String, String): Builder
+    fun setSampleRate(Double): Builder
+    fun setTraceRateLimit(Int): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
+  override fun toString(): String

@@ -11,6 +11,7 @@ import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -30,6 +31,7 @@ internal class RecorderWindowCallback(
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val internalLogger: InternalLogger,
     private val privacy: SessionReplayPrivacy,
+    private val imagePrivacy: ImagePrivacy,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
@@ -174,7 +176,11 @@ internal class RecorderWindowCallback(
             // a new window was added or removed so we stop recording the previous root views
             // and we start recording the new ones.
             viewOnDrawInterceptor.stopIntercepting()
-            viewOnDrawInterceptor.intercept(rootViews, privacy)
+            viewOnDrawInterceptor.intercept(
+                decorViews = rootViews,
+                sessionReplayPrivacy = privacy,
+                imagePrivacy = imagePrivacy
+            )
         }
     }
 

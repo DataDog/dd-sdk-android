@@ -17,16 +17,18 @@ import com.datadog.opentracing.propagation.HttpCodec;
 import com.datadog.opentracing.propagation.TagContext;
 import com.datadog.opentracing.scopemanager.ContextualScopeManager;
 import com.datadog.opentracing.scopemanager.ScopeContext;
-import com.datadog.trace.api.Config;
-import com.datadog.trace.api.Tracer;
-import com.datadog.trace.api.interceptor.MutableSpan;
-import com.datadog.trace.api.interceptor.TraceInterceptor;
-import com.datadog.trace.api.sampling.PrioritySampling;
-import com.datadog.trace.common.sampling.PrioritySampler;
-import com.datadog.trace.common.sampling.Sampler;
-import com.datadog.trace.common.writer.LoggingWriter;
-import com.datadog.trace.common.writer.Writer;
-import com.datadog.trace.context.ScopeListener;
+import com.datadog.legacy.trace.api.Config;
+import com.datadog.legacy.trace.api.Tracer;
+import com.datadog.legacy.trace.api.interceptor.MutableSpan;
+import com.datadog.legacy.trace.api.interceptor.TraceInterceptor;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.common.sampling.PrioritySampler;
+import com.datadog.legacy.trace.common.sampling.Sampler;
+import com.datadog.legacy.trace.common.writer.LoggingWriter;
+import com.datadog.legacy.trace.common.writer.Writer;
+import com.datadog.legacy.trace.context.ScopeListener;
+import com.datadog.trace.api.IdGenerationStrategy;
+
 import io.opentracing.References;
 import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
@@ -48,9 +50,14 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * DDTracer makes it easy to send traces and span to DD using the OpenTracing API.
  */
 public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
+    // UINT128 max value
+    public static final BigInteger TRACE_ID_128_BITS_MAX =
+            BigInteger.valueOf(2).pow(128).subtract(BigInteger.ONE);
+
     // UINT64 max value
-    public static final BigInteger TRACE_ID_MAX =
+    public static final BigInteger TRACE_ID_64_BITS_MAX =
             BigInteger.valueOf(2).pow(64).subtract(BigInteger.ONE);
+
     public static final BigInteger TRACE_ID_MIN = BigInteger.ZERO;
 
     /**
@@ -111,6 +118,9 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
 
     private final HttpCodec.Injector injector;
     private final HttpCodec.Extractor extractor;
+
+    private final IdGenerationStrategy idGenerationStrategy =
+            IdGenerationStrategy.fromName("SECURE_RANDOM", true);
 
     // On Android, the same zygote is reused for every single application,
     // meaning that the ThreadLocalRandom reuses the same exact state,
@@ -579,13 +589,24 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
             return this;
         }
 
-        private BigInteger generateNewId() {
+        private BigInteger generateNewSpanId() {
             // It is **extremely** unlikely to generate the value "0" but we still need to handle that
             // case
             BigInteger value;
             do {
                 synchronized (random) {
                     value = new StringCachingBigInteger(63, random);
+                }
+            } while (value.signum() == 0);
+
+            return value;
+        }
+
+        private BigInteger generateNewTraceId() {
+            BigInteger value;
+            do {
+                synchronized (idGenerationStrategy) {
+                    value = new BigInteger(idGenerationStrategy.generateTraceId().toHexString(), 16);
                 }
             } while (value.signum() == 0);
 
@@ -600,7 +621,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
          */
         private DDSpanContext buildSpanContext() {
             final BigInteger traceId;
-            final BigInteger spanId = generateNewId();
+            final BigInteger spanId = generateNewSpanId();
             final BigInteger parentSpanId;
             final Map<String, String> baggage;
             final PendingTrace parentTrace;
@@ -642,7 +663,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
                     baggage = extractedContext.getBaggage();
                 } else {
                     // Start a new trace
-                    traceId = generateNewId();
+                    traceId = generateNewTraceId();
                     parentSpanId = BigInteger.ZERO;
                     samplingPriority = PrioritySampling.UNSET;
                     baggage = null;

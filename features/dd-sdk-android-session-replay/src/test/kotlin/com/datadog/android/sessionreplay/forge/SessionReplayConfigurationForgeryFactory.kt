@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import fr.xgouchet.elmyr.Forge
@@ -17,6 +18,7 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
         return SessionReplayConfiguration(
             customEndpointUrl = forge.aNullable { aStringMatching("https://[a-z]+\\.com") },
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java),
+            imagePrivacy = forge.aValueFrom(ImagePrivacy::class.java),
             customMappers = forge.aList { mock() },
             customOptionSelectorDetectors = forge.aList { mock() },
             sampleRate = forge.aFloat(min = 0f, max = 100f)

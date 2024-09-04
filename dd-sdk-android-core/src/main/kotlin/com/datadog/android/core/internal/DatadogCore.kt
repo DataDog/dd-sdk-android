@@ -19,7 +19,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
@@ -122,7 +121,7 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override var isDeveloperModeEnabled: Boolean = false
-        private set
+        internal set
 
     /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
@@ -166,14 +165,7 @@ internal class DatadogCore(
         email: String?,
         extraInfo: Map<String, Any?>
     ) {
-        coreFeature.userInfoProvider.setUserInfo(
-            UserInfo(
-                id = id,
-                name = name,
-                email = email,
-                additionalProperties = extraInfo
-            )
-        )
+        coreFeature.userInfoProvider.setUserInfo(id, name, email, extraInfo)
     }
 
     /** @inheritDoc */
@@ -545,6 +537,7 @@ internal class DatadogCore(
         }
 
         coreFeature.stop()
+        isDeveloperModeEnabled = false
 
         removeShutdownHook()
     }

@@ -17,6 +17,9 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
@@ -46,7 +49,7 @@ public class LocalServer {
         val configuration = Configuration.Builder(
             clientToken = BuildConfig.DD_CLIENT_TOKEN,
             env = "prod",
-            service = "com.datadog.android.vendor.sample"
+            service = SERVICE_NAME
         )
             .useSite(DatadogSite.US1)
             .setBatchSize(BatchSize.SMALL)
@@ -66,6 +69,8 @@ public class LocalServer {
             .build()
         Logs.enable(logsConfig, instance)
 
+        val tracesConfig = TraceConfiguration.Builder().build()
+        Trace.enable(tracesConfig)
         logger = Logger.Builder(instance)
             .setLogcatLogsEnabled(true)
             .build()
@@ -78,6 +83,9 @@ public class LocalServer {
     fun start(redirectedUrl: String) {
         logger.i("Starting the server")
         engine = embeddedServer(Netty, PORT) {
+            val tracerProvider = OtelTracerProvider.Builder().setService(SERVICE_NAME).build()
+            val tracer = tracerProvider.get("ktor")
+
             install(ContentNegotiation) { gson() }
             routing {
                 get(PATH) {
@@ -88,7 +96,11 @@ public class LocalServer {
                             "redirection.to" to redirectedUrl
                         )
                     )
+                    val redirectSpan = tracer.spanBuilder("redirect").startSpan()
+                    redirectSpan.setAttribute("redirection.from", LOCAL_URL)
+                    redirectSpan.setAttribute("redirection.to", redirectedUrl)
                     call.respondRedirect(redirectedUrl, false)
+                    redirectSpan.end()
                 }
             }
         }
@@ -116,6 +128,7 @@ public class LocalServer {
 
     companion object {
 
+        private const val SERVICE_NAME = "com.datadog.android.vendor.sample"
         private const val DATADOG_INSTANCE_ID = "com.datadog.android.vendor.sample"
 
         private const val HOST = "127.0.0.1"

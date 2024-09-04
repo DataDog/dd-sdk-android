@@ -34,7 +34,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
-    id("thirdPartyLicences")
+    id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
@@ -85,9 +85,8 @@ android {
         }
     }
 
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
+    testFixtures {
+        enable = true
     }
 }
 
@@ -103,6 +102,8 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)
     implementation(libs.androidXWorkManager)
+
+    implementation(project(":dd-sdk-android-internal"))
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

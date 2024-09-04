@@ -42,7 +42,8 @@ internal constructor(
         val site: DatadogSite,
         val batchProcessingLevel: BatchProcessingLevel,
         val persistenceStrategyFactory: PersistenceStrategy.Factory?,
-        val backpressureStrategy: BackPressureStrategy
+        val backpressureStrategy: BackPressureStrategy,
+        val uploadSchedulerStrategy: UploadSchedulerStrategy?
     )
 
     // region Builder
@@ -259,6 +260,16 @@ internal constructor(
             return this
         }
 
+        /**
+         * Sets the strategy to schedule data uploads.
+         * @param uploadSchedulerStrategy the upload scheduler strategy,
+         * or null to use the default strategy (default: null)
+         */
+        fun setUploadSchedulerStrategy(uploadSchedulerStrategy: UploadSchedulerStrategy?): Builder {
+            coreConfig = coreConfig.copy(uploadSchedulerStrategy = uploadSchedulerStrategy)
+            return this
+        }
+
         internal fun allowClearTextHttp(): Builder {
             coreConfig = coreConfig.copy(
                 needsClearTextHttp = true
@@ -297,7 +308,8 @@ internal constructor(
             site = DatadogSite.US1,
             batchProcessingLevel = BatchProcessingLevel.MEDIUM,
             persistenceStrategyFactory = null,
-            backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY
+            backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY,
+            uploadSchedulerStrategy = null
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

@@ -6,7 +6,7 @@
 
 package com.datadog.opentracing.decorators;
 
-import com.datadog.trace.api.Config;
+import com.datadog.legacy.trace.api.Config;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,13 +19,11 @@ public class DDDecoratorsFactory {
 
     for (final AbstractDecorator decorator :
         Arrays.asList(
-            new DBTypeDecorator(),
             new ForceManualDropDecorator(),
             new ForceManualKeepDecorator(),
             new PeerServiceDecorator(),
             new ServiceNameDecorator(),
-            new ServiceNameDecorator("service", false),
-            new ServletContextDecorator())) {
+            new ServiceNameDecorator("service", false))) {
 
       if (Config.get().isRuleEnabled(decorator.getClass().getSimpleName())) {
         decorators.add(decorator);

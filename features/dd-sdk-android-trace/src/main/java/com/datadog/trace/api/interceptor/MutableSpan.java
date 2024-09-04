@@ -1,10 +1,6 @@
-/*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
-
 package com.datadog.trace.api.interceptor;
+
+import androidx.annotation.Nullable;
 
 import com.datadog.trace.api.DDTags;
 
@@ -18,35 +14,41 @@ public interface MutableSpan {
   /** @return Duration with nanosecond scale. */
   long getDurationNano();
 
-  String getOperationName();
+  CharSequence getOperationName();
 
-  MutableSpan setOperationName(final String serviceName);
+  MutableSpan setOperationName(final CharSequence serviceName);
 
   String getServiceName();
 
   MutableSpan setServiceName(final String serviceName);
 
-  String getResourceName();
+  CharSequence getResourceName();
 
-  MutableSpan setResourceName(final String resourceName);
+  MutableSpan setResourceName(final CharSequence resourceName);
 
+  @Nullable
   Integer getSamplingPriority();
 
   /**
+   * @param newPriority
+   * @return
    * @deprecated Use {@link io.opentracing.Span#setTag(String, boolean)} instead using either tag
    *     names {@link DDTags#MANUAL_KEEP} or {@link
    *     DDTags#MANUAL_DROP}.
-   * @param newPriority
-   * @return
    */
   @Deprecated
   MutableSpan setSamplingPriority(final int newPriority);
 
   String getSpanType();
 
-  MutableSpan setSpanType(final String type);
+  MutableSpan setSpanType(final CharSequence type);
 
   Map<String, Object> getTags();
+
+  default Object getTag(String key) {
+    Map<String, Object> tags = getTags();
+    return tags == null ? null : tags.get(key);
+  }
 
   MutableSpan setTag(final String tag, final String value);
 
@@ -54,7 +56,13 @@ public interface MutableSpan {
 
   MutableSpan setTag(final String tag, final Number value);
 
-  Boolean isError();
+  MutableSpan setMetric(final CharSequence metric, final int value);
+
+  MutableSpan setMetric(final CharSequence metric, final long value);
+
+  MutableSpan setMetric(final CharSequence metric, final double value);
+
+  boolean isError();
 
   MutableSpan setError(boolean value);
 
@@ -70,13 +78,4 @@ public interface MutableSpan {
    * @return The root span for the current trace fragment.
    */
   MutableSpan getLocalRootSpan();
-
-  /**
-   * By calling this method the span will be removed from the current active Trace without
-   * actually being persisted.
-   *
-   * Note: This method is meant for internal SDK usage. Be aware that if used this Span will
-   * be removed from the Trace and lost.
-   */
-  public void drop();
 }

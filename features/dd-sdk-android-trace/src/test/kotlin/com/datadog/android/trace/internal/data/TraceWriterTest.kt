@@ -96,7 +96,7 @@ internal class TraceWriterTest {
 
         testedWriter = TraceWriter(
             sdkCore = mockSdkCore,
-            legacyMapper = mockLegacyMapper,
+            ddSpanToSpanEventMapper = mockLegacyMapper,
             eventMapper = mockEventMapper,
             serializer = mockSerializer,
             internalLogger = mockInternalLogger

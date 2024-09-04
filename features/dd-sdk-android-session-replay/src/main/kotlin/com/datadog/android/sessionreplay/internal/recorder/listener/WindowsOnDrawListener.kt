@@ -12,6 +12,8 @@ import androidx.annotation.MainThread
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.internal.profiler.withinBenchmarkSpan
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -25,6 +27,7 @@ internal class WindowsOnDrawListener(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val privacy: SessionReplayPrivacy,
+    private val imagePrivacy: ImagePrivacy,
     private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
     private val internalLogger: InternalLogger,
@@ -55,10 +58,18 @@ internal class WindowsOnDrawListener(
                 METHOD_CALL_CAPTURE_RECORD,
                 methodCallSamplingRate
             ) {
-                val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
-                recordedDataQueueRefs.recordedDataQueueItem = item
-                rootViews.mapNotNull {
-                    snapshotProducer.produce(it, systemInformation, privacy, recordedDataQueueRefs)
+                withinBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER) {
+                    val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
+                    recordedDataQueueRefs.recordedDataQueueItem = item
+                    rootViews.mapNotNull {
+                        snapshotProducer.produce(
+                            rootView = it,
+                            systemInformation = systemInformation,
+                            privacy = privacy,
+                            imagePrivacy = imagePrivacy,
+                            recordedDataQueueRefs = recordedDataQueueRefs
+                        )
+                    }
                 }
             }
 
@@ -75,8 +86,9 @@ internal class WindowsOnDrawListener(
     }
 
     companion object {
-        const val METHOD_CALL_SAMPLING_RATE = 0.1f
         private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"
+
+        private const val BENCHMARK_SPAN_SNAPSHOT_PRODUCER = "SnapshotProducer"
 
         private val METHOD_CALL_CALLER_CLASS = WindowsOnDrawListener::class.java
     }

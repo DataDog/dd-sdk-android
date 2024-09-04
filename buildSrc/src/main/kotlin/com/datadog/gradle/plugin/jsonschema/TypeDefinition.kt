@@ -41,6 +41,19 @@ sealed class TypeDefinition {
         override fun matches(other: TypeDefinition): Boolean {
             return (other is Constant) && (other.type == type) && (other.value == value)
         }
+
+        fun asPrimitiveTypeFun(): String {
+            return when (type) {
+                JsonType.NULL -> "asNull"
+                JsonType.BOOLEAN -> "asBoolean"
+                JsonType.NUMBER -> "asNumber"
+                JsonType.STRING -> "asString"
+                JsonType.INTEGER -> "asLong"
+                JsonType.ARRAY -> "asArray"
+                JsonType.OBJECT -> "asObjext"
+                null -> TODO()
+            }
+        }
     }
 
     data class Primitive(

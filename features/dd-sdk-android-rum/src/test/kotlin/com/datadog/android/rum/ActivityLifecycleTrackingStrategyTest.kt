@@ -39,6 +39,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -166,7 +167,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
 
         // verify
         val mockRumMonitor = rumMonitor.mockInstance as AdvancedRumMonitor
-        verifyNoInteractions(mockRumMonitor)
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
     }
 
     @Test
@@ -184,7 +185,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
 
         // verify
         val mockRumMonitor = rumMonitor.mockInstance as AdvancedRumMonitor
-        verifyNoInteractions(mockRumMonitor)
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
     }
 
     companion object {
