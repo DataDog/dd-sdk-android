@@ -14,12 +14,12 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.annotation.DrawableRes
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
+import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class TracesFragment : Fragment(), View.OnClickListener {
+internal class TracesFragment : SynchronousLoadedFragment(), View.OnClickListener {
 
     lateinit var viewModel: TracesViewModel
     lateinit var progressBarAsync: ProgressBar

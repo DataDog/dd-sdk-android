@@ -13,12 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -28,6 +33,8 @@ import androidx.navigation.navArgument
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.compose.trackClick
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import java.lang.IllegalArgumentException
 import kotlin.random.Random
@@ -35,6 +42,12 @@ import kotlin.random.Random
 @OptIn(ExperimentalTrackingApi::class)
 @Composable
 internal fun NavigationSampleView() {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = DatadogLifecycleObserver()
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val navController = rememberNavController().apply {
         NavigationViewTrackingEffect(
             navController = this,
@@ -57,6 +70,13 @@ internal fun SimpleView(
     @PreviewParameter(provider = SimpleViewIdPreviewProvider::class) viewId: String,
     onNavigate: () -> Unit = {}
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = DatadogLifecycleObserver()
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -128,4 +148,16 @@ internal sealed class Screen(
 
 internal fun <T> oneOf(vararg items: T): T {
     return items[Random.nextInt(items.size)]
+}
+
+private class DatadogLifecycleObserver : LifecycleEventObserver {
+    private var viewIsLoaded = false
+
+    @OptIn(ExperimentalRumApi::class)
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        if (event == Lifecycle.Event.ON_RESUME && !viewIsLoaded) {
+            GlobalRumMonitor.get().addViewLoadingTime()
+            viewIsLoaded = true
+        }
+    }
 }

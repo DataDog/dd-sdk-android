@@ -11,12 +11,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 
 internal class AboutFragment :
-    Fragment() {
+    SynchronousLoadedFragment() {
 
     private lateinit var viewModel: AboutViewModel
     private lateinit var aboutText: TextView

@@ -14,6 +14,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 import com.datadog.android.webview.WebViewTracking
@@ -27,8 +29,12 @@ internal class WebFragment : Fragment() {
         "datadoghq.dev"
     )
 
+    @Volatile
+    private var pageWasLoaded: Boolean = false
+
     // region Fragment Lifecycle
 
+    @OptIn(ExperimentalRumApi::class)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,7 +43,15 @@ internal class WebFragment : Fragment() {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web, container, false)
         webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                if (!pageWasLoaded) {
+                    GlobalRumMonitor.get().addViewLoadingTime()
+                    pageWasLoaded = true
+                }
+            }
+        }
         webView.settings.javaScriptEnabled = true
         WebViewTracking.enable(webView, webViewTrackingHosts)
         return rootView

@@ -12,12 +12,12 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.ProgressBar
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 
 internal class VitalsFragment :
-    Fragment(),
+    SynchronousLoadedFragment(),
     View.OnClickListener,
     CompoundButton.OnCheckedChangeListener {
 

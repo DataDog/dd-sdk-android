@@ -12,12 +12,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ProgressBar
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
+import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class OtelTracesFragment : Fragment(), View.OnClickListener {
+internal class OtelTracesFragment : SynchronousLoadedFragment(), View.OnClickListener {
 
     lateinit var viewModel: OtelTracesViewModel
     lateinit var progressBarAsync: ProgressBar

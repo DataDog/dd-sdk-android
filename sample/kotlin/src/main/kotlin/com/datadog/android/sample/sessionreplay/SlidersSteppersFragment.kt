@@ -11,10 +11,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.NumberPicker
-import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class SlidersSteppersFragment : Fragment() {
+internal class SlidersSteppersFragment : SynchronousLoadedFragment() {
 
     @Suppress("MagicNumber")
     override fun onCreateView(

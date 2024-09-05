@@ -18,7 +18,10 @@ import android.widget.TextView
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
+import java.util.concurrent.atomic.AtomicInteger
 
 internal interface ImageLoadedCallback {
     fun onImageLoaded(resource: Drawable)
@@ -31,6 +34,9 @@ internal class ImageComponentsFragment : Fragment() {
     private lateinit var imageViewRemote: ImageView
     private lateinit var imageButtonRemote: ImageButton
     private lateinit var appCompatButtonRemote: AppCompatImageButton
+
+    @Suppress("MagicNumber")
+    private val imageLoadedCounter: AtomicInteger = AtomicInteger(4)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -68,6 +74,7 @@ internal class ImageComponentsFragment : Fragment() {
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
                     imageViewRemote.setImageDrawable(resource)
+                    decrementLoadingCounter()
                 }
             }
         )
@@ -80,6 +87,7 @@ internal class ImageComponentsFragment : Fragment() {
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
                     buttonRemote.setCompoundDrawablesWithIntrinsicBounds(null, null, null, resource)
+                    decrementLoadingCounter()
                 }
             }
         )
@@ -92,6 +100,7 @@ internal class ImageComponentsFragment : Fragment() {
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
                     textViewRemote.setCompoundDrawablesWithIntrinsicBounds(null, null, null, resource)
+                    decrementLoadingCounter()
                 }
             }
         )
@@ -105,9 +114,17 @@ internal class ImageComponentsFragment : Fragment() {
                 override fun onImageLoaded(resource: Drawable) {
                     imageButtonRemote.background = resource
                     appCompatButtonRemote.background = resource
+                    decrementLoadingCounter()
                 }
             }
         )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    private fun decrementLoadingCounter() {
+        if (imageLoadedCounter.decrementAndGet() == 0) {
+            GlobalRumMonitor.get().addViewLoadingTime()
+        }
     }
 
     // endregion

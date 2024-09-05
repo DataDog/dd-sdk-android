@@ -12,13 +12,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
-import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import java.util.Locale
 
-internal class PickerComponentsFragment : Fragment() {
+internal class PickerComponentsFragment : SynchronousLoadedFragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,

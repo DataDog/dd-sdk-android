@@ -7056,7 +7056,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingType(null)
-                    hasVersion(2)
+                    hasVersion((viewLoadingTimeEvents.size + 1).toLong())
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)

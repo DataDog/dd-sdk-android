@@ -13,13 +13,13 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 
 internal class PictureFragment :
-    Fragment(), View.OnClickListener {
+    SynchronousLoadedFragment(), View.OnClickListener {
 
     private lateinit var picture: ImageView
     private lateinit var rootView: View

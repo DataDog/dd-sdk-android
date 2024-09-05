@@ -15,13 +15,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.appcompat.widget.AppCompatSpinner
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 
 @Suppress("MagicNumber")
 internal class CrashFragment :
-    Fragment(),
+    SynchronousLoadedFragment(),
     View.OnClickListener {
 
     private lateinit var viewModel: CrashViewModel

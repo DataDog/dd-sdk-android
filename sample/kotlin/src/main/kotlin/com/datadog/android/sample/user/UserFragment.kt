@@ -11,14 +11,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SynchronousLoadedFragment
 import com.datadog.android.trace.withinSpan
 import com.google.android.material.snackbar.Snackbar
 
-internal class UserFragment : Fragment(), View.OnClickListener {
+internal class UserFragment : SynchronousLoadedFragment(), View.OnClickListener {
 
     lateinit var idField: EditText
     lateinit var nameField: EditText
