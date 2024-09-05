@@ -83,9 +83,9 @@ internal class SessionReplayFeatureTest {
     @Mock
     lateinit var mockSampler: Sampler
 
-    lateinit var fakeSessionId: String
+    private lateinit var fakeSessionId: String
 
-    var fakeSampleRate: Float? = null
+    private var fakeSampleRate: Float? = null
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -99,8 +99,9 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             rateBasedSampler = mockSampler
-        ) { _, _, _ -> mockRecorder }
+        ) { _, _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -120,6 +121,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate
@@ -140,6 +142,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate
@@ -172,8 +175,9 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
             rateBasedSampler = mockSampler
-        ) { _, _, _ -> mockRecorder }
+        ) { _, _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
@@ -958,6 +962,7 @@ internal class SessionReplayFeatureTest {
 
         @TestConfigurationsProvider
         @JvmStatic
+        @Suppress("unused") // this is actually used
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(appContext)
         }

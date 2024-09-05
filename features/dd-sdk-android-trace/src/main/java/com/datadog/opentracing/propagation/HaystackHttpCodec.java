@@ -6,10 +6,11 @@
 
 package com.datadog.opentracing.propagation;
 
+import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;
@@ -79,7 +80,7 @@ public class HaystackHttpCodec {
           }
 
           if (TRACE_ID_KEY.equalsIgnoreCase(key)) {
-            traceId = validateUInt64BitsID(value, 10);
+            traceId = validateUInt128BitsID(value, 10);
           } else if (SPAN_ID_KEY.equalsIgnoreCase(key)) {
             spanId = validateUInt64BitsID(value, 10);
           } else if (key.startsWith(OT_BAGGAGE_PREFIX.toLowerCase(Locale.US))) {

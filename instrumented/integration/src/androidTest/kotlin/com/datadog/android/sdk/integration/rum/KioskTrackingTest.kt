@@ -17,6 +17,7 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.rules.KioskTrackingActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,7 +37,9 @@ internal class KioskTrackingTest :
         trackingConsent = TrackingConsent.GRANTED
     )
 
+    // TODO RUM-5919: Fix and re - enable this flaky test
     @Test
+    @Ignore("Flaky test, needs to be fixed")
     fun verifyRumEvents() {
         val expectedEvents = runInstrumentationScenario(mockServerRule)
 

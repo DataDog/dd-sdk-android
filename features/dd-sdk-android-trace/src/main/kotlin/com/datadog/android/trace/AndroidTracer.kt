@@ -14,13 +14,16 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
+import com.datadog.android.trace.internal.addActiveTraceToContext
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.android.trace.internal.removeActiveTraceFromContext
+import com.datadog.android.trace.internal.utils.traceIdAsHexString
+import com.datadog.legacy.trace.api.Config
+import com.datadog.legacy.trace.common.writer.Writer
+import com.datadog.legacy.trace.context.ScopeListener
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
-import com.datadog.trace.api.Config
-import com.datadog.trace.common.writer.Writer
-import com.datadog.trace.context.ScopeListener
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
@@ -47,27 +50,16 @@ class AndroidTracer internal constructor(
     init {
         addScopeListener(object : ScopeListener {
             override fun afterScopeActivated() {
-                // scope is thread-local and at the given time for the particular thread it can
-                // be only one active scope.
-                val threadName = Thread.currentThread().name
                 val activeContext = activeSpan()?.context()
                 if (activeContext != null) {
                     val activeSpanId = activeContext.toSpanId()
-                    val activeTraceId = activeContext.toTraceId()
-                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                        it["context@$threadName"] = mapOf(
-                            "span_id" to activeSpanId,
-                            "trace_id" to activeTraceId
-                        )
-                    }
+                    val activeTraceId = activeContext.traceIdAsHexString()
+                    sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
                 }
             }
 
             override fun afterScopeClosed() {
-                val threadName = Thread.currentThread().name
-                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-                    it.remove("context@$threadName")
-                }
+                sdkCore.removeActiveTraceFromContext()
             }
         })
     }
@@ -154,7 +146,7 @@ class AndroidTracer internal constructor(
             return AndroidTracer(
                 sdkCore,
                 config(),
-                tracingFeature?.dataWriter ?: NoOpWriter(),
+                tracingFeature?.legacyTracerWriter ?: NoOpWriter(),
                 random,
                 logsHandler,
                 bundleWithRumEnabled
@@ -302,10 +294,10 @@ class AndroidTracer internal constructor(
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +
-                "disabled in your Configuration. No tracing data will be sent."
+                "not registered/initialized. No tracing data will be sent."
         internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to bundle the traces with a RUM context, " +
-                "but the RUM feature was disabled in your Configuration. " +
+                "but the RUM feature was not registered/initialized. " +
                 "No RUM context will be attached to your traces in this case."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
@@ -315,7 +307,7 @@ class AndroidTracer internal constructor(
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
 
-        internal const val TRACE_ID_BIT_SIZE = 63
+        internal const val SPAN_ID_BIT_SIZE = 63
 
         /**
          * Helper method to attach a Throwable to a specific Span.

@@ -206,7 +206,8 @@ class ModelValidationTest(
                 arrayOf("all_of", OutputInfo("User")),
                 arrayOf("all_of_merged", OutputInfo("UserMerged")),
                 arrayOf("constant_number", OutputInfo("Version")),
-                arrayOf("sets", OutputInfo("Video"))
+                arrayOf("sets", OutputInfo("Video")),
+                arrayOf("one_of_nested", OutputInfo("WeirdCombo"))
             )
         }
     }

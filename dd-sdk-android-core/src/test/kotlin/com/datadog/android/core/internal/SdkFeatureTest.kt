@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
@@ -23,6 +24,7 @@ import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.DataUploadRunnable
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrategy
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -33,6 +35,7 @@ import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
+import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
@@ -84,10 +87,13 @@ import java.util.Locale
 @ForgeConfiguration(Configurator::class)
 internal class SdkFeatureTest {
 
-    lateinit var testedFeature: SdkFeature
+    private lateinit var testedFeature: SdkFeature
 
     @Mock
     lateinit var mockStorage: Storage
+
+    @Mock
+    lateinit var mockDataStore: DataStoreHandler
 
     @Mock
     lateinit var mockWrappedFeature: StorageBackedFeature
@@ -148,7 +154,7 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        argumentCaptor<Application.ActivityLifecycleCallbacks>() {
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
             verify((appContext.mockInstance)).registerActivityLifecycleCallbacks(capture())
             assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
             assertThat((firstValue as ProcessLifecycleMonitor).callback)
@@ -176,15 +182,11 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        assertThat(testedFeature.uploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
+        assertThat(testedFeature.uploadScheduler).isInstanceOf(DataUploadScheduler::class.java)
         val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
-        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
-        assertThat(dataUploadRunnable.currentDelayIntervalMs)
-            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
-        assertThat(dataUploadRunnable.maxBatchesPerJob)
-            .isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
+        val uploadSchedulerStrategy = (dataUploadRunnable.uploadSchedulerStrategy as? DefaultUploadSchedulerStrategy)
+        assertThat(uploadSchedulerStrategy?.uploadConfiguration).isEqualTo(expectedUploadConfiguration)
+        assertThat(dataUploadRunnable.maxBatchesPerJob).isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
         argumentCaptor<Runnable> {
             verify(coreFeature.mockUploadExecutor).execute(
                 argThat { this is DataUploadRunnable }
@@ -244,6 +246,7 @@ internal class SdkFeatureTest {
     fun `M register tracking consent callback W initialize(){feature+TrackingConsentProviderCallback}`() {
         // Given
         val mockFeature = mock<TrackingConsentFeature>()
+        whenever(mockFeature.name).thenReturn(fakeFeatureName)
         testedFeature = SdkFeature(
             coreFeature.mockInstance,
             mockFeature,
@@ -422,7 +425,44 @@ internal class SdkFeatureTest {
         verify(mockStorage).dropAll()
     }
 
+    @Test
+    fun `M clear data store W clearAllData()`() {
+        // Given
+        testedFeature.dataStore = mockDataStore
+
+        // When
+        testedFeature.clearAllData()
+
+        // Then
+        verify(mockDataStore).clearAllData()
+    }
+
     // region FeatureScope
+
+    @Test
+    fun `M unregister datastore W stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
+
+        assertThat(testedFeature.dataStore)
+            .isNotInstanceOf(NoOpDataStoreHandler::class.java)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataStore).isInstanceOf(NoOpDataStoreHandler::class.java)
+    }
+
+    @Test
+    fun `M register datastore W initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
+
+        // Then
+        assertThat(testedFeature.dataStore)
+            .isNotInstanceOf(NoOpDataStoreHandler::class.java)
+    }
 
     @Test
     fun `M provide write context W withWriteContext(callback)`(

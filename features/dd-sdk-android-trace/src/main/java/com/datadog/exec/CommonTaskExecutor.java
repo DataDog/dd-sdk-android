@@ -66,8 +66,14 @@ public final class CommonTaskExecutor extends AbstractExecutorService {
     } else {
       try {
         final PeriodicTask<T> periodicTask = new PeriodicTask<>(task, target);
+
+        // was scheduleAtFixedRate before, but Android Lint gives this:
+        // Error: Use of scheduleAtFixedRate is strongly discouraged because it can lead to
+        // unexpected behavior when Android processes become cached (tasks may unexpectedly
+        // execute hundreds or thousands of times in quick succession when a process
+        // changes from cached to uncached); prefer using scheduleWithFixedDelay [DiscouragedApi]
         final ScheduledFuture<?> future =
-            executorService.scheduleAtFixedRate(
+            executorService.scheduleWithFixedDelay(
                 new PeriodicTask<>(task, target), initialDelay, period, unit);
         periodicTask.setFuture(future);
         return future;

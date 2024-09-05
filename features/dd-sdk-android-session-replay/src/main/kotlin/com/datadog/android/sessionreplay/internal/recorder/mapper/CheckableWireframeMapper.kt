@@ -42,10 +42,9 @@ internal abstract class CheckableWireframeMapper<T>(
         val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback, internalLogger)
         val checkableWireframes = if (mappingContext.privacy != SessionReplayPrivacy.ALLOW) {
             resolveMaskedCheckable(view, mappingContext)
-        } else if (view.isChecked) {
-            resolveCheckedCheckable(view, mappingContext)
         } else {
-            resolveNotCheckedCheckable(view, mappingContext)
+            // Resolves checkable view regardless the state
+            resolveCheckable(view, mappingContext, asyncJobStatusCallback)
         }
         checkableWireframes?.let { wireframes ->
             return mainWireframes + wireframes
@@ -68,14 +67,9 @@ internal abstract class CheckableWireframeMapper<T>(
     ): List<MobileSegment.Wireframe>?
 
     @UiThread
-    abstract fun resolveNotCheckedCheckable(
+    abstract fun resolveCheckable(
         view: T,
-        mappingContext: MappingContext
-    ): List<MobileSegment.Wireframe>?
-
-    @UiThread
-    abstract fun resolveCheckedCheckable(
-        view: T,
-        mappingContext: MappingContext
-    ): List<MobileSegment.Wireframe>?
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe>
 }

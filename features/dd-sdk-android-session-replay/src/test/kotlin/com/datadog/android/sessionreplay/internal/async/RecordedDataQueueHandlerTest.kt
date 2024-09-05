@@ -8,12 +8,12 @@ package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.MAX_DELAY_MS
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.ITEM_DROPPED_EXPIRED_MESSAGE
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.ITEM_DROPPED_INVALID_MESSAGE
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.utils.verifyLog
@@ -47,6 +47,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 import java.util.Queue
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -75,9 +76,6 @@ internal class RecordedDataQueueHandlerTest {
 
     @Mock
     lateinit var mockSystemInformation: SystemInformation
-
-    @Mock
-    lateinit var mockTimeProvider: SessionReplayTimeProvider
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -129,10 +127,9 @@ internal class RecordedDataQueueHandlerTest {
         testedHandler = RecordedDataQueueHandler(
             processor = mockProcessor,
             rumContextDataHandler = mockRumContextDataHandler,
-            timeProvider = mockTimeProvider,
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
-            recordedQueue = fakeRecordedDataQueue
+            recordedDataQueue = fakeRecordedDataQueue
         )
     }
 
@@ -152,10 +149,9 @@ internal class RecordedDataQueueHandlerTest {
         testedHandler = RecordedDataQueueHandler(
             processor = mockProcessor,
             rumContextDataHandler = mockRumContextDataHandler,
-            timeProvider = mockTimeProvider,
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
-            recordedQueue = mockQueue
+            recordedDataQueue = mockQueue
         )
         testedHandler.recordedDataQueue.add(fakeSnapshotQueueItem)
 
@@ -256,7 +252,8 @@ internal class RecordedDataQueueHandlerTest {
         val item = testedHandler.addSnapshotItem(mockSystemInformation)
 
         // Then
-        assertThat(item!!.recordedQueuedItemContext).isEqualTo(currentRumContextData)
+        checkNotNull(item)
+        assertThat(item.recordedQueuedItemContext).isEqualTo(currentRumContextData)
         assertThat(item.systemInformation).isEqualTo(mockSystemInformation)
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(1)
     }
@@ -273,20 +270,26 @@ internal class RecordedDataQueueHandlerTest {
             testedHandler.addTouchEventItem(fakeTouchData)
 
         // Then
-        assertThat(item!!.recordedQueuedItemContext).isEqualTo(currentRumContextData)
+        checkNotNull(item)
+        assertThat(item.recordedQueuedItemContext).isEqualTo(currentRumContextData)
         assertThat(item.touchData).isEqualTo(fakeTouchData)
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(1)
     }
 
     @Test
-    fun `M remove item from queue W tryToConsumeItems() { expired item }`() {
+    fun `M remove item from queue W tryToConsumeItems() { expired item }`(
+        @Mock mockSnapshotItem: SnapshotRecordedDataQueueItem
+    ) {
         // Given
-        val item = testedHandler.addSnapshotItem(mockSystemInformation)
-            ?: fail("item is null")
-        item.nodes = fakeNodeData
+        mockSnapshotItem.apply {
+            val expiredTime = System.nanoTime() - RecordedDataQueueHandler.MAX_DELAY_NS
+            whenever(creationTimeStampInNs).thenReturn(expiredTime)
+            whenever(isValid()).thenReturn(true)
+            whenever(isReady()).thenReturn(true)
+            whenever(nodes).thenReturn(fakeNodeData)
+        }
 
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(item.recordedQueuedItemContext.timestamp + MAX_DELAY_MS + 1)
+        testedHandler.recordedDataQueue.offer(mockSnapshotItem)
 
         // When
         testedHandler.tryToConsumeItems()
@@ -295,13 +298,14 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue
+        val expectedMessage = ITEM_DROPPED_EXPIRED_MESSAGE.split("=")[0]
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            { it.startsWith("SR RecordedDataQueueHandler: dropped item from the queue. age=") }
+            { it.startsWith(expectedMessage) }
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -317,10 +321,6 @@ internal class RecordedDataQueueHandlerTest {
 
         testedHandler.recordedDataQueue.offer(mockSnapshotItem)
 
-        val timestamp = mockSnapshotItem.recordedQueuedItemContext.timestamp
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(timestamp)
-
         // When
         testedHandler.tryToConsumeItems()
         spyExecutorService.shutdown()
@@ -328,14 +328,15 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue).isEmpty()
+        val expectedMessage =
+            ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, "SnapshotRecordedDataQueueItem")
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, " +
-                "type=SnapshotRecordedDataQueueItem"
+            expectedMessage
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -350,10 +351,6 @@ internal class RecordedDataQueueHandlerTest {
 
         testedHandler.recordedDataQueue.offer(mockTouchEventItem)
 
-        val spyTimestamp = mockTouchEventItem.recordedQueuedItemContext.timestamp
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(spyTimestamp)
-
         // When
         testedHandler.tryToConsumeItems()
         spyExecutorService.shutdown()
@@ -361,14 +358,15 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue).isEmpty()
+        val expectedMessage =
+            ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, "TouchEventRecordedDataQueueItem")
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, " +
-                "type=TouchEventRecordedDataQueueItem"
+            expectedMessage
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -382,10 +380,6 @@ internal class RecordedDataQueueHandlerTest {
         whenever(mockResourceItem.recordedQueuedItemContext).thenReturn(fakeRecordedQueuedItemContext)
         testedHandler.recordedDataQueue.offer(mockResourceItem)
 
-        val timestamp = mockResourceItem.recordedQueuedItemContext.timestamp
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(timestamp)
-
         // When
         testedHandler.tryToConsumeItems()
         spyExecutorService.shutdown()
@@ -393,14 +387,15 @@ internal class RecordedDataQueueHandlerTest {
 
         // Then
         assertThat(testedHandler.recordedDataQueue).isEmpty()
+        val expectedMessage =
+            ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, "ResourceRecordedDataQueueItem")
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(
                 InternalLogger.Target.MAINTAINER,
                 InternalLogger.Target.TELEMETRY
             ),
-            "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, " +
-                "type=ResourceRecordedDataQueueItem"
+            expectedMessage
         )
         verifyNoMoreInteractions(mockProcessor)
     }
@@ -414,9 +409,6 @@ internal class RecordedDataQueueHandlerTest {
         doReturn(false).whenever(mockSnapshotItem).isReady()
 
         testedHandler.recordedDataQueue.add(mockSnapshotItem)
-
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(fakeRecordedQueuedItemContext.timestamp)
 
         // When
         testedHandler.tryToConsumeItems()
@@ -433,9 +425,6 @@ internal class RecordedDataQueueHandlerTest {
         val item = testedHandler.addSnapshotItem(mockSystemInformation) ?: fail("item is null")
         item.nodes = fakeNodeData
         item.isFinishedTraversal = true
-
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(item.recordedQueuedItemContext.timestamp)
 
         // When
         testedHandler.tryToConsumeItems()
@@ -454,9 +443,6 @@ internal class RecordedDataQueueHandlerTest {
     fun `M call processor W tryToConsumeItems() { valid Touch Event item }`() {
         // Given
         val item = testedHandler.addTouchEventItem(fakeTouchData) ?: fail("item is null")
-
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(item.recordedQueuedItemContext.timestamp)
 
         // When
         testedHandler.tryToConsumeItems()
@@ -483,9 +469,6 @@ internal class RecordedDataQueueHandlerTest {
             fakePayload.toByteArray()
         ) ?: fail("item is null")
 
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(item.recordedQueuedItemContext.timestamp)
-
         // When
         testedHandler.tryToConsumeItems()
         spyExecutorService.shutdown()
@@ -504,22 +487,18 @@ internal class RecordedDataQueueHandlerTest {
     @Test
     fun `M consume items in the correct order W tryToConsumeItems() { spawn multiple threads }`() {
         // Given
-        val item1 = createFakeSnapshotItemWithDelayMs(1)
-        val item2 = createFakeSnapshotItemWithDelayMs(2)
-        val item3 = createFakeSnapshotItemWithDelayMs(3)
+        val item1 = addSnapshotItemToQueue()
+        val item2 = addSnapshotItemToQueue()
+        val item3 = addSnapshotItemToQueue()
 
         item1.isFinishedTraversal = true
         item2.isFinishedTraversal = true
         item3.isFinishedTraversal = true
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(3)
-        val itemTimestamp = item1.recordedQueuedItemContext.timestamp
 
         // When
         repeat(50) {
-            whenever(mockTimeProvider.getDeviceTimestamp())
-                .thenReturn(itemTimestamp + it)
-
             testedHandler.tryToConsumeItems()
             spyExecutorService.shutdown()
             spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
@@ -542,41 +521,37 @@ internal class RecordedDataQueueHandlerTest {
     ) {
         // Given
         // item1
-        val item1RumContextData = fakeRecordedQueuedItemContext.copy(timestamp = 1)
-
-        whenever(mockSnapshotItem1.recordedQueuedItemContext).thenReturn(item1RumContextData)
-        whenever(mockSnapshotItem1.systemInformation).thenReturn(mockSystemInformation)
-        whenever(mockSnapshotItem1.nodes).thenReturn(fakeNodeData)
-        doReturn(true).whenever(mockSnapshotItem1).isValid()
-        doReturn(true).whenever(mockSnapshotItem1).isReady()
+        mockSnapshotItem1.apply {
+            whenever(systemInformation).thenReturn(mockSystemInformation)
+            whenever(nodes).thenReturn(fakeNodeData)
+            whenever(creationTimeStampInNs).thenReturn(System.nanoTime())
+            whenever(isValid()).thenReturn(true)
+            whenever(isReady()).thenReturn(true)
+        }
 
         // item2
-        val item2RumContextData = fakeRecordedQueuedItemContext.copy(timestamp = 2)
-
-        whenever(mockSnapshotItem2.recordedQueuedItemContext).thenReturn(item2RumContextData)
-        whenever(mockSnapshotItem2.systemInformation).thenReturn(mockSystemInformation)
-        whenever(mockSnapshotItem2.nodes).thenReturn(emptyList())
-        doReturn(true).whenever(mockSnapshotItem2).isValid()
-        doReturn(false).whenever(mockSnapshotItem2).isReady()
+        mockSnapshotItem2.apply {
+            whenever(systemInformation).thenReturn(mockSystemInformation)
+            whenever(nodes).thenReturn(fakeNodeData)
+            whenever(creationTimeStampInNs).thenReturn(System.nanoTime())
+            whenever(isValid()).thenReturn(true)
+            whenever(isReady()).thenReturn(false)
+        }
 
         // item3
-        val item3RumContextData = fakeRecordedQueuedItemContext.copy(timestamp = 3)
-
-        whenever(mockSnapshotItem3.recordedQueuedItemContext).thenReturn(item3RumContextData)
-        whenever(mockSnapshotItem3.systemInformation).thenReturn(mockSystemInformation)
-        whenever(mockSnapshotItem3.nodes).thenReturn(fakeNodeData)
-        doReturn(true).whenever(mockSnapshotItem3).isValid()
-        doReturn(true).whenever(mockSnapshotItem3).isReady()
+        mockSnapshotItem3.apply {
+            whenever(systemInformation).thenReturn(mockSystemInformation)
+            whenever(nodes).thenReturn(fakeNodeData)
+            whenever(creationTimeStampInNs).thenReturn(System.nanoTime())
+            whenever(isValid()).thenReturn(true)
+            whenever(isReady()).thenReturn(true)
+        }
 
         testedHandler.recordedDataQueue.offer(mockSnapshotItem1)
         testedHandler.recordedDataQueue.offer(mockSnapshotItem2)
         testedHandler.recordedDataQueue.offer(mockSnapshotItem3)
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(3)
-        val item1Time = mockSnapshotItem1.recordedQueuedItemContext.timestamp
-
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .thenReturn(item1Time + 1)
 
         // When
         repeat(3) {
@@ -592,9 +567,9 @@ internal class RecordedDataQueueHandlerTest {
     @Test
     fun `M clear pending queue and stop processor W clearAndStopProcessing() { pending items }`() {
         // Given
-        createFakeSnapshotItemWithDelayMs(1)
-        createFakeSnapshotItemWithDelayMs(2)
-        createFakeSnapshotItemWithDelayMs(3)
+        addSnapshotItemToQueue()
+        addSnapshotItemToQueue()
+        addSnapshotItemToQueue()
 
         // When
         testedHandler.clearAndStopProcessingQueue()
@@ -697,9 +672,9 @@ internal class RecordedDataQueueHandlerTest {
 
     // endregion
 
-    private fun createFakeSnapshotItemWithDelayMs(delay: Int): SnapshotRecordedDataQueueItem {
+    private fun addSnapshotItemToQueue(): SnapshotRecordedDataQueueItem {
         val newRumContext = RecordedQueuedItemContext(
-            timestamp = System.currentTimeMillis() + delay,
+            timestamp = System.currentTimeMillis(),
             newRumContext = fakeRecordedQueuedItemContext.newRumContext
         )
 
@@ -707,7 +682,8 @@ internal class RecordedDataQueueHandlerTest {
             .thenReturn(newRumContext)
 
         val item = testedHandler.addSnapshotItem(mockSystemInformation)
-        item!!.nodes = fakeNodeData
+        checkNotNull(item)
+        item.nodes = fakeNodeData
         return item
     }
 

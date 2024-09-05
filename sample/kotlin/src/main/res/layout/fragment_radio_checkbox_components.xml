@@ -13,34 +13,111 @@
     <CheckBox
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:id="@+id/checkbox"
+        android:id="@+id/default_checkbox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="@color/datadog_violet"
         android:text="@string/default_checkbox" />
 
+    <CheckBox
+        android:id="@+id/checkbox_disabled_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:enabled="false"
+        android:text="@string/default_checkbox_disabled_checked"
+        android:textColor="@color/datadog_violet"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/default_checkbox" />
+
+    <CheckBox
+        android:id="@+id/checkbox_disabled_not_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:enabled="false"
+        android:text="@string/default_checkbox_disabled_not_checked"
+        android:textColor="@color/datadog_violet"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/checkbox_disabled_checked" />
+
     <androidx.appcompat.widget.AppCompatCheckBox
-        app:layout_constraintTop_toBottomOf="@+id/checkbox"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/app_compat_checkbox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintTop_toBottomOf="@+id/checkbox_disabled_not_checked"
         android:text="@string/app_compat_checkbox" />
 
+    <androidx.appcompat.widget.AppCompatCheckBox
+        android:id="@+id/app_compat_checkbox_disabled_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:checked="true"
+        android:enabled="false"
+        android:text="@string/app_compat_checkbox_disabled_checked"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox" />
+
+
+    <androidx.appcompat.widget.AppCompatCheckBox
+        android:id="@+id/app_compat_checkbox_disabled_unchecked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:checked="false"
+        android:enabled="false"
+        android:text="@string/app_compat_checkbox_disabled_not_checked"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox_disabled_checked" />
+
     <com.google.android.material.checkbox.MaterialCheckBox
-        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/material_checkbox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="@android:color/holo_orange_light"
-        android:text="@string/material_checkbox"/>
+        android:buttonTint="@color/checkbox_state_tint"
+        android:text="@string/material_checkbox"
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_checkbox_disabled_unchecked"
+        app:useMaterialThemeColors="false" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/material_checkbox_disabled_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:buttonTint="@color/checkbox_state_tint"
+        android:checked="true"
+        android:enabled="false"
+        android:text="@string/material_checkbox_disabled_checked"
+        android:textColor="@android:color/holo_orange_light"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox"
+        app:useMaterialThemeColors="false" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/material_checkbox_disabled_not_checked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/default_padding"
+        android:buttonTint="@color/checkbox_state_tint"
+        android:checked="false"
+        android:enabled="false"
+        android:text="@string/material_checkbox_disabled_not_checked"
+        android:textColor="@android:color/holo_orange_light"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox_disabled_checked"
+        app:useMaterialThemeColors="false" />
 
     <RadioButton
-        app:layout_constraintTop_toBottomOf="@+id/material_checkbox"
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox_disabled_not_checked"
         app:layout_constraintStart_toStartOf="parent"
         android:id="@+id/radio"
         android:layout_width="match_parent"

@@ -32,7 +32,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
-    id("thirdPartyLicences")
+    id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
@@ -44,15 +44,11 @@ android {
     }
 
     namespace = "com.datadog.android.log"
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
 }
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)

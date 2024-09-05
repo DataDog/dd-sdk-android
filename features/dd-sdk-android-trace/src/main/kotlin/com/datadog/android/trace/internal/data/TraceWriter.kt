@@ -18,13 +18,13 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.opentracing.DDSpan
-import com.datadog.trace.common.writer.Writer
 import java.util.Locale
 
 internal class TraceWriter(
     private val sdkCore: FeatureSdkCore,
-    internal val legacyMapper: ContextAwareMapper<DDSpan, SpanEvent>,
+    internal val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     internal val eventMapper: EventMapper<SpanEvent>,
     private val serializer: ContextAwareSerializer<SpanEvent>,
     private val internalLogger: InternalLogger
@@ -61,7 +61,7 @@ internal class TraceWriter(
         writer: EventBatchWriter,
         span: DDSpan
     ) {
-        val spanEvent = legacyMapper.map(datadogContext, span)
+        val spanEvent = ddSpanToSpanEventMapper.map(datadogContext, span)
         val mapped = eventMapper.map(spanEvent) ?: return
         try {
             val serialized = serializer

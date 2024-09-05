@@ -53,6 +53,9 @@ android {
 
     compileOptions {
         java17()
+        if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
+            isCoreLibraryDesugaringEnabled = true
+        }
     }
 
     packaging {
@@ -74,14 +77,6 @@ android {
             )
             testProguardFile("test-proguard-rules.pro")
         }
-        getByName("debug") {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            testProguardFile("test-proguard-rules.pro")
-        }
     }
 }
 
@@ -92,6 +87,9 @@ repositories {
 }
 
 dependencies {
+    if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
+        coreLibraryDesugaring(libs.androidDesugaringSdk)
+    }
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))

@@ -11,8 +11,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
-import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchId
@@ -21,9 +21,6 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToLong
 
 internal class DataUploadRunnable(
     private val featureName: String,
@@ -33,52 +30,43 @@ internal class DataUploadRunnable(
     private val contextProvider: ContextProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    uploadConfiguration: DataUploadConfiguration,
+    internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
+    internal val maxBatchesPerJob: Int,
     private val internalLogger: InternalLogger
 ) : UploadRunnable {
-
-    internal var currentDelayIntervalMs = uploadConfiguration.defaultDelayMs
-    internal val minDelayMs = uploadConfiguration.minDelayMs
-    internal val maxDelayMs = uploadConfiguration.maxDelayMs
-    internal val maxBatchesPerJob = uploadConfiguration.maxBatchesPerUploadJob
 
     //  region Runnable
 
     @WorkerThread
     override fun run() {
+        var uploadAttempts = 0
+        var lastBatchUploadStatus: UploadStatus? = null
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
             var batchConsumerAvailableAttempts = maxBatchesPerJob
-            var lastBatchUploadStatus: UploadStatus?
             do {
                 batchConsumerAvailableAttempts--
                 lastBatchUploadStatus = handleNextBatch(context)
-            } while (batchConsumerAvailableAttempts > 0 &&
-                lastBatchUploadStatus is UploadStatus.Success
+                if (lastBatchUploadStatus != null) {
+                    uploadAttempts++
+                }
+            } while (
+                batchConsumerAvailableAttempts > 0 && lastBatchUploadStatus is UploadStatus.Success
             )
-            if (lastBatchUploadStatus != null) {
-                handleBatchConsumingJobFrequency(lastBatchUploadStatus)
-            } else {
-                // there was no batch left or there was a problem reading the next batch
-                // in the storage so we increase the interval
-                increaseInterval()
-            }
         }
 
-        scheduleNextUpload()
+        val delayMs = uploadSchedulerStrategy.getMsDelayUntilNextUpload(
+            featureName,
+            uploadAttempts,
+            lastBatchUploadStatus?.code,
+            lastBatchUploadStatus?.throwable
+        )
+        scheduleNextUpload(delayMs)
     }
 
     // endregion
 
     // region Internal
-
-    private fun handleBatchConsumingJobFrequency(lastBatchUploadStatus: UploadStatus) {
-        if (lastBatchUploadStatus.shouldRetry) {
-            increaseInterval()
-        } else {
-            decreaseInterval()
-        }
-    }
 
     @WorkerThread
     @Suppress("UnsafeThirdPartyFunctionCall") // called inside a dedicated executor
@@ -109,11 +97,11 @@ internal class DataUploadRunnable(
         return hasEnoughPower && !systemInfo.powerSaveMode
     }
 
-    private fun scheduleNextUpload() {
+    private fun scheduleNextUpload(delayMs: Long) {
         threadPoolExecutor.remove(this)
         threadPoolExecutor.scheduleSafe(
             "$featureName: data upload",
-            currentDelayIntervalMs,
+            delayMs,
             TimeUnit.MILLISECONDS,
             internalLogger,
             this
@@ -137,29 +125,9 @@ internal class DataUploadRunnable(
         return status
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
-    private fun decreaseInterval() {
-        currentDelayIntervalMs = max(
-            minDelayMs,
-            @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
-            (currentDelayIntervalMs * DECREASE_PERCENT).roundToLong()
-        )
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
-    private fun increaseInterval() {
-        currentDelayIntervalMs = min(
-            maxDelayMs,
-            @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
-            (currentDelayIntervalMs * INCREASE_PERCENT).roundToLong()
-        )
-    }
-
     // endregion
 
     companion object {
         internal const val LOW_BATTERY_THRESHOLD = 10
-        const val DECREASE_PERCENT = 0.90
-        const val INCREASE_PERCENT = 1.10
     }
 }

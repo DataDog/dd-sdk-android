@@ -7,8 +7,8 @@
 package com.datadog.opentracing;
 
 import com.datadog.opentracing.decorators.AbstractDecorator;
-import com.datadog.trace.api.DDTags;
-import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.api.DDTags;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;

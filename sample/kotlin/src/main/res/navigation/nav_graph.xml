@@ -120,4 +120,8 @@
         android:name="com.datadog.android.sample.sessionreplay.WebViewRecordFragment"
         android:label="@string/webview_recording"/>
 
+    <fragment android:id="@+id/fragment_otel_traces"
+        android:name="com.datadog.android.sample.traces.OtelTracesFragment"
+        android:label="@string/title_otel_traces"/>
+
 </navigation>

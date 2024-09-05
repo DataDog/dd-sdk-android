@@ -15,7 +15,12 @@ tasks.register(
 ) {
     inputDirPath = "src/main/json/rum"
     targetPackageName = "com.datadog.android.rum.model"
-    ignoredFiles = arrayOf("_common-schema.json")
+    ignoredFiles = arrayOf(
+        "_common-schema.json",
+        "_action-child-schema.json",
+        "_perf-metric-schema.json",
+        "_view-container-schema.json"
+    )
     inputNameMapping = mapOf(
         "action-schema.json" to "ActionEvent",
         "error-schema.json" to "ErrorEvent",

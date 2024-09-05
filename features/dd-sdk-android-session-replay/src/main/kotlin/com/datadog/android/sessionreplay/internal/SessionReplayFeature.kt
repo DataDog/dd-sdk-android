@@ -18,12 +18,16 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
+import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
+import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -39,6 +43,7 @@ internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
     private val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
+    internal val imagePrivacy: ImagePrivacy?,
     private val rateBasedSampler: Sampler,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -49,6 +54,7 @@ internal class SessionReplayFeature(
         sdkCore: FeatureSdkCore,
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         sampleRate: Float
@@ -56,10 +62,12 @@ internal class SessionReplayFeature(
         sdkCore,
         customEndpointUrl,
         privacy,
+        imagePrivacy,
         RateBasedSampler(sampleRate),
         DefaultRecorderProvider(
             sdkCore,
             privacy,
+            imagePrivacy,
             customMappers,
             customOptionSelectorDetectors
         )
@@ -90,9 +98,20 @@ internal class SessionReplayFeature(
 
         val resourcesFeature = registerResourceFeature(sdkCore)
 
+        val resourceDataStoreManager = ResourceDataStoreManager(
+            featureSdkCore = sdkCore,
+            resourceHashesSerializer = ResourceHashesEntrySerializer(),
+            resourceHashesDeserializer = ResourceHashesEntryDeserializer(internalLogger = sdkCore.internalLogger)
+        )
+
         dataWriter = createDataWriter()
         sessionReplayRecorder =
-            recorderProvider.provideSessionReplayRecorder(resourcesFeature.dataWriter, dataWriter, appContext)
+            recorderProvider.provideSessionReplayRecorder(
+                resourceDataStoreManager = resourceDataStoreManager,
+                resourceWriter = resourcesFeature.dataWriter,
+                recordWriter = dataWriter,
+                application = appContext
+            )
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {

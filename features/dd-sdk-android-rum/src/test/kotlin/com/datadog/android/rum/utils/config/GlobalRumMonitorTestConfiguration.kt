@@ -9,19 +9,33 @@ package com.datadog.android.rum.utils.config
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+
+@Suppress("TestFunctionName")
+internal abstract class InternalAdvancedRumMonitor : AdvancedRumMonitor {
+    override fun _getInternal(): _RumInternalProxy? {
+        return null
+    }
+}
 
 internal class GlobalRumMonitorTestConfiguration :
-    MockTestConfiguration<RumMonitor>(AdvancedRumMonitor::class.java) {
+    MockTestConfiguration<RumMonitor>(InternalAdvancedRumMonitor::class.java) {
 
     lateinit var mockSdkCore: InternalSdkCore
 
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         mockSdkCore = mock()
+
+        (mockInstance as? InternalAdvancedRumMonitor)?.let {
+            whenever(it._getInternal()).thenReturn(_RumInternalProxy(mockInstance as AdvancedRumMonitor))
+        }
+
         GlobalRumMonitor.registerIfAbsent(mockInstance, mockSdkCore)
     }
 

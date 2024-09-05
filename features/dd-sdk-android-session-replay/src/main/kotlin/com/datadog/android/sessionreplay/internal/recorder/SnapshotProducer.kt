@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
+import com.datadog.android.internal.profiler.withinBenchmarkSpan
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -29,11 +31,17 @@ internal class SnapshotProducer(
         rootView: View,
         systemInformation: SystemInformation,
         privacy: SessionReplayPrivacy,
+        imagePrivacy: ImagePrivacy,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
         return convertViewToNode(
             rootView,
-            MappingContext(systemInformation, imageWireframeHelper, privacy),
+            MappingContext(
+                systemInformation = systemInformation,
+                imageWireframeHelper = imageWireframeHelper,
+                privacy = privacy,
+                imagePrivacy = imagePrivacy
+            ),
             LinkedList(),
             recordedDataQueueRefs
         )
@@ -47,35 +55,37 @@ internal class SnapshotProducer(
         parents: LinkedList<MobileSegment.Wireframe>,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
-        val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
-        val nextTraversalStrategy = traversedTreeView.nextActionStrategy
-        val resolvedWireframes = traversedTreeView.mappedWireframes
-        if (nextTraversalStrategy == TraversalStrategy.STOP_AND_DROP_NODE) {
-            return null
-        }
-        if (nextTraversalStrategy == TraversalStrategy.STOP_AND_RETURN_NODE) {
-            return Node(wireframes = resolvedWireframes, parents = parents)
-        }
+        return withinBenchmarkSpan(view::class.java.simpleName) {
+            val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
+            val nextTraversalStrategy = traversedTreeView.nextActionStrategy
+            val resolvedWireframes = traversedTreeView.mappedWireframes
+            if (nextTraversalStrategy == TraversalStrategy.STOP_AND_DROP_NODE) {
+                return null
+            }
+            if (nextTraversalStrategy == TraversalStrategy.STOP_AND_RETURN_NODE) {
+                return Node(wireframes = resolvedWireframes, parents = parents)
+            }
 
-        val childNodes = LinkedList<Node>()
-        if (view is ViewGroup &&
-            view.childCount > 0 &&
-            nextTraversalStrategy == TraversalStrategy.TRAVERSE_ALL_CHILDREN
-        ) {
-            val childMappingContext = resolveChildMappingContext(view, mappingContext)
-            val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
-            for (i in 0 until view.childCount) {
-                val viewChild = view.getChildAt(i) ?: continue
-                convertViewToNode(viewChild, childMappingContext, parentsCopy, recordedDataQueueRefs)?.let {
-                    childNodes.add(it)
+            val childNodes = LinkedList<Node>()
+            if (view is ViewGroup &&
+                view.childCount > 0 &&
+                nextTraversalStrategy == TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            ) {
+                val childMappingContext = resolveChildMappingContext(view, mappingContext)
+                val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
+                for (i in 0 until view.childCount) {
+                    val viewChild = view.getChildAt(i) ?: continue
+                    convertViewToNode(viewChild, childMappingContext, parentsCopy, recordedDataQueueRefs)?.let {
+                        childNodes.add(it)
+                    }
                 }
             }
+            Node(
+                children = childNodes,
+                wireframes = resolvedWireframes,
+                parents = parents
+            )
         }
-        return Node(
-            children = childNodes,
-            wireframes = resolvedWireframes,
-            parents = parents
-        )
     }
 
     private fun resolveChildMappingContext(

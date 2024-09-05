@@ -7,6 +7,7 @@
 package com.datadog.tools.unit
 
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.LinkedList
 
 /**
@@ -113,4 +114,71 @@ private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Bool
     }
     field.set(instance, fieldValue)
     return true
+}
+
+/**
+ * Invokes a private constructor for the specified parameters.
+ * @param T the type of the class
+ * @param clazz the class to create an instance of
+ * @param params the parameters to provide the constructor
+ * @return the instance of the class
+ */
+@Suppress("SpreadOperator")
+fun <T : Any> createInstance(clazz: Class<T>, vararg params: Any?): T {
+    val toTypedArray = params.map { it?.javaClass ?: Any::class.java }.toTypedArray()
+    val constructor = clazz.getDeclaredConstructor(*toTypedArray)
+    constructor.isAccessible = true
+    return constructor.newInstance(*params) as T
+}
+
+/**
+ * Invokes a private constructor for the specified parameters without type check.
+ * This is mostly useful when you provide Mock parameters where the type check fails for the constructor.
+ * @param T the type of the class
+ * @param clazz the class to create an instance of
+ * @param params the parameters to provide the constructor
+ * @return the instance of the class
+ */
+@Suppress("SpreadOperator", "UNCHECKED_CAST")
+fun <T : Any> createInstanceWithoutTypeCheck(clazz: Class<T>, vararg params: Any?): T {
+    val constructor = clazz.declaredConstructors.first { it.parameterTypes.size == params.size }
+    constructor.isAccessible = true
+    return constructor.newInstance(*params) as T
+}
+
+/**
+ * Invokes a static method on the specified class.
+ * @param T the type of the class
+ * @param R the type of the result
+ * @param methodName the name of the method
+ * @param params the parameters to provide the method
+ * @return the result of the method
+ */
+@Suppress("SpreadOperator")
+inline fun <reified T : Any, reified R> Class<T>.callStaticMethod(
+    methodName: String,
+    vararg params: Any?
+): R {
+    val declarationParams = Array<Class<*>?>(params.size) {
+        params[it]?.javaClass ?: Any::class.java
+    }
+
+    val method = this.getDeclaredMethod(methodName, *declarationParams)
+    val wasAccessible = method.isAccessible
+
+    val output: Any?
+    method.isAccessible = true
+    try {
+        output = if (params.isEmpty()) {
+            method.invoke(null)
+        } else {
+            method.invoke(null, *params)
+        }
+    } catch (e: InvocationTargetException) {
+        throw e.cause ?: e
+    } finally {
+        method.isAccessible = wasAccessible
+    }
+
+    return output as R
 }

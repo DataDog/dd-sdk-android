@@ -6,10 +6,11 @@
 
 package com.datadog.opentracing.propagation;
 
+import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
 
 import com.datadog.opentracing.DDSpanContext;
-import com.datadog.trace.api.sampling.PrioritySampling;
+import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;
@@ -98,7 +99,7 @@ class B3MHttpCodec {
             } else {
               trimmedValue = value;
             }
-            traceId = validateUInt64BitsID(trimmedValue, HEX_RADIX);
+            traceId = validateUInt128BitsID(trimmedValue, HEX_RADIX);
           } else if (SPAN_ID_KEY.equalsIgnoreCase(key)) {
             spanId = validateUInt64BitsID(value, HEX_RADIX);
           } else if (SAMPLING_PRIORITY_KEY.equalsIgnoreCase(key)) {

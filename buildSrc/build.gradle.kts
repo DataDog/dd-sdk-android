@@ -34,7 +34,7 @@ dependencies {
     implementation(libs.versionsGradlePlugin)
     implementation(libs.fuzzyWuzzy)
     implementation(libs.dokkaGradlePlugin)
-    implementation(libs.nexusPublishGradlePlugin)
+    implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)
 
     // check api surface
@@ -58,10 +58,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("thirdPartyLicences") {
-            id = "thirdPartyLicences" // the alias
-            implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
-        }
         register("apiSurface") {
             id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
@@ -76,6 +72,9 @@ gradlePlugin {
         }
     }
 }
+
+java.targetCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {

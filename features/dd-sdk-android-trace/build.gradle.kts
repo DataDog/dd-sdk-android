@@ -31,7 +31,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
-    id("thirdPartyLicences")
+    id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
@@ -41,20 +41,16 @@ android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
-
     namespace = "com.datadog.android.trace"
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
 }
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
+    implementation(libs.bundles.traceCore)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -74,6 +70,8 @@ dependencies {
     testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    testImplementation(libs.systemStubsJupiter)
+
     unmock(libs.robolectric)
 }
 

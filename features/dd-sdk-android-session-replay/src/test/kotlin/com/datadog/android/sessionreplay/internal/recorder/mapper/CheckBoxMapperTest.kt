@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.widget.CheckBox
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -14,6 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -23,7 +27,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class CheckBoxMapperTest : BaseCheckBoxMapperTest() {
+internal class CheckBoxMapperTest : BaseCheckableTextViewMapperTest<CheckBox>() {
 
     override fun setupTestedMapper(): CheckBoxMapper {
         return CheckBoxMapper(
@@ -31,7 +35,18 @@ internal class CheckBoxMapperTest : BaseCheckBoxMapperTest() {
             mockViewIdentifierResolver,
             mockColorStringFormatter,
             mockViewBoundsResolver,
-            mockDrawableToColorMapper
+            mockDrawableToColorMapper,
+            mockInternalLogger
         )
+    }
+
+    override fun mockCheckableTextView(): CheckBox {
+        return mock {
+            whenever(it.textSize).thenReturn(fakeTextSize)
+            whenever(it.currentTextColor).thenReturn(fakeCurrentTextColor)
+            whenever(it.alpha) doReturn 1f
+            whenever(it.buttonDrawable) doReturn mockButtonDrawable
+            whenever(it.resources) doReturn mockResources
+        }
     }
 }

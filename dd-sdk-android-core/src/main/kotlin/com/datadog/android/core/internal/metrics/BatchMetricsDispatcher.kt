@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.privacy.TrackingConsent
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 internal class BatchMetricsDispatcher(
     featureName: String,
-    private val uploadConfiguration: DataUploadConfiguration,
+    private val uploadConfiguration: DataUploadConfiguration?,
     private val filePersistenceConfig: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
     private val dateTimeProvider: TimeProvider,
@@ -44,7 +45,8 @@ internal class BatchMetricsDispatcher(
         resolveBatchDeletedMetricAttributes(batchFile, removalReason)?.let {
             internalLogger.logMetric(
                 messageBuilder = { BATCH_DELETED_MESSAGE },
-                additionalProperties = it
+                additionalProperties = it,
+                samplingRate = MethodCallSamplingRate.LOW.rate
             )
         }
     }
@@ -56,7 +58,8 @@ internal class BatchMetricsDispatcher(
         resolveBatchClosedMetricAttributes(batchFile, batchMetadata)?.let {
             internalLogger.logMetric(
                 messageBuilder = { BATCH_CLOSED_MESSAGE },
-                additionalProperties = it
+                additionalProperties = it,
+                samplingRate = MethodCallSamplingRate.LOW.rate
             )
         }
     }
@@ -101,8 +104,8 @@ internal class BatchMetricsDispatcher(
             TYPE_KEY to BATCH_DELETED_TYPE_VALUE,
             BATCH_AGE_KEY to fileAgeInMillis,
             UPLOADER_DELAY_KEY to mapOf(
-                UPLOADER_DELAY_MIN_KEY to uploadConfiguration.minDelayMs,
-                UPLOADER_DELAY_MAX_KEY to uploadConfiguration.maxDelayMs
+                UPLOADER_DELAY_MIN_KEY to uploadConfiguration?.minDelayMs,
+                UPLOADER_DELAY_MAX_KEY to uploadConfiguration?.maxDelayMs
             ),
             UPLOADER_WINDOW_KEY to filePersistenceConfig.recentDelayMs,
 
@@ -187,7 +190,7 @@ internal class BatchMetricsDispatcher(
         internal const val SR_TRACK_NAME = "sr"
         internal const val SR_RESOURCES_TRACK_NAME = "sr-resources"
 
-        private const val METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE = 15f
+        private const val METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE = 1.5f
 
         internal const val WRONG_FILE_NAME_MESSAGE_FORMAT =
             "Unable to parse the file name as a timestamp: %s"

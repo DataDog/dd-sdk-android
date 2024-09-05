@@ -6,10 +6,10 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.legacy.trace.api.Config
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.DDTracer.DDSpanBuilder
-import com.datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock

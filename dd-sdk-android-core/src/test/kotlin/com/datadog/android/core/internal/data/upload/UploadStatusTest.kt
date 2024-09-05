@@ -59,7 +59,7 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
         )
         verifyNoMoreInteractions(mockLogger)
@@ -79,9 +79,30 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network error; we will retry later."
+                "because of a network error (${status.throwable!!.message}); we will retry later."
+        )
+        verifyNoMoreInteractions(mockLogger)
+    }
+
+    @Test
+    fun `M log DNS_ERROR only to USER W logStatus()`(
+        @Forgery status: UploadStatus.DNSError
+    ) {
+        // When
+        status.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER),
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of a DNS error (${status.throwable!!.message}); we will retry later."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -100,7 +121,7 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because your token is invalid; the batch was dropped. " +
                 "Make sure that the provided token still " +
@@ -123,7 +144,7 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because of a network redirection; the batch was dropped."
         )
@@ -167,7 +188,7 @@ internal class UploadStatusTest {
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            "Batch [$fakeByteSize bytes] ($fakeContext) not uploaded due to rate limitation; " +
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed because of an intake rate limitation; " +
                 "we will retry later."
         )
     }
@@ -186,7 +207,7 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because of a server processing error; we will retry later."
         )
@@ -194,8 +215,8 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `M log UNKNOWN_ERROR only to USER W logStatus()`(
-        @Forgery status: UploadStatus.UnknownError
+    fun `M log UNKNOWN_HTTP_ERROR only to USER W logStatus()`(
+        @Forgery status: UploadStatus.UnknownHttpError
     ) {
         // When
         status.logStatus(
@@ -207,9 +228,29 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error (status code = ${status.code}); the batch was dropped."
+                "because of an unexpected HTTP error (status code = ${status.code}); the batch was dropped."
+        )
+    }
+
+    @Test
+    fun `M log UNKNOWN_EXCEPTION only to USER W logStatus()`(
+        @Forgery status: UploadStatus.UnknownException
+    ) {
+        // When
+        status.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER),
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of an unknown error (${status.throwable!!.message}); we will retry later."
         )
     }
 
@@ -227,9 +268,9 @@ internal class UploadStatusTest {
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an error when creating the request;" +
+                "because of an error when creating the request (${status.throwable!!.message});" +
                 " the batch was dropped."
         )
     }

@@ -35,6 +35,7 @@ import com.datadog.gradle.plugin.jsonschema.User
 import com.datadog.gradle.plugin.jsonschema.UserMerged
 import com.datadog.gradle.plugin.jsonschema.Version
 import com.datadog.gradle.plugin.jsonschema.Video
+import com.datadog.gradle.plugin.jsonschema.WeirdCombo
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -126,7 +127,8 @@ class FileGeneratorTest(
                 arrayOf(User, "User"),
                 arrayOf(UserMerged, "UserMerged"),
                 arrayOf(Version, "Version"),
-                arrayOf(Video, "Video")
+                arrayOf(Video, "Video"),
+                arrayOf(WeirdCombo, "WeirdCombo")
             )
         }
     }

@@ -6,18 +6,19 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.okhttp.test.elmyr.OkHttpIntegrationForgeConfigurator
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.reset
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.forge.BaseConfigurator
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
@@ -52,7 +53,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(BaseConfigurator::class)
+@ForgeConfiguration(OkHttpIntegrationForgeConfigurator::class)
 internal class DatadogEventListenerTest {
 
     lateinit var testedListener: EventListener
@@ -60,8 +61,8 @@ internal class DatadogEventListenerTest {
     @Mock
     lateinit var mockCall: Call
 
-    @StringForgery(type = StringForgeryType.ASCII)
-    lateinit var fakeKey: String
+    @Forgery
+    lateinit var fakeKey: ResourceId
 
     @StringForgery(regex = "[a-z]+\\.[a-z]{3}")
     lateinit var fakeDomain: String

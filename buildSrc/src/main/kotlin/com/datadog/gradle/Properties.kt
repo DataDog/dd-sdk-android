@@ -9,4 +9,5 @@ package com.datadog.gradle
 object Properties {
     // needed to bring some classes into classpath which are missing on the lower APIs
     const val USE_API21_JAVA_BACKPORT = "use-api21-java-backport"
+    const val USE_DESUGARING = "use-desugaring"
 }

@@ -20,11 +20,14 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.DataUploader
+import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrategy
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -36,6 +39,11 @@ import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
+import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
+import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
+import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
+import com.datadog.android.core.internal.persistence.datastore.DatastoreFileWriter
+import com.datadog.android.core.internal.persistence.datastore.NoOpDataStoreHandler
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -43,8 +51,10 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsentProviderCallback
+import com.datadog.android.security.Encryption
 import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -57,6 +67,8 @@ internal class SdkFeature(
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger
 ) : FeatureScope {
+
+    override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
     internal val initialized = AtomicBoolean(false)
 
@@ -78,14 +90,16 @@ internal class SdkFeature(
             return
         }
 
-        var dataUploadConfiguration: DataUploadConfiguration? = null
         if (wrappedFeature is StorageBackedFeature) {
             val uploadFrequency = coreFeature.uploadFrequency
             val batchProcessingLevel = coreFeature.batchProcessingLevel
-            dataUploadConfiguration = DataUploadConfiguration(
+
+            val dataUploadConfiguration = DataUploadConfiguration(
                 uploadFrequency,
                 batchProcessingLevel.maxBatchesPerUploadJob
             )
+            val uploadSchedulerStrategy = coreFeature.customUploadSchedulerStrategy
+                ?: DefaultUploadSchedulerStrategy(dataUploadConfiguration)
             storage = prepareStorage(
                 dataUploadConfiguration,
                 wrappedFeature,
@@ -93,17 +107,21 @@ internal class SdkFeature(
                 instanceId,
                 coreFeature.persistenceStrategyFactory
             )
-        }
 
-        wrappedFeature.onInitialize(context)
+            wrappedFeature.onInitialize(context)
 
-        if (wrappedFeature is StorageBackedFeature && dataUploadConfiguration != null) {
-            setupUploader(wrappedFeature, dataUploadConfiguration)
+            setupUploader(wrappedFeature, uploadSchedulerStrategy, dataUploadConfiguration.maxBatchesPerUploadJob)
+        } else {
+            wrappedFeature.onInitialize(context)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
             coreFeature.trackingConsentProvider.registerCallback(wrappedFeature)
         }
+
+        prepareDataStoreHandler(
+            encryption = coreFeature.localDataEncryption
+        )
 
         initialized.set(true)
 
@@ -117,6 +135,7 @@ internal class SdkFeature(
     @AnyThread
     fun clearAllData() {
         storage.dropAll()
+        dataStore.clearAllData()
     }
 
     fun stop() {
@@ -129,6 +148,7 @@ internal class SdkFeature(
             uploadScheduler.stopScheduling()
             uploadScheduler = NoOpUploadScheduler()
             storage = NoOpStorage()
+            dataStore = NoOpDataStoreHandler()
             uploader = NoOpDataUploader()
             fileOrchestrator = NoOpFileOrchestrator()
             metricsDispatcher = NoOpMetricsDispatcher()
@@ -213,7 +233,7 @@ internal class SdkFeature(
     // region Internal
 
     private fun setupMetricsDispatcher(
-        dataUploadConfiguration: DataUploadConfiguration,
+        dataUploadConfiguration: DataUploadConfiguration?,
         filePersistenceConfig: FilePersistenceConfig,
         context: Context
     ) {
@@ -235,7 +255,8 @@ internal class SdkFeature(
 
     private fun setupUploader(
         feature: StorageBackedFeature,
-        uploadConfiguration: DataUploadConfiguration
+        uploadSchedulerStrategy: UploadSchedulerStrategy,
+        maxBatchesPerJob: Int
     ) {
         uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(feature.requestFactory)
@@ -246,7 +267,8 @@ internal class SdkFeature(
                 coreFeature.contextProvider,
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
-                uploadConfiguration,
+                uploadSchedulerStrategy,
+                maxBatchesPerJob,
                 coreFeature.uploadExecutorService,
                 internalLogger
             )
@@ -258,7 +280,7 @@ internal class SdkFeature(
     // region Feature setup
 
     private fun prepareStorage(
-        dataUploadConfiguration: DataUploadConfiguration,
+        dataUploadConfiguration: DataUploadConfiguration?,
         wrappedFeature: StorageBackedFeature,
         context: Context,
         instanceId: String,
@@ -340,6 +362,47 @@ internal class SdkFeature(
             callFactory = coreFeature.okHttpClient,
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider
+        )
+    }
+
+    private fun prepareDataStoreHandler(
+        encryption: Encryption?
+    ) {
+        val fileReaderWriter = FileReaderWriter.create(
+            internalLogger,
+            encryption
+        )
+
+        val dataStoreFileHelper = DataStoreFileHelper(internalLogger)
+        val featureName = wrappedFeature.name
+        val storageDir = coreFeature.storageDir
+
+        val tlvBlockFileReader = TLVBlockFileReader(
+            internalLogger = internalLogger,
+            fileReaderWriter = fileReaderWriter
+        )
+
+        val dataStoreFileReader = DatastoreFileReader(
+            dataStoreFileHelper = dataStoreFileHelper,
+            featureName = featureName,
+            internalLogger = internalLogger,
+            storageDir = storageDir,
+            tlvBlockFileReader = tlvBlockFileReader
+        )
+
+        val dataStoreFileWriter = DatastoreFileWriter(
+            dataStoreFileHelper = dataStoreFileHelper,
+            featureName = featureName,
+            fileReaderWriter = fileReaderWriter,
+            internalLogger = internalLogger,
+            storageDir = storageDir
+        )
+
+        dataStore = DataStoreFileHandler(
+            executorService = coreFeature.persistenceExecutorService,
+            internalLogger = internalLogger,
+            dataStoreFileReader = dataStoreFileReader,
+            datastoreFileWriter = dataStoreFileWriter
         )
     }
 

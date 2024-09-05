@@ -165,6 +165,7 @@ class JsonSchemaReader(
                     transform(JsonDefinition.ANY.copy(type = type), "?", fromFile)
                 }
             }
+
             is Boolean -> {
                 if (additional) {
                     transform(JsonDefinition.EMPTY.copy(type = JsonType.OBJECT), "?", fromFile)
@@ -172,6 +173,7 @@ class JsonSchemaReader(
                     null
                 }
             }
+
             else -> {
                 error("additionalProperties uses an unknown format")
             }
@@ -311,10 +313,16 @@ class JsonSchemaReader(
             // because we can't make a type matching both, we simplify it to be always an array
             logger.warn("Simplifying a 'oneOf' constraint to $asArray")
             asArray
-        } else if (options.all { it is TypeDefinition.Class }) {
+        } else if (options.all { it is TypeDefinition.Class || it is TypeDefinition.OneOfClass }) {
             TypeDefinition.OneOfClass(
                 typeName,
-                options.filterIsInstance<TypeDefinition.Class>(),
+                options.flatMap {
+                    when (it) {
+                        is TypeDefinition.OneOfClass -> it.options
+                        is TypeDefinition.Class -> listOf(it)
+                        else -> emptyList()
+                    }
+                },
                 description.orEmpty()
             )
         } else {

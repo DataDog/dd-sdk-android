@@ -44,15 +44,17 @@ internal class Configurator :
         forge.addFactory(DataUploadConfigurationForgeryFactory())
 
         // UploadStatus
-        forge.addFactory(HttpRedirectStatusForgeryFactory())
-        forge.addFactory(HttpClientRateLimitingStatusForgeryFactory())
+        forge.addFactory(DNSErrorStatusForgeryFactory())
         forge.addFactory(HttpClientErrorForgeryFactory())
+        forge.addFactory(HttpClientRateLimitingStatusForgeryFactory())
+        forge.addFactory(HttpRedirectStatusForgeryFactory())
         forge.addFactory(HttpServerErrorForgeryFactory())
         forge.addFactory(InvalidTokenErrorStatusForgeryFactory())
         forge.addFactory(NetworkErrorStatusForgeryFactory())
         forge.addFactory(RequestCreationErrorStatusForgeryFactory())
         forge.addFactory(SuccessStatusForgeryFactory())
-        forge.addFactory(UnknownErrorStatusForgeryFactory())
+        forge.addFactory(UnknownExceptionStatusForgeryFactory())
+        forge.addFactory(UnknownHttpErrorStatusForgeryFactory())
         forge.addFactory(UnknownStatusForgeryFactory())
 
         // RemovalReason

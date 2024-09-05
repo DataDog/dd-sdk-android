@@ -1,0 +1,1 @@
+# Tracing SDK for Android with OpenTelemetry support

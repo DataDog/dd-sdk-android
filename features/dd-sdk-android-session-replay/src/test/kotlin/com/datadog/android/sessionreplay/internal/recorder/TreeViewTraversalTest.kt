@@ -17,9 +17,12 @@ import android.widget.RadioButton
 import android.widget.TextView
 import androidx.drawerlayout.widget.DrawerLayout
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal.Companion.METHOD_CALL_MAP_PREFIX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -42,6 +45,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -366,6 +370,97 @@ internal class TreeViewTraversalTest {
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
         assertThat(traversedTreeView.nextActionStrategy)
             .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
+    }
+
+    // endregion
+
+    // region MapWith Telemetry
+
+    @Test
+    fun `M return correct sample rate W traverse { ViewWireframeMapper }()`(forge: Forge) {
+        // Given
+        val expectedSampleRate = MethodCallSamplingRate.RARE.rate
+        val mockViewGroup = forge.aMockView<ViewGroup>()
+
+        val mockView = mock<View> {
+            whenever(it.parent) doReturn mockViewGroup
+        }
+
+        // When
+        testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        val expectedOperationName = "$METHOD_CALL_MAP_PREFIX ${ViewWireframeMapper::class.simpleName}"
+        verify(mockInternalLogger).measureMethodCallPerf(
+            callerClass = TreeViewTraversal::class.java,
+            operationName = expectedOperationName,
+            samplingRate = expectedSampleRate
+        ) {}
+    }
+
+    @Test
+    fun `M return correct sample rate W traverse { DecorViewMapper }()`() {
+        // Given
+        val expectedSampleRate = MethodCallSamplingRate.RARE.rate
+        val mockView = mock<View> {
+            whenever(it.parent) doReturn null
+        }
+
+        // When
+        testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        val expectedOperationName = "$METHOD_CALL_MAP_PREFIX ${DecorViewMapper::class.simpleName}"
+        verify(mockInternalLogger).measureMethodCallPerf(
+            callerClass = TreeViewTraversal::class.java,
+            operationName = expectedOperationName,
+            samplingRate = expectedSampleRate
+        ) {}
+    }
+
+    @Test
+    fun `M return correct sample rate W traverse() { specific mapper }`(forge: Forge) {
+        // Given
+        val expectedSampleRate = MethodCallSamplingRate.RARE.rate
+        val mockViewGroup = forge.aMockView<ViewGroup>()
+        val mockDefaultView = mock<View> {
+            whenever(it.parent) doReturn mockViewGroup
+        }
+        val mockMapper = mock<MapperTypeWrapper<*>>()
+        val mockWireFrameMapper = mock<WireframeMapper<View>>()
+        whenever(mockMapper.supportsView(mockDefaultView)).thenReturn(true)
+        whenever(mockMapper.getUnsafeMapper()).thenReturn(mockWireFrameMapper)
+
+        testedTreeViewTraversal = TreeViewTraversal(
+            listOf(mockMapper),
+            mockDefaultViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal,
+            mockInternalLogger
+        )
+
+        // When
+        testedTreeViewTraversal.traverse(
+            mockDefaultView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        val expectedOperationName = "$METHOD_CALL_MAP_PREFIX ${mockWireFrameMapper::class.simpleName}"
+        verify(mockInternalLogger).measureMethodCallPerf(
+            callerClass = TreeViewTraversal::class.java,
+            operationName = expectedOperationName,
+            samplingRate = expectedSampleRate
+        ) {}
     }
 
     // endregion

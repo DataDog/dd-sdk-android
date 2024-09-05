@@ -49,6 +49,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
+import java.net.UnknownHostException
 import java.util.Locale
 import com.datadog.android.api.net.Request as DatadogRequest
 
@@ -513,7 +514,7 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
-        assertThat(result).isInstanceOf(UploadStatus.UnknownError::class.java)
+        assertThat(result).isInstanceOf(UploadStatus.UnknownHttpError::class.java)
         assertThat(result.code).isEqualTo(statusCode)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
@@ -539,6 +540,25 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
+    fun `M return error W upload() {UnknownHostException}`(
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockCall.execute()) doThrow UnknownHostException(message)
+
+        // When
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+
+        // Then
+        assertThat(result).isInstanceOf(UploadStatus.DNSError::class.java)
+        assertThat(result.code).isEqualTo(UploadStatus.UNKNOWN_RESPONSE_CODE)
+        verifyRequest(fakeDatadogRequest)
+    }
+
+    @Test
     fun `M return error W upload() {any Throwable}`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
@@ -552,7 +572,7 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
-        assertThat(result).isInstanceOf(UploadStatus.NetworkError::class.java)
+        assertThat(result).isInstanceOf(UploadStatus.UnknownException::class.java)
         assertThat(result.code).isEqualTo(UploadStatus.UNKNOWN_RESPONSE_CODE)
         verifyRequest(fakeDatadogRequest)
     }
