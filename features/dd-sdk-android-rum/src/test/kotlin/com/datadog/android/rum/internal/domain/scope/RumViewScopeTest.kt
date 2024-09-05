@@ -6960,6 +6960,165 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region View Loading Time
+
+    @Test
+    fun `M send event with view loading time W handleEvent(AddViewLoadingTime) on active view`() {
+        // Given
+        val viewLoadingTimeEvent = RumRawEvent.AddViewLoadingTime()
+        val expectedViewLoadingTime = viewLoadingTimeEvent.eventTime.nanoTime - fakeEventTime.nanoTime
+
+        // When
+        testedScope.handleEvent(
+            viewLoadingTimeEvent,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeKey.name)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasLoadingType(null)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
+                    hasSource(fakeSourceViewEvent)
+                    hasLoadingTime(expectedViewLoadingTime)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M send event with view loading time W handleEvent(AddViewLoadingTime) on active view called multiple times`(
+        forge: Forge
+    ) {
+        // Given
+        val viewLoadingTimeEvents = forge.aList { RumRawEvent.AddViewLoadingTime() }
+        val expectedViewLoadingTime = viewLoadingTimeEvents.last().eventTime.nanoTime - fakeEventTime.nanoTime
+
+        // When
+        viewLoadingTimeEvents.forEach {
+            testedScope.handleEvent(
+                it,
+                mockWriter
+            )
+        }
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(viewLoadingTimeEvents.size))
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeKey.name)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasLoadingType(null)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
+                    hasSource(fakeSourceViewEvent)
+                    hasLoadingTime(expectedViewLoadingTime)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M not update the view loading time W handleEvent(AddViewLoadingTime) on stopped view`() {
+        // Given
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.AddViewLoadingTime(),
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.viewLoadingTime).isNull()
+        verifyNoInteractions(mockWriter)
+    }
+
+    // endregion
+
     // region Vitals
 
     @Test

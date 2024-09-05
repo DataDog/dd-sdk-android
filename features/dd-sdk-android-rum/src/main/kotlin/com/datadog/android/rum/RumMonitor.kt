@@ -324,6 +324,15 @@ interface RumMonitor {
     fun stopSession()
 
     /**
+     * Adds view loading time to current RUM view based on the time elapsed since the view was started.
+     * This method should be called only once per view.
+     * If the view is not started, this method does nothing.
+     * If the view is not active(stopped), this method does nothing.
+     */
+    @ExperimentalRumApi
+    fun addViewLoadingTime()
+
+    /**
      * Utility setting to inspect the active RUM View.
      * If set, a debugging outline will be displayed on top of the application, describing the name
      * of the active RUM View in the default SDK instance (if any).

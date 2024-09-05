@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -537,6 +538,11 @@ internal class DatadogRumMonitor(
         handleEvent(
             RumRawEvent.AddCustomTiming(name)
         )
+    }
+
+    @ExperimentalRumApi
+    override fun addViewLoadingTime() {
+        handleEvent(RumRawEvent.AddViewLoadingTime())
     }
 
     override fun addLongTask(durationNs: Long, target: String) {

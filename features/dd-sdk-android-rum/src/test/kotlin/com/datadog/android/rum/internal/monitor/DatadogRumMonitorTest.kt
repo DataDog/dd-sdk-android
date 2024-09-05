@@ -875,6 +875,19 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W addViewLoadTime()`() {
+        testedMonitor.addViewLoadingTime()
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            val event = firstValue
+            check(event is RumRawEvent.AddViewLoadingTime)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `M delegate event to rootScope on current thread W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
