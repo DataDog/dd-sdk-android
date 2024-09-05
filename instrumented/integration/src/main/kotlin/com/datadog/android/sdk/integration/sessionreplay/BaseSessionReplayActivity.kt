@@ -56,6 +56,7 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
             .forEach { it() }
     }
 
+    @Suppress("DEPRECATION")
     open fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
         return RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
             .setPrivacy(privacy)

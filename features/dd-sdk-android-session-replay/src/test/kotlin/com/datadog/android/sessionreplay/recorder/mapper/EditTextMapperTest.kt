@@ -6,7 +6,7 @@ import android.text.InputType
 import android.view.Gravity
 import android.widget.EditText
 import android.widget.TextView
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapperTest.Companion.parametersMatrix
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
@@ -56,7 +56,7 @@ internal abstract class EditTextMapperTest :
 
         whenever(mockEditable.toString()) doReturn fakeText
 
-        withPrivacy(privacyOption())
+        withTextAndInputPrivacy(privacyOption())
 
         testedWireframeMapper = EditTextMapper(
             mockViewIdentifierResolver,
@@ -70,7 +70,7 @@ internal abstract class EditTextMapperTest :
 
     abstract fun expectedPrivacyCompliantHint(hint: String): String
 
-    abstract fun privacyOption(): SessionReplayPrivacy
+    abstract fun privacyOption(): TextAndInputPrivacy
 
     @ParameterizedTest(name = "{index} (typeface: {0}, align:{2}, gravity:{3})")
     @MethodSource("basicParametersMatrix")

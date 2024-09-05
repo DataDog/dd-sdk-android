@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.material
 
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -35,7 +35,7 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
     @Test
     fun `M map the Slider to a list of wireframes W map() {ALLOW}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         val expectedInactiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeInactiveTrackId,
             x = fakeExpectedInactiveTrackXPos,
@@ -92,7 +92,7 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
     @Test
     fun `M map the Slider to a list of wireframes W map() {MASK}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         val expectedInactiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeInactiveTrackId,
             x = fakeExpectedInactiveTrackXPos,
@@ -124,7 +124,7 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
     @Test
     fun `M map the Slider to a list of wireframes W map() {MASK_USER_INPUT}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         val expectedInactiveTrackWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeInactiveTrackId,
             x = fakeExpectedInactiveTrackXPos,

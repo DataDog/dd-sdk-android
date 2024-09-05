@@ -11,7 +11,7 @@ import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
 import android.widget.TextView
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapperTest
@@ -68,7 +68,7 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
             )
         ) doReturn fakeTextColorHexString
 
-        withPrivacy(privacyOption())
+        withTextAndInputPrivacy(privacyOption())
 
         testedWireframeMapper = ButtonMapper(
             mockViewIdentifierResolver,
@@ -80,7 +80,7 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
 
     abstract fun expectedPrivacyCompliantText(text: String): String
 
-    abstract fun privacyOption(): SessionReplayPrivacy
+    abstract fun privacyOption(): TextAndInputPrivacy
 
     @ParameterizedTest(name = "{index} (typeface: {0}, align:{2}, gravity:{3})")
     @MethodSource("basicParametersMatrix")

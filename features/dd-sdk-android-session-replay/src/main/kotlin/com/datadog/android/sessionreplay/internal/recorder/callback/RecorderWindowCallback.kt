@@ -12,7 +12,7 @@ import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -31,7 +31,7 @@ internal class RecorderWindowCallback(
     private val timeProvider: TimeProvider,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val internalLogger: InternalLogger,
-    private val privacy: SessionReplayPrivacy,
+    private val privacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
     private val touchPrivacy: TouchPrivacy,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
@@ -182,7 +182,7 @@ internal class RecorderWindowCallback(
             viewOnDrawInterceptor.stopIntercepting()
             viewOnDrawInterceptor.intercept(
                 decorViews = rootViews,
-                sessionReplayPrivacy = privacy,
+                textAndInputPrivacy = privacy,
                 imagePrivacy = imagePrivacy
             )
         }

@@ -85,25 +85,6 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
-    fun `M use the given privacy rule W setSessionReplayPrivacy`(
-        @Forgery fakePrivacy: SessionReplayPrivacy
-    ) {
-        // When
-        val sessionReplayConfiguration = testedBuilder
-            .setPrivacy(fakePrivacy)
-            .build()
-
-        // Then
-        assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
-        assertThat(sessionReplayConfiguration.privacy).isEqualTo(fakePrivacy)
-        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
-        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
-        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
-        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
-        assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
-    }
-
-    @Test
     fun `M use the given image privacy rule W setImagePrivacy`(
         @Forgery fakeImagePrivacy: ImagePrivacy
     ) {
@@ -127,6 +108,19 @@ internal class SessionReplayConfigurationBuilderTest {
 
         // Then
         assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(fakeTouchPrivacy)
+    }
+
+    @Test
+    fun `M use the given text and input privacy rule W setTextAndInputPrivacy`(
+        @Forgery fakeTextAndInputPrivacy: TextAndInputPrivacy
+    ) {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setTextAndInputPrivacy(fakeTextAndInputPrivacy)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.textAndInputPrivacy).isEqualTo(fakeTextAndInputPrivacy)
     }
 
     @Test
@@ -162,5 +156,60 @@ internal class SessionReplayConfigurationBuilderTest {
 
         // Then
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `M not overwrite fgm W setPrivacy { fgm already set }`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setImagePrivacy(ImagePrivacy.MASK_ALL)
+            .setPrivacy(SessionReplayPrivacy.ALLOW)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `M set appropriate fgm privacy W setPrivacy { allow }`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setPrivacy(SessionReplayPrivacy.ALLOW)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_NONE)
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.SHOW)
+        assertThat(sessionReplayConfiguration.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `M set appropriate fgm privacy W setPrivacy { mask_user_input }`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_LARGE_ONLY)
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
+        assertThat(sessionReplayConfiguration.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_ALL_INPUTS)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `M set appropriate fgm privacy W setPrivacy { mask }`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setPrivacy(SessionReplayPrivacy.MASK)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
+        assertThat(sessionReplayConfiguration.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_ALL)
     }
 }

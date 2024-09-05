@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -67,7 +67,7 @@ internal class SnapshotProducerTest {
     lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
 
     @Forgery
-    lateinit var fakePrivacy: SessionReplayPrivacy
+    lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
 
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
@@ -96,7 +96,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -123,7 +123,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -150,7 +150,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -177,7 +177,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -208,7 +208,7 @@ internal class SnapshotProducerTest {
         testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -220,7 +220,7 @@ internal class SnapshotProducerTest {
         argumentCaptor.allValues.forEach {
             assertThat(it.systemInformation).isEqualTo(fakeSystemInformation)
             assertThat(it.imageWireframeHelper).isEqualTo(mockImageWireframeHelper)
-            assertThat(it.privacy).isEqualTo(fakePrivacy)
+            assertThat(it.textAndInputPrivacy).isEqualTo(fakeTextAndInputPrivacy)
         }
     }
 
@@ -245,7 +245,7 @@ internal class SnapshotProducerTest {
         testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -280,7 +280,7 @@ internal class SnapshotProducerTest {
         testedSnapshotProducer.produce(
             mockRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -324,7 +324,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )
@@ -357,7 +357,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(
             fakeRoot,
             fakeSystemInformation,
-            fakePrivacy,
+            fakeTextAndInputPrivacy,
             fakeImagePrivacy,
             mockRecordedDataQueueRefs
         )

@@ -105,6 +105,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
@@ -129,6 +130,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             customMappers = emptyList(),
@@ -152,6 +154,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             customMappers = emptyList(),
@@ -177,6 +180,10 @@ internal class SessionReplayFeatureTest {
                 .isEqualTo(fakeConfiguration.privacy.toString().lowercase(Locale.US))
             assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY])
                 .isEqualTo(true)
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_IMAGE_PRIVACY_KEY])
+                .isEqualTo(fakeConfiguration.imagePrivacy.toString().lowercase(Locale.US))
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY])
+                .isEqualTo(fakeConfiguration.textAndInputPrivacy.toString().lowercase(Locale.US))
         }
     }
 
@@ -187,6 +194,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
@@ -1006,6 +1014,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
@@ -1044,6 +1053,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
@@ -1075,6 +1085,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
@@ -1108,6 +1119,7 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
