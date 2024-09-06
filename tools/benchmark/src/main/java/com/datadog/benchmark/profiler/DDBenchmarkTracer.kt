@@ -16,10 +16,18 @@ import io.opentelemetry.context.Context
  */
 class DDBenchmarkTracer(private val tracer: Tracer) : BenchmarkTracer {
 
-    override fun spanBuilder(spanName: String): BenchmarkSpanBuilder {
+    override fun spanBuilder(
+        spanName: String,
+        additionalProperties: Map<String, String>
+    ): BenchmarkSpanBuilder {
         return DDBenchmarkSpanBuilder(
             tracer
                 .spanBuilder(spanName)
+                .apply {
+                    additionalProperties.forEach {
+                        this.setAttribute(it.key, it.value)
+                    }
+                }
                 .setParent(Context.current())
         )
     }

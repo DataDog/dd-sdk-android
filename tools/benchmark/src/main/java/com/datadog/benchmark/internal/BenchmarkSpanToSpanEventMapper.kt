@@ -28,19 +28,23 @@ internal class BenchmarkSpanToSpanEventMapper {
             duration = durationNanos,
             start = spanData.startEpochNanos,
             error = 0, // error is not needed in benchmark
-            meta = resolveMeta(),
+            meta = resolveMeta(spanData),
             metrics = resolveMetrics()
         )
     }
 
-    private fun resolveMeta(): SpanEvent.Meta {
-        // TODO: RUM-5985 Fill SpanEvent with useful meta data
+    private fun resolveMeta(spanData: SpanData): SpanEvent.Meta {
+        val map = mutableMapOf<String, String>()
+        spanData.attributes.forEach { attributeKey, value ->
+            map[attributeKey.key] = value.toString()
+        }
         return SpanEvent.Meta(
             version = "",
             dd = SpanEvent.Dd(),
             span = SpanEvent.Span(),
             tracer = SpanEvent.Tracer(version = ""),
-            usr = SpanEvent.Usr()
+            usr = SpanEvent.Usr(),
+            additionalProperties = map
         )
     }
 

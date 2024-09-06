@@ -11,11 +11,16 @@ public abstract interface class com/datadog/android/internal/profiler/BenchmarkS
 }
 
 public final class com/datadog/android/internal/profiler/BenchmarkSpanExtKt {
-	public static final fun withinBenchmarkSpan (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun withinBenchmarkSpan (Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withinBenchmarkSpan$default (Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkTracer {
-	public abstract fun spanBuilder (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkSpanBuilder;
+	public abstract fun spanBuilder (Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/internal/profiler/BenchmarkSpanBuilder;
+}
+
+public final class com/datadog/android/internal/profiler/BenchmarkTracer$DefaultImpls {
+	public static synthetic fun spanBuilder$default (Lcom/datadog/android/internal/profiler/BenchmarkTracer;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/internal/profiler/BenchmarkSpanBuilder;
 }
 
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
