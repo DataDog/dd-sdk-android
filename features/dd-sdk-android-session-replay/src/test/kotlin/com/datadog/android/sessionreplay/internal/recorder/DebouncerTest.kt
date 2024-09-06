@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.os.Handler
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -38,11 +39,18 @@ internal class DebouncerTest {
     @Mock
     lateinit var mockHandler: Handler
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     lateinit var testedDebouncer: Debouncer
 
     @BeforeEach
     fun `set up`() {
-        testedDebouncer = Debouncer(mockHandler, TEST_MAX_DELAY_THRESHOLD_IN_NS)
+        testedDebouncer = Debouncer(
+            mockHandler,
+            TEST_MAX_DELAY_THRESHOLD_IN_NS,
+            internalLogger = mockInternalLogger
+        )
     }
 
     @Test
