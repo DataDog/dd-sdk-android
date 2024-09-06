@@ -97,8 +97,10 @@ internal class UploadWorker(
                     RemovalReason.IntakeCode(uploadStatus.code),
                     deleteBatch = !uploadStatus.shouldRetry
                 )
-                @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
-                taskQueue.offer(UploadNextBatchTask(taskQueue, sdkCore, feature))
+                if (uploadStatus is UploadStatus.Success) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
+                    taskQueue.offer(UploadNextBatchTask(taskQueue, sdkCore, feature))
+                }
             }
         }
 
