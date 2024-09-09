@@ -1,3 +1,7 @@
+# 2.13.1 / 2024-09-09
+
+* [BUGFIX] Stop upload worker on upload failure. See [#2242](https://github.com/DataDog/dd-sdk-android/pull/2242)
+
 # 2.13.0 / 2024-09-03
 
 * [FEATURE] Create Benchmark module to collect performance metrics. See [#2141](https://github.com/DataDog/dd-sdk-android/pull/2141)
