@@ -255,8 +255,6 @@ object WebViewTracking {
         }
     }
 
-    internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
-
     internal const val SESSION_REPLAY_MASK_NONE_PRIVACY = "allow"
     internal const val SESSION_REPLAY_MASK_INPUTS_PRIVACY = "mask_user_input"
     internal const val SESSION_REPLAY_MASK_ALL_PRIVACY = "mask"

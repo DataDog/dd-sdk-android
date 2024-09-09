@@ -252,8 +252,6 @@ internal class TelemetryEventHandler(
             as? Long
         val startRecordingImmediately =
             sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
-        val legacySessionReplayPrivacy = sessionReplayFeatureContext[SESSION_REPLAY_PRIVACY_KEY]
-            as? String
         val sessionReplayImagePrivacy =
             sessionReplayFeatureContext[SESSION_REPLAY_IMAGE_PRIVACY_KEY] as? String
         val sessionReplayTouchPrivacy =
@@ -320,7 +318,6 @@ internal class TelemetryEventHandler(
                     tracerApiVersion = openTelemetryApiVersion,
                     trackNetworkRequests = trackNetworkRequests,
                     sessionReplaySampleRate = sessionReplaySampleRate,
-                    defaultPrivacyLevel = legacySessionReplayPrivacy,
                     imagePrivacyLevel = sessionReplayImagePrivacy,
                     touchPrivacyLevel = sessionReplayTouchPrivacy,
                     textAndInputPrivacyLevel = sessionReplayTextAndInputPrivacy,
@@ -402,7 +399,6 @@ internal class TelemetryEventHandler(
         internal const val IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY = "is_opentelemetry_enabled"
         internal const val OPENTELEMETRY_API_VERSION_CONTEXT_KEY = "opentelemetry_api_version"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
-        internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
         internal const val SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY = "session_replay_text_and_input_privacy"
         internal const val SESSION_REPLAY_IMAGE_PRIVACY_KEY = "session_replay_image_privacy"
         internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
