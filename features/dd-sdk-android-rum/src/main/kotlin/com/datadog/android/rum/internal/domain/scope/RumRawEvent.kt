@@ -174,6 +174,7 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class AddViewLoadingTime(
+        val overwrite: Boolean,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

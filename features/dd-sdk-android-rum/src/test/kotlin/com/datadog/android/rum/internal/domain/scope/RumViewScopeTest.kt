@@ -6963,9 +6963,11 @@ internal class RumViewScopeTest {
     // region View Loading Time
 
     @Test
-    fun `M send event with view loading time W handleEvent(AddViewLoadingTime) on active view`() {
+    fun `M send event with view loading time W handleEvent(AddViewLoadingTime) on active view`(
+        @BoolForgery fakeOverwrite: Boolean
+    ) {
         // Given
-        val viewLoadingTimeEvent = RumRawEvent.AddViewLoadingTime()
+        val viewLoadingTimeEvent = RumRawEvent.AddViewLoadingTime(overwrite = fakeOverwrite)
         val expectedViewLoadingTime = viewLoadingTimeEvent.eventTime.nanoTime - fakeEventTime.nanoTime
 
         // When
@@ -7030,11 +7032,11 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event with view loading time W handleEvent(AddViewLoadingTime) on active view called multiple times`(
+    fun `M update view loading time each time W handleEvent(AddViewLoadingTime, overwrite=true) multi calls`(
         forge: Forge
     ) {
         // Given
-        val viewLoadingTimeEvents = forge.aList { RumRawEvent.AddViewLoadingTime() }
+        val viewLoadingTimeEvents = forge.aList { RumRawEvent.AddViewLoadingTime(overwrite = true) }
         val expectedViewLoadingTime = viewLoadingTimeEvents.last().eventTime.nanoTime - fakeEventTime.nanoTime
 
         // When
@@ -7102,13 +7104,87 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M not update the view loading time W handleEvent(AddViewLoadingTime) on stopped view`() {
+    fun `M update view loading time only first time W handleEvent(AddViewLoadingTime, overwrite=false) multi calls`(
+        forge: Forge
+    ) {
+        // Given
+        val viewLoadingTimeEvents = forge.aList { RumRawEvent.AddViewLoadingTime(overwrite = false) }
+        val expectedViewLoadingTime = viewLoadingTimeEvents.first().eventTime.nanoTime - fakeEventTime.nanoTime
+
+        // When
+        viewLoadingTimeEvents.forEach {
+            testedScope.handleEvent(
+                it,
+                mockWriter
+            )
+        }
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter)
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeKey.name)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasLoadingType(null)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
+                    hasSource(fakeSourceViewEvent)
+                    hasLoadingTime(expectedViewLoadingTime)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M not update the view loading time W handleEvent(AddViewLoadingTime) on stopped view`(
+        @BoolForgery fakeOverwrite: Boolean
+    ) {
         // Given
         testedScope.stopped = true
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.AddViewLoadingTime(),
+            RumRawEvent.AddViewLoadingTime(overwrite = fakeOverwrite),
             mockWriter
         )
 

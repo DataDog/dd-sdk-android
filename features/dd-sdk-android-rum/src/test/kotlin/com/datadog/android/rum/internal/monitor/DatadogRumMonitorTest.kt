@@ -877,8 +877,10 @@ internal class DatadogRumMonitorTest {
 
     @Test
     @OptIn(ExperimentalRumApi::class)
-    fun `M delegate event to rootScope W addViewLoadTime()`() {
-        testedMonitor.addViewLoadingTime()
+    fun `M delegate event to rootScope W addViewLoadTime()`(
+        @BoolForgery fakeOverride: Boolean
+    ) {
+        testedMonitor.addViewLoadingTime(fakeOverride)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {

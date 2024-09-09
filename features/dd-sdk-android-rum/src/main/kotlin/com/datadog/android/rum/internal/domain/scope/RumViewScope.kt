@@ -241,9 +241,13 @@ internal open class RumViewScope(
     @WorkerThread
     private fun onAddViewLoadingTime(event: RumRawEvent.AddViewLoadingTime, writer: DataWriter<Any>) {
         if (stopped) return
-
-        viewLoadingTime = event.eventTime.nanoTime - startedNanos
-        sendViewUpdate(event, writer)
+        val canAddViewLoadingTime = event.overwrite || viewLoadingTime == null
+        if (canAddViewLoadingTime) {
+            viewLoadingTime = event.eventTime.nanoTime - startedNanos
+            sendViewUpdate(event, writer)
+        } else {
+            // TODO: RUM-6031 Add logs and telemetry here
+        }
     }
 
     @WorkerThread

@@ -541,8 +541,8 @@ internal class DatadogRumMonitor(
     }
 
     @ExperimentalRumApi
-    override fun addViewLoadingTime() {
-        handleEvent(RumRawEvent.AddViewLoadingTime())
+    override fun addViewLoadingTime(overwrite: Boolean) {
+        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite))
     }
 
     override fun addLongTask(durationNs: Long, target: String) {
