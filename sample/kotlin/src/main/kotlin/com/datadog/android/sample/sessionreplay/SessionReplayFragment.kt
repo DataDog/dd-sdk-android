@@ -12,13 +12,13 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
+import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
 internal class SessionReplayFragment :
-    SynchronousLoadedFragment(),
+    Fragment(),
     View.OnClickListener {
 
     lateinit var navController: NavController

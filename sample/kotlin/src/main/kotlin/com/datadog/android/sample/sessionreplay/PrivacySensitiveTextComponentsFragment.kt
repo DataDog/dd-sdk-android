@@ -10,10 +10,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class PrivacySensitiveTextComponentsFragment : SynchronousLoadedFragment() {
+internal class PrivacySensitiveTextComponentsFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,

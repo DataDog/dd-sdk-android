@@ -6,7 +6,7 @@
 
 package com.datadog.android.sample.sessionreplay
 
+import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class ImageScalingFragment : SynchronousLoadedFragment(R.layout.fragment_image_scaling)
+internal class ImageScalingFragment : Fragment(R.layout.fragment_image_scaling)

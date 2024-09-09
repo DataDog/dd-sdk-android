@@ -246,7 +246,7 @@ internal open class RumViewScope(
             viewLoadingTime = event.eventTime.nanoTime - startedNanos
             sendViewUpdate(event, writer)
         } else {
-            // TODO: RUM-6031 Add logs and telemetry here
+            // TODO RUM-6031 Add logs and telemetry here
         }
     }
 

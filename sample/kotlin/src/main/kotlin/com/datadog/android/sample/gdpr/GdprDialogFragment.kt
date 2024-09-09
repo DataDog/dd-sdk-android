@@ -15,8 +15,6 @@ import androidx.annotation.IdRes
 import androidx.fragment.app.DialogFragment
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.ExperimentalRumApi
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 import com.datadog.android.sample.TrackingConsentChangeListener
@@ -47,12 +45,6 @@ internal class GdprDialogFragment : DialogFragment() {
             (activity as? TrackingConsentChangeListener)?.onTrackingConsentChanged(trackingConsent)
         }
         return rootView
-    }
-
-    @OptIn(ExperimentalRumApi::class)
-    override fun onResume() {
-        super.onResume()
-        GlobalRumMonitor.get().addViewLoadingTime()
     }
 
     @IdRes

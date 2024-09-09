@@ -13,10 +13,10 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.appcompat.widget.SwitchCompat
+import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class DropDownSwitchersFragment : SynchronousLoadedFragment() {
+internal class DropDownSwitchersFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.fragment_drop_down_switchers_components, container, false)

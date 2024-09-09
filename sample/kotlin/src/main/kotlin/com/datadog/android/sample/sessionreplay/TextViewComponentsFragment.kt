@@ -12,10 +12,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckedTextView
 import androidx.appcompat.widget.AppCompatCheckedTextView
+import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class TextViewComponentsFragment : SynchronousLoadedFragment() {
+internal class TextViewComponentsFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,

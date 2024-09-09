@@ -30,9 +30,6 @@ internal class WebViewRecordFragment : Fragment() {
         "datadoghq.dev"
     )
 
-    @Volatile
-    private var pageIsLoaded: Boolean = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
@@ -55,10 +52,7 @@ internal class WebViewRecordFragment : Fragment() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                if (!pageIsLoaded) {
-                    GlobalRumMonitor.get().addViewLoadingTime()
-                    pageIsLoaded = true
-                }
+                GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
             }
         }
         webView.settings.javaScriptEnabled = true

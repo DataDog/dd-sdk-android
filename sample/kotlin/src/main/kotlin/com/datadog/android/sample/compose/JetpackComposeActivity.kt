@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.google.accompanist.appcompattheme.AppCompatTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -39,7 +38,7 @@ import kotlinx.coroutines.launch
 class JetpackComposeActivity : AppCompatActivity() {
 
     @Suppress("LongMethod")
-    @OptIn(ExperimentalPagerApi::class, ExperimentalRumApi::class)
+    @OptIn(ExperimentalPagerApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -58,7 +57,6 @@ class JetpackComposeActivity : AppCompatActivity() {
                             val screen = pages[pagerState.currentPage].trackingName
                             if (event == Lifecycle.Event.ON_RESUME) {
                                 rumMonitor.startView(screen, screen)
-                                rumMonitor.addViewLoadingTime()
                             } else if (event == Lifecycle.Event.ON_PAUSE) {
                                 rumMonitor.stopView(screen)
                             }
@@ -78,7 +76,6 @@ class JetpackComposeActivity : AppCompatActivity() {
                             .collect { page ->
                                 val screen = pages[page].trackingName
                                 GlobalRumMonitor.get().startView(screen, screen)
-                                GlobalRumMonitor.get().addViewLoadingTime()
                             }
                     }
 

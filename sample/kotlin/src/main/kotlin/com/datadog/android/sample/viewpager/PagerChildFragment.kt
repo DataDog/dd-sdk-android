@@ -33,9 +33,6 @@ internal open class PagerChildFragment : Fragment() {
     )
     private lateinit var webView: WebView
 
-    @Volatile
-    private var pageWasLoaded: Boolean = false
-
     @OptIn(ExperimentalRumApi::class)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
@@ -51,10 +48,7 @@ internal open class PagerChildFragment : Fragment() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                if (!pageWasLoaded) {
-                    GlobalRumMonitor.get().addViewLoadingTime()
-                    pageWasLoaded = true
-                }
+                GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
             }
         }
         webView.settings.javaScriptEnabled = true

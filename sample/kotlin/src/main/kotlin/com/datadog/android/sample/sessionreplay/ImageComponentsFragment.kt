@@ -21,7 +21,6 @@ import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
-import java.util.concurrent.atomic.AtomicInteger
 
 internal interface ImageLoadedCallback {
     fun onImageLoaded(resource: Drawable)
@@ -36,7 +35,7 @@ internal class ImageComponentsFragment : Fragment() {
     private lateinit var appCompatButtonRemote: AppCompatImageButton
 
     @Suppress("MagicNumber")
-    private val imageLoadedCounter: AtomicInteger = AtomicInteger(4)
+    private var imageLoadedCounter: Int = 4
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -122,8 +121,8 @@ internal class ImageComponentsFragment : Fragment() {
 
     @OptIn(ExperimentalRumApi::class)
     private fun decrementLoadingCounter() {
-        if (imageLoadedCounter.decrementAndGet() == 0) {
-            GlobalRumMonitor.get().addViewLoadingTime()
+        if (--imageLoadedCounter == 0) {
+            GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
         }
     }
 

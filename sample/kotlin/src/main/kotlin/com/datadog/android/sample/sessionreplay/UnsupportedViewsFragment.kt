@@ -9,11 +9,11 @@ package com.datadog.android.sample.sessionreplay
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.Toolbar
+import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
-internal class UnsupportedViewsFragment : SynchronousLoadedFragment(R.layout.fragment_unsupported_views)
+internal class UnsupportedViewsFragment : Fragment(R.layout.fragment_unsupported_views)
 
 internal class AppcompatToolbarCustomSubclass(context: Context, attrs: AttributeSet) : AppCompatToolbar(context, attrs)
 internal class ToolbarCustomSubclass(context: Context, attrs: AttributeSet) : Toolbar(context, attrs)

@@ -13,15 +13,15 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
 @Suppress("DEPRECATION")
 internal class LogsFragment :
-    SynchronousLoadedFragment(),
+    Fragment(),
     View.OnClickListener {
 
     private var interactionsCount = 0

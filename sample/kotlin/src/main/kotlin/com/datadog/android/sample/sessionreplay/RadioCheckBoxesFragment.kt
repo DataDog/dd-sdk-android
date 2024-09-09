@@ -9,10 +9,10 @@ package com.datadog.android.sample.sessionreplay
 import android.os.Bundle
 import android.view.View
 import android.widget.CheckBox
+import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SynchronousLoadedFragment
 
-internal class RadioCheckBoxesFragment : SynchronousLoadedFragment(R.layout.fragment_radio_checkbox_components) {
+internal class RadioCheckBoxesFragment : Fragment(R.layout.fragment_radio_checkbox_components) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

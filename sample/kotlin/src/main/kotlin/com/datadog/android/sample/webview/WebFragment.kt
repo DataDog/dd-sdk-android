@@ -29,9 +29,6 @@ internal class WebFragment : Fragment() {
         "datadoghq.dev"
     )
 
-    @Volatile
-    private var pageWasLoaded: Boolean = false
-
     // region Fragment Lifecycle
 
     @OptIn(ExperimentalRumApi::class)
@@ -46,10 +43,7 @@ internal class WebFragment : Fragment() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                if (!pageWasLoaded) {
-                    GlobalRumMonitor.get().addViewLoadingTime()
-                    pageWasLoaded = true
-                }
+                GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
             }
         }
         webView.settings.javaScriptEnabled = true

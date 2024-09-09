@@ -26,7 +26,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 /**
  * An [Activity] with a [ViewPager] holding multiple fragments.
  */
-class ViewPagerFragment : SynchronousLoadedFragment() {
+class ViewPagerFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,
