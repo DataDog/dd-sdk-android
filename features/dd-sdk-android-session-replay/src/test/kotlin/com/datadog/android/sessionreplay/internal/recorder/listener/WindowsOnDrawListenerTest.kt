@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -117,6 +118,9 @@ internal class WindowsOnDrawListenerTest {
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
 
+    @BoolForgery
+    var fakeDynamicOptimizationEnabled: Boolean = false
+
     @FloatForgery
     var fakeMethodCallSamplingRate: Float = 0f
 
@@ -150,6 +154,7 @@ internal class WindowsOnDrawListenerTest {
                 .ORIENTATION_LANDSCAPE,
             Configuration.ORIENTATION_PORTRAIT
         )
+        fakeDynamicOptimizationEnabled = forge.aBool()
         configuration.orientation = fakeOrientation
         mockResources = mock {
             whenever(it.configuration).thenReturn(configuration)
@@ -167,7 +172,8 @@ internal class WindowsOnDrawListenerTest {
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
             sdkCore = mockSdkCore,
-            methodCallSamplingRate = fakeMethodCallSamplingRate
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled
         )
     }
 
@@ -219,7 +225,8 @@ internal class WindowsOnDrawListenerTest {
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
             sdkCore = mockSdkCore,
-            methodCallSamplingRate = fakeMethodCallSamplingRate
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled
         )
         testedListener.onDraw()
 
