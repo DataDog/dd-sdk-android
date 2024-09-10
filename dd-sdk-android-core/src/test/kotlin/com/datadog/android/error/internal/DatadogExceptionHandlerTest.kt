@@ -31,6 +31,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +47,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -96,11 +96,15 @@ internal class DatadogExceptionHandlerTest {
     @Forgery
     lateinit var fakeThrowable: Throwable
 
+    @StringForgery
+    lateinit var fakeInstanceName: String
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.name) doReturn fakeInstanceName
 
         CoreFeature.disableKronosBackgroundSync = true
 
@@ -448,15 +452,17 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(mockWorkManager)
-            .enqueueUniqueWork(
+        argumentCaptor<OneTimeWorkRequest> {
+            verify(mockWorkManager).enqueueUniqueWork(
                 eq(UPLOAD_WORKER_NAME),
                 eq(ExistingWorkPolicy.REPLACE),
-                argThat<OneTimeWorkRequest> {
-                    this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                        this.tags.contains(TAG_DATADOG_UPLOAD)
-                }
+                capture()
             )
+            val workSpec = lastValue.workSpec
+            assertThat(workSpec.workerClassName).isEqualTo(UploadWorker::class.java.canonicalName)
+            assertThat(workSpec.input.getString(UploadWorker.DATADOG_INSTANCE_NAME)).isEqualTo(fakeInstanceName)
+            assertThat(lastValue.tags).contains(TAG_DATADOG_UPLOAD)
+        }
     }
 
     // region Forward to RUM
