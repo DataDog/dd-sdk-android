@@ -12,6 +12,7 @@ import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.sessionreplay.ImagePrivacy
@@ -80,6 +81,9 @@ internal class WindowsOnDrawListenerTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
     lateinit var mockPerformanceMetric: PerformanceMetric
 
     @IntForgery(min = 0)
@@ -118,6 +122,7 @@ internal class WindowsOnDrawListenerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
             .thenReturn(fakeSystemInformation)
         fakeMockedDecorViews = forge.aMockedDecorViewList().onEach {
@@ -161,7 +166,7 @@ internal class WindowsOnDrawListenerTest {
             imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            internalLogger = mockInternalLogger,
+            sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate
         )
     }
@@ -213,7 +218,7 @@ internal class WindowsOnDrawListenerTest {
             imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            internalLogger = mockInternalLogger,
+            sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate
         )
         testedListener.onDraw()

@@ -50,4 +50,9 @@ internal interface SessionMetricDispatcher {
      * Called when a missed event is tracked by this session metric.
      */
     fun onMissedEventTracked(sessionId: String, missedEventType: SessionEndedMetric.MissedEventType)
+
+    /**
+     * Called when skipped frame is tracked by this session metric.
+     */
+    fun onSessionReplaySkippedFrameTracked(sessionId: String)
 }

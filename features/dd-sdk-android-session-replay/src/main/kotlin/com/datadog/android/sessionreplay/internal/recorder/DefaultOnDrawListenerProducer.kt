@@ -32,7 +32,7 @@ internal class DefaultOnDrawListenerProducer(
             snapshotProducer = snapshotProducer,
             privacy = privacy,
             imagePrivacy = imagePrivacy,
-            internalLogger = sdkCore.internalLogger,
+            sdkCore = sdkCore,
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate
         )
     }
