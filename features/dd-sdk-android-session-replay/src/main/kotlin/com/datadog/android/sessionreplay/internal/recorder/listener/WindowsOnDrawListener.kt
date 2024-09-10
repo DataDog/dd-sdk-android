@@ -28,9 +28,9 @@ internal class WindowsOnDrawListener(
     private val snapshotProducer: SnapshotProducer,
     private val privacy: SessionReplayPrivacy,
     private val imagePrivacy: ImagePrivacy,
-    private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
     private val internalLogger: InternalLogger,
+    private val debouncer: Debouncer = Debouncer(internalLogger = internalLogger),
     private val methodCallSamplingRate: Float
 ) : ViewTreeObserver.OnDrawListener {
 
