@@ -7,7 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.os.Handler
-import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -40,17 +42,42 @@ internal class DebouncerTest {
     lateinit var mockHandler: Handler
 
     @Mock
-    lateinit var mockInternalLogger: InternalLogger
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockTimeBank: TimeBank
+
+    @Mock
+    lateinit var mockRumFeature: FeatureScope
 
     lateinit var testedDebouncer: Debouncer
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockTimeBank.updateAndCheck(any())).thenReturn(true)
+        whenever(mockSdkCore.getFeature(RUM_FEATURE_NAME)).thenReturn(mockRumFeature)
         testedDebouncer = Debouncer(
             mockHandler,
             TEST_MAX_DELAY_THRESHOLD_IN_NS,
-            internalLogger = mockInternalLogger
+            sdkCore = mockSdkCore,
+            timeBank = mockTimeBank
         )
+    }
+
+    @Test
+    fun `M send telemetry W frame is skipped by time bank`() {
+        // Given
+        whenever(mockTimeBank.updateAndCheck(any())).thenReturn(false)
+        val fakeRunnable = TestRunnable()
+        val fakeSecondRunnable = TestRunnable()
+        testedDebouncer.debounce(fakeRunnable)
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MAX_DELAY_THRESHOLD_IN_NS))
+
+        // When
+        testedDebouncer.debounce(fakeSecondRunnable)
+
+        // Then
+        verify(mockRumFeature, times(1)).sendEvent(any())
     }
 
     @Test

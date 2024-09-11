@@ -8,14 +8,15 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import java.util.concurrent.TimeUnit
 
 internal class Debouncer(
     private val handler: Handler = Handler(Looper.getMainLooper()),
     private val maxRecordDelayInNs: Long = MAX_DELAY_THRESHOLD_NS,
     private val timeBank: TimeBank = RecordingTimeBank(),
-    private val internalLogger: InternalLogger
+    private val sdkCore: FeatureSdkCore
 ) {
 
     private var lastTimeRecordWasPerformed = 0L
@@ -53,15 +54,14 @@ internal class Debouncer(
             val endTimeInNano = System.nanoTime()
             timeBank.consume(endTimeInNano - startTimeInNano)
         } else {
-            // TODO RUM-5188 report with telemetry about the frames skipped
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                messageBuilder = {
-                    MSG_FRAME_SKIP
-                }
-            )
+            logSkippedFrame()
         }
+    }
+
+    private fun logSkippedFrame() {
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val telemetryEvent = mapOf(TYPE_KEY to TYPE_VALUE)
+        rumFeature.sendEvent(telemetryEvent)
     }
 
     companion object {
@@ -71,6 +71,7 @@ internal class Debouncer(
         // one frame time
         internal const val DEBOUNCE_TIME_IN_MS: Long = 64
 
-        private const val MSG_FRAME_SKIP = "Session Replay skipped this recording due to the time limit"
+        private const val TYPE_VALUE = "sr_skipped_frame"
+        private const val TYPE_KEY = "type"
     }
 }

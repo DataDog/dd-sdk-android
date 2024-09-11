@@ -277,6 +277,7 @@ internal class RumFeature(
             TELEMETRY_DEBUG_MESSAGE_TYPE -> logTelemetryDebug(event)
             MOBILE_METRIC_MESSAGE_TYPE -> logMetric(event)
             TELEMETRY_CONFIG_MESSAGE_TYPE -> logTelemetryConfiguration(event)
+            TELEMETRY_SESSION_REPLAY_SKIP_FRAME -> addSessionReplaySkippedFrame()
             FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
                     it.stopKeepAliveCallback()
@@ -564,6 +565,10 @@ internal class RumFeature(
         }
     }
 
+    private fun addSessionReplaySkippedFrame() {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addSessionReplaySkippedFrame()
+    }
+
     // endregion
 
     internal data class Configuration(
@@ -600,6 +605,7 @@ internal class RumFeature(
         internal const val TELEMETRY_DEBUG_MESSAGE_TYPE = "telemetry_debug"
         internal const val MOBILE_METRIC_MESSAGE_TYPE = "mobile_metric"
         internal const val TELEMETRY_CONFIG_MESSAGE_TYPE = "telemetry_configuration"
+        internal const val TELEMETRY_SESSION_REPLAY_SKIP_FRAME = "sr_skipped_frame"
         internal const val FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE = "flush_and_stop_monitor"
 
         internal const val ALL_IN_SAMPLE_RATE: Float = 100f

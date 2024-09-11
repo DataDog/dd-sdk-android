@@ -437,7 +437,7 @@ class RumSessionEndedMetricTest {
     }
 
     @Test
-    fun `M have correct 'no_view_events_count' W toMetricAttributes()`(
+    fun `M have correct no_view_events_count W toMetricAttributes()`(
         @BoolForgery fakeBackgroundEventTracking: Boolean,
         @IntForgery(min = 0, max = 5) randomActionCount: Int,
         @IntForgery(min = 0, max = 5) randomResourceCount: Int,
@@ -474,7 +474,7 @@ class RumSessionEndedMetricTest {
     }
 
     @Test
-    fun `M have correct 'has_background_events_tracking_enabled' W toMetricAttributes()`(
+    fun `M have correct has_background_events_tracking_enabled W toMetricAttributes()`(
         @BoolForgery fakeBackgroundEventTracking: Boolean
     ) {
         // Given
@@ -492,7 +492,7 @@ class RumSessionEndedMetricTest {
     }
 
     @Test
-    fun `M have correct 'ntp_offset' W toMetricAttributes()`(
+    fun `M have correct ntp_offset W toMetricAttributes()`(
         @LongForgery ntpOffsetAtStart: Long,
         @LongForgery ntpOffsetAtEnd: Long
     ) {
@@ -512,6 +512,30 @@ class RumSessionEndedMetricTest {
         val ntpOffset = rse[SessionEndedMetric.NTP_OFFSET_KEY] as Map<*, *>
         assertThat(ntpOffset[SessionEndedMetric.NTP_OFFSET_AT_START_KEY]).isEqualTo(ntpOffsetAtStart)
         assertThat(ntpOffset[SessionEndedMetric.NTP_OFFSET_AT_END_KEY]).isEqualTo(ntpOffsetAtEnd)
+    }
+
+    @Test
+    fun `M have correct sr_skipped_frames_count W toMetricAttributes()`(
+        @IntForgery(min = 0, max = 100) count: Int
+    ) {
+        // Given
+        val sessionEndedMetric = SessionEndedMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+
+        // When
+        repeat(count) {
+            sessionEndedMetric.onSessionReplaySkippedFrameTracked()
+        }
+        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+
+        // Then
+        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
+        val skippedFramesCount = rse[SessionEndedMetric.SESSION_REPLAY_SKIPPED_FRAMES_COUNT] as Int
+        assertThat(skippedFramesCount).isEqualTo(count)
     }
 
     @Test
