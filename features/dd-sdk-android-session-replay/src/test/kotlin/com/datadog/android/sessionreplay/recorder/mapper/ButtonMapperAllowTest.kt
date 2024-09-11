@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.recorder.mapper
 
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapperTest
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -29,5 +29,5 @@ internal class ButtonMapperAllowTest : ButtonMapperTest() {
         return text
     }
 
-    override fun privacyOption(): SessionReplayPrivacy = SessionReplayPrivacy.ALLOW
+    override fun privacyOption(): TextAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
 }

@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.Drawable
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -82,7 +82,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         )
 
         // Then
-        if (fakeMappingContext.privacy != SessionReplayPrivacy.ALLOW) {
+        if (fakeMappingContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
             assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes + expectedTrackWireframe)
         } else {
             assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
@@ -147,7 +147,10 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY),
+            fakeMappingContext.copy(
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+                imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+            ),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
@@ -172,7 +175,10 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK, imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY),
+            fakeMappingContext.copy(
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+                imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+            ),
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )

@@ -10,7 +10,7 @@ import android.view.View
 import android.widget.Checkable
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
@@ -40,7 +40,7 @@ internal abstract class CheckableWireframeMapper<T>(
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback, internalLogger)
-        val checkableWireframes = if (mappingContext.privacy != SessionReplayPrivacy.ALLOW) {
+        val checkableWireframes = if (mappingContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
             resolveMaskedCheckable(view, mappingContext)
         } else {
             // Resolves checkable view regardless the state

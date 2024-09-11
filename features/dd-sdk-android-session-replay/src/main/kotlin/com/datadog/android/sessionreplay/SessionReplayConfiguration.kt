@@ -19,7 +19,10 @@ data class SessionReplayConfiguration internal constructor(
     internal val customMappers: List<MapperTypeWrapper<*>>,
     internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     internal val sampleRate: Float,
-    internal val imagePrivacy: ImagePrivacy
+    internal val imagePrivacy: ImagePrivacy,
+    internal val startRecordingImmediately: Boolean,
+    internal val touchPrivacy: TouchPrivacy,
+    internal val textAndInputPrivacy: TextAndInputPrivacy
 ) {
 
     /**
@@ -30,7 +33,14 @@ data class SessionReplayConfiguration internal constructor(
     class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float) {
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
-        private var imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+
+        // indicates whether fine grained masking levels have been explicitly set
+        private var fineGrainedMaskingSet = false
+
+        private var imagePrivacy = ImagePrivacy.MASK_ALL
+        private var startRecordingImmediately = true
+        private var touchPrivacy = TouchPrivacy.HIDE
+        private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
         /**
@@ -59,8 +69,35 @@ data class SessionReplayConfiguration internal constructor(
          * @see SessionReplayPrivacy.MASK
          * @see SessionReplayPrivacy.MASK_USER_INPUT
          */
+        @Deprecated(
+            message = "This method is deprecated and will be removed in future versions. " +
+                "Use the new fine grained masking apis instead: " +
+                "[setImagePrivacy], [setTouchPrivacy], [setTextAndInputPrivacy]."
+        )
         fun setPrivacy(privacy: SessionReplayPrivacy): Builder {
-            this.privacy = privacy
+            // if fgm levels have already been explicitly set then ignore legacy privacy.
+            if (fineGrainedMaskingSet) return this
+
+            when (privacy) {
+                SessionReplayPrivacy.ALLOW -> {
+                    this.touchPrivacy = TouchPrivacy.SHOW
+                    this.imagePrivacy = ImagePrivacy.MASK_NONE
+                    this.textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+                }
+
+                SessionReplayPrivacy.MASK_USER_INPUT -> {
+                    this.touchPrivacy = TouchPrivacy.HIDE
+                    this.imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+                    this.textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS
+                }
+
+                SessionReplayPrivacy.MASK -> {
+                    this.touchPrivacy = TouchPrivacy.HIDE
+                    this.imagePrivacy = ImagePrivacy.MASK_ALL
+                    this.textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
+                }
+            }
+
             return this
         }
 
@@ -71,8 +108,44 @@ data class SessionReplayConfiguration internal constructor(
          * @see ImagePrivacy.MASK_LARGE_ONLY
          * @see ImagePrivacy.MASK_ALL
          */
-        internal fun setImagePrivacy(level: ImagePrivacy): Builder {
+        fun setImagePrivacy(level: ImagePrivacy): Builder {
+            fineGrainedMaskingSet = true
             this.imagePrivacy = level
+            return this
+        }
+
+        /**
+         * Sets the touch recording level for the Session Replay feature.
+         * If not specified then all touches will be hidden by default.
+         * @see TouchPrivacy.HIDE
+         * @see TouchPrivacy.SHOW
+         */
+        fun setTouchPrivacy(level: TouchPrivacy): Builder {
+            fineGrainedMaskingSet = true
+            this.touchPrivacy = level
+            return this
+        }
+
+        /**
+         * Should recording start automatically (or be manually started).
+         * If not specified then by default it starts automatically.
+         * @param enabled whether recording should start automatically or not.
+         */
+        fun startRecordingImmediately(enabled: Boolean): Builder {
+            this.startRecordingImmediately = enabled
+            return this
+        }
+
+        /**
+         * Sets the text and input recording level for the Session Replay feature.
+         * If not specified then sensitive text will be masked by default.
+         * @see TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+         * @see TextAndInputPrivacy.MASK_ALL_INPUTS
+         * @see TextAndInputPrivacy.MASK_ALL
+         */
+        fun setTextAndInputPrivacy(level: TextAndInputPrivacy): Builder {
+            fineGrainedMaskingSet = true
+            this.textAndInputPrivacy = level
             return this
         }
 
@@ -84,9 +157,12 @@ data class SessionReplayConfiguration internal constructor(
                 customEndpointUrl = customEndpointUrl,
                 privacy = privacy,
                 imagePrivacy = imagePrivacy,
+                touchPrivacy = touchPrivacy,
+                textAndInputPrivacy = textAndInputPrivacy,
                 customMappers = customMappers(),
                 customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                startRecordingImmediately = startRecordingImmediately
             )
         }
 

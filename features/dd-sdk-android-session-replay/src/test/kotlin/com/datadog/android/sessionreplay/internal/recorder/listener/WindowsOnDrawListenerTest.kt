@@ -15,7 +15,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -108,7 +108,7 @@ internal class WindowsOnDrawListenerTest {
     lateinit var mockContext: Context
 
     @Forgery
-    lateinit var fakePrivacy: SessionReplayPrivacy
+    lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
 
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
@@ -130,7 +130,7 @@ internal class WindowsOnDrawListenerTest {
                 mockSnapshotProducer.produce(
                     eq(decorView),
                     eq(fakeSystemInformation),
-                    eq(fakePrivacy),
+                    eq(fakeTextAndInputPrivacy),
                     eq(fakeImagePrivacy),
                     any()
                 )
@@ -157,7 +157,7 @@ internal class WindowsOnDrawListenerTest {
             zOrderedDecorViews = fakeMockedDecorViews,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
-            privacy = fakePrivacy,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
@@ -194,7 +194,7 @@ internal class WindowsOnDrawListenerTest {
         verify(mockSnapshotProducer, times(fakeWindowsSnapshots.size)).produce(
             rootView = any(),
             systemInformation = any(),
-            privacy = eq(fakePrivacy),
+            textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
             imagePrivacy = eq(fakeImagePrivacy),
             recordedDataQueueRefs = argCaptor.capture()
         )
@@ -209,7 +209,7 @@ internal class WindowsOnDrawListenerTest {
             zOrderedDecorViews = emptyList(),
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
-            privacy = fakePrivacy,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,

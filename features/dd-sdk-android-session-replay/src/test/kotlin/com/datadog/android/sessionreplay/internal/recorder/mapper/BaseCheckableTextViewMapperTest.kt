@@ -13,7 +13,7 @@ import android.os.Build
 import android.widget.Checkable
 import android.widget.TextView
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_CHECKED_DRAWABLE_INDEX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
@@ -179,7 +179,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     internal abstract fun mockCheckableTextView(): T
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
-        return if (fakeMappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+        return if (fakeMappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
             MobileSegment.ShapeStyle(
                 backgroundColor = checkBoxColor,
                 opacity = mockCheckableTextView.alpha
@@ -196,7 +196,10 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     fun `M create ImageWireFrame W map() { checked, above M }`() {
         // Given
         val allowedMappingContext =
-            fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW, imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY)
+            fakeMappingContext.copy(
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+                imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+            )
         whenever(mockButtonDrawable.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         whenever(mockCheckableTextView.isChecked).thenReturn(true)
 
@@ -236,7 +239,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     fun `M create ImageWireFrame W map() { not checked, above M }`() {
         // Given
         val allowedMappingContext = fakeMappingContext.copy(
-            privacy = SessionReplayPrivacy.ALLOW,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
         )
         whenever(mockButtonDrawable.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)

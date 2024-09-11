@@ -157,6 +157,7 @@ class SampleApplication : Application() {
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)
 
+        @Suppress("DEPRECATION")
         val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
             .apply {
                 if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {

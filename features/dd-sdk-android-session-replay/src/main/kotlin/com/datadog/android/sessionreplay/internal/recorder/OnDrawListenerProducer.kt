@@ -9,12 +9,12 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 
 internal fun interface OnDrawListenerProducer {
     fun create(
         decorViews: List<View>,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy
     ): ViewTreeObserver.OnDrawListener
 }

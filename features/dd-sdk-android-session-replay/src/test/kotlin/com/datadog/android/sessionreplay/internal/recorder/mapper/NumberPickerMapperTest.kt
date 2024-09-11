@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -42,7 +42,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=ALLOW}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         val expectedSelectedLabelValue = fakeValue.toString()
         val expectedPrevLabelValue = (fakeValue - 1).toString()
         val expectedNextLabelValue = (fakeValue + 1).toString()
@@ -78,7 +78,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=ALLOW, value=max }`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = fakeValue.toString()
@@ -116,7 +116,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=ALLOW, value=min }`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = fakeValue.toString()
@@ -156,7 +156,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
@@ -198,7 +198,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -241,7 +241,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -283,7 +283,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return empty list W map {privacy=ALLOW, prevLabelId=null}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         whenever(
             mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
@@ -308,7 +308,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return empty list W map {privacy=ALLOW, nextLabelId=null}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         whenever(
             mockViewIdentifierResolver
                 .resolveChildUniqueIdentifier(
@@ -337,7 +337,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=MASK}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         val expectedSelectedLabelValue = "xxx"
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
@@ -364,7 +364,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=MASK, value=max}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = "xxx"
@@ -393,7 +393,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=MASK, value=min }`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = "xxx"
@@ -425,7 +425,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
@@ -457,7 +457,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -491,7 +491,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -528,7 +528,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         val expectedSelectedLabelValue = "xxx"
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
@@ -555,7 +555,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, value=max}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = "xxx"
@@ -584,7 +584,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
     @Test
     fun `M return a list of wireframes W map() {privacy=MASK_USER_INPUT, value=min }`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = "xxx"
@@ -616,7 +616,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
@@ -648,7 +648,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }
@@ -682,7 +682,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
         forge: Forge
     ) {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.MASK_USER_INPUT)
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val fakeDisplayedValues = forge.aList(size = (fakeMaxValue - fakeMinValue + 1)) { aString() }

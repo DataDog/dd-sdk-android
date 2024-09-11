@@ -269,6 +269,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
             .isEqualTo(expected)
         return this
     }
+
     fun hasBatchProcessingLevel(expected: Int?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.batchProcessingLevel)
             .overridingErrorMessage(
@@ -348,23 +349,45 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
-    fun hasSessionReplayPrivacy(expected: String?): TelemetryConfigurationEventAssert {
-        assertThat(actual.telemetry.configuration.defaultPrivacyLevel)
+    fun hasSessionReplayImagePrivacy(expected: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.imagePrivacyLevel)
             .overridingErrorMessage(
-                "Expected event data to have telemetry.configuration.defaultPrivacyLevel" +
+                "Expected event data to have telemetry.configuration.imagePrivacyLevel" +
                     " $expected " +
-                    "but was ${actual.telemetry.configuration.defaultPrivacyLevel}"
+                    "but was ${actual.telemetry.configuration.imagePrivacyLevel}"
             )
             .isEqualTo(expected)
         return this
     }
 
-    fun hasSessionReplayStartManually(expected: Boolean?): TelemetryConfigurationEventAssert {
+    fun hasSessionReplayTouchPrivacy(expected: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.touchPrivacyLevel)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.touchPrivacyLevel" +
+                    " $expected " +
+                    "but was ${actual.telemetry.configuration.touchPrivacyLevel}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionReplayTextAndInputPrivacy(expected: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.textAndInputPrivacyLevel)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.textAndInputPrivacyLevel" +
+                    " $expected " +
+                    "but was ${actual.telemetry.configuration.textAndInputPrivacyLevel}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasStartRecordingImmediately(expected: Boolean?): TelemetryConfigurationEventAssert {
         val assertErrorMessage = "Expected event data to have" +
-            " telemetry.configuration.startSessionReplayRecordingManually" +
+            " telemetry.configuration.startRecordingImmediately" +
             " $expected " +
-            "but was ${actual.telemetry.configuration.startSessionReplayRecordingManually}"
-        assertThat(actual.telemetry.configuration.startSessionReplayRecordingManually)
+            "but was ${actual.telemetry.configuration.startRecordingImmediately}"
+        assertThat(actual.telemetry.configuration.startRecordingImmediately)
             .overridingErrorMessage(assertErrorMessage)
             .isEqualTo(expected)
         return this
