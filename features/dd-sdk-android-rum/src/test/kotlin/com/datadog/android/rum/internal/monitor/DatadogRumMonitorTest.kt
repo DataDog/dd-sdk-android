@@ -16,7 +16,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.internal.telemetry.TelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -45,9 +45,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
-import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
-import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -1862,177 +1860,17 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M handle debug telemetry event W sendDebugTelemetryEvent()`(
-        @StringForgery message: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
-
+    fun `M handle telemetry event W sendTelemetryEvent()`(@Forgery fakeTelemetryEvent: TelemetryEvent) {
         // When
-        testedMonitor.sendDebugTelemetryEvent(message, fakeAdditionalProperties)
+        testedMonitor.sendTelemetryEvent(fakeTelemetryEvent)
 
         // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
             verify(mockTelemetryEventHandler).handleEvent(
                 capture(),
                 eq(mockWriter)
             )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle error telemetry event W sendErrorTelemetryEvent() {stack+kind}`(
-        @StringForgery message: String,
-        @StringForgery stackTrace: String,
-        @StringForgery kind: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
-
-        // When
-        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind, fakeAdditionalProperties)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.stack).isEqualTo(stackTrace)
-            assertThat(lastValue.kind).isEqualTo(kind)
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle error telemetry event W sendErrorTelemetryEvent() {throwable}`(
-        @StringForgery message: String,
-        forge: Forge
-    ) {
-        // Given
-        val throwable = forge.aNullable { forge.aThrowable() }
-        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
-
-        // When
-        testedMonitor.sendErrorTelemetryEvent(message, throwable, fakeAdditionalProperties)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
-            assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle configuration telemetry event W sendConfigurationTelemetryEvent()`(
-        @Forgery fakeConfiguration: TelemetryCoreConfiguration
-    ) {
-        // When
-        testedMonitor.sendConfigurationTelemetryEvent(fakeConfiguration)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEmpty()
-            assertThat(lastValue.type).isEqualTo(TelemetryType.CONFIGURATION)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isSameAs(fakeConfiguration)
-        }
-    }
-
-    @Test
-    fun `M handle metric event W sendMetricEvent()`(
-        @StringForgery message: String,
-        forge: Forge
-    ) {
-        // When
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        testedMonitor.sendMetricEvent(message, fakeAdditionalProperties)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.isMetric).isTrue
-            assertThat(lastValue.additionalProperties)
-                .containsExactlyInAnyOrderEntriesOf(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle metric event W sendMetricEvent(){additionalProperties is null}`(
-        @StringForgery message: String
-    ) {
-        // When
-        testedMonitor.sendMetricEvent(message, null)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.isMetric).isTrue
-            assertThat(lastValue.additionalProperties).isNull()
-        }
-    }
-
-    @Test
-    fun `M handle interceptor event W notifyInterceptorInstantiated()`() {
-        // When
-        testedMonitor.notifyInterceptorInstantiated()
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEmpty()
-            assertThat(lastValue.type).isEqualTo(TelemetryType.INTERCEPTOR_SETUP)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.event).isEqualTo(fakeTelemetryEvent)
         }
     }
 

@@ -28,6 +28,9 @@
                 },
                 {
                   "$ref": "usage/browser-features-schema.json"
+                },
+                {
+                  "$ref": "usage/mobile-features-schema.json"
                 }
               ]
             }

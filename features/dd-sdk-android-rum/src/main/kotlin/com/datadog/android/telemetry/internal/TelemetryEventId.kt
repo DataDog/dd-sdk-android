@@ -6,7 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.internal.telemetry.TelemetryEvent
 
 internal data class TelemetryEventId(
     val type: TelemetryType,
@@ -14,7 +14,22 @@ internal data class TelemetryEventId(
     val kind: String?
 )
 
-internal val RumRawEvent.SendTelemetry.identity: TelemetryEventId
+internal val TelemetryEvent.identity: TelemetryEventId
     get() {
-        return TelemetryEventId(type, message, kind)
+        return when (this) {
+            is TelemetryEvent.Log.Error -> TelemetryEventId(type(), message, kind)
+            is TelemetryEvent.Log.Debug -> TelemetryEventId(type(), message, null)
+            else -> TelemetryEventId(type(), "", null)
+        }
     }
+
+internal fun TelemetryEvent.type(): TelemetryType {
+    return when (this) {
+        is TelemetryEvent.Log.Debug -> TelemetryType.DEBUG
+        is TelemetryEvent.Log.Error -> TelemetryType.ERROR
+        is TelemetryEvent.Configuration -> TelemetryType.CONFIGURATION
+        is TelemetryEvent.Metric -> TelemetryType.METRIC
+        is TelemetryEvent.ApiUsage -> TelemetryType.API_USAGE
+        is TelemetryEvent.InterceptorInstantiated -> TelemetryType.INTERCEPTOR_SETUP
+    }
+}

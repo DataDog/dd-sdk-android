@@ -38,6 +38,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.telemetry.TelemetryEvent
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
@@ -499,20 +500,23 @@ internal class DatadogCore(
     }
 
     @Suppress("FunctionMaxLength")
-    private fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
+    internal fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
         val runnable = Runnable {
             val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
-            val coreConfigurationEvent = mapOf(
-                "type" to "telemetry_configuration",
-                "track_errors" to (configuration.crashReportsEnabled),
-                "batch_size" to configuration.coreConfig.batchSize.windowDurationMs,
-                "batch_upload_frequency" to configuration.coreConfig.uploadFrequency.baseStepMs,
-                "use_proxy" to (configuration.coreConfig.proxy != null),
-                "use_local_encryption" to (configuration.coreConfig.encryption != null),
-                "batch_processing_level" to configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob,
-                "use_persistence_strategy_factory" to (configuration.coreConfig.persistenceStrategyFactory != null)
+            val event = TelemetryEvent.Configuration(
+                trackErrors = configuration.crashReportsEnabled,
+                batchSize = configuration.coreConfig.batchSize.windowDurationMs,
+                useProxy = configuration.coreConfig.proxy != null,
+                useLocalEncryption = configuration.coreConfig.encryption != null,
+                batchUploadFrequency = configuration.coreConfig.uploadFrequency.baseStepMs,
+                batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob
             )
-            rumFeature.sendEvent(coreConfigurationEvent)
+            rumFeature.sendEvent(
+                mapOf(
+                    "type" to "telemetry_event",
+                    "event" to event
+                )
+            )
         }
 
         coreFeature.uploadExecutorService.scheduleSafe(

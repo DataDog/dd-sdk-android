@@ -10,5 +10,7 @@ internal enum class TelemetryType {
     DEBUG,
     ERROR,
     CONFIGURATION,
-    INTERCEPTOR_SETUP
+    INTERCEPTOR_SETUP,
+    API_USAGE,
+    METRIC
 }

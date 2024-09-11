@@ -6,6 +6,12 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.TelemetryApiUsageEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.TelemetryEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.TelemetryInternalConfigurationEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.TelemetryLogDebugEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.TelemetryLogErrorEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.TelemetryMetricEventForgeryFactory
 import com.datadog.android.rum.tests.elmyr.ResourceIdForgeryFactory
 import com.datadog.android.rum.tests.elmyr.RumScopeKeyForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
@@ -35,15 +41,22 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ResourceTimingForgeryFactory())
         forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
-        forge.addFactory(TelemetryCoreConfigurationForgeryFactory())
         forge.addFactory(RumEventMetaForgeryFactory())
         forge.addFactory(ViewEventMetaForgeryFactory())
         forge.addFactory(RumScopeKeyForgeryFactory())
         forge.addFactory(ResourceIdForgeryFactory())
 
-        // Telemetry
+        // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())
         forge.addFactory(TelemetryErrorEventForgeryFactory())
         forge.addFactory(TelemetryConfigurationEventForgeryFactory())
+
+        // Telemetry internal models
+        forge.addFactory(TelemetryEventForgeryFactory())
+        forge.addFactory(TelemetryMetricEventForgeryFactory())
+        forge.addFactory(TelemetryLogDebugEventForgeryFactory())
+        forge.addFactory(TelemetryLogErrorEventForgeryFactory())
+        forge.addFactory(TelemetryInternalConfigurationEventForgeryFactory())
+        forge.addFactory(TelemetryApiUsageEventForgeryFactory())
     }
 }

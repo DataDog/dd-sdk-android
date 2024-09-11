@@ -120,6 +120,7 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)

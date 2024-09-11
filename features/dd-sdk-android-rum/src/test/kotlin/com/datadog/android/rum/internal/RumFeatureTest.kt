@@ -19,6 +19,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.internal.telemetry.TelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
@@ -45,7 +46,6 @@ import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
-import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -57,7 +57,6 @@ import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -1175,6 +1174,8 @@ internal class RumFeatureTest {
 
     // endregion
 
+    // region FeatureEventReceiver#onReceive + webview notification
+
     @Test
     fun `M notify webview event received W onReceive() {webview event received}`() {
         // Given
@@ -1191,78 +1192,35 @@ internal class RumFeatureTest {
         verifyNoInteractions(mockInternalLogger)
     }
 
+    // endregion
+
     // region FeatureEventReceiver#onReceive + telemetry event
 
     @Test
-    fun `M handle telemetry debug event W onReceive(){no additionalProperties}`(
-        @StringForgery fakeMessage: String
+    fun `M handle telemetry event W onReceive()`(
+        @Forgery fakeTelemetryEvent: TelemetryEvent
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val event = mapOf(
-            "type" to "telemetry_debug",
-            "message" to fakeMessage
+            "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE,
+            "event" to fakeTelemetryEvent
         )
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage, null)
+        verify(mockRumMonitor).sendTelemetryEvent(fakeTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
-    fun `M handle telemetry debug event W onReceive() {additionalProperties}`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to "telemetry_debug",
-            "message" to fakeMessage,
-            "additionalProperties" to fakeAdditionalProperties
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage, fakeAdditionalProperties)
-        verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle telemetry debug event W onReceive {additionalProperties is null}`(
-        @StringForgery fakeMessage: String
-    ) {
-        // Given
-        val fakeAdditionalProperties = null
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to "telemetry_debug",
-            "message" to fakeMessage,
-            "additionalProperties" to fakeAdditionalProperties
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage, fakeAdditionalProperties)
-        verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M log warning W onReceive() { telemetry debug + message is missing }`() {
+    fun `M log warning W onReceive() { telemetry event, event is missing }`() {
         // Given
         val event = mapOf(
-            "type" to "telemetry_debug"
+            "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE
         )
 
         // When
@@ -1272,169 +1230,18 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+            RumFeature.TELEMETRY_MISSING_EVENT_FIELD_WARNING_MESSAGE
         )
 
         verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
-    fun `M handle telemetry error event W onReceive() { with throwable, no additional properties }`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
+    fun `M log warning W onReceive() { telemetry event, event is not of type Telemetry }`() {
         // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val fakeThrowable = forge.aThrowable()
         val event = mapOf(
-            "type" to "telemetry_error",
-            "message" to fakeMessage,
-            "throwable" to fakeThrowable
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor)
-            .sendErrorTelemetryEvent(fakeMessage, fakeThrowable)
-        verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle telemetry error event W onReceive() { with throwable, with additional properties }`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val fakeThrowable = forge.aThrowable()
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val event = mapOf(
-            "type" to "telemetry_error",
-            "message" to fakeMessage,
-            "throwable" to fakeThrowable,
-            "additionalProperties" to fakeAdditionalProperties
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor)
-            .sendErrorTelemetryEvent(fakeMessage, fakeThrowable, fakeAdditionalProperties)
-        verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle telemetry error event W onReceive() { with stack and kind, no additional properties }`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val fakeStack = forge.aNullable { aString() }
-        val fakeKind = forge.aNullable { aString() }
-        val event = mapOf(
-            "type" to "telemetry_error",
-            "message" to fakeMessage,
-            "stacktrace" to fakeStack,
-            "kind" to fakeKind
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor)
-            .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind)
-
-        verifyNoMoreInteractions(mockRumMonitor)
-
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle telemetry error event W onReceive() { with stack and kind, with additional properties }`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val fakeStack = forge.aNullable { aString() }
-        val fakeKind = forge.aNullable { aString() }
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val event = mapOf(
-            "type" to "telemetry_error",
-            "message" to fakeMessage,
-            "stacktrace" to fakeStack,
-            "kind" to fakeKind,
-            "additionalProperties" to fakeAdditionalProperties
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor)
-            .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind, fakeAdditionalProperties)
-
-        verifyNoMoreInteractions(mockRumMonitor)
-
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle metric event W onReceive()`(
-        @StringForgery fakeMessage: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE,
-            "message" to fakeMessage,
-            "additionalProperties" to fakeAdditionalProperties
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor).sendMetricEvent(fakeMessage, fakeAdditionalProperties)
-        verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle metric event W onReceive(){no additionalProperties}`(
-        @StringForgery fakeMessage: String
-    ) {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE,
-            "message" to fakeMessage
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor).sendMetricEvent(fakeMessage, null)
-        verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M handle metric event W onReceive(){no message}`() {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE
+            "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE,
+            "event" to Any()
         )
 
         // When
@@ -1444,69 +1251,10 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
-        )
-        verifyNoInteractions(mockRumMonitor)
-    }
-
-    @Test
-    fun `M log warning W onReceive() { telemetry error + message is missing }`() {
-        // Given
-        val event = mapOf(
-            "type" to "telemetry_error"
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+            RumFeature.TELEMETRY_MISSING_EVENT_FIELD_WARNING_MESSAGE
         )
 
         verifyNoInteractions(mockRumMonitor)
-    }
-
-    @Test
-    fun `M submit configuration telemetry W onReceive() { telemetry configuration }`(
-        @BoolForgery trackErrors: Boolean,
-        @BoolForgery useProxy: Boolean,
-        @BoolForgery useLocalEncryption: Boolean,
-        @LongForgery(min = 0L) batchSize: Long,
-        @LongForgery(min = 0L) batchUploadFrequency: Long,
-        @IntForgery(min = 0) batchProcessingLevel: Int
-    ) {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to "telemetry_configuration",
-            "track_errors" to trackErrors,
-            "batch_size" to batchSize,
-            "batch_upload_frequency" to batchUploadFrequency,
-            "use_proxy" to useProxy,
-            "use_local_encryption" to useLocalEncryption,
-            "batch_processing_level" to batchProcessingLevel
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockRumMonitor)
-            .sendConfigurationTelemetryEvent(
-                TelemetryCoreConfiguration(
-                    trackErrors = trackErrors,
-                    batchSize = batchSize,
-                    batchUploadFrequency = batchUploadFrequency,
-                    useProxy = useProxy,
-                    useLocalEncryption = useLocalEncryption,
-                    batchProcessingLevel = batchProcessingLevel
-                )
-            )
-
-        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion

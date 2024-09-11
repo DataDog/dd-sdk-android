@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.DatadogCore
+import com.datadog.android.internal.telemetry.TelemetryEvent
 import com.datadog.android.lint.InternalApi
 
 /**
@@ -45,29 +46,40 @@ class _InternalProxy internal constructor(
             }
 
         fun debug(message: String) {
-            rumFeature?.sendEvent(mapOf("type" to "telemetry_debug", "message" to message))
+            val telemetryEvent = TelemetryEvent.Log.Debug(
+                message = message,
+                additionalProperties = null
+            )
+            rumFeature?.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
         }
 
         fun error(message: String, throwable: Throwable? = null) {
-            rumFeature?.sendEvent(
-                mapOf(
-                    "type" to "telemetry_error",
-                    "message" to message,
-                    "throwable" to throwable
-                )
+            val telemetryEvent = TelemetryEvent.Log.Error(
+                message = message,
+                error = throwable
             )
+            rumFeature?.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
         }
 
         fun error(message: String, stack: String?, kind: String?) {
-            rumFeature?.sendEvent(
-                mapOf(
-                    "type" to "telemetry_error",
-                    "message" to message,
-                    "stacktrace" to stack,
-                    "kind" to kind
-                )
+            val telemetryEvent = TelemetryEvent.Log.Error(
+                message = message,
+                stacktrace = stack,
+                kind = kind
+            )
+            rumFeature?.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
+        }
+
+        // region Internal
+
+        private fun bundleEventIntoTelemetry(event: Any): Map<String, Any?> {
+            return mapOf(
+                "type" to "telemetry_event",
+                "event" to event
             )
         }
+
+        // endregion
     }
 
     @Suppress("PropertyName")
