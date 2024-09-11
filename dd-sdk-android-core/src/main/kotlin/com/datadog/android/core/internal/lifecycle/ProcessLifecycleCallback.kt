@@ -26,7 +26,7 @@ internal class ProcessLifecycleCallback(
     override fun onStarted() {
         contextWeakRef.get()?.let {
             if (WorkManager.isInitialized()) {
-                cancelUploadWorker(it, internalLogger)
+                cancelUploadWorker(it, instanceName, internalLogger)
             }
         }
     }

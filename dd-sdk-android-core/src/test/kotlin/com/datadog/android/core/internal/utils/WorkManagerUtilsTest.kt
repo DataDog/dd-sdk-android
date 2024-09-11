@@ -85,16 +85,16 @@ internal class WorkManagerUtilsTest {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // When
-        cancelUploadWorker(appContext.mockInstance, mockInternalLogger)
+        cancelUploadWorker(appContext.mockInstance, fakeInstanceName, mockInternalLogger)
 
         // Then
-        verify(mockWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
+        verify(mockWorkManager).cancelAllWorkByTag("$TAG_DATADOG_UPLOAD/$fakeInstanceName")
     }
 
     @Test
     fun `it will handle the cancel exception if WorkManager was not correctly instantiated`() {
         // When
-        cancelUploadWorker(appContext.mockInstance, mockInternalLogger)
+        cancelUploadWorker(appContext.mockInstance, fakeInstanceName, mockInternalLogger)
 
         // Then
         verifyNoInteractions(mockWorkManager)
@@ -118,7 +118,7 @@ internal class WorkManagerUtilsTest {
             val workSpec = lastValue.workSpec
             assertThat(workSpec.workerClassName).isEqualTo(UploadWorker::class.java.canonicalName)
             assertThat(workSpec.input.getString(UploadWorker.DATADOG_INSTANCE_NAME)).isEqualTo(fakeInstanceName)
-            assertThat(lastValue.tags).contains(TAG_DATADOG_UPLOAD)
+            assertThat(lastValue.tags).contains("$TAG_DATADOG_UPLOAD/$fakeInstanceName")
         }
     }
 

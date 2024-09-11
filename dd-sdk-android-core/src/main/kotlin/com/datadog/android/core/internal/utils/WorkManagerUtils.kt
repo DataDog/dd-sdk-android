@@ -25,10 +25,14 @@ internal const val TAG_DATADOG_UPLOAD = "DatadogBackgroundUpload"
 
 internal const val DELAY_MS: Long = 5000
 
-internal fun cancelUploadWorker(context: Context, internalLogger: InternalLogger) {
+internal fun cancelUploadWorker(
+    context: Context,
+    instanceName: String,
+    internalLogger: InternalLogger
+) {
     try {
         val workManager = WorkManager.getInstance(context)
-        workManager.cancelAllWorkByTag(TAG_DATADOG_UPLOAD)
+        workManager.cancelAllWorkByTag("$TAG_DATADOG_UPLOAD/$instanceName")
     } catch (e: IllegalStateException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -52,7 +56,7 @@ internal fun triggerUploadWorker(
             .build()
         val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
             .setConstraints(constraints)
-            .addTag(TAG_DATADOG_UPLOAD)
+            .addTag("$TAG_DATADOG_UPLOAD/$instanceName")
             .setInitialDelay(DELAY_MS, TimeUnit.MILLISECONDS)
             .setInputData(Data.Builder().putString(UploadWorker.DATADOG_INSTANCE_NAME, instanceName).build())
             .build()

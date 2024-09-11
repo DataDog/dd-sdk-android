@@ -98,7 +98,7 @@ internal class ProcessLifecycleCallbackTest {
             val workSpec = lastValue.workSpec
             assertThat(workSpec.workerClassName).isEqualTo(UploadWorker::class.java.canonicalName)
             assertThat(workSpec.input.getString(UploadWorker.DATADOG_INSTANCE_NAME)).isEqualTo(fakeInstanceName)
-            assertThat(lastValue.tags).contains(TAG_DATADOG_UPLOAD)
+            assertThat(lastValue.tags).contains("$TAG_DATADOG_UPLOAD/$fakeInstanceName")
         }
     }
 
@@ -132,7 +132,7 @@ internal class ProcessLifecycleCallbackTest {
         testedCallback.onStarted()
 
         // Then
-        verify(mockWorkManager).cancelAllWorkByTag(TAG_DATADOG_UPLOAD)
+        verify(mockWorkManager).cancelAllWorkByTag("$TAG_DATADOG_UPLOAD/$fakeInstanceName")
     }
 
     @Test
