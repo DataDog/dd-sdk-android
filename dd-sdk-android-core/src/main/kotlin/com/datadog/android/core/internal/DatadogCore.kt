@@ -421,6 +421,7 @@ internal class DatadogCore(
             processLifecycleMonitor = ProcessLifecycleMonitor(
                 ProcessLifecycleCallback(
                     appContext,
+                    name,
                     internalLogger
                 )
             ).apply {
