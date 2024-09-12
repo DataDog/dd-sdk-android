@@ -11,16 +11,21 @@ package com.datadog.android.internal.profiler
  * @param T the type returned by the lambda
  * @param operationName the name of the [BenchmarkSpan] created around the lambda
  * (default is `true`)
+ * @param additionalProperties Additional properties for this span.
  * @param block the lambda function traced by this newly created [BenchmarkSpan]
  *
  */
 inline fun <T : Any?> withinBenchmarkSpan(
     operationName: String,
+    additionalProperties: Map<String, String> = emptyMap(),
     block: BenchmarkSpan.() -> T
 ): T {
     val tracer = GlobalBenchmark.get().getTracer("dd-sdk-android")
 
-    val spanBuilder = tracer.spanBuilder(operationName)
+    val spanBuilder = tracer.spanBuilder(
+        operationName,
+        additionalProperties
+    )
 
     val span = spanBuilder.startSpan()
 

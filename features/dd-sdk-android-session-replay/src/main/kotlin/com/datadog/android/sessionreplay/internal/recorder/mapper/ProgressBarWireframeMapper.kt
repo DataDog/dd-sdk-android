@@ -14,7 +14,7 @@ import android.widget.ProgressBar
 import androidx.annotation.RequiresApi
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -69,8 +69,12 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
         buildNonActiveTrackWireframe(view, trackBounds, trackColor)?.let(wireframes::add)
 
         val hasProgress = !view.isIndeterminate
-        val showProgress = (mappingContext.privacy == SessionReplayPrivacy.ALLOW) ||
-            (mappingContext.privacy == SessionReplayPrivacy.MASK_USER_INPUT && showProgressWhenMaskUserInput)
+        val showProgress =
+            (mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) ||
+                (
+                    mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL_INPUTS &&
+                        showProgressWhenMaskUserInput
+                    )
 
         if (hasProgress && showProgress) {
             val normalizedProgress = normalizedProgress(view)

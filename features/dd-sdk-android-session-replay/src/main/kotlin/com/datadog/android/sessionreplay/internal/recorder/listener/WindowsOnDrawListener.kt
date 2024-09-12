@@ -12,13 +12,13 @@ import androidx.annotation.MainThread
 import androidx.annotation.UiThread
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.measureMethodCallPerf
-import com.datadog.android.internal.profiler.withinBenchmarkSpan
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
@@ -26,7 +26,7 @@ internal class WindowsOnDrawListener(
     zOrderedDecorViews: List<View>,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
-    private val privacy: SessionReplayPrivacy,
+    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
     private val miscUtils: MiscUtils = MiscUtils,
     private val sdkCore: FeatureSdkCore,
@@ -58,14 +58,14 @@ internal class WindowsOnDrawListener(
                 METHOD_CALL_CAPTURE_RECORD,
                 methodCallSamplingRate
             ) {
-                withinBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER) {
+                withinSRBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER, isContainer = true) {
                     val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
                     recordedDataQueueRefs.recordedDataQueueItem = item
                     rootViews.mapNotNull {
                         snapshotProducer.produce(
                             rootView = it,
                             systemInformation = systemInformation,
-                            privacy = privacy,
+                            textAndInputPrivacy = textAndInputPrivacy,
                             imagePrivacy = imagePrivacy,
                             recordedDataQueueRefs = recordedDataQueueRefs
                         )

@@ -11,7 +11,7 @@ import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -73,7 +73,7 @@ internal open class NumberPickerMapper(
             return map(
                 view,
                 mappingContext.systemInformation,
-                mappingContext.privacy,
+                mappingContext.textAndInputPrivacy,
                 prevIndexLabelId,
                 topDividerId,
                 selectedIndexLabelId,
@@ -89,7 +89,7 @@ internal open class NumberPickerMapper(
     private fun map(
         view: NumberPicker,
         systemInformation: SystemInformation,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         prevIndexLabelId: Long,
         topDividerId: Long,
         selectedIndexLabelId: Long,
@@ -167,7 +167,7 @@ internal open class NumberPickerMapper(
             nextPrevLabelTextColor
         )
 
-        return if (privacy == SessionReplayPrivacy.ALLOW) {
+        return if (textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
             listOf(
                 prevValueLabelWireframe,
                 topDividerWireframe,

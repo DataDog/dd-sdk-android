@@ -11,7 +11,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -197,7 +197,8 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
         // Given
         whenever(mockSwitch.thumbDrawable).thenReturn(null)
         whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
-        val allowMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        val allowMappingContext =
+            fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
@@ -216,7 +217,8 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
         // Given
         whenever(mockSwitch.trackDrawable).thenReturn(null)
         whenever(mockSwitch.isChecked).thenReturn(forge.aBool())
-        val allowMappingContext = fakeMappingContext.copy(privacy = SessionReplayPrivacy.ALLOW)
+        val allowMappingContext =
+            fakeMappingContext.copy(textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
 
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(

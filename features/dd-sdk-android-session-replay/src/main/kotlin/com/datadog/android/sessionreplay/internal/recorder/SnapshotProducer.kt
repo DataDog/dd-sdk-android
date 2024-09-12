@@ -9,9 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
-import com.datadog.android.internal.profiler.withinBenchmarkSpan
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -30,7 +29,7 @@ internal class SnapshotProducer(
     fun produce(
         rootView: View,
         systemInformation: SystemInformation,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
@@ -39,7 +38,7 @@ internal class SnapshotProducer(
             MappingContext(
                 systemInformation = systemInformation,
                 imageWireframeHelper = imageWireframeHelper,
-                privacy = privacy,
+                textAndInputPrivacy = textAndInputPrivacy,
                 imagePrivacy = imagePrivacy
             ),
             LinkedList(),
@@ -55,7 +54,7 @@ internal class SnapshotProducer(
         parents: LinkedList<MobileSegment.Wireframe>,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
-        return withinBenchmarkSpan(view::class.java.simpleName) {
+        return withinSRBenchmarkSpan(view::class.java.simpleName, view is ViewGroup) {
             val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
             val nextTraversalStrategy = traversedTreeView.nextActionStrategy
             val resolvedWireframes = traversedTreeView.mappedWireframes

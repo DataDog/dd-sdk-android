@@ -4,9 +4,9 @@ interface com.datadog.android.internal.profiler.BenchmarkSpan
   fun stop()
 interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
   fun startSpan(): BenchmarkSpan
-fun <T: Any?> withinBenchmarkSpan(String, BenchmarkSpan.() -> T): T
+fun <T: Any?> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
 interface com.datadog.android.internal.profiler.BenchmarkTracer
-  fun spanBuilder(String): BenchmarkSpanBuilder
+  fun spanBuilder(String, Map<String, String> = emptyMap()): BenchmarkSpanBuilder
 object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkProfiler)
   fun get(): BenchmarkProfiler

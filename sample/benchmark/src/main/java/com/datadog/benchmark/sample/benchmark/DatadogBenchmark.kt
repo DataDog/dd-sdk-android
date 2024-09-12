@@ -50,6 +50,7 @@ internal class DatadogBenchmark(config: Config) {
         meter.stopGauges()
     }
 
+    @Suppress("DEPRECATION")
     private fun enableSessionReplay() {
         val sessionReplayConfig = SessionReplayConfiguration
             .Builder(SAMPLE_IN_ALL_SESSIONS)

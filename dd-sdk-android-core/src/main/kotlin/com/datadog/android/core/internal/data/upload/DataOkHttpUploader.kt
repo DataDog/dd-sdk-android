@@ -172,12 +172,16 @@ internal class DataOkHttpUploader(
     ): UploadStatus {
         return when (code) {
             HTTP_ACCEPTED -> UploadStatus.Success(code)
-            HTTP_BAD_REQUEST -> UploadStatus.HttpClientError(code)
-            HTTP_UNAUTHORIZED -> UploadStatus.InvalidTokenError(code)
+
+            HTTP_UNAUTHORIZED,
             HTTP_FORBIDDEN -> UploadStatus.InvalidTokenError(code)
-            HTTP_CLIENT_TIMEOUT -> UploadStatus.HttpClientRateLimiting(code)
-            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HttpClientError(code)
+
+            HTTP_CLIENT_TIMEOUT,
             HTTP_TOO_MANY_REQUESTS -> UploadStatus.HttpClientRateLimiting(code)
+
+            HTTP_BAD_REQUEST,
+            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HttpClientError(code)
+
             HTTP_INTERNAL_ERROR,
             HTTP_BAD_GATEWAY,
             HTTP_UNAVAILABLE,

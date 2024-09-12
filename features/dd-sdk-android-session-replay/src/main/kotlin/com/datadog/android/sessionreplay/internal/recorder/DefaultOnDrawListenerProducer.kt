@@ -11,7 +11,7 @@ import android.view.ViewTreeObserver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 
@@ -23,14 +23,14 @@ internal class DefaultOnDrawListenerProducer(
 
     override fun create(
         decorViews: List<View>,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy
     ): ViewTreeObserver.OnDrawListener {
         return WindowsOnDrawListener(
             zOrderedDecorViews = decorViews,
             recordedDataQueueHandler = recordedDataQueueHandler,
             snapshotProducer = snapshotProducer,
-            privacy = privacy,
+            textAndInputPrivacy = textAndInputPrivacy,
             imagePrivacy = imagePrivacy,
             sdkCore = sdkCore,
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate

@@ -5,7 +5,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.SeekBar
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper.Companion.TRACK_HEIGHT_IN_PX
@@ -119,7 +119,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {invalid thumb id, Android O+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, null)
 
@@ -141,7 +141,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {invalid active track id, Android O+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
 
@@ -163,7 +163,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {invalid non active track id, Android O+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
 
@@ -185,7 +185,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {privacy=ALLOW, Android O+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
 
         // When
@@ -207,7 +207,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {privacy=MASK, Android O+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.MASK)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
         prepareMockSeekBar()
 
         // When
@@ -227,7 +227,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {privacy=MASK_USER_INPUT, Android O+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
         prepareMockSeekBar()
 
         // When
@@ -251,7 +251,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     fun `M return partial wireframes W map { invalid thumb id }`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, null)
 
@@ -273,7 +273,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     fun `M return partial wireframes W map { invalid active track id }`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
 
@@ -295,7 +295,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     fun `M return partial wireframes W map { invalid non active track id }`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
 
@@ -317,7 +317,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     fun `M return wireframes W map {privacy=ALLOW}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
 
         // When
@@ -339,7 +339,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     fun `M return wireframes W map {privacy=MASK}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.MASK)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
         prepareMockSeekBar()
 
         // When
@@ -359,7 +359,7 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     fun `M return wireframes W map {privacy=MASK_USER_INPUT}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
         prepareMockSeekBar()
 
         // When

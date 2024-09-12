@@ -179,7 +179,7 @@ internal class DefaultImageWireframeHelperTest {
     // region createImageWireframe
 
     @Test
-    fun `M return content placeholder W createImageWireframe() { ImagePrivacy NONE }`() {
+    fun `M return content placeholder W createImageWireframe() { ImagePrivacy MASK_ALL }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
@@ -201,7 +201,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not return image wireframe W createImageWireframe() { ImagePrivacy ALL }`() {
+    fun `M return image wireframe W createImageWireframe() { ImagePrivacy MASK_NONE }`() {
         // When
         val wireframe = testedHelper.createImageWireframe(
             view = mockView,
@@ -670,13 +670,6 @@ internal class DefaultImageWireframeHelperTest {
         mockDisplayMetrics.density = 1f
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer { location ->
-                val coords = location.arguments[0] as IntArray
-                coords[0] = fakeGlobalX
-                coords[1] = fakeGlobalY
-                null
-            }
-
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.context).thenReturn(mockContext)
         }
@@ -686,8 +679,8 @@ internal class DefaultImageWireframeHelperTest {
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = forge.aPositiveInt(),
-            x = forge.aPositiveLong(),
-            y = forge.aPositiveLong(),
+            x = fakeGlobalX.toLong(),
+            y = fakeGlobalY.toLong(),
             width = forge.aPositiveInt(),
             height = forge.aPositiveInt(),
             drawable = mockDrawable,

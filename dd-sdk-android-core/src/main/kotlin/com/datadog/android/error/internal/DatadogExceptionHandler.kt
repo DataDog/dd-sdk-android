@@ -90,7 +90,7 @@ internal class DatadogExceptionHandler(
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
             if (WorkManager.isInitialized()) {
-                triggerUploadWorker(it, sdkCore.internalLogger)
+                triggerUploadWorker(it, sdkCore.name, sdkCore.internalLogger)
             }
         }
 

@@ -15,6 +15,7 @@ internal sealed class UploadStatus(
 ) {
 
     internal class Success(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+
     internal class NetworkError(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
     internal class DNSError(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
     internal class RequestCreationError(throwable: Throwable?) :
@@ -26,6 +27,7 @@ internal sealed class UploadStatus(
     internal class HttpServerError(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
     internal class HttpClientRateLimiting(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
     internal class UnknownHttpError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+
     internal class UnknownException(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
 
     internal object UnknownStatus : UploadStatus(shouldRetry = false, code = UNKNOWN_RESPONSE_CODE)
