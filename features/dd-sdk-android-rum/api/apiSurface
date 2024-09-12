@@ -791,6 +791,8 @@ data class com.datadog.android.rum.model.ErrorEvent
     - ANR
     - APP_HANG
     - EXCEPTION
+    - WATCHDOG_TERMINATION
+    - MEMORY_WARNING
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Category

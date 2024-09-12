@@ -1340,6 +1340,8 @@ public final class com/datadog/android/rum/model/ErrorEvent$Category : java/lang
 	public static final field APP_HANG Lcom/datadog/android/rum/model/ErrorEvent$Category;
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Category$Companion;
 	public static final field EXCEPTION Lcom/datadog/android/rum/model/ErrorEvent$Category;
+	public static final field MEMORY_WARNING Lcom/datadog/android/rum/model/ErrorEvent$Category;
+	public static final field WATCHDOG_TERMINATION Lcom/datadog/android/rum/model/ErrorEvent$Category;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Category;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Category;
