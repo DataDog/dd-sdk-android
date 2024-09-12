@@ -39,6 +39,7 @@ dependencies {
 
     // check api surface
     implementation(libs.kotlinGrammarParser)
+    implementation(libs.kotlinAntlrRuntime)
 
     // JsonSchema 2 Poko
     implementation(libs.gson)
