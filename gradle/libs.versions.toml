@@ -68,6 +68,10 @@ nexusPublishGradlePlugin = "1.1.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
+# version d4384e4d90 of com.github.drieks.antlr-kotlin:antlr-kotlin-runtime
+# referenced by com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm cannot be found
+# so explicitly overriding with the version which can be found
+kotlinAntlrRuntime = "v0.1.0"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.13.2"
 dependencyLicense = "0.3"
@@ -203,6 +207,7 @@ kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
 kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
 kotlinGrammarParser = { module = "com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm", version.ref = "kotlinGrammarParser" }
+kotlinAntlrRuntime = { module = "com.github.drieks.antlr-kotlin:antlr-kotlin-runtime", version.ref = "kotlinAntlrRuntime" }
 jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
 
 # Integrations
