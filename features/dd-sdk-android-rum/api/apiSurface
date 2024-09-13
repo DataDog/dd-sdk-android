@@ -6,6 +6,7 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+annotation com.datadog.android.rum.ExperimentalRumApi
 typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
@@ -111,6 +112,7 @@ interface com.datadog.android.rum.RumMonitor
   fun getAttributes(): Map<String, Any?>
   fun clearAttributes()
   fun stopSession()
+  fun addViewLoadingTime(Boolean)
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
 enum com.datadog.android.rum.RumPerformanceMetric

@@ -13,6 +13,9 @@ public final class com/datadog/android/rum/DdRumContentProvider : android/conten
 	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
 }
 
+public abstract interface annotation class com/datadog/android/rum/ExperimentalRumApi : java/lang/annotation/Annotation {
+}
+
 public final class com/datadog/android/rum/GlobalRumMonitor {
 	public static final field INSTANCE Lcom/datadog/android/rum/GlobalRumMonitor;
 	public static final fun get ()Lcom/datadog/android/rum/RumMonitor;
@@ -141,6 +144,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun addFeatureFlagEvaluation (Ljava/lang/String;Ljava/lang/Object;)V
 	public abstract fun addFeatureFlagEvaluations (Ljava/util/Map;)V
 	public abstract fun addTiming (Ljava/lang/String;)V
+	public abstract fun addViewLoadingTime (Z)V
 	public abstract fun clearAttributes ()V
 	public abstract fun getAttributes ()Ljava/util/Map;
 	public abstract fun getCurrentSessionId (Lkotlin/jvm/functions/Function1;)V

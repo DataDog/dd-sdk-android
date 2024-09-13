@@ -173,6 +173,11 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class AddViewLoadingTime(
+        val overwrite: Boolean,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class AddLongTask(
         val durationNs: Long,
         val target: String,

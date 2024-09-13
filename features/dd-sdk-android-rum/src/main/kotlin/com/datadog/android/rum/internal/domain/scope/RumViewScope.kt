@@ -79,6 +79,7 @@ internal open class RumViewScope(
 
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
+    internal var viewLoadingTime: Long? = null
 
     internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
@@ -194,6 +195,7 @@ internal open class RumViewScope(
             is RumRawEvent.StopSession -> onStopSession(event, writer)
 
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
+            is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -235,6 +237,18 @@ internal open class RumViewScope(
     // endregion
 
     // region Internal
+
+    @WorkerThread
+    private fun onAddViewLoadingTime(event: RumRawEvent.AddViewLoadingTime, writer: DataWriter<Any>) {
+        if (stopped) return
+        val canAddViewLoadingTime = event.overwrite || viewLoadingTime == null
+        if (canAddViewLoadingTime) {
+            viewLoadingTime = event.eventTime.nanoTime - startedNanos
+            sendViewUpdate(event, writer)
+        } else {
+            // TODO RUM-6031 Add logs and telemetry here
+        }
+    }
 
     @WorkerThread
     private fun onStartView(
@@ -834,7 +848,8 @@ internal open class RumViewScope(
                     frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
-                    jsRefreshRate = eventJsRefreshRate
+                    jsRefreshRate = eventJsRefreshRate,
+                    loadingTime = viewLoadingTime
                 ),
                 usr = if (user.hasUserData()) {
                     ViewEvent.Usr(

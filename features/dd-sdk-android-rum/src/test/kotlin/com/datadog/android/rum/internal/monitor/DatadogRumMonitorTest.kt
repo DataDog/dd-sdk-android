@@ -18,6 +18,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -870,6 +871,22 @@ internal class DatadogRumMonitorTest {
             val event = firstValue
             check(event is RumRawEvent.AddCustomTiming)
             assertThat(event.name).isEqualTo(name)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M delegate event to rootScope W addViewLoadTime()`(
+        @BoolForgery fakeOverwrite: Boolean
+    ) {
+        testedMonitor.addViewLoadingTime(fakeOverwrite)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            val event = firstValue
+            check(event is RumRawEvent.AddViewLoadingTime)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
