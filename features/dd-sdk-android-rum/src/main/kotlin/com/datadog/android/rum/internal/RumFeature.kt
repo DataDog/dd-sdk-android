@@ -33,7 +33,7 @@ import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -293,7 +293,7 @@ internal class RumFeature(
     // region Internal
 
     private fun handleTelemetryEvent(event: Map<*, *>) {
-        val telemetryEvent = event[EVENT_MESSAGE_KEY] as? TelemetryEvent
+        val telemetryEvent = event[EVENT_MESSAGE_KEY] as? InternalTelemetryEvent
         val advancedRumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
         if (telemetryEvent != null) {
             advancedRumMonitor.sendTelemetryEvent(telemetryEvent)

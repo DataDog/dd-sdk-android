@@ -15,7 +15,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.submitSafe
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -587,7 +587,7 @@ internal class DatadogRumMonitor(
 
     override fun notifyInterceptorInstantiated() {
         handleEvent(
-            RumRawEvent.TelemetryEventWrapper(TelemetryEvent.InterceptorInstantiated)
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.InterceptorInstantiated)
         )
     }
 
@@ -606,7 +606,7 @@ internal class DatadogRumMonitor(
         return internalProxy
     }
 
-    override fun sendTelemetryEvent(telemetryEvent: TelemetryEvent) {
+    override fun sendTelemetryEvent(telemetryEvent: InternalTelemetryEvent) {
         handleEvent(RumRawEvent.TelemetryEventWrapper(telemetryEvent))
     }
 

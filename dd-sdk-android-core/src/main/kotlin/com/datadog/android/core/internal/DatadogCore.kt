@@ -38,7 +38,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
@@ -500,10 +500,10 @@ internal class DatadogCore(
     }
 
     @Suppress("FunctionMaxLength")
-    internal fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
+    private fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
         val runnable = Runnable {
             val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
-            val event = TelemetryEvent.Configuration(
+            val event = InternalTelemetryEvent.Configuration(
                 trackErrors = configuration.crashReportsEnabled,
                 batchSize = configuration.coreConfig.batchSize.windowDurationMs,
                 useProxy = configuration.coreConfig.proxy != null,

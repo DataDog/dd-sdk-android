@@ -6,15 +6,15 @@
 
 package com.datadog.android.internal.tests.elmyr
 
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class TelemetryLogErrorEventForgeryFactory : ForgeryFactory<TelemetryEvent.Log.Error> {
+class InternalTelemetryErrorLogForgeryFactory : ForgeryFactory<InternalTelemetryEvent.Log.Error> {
 
-    override fun getForgery(forge: Forge): TelemetryEvent.Log.Error {
-        return TelemetryEvent.Log.Error(
+    override fun getForgery(forge: Forge): InternalTelemetryEvent.Log.Error {
+        return InternalTelemetryEvent.Log.Error(
             message = forge.aString(),
             additionalProperties = forge.aMap { forge.aString() to forge.aString() },
             error = forge.aNullable { forge.aThrowable() },

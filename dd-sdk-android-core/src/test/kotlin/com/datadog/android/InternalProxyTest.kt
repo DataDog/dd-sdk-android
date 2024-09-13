@@ -11,7 +11,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.AppVersionProvider
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -56,7 +56,7 @@ internal class InternalProxyTest {
             verify(mockRumFeatureScope).sendEvent(capture())
             val payload = firstValue
             assert(payload["type"] == "telemetry_event")
-            val logEvent = payload["event"] as TelemetryEvent.Log.Debug
+            val logEvent = payload["event"] as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(message)
         }
     }
@@ -81,7 +81,7 @@ internal class InternalProxyTest {
             verify(mockRumFeatureScope).sendEvent(capture())
             val payload = firstValue
             assert(payload["type"] == "telemetry_event")
-            val logEvent = payload["event"] as TelemetryEvent.Log.Error
+            val logEvent = payload["event"] as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(message)
             assertThat(logEvent.stacktrace).isEqualTo(stack)
             assertThat(logEvent.kind).isEqualTo(kind)
@@ -107,7 +107,7 @@ internal class InternalProxyTest {
             verify(mockRumFeatureScope).sendEvent(capture())
             val payload = firstValue
             assert(payload["type"] == "telemetry_event")
-            val logEvent = payload["event"] as TelemetryEvent.Log.Error
+            val logEvent = payload["event"] as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(message)
             assertThat(logEvent.error).isEqualTo(throwable)
         }

@@ -6,14 +6,14 @@
 
 package com.datadog.android.internal.tests.elmyr
 
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class TelemetryApiUsageEventForgeryFactory : ForgeryFactory<TelemetryEvent.ApiUsage> {
+class InternalTelemetryApiUsageForgeryFactory : ForgeryFactory<InternalTelemetryEvent.ApiUsage> {
 
-    override fun getForgery(forge: Forge): TelemetryEvent.ApiUsage {
-        return TelemetryEvent.ApiUsage.AddViewLoadingTime(
+    override fun getForgery(forge: Forge): InternalTelemetryEvent.ApiUsage {
+        return InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
             overwrite = forge.aBool(),
             noView = forge.aBool(),
             noActiveView = forge.aBool(),

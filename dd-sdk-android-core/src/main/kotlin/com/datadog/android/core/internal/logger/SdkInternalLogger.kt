@@ -16,7 +16,7 @@ import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 
 internal class SdkInternalLogger(
     private val sdkCore: FeatureSdkCore?,
@@ -100,7 +100,7 @@ internal class SdkInternalLogger(
     ) {
         if (!RateBasedSampler(samplingRate).sample()) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        val metricEvent = TelemetryEvent.Metric(
+        val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
             additionalProperties = additionalProperties
         )
@@ -127,7 +127,7 @@ internal class SdkInternalLogger(
     }
 
     override fun logApiUsage(
-        apiUsageEvent: TelemetryEvent.ApiUsage,
+        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
         samplingRate: Float
     ) {
         if (!RateBasedSampler(samplingRate).sample()) return
@@ -223,13 +223,13 @@ internal class SdkInternalLogger(
             level == InternalLogger.Level.WARN ||
             error != null
         ) {
-            TelemetryEvent.Log.Error(
+            InternalTelemetryEvent.Log.Error(
                 message = message,
                 additionalProperties = additionalProperties,
                 error = error
             )
         } else {
-            TelemetryEvent.Log.Debug(
+            InternalTelemetryEvent.Log.Debug(
                 message = message,
                 additionalProperties = additionalProperties
             )

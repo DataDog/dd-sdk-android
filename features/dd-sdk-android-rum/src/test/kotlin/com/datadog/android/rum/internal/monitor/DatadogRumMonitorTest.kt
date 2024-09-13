@@ -16,7 +16,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -1860,9 +1860,9 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M handle telemetry event W sendTelemetryEvent()`(@Forgery fakeTelemetryEvent: TelemetryEvent) {
+    fun `M handle telemetry event W sendTelemetryEvent()`(@Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent) {
         // When
-        testedMonitor.sendTelemetryEvent(fakeTelemetryEvent)
+        testedMonitor.sendTelemetryEvent(fakeInternalTelemetryEvent)
 
         // Then
         argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
@@ -1870,7 +1870,7 @@ internal class DatadogRumMonitorTest {
                 capture(),
                 eq(mockWriter)
             )
-            assertThat(lastValue.event).isEqualTo(fakeTelemetryEvent)
+            assertThat(lastValue.event).isEqualTo(fakeInternalTelemetryEvent)
         }
     }
 

@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
@@ -42,7 +42,7 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun setDebugListener(listener: RumDebugListener?)
 
-    fun sendTelemetryEvent(telemetryEvent: TelemetryEvent)
+    fun sendTelemetryEvent(telemetryEvent: InternalTelemetryEvent)
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 

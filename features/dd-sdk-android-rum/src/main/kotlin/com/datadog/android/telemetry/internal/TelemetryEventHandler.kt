@@ -15,7 +15,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -60,7 +60,7 @@ internal class TelemetryEventHandler(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, eventBatchWriter ->
             val timestamp = wrappedEvent.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
             val telemetryEvent: Any? = when (event) {
-                is TelemetryEvent.Log.Debug -> {
+                is InternalTelemetryEvent.Log.Debug -> {
                     createDebugEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
@@ -69,7 +69,7 @@ internal class TelemetryEventHandler(
                     )
                 }
 
-                is TelemetryEvent.Metric -> {
+                is InternalTelemetryEvent.Metric -> {
                     createDebugEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
@@ -78,7 +78,7 @@ internal class TelemetryEventHandler(
                     )
                 }
 
-                is TelemetryEvent.Log.Error -> {
+                is InternalTelemetryEvent.Log.Error -> {
                     sessionEndedMetricDispatcher.onSdkErrorTracked(
                         sessionId = datadogContext.rumContext().sessionId,
                         errorKind = event.kind
@@ -93,7 +93,7 @@ internal class TelemetryEventHandler(
                     )
                 }
 
-                is TelemetryEvent.Configuration -> {
+                is InternalTelemetryEvent.Configuration -> {
                     createConfigurationEvent(
                         datadogContext,
                         timestamp,
@@ -101,7 +101,7 @@ internal class TelemetryEventHandler(
                     )
                 }
 
-                is TelemetryEvent.ApiUsage -> {
+                is InternalTelemetryEvent.ApiUsage -> {
                     createApiUsageEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
@@ -109,7 +109,7 @@ internal class TelemetryEventHandler(
                     )
                 }
 
-                is TelemetryEvent.InterceptorInstantiated -> {
+                is InternalTelemetryEvent.InterceptorInstantiated -> {
                     trackNetworkRequests = true
                     null
                 }
@@ -130,16 +130,16 @@ internal class TelemetryEventHandler(
     // region private
 
     @Suppress("ReturnCount")
-    private fun canWrite(event: TelemetryEvent): Boolean {
+    private fun canWrite(event: InternalTelemetryEvent): Boolean {
         if (!eventSampler.sample()) return false
 
-        if (event is TelemetryEvent.Configuration && !configurationExtraSampler.sample()) {
+        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample()) {
             return false
         }
 
         val eventIdentity = event.identity
 
-        if (event !is TelemetryEvent.Metric && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
+        if (event !is InternalTelemetryEvent.Metric && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
@@ -253,7 +253,7 @@ internal class TelemetryEventHandler(
     private fun createConfigurationEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        event: TelemetryEvent.Configuration
+        event: InternalTelemetryEvent.Configuration
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val sessionReplayFeatureContext =
@@ -341,11 +341,11 @@ internal class TelemetryEventHandler(
     private fun createApiUsageEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        event: TelemetryEvent.ApiUsage
+        event: InternalTelemetryEvent.ApiUsage
     ): TelemetryUsageEvent? {
         val rumContext = datadogContext.rumContext()
         return when (event) {
-            is TelemetryEvent.ApiUsage.AddViewLoadingTime -> {
+            is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> {
                 TelemetryUsageEvent(
                     dd = TelemetryUsageEvent.Dd(),
                     date = timestamp,

@@ -19,7 +19,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
@@ -1198,20 +1198,20 @@ internal class RumFeatureTest {
 
     @Test
     fun `M handle telemetry event W onReceive()`(
-        @Forgery fakeTelemetryEvent: TelemetryEvent
+        @Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val event = mapOf(
             "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE,
-            "event" to fakeTelemetryEvent
+            "event" to fakeInternalTelemetryEvent
         )
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockRumMonitor).sendTelemetryEvent(fakeTelemetryEvent)
+        verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifyNoInteractions(mockInternalLogger)
     }

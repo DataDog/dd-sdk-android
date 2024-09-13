@@ -9,7 +9,7 @@ package com.datadog.android.api
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -141,7 +141,7 @@ interface InternalLogger {
      */
     @InternalApi
     fun logApiUsage(
-        apiUsageEvent: TelemetryEvent.ApiUsage,
+        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
         samplingRate: Float
     )
 

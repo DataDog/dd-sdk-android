@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
@@ -217,7 +217,7 @@ internal sealed class RumRawEvent {
     internal data class WebViewEvent(override val eventTime: Time = Time()) : RumRawEvent()
 
     internal data class TelemetryEventWrapper(
-        val event: TelemetryEvent,
+        val event: InternalTelemetryEvent,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

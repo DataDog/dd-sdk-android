@@ -12,7 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.DatadogCore
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 
 /**
@@ -46,7 +46,7 @@ class _InternalProxy internal constructor(
             }
 
         fun debug(message: String) {
-            val telemetryEvent = TelemetryEvent.Log.Debug(
+            val telemetryEvent = InternalTelemetryEvent.Log.Debug(
                 message = message,
                 additionalProperties = null
             )
@@ -54,7 +54,7 @@ class _InternalProxy internal constructor(
         }
 
         fun error(message: String, throwable: Throwable? = null) {
-            val telemetryEvent = TelemetryEvent.Log.Error(
+            val telemetryEvent = InternalTelemetryEvent.Log.Error(
                 message = message,
                 error = throwable
             )
@@ -62,7 +62,7 @@ class _InternalProxy internal constructor(
         }
 
         fun error(message: String, stack: String?, kind: String?) {
-            val telemetryEvent = TelemetryEvent.Log.Error(
+            val telemetryEvent = InternalTelemetryEvent.Log.Error(
                 message = message,
                 stacktrace = stack,
                 kind = kind

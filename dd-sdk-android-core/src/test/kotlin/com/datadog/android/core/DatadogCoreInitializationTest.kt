@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -48,6 +49,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -371,19 +373,24 @@ internal class DatadogCoreInitializationTest {
             }
         testedCore.coreFeature.uploadExecutorService.shutdownNow()
 
-        verify(mockRumFeature)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_configuration",
-                    "use_proxy" to useProxy,
-                    "use_local_encryption" to useLocalEncryption,
-                    "batch_size" to batchSize.windowDurationMs,
-                    "batch_upload_frequency" to uploadFrequency.baseStepMs,
-                    "track_errors" to trackErrors,
-                    "batch_processing_level" to batchProcessingLevel.maxBatchesPerUploadJob,
-                    "use_persistence_strategy_factory" to usePersistenceStrategyFactory
-                )
-            )
+        argumentCaptor<Map<String, Any>> {
+            verify(mockRumFeature).sendEvent(capture())
+            assertThat(firstValue.size).isEqualTo(2)
+            assertThat(firstValue["type"]).isEqualTo("telemetry_event")
+            val telemetryConfigurationEvent = firstValue["event"] as InternalTelemetryEvent.Configuration
+            assertThat(telemetryConfigurationEvent.trackErrors)
+                .isEqualTo(configuration.crashReportsEnabled)
+            assertThat(telemetryConfigurationEvent.batchSize)
+                .isEqualTo(configuration.coreConfig.batchSize.windowDurationMs)
+            assertThat(telemetryConfigurationEvent.useLocalEncryption)
+                .isEqualTo(configuration.coreConfig.encryption != null)
+            assertThat(telemetryConfigurationEvent.batchUploadFrequency)
+                .isEqualTo(configuration.coreConfig.uploadFrequency.baseStepMs)
+            assertThat(telemetryConfigurationEvent.batchProcessingLevel)
+                .isEqualTo(configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob)
+            assertThat(telemetryConfigurationEvent.useProxy)
+                .isEqualTo(configuration.coreConfig.proxy != null)
+        }
     }
 
     // region AdditionalConfig

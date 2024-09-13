@@ -29,16 +29,16 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
 }
 
-public abstract class com/datadog/android/internal/telemetry/TelemetryEvent {
+public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 }
 
-public abstract class com/datadog/android/internal/telemetry/TelemetryEvent$ApiUsage : com/datadog/android/internal/telemetry/TelemetryEvent {
+public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getAdditionalProperties ()Ljava/util/Map;
 }
 
-public final class com/datadog/android/internal/telemetry/TelemetryEvent$ApiUsage$AddViewLoadingTime : com/datadog/android/internal/telemetry/TelemetryEvent$ApiUsage {
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddViewLoadingTime : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage {
 	public fun <init> (ZZZLjava/util/Map;)V
 	public synthetic fun <init> (ZZZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getNoActiveView ()Z
@@ -46,7 +46,7 @@ public final class com/datadog/android/internal/telemetry/TelemetryEvent$ApiUsag
 	public final fun getOverwrite ()Z
 }
 
-public final class com/datadog/android/internal/telemetry/TelemetryEvent$Configuration : com/datadog/android/internal/telemetry/TelemetryEvent {
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Configuration : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 	public fun <init> (ZJJZZI)V
 	public final fun component1 ()Z
 	public final fun component2 ()J
@@ -54,8 +54,8 @@ public final class com/datadog/android/internal/telemetry/TelemetryEvent$Configu
 	public final fun component4 ()Z
 	public final fun component5 ()Z
 	public final fun component6 ()I
-	public final fun copy (ZJJZZI)Lcom/datadog/android/internal/telemetry/TelemetryEvent$Configuration;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/telemetry/TelemetryEvent$Configuration;ZJJZZIILjava/lang/Object;)Lcom/datadog/android/internal/telemetry/TelemetryEvent$Configuration;
+	public final fun copy (ZJJZZI)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Configuration;ZJJZZIILjava/lang/Object;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBatchProcessingLevel ()I
 	public final fun getBatchSize ()J
@@ -67,21 +67,21 @@ public final class com/datadog/android/internal/telemetry/TelemetryEvent$Configu
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/telemetry/TelemetryEvent$InterceptorInstantiated : com/datadog/android/internal/telemetry/TelemetryEvent {
-	public static final field INSTANCE Lcom/datadog/android/internal/telemetry/TelemetryEvent$InterceptorInstantiated;
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$InterceptorInstantiated : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
+	public static final field INSTANCE Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$InterceptorInstantiated;
 }
 
-public abstract class com/datadog/android/internal/telemetry/TelemetryEvent$Log : com/datadog/android/internal/telemetry/TelemetryEvent {
+public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Log : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getAdditionalProperties ()Ljava/util/Map;
 	public final fun getMessage ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/telemetry/TelemetryEvent$Log$Debug : com/datadog/android/internal/telemetry/TelemetryEvent$Log {
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Log$Debug : com/datadog/android/internal/telemetry/InternalTelemetryEvent$Log {
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
 }
 
-public final class com/datadog/android/internal/telemetry/TelemetryEvent$Log$Error : com/datadog/android/internal/telemetry/TelemetryEvent$Log {
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Log$Error : com/datadog/android/internal/telemetry/InternalTelemetryEvent$Log {
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getError ()Ljava/lang/Throwable;
@@ -89,12 +89,12 @@ public final class com/datadog/android/internal/telemetry/TelemetryEvent$Log$Err
 	public final fun getStacktrace ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/telemetry/TelemetryEvent$Metric : com/datadog/android/internal/telemetry/TelemetryEvent {
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Metric : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/internal/telemetry/TelemetryEvent$Metric;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/telemetry/TelemetryEvent$Metric;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/internal/telemetry/TelemetryEvent$Metric;
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Metric;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Metric;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Metric;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAdditionalProperties ()Ljava/util/Map;
 	public final fun getMessage ()Ljava/lang/String;

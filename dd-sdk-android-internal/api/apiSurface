@@ -10,21 +10,21 @@ interface com.datadog.android.internal.profiler.BenchmarkTracer
 object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkProfiler)
   fun get(): BenchmarkProfiler
-sealed class com.datadog.android.internal.telemetry.TelemetryEvent
-  sealed class Log : TelemetryEvent
+sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
+  sealed class Log : InternalTelemetryEvent
     constructor(String, Map<String, Any?>?)
     class Debug : Log
       constructor(String, Map<String, Any?>?)
     class Error : Log
       constructor(String, Map<String, Any?>? = null, Throwable? = null, String? = null, String? = null)
-  data class Configuration : TelemetryEvent
+  data class Configuration : InternalTelemetryEvent
     constructor(Boolean, Long, Long, Boolean, Boolean, Int)
-  data class Metric : TelemetryEvent
+  data class Metric : InternalTelemetryEvent
     constructor(String, Map<String, Any?>?)
-  sealed class ApiUsage : TelemetryEvent
+  sealed class ApiUsage : InternalTelemetryEvent
     constructor(MutableMap<String, Any?> = mutableMapOf())
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
-  object InterceptorInstantiated : TelemetryEvent
+  object InterceptorInstantiated : InternalTelemetryEvent
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

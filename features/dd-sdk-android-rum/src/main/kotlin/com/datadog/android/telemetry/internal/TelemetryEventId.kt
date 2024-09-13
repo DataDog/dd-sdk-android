@@ -6,7 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.internal.telemetry.TelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 
 internal data class TelemetryEventId(
     val type: TelemetryType,
@@ -14,22 +14,22 @@ internal data class TelemetryEventId(
     val kind: String?
 )
 
-internal val TelemetryEvent.identity: TelemetryEventId
+internal val InternalTelemetryEvent.identity: TelemetryEventId
     get() {
         return when (this) {
-            is TelemetryEvent.Log.Error -> TelemetryEventId(type(), message, kind)
-            is TelemetryEvent.Log.Debug -> TelemetryEventId(type(), message, null)
+            is InternalTelemetryEvent.Log.Error -> TelemetryEventId(type(), message, kind)
+            is InternalTelemetryEvent.Log.Debug -> TelemetryEventId(type(), message, null)
             else -> TelemetryEventId(type(), "", null)
         }
     }
 
-internal fun TelemetryEvent.type(): TelemetryType {
+internal fun InternalTelemetryEvent.type(): TelemetryType {
     return when (this) {
-        is TelemetryEvent.Log.Debug -> TelemetryType.DEBUG
-        is TelemetryEvent.Log.Error -> TelemetryType.ERROR
-        is TelemetryEvent.Configuration -> TelemetryType.CONFIGURATION
-        is TelemetryEvent.Metric -> TelemetryType.METRIC
-        is TelemetryEvent.ApiUsage -> TelemetryType.API_USAGE
-        is TelemetryEvent.InterceptorInstantiated -> TelemetryType.INTERCEPTOR_SETUP
+        is InternalTelemetryEvent.Log.Debug -> TelemetryType.DEBUG
+        is InternalTelemetryEvent.Log.Error -> TelemetryType.ERROR
+        is InternalTelemetryEvent.Configuration -> TelemetryType.CONFIGURATION
+        is InternalTelemetryEvent.Metric -> TelemetryType.METRIC
+        is InternalTelemetryEvent.ApiUsage -> TelemetryType.API_USAGE
+        is InternalTelemetryEvent.InterceptorInstantiated -> TelemetryType.INTERCEPTOR_SETUP
     }
 }

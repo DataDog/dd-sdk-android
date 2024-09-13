@@ -7,9 +7,9 @@
 package com.datadog.android.internal.telemetry
 
 @Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "UndocumentedPublicProperty")
-sealed class TelemetryEvent {
+sealed class InternalTelemetryEvent {
 
-    sealed class Log(val message: String, val additionalProperties: Map<String, Any?>?) : TelemetryEvent() {
+    sealed class Log(val message: String, val additionalProperties: Map<String, Any?>?) : InternalTelemetryEvent() {
         class Debug(message: String, additionalProperties: Map<String, Any?>?) : Log(message, additionalProperties)
 
         class Error(
@@ -28,14 +28,15 @@ sealed class TelemetryEvent {
         val useProxy: Boolean,
         val useLocalEncryption: Boolean,
         val batchProcessingLevel: Int
-    ) : TelemetryEvent()
+    ) : InternalTelemetryEvent()
 
     data class Metric(
         val message: String,
         val additionalProperties: Map<String, Any?>?
-    ) : TelemetryEvent()
+    ) : InternalTelemetryEvent()
 
-    sealed class ApiUsage(val additionalProperties: MutableMap<String, Any?> = mutableMapOf()) : TelemetryEvent() {
+    sealed class ApiUsage(val additionalProperties: MutableMap<String, Any?> = mutableMapOf()) :
+        InternalTelemetryEvent() {
         class AddViewLoadingTime(
             val overwrite: Boolean,
             val noView: Boolean,
@@ -44,5 +45,5 @@ sealed class TelemetryEvent {
         ) : ApiUsage(additionalProperties)
     }
 
-    object InterceptorInstantiated : TelemetryEvent()
+    object InterceptorInstantiated : InternalTelemetryEvent()
 }

@@ -29,7 +29,6 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
-import com.datadog.android.internal.telemetry.TelemetryEvent
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -80,7 +79,6 @@ import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Future
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -157,53 +155,6 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockConsentProvider).setConsent(fakeConsent)
-    }
-
-    @Test
-    fun `M send configuration telemetry W initialize()`() {
-        // Given
-        val mockRumFeature = mock<SdkFeature>()
-        testedCore = DatadogCore(
-            appContext.mockInstance,
-            fakeInstanceId,
-            fakeInstanceName,
-            internalLoggerProvider = { mockInternalLogger },
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
-            buildSdkVersionProvider = mockBuildSdkVersionProvider
-        )
-        val mockUploadExecutorService = mock<ScheduledThreadPoolExecutor> { executor ->
-            whenever(executor.schedule(any(), any(), any())) doAnswer { invocation ->
-                val runnable = invocation.getArgument<Runnable>(0)
-                runnable.run()
-                mock()
-            }
-        }
-        testedCore.features[Feature.RUM_FEATURE_NAME] = mockRumFeature
-        testedCore.initialize(fakeConfiguration)
-
-        // When
-        testedCore.coreFeature.uploadExecutorService = mockUploadExecutorService
-        testedCore.sendCoreConfigurationTelemetryEvent(fakeConfiguration)
-
-        // Then
-        argumentCaptor<Map<String, Any>> {
-            verify(mockRumFeature).sendEvent(capture())
-            assertThat(firstValue.size).isEqualTo(2)
-            assertThat(firstValue["type"]).isEqualTo("telemetry_event")
-            val telemetryConfigurationEvent = firstValue["event"] as TelemetryEvent.Configuration
-            assertThat(telemetryConfigurationEvent.trackErrors)
-                .isEqualTo(fakeConfiguration.crashReportsEnabled)
-            assertThat(telemetryConfigurationEvent.batchSize)
-                .isEqualTo(fakeConfiguration.coreConfig.batchSize.windowDurationMs)
-            assertThat(telemetryConfigurationEvent.useLocalEncryption)
-                .isEqualTo(fakeConfiguration.coreConfig.encryption != null)
-            assertThat(telemetryConfigurationEvent.batchUploadFrequency)
-                .isEqualTo(fakeConfiguration.coreConfig.uploadFrequency.baseStepMs)
-            assertThat(telemetryConfigurationEvent.batchProcessingLevel)
-                .isEqualTo(fakeConfiguration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob)
-            assertThat(telemetryConfigurationEvent.useProxy)
-                .isEqualTo(fakeConfiguration.coreConfig.proxy != null)
-        }
     }
 
     @Test
