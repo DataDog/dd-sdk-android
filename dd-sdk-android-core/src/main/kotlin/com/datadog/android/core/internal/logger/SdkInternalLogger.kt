@@ -104,7 +104,7 @@ internal class SdkInternalLogger(
             message = messageBuilder(),
             additionalProperties = additionalProperties
         )
-        rumFeature.sendEvent(bundleEventIntoTelemetry(metricEvent))
+        rumFeature.sendEvent(metricEvent)
     }
 
     override fun startPerformanceMeasure(
@@ -132,19 +132,12 @@ internal class SdkInternalLogger(
     ) {
         if (!RateBasedSampler(samplingRate).sample()) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        rumFeature.sendEvent(bundleEventIntoTelemetry(apiUsageEvent))
+        rumFeature.sendEvent(apiUsageEvent)
     }
 
     // endregion
 
     // region Internal
-
-    private fun bundleEventIntoTelemetry(event: Any): Map<String, Any?> {
-        return mapOf(
-            TYPE_KEY to TELEMETRY_EVENT_MESSAGE_TYPE,
-            TELEMETRY_EVENT_KEY to event
-        )
-    }
 
     private fun logToUser(
         level: InternalLogger.Level,
@@ -234,7 +227,7 @@ internal class SdkInternalLogger(
                 additionalProperties = additionalProperties
             )
         }
-        rumFeature.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
+        rumFeature.sendEvent(telemetryEvent)
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {
@@ -259,9 +252,6 @@ internal class SdkInternalLogger(
     companion object {
         internal const val SDK_LOG_TAG = "DD_LOG"
         internal const val DEV_LOG_TAG = "Datadog"
-        private const val TYPE_KEY = "type"
-        private const val TELEMETRY_EVENT_MESSAGE_TYPE = "telemetry_event"
-        internal const val TELEMETRY_EVENT_KEY = "event"
     }
 
     // endregion

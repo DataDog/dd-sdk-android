@@ -15,7 +15,7 @@ class InternalTelemetryDebugLogForgeryFactory : ForgeryFactory<InternalTelemetry
     override fun getForgery(forge: Forge): InternalTelemetryEvent.Log.Debug {
         return InternalTelemetryEvent.Log.Debug(
             message = forge.aString(),
-            additionalProperties = forge.aMap { forge.aString() to forge.aString() }
+            additionalProperties = forge.aMap { aString() to aString() }
         )
     }
 }

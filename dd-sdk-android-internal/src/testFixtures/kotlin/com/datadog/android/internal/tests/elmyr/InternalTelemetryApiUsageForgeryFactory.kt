@@ -17,7 +17,7 @@ class InternalTelemetryApiUsageForgeryFactory : ForgeryFactory<InternalTelemetry
             overwrite = forge.aBool(),
             noView = forge.aBool(),
             noActiveView = forge.aBool(),
-            additionalProperties = forge.aMap { forge.aString() to forge.aString() }.toMutableMap()
+            additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
         )
     }
 }

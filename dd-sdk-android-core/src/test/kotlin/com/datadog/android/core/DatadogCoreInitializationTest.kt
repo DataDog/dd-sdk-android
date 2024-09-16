@@ -373,11 +373,9 @@ internal class DatadogCoreInitializationTest {
             }
         testedCore.coreFeature.uploadExecutorService.shutdownNow()
 
-        argumentCaptor<Map<String, Any>> {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeature).sendEvent(capture())
-            assertThat(firstValue.size).isEqualTo(2)
-            assertThat(firstValue["type"]).isEqualTo("telemetry_event")
-            val telemetryConfigurationEvent = firstValue["event"] as InternalTelemetryEvent.Configuration
+            val telemetryConfigurationEvent = firstValue as InternalTelemetryEvent.Configuration
             assertThat(telemetryConfigurationEvent.trackErrors)
                 .isEqualTo(configuration.crashReportsEnabled)
             assertThat(telemetryConfigurationEvent.batchSize)

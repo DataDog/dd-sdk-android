@@ -52,11 +52,9 @@ internal class InternalProxyTest {
         proxy._telemetry.debug(message)
 
         // Then
-        argumentCaptor<Map<String, Any>> {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
-            val payload = firstValue
-            assert(payload["type"] == "telemetry_event")
-            val logEvent = payload["event"] as InternalTelemetryEvent.Log.Debug
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(message)
         }
     }
@@ -77,11 +75,9 @@ internal class InternalProxyTest {
         proxy._telemetry.error(message, stack, kind)
 
         // Then
-        argumentCaptor<Map<String, Any>> {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
-            val payload = firstValue
-            assert(payload["type"] == "telemetry_event")
-            val logEvent = payload["event"] as InternalTelemetryEvent.Log.Error
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(message)
             assertThat(logEvent.stacktrace).isEqualTo(stack)
             assertThat(logEvent.kind).isEqualTo(kind)
@@ -103,11 +99,9 @@ internal class InternalProxyTest {
         proxy._telemetry.error(message, throwable)
 
         // Then
-        argumentCaptor<Map<String, Any>> {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
-            val payload = firstValue
-            assert(payload["type"] == "telemetry_event")
-            val logEvent = payload["event"] as InternalTelemetryEvent.Log.Error
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(message)
             assertThat(logEvent.error).isEqualTo(throwable)
         }

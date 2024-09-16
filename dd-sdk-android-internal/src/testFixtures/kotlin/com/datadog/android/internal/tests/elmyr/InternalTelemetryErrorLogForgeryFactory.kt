@@ -16,10 +16,10 @@ class InternalTelemetryErrorLogForgeryFactory : ForgeryFactory<InternalTelemetry
     override fun getForgery(forge: Forge): InternalTelemetryEvent.Log.Error {
         return InternalTelemetryEvent.Log.Error(
             message = forge.aString(),
-            additionalProperties = forge.aMap { forge.aString() to forge.aString() },
-            error = forge.aNullable { forge.aThrowable() },
-            stacktrace = forge.aNullable { forge.aString() },
-            kind = forge.aNullable { forge.aString() }
+            additionalProperties = forge.aMap { aString() to aString() },
+            error = forge.aNullable { aThrowable() },
+            stacktrace = forge.aNullable { aString() },
+            kind = forge.aNullable { aString() }
         )
     }
 }

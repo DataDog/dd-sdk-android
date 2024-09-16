@@ -113,8 +113,6 @@ internal class TelemetryEventHandler(
                     trackNetworkRequests = true
                     null
                 }
-
-                else -> null
             }
             if (telemetryEvent != null) {
                 writer.write(eventBatchWriter, telemetryEvent, EventType.TELEMETRY)
@@ -379,7 +377,6 @@ internal class TelemetryEventHandler(
                     )
                 )
             }
-            else -> null
         }
     }
 

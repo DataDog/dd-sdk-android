@@ -511,12 +511,7 @@ internal class DatadogCore(
                 batchUploadFrequency = configuration.coreConfig.uploadFrequency.baseStepMs,
                 batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob
             )
-            rumFeature.sendEvent(
-                mapOf(
-                    "type" to "telemetry_event",
-                    "event" to event
-                )
-            )
+            rumFeature.sendEvent(event)
         }
 
         coreFeature.uploadExecutorService.scheduleSafe(

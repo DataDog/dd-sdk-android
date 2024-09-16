@@ -15,7 +15,7 @@ class InternalTelemetryMetricForgeryFactory : ForgeryFactory<InternalTelemetryEv
     override fun getForgery(forge: Forge): InternalTelemetryEvent.Metric {
         return InternalTelemetryEvent.Metric(
             message = forge.aString(),
-            additionalProperties = forge.aMap { forge.aString() to forge.aString() }
+            additionalProperties = forge.aMap { aString() to aString() }
         )
     }
 }

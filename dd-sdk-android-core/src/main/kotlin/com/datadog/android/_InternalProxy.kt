@@ -50,7 +50,7 @@ class _InternalProxy internal constructor(
                 message = message,
                 additionalProperties = null
             )
-            rumFeature?.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
+            rumFeature?.sendEvent(telemetryEvent)
         }
 
         fun error(message: String, throwable: Throwable? = null) {
@@ -58,7 +58,7 @@ class _InternalProxy internal constructor(
                 message = message,
                 error = throwable
             )
-            rumFeature?.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
+            rumFeature?.sendEvent(telemetryEvent)
         }
 
         fun error(message: String, stack: String?, kind: String?) {
@@ -67,19 +67,8 @@ class _InternalProxy internal constructor(
                 stacktrace = stack,
                 kind = kind
             )
-            rumFeature?.sendEvent(bundleEventIntoTelemetry(telemetryEvent))
+            rumFeature?.sendEvent(telemetryEvent)
         }
-
-        // region Internal
-
-        private fun bundleEventIntoTelemetry(event: Any): Map<String, Any?> {
-            return mapOf(
-                "type" to "telemetry_event",
-                "event" to event
-            )
-        }
-
-        // endregion
     }
 
     @Suppress("PropertyName")

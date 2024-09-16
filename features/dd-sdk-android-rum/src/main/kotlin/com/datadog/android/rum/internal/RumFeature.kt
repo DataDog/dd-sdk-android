@@ -248,18 +248,25 @@ internal class RumFeature(
     // region FeatureEventReceiver
 
     override fun onReceive(event: Any) {
-        if (event is JvmCrash.Rum) {
-            addJvmCrash(event)
-            return
-        } else if (event !is Map<*, *>) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
-            )
-            return
+        when (event) {
+            is Map<*, *> -> handleMapLikeEvent(event)
+            is JvmCrash.Rum -> addJvmCrash(event)
+            is InternalTelemetryEvent -> handleTelemetryEvent(event)
+            else -> {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+                )
+            }
         }
+    }
 
+    // endregion
+
+    // region Internal
+
+    private fun handleMapLikeEvent(event: Map<*, *>) {
         when (event["type"]) {
             NDK_CRASH_BUS_MESSAGE_TYPE ->
                 lateCrashEventHandler.handleNdkCrashEvent(event, dataWriter)
@@ -269,14 +276,13 @@ internal class RumFeature(
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
             }
+
             FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
                     it.stopKeepAliveCallback()
                     it.drainExecutorService()
                 }
             }
-
-            TELEMETRY_EVENT_MESSAGE_TYPE -> handleTelemetryEvent(event)
 
             else -> {
                 sdkCore.internalLogger.log(
@@ -288,22 +294,9 @@ internal class RumFeature(
         }
     }
 
-    // endregion
-
-    // region Internal
-
-    private fun handleTelemetryEvent(event: Map<*, *>) {
-        val telemetryEvent = event[EVENT_MESSAGE_KEY] as? InternalTelemetryEvent
+    private fun handleTelemetryEvent(event: InternalTelemetryEvent) {
         val advancedRumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-        if (telemetryEvent != null) {
-            advancedRumMonitor.sendTelemetryEvent(telemetryEvent)
-        } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { TELEMETRY_MISSING_EVENT_FIELD_WARNING_MESSAGE }
-            )
-        }
+        advancedRumMonitor.sendTelemetryEvent(event)
     }
 
     @AnyThread
@@ -542,7 +535,6 @@ internal class RumFeature(
         internal const val LOGGER_ERROR_BUS_MESSAGE_TYPE = "logger_error"
         internal const val LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE = "logger_error_with_stacktrace"
         internal const val WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE = "web_view_ingested_notification"
-        internal const val MOBILE_METRIC_MESSAGE_TYPE = "mobile_metric"
         internal const val FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE = "flush_and_stop_monitor"
 
         internal const val ALL_IN_SAMPLE_RATE: Float = 100f
@@ -583,8 +575,6 @@ internal class RumFeature(
         internal const val EVENT_THROWABLE_PROPERTY = "throwable"
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
-        internal const val TELEMETRY_EVENT_MESSAGE_TYPE = "telemetry_event"
-        internal const val EVENT_MESSAGE_KEY = "event"
 
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."
@@ -600,8 +590,6 @@ internal class RumFeature(
         internal const val LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event with stacktrace" +
                 " where mandatory message field is either missing or has a wrong type."
-        internal const val TELEMETRY_MISSING_EVENT_FIELD_WARNING_MESSAGE = "RUM feature received a telemetry" +
-            " event, but mandatory event field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =

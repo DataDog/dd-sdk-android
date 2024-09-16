@@ -1202,59 +1202,14 @@ internal class RumFeatureTest {
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
-        val event = mapOf(
-            "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE,
-            "event" to fakeInternalTelemetryEvent
-        )
 
         // When
-        testedFeature.onReceive(event)
+        testedFeature.onReceive(fakeInternalTelemetryEvent)
 
         // Then
         verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M log warning W onReceive() { telemetry event, event is missing }`() {
-        // Given
-        val event = mapOf(
-            "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            RumFeature.TELEMETRY_MISSING_EVENT_FIELD_WARNING_MESSAGE
-        )
-
-        verifyNoInteractions(mockRumMonitor)
-    }
-
-    @Test
-    fun `M log warning W onReceive() { telemetry event, event is not of type Telemetry }`() {
-        // Given
-        val event = mapOf(
-            "type" to RumFeature.TELEMETRY_EVENT_MESSAGE_TYPE,
-            "event" to Any()
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            RumFeature.TELEMETRY_MISSING_EVENT_FIELD_WARNING_MESSAGE
-        )
-
-        verifyNoInteractions(mockRumMonitor)
     }
 
     // endregion

@@ -68,7 +68,7 @@ internal class StubInternalLogger : InternalLogger {
         apiUsageEvent: InternalTelemetryEvent.ApiUsage,
         samplingRate: Float
     ) {
-        println("AU [T]: ${apiUsageEvent::class.simpleName} | $samplingRate%")
+        println("${apiUsageEvent::class.simpleName} | $samplingRate%")
         apiUsageEvent.additionalProperties.log()
     }
 

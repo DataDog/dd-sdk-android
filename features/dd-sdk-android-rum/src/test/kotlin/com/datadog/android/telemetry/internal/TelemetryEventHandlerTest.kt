@@ -45,7 +45,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -623,7 +622,7 @@ internal class TelemetryEventHandlerTest {
         val internalTelemetryEvent = forge.anElementFrom(
             forge.getForgery<InternalTelemetryEvent.Log.Error>(),
             forge.getForgery<InternalTelemetryEvent.Log.Debug>(),
-            forge.getForgery<InternalTelemetryEvent.Configuration>(),
+            forge.getForgery<InternalTelemetryEvent.Configuration>()
         )
         val rawEvent = RumRawEvent.TelemetryEventWrapper(internalTelemetryEvent)
         val anotherEvent = rawEvent.copy()
