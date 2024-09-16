@@ -557,10 +557,9 @@ internal class TelemetryEventHandlerTest {
     // region Sampling
 
     @Test
-    fun `M not write event W handleEvent() { event is not sampled }`(
-        @Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent
-    ) {
+    fun `M not write event W handleEvent() { event is not sampled }`(forge: Forge) {
         // Given
+        val fakeInternalTelemetryEvent = forge.forgeWritableInternalTelemetryEvent()
         val rawEvent = RumRawEvent.TelemetryEventWrapper(fakeInternalTelemetryEvent)
         whenever(mockSampler.sample()) doReturn false
 
@@ -772,7 +771,7 @@ internal class TelemetryEventHandlerTest {
 
         val events = forge.aList(
             size = MAX_EVENTS_PER_SESSION_TEST * 10
-        ) { forge.getForgery<InternalTelemetryEvent>() }
+        ) { forge.forgeWritableInternalTelemetryEvent() }
             // remove unwanted identity collisions
             .groupBy { it.identity }
             .map { RumRawEvent.TelemetryEventWrapper(it.value.first()) }
@@ -912,6 +911,15 @@ internal class TelemetryEventHandlerTest {
             .hasTrackErrors(internalConfigurationEvent.trackErrors)
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
+    }
+
+    private fun Forge.forgeWritableInternalTelemetryEvent(): InternalTelemetryEvent {
+        return anElementFrom(
+            getForgery<InternalTelemetryEvent.Log.Error>(),
+            getForgery<InternalTelemetryEvent.Log.Debug>(),
+            getForgery<InternalTelemetryEvent.Configuration>(),
+            getForgery<InternalTelemetryEvent.Metric>()
+        )
     }
 
 // endregion

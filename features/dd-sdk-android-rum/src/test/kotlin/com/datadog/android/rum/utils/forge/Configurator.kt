@@ -50,6 +50,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(TelemetryDebugEventForgeryFactory())
         forge.addFactory(TelemetryErrorEventForgeryFactory())
         forge.addFactory(TelemetryConfigurationEventForgeryFactory())
+        forge.addFactory(TelemetryUsageEventForgeryFactory())
 
         // Telemetry internal models
         forge.addFactory(InternalTelemetryEventForgeryFactory())
