@@ -446,7 +446,7 @@ internal class TelemetryEventHandler(
 
     companion object {
         const val MAX_EVENTS_PER_SESSION = 100
-        const val DEFAULT_CONFIGURATION_SAMPLE_RATE = 100f
+        const val DEFAULT_CONFIGURATION_SAMPLE_RATE = 20f
         const val ALREADY_SEEN_EVENT_MESSAGE =
             "Already seen telemetry event with identity=%s, rejecting."
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =

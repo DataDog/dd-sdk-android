@@ -137,12 +137,12 @@ interface InternalLogger {
      * Logs an API usage from the internal implementation.
      * @param apiUsageEvent the API event being tracked
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
-     * event will be applied in addition to the global telemetry sampling rate.
+     * event will be applied in addition to the global telemetry sampling rate. By default, the sampling rate is 15%.
      */
     @InternalApi
     fun logApiUsage(
         apiUsageEvent: InternalTelemetryEvent.ApiUsage,
-        samplingRate: Float
+        samplingRate: Float = 15f
     )
 
     companion object {

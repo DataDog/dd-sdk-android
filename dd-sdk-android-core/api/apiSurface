@@ -44,7 +44,7 @@ interface com.datadog.android.api.InternalLogger
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun logMetric(() -> String, Map<String, Any?>, Float)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
-  fun logApiUsage(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage, Float)
+  fun logApiUsage(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage, Float = 15f)
   companion object 
     val UNBOUND: InternalLogger
 interface com.datadog.android.api.SdkCore
