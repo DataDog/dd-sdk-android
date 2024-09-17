@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.forge
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import fr.xgouchet.elmyr.Forge
@@ -27,7 +28,11 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             customOptionSelectorDetectors = forge.aList { mock() },
             startRecordingImmediately = forge.aBool(),
             sampleRate = forge.aFloat(min = 0f, max = 100f),
-            dynamicOptimizationEnabled = forge.aBool()
+            dynamicOptimizationEnabled = forge.aBool(),
+            systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
+                .setMinRAMSizeMb(forge.aSmallInt())
+                .setMinCPUCoreNumber(forge.aSmallInt())
+                .build()
         )
     }
 }

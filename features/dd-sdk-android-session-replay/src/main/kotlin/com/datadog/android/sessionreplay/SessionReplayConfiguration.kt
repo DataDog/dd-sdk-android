@@ -23,7 +23,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val startRecordingImmediately: Boolean,
     internal val touchPrivacy: TouchPrivacy,
     internal val textAndInputPrivacy: TextAndInputPrivacy,
-    internal val dynamicOptimizationEnabled: Boolean
+    internal val dynamicOptimizationEnabled: Boolean,
+    internal val systemRequirementsConfiguration: SystemRequirementsConfiguration
 ) {
 
     /**
@@ -44,6 +45,7 @@ data class SessionReplayConfiguration internal constructor(
         private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
         private var dynamicOptimizationEnabled = true
+        private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -161,6 +163,18 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Defines the minimum system requirements for enabling the Session Replay feature.
+         * When [SessionReplay.enable] is invoked, the system configuration is verified against these requirements.
+         * If the system meets the specified criteria, Session Replay will be successfully enabled.
+         * If this function is not invoked, no minimum requirements will be enforced, and Session Replay will be
+         * enabled on all devices.
+         */
+        fun setSystemRequirements(systemRequirementsConfiguration: SystemRequirementsConfiguration): Builder {
+            this.systemRequirementsConfiguration = systemRequirementsConfiguration
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -174,7 +188,8 @@ data class SessionReplayConfiguration internal constructor(
                 customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
                 sampleRate = sampleRate,
                 startRecordingImmediately = startRecordingImmediately,
-                dynamicOptimizationEnabled = dynamicOptimizationEnabled
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                systemRequirementsConfiguration = systemRequirementsConfiguration
             )
         }
 

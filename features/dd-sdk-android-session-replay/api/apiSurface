@@ -24,11 +24,20 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun startRecordingImmediately(Boolean): Builder
     fun setTextAndInputPrivacy(TextAndInputPrivacy): Builder
     fun setDynamicOptimizationEnabled(Boolean): Builder
+    fun setSystemRequirements(SystemRequirementsConfiguration): Builder
     fun build(): SessionReplayConfiguration
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
   - MASK
   - MASK_USER_INPUT
+class com.datadog.android.sessionreplay.SystemRequirementsConfiguration
+  class Builder
+    fun setMinCPUCoreNumber(Int): Builder
+    fun setMinRAMSizeMb(Int): Builder
+    fun build(): SystemRequirementsConfiguration
+  companion object 
+    val BASIC: SystemRequirementsConfiguration
+    val NONE: SystemRequirementsConfiguration
 enum com.datadog.android.sessionreplay.TextAndInputPrivacy
   - MASK_SENSITIVE_INPUTS
   - MASK_ALL_INPUTS

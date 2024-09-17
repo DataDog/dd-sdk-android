@@ -47,6 +47,7 @@ import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
@@ -157,6 +158,8 @@ class SampleApplication : Application() {
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)
 
+        val systemRequirementsConfiguration = SystemRequirementsConfiguration.BASIC
+
         @Suppress("DEPRECATION")
         val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
             .apply {
@@ -166,6 +169,7 @@ class SampleApplication : Application() {
             }
             .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
             .addExtensionSupport(MaterialExtensionSupport())
+            .setSystemRequirements(systemRequirementsConfiguration)
             .build()
         SessionReplay.enable(sessionReplayConfig)
 
