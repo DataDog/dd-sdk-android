@@ -14,8 +14,8 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -45,9 +45,7 @@ import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.resource.ResourceId
-import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
-import com.datadog.android.telemetry.internal.TelemetryType
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -587,97 +585,9 @@ internal class DatadogRumMonitor(
         debugListener = listener
     }
 
-    override fun sendDebugTelemetryEvent(
-        message: String,
-        additionalProperties: Map<String, Any?>?
-    ) {
-        handleEvent(
-            RumRawEvent.SendTelemetry(
-                type = TelemetryType.DEBUG,
-                message = message,
-                stack = null,
-                kind = null,
-                coreConfiguration = null,
-                additionalProperties = additionalProperties
-            )
-        )
-    }
-
-    override fun sendMetricEvent(message: String, additionalProperties: Map<String, Any?>?) {
-        handleEvent(
-            RumRawEvent.SendTelemetry(
-                type = TelemetryType.DEBUG,
-                message = message,
-                stack = null,
-                kind = null,
-                coreConfiguration = null,
-                additionalProperties = additionalProperties,
-                isMetric = true
-            )
-        )
-    }
-
-    override fun sendErrorTelemetryEvent(
-        message: String,
-        throwable: Throwable?,
-        additionalProperties: Map<String, Any?>?
-    ) {
-        val stack: String? = throwable?.loggableStackTrace()
-        val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
-        handleEvent(
-            RumRawEvent.SendTelemetry(
-                type = TelemetryType.ERROR,
-                message = message,
-                stack = stack,
-                kind = kind,
-                coreConfiguration = null,
-                additionalProperties = additionalProperties
-            )
-        )
-    }
-
-    override fun sendErrorTelemetryEvent(
-        message: String,
-        stack: String?,
-        kind: String?,
-        additionalProperties: Map<String, Any?>?
-    ) {
-        handleEvent(
-            RumRawEvent.SendTelemetry(
-                type = TelemetryType.ERROR,
-                message = message,
-                stack = stack,
-                kind = kind,
-                coreConfiguration = null,
-                additionalProperties = additionalProperties
-            )
-        )
-    }
-
-    @Suppress("FunctionMaxLength")
-    override fun sendConfigurationTelemetryEvent(coreConfiguration: TelemetryCoreConfiguration) {
-        handleEvent(
-            RumRawEvent.SendTelemetry(
-                type = TelemetryType.CONFIGURATION,
-                message = "",
-                stack = null,
-                kind = null,
-                coreConfiguration = coreConfiguration,
-                additionalProperties = null
-            )
-        )
-    }
-
     override fun notifyInterceptorInstantiated() {
         handleEvent(
-            RumRawEvent.SendTelemetry(
-                TelemetryType.INTERCEPTOR_SETUP,
-                message = "",
-                stack = null,
-                kind = null,
-                coreConfiguration = null,
-                additionalProperties = null
-            )
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.InterceptorInstantiated)
         )
     }
 
@@ -694,6 +604,10 @@ internal class DatadogRumMonitor(
 
     override fun _getInternal(): _RumInternalProxy {
         return internalProxy
+    }
+
+    override fun sendTelemetryEvent(telemetryEvent: InternalTelemetryEvent) {
+        handleEvent(RumRawEvent.TelemetryEventWrapper(telemetryEvent))
     }
 
     // endregion
@@ -720,7 +634,7 @@ internal class DatadogRumMonitor(
                 @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                 rootScope.handleEvent(event, writer)
             }
-        } else if (event is RumRawEvent.SendTelemetry) {
+        } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)

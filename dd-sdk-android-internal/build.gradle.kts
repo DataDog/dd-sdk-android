@@ -35,6 +35,10 @@ android {
     compileOptions {
         java17()
     }
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -42,6 +46,18 @@ dependencies {
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
+
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

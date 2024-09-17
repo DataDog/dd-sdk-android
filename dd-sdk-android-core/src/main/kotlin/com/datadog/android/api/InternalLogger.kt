@@ -9,6 +9,7 @@ package com.datadog.android.api
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -131,6 +132,18 @@ interface InternalLogger {
         samplingRate: Float,
         operationName: String
     ): PerformanceMetric?
+
+    /**
+     * Logs an API usage from the internal implementation.
+     * @param apiUsageEvent the API event being tracked
+     * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
+     * event will be applied in addition to the global telemetry sampling rate.
+     */
+    @InternalApi
+    fun logApiUsage(
+        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
+        samplingRate: Float
+    )
 
     companion object {
 
