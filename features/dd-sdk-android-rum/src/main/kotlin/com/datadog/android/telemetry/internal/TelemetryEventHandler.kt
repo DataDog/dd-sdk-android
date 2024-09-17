@@ -137,7 +137,7 @@ internal class TelemetryEventHandler(
 
         val eventIdentity = event.identity
 
-        if (event !is InternalTelemetryEvent.Metric && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
+        if (isLog(event) && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
@@ -156,6 +156,10 @@ internal class TelemetryEventHandler(
         }
 
         return true
+    }
+
+    private fun isLog(event: InternalTelemetryEvent): Boolean {
+        return event is InternalTelemetryEvent.Log
     }
 
     private fun createDebugEvent(
@@ -351,7 +355,7 @@ internal class TelemetryEventHandler(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ) ?: TelemetryUsageEvent.Source.ANDROID,
-                    service = datadogContext.service,
+                    service = TELEMETRY_SERVICE_NAME,
                     version = datadogContext.sdkVersion,
                     application = TelemetryUsageEvent.Application(rumContext.applicationId),
                     session = TelemetryUsageEvent.Session(rumContext.sessionId),
@@ -442,7 +446,7 @@ internal class TelemetryEventHandler(
 
     companion object {
         const val MAX_EVENTS_PER_SESSION = 100
-        const val DEFAULT_CONFIGURATION_SAMPLE_RATE = 20f
+        const val DEFAULT_CONFIGURATION_SAMPLE_RATE = 100f
         const val ALREADY_SEEN_EVENT_MESSAGE =
             "Already seen telemetry event with identity=%s, rejecting."
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =

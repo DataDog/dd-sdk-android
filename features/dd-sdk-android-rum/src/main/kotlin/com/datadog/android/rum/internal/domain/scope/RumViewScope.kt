@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -242,6 +243,14 @@ internal open class RumViewScope(
     private fun onAddViewLoadingTime(event: RumRawEvent.AddViewLoadingTime, writer: DataWriter<Any>) {
         if (stopped) return
         val canAddViewLoadingTime = event.overwrite || viewLoadingTime == null
+        sdkCore.internalLogger.logApiUsage(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                overwrite = event.overwrite,
+                noView = viewId.isEmpty(),
+                noActiveView = !isActive()
+            ),
+            100.0f
+        )
         if (canAddViewLoadingTime) {
             viewLoadingTime = event.eventTime.nanoTime - startedNanos
             sendViewUpdate(event, writer)

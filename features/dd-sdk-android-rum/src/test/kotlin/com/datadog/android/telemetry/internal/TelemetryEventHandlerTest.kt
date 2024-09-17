@@ -30,9 +30,11 @@ import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
+import com.datadog.android.telemetry.assertj.TelemetryUsageEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -614,14 +616,13 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `M not write event W handleEvent(){ seen in the session, not metric }`(
+    fun `M not write event W handleEvent(){ seen in the session, log event }`(
         forge: Forge
     ) {
         // Given
         val internalTelemetryEvent = forge.anElementFrom(
             forge.getForgery<InternalTelemetryEvent.Log.Error>(),
-            forge.getForgery<InternalTelemetryEvent.Log.Debug>(),
-            forge.getForgery<InternalTelemetryEvent.Configuration>()
+            forge.getForgery<InternalTelemetryEvent.Log.Debug>()
         )
         val rawEvent = RumRawEvent.TelemetryEventWrapper(internalTelemetryEvent)
         val anotherEvent = rawEvent.copy()
@@ -792,8 +793,106 @@ internal class TelemetryEventHandlerTest {
     }
 
 // endregion
+// region Api Usage
+
+    @Test
+    fun `M create api usage event W handleEvent(api usage event)`(
+        @Forgery fakeApiUsageEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        val fakeWrappedEvent = RumRawEvent.TelemetryEventWrapper(fakeApiUsageEvent)
+
+        // When
+        testedTelemetryHandler.handleEvent(fakeWrappedEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryUsageEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertApiUsageMatchesInternalEvent(
+                lastValue,
+                fakeApiUsageEvent,
+                fakeRumContext,
+                fakeWrappedEvent.eventTime.timestamp
+            )
+        }
+    }
+
+    @Test
+    fun `M write event W handleEvent(){ seen in the session, is api usage }`(
+        @Forgery fakeApiUsageEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        val rawEvent = RumRawEvent.TelemetryEventWrapper(fakeApiUsageEvent)
+        val events = listOf(rawEvent, RumRawEvent.TelemetryEventWrapper(fakeApiUsageEvent))
+
+        // When
+        testedTelemetryHandler.handleEvent(events[0], mockWriter)
+        testedTelemetryHandler.handleEvent(events[1], mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertApiUsageMatchesInternalEvent(
+                firstValue as TelemetryUsageEvent,
+                fakeApiUsageEvent,
+                fakeRumContext,
+                rawEvent.eventTime.timestamp
+            )
+            assertApiUsageMatchesInternalEvent(
+                secondValue as TelemetryUsageEvent,
+                fakeApiUsageEvent,
+                fakeRumContext,
+                rawEvent.eventTime.timestamp
+            )
+        }
+    }
+
+    @Test
+    fun `M not write events over the limit W handleEvent() { api usage event }`(
+        forge: Forge
+    ) {
+        val events = (0..MAX_EVENTS_PER_SESSION_TEST).map { forge.getForgery<InternalTelemetryEvent.ApiUsage>() }
+
+        // When
+        events.forEach {
+            testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(it), mockWriter)
+        }
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.MAINTAINER,
+            message = TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+        )
+    }
+// endregion
 
 // region Assertions
+
+    private fun assertApiUsageMatchesInternalEvent(
+        actual: TelemetryUsageEvent,
+        internalUsageEvent: InternalTelemetryEvent.ApiUsage,
+        rumContext: RumContext,
+        time: Long
+    ) {
+        assertThat(actual)
+            .hasDate(time + fakeServerOffset)
+            .hasSource(TelemetryUsageEvent.Source.ANDROID)
+            .hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
+            .hasVersion(fakeDatadogContext.sdkVersion)
+            .hasApplicationId(rumContext.applicationId)
+            .hasSessionId(rumContext.sessionId)
+            .hasViewId(rumContext.viewId)
+            .hasActionId(rumContext.actionId)
+            .hasAdditionalProperties(internalUsageEvent.additionalProperties ?: emptyMap())
+            .hasDeviceArchitecture(fakeDeviceArchitecture)
+            .hasDeviceBrand(fakeDeviceBrand)
+            .hasDeviceModel(fakeDeviceModel)
+            .hasOsBuild(fakeOsBuildId)
+            .hasOsName(fakeOsName)
+            .hasOsVersion(fakeOsVersion)
+            .hasUsage(internalUsageEvent)
+    }
 
     private fun assertDebugEventMatchesInternalEvent(
         actual: TelemetryDebugEvent,
