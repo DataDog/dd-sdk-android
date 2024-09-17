@@ -30,7 +30,11 @@ internal class WindowsOnDrawListener(
     private val imagePrivacy: ImagePrivacy,
     private val miscUtils: MiscUtils = MiscUtils,
     private val sdkCore: FeatureSdkCore,
-    private val debouncer: Debouncer = Debouncer(sdkCore = sdkCore),
+    dynamicOptimizationEnabled: Boolean,
+    private val debouncer: Debouncer = Debouncer(
+        sdkCore = sdkCore,
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled
+    ),
     private val methodCallSamplingRate: Float
 ) : ViewTreeObserver.OnDrawListener {
 

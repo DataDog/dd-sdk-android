@@ -23,6 +23,7 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun setTouchPrivacy(TouchPrivacy): Builder
     fun startRecordingImmediately(Boolean): Builder
     fun setTextAndInputPrivacy(TextAndInputPrivacy): Builder
+    fun setDynamicOptimizationEnabled(Boolean): Builder
     fun build(): SessionReplayConfiguration
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW

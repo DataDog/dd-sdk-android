@@ -136,7 +136,8 @@ internal class SessionReplayFeatureTest {
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             startRecordingImmediately = true,
-            sampleRate = fakeConfiguration.sampleRate
+            sampleRate = fakeConfiguration.sampleRate,
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
         )
 
         // When
@@ -160,7 +161,8 @@ internal class SessionReplayFeatureTest {
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate,
-            startRecordingImmediately = true
+            startRecordingImmediately = true,
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
         )
 
         // When

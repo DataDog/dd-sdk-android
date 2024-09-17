@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -62,6 +63,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
+        assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
     }
 
     @Test
@@ -144,6 +146,20 @@ internal class SessionReplayConfigurationBuilderTest {
         // Then
         assertThat(sessionReplayConfiguration.customMappers)
             .isEqualTo(fakeExpectedCustomMappers)
+    }
+
+    @Test
+    fun `M use the given dynamic optimization W setDynamicOptimization()`(
+        @BoolForgery fakeDynamicOptimizationEnabled: Boolean
+    ) {
+        // Given
+        val sessionReplayConfiguration = testedBuilder
+            .setDynamicOptimizationEnabled(fakeDynamicOptimizationEnabled)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled)
+            .isEqualTo(fakeDynamicOptimizationEnabled)
     }
 
     @Test

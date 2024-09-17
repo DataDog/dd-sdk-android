@@ -18,7 +18,8 @@ import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDra
 internal class DefaultOnDrawListenerProducer(
     private val snapshotProducer: SnapshotProducer,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
-    private val sdkCore: FeatureSdkCore
+    private val sdkCore: FeatureSdkCore,
+    private val dynamicOptimizationEnabled: Boolean
 ) : OnDrawListenerProducer {
 
     override fun create(
@@ -33,7 +34,8 @@ internal class DefaultOnDrawListenerProducer(
             textAndInputPrivacy = textAndInputPrivacy,
             imagePrivacy = imagePrivacy,
             sdkCore = sdkCore,
-            methodCallSamplingRate = MethodCallSamplingRate.LOW.rate
+            methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled
         )
     }
 }

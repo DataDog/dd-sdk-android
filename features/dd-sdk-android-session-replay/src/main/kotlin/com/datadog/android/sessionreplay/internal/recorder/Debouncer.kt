@@ -16,7 +16,8 @@ internal class Debouncer(
     private val handler: Handler = Handler(Looper.getMainLooper()),
     private val maxRecordDelayInNs: Long = MAX_DELAY_THRESHOLD_NS,
     private val timeBank: TimeBank = RecordingTimeBank(),
-    private val sdkCore: FeatureSdkCore
+    private val sdkCore: FeatureSdkCore,
+    private val dynamicOptimizationEnabled: Boolean
 ) {
 
     private var lastTimeRecordWasPerformed = 0L
@@ -41,10 +42,14 @@ internal class Debouncer(
     }
 
     private fun executeRunnable(runnable: Runnable) {
-        runInTimeBalance {
+        if (dynamicOptimizationEnabled) {
+            runInTimeBalance {
+                runnable.run()
+            }
+        } else {
             runnable.run()
-            lastTimeRecordWasPerformed = System.nanoTime()
         }
+        lastTimeRecordWasPerformed = System.nanoTime()
     }
 
     private fun runInTimeBalance(block: () -> Unit) {

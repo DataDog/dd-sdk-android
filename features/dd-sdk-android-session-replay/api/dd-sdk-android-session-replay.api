@@ -34,8 +34,8 @@ public final class com/datadog/android/sessionreplay/SessionReplay {
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -45,6 +45,7 @@ public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$
 	public fun <init> (F)V
 	public final fun addExtensionSupport (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun setDynamicOptimizationEnabled (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setImagePrivacy (Lcom/datadog/android/sessionreplay/ImagePrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setTextAndInputPrivacy (Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;

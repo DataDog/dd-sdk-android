@@ -66,7 +66,8 @@ internal class SessionReplayFeature(
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         sampleRate: Float,
-        startRecordingImmediately: Boolean
+        startRecordingImmediately: Boolean,
+        dynamicOptimizationEnabled: Boolean
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -82,7 +83,8 @@ internal class SessionReplayFeature(
             imagePrivacy,
             touchPrivacy,
             customMappers,
-            customOptionSelectorDetectors
+            customOptionSelectorDetectors,
+            dynamicOptimizationEnabled
         )
     )
 

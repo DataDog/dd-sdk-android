@@ -40,7 +40,8 @@ object SessionReplay {
             customMappers = sessionReplayConfiguration.customMappers,
             customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
             sampleRate = sessionReplayConfiguration.sampleRate,
-            startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately
+            startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
+            dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
         )
 
         sdkCore.registerFeature(sessionReplayFeature)

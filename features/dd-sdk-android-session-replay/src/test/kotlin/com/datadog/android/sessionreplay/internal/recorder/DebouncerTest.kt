@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -50,6 +51,9 @@ internal class DebouncerTest {
     @Mock
     lateinit var mockRumFeature: FeatureScope
 
+    @BoolForgery
+    var fakeDynamicOptimizationEnabled: Boolean = false
+
     lateinit var testedDebouncer: Debouncer
 
     @BeforeEach
@@ -60,20 +64,50 @@ internal class DebouncerTest {
             mockHandler,
             TEST_MAX_DELAY_THRESHOLD_IN_NS,
             sdkCore = mockSdkCore,
+            timeBank = mockTimeBank,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled
+        )
+    }
+
+    @Test
+    fun `M not optimize W dynamicOptimizationEnabled is false`() {
+        // Given
+        whenever(mockTimeBank.updateAndCheck(any())).thenReturn(false)
+        testedDebouncer = Debouncer(
+            mockHandler,
+            TEST_MAX_DELAY_THRESHOLD_IN_NS,
+            sdkCore = mockSdkCore,
+            dynamicOptimizationEnabled = false,
             timeBank = mockTimeBank
         )
+        val fakeRunnable = TestRunnable()
+        val fakeSecondRunnable = TestRunnable()
+
+        // When
+        testedDebouncer.debounce(fakeRunnable)
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MAX_DELAY_THRESHOLD_IN_NS))
+        testedDebouncer.debounce(fakeSecondRunnable)
+
+        assertThat(fakeSecondRunnable.wasExecuted).isTrue()
     }
 
     @Test
     fun `M send telemetry W frame is skipped by time bank`() {
         // Given
+        testedDebouncer = Debouncer(
+            mockHandler,
+            TEST_MAX_DELAY_THRESHOLD_IN_NS,
+            sdkCore = mockSdkCore,
+            timeBank = mockTimeBank,
+            dynamicOptimizationEnabled = true
+        )
         whenever(mockTimeBank.updateAndCheck(any())).thenReturn(false)
         val fakeRunnable = TestRunnable()
         val fakeSecondRunnable = TestRunnable()
-        testedDebouncer.debounce(fakeRunnable)
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MAX_DELAY_THRESHOLD_IN_NS))
 
         // When
+        testedDebouncer.debounce(fakeRunnable)
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MAX_DELAY_THRESHOLD_IN_NS))
         testedDebouncer.debounce(fakeSecondRunnable)
 
         // Then
