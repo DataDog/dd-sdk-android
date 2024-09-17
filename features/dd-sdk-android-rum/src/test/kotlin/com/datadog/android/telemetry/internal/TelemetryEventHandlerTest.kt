@@ -661,20 +661,6 @@ internal class TelemetryEventHandlerTest {
                         rawEvent.eventTime.timestamp
                     )
                 }
-
-                is TelemetryConfigurationEvent -> {
-                    assertConfigEventMatchesInternalEvent(
-                        capturedValue,
-                        internalTelemetryEvent as InternalTelemetryEvent.Configuration,
-                        fakeRumContext,
-                        rawEvent.eventTime.timestamp
-                    )
-                }
-
-                is InternalTelemetryEvent.InterceptorInstantiated -> {
-                    assertThat(capturedValue).isEqualTo(InternalTelemetryEvent.InterceptorInstantiated)
-                }
-
                 else -> throw IllegalArgumentException(
                     "Unexpected type=${lastValue::class.jvmName} of the captured value."
                 )
@@ -884,7 +870,7 @@ internal class TelemetryEventHandlerTest {
             .hasSessionId(rumContext.sessionId)
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
-            .hasAdditionalProperties(internalUsageEvent.additionalProperties ?: emptyMap())
+            .hasAdditionalProperties(internalUsageEvent.additionalProperties)
             .hasDeviceArchitecture(fakeDeviceArchitecture)
             .hasDeviceBrand(fakeDeviceBrand)
             .hasDeviceModel(fakeDeviceModel)
