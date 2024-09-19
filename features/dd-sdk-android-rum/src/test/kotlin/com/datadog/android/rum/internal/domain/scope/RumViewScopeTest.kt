@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -44,6 +45,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyApiUsage
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -7028,6 +7030,112 @@ internal class RumViewScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.USER,
+            RumViewScope.ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(
+                expectedViewLoadingTime,
+                testedScope.key.name
+            )
+        )
+        mockInternalLogger.verifyApiUsage(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                overwrite = false,
+                noView = false,
+                noActiveView = false
+            ),
+            15f
+        )
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M overwrite view loading W handleEvent(AddViewLoadingTime, overwrite=true)`(
+        forge: Forge
+    ) {
+        // Given
+        val previousLoadingTime = forge.aPositiveLong()
+        testedScope.viewLoadingTime = previousLoadingTime
+        val newViewLoadingTime = RumRawEvent.AddViewLoadingTime(overwrite = true)
+        val expectedViewLoadingTime = newViewLoadingTime.eventTime.nanoTime - fakeEventTime.nanoTime
+
+        // When
+        testedScope.handleEvent(
+            newViewLoadingTime,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter)
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeKey.name)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasLoadingType(null)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
+                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
+                    hasSource(fakeSourceViewEvent)
+                    hasLoadingTime(expectedViewLoadingTime)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumViewScope.OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT.format(
+                Locale.US,
+                testedScope.key.name,
+                previousLoadingTime,
+                expectedViewLoadingTime
+            )
+        )
+        mockInternalLogger.verifyApiUsage(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                noActiveView = false,
+                noView = false,
+                overwrite = true
+            ),
+            15f
+        )
         verifyNoMoreInteractions(mockWriter)
     }
 
@@ -7190,6 +7298,19 @@ internal class RumViewScopeTest {
 
         // Then
         assertThat(testedScope.viewLoadingTime).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumViewScope.NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE
+        )
+        mockInternalLogger.verifyApiUsage(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                noActiveView = true,
+                noView = false,
+                overwrite = fakeOverwrite
+            ),
+            15f
+        )
         verifyNoInteractions(mockWriter)
     }
 
