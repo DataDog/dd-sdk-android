@@ -20,6 +20,9 @@ import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
+import com.launchdarkly.eventsource.EventHandler
+import com.launchdarkly.eventsource.EventSource
+import com.launchdarkly.eventsource.MessageEvent
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
@@ -33,10 +36,12 @@ import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.net.URI
+import java.time.Duration
 import java.util.Locale
 import java.util.Random
 
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION", "StringLiteralDuplication", "TooManyFunctions")
 internal class TracesViewModel(
     private val okHttpClient: OkHttpClient,
     private val localServer: LocalServer
@@ -80,7 +85,7 @@ internal class TracesViewModel(
         onException: (Throwable) -> Unit,
         onCancel: () -> Unit
     ) {
-        networkRequestTask = RequestTask(
+        networkRequestTask = GetRequestTask(
             localServer.getUrl(),
             okHttpClient,
             onResponse,
@@ -95,12 +100,25 @@ internal class TracesViewModel(
         onException: (Throwable) -> Unit,
         onCancel: () -> Unit
     ) {
-        networkRequestTask = RequestTask(
+        networkRequestTask = GetRequestTask(
             "https://www.datadoghq.com/notfound",
             okHttpClient,
             onResponse,
             onException,
             onCancel
+        )
+        networkRequestTask?.execute()
+    }
+
+    fun startSseRequest(
+        onResponse: () -> Unit,
+        onException: (Throwable) -> Unit
+    ) {
+        networkRequestTask = SSERequestTask(
+            localServer.sseUrl(),
+            okHttpClient,
+            onResponse,
+            onException
         )
         networkRequestTask?.execute()
     }
@@ -184,9 +202,9 @@ internal class TracesViewModel(
 
     // endregion
 
-    // region RequestTask
+    // region GetRequestTask
 
-    private class RequestTask(
+    private class GetRequestTask(
         private val url: String,
         private val okHttpClient: OkHttpClient,
         private val onResponse: (Response) -> Unit,
@@ -254,6 +272,64 @@ internal class TracesViewModel(
                     }
                 }
             }
+        }
+    }
+
+    // endregion
+
+    // region SSERequestTask
+
+    private class SSERequestTask(
+        private val url: String,
+        private val okHttpClient: OkHttpClient,
+        private val onResponse: () -> Unit,
+        private val onException: (Throwable) -> Unit
+    ) : AsyncTask<Unit, Unit, Result>(), EventHandler {
+        private var currentActiveMainSpan: Span? = null
+
+        @Deprecated("Deprecated in Java")
+        override fun onPreExecute() {
+            super.onPreExecute()
+            currentActiveMainSpan = GlobalTracer.get().activeSpan()
+        }
+
+        @Deprecated("Deprecated in Java")
+        @Suppress("TooGenericExceptionCaught", "LogNotTimber", "MagicNumber")
+        override fun doInBackground(vararg params: Unit?): Result {
+            return try {
+                val eventSourceSse = EventSource.Builder(this, URI.create(url))
+                    .client(okHttpClient)
+                    .connectTimeout(Duration.ofSeconds(3))
+                    .backoffResetThreshold(Duration.ofSeconds(3))
+                    .build()
+
+                eventSourceSse?.start()
+                Result.Success("")
+            } catch (e: Exception) {
+                Log.e("Response", "Error", e)
+                Result.Failure(throwable = e)
+            }
+        }
+
+        override fun onOpen() {
+            Log.i("SSE", "onOpen")
+        }
+
+        override fun onError(e: Throwable?) {
+            Log.e("SSE", "onError", e)
+            e?.let { onException(it) }
+        }
+
+        override fun onComment(comment: String?) {
+            Log.i("SSE", "onComment: $comment")
+        }
+
+        override fun onMessage(message: String?, event: MessageEvent?) {
+            Log.i("SSE", "onMessage: $message | $event")
+        }
+
+        override fun onClosed() {
+            onResponse()
         }
     }
 
