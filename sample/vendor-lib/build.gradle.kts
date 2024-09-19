@@ -81,6 +81,7 @@ dependencies {
 
     // Ktor (local web server)
     implementation(libs.bundles.ktor)
+    implementation(libs.bundles.ktorServer)
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)

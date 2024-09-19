@@ -195,6 +195,7 @@ dependencies {
     implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
         exclude(group = "io.opentracing")
     }
+    implementation("com.launchdarkly:okhttp-eventsource:2.5.0")
 
     // Image Loading Library
     implementation(libs.coil)
@@ -220,6 +221,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.okHttp)
     implementation(libs.gson)
+    implementation("com.launchdarkly:okhttp-eventsource:2.5.0")
 
     // Misc
     implementation(libs.timber)

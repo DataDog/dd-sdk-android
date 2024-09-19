@@ -39,6 +39,7 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
         rootView.findViewById<Button>(R.id.start_coroutine_operation).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_request).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_404_request).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.start_sse_request).setOnClickListener(this)
         progressBarAsync = rootView.findViewById(R.id.spinner_async)
         progressBarCoroutine = rootView.findViewById(R.id.spinner_coroutine)
         progressBarRequest = rootView.findViewById(R.id.spinner_request)
@@ -73,6 +74,7 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
 
     // region View.OnClickListener
 
+    @Suppress("LongMethod")
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.start_async_operation -> {
@@ -120,6 +122,17 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onCancel = {
                         setCompleteStatus(R.drawable.ic_cancel_red_24dp)
+                    }
+                )
+            }
+            R.id.start_sse_request -> {
+                setInProgress()
+                viewModel.startSseRequest(
+                    onResponse = {
+                        setCompleteStatus(R.drawable.ic_check_circle_green_24dp)
+                    },
+                    onException = {
+                        setCompleteStatus(R.drawable.ic_error_red_24dp)
                     }
                 )
             }
