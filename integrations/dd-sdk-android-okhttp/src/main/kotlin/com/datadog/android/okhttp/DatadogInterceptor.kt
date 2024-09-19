@@ -359,10 +359,12 @@ internal constructor(
         return try {
             val body = response.body
             val contentType = body?.contentType()?.let {
-                // manually rebuild the mimetype has `toString()` can also include the charsets
+                // manually rebuild the mimetype as `toString()` can also include the charsets
                 it.type + "/" + it.subtype
             }
-            if (body == null || contentType in STREAM_CONTENT_TYPES) {
+            val isStream = contentType in STREAM_CONTENT_TYPES
+            val isWebSocket = !response.header(WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
+            if (body == null || isStream || isWebSocket) {
                 return null
             }
             // if there is a Content-Length available, we can read it directly
@@ -487,9 +489,14 @@ internal constructor(
 
     internal companion object {
 
-        internal val STREAM_CONTENT_TYPES = arrayOf(
-            "text/event-stream"
+        internal val STREAM_CONTENT_TYPES = setOf(
+            "text/event-stream",
+            "application/grpc",
+            "application/grpc+proto",
+            "application/grpc+json"
         )
+
+        internal const val WEBSOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept"
 
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +

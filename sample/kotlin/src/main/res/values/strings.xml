@@ -60,7 +60,7 @@
     <string name="button_async_operation">Async Operation</string>
     <string name="button_network_request">Network Request</string>
     <string name="button_start">Start</string>
-    <string name="button_start_sse">Start SSE Request</string>
+    <string name="button_start_sse">Start Server Sent Event Request</string>
     <string name="button_start_404">Start 404 Request</string>
     <string name="button_save">Save</string>
     <string name="button_long_task">Long Task</string>

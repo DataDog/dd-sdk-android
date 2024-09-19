@@ -228,9 +228,50 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         forge: Forge
     ) {
         // Given
-        val mimeType = forge.anElementFrom(*DatadogInterceptor.STREAM_CONTENT_TYPES)
+        val mimeType = forge.anElementFrom(DatadogInterceptor.STREAM_CONTENT_TYPES)
         fakeMediaType = mimeType.toMediaType()
         stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
+            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.RULE_PSR to fakeTracingSampleRate
+        ) + fakeAttributes
+        val kind = RumResourceKind.NATIVE
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(null),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
+        }
+    }
+
+    @Test
+    fun `M start and stop RUM Resource W intercept() {successful websocket request}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery websocketHash: String
+    ) {
+        // Given
+        stubChain(mockChain, statusCode) {
+            header("Sec-WebSocket-Accept", websocketHash)
+        }
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,

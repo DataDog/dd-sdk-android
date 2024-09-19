@@ -195,7 +195,6 @@ dependencies {
     implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
         exclude(group = "io.opentracing")
     }
-    implementation("com.launchdarkly:okhttp-eventsource:2.5.0")
 
     // Image Loading Library
     implementation(libs.coil)
