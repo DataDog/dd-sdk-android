@@ -142,10 +142,12 @@ interface InternalLogger {
     @InternalApi
     fun logApiUsage(
         apiUsageEvent: InternalTelemetryEvent.ApiUsage,
-        samplingRate: Float = 15f
+        samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE
     )
 
     companion object {
+
+        private const val DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE = 15f
 
         /**
          * Logger for the cases when SDK instance is not yet available. Try to use the logger
