@@ -148,13 +148,14 @@ internal class BitmapPoolTest {
     fun `M mark bitmap as free W put() { if bitmap already in the pool }`() {
         // Given
         testedCache.put(mockBitmap)
-        testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockBitmap.config)
+        testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockConfig)
 
         // When
         testedCache.put(mockBitmap)
 
         // Then
-        val actualBitmap = testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockBitmap.config)
+        val actualBitmap =
+            testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockConfig)
         assertThat(actualBitmap).isEqualTo(mockBitmap)
     }
 
