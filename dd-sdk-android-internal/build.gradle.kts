@@ -47,7 +47,8 @@ dependencies {
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
-
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
     testFixturesImplementation(libs.kotlin)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)

@@ -26,5 +26,6 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
   object InterceptorInstantiated : InternalTelemetryEvent
+fun ByteArray.toHexString(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

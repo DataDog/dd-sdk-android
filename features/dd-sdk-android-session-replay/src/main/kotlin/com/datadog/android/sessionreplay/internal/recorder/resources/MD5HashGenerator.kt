@@ -7,9 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.toHexString
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.Locale
 
 internal class MD5HashGenerator(
     private val logger: InternalLogger
@@ -21,7 +21,7 @@ internal class MD5HashGenerator(
 
             val hashBytes = messageDigest.digest()
 
-            hashBytes.joinToString(separator = "") { "%02x".format(Locale.US, it) }
+            hashBytes.toHexString()
         } catch (e: NoSuchAlgorithmException) {
             logger.log(
                 InternalLogger.Level.ERROR,
