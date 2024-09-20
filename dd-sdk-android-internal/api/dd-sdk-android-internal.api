@@ -102,6 +102,10 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/utils/ByteArrayExtKt {
+	public static final fun toHexString ([B)Ljava/lang/String;
+}
+
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
 	public abstract fun publicNoOpImplementation ()Z
 }
