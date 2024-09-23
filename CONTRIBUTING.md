@@ -89,7 +89,7 @@ The whole project is covered by a set of static analysis tools, linters and test
 Many great ideas for new features come from the community, and we'd be happy to
 consider yours!
 
-To share your request, you can open an [issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=enhancement&template=feature_request.md) 
+To share your request, you can open an [issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=enhancement&template=FeatureRequest.yml)
 with the details about what you'd like to see. At a minimum, please provide:
 
  - The goal of the new feature;
@@ -104,7 +104,7 @@ or UI, contact our support team via https://docs.datadoghq.com/help/ for direct,
 faster assistance.
 
 You may submit bug reports concerning the Datadog SDK for Android by 
-[opening a Github issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=bug&template=bug_report.md).
+[opening a Github issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=bug&template=BugReport.yml).
 At a minimum, please provide:
 
  - A description of the problem;
@@ -357,5 +357,3 @@ It is recommended to use Closed Box testing as much as possible.
 To ensure that our tests cover the widest range of possible states and inputs, we use property based 
 testing thanks to the Elmyr library. Given a unit under test, we must make sure that the whole range 
 of possible input is covered for all tests.
-
-
