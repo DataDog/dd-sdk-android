@@ -278,7 +278,11 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.SPAN_ID to fakeSpanId,
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
-        val kind = RumResourceKind.NATIVE
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
 
         // When
         testedInterceptor.intercept(mockChain)
