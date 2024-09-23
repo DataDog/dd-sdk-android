@@ -172,14 +172,14 @@ same feature from a Java source code.
 Our code uses [Detekt](https://detekt.dev/) static analysis with a shared configuration, slightly
 stricter than the default one. A Detekt check is ran on every on every PR to ensure that all new code
 follow this rule.
-Current Detekt version: 1.22.0
+Current Detekt version: 1.23.4
 
 ### Code style
 
 Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the
 default settings. A KtLint check is ran on every PR to ensure that all new code
 follow this rule.
-Current KtLint version: 0.47.1
+Current KtLint version: 0.50.0
 
 Classes should group their methods in folding regions named after the declaring
 class. Private methods should be grouped in an `Internal` named folding region. 
@@ -309,7 +309,7 @@ Here's a test method following those conventions:
         testedLogger = Logger(mockLogHandler)
     
         // When
-        testedLogger.addAttribute(key, value)
+        testedLogger.addAttribute(fakeKey, value)
         testedLogger.v(fakeMessage)
 
         // Then
