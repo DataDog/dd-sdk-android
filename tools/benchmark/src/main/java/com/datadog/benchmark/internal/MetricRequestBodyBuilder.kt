@@ -63,7 +63,8 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
             benchmarkContext.scenario?.let {
                 "$KEY_SCENARIO:$it"
             },
-            "$KEY_TAG_APPLICATION_ID:${benchmarkContext.applicationId}"
+            "$KEY_TAG_APPLICATION_ID:${benchmarkContext.applicationId}",
+            "$KEY_ENV:${benchmarkContext.env}"
         )
     }
 
@@ -114,6 +115,7 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
         private const val KEY_TAG_DEVICE_MODEL = "device_model"
         private const val KEY_TAG_OS_VERSION = "os_version"
         private const val KEY_TAG_RUN = "run"
+        private const val KEY_ENV = "env"
         private const val KEY_TAG_APPLICATION_ID = "application_id"
     }
 }
