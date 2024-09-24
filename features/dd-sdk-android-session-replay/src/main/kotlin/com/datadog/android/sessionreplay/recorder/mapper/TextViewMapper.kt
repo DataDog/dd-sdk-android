@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
  */
+@Suppress("TooManyFunctions")
 open class TextViewMapper<in T : TextView>(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
@@ -90,7 +91,7 @@ open class TextViewMapper<in T : TextView>(
         textAndInputPrivacy: TextAndInputPrivacy,
         isOption: Boolean
     ): String {
-        val originalText = textView.text?.toString().orEmpty()
+        val originalText = resolveLayoutText(textView)
         return when (textAndInputPrivacy) {
             TextAndInputPrivacy.MASK_SENSITIVE_INPUTS -> originalText
             TextAndInputPrivacy.MASK_ALL -> if (isOption) {
@@ -106,6 +107,10 @@ open class TextViewMapper<in T : TextView>(
     // endregion
 
     // region Internal
+
+    private fun resolveLayoutText(textView: T): String {
+        return (textView.layout?.text ?: textView.text)?.toString().orEmpty()
+    }
 
     private fun createTextWireframe(
         textView: T,
