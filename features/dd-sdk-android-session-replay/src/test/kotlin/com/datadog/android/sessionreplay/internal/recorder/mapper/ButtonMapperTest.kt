@@ -127,10 +127,6 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
                     height = fakeViewGlobalBounds.height,
                     clip = null,
                     shapeStyle = null,
-                    border = MobileSegment.ShapeBorder(
-                        color = "#000000ff",
-                        width = 1L
-                    ),
                     text = expectedPrivacyCompliantText(fakeText),
                     textStyle = MobileSegment.TextStyle(
                         family = expectedFontFamily,
@@ -187,10 +183,7 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
                     height = fakeViewGlobalBounds.height,
                     clip = null,
                     shapeStyle = null,
-                    border = MobileSegment.ShapeBorder(
-                        color = "#000000ff",
-                        width = 1L
-                    ),
+                    border = null,
                     text = expectedPrivacyCompliantText(""),
                     textStyle = MobileSegment.TextStyle(
                         family = TextViewMapper.SANS_SERIF_FAMILY_NAME,
