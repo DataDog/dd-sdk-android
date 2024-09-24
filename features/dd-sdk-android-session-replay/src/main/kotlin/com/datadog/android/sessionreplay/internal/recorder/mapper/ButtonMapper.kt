@@ -37,19 +37,6 @@ internal class ButtonMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return super.map(view, mappingContext, asyncJobStatusCallback, internalLogger).map {
-            if (it is MobileSegment.Wireframe.TextWireframe &&
-                it.shapeStyle == null && it.border == null
-            ) {
-                // we were not able to resolve the background for this button so just add a border
-                it.copy(border = MobileSegment.ShapeBorder(BLACK_COLOR, 1))
-            } else {
-                it
-            }
-        }
-    }
-
-    companion object {
-        internal const val BLACK_COLOR = "#000000ff"
+        return super.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
     }
 }
