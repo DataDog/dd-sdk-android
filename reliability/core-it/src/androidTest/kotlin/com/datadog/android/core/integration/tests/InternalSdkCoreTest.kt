@@ -218,20 +218,15 @@ class InternalSdkCoreTest : MockServerTest() {
     fun mustUseAtomicOperations_when_updateFeatureContext_modifyValues() {
         // Given
         val fakeKeyValues1 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeModifiedValues = fakeKeyValues2.mapValues { (_, _) -> forge.anAlphabeticalString() }
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
         val countDownLatch = CountDownLatch(3)
+        val innerLatch = CountDownLatch(2)
         testedInternalSdkCore.setContextUpdateReceiver(fakeFeatureName) { _, _ -> countDownLatch.countDown() }
         Thread {
             testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
@@ -239,6 +234,7 @@ class InternalSdkCoreTest : MockServerTest() {
                     it[key] = value
                 }
             }
+            innerLatch.countDown()
         }.start()
         Thread {
             testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
@@ -246,9 +242,9 @@ class InternalSdkCoreTest : MockServerTest() {
                     it[key] = value
                 }
             }
+            innerLatch.countDown()
         }.start()
-        // Give some time to the first 2 threads to start
-        Thread.sleep(100)
+        innerLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
         Thread {
             testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
                 fakeKeyValues2.forEach { (key, _) ->
@@ -256,8 +252,7 @@ class InternalSdkCoreTest : MockServerTest() {
                 }
             }
         }.start()
-        // We need to wait more here as the last thread is waiting for the first 2 to finish
-        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
 
         // When
         val context = testedInternalSdkCore.getDatadogContext()
