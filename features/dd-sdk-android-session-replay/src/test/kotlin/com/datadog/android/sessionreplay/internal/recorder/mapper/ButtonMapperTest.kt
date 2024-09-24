@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Typeface
 import android.text.InputType
+import android.text.Layout
 import android.view.Gravity
 import android.widget.Button
 import android.widget.TextView
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
@@ -46,6 +48,9 @@ import java.util.stream.Stream
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTest<Button, ButtonMapper>() {
+
+    @Mock
+    lateinit var mockLayout: Layout
 
     @StringForgery
     lateinit var fakeText: String
@@ -67,6 +72,8 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
                 OPAQUE_ALPHA_VALUE
             )
         ) doReturn fakeTextColorHexString
+
+        whenever(mockLayout.text) doReturn fakeText
 
         withTextAndInputPrivacy(privacyOption())
 
@@ -94,6 +101,7 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
     ) {
         // Given
         prepareMockView<Button> { mockView ->
+            whenever(mockView.layout) doReturn mockLayout
             whenever(mockView.typeface) doReturn fakeTypeface
             whenever(mockView.textSize) doReturn fakeFontSize
             whenever(mockView.currentTextColor) doReturn fakeTextColor
@@ -155,6 +163,8 @@ internal abstract class ButtonMapperTest : BaseAsyncBackgroundWireframeMapperTes
     fun `M resolves wireframe W map {no text}`() {
         // Given
         prepareMockView<Button> { mockView ->
+            whenever(mockLayout.text) doReturn ""
+            whenever(mockView.layout) doReturn mockLayout
             whenever(mockView.typeface) doReturn null
             whenever(mockView.textSize) doReturn fakeFontSize
             whenever(mockView.currentTextColor) doReturn fakeTextColor
