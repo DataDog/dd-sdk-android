@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -79,6 +80,7 @@ internal open class RumViewScope(
 
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
+    internal var viewLoadingTime: Long? = null
 
     internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
@@ -194,6 +196,7 @@ internal open class RumViewScope(
             is RumRawEvent.StopSession -> onStopSession(event, writer)
 
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
+            is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -235,6 +238,76 @@ internal open class RumViewScope(
     // endregion
 
     // region Internal
+
+    @WorkerThread
+    private fun onAddViewLoadingTime(event: RumRawEvent.AddViewLoadingTime, writer: DataWriter<Any>) {
+        val internalLogger = sdkCore.internalLogger
+        val canUpdateViewLoadingTime = !stopped && (viewLoadingTime == null || event.overwrite)
+        if (stopped) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE }
+            )
+            internalLogger.logApiUsage(
+                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                    overwrite = event.overwrite,
+                    noView = false,
+                    noActiveView = true
+                )
+            )
+        }
+
+        if (canUpdateViewLoadingTime) {
+            updateViewLoadingTime(event, internalLogger, writer)
+        }
+    }
+
+    private fun updateViewLoadingTime(
+        event: RumRawEvent.AddViewLoadingTime,
+        internalLogger: InternalLogger,
+        writer: DataWriter<Any>
+    ) {
+        val viewName = key.name
+        val previousViewLoadingTime = viewLoadingTime
+        val newLoadingTime = event.eventTime.nanoTime - startedNanos
+        if (previousViewLoadingTime == null) {
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.USER,
+                { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, viewLoadingTime, viewName) }
+            )
+            internalLogger.logApiUsage(
+                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                    overwrite = false,
+                    noView = false,
+                    noActiveView = false
+                )
+            )
+        } else if (event.overwrite) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                {
+                    OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT.format(
+                        Locale.US,
+                        viewName,
+                        previousViewLoadingTime,
+                        newLoadingTime
+                    )
+                }
+            )
+            internalLogger.logApiUsage(
+                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                    overwrite = true,
+                    noView = false,
+                    noActiveView = false
+                )
+            )
+        }
+        viewLoadingTime = newLoadingTime
+        sendViewUpdate(event, writer)
+    }
 
     @WorkerThread
     private fun onStartView(
@@ -834,7 +907,8 @@ internal open class RumViewScope(
                     frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
-                    jsRefreshRate = eventJsRefreshRate
+                    jsRefreshRate = eventJsRefreshRate,
+                    loadingTime = viewLoadingTime
                 ),
                 usr = if (user.hasUserData()) {
                     ViewEvent.Usr(
@@ -1234,6 +1308,13 @@ internal open class RumViewScope(
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
             "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
+        internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
+            "No active view found to add the loading time."
+        internal const val ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT =
+            "View loading time %dns added to the view %s"
+        internal const val OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT =
+            "View loading time already exists for the view %s. Replacing the existing %d ns " +
+                "view loading time with the new %d ns loading time."
 
         internal fun fromEvent(
             parentScope: RumScope,

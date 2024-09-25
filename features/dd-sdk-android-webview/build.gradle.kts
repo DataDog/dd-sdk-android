@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -39,11 +40,6 @@ plugins {
 
 android {
     namespace = "com.datadog.android.webview"
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
 }
 
 dependencies {
@@ -85,3 +81,4 @@ publishingConfig(
     "The WebView integration feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
+detektCustomConfig(":dd-sdk-android-internal")

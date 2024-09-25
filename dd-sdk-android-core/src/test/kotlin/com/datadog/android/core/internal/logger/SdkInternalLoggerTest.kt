@@ -14,11 +14,13 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.mockingDetails
@@ -280,13 +283,12 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_debug",
-                    "message" to fakeMessage
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
+            assertThat(logEvent.message).isEqualTo(fakeMessage)
+            assertThat(logEvent.additionalProperties).isNull()
+        }
     }
 
     @Test
@@ -314,14 +316,12 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_debug",
-                    "message" to fakeMessage,
-                    "additionalProperties" to fakeAdditionalProperties
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
+            assertThat(logEvent.message).isEqualTo(fakeMessage)
+            assertThat(logEvent.additionalProperties).isEqualTo(fakeAdditionalProperties)
+        }
     }
 
     @Test
@@ -346,13 +346,12 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_debug",
-                    "message" to fakeMessage
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
+            assertThat(logEvent.message).isEqualTo(fakeMessage)
+            assertThat(logEvent.additionalProperties).isEmpty()
+        }
     }
 
     @Test
@@ -378,15 +377,12 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_error",
-                    "message" to fakeMessage,
-                    "throwable" to null,
-                    "additionalProperties" to fakeAdditionalProperties
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Error
+            assertThat(logEvent.message).isEqualTo(fakeMessage)
+            assertThat(logEvent.additionalProperties).isEqualTo(fakeAdditionalProperties)
+        }
     }
 
     @Test
@@ -413,15 +409,13 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_error",
-                    "message" to fakeMessage,
-                    "throwable" to fakeThrowable,
-                    "additionalProperties" to fakeAdditionalProperties
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Error
+            assertThat(logEvent.message).isEqualTo(fakeMessage)
+            assertThat(logEvent.error).isEqualTo(fakeThrowable)
+            assertThat(logEvent.additionalProperties).isEqualTo(fakeAdditionalProperties)
+        }
     }
 
     @Test
@@ -448,13 +442,11 @@ internal class SdkInternalLoggerTest {
         }
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "telemetry_debug",
-                    "message" to fakeMessage
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
+            assertThat(logEvent.message).isEqualTo(fakeMessage)
+        }
     }
 
     @Test
@@ -477,14 +469,12 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockRumFeatureScope)
-            .sendEvent(
-                mapOf(
-                    "type" to "mobile_metric",
-                    "message" to fakeMessage,
-                    "additionalProperties" to fakeAdditionalProperties
-                )
-            )
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val metricEvent = firstValue as InternalTelemetryEvent.Metric
+            assertThat(metricEvent.message).isEqualTo(fakeMessage)
+            assertThat(metricEvent.additionalProperties).isEqualTo(fakeAdditionalProperties)
+        }
     }
 
     @Test
@@ -518,7 +508,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `M send metric W metric() {sampling 0 percent}`(
+    fun `M not send metric W metric() {sampling 0 percent}`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -541,7 +531,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `M do nothing metric W metric { rum feature not initialized }`(
+    fun `M do nothing W metric { rum feature not initialized }`(
         @StringForgery fakeMessage: String,
         @FloatForgery(0f, 100f) fakeSampleRate: Float,
         forge: Forge
@@ -557,6 +547,85 @@ internal class SdkInternalLoggerTest {
             testedInternalLogger.logMetric(
                 mockLambda,
                 fakeAdditionalProperties,
+                fakeSampleRate
+            )
+        }
+    }
+
+    @Test
+    fun `M send api usage telemetry W logApiUsage() { sampling rate 100 percent }`(
+        @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        // When
+        testedInternalLogger.logApiUsage(fakeApiUsageInternalTelemetryEvent, 100.0f)
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent>() {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val apiUsageEvent = firstValue as InternalTelemetryEvent.ApiUsage
+            assertThat(apiUsageEvent).isEqualTo(fakeApiUsageInternalTelemetryEvent)
+        }
+    }
+
+    @Test
+    fun `M send api usage telemetry W metric() {sampling x percent}`(
+        @FloatForgery(25f, 75f) fakeSampleRate: Float,
+        @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        val repeatCount = 100
+        val expectedCallCount = (repeatCount * fakeSampleRate / 100f).toInt()
+        val marginOfError = (repeatCount * 0.25f).toInt()
+
+        // When
+        repeat(100) {
+            testedInternalLogger.logApiUsage(
+                fakeApiUsageInternalTelemetryEvent,
+                fakeSampleRate
+            )
+        }
+
+        // Then
+        val count = mockingDetails(mockRumFeatureScope).invocations.filter { it.method.name == "sendEvent" }.size
+        assertThat(count).isCloseTo(expectedCallCount, offset(marginOfError))
+    }
+
+    @Test
+    fun `M not send any api usage telemetry W logApiUsage() {sampling 0 percent}`(
+        @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        // When
+        testedInternalLogger.logApiUsage(
+            fakeApiUsageInternalTelemetryEvent,
+            0.0f
+        )
+
+        // Then
+        verify(mockRumFeatureScope, never()).sendEvent(any())
+    }
+
+    @Test
+    fun `M do nothing W logApiUsage { rum feature not initialized }`(
+        @FloatForgery(0f, 100f) fakeSampleRate: Float,
+        @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+
+        // When
+        assertDoesNotThrow {
+            testedInternalLogger.logApiUsage(
+                fakeApiUsageInternalTelemetryEvent,
                 fakeSampleRate
             )
         }

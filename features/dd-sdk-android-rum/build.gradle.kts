@@ -3,9 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -44,11 +46,6 @@ android {
     }
 
     namespace = "com.datadog.android.rum"
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
 }
 
 dependencies {
@@ -76,6 +73,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
@@ -119,3 +117,4 @@ publishingConfig(
     "The RUM feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
+detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")

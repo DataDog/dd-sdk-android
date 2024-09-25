@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.recorder.mapper
 
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -33,5 +33,5 @@ internal class EditTextMapperMaskTest : EditTextMapperTest() {
         return StringObfuscator.getStringObfuscator().obfuscate(hint)
     }
 
-    override fun privacyOption(): SessionReplayPrivacy = SessionReplayPrivacy.MASK
+    override fun privacyOption(): TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
 }

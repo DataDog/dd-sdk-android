@@ -1,5 +1,6 @@
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
@@ -35,6 +36,10 @@ android {
     compileOptions {
         java17()
     }
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -42,6 +47,19 @@ dependencies {
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
@@ -52,3 +70,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "Internal library to be used by the Datadog SDK modules."
 )
+detektCustomConfig()

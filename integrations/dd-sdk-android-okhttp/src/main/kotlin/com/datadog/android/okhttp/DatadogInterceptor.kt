@@ -357,13 +357,21 @@ internal constructor(
 
     private fun getBodyLength(response: Response, internalLogger: InternalLogger): Long? {
         return try {
-            val body = response.body ?: return null
+            val body = response.body
+            val contentType = body?.contentType()?.let {
+                // manually rebuild the mimetype as `toString()` can also include the charsets
+                it.type + "/" + it.subtype
+            }
+            val isStream = contentType in STREAM_CONTENT_TYPES
+            val isWebSocket = !response.header(WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
+            if (body == null || isStream || isWebSocket) {
+                return null
+            }
             // if there is a Content-Length available, we can read it directly
             // however, OkHttp will drop Content-Length header if transparent compression is
             // used (since the value reported cannot be applied to decompressed body), so to be
             // able to still read it, we force decompression by calling peekBody
-            body.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK)
-                .contentLengthOrNull()
+            body.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK).contentLengthOrNull()
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -480,6 +488,15 @@ internal constructor(
     // endregion
 
     internal companion object {
+
+        internal val STREAM_CONTENT_TYPES = setOf(
+            "text/event-stream",
+            "application/grpc",
+            "application/grpc+proto",
+            "application/grpc+json"
+        )
+
+        internal const val WEBSOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept"
 
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +

@@ -4,11 +4,28 @@ interface com.datadog.android.internal.profiler.BenchmarkSpan
   fun stop()
 interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
   fun startSpan(): BenchmarkSpan
-fun <T: Any?> withinBenchmarkSpan(String, BenchmarkSpan.() -> T): T
+fun <T: Any?> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
 interface com.datadog.android.internal.profiler.BenchmarkTracer
-  fun spanBuilder(String): BenchmarkSpanBuilder
+  fun spanBuilder(String, Map<String, String> = emptyMap()): BenchmarkSpanBuilder
 object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkProfiler)
   fun get(): BenchmarkProfiler
+sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
+  sealed class Log : InternalTelemetryEvent
+    constructor(String, Map<String, Any?>?)
+    class Debug : Log
+      constructor(String, Map<String, Any?>?)
+    class Error : Log
+      constructor(String, Map<String, Any?>? = null, Throwable? = null, String? = null, String? = null)
+  data class Configuration : InternalTelemetryEvent
+    constructor(Boolean, Long, Long, Boolean, Boolean, Int)
+  data class Metric : InternalTelemetryEvent
+    constructor(String, Map<String, Any?>?)
+  sealed class ApiUsage : InternalTelemetryEvent
+    constructor(MutableMap<String, Any?> = mutableMapOf())
+    class AddViewLoadingTime : ApiUsage
+      constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
+  object InterceptorInstantiated : InternalTelemetryEvent
+fun ByteArray.toHexString(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

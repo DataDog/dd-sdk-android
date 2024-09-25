@@ -8,6 +8,7 @@ package com.datadog.android.rum.integration.tests.assertj
 
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonObject
+import org.assertj.core.data.Offset
 
 class RumEventAssert(actual: JsonObject) :
     JsonObjectAssert(actual, true) {
@@ -118,6 +119,20 @@ class RumEventAssert(actual: JsonObject) :
 
     fun hasActionTargetName(name: String): RumEventAssert {
         hasField("action.target.name", name)
+        return this
+    }
+
+    // endregion
+
+    // region view loading time
+
+    fun hasViewLoadingTime(time: Long, offset: Offset<Long>): RumEventAssert {
+        hasField("view.loading_time", time, offset = offset)
+        return this
+    }
+
+    fun doesNotHaveViewLoadingTime(): RumEventAssert {
+        doesNotHaveField("view.loading_time")
         return this
     }
 

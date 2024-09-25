@@ -19,7 +19,11 @@ interface BenchmarkTracer {
      * Returns a new [BenchmarkSpanBuilder].
      *
      * @param spanName The name of the returned span.
+     * @param additionalProperties Additional properties for this span.
      * @return a new [BenchmarkSpanBuilder].
      */
-    fun spanBuilder(spanName: String): BenchmarkSpanBuilder
+    fun spanBuilder(
+        spanName: String,
+        additionalProperties: Map<String, String> = emptyMap()
+    ): BenchmarkSpanBuilder
 }

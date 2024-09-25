@@ -4,7 +4,7 @@ import android.content.res.ColorStateList
 import android.graphics.Rect
 import android.os.Build
 import android.widget.ProgressBar
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper.Companion.TRACK_HEIGHT_IN_PX
@@ -96,7 +96,7 @@ internal class ProgressBarWireframeMapperTest :
     @Test
     fun `M return generic wireframes W map {indeterminate}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = true)
 
         // When
@@ -120,7 +120,7 @@ internal class ProgressBarWireframeMapperTest :
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {determinate, invalid track id, Android 0+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
 
@@ -141,7 +141,7 @@ internal class ProgressBarWireframeMapperTest :
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {determinate, invalid non active track id, Android 0+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
 
@@ -162,7 +162,7 @@ internal class ProgressBarWireframeMapperTest :
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {determinate, privacy=ALLOW, Android 0+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
 
         // When
@@ -183,7 +183,7 @@ internal class ProgressBarWireframeMapperTest :
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {determinate, privacy=MASK, Android 0+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.MASK)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
         prepareMockProgressBar(isIndeterminate = false)
 
         // When
@@ -203,7 +203,7 @@ internal class ProgressBarWireframeMapperTest :
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {determinate, privacy=MASK_USER_INPUT, Android 0+}`() {
         // Given
-        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
 
         // When
@@ -228,7 +228,7 @@ internal class ProgressBarWireframeMapperTest :
     fun `M return partial wireframes W map {determinate, invalid track id}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
 
@@ -249,7 +249,7 @@ internal class ProgressBarWireframeMapperTest :
     fun `M return partial wireframes W map {determinate, invalid non active track id}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
 
@@ -270,7 +270,7 @@ internal class ProgressBarWireframeMapperTest :
     fun `M return wireframes W map {determinate, privacy=ALLOW}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.ALLOW)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
 
         // When
@@ -291,7 +291,7 @@ internal class ProgressBarWireframeMapperTest :
     fun `M return wireframes W map {determinate, privacy=MASK}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.MASK)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
         prepareMockProgressBar(isIndeterminate = false)
 
         // When
@@ -311,7 +311,7 @@ internal class ProgressBarWireframeMapperTest :
     fun `M return wireframes W map {determinate, privacy=MASK_USER_INPUT}`() {
         // Given
         fakeMinValue = 0
-        withPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
 
         // When

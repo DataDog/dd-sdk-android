@@ -17,7 +17,6 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.rules.KioskTrackingActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,9 +36,7 @@ internal class KioskTrackingTest :
         trackingConsent = TrackingConsent.GRANTED
     )
 
-    // TODO RUM-5919: Fix and re - enable this flaky test
     @Test
-    @Ignore("Flaky test, needs to be fixed")
     fun verifyRumEvents() {
         val expectedEvents = runInstrumentationScenario(mockServerRule)
 
@@ -114,8 +111,11 @@ internal class KioskTrackingTest :
 
         onView(withId(R.id.kiosk_button)).perform(click())
         instrumentation.waitForIdleSync()
+        Thread.sleep(500)
         onView(withId(R.id.kiosk_back_button)).perform(click())
+        Thread.sleep(500)
         instrumentation.waitForIdleSync()
+        Thread.sleep(4000) // give some time to settle and register the events
 
         // No events on this view - one for view stop view / stop session
         // ignore first view event, it will be reduced

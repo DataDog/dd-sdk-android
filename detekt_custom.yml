@@ -152,6 +152,7 @@ datadog:
       - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
       - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):java.lang.IllegalStateException"
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
+      - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
       # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -475,6 +476,8 @@ datadog:
       - "android.graphics.Rect.width()"
       # endregion
       # region Androidx APIs
+      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.constructor(androidx.appcompat.widget.ActionBarContainer)"
+      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.getBackgroundDrawable()"
       - "androidx.compose.foundation.interaction.DragInteraction.Start.constructor()"
       - "androidx.compose.runtime.DisposableEffect(kotlin.Any?, kotlin.Any?, kotlin.Function1)"
       - "androidx.compose.runtime.DisposableEffectScope.onDispose(kotlin.Function0)"
@@ -506,6 +509,8 @@ datadog:
       - "androidx.work.Constraints.Builder.build()"
       - "androidx.work.Constraints.Builder.constructor()"
       - "androidx.work.Constraints.Builder.setRequiredNetworkType(androidx.work.NetworkType)"
+      - "androidx.work.Data.Builder.constructor()"
+      - "androidx.work.Data.Builder.putString(kotlin.String, kotlin.String?)"
       - "androidx.work.Data.getString(kotlin.String)"
       - "androidx.work.ListenableWorker.Result.success()"
       - "androidx.work.OneTimeWorkRequest.Builder(java.lang.Class)"
@@ -514,11 +519,10 @@ datadog:
       - "androidx.work.OneTimeWorkRequest.Builder.constructor(java.lang.Class)"
       - "androidx.work.OneTimeWorkRequest.Builder.setConstraints(androidx.work.Constraints)"
       - "androidx.work.OneTimeWorkRequest.Builder.setInitialDelay(kotlin.Long, java.util.concurrent.TimeUnit)"
+      - "androidx.work.OneTimeWorkRequest.Builder.setInputData(androidx.work.Data)"
       - "androidx.work.WorkManager.cancelAllWorkByTag(kotlin.String)"
       - "androidx.work.WorkManager.getInstance(android.content.Context)"
       - "androidx.work.WorkManager.isInitialized()"
-      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.constructor(androidx.appcompat.widget.ActionBarContainer)"
-      - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.getBackgroundDrawable()"
       # endregion
       # region Google Material
       - "com.google.android.material.tabs.TabLayout.TabView.getChildAt(kotlin.Int)"
@@ -1233,6 +1237,7 @@ datadog:
       - "okhttp3.Response.code()"
       - "okhttp3.Response.header(kotlin.String, kotlin.String?)"
       - "okhttp3.ResponseBody.contentLength()"
+      - "okhttp3.ResponseBody.contentType()"
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json

@@ -19,6 +19,7 @@ import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -206,6 +207,18 @@ internal class RumEventMapperTest {
                 .format(Locale.US, fakeRumEvent.javaClass.simpleName)
         )
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
+    }
+
+    @Test
+    fun `M return the original event W map { TelemetryUsageEvent }`(
+        @Forgery telemetryUsageEvent: TelemetryUsageEvent
+    ) {
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(telemetryUsageEvent)
+
+        // THEN
+        verifyNoInteractions(mockInternalLogger)
+        assertThat(mappedRumEvent).isSameAs(telemetryUsageEvent)
     }
 
     @Test

@@ -19,6 +19,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.forge.anException
 import com.google.gson.JsonObject
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.fail
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -705,6 +707,110 @@ internal class RumEventSerializerTest {
                         hasField("batch_upload_frequency", configuration.batchUploadFrequency!!)
                     }
                 }
+            }
+
+        val application = event.application
+        if (application != null) {
+            assertThat(jsonObject)
+                .hasField("application") {
+                    hasField("id", application.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("application")
+        }
+
+        val session = event.session
+        if (session != null) {
+            assertThat(jsonObject)
+                .hasField("session") {
+                    hasField("id", session.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("session")
+        }
+
+        val view = event.view
+        if (view != null) {
+            assertThat(jsonObject)
+                .hasField("view") {
+                    hasField("id", view.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("view")
+        }
+
+        val action = event.action
+        if (action != null) {
+            assertThat(jsonObject)
+                .hasField("action") {
+                    hasField("id", action.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("action")
+        }
+    }
+
+    @RepeatedTest(8)
+    fun `M serialize RUM event W serialize() with TelemetryUsageEvent`(
+        @Forgery event: TelemetryUsageEvent
+    ) {
+        val serialized = testedSerializer.serialize(event)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertThat(jsonObject)
+            .hasField("type", "telemetry")
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
+            .hasField("date", event.date)
+            .hasField("source", event.source.name.lowercase(Locale.US).replace('_', '-'))
+            .hasField("service", event.service)
+            .hasField("version", event.version)
+            .hasField("telemetry") {
+                hasField("usage") {
+                    when (event.telemetry.usage) {
+                        is TelemetryUsageEvent.Usage.AddViewLoadingTime -> {
+                            val usage = event.telemetry.usage as TelemetryUsageEvent.Usage.AddViewLoadingTime
+                            hasField("no_view", usage.noView)
+                            hasField("no_active_view", usage.noActiveView)
+                            hasField("overwritten", usage.overwritten)
+                        }
+
+                        else -> {
+                            fail("Usage type not covered in assertions")
+                        }
+                    }
+                }
+                if (event.telemetry.device != null) {
+                    hasField("device") {
+                        val device = event.telemetry.device
+                        checkNotNull(device)
+                        if (device.architecture != null) {
+                            hasField("architecture", device.architecture!!)
+                        }
+                        if (device.brand != null) {
+                            hasField("brand", device.brand!!)
+                        }
+                        if (device.model != null) {
+                            hasField("model", device.model!!)
+                        }
+                    }
+                }
+                if (event.telemetry.os != null) {
+                    hasField("os") {
+                        val os = event.telemetry.os
+                        checkNotNull(os)
+                        if (os.build != null) {
+                            hasField("build", os.build!!)
+                        }
+                        if (os.name != null) {
+                            hasField("name", os.name!!)
+                        }
+                        if (os.version != null) {
+                            hasField("version", os.version!!)
+                        }
+                    }
+                }
+                containsAttributes(event.telemetry.additionalProperties)
             }
 
         val application = event.application
@@ -1451,18 +1557,21 @@ internal class RumEventSerializerTest {
                     usr = (it.usr ?: ViewEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
+
             2 -> this.getForgery(ActionEvent::class.java).let {
                 it.copy(
                     context = ActionEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: ActionEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
+
             3 -> this.getForgery(ErrorEvent::class.java).let {
                 it.copy(
                     context = ErrorEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: ErrorEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
+
             4 -> this.getForgery(ResourceEvent::class.java).let {
                 it.copy(
                     context = ResourceEvent.Context(additionalProperties = attributes),
@@ -1470,6 +1579,7 @@ internal class RumEventSerializerTest {
                         .copy(additionalProperties = userAttributes)
                 )
             }
+
             else -> this.getForgery(LongTaskEvent::class.java).let {
                 it.copy(
                     context = LongTaskEvent.Context(additionalProperties = attributes),

@@ -9,6 +9,7 @@ import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -85,9 +86,8 @@ android {
         }
     }
 
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
+    testFixtures {
+        enable = true
     }
 }
 
@@ -121,6 +121,7 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
@@ -151,3 +152,4 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig("Datadog monitoring library for Android applications.")
+detektCustomConfig()
