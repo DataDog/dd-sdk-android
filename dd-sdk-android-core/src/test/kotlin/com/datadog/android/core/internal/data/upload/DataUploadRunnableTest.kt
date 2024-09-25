@@ -12,7 +12,6 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
-import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
@@ -552,8 +551,7 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `M handle the maxBatchesPerJob W run{maxBatchesPerJob smaller availableBatches}`(
-        forge: Forge,
-        @Forgery fakeConfiguration: DataUploadConfiguration
+        forge: Forge
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
@@ -570,8 +568,8 @@ internal class DataUploadRunnableTest {
         )
         val batches = forge.aList(
             size = forge.anInt(
-                min = fakeConfiguration.maxBatchesPerUploadJob + 1,
-                max = fakeConfiguration.maxBatchesPerUploadJob + 1000
+                min = fakeMaxBatchesPerJob + 1,
+                max = fakeMaxBatchesPerJob + 1000
             )
         ) {
             aList { getForgery<RawBatchEvent>() }
@@ -608,8 +606,7 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `M exhaust the available batches W run {maxBatchesPerJob higher or equal availableBatches}`(
-        forge: Forge,
-        @Forgery fakeConfiguration: DataUploadConfiguration
+        forge: Forge
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
@@ -626,7 +623,7 @@ internal class DataUploadRunnableTest {
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
-            max = fakeConfiguration.maxBatchesPerUploadJob + 4
+            max = fakeMaxBatchesPerJob + 1
         )
         val batches = forge.aList(size = fakeBatchesCount) { aList { getForgery<RawBatchEvent>() } }
         val batchIds: List<BatchId> = batches.map { mock() }
@@ -648,8 +645,7 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        repeat(fakeMaxBatchesPerJob) { index ->
-            val batch = batches[index]
+        batches.forEachIndexed { index, batch ->
             verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index])
             verify(mockStorage).confirmBatchRead(
                 eq(batchIds[index]),

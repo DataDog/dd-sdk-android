@@ -275,38 +275,38 @@ class FeatureSdkCoreTest : MockServerTest() {
     fun mustUseAtomicOperations_when_updateFeatureContext_modifyValues() {
         // Given
         testedFeatureSdkCore.registerFeature(stubFeature)
-        val threadStartedCountDownLatch = CountDownLatch(2)
         val fakeKeyValues1 = forge.aMap(
             size = forge.anInt(
                 min = 1,
                 max = 10
             )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
             size = forge.anInt(
                 min = 1,
                 max = 10
             )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeModifiedValues = fakeKeyValues2.mapValues { (_, _) -> forge.anAlphabeticalString() }
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
         val countDownLatch = CountDownLatch(3)
         testedFeatureSdkCore.setContextUpdateReceiver(fakeFeatureName) { _, _ -> countDownLatch.countDown() }
+        val threadStartedCountDownLatch = CountDownLatch(2)
         Thread {
-            threadStartedCountDownLatch.countDown()
             testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) {
                 fakeKeyValues1.forEach { (key, value) ->
                     it[key] = value
                 }
             }
+            threadStartedCountDownLatch.countDown()
         }.start()
         Thread {
-            threadStartedCountDownLatch.countDown()
             testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) {
                 fakeKeyValues2.forEach { (key, value) ->
                     it[key] = value
                 }
             }
+            threadStartedCountDownLatch.countDown()
         }.start()
         threadStartedCountDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
         Thread {
@@ -316,8 +316,7 @@ class FeatureSdkCoreTest : MockServerTest() {
                 }
             }
         }.start()
-        // we need to wait 3 times the SHORT_WAIT_MS because the last update is done after the first two
-        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
 
         // When
         val context = testedFeatureSdkCore.getFeatureContext(stubFeature.name)
