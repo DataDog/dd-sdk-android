@@ -521,6 +521,7 @@ public final class com/datadog/android/core/SdkReference {
 
 public final class com/datadog/android/core/StrictModeExtKt {
 	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static final fun allowThreadDiskWrites (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 }
 
 public final class com/datadog/android/core/configuration/BackPressureMitigation : java/lang/Enum {
