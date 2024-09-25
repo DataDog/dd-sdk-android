@@ -12,6 +12,10 @@ import androidx.collection.LruCache
 internal class CacheUtils<K : Any, V : Any>(
     private val invocationUtils: InvocationUtils = InvocationUtils()
 ) {
+
+    // some of this memory level are not being triggered after API 34. We still need to keep them for now
+    // for lower versions
+    @Suppress("DEPRECATION")
     internal fun handleTrimMemory(level: Int, cache: LruCache<K, V>) {
         @Suppress("MagicNumber")
         val onLowMemorySizeBytes = cache.maxSize() / 2 // 50%

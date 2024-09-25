@@ -118,7 +118,7 @@ internal class BitmapPool(
         cacheUtils.handleTrimMemory(level, cache)
     }
 
-    internal fun getBitmapByProperties(width: Int, height: Int, config: Config): Bitmap? {
+    internal fun getBitmapByProperties(width: Int, height: Int, config: Config?): Bitmap? {
         val key = bitmapPoolHelper.generateKey(width, height, config)
         return get(key)
     }
