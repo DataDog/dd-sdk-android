@@ -1,3 +1,32 @@
+# 2.14.0 / 2024-09-25
+
+* [FEATURE] Add stop and start APIs for Session Replay. See [#2169](https://github.com/DataDog/dd-sdk-android/pull/2169)
+* [FEATURE] Add touch privacy fine grained masking API to Session Replay. See [#2196](https://github.com/DataDog/dd-sdk-android/pull/2196)
+* [FEATURE] Add text and input privacy fine grained masking API to Session Replay. See [#2235](https://github.com/DataDog/dd-sdk-android/pull/2235)
+* [FEATURE] Introduce the `RumMonitor#addViewLoadingTime` API. See [#2243](https://github.com/DataDog/dd-sdk-android/pull/2243)
+* [FEATURE] Introduce the API usage telemetry event and API. See [#2258](https://github.com/DataDog/dd-sdk-android/pull/2258)
+* [IMPROVEMENT] Enable Kotlin test fixtures support. See [#2234](https://github.com/DataDog/dd-sdk-android/pull/2234)
+* [IMPROVEMENT] Add `isContainer` attribute to session replay span. See [#2244](https://github.com/DataDog/dd-sdk-android/pull/2244)
+* [IMPROVEMENT] Update custom detekt CI Job. See [#2118](https://github.com/DataDog/dd-sdk-android/pull/2118)
+* [IMPROVEMENT] Randomize privacy levels to support Fine Grained Masking in E2E. See [#2265](https://github.com/DataDog/dd-sdk-android/pull/2265)
+* [IMPROVEMENT] Update AGP to 8.6.1. See [#2269](https://github.com/DataDog/dd-sdk-android/pull/2269)
+* [IMPROVEMENT] Add telemetry and logs related with `RumMonitor#addViewLoadingTime` API. See [#2267](https://github.com/DataDog/dd-sdk-android/pull/2267)
+* [IMPROVEMENT] Handle SSE requests. See [#2270](https://github.com/DataDog/dd-sdk-android/pull/2270)
+* [IMPROVEMENT] Do not use magic numbers in `InternalLogger` API. See [#2271](https://github.com/DataDog/dd-sdk-android/pull/2271)
+* [IMPROVEMENT] Optimize MD5 byte array to hex string conversion. See [#2273](https://github.com/DataDog/dd-sdk-android/pull/2273)
+* [IMPROVEMENT] `CONTRIBUTING` doc changes. See [#2275](https://github.com/DataDog/dd-sdk-android/pull/2275)
+* [IMPROVEMENT] Add env tag in benchmark metrics. See [#2276](https://github.com/DataDog/dd-sdk-android/pull/2276)
+* [MAINTENANCE] Make image privacy fine grained masking API public in Session Replay. See [#2204](https://github.com/DataDog/dd-sdk-android/pull/2204)
+* [MAINTENANCE] Update benchmark metrics memory reader probe interval. See [#2228](https://github.com/DataDog/dd-sdk-android/pull/2228)
+* [MAINTENANCE] Fix the flakiness in the `KioskTrackingTest`. See [#2226](https://github.com/DataDog/dd-sdk-android/pull/2226)
+* [MAINTENANCE] Fix placeholder dimensions. See [#2248](https://github.com/DataDog/dd-sdk-android/pull/2248)
+* [MAINTENANCE] Send fine grained masking instead of legacy privacy in config telemetry. See [#2253](https://github.com/DataDog/dd-sdk-android/pull/2253)
+* [MAINTENANCE] Ensure `UploadWorker` uses the SDK instance name. See [#2257](https://github.com/DataDog/dd-sdk-android/pull/2257)
+* [MAINTENANCE] Explicitly set `antlr-runtime` transitive dependency version. See [#2261](https://github.com/DataDog/dd-sdk-android/pull/2261)
+* [MAINTENANCE] Add the integration tests related with `RumMonitor#addViewLoadingTime` API. See [#2268](https://github.com/DataDog/dd-sdk-android/pull/2268)
+* [MAINTENANCE] Fix `DatadogInterceptor` flaky test. See [#2274](https://github.com/DataDog/dd-sdk-android/pull/2274)
+* [MAINTENANCE] Fix typos and links in Github issue templates. See [#2277](https://github.com/DataDog/dd-sdk-android/pull/2277)
+
 # 2.13.1 / 2024-09-09
 
 * [BUGFIX] Stop upload worker on upload failure. See [#2242](https://github.com/DataDog/dd-sdk-android/pull/2242)
