@@ -57,6 +57,10 @@ internal open class ConsentAwareFileOrchestrator(
         return null
     }
 
+    override fun getRootDirName(): String? {
+        return null
+    }
+
     @WorkerThread
     override fun getFlushableFiles(): List<File> {
         return grantedOrchestrator.getFlushableFiles()

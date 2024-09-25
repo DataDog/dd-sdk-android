@@ -63,7 +63,7 @@ internal class ConsentAwareStorage(
             callerClass = ConsentAwareStorage::class.java.name,
             metric = TelemetryMetricType.MethodCalled,
             samplingRate = MethodCallSamplingRate.RARE.rate,
-            operationName = "writeCurrentBatch[${orchestrator?.getRootDir()?.nameWithoutExtension}]"
+            operationName = "writeCurrentBatch[${orchestrator?.getRootDirName()}]"
         )
 
         executorService.submitSafe("Data write", internalLogger) {
