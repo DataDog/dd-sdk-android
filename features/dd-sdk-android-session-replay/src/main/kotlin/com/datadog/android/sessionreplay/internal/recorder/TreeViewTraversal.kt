@@ -13,7 +13,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -25,6 +27,7 @@ import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
 internal class TreeViewTraversal(
     private val mappers: List<MapperTypeWrapper<*>>,
     private val defaultViewMapper: WireframeMapper<View>,
+    private val hiddenViewMapper: HiddenViewMapper,
     private val decorViewMapper: WireframeMapper<View>,
     private val viewUtilsInternal: ViewUtilsInternal,
     private val internalLogger: InternalLogger
@@ -51,7 +54,11 @@ internal class TreeViewTraversal(
         // try to resolve from the exhaustive type mappers
         var mapper = findMapperForView(view)
 
-        if (mapper != null) {
+        if (isHidden(view)) {
+            traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
+            mapper = hiddenViewMapper
+            jobStatusCallback = noOpCallback
+        } else if (mapper != null) {
             jobStatusCallback = QueueStatusCallback(recordedDataQueueRefs)
             traversalStrategy = if (mapper is TraverseAllChildrenMapper) {
                 TraversalStrategy.TRAVERSE_ALL_CHILDREN
@@ -104,6 +111,9 @@ internal class TreeViewTraversal(
     private fun findMapperForView(view: View): WireframeMapper<View>? {
         return mappers.firstOrNull { it.supportsView(view) }?.getUnsafeMapper()
     }
+
+    private fun isHidden(view: View): Boolean =
+        view.getTag(R.id.datadog_hidden) == true
 
     data class TraversedTreeView(
         val mappedWireframes: List<MobileSegment.Wireframe>,
