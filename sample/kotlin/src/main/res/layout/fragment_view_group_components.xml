@@ -27,11 +27,32 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="@dimen/default_padding"
-            android:text="@string/card_view"
+            android:text="@string/material_card_view"
             android:textAlignment="center"
             android:textColor="@android:color/holo_orange_light"
             android:textSize="18sp" />
     </com.google.android.material.card.MaterialCardView>
 
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_view_2"
+        android:layout_width="0dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="@dimen/default_padding"
+        app:cardBackgroundColor="@color/datadog_violet"
+        app:cardCornerRadius="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/card_view_1">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="@dimen/default_padding"
+            android:text="@string/card_view"
+            android:textAlignment="center"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="18sp" />
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
