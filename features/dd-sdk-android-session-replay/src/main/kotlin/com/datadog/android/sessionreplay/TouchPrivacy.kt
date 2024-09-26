@@ -11,7 +11,7 @@ package com.datadog.android.sessionreplay
  * @see TouchPrivacy.SHOW
  * @see TouchPrivacy.HIDE
  */
-enum class TouchPrivacy {
+enum class TouchPrivacy : PrivacyLevel {
     /**
      * All touch interactions will be recorded.
      */
