@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.compose
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
-import com.datadog.android.sessionreplay.compose.internal.mappers.ComposeWireframeMapper
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SemanticsWireframeMapper
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -34,7 +34,7 @@ class ComposeExtensionSupport : ExtensionSupport {
         return listOf(
             MapperTypeWrapper(
                 ComposeView::class.java,
-                ComposeWireframeMapper(
+                SemanticsWireframeMapper(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
