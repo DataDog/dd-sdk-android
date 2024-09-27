@@ -190,7 +190,8 @@ internal class UploadWorkerTest {
                     mockUploader.upload(
                         fakeDatadogContext,
                         batch,
-                        fakeBatchMetadata[batchIndex]
+                        fakeBatchMetadata[batchIndex],
+                        fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                 ) doReturn status
             }
@@ -253,7 +254,8 @@ internal class UploadWorkerTest {
                 verify(mockUploader).upload(
                     context = fakeDatadogContext,
                     batch = fakeBatch,
-                    batchMeta = fakeMetadata[batchIndex]
+                    batchMeta = fakeMetadata[batchIndex],
+                    batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                 )
                 verify(mockStorage).confirmBatchRead(
                     batchId = fakeBatchIds[batchIndex],
@@ -293,7 +295,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -307,7 +310,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -349,7 +353,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -363,7 +368,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -405,7 +411,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -419,7 +426,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -461,7 +469,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -475,7 +484,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -517,7 +527,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -531,7 +542,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -573,7 +585,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -587,7 +600,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -629,7 +643,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -643,7 +658,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -685,7 +701,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -699,7 +716,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -741,7 +759,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -755,7 +774,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -797,7 +817,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -811,7 +832,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -852,7 +874,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],
@@ -866,7 +889,8 @@ internal class UploadWorkerTest {
                     verify(mockUploader).upload(
                         context = fakeDatadogContext,
                         batch = fakeBatch,
-                        batchMeta = fakeMetadata[batchIndex]
+                        batchMeta = fakeMetadata[batchIndex],
+                        batchId = fakeFeatureBatchIds[featureIndex][batchIndex]
                     )
                     verify(mockStorage).confirmBatchRead(
                         batchId = fakeBatchIds[batchIndex],

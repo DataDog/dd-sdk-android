@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.event.EventMapper
@@ -54,6 +55,9 @@ class LoggerTest {
 
     private lateinit var stubSdkCore: StubSDKCore
 
+    @Forgery
+    private lateinit var fakeExecutionContext: RequestExecutionContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubSdkCore = StubSDKCore(forge)
@@ -93,7 +97,12 @@ class LoggerTest {
         // When
         val logsFeature = stubSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
         val requestFactory = logsFeature?.requestFactory
-        val request = requestFactory?.create(stubSdkCore.getDatadogContext(), fakeBatch, fakeMetadata.toByteArray())
+        val request = requestFactory?.create(
+            stubSdkCore.getDatadogContext(),
+            fakeExecutionContext,
+            fakeBatch,
+            fakeMetadata.toByteArray()
+        )
 
         // Then
         checkNotNull(request)
@@ -122,7 +131,12 @@ class LoggerTest {
         // When
         val logsFeature = stubSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
         val requestFactory = logsFeature?.requestFactory
-        val request = requestFactory?.create(stubSdkCore.getDatadogContext(), fakeBatch, fakeMetadata.toByteArray())
+        val request = requestFactory?.create(
+            stubSdkCore.getDatadogContext(),
+            fakeExecutionContext,
+            fakeBatch,
+            fakeMetadata.toByteArray()
+        )
 
         // Then
         checkNotNull(request)
