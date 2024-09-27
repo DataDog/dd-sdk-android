@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
@@ -15,6 +16,7 @@ import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
@@ -40,11 +42,22 @@ internal class BatchesToSegmentsMapperTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var datadogContext: DatadogContext
+
     private lateinit var testedMapper: BatchesToSegmentsMapper
 
+    var fakeSegmentSource: MobileSegment.Source? = null
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedMapper = BatchesToSegmentsMapper(mockInternalLogger)
+
+        fakeSegmentSource = forge.aNullable { aValueFrom(MobileSegment.Source::class.java) }
+
+        datadogContext = datadogContext.copy(
+            source = fakeSegmentSource?.toJson()?.asString ?: forge.aString()
+        )
     }
 
     @Test
@@ -71,7 +84,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         assertThat(mappedSegments.size).isEqualTo(fakeEnrichedRecords.size)
@@ -106,7 +119,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         mappedSegments.forEachIndexed { index, pair ->
@@ -140,7 +153,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         mappedSegments.forEachIndexed { index, pair ->
@@ -177,7 +190,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         mappedSegments.forEachIndexed { index, pair ->
@@ -201,7 +214,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
+        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
     }
 
     @Test
@@ -212,7 +225,7 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = forge.aList { forge.anAlphabeticalString().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
+        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
     }
 
     @Test
@@ -249,7 +262,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
+        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
     }
 
     @Test
@@ -292,7 +305,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
         val expectedRecordsSize = fakeRecords.size - removedRecords
         assertThat(mappedSegments.size).isEqualTo(1)
         assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
@@ -329,7 +342,7 @@ internal class BatchesToSegmentsMapperTest {
             }
             .map { it.toString().toByteArray() }
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
+        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
@@ -376,7 +389,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
         assertThat(mappedSegments.size).isEqualTo(1)
         val expectedRecordsSize = fakeRecords.size - removedRecords
         assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
@@ -415,7 +428,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
+        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
@@ -462,7 +475,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
@@ -502,7 +515,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // Then
-        assertThat(testedMapper.map(fakeBatchData)).isEmpty()
+        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
@@ -549,7 +562,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
@@ -603,7 +616,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
@@ -651,7 +664,7 @@ internal class BatchesToSegmentsMapperTest {
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
 
         // Then
         val expectedRecordsSize = fakeRecords.size - removedRecords
@@ -673,7 +686,7 @@ internal class BatchesToSegmentsMapperTest {
             recordsCount = records.size.toLong(),
             indexInView = null,
             hasFullSnapshot = hasFullSnapshot(),
-            source = MobileSegment.Source.ANDROID,
+            source = fakeSegmentSource ?: MobileSegment.Source.ANDROID,
             records = records
         )
     }

@@ -7,10 +7,12 @@
 package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsLong
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
+import com.datadog.android.sessionreplay.internal.processor.tryFromSource
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.google.gson.JsonArray
@@ -24,13 +26,16 @@ import com.google.gson.JsonParser
  */
 internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogger) {
 
-    fun map(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
-        return groupBatchDataIntoSegments(batchData)
+    fun map(datadogContext: DatadogContext, batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
+        return groupBatchDataIntoSegments(datadogContext, batchData)
     }
 
     // region Internal
 
-    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
+    private fun groupBatchDataIntoSegments(
+        datadogContext: DatadogContext,
+        batchData: List<ByteArray>
+    ): List<Pair<MobileSegment, JsonObject>> {
         return batchData
             .asSequence()
             .mapNotNull {
@@ -73,12 +78,13 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
             }
             .filter { !it.value.isEmpty }
             .mapNotNull {
-                mapToSegment(it.key, it.value)
+                mapToSegment(datadogContext, it.key, it.value)
             }
     }
 
     @Suppress("ReturnCount")
     private fun mapToSegment(
+        datadogContext: DatadogContext,
         rumContext: SessionReplayRumContext,
         records: JsonArray
     ): Pair<MobileSegment, JsonObject>? {
@@ -132,7 +138,7 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
             // TODO RUM-861 Find a way or alternative to provide a reliable indexInView
             indexInView = null,
             hasFullSnapshot = hasFullSnapshotRecord,
-            source = MobileSegment.Source.ANDROID,
+            source = MobileSegment.Source.tryFromSource(datadogContext.source, internalLogger),
             records = emptyList()
         )
         val segmentAsJsonObject = segment.toJson().safeGetAsJsonObject(internalLogger)
