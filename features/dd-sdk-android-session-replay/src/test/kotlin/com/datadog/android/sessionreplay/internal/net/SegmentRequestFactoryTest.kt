@@ -87,7 +87,7 @@ internal class SegmentRequestFactoryTest {
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
         whenever(mockSegmentRequestBodyFactory.create(fakeDataGroup))
             .thenReturn(mockRequestBody)
-        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
+        whenever(mockBatchesToSegmentsMapper.map(fakeDatadogContext, fakeBatchData.map { it.data }))
             .thenReturn(fakeDataGroup)
         testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = null,
@@ -160,7 +160,7 @@ internal class SegmentRequestFactoryTest {
     @Test
     fun `M throw exception W create(){ payload is broken }`() {
         // Given
-        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
+        whenever(mockBatchesToSegmentsMapper.map(fakeDatadogContext, fakeBatchData.map { it.data }))
             .thenReturn(emptyList())
 
         // When
