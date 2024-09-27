@@ -29,6 +29,17 @@ internal object ComposeReflection {
 
     val RecomposeScopeImplClass = getClassSafe("androidx.compose.runtime.RecomposeScopeImpl")
     val RecomposeScopeImplBlockField = RecomposeScopeImplClass?.getDeclaredFieldSafe("block")
+
+    val AbstractComposeViewClass = getClassSafe("androidx.compose.ui.platform.AbstractComposeView")
+    val CompositionField = AbstractComposeViewClass?.getDeclaredFieldSafe("composition")
+
+    val OwnerField = WrappedCompositionClass?.getDeclaredFieldSafe("owner")
+
+    val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
+    val SemanticsOwner = AndroidComposeViewClass?.getDeclaredFieldSafe("semanticsOwner")
+
+    val TextStringSimpleElement = getClassSafe("androidx.compose.foundation.text.modifiers.TextStringSimpleElement")
+    val ColorProducerField = TextStringSimpleElement?.getDeclaredFieldSafe("color")
 }
 
 internal fun Field.accessible(): Field {
