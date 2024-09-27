@@ -505,6 +505,7 @@ datadog:
       - "androidx.compose.ui.layout.LayoutCoordinates.positionInWindow()"
       - "androidx.compose.ui.layout.LayoutInfo.getModifierInfo()"
       - "androidx.compose.ui.unit.Density(kotlin.Float, kotlin.Float)"
+      - "androidx.compose.ui.geometry.Size(kotlin.Float, kotlin.Float)"
       - "androidx.compose.ui.geometry.Size.copy(kotlin.Float, kotlin.Float)"
       - "androidx.compose.ui.semantics.SemanticsConfiguration.firstOrNull(kotlin.Function1)"
       - "androidx.compose.ui.semantics.SemanticsConfiguration.getOrNull(androidx.compose.ui.semantics.SemanticsPropertyKey)"
