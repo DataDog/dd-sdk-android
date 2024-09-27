@@ -188,4 +188,5 @@
     <string name="linked_spans_test">Linked Spans Test</string>
     <string name="start_linked_spans_test">Start Linked Spans Test</string>
     <string name="card_view">Card view</string>
+    <string name="material_card_view">Material Card view</string>
 </resources>
