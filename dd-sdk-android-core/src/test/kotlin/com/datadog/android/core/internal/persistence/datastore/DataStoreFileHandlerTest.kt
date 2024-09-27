@@ -4,15 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file.datastore
+package com.datadog.android.core.internal.persistence.datastore
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
-import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
-import com.datadog.android.core.internal.persistence.datastore.DatastoreFileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.utils.forge.Configurator
@@ -169,5 +166,14 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             callback = mockDataStoreWriteCallback
         )
+    }
+
+    @Test
+    fun `M call dataStoreWriter W clearAll()`() {
+        // When
+        testedDataStoreHandler.clearAllData()
+
+        // Then
+        verify(mockDatastoreFileWriter).clearAllData()
     }
 }

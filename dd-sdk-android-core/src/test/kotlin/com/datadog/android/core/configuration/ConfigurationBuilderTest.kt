@@ -434,6 +434,21 @@ internal class ConfigurationBuilderTest {
         )
     }
 
+    @Test
+    fun `M build config with allowClearTextHttp W allowClearTextHttp() and build()`() {
+        // When
+        val config = testedBuilder
+            .allowClearTextHttp()
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                needsClearTextHttp = true
+            )
+        )
+    }
+
     companion object {
         val logger = InternalLoggerTestConfiguration()
 

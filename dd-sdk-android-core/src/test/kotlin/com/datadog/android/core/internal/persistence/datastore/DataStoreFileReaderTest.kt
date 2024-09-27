@@ -4,13 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file.datastore
+package com.datadog.android.core.internal.persistence.datastore
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
-import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader.Companion.INVALID_NUMBER_OF_BLOCKS_ERROR
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader.Companion.UNEXPECTED_BLOCKS_ORDER_ERROR
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -94,8 +92,8 @@ internal class DataStoreFileReaderTest {
 
         whenever(
             mockDataStoreFileHelper.getDataStoreFile(
-                featureName = eq(fakeFeatureName),
                 storageDir = eq(mockStorageDir),
+                featureName = eq(fakeFeatureName),
                 key = any()
             )
         ).thenReturn(mockDataStoreFile)

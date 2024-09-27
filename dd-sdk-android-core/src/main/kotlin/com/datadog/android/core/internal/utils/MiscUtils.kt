@@ -51,7 +51,7 @@ internal inline fun retryWithDelay(
                     { "Internal I/O operation failed" },
                     e
                 )
-                return false
+                false
             }
             loopTimeOrigin = System.nanoTime()
             retryCounter++
@@ -135,7 +135,9 @@ internal fun Any?.fromJsonElement(): Any? {
                 this
             }
         }
+
         is JsonObject -> this.asDeepMap()
+
         else -> this
     }
 }
