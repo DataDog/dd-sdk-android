@@ -745,6 +745,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Source 
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Source$Companion;
 	public static final field FLUTTER Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final field IOS Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
