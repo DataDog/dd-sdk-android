@@ -8,10 +8,10 @@ package com.datadog.android.core.internal.persistence.tlvformat
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.datastore.ext.copyOfRangeSafe
-import com.datadog.android.core.internal.persistence.datastore.ext.toInt
-import com.datadog.android.core.internal.persistence.datastore.ext.toShort
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.utils.copyOfRangeSafe
+import com.datadog.android.core.internal.utils.toInt
+import com.datadog.android.core.internal.utils.toShort
 import java.io.File
 import java.util.Locale
 
