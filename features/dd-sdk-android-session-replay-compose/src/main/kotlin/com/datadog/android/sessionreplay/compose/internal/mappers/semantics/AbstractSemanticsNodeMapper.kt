@@ -27,13 +27,6 @@ internal abstract class AbstractSemanticsNodeMapper(
         return GlobalBounds(x, y, width, height)
     }
 
-    protected fun convertColor(color: Color): String {
-        return colorStringFormatter.formatColorAndAlphaAsHexString(
-            color.toArgb(),
-            (color.alpha * MAX_ALPHA).roundToInt()
-        )
-    }
-
     protected fun convertColor(color: Long): String? {
         return if (color == UNSPECIFIED_COLOR) {
             null

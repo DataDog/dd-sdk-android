@@ -32,6 +32,7 @@ internal class SemanticsWireframeMapper(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
         // TODO RUM-6189 Add Mappers for each Semantics Role
+        Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(colorStringFormatter)
