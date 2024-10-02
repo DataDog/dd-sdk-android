@@ -276,7 +276,7 @@ internal class RumFeature(
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
             }
-
+            TELEMETRY_SESSION_REPLAY_SKIP_FRAME -> addSessionReplaySkippedFrame()
             FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
                     it.stopKeepAliveCallback()
@@ -503,6 +503,10 @@ internal class RumFeature(
         )
     }
 
+    private fun addSessionReplaySkippedFrame() {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addSessionReplaySkippedFrame()
+    }
+
     // endregion
 
     internal data class Configuration(
@@ -535,6 +539,7 @@ internal class RumFeature(
         internal const val LOGGER_ERROR_BUS_MESSAGE_TYPE = "logger_error"
         internal const val LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE = "logger_error_with_stacktrace"
         internal const val WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE = "web_view_ingested_notification"
+        internal const val TELEMETRY_SESSION_REPLAY_SKIP_FRAME = "sr_skipped_frame"
         internal const val FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE = "flush_and_stop_monitor"
 
         internal const val ALL_IN_SAMPLE_RATE: Float = 100f

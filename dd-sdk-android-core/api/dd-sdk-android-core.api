@@ -718,6 +718,7 @@ public abstract interface class com/datadog/android/core/internal/persistence/De
 public final class com/datadog/android/core/internal/persistence/file/FileExtKt {
 	public static final fun canReadSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
 	public static final fun existsSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
+	public static final fun listFilesSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;Ljava/io/FilenameFilter;)[Ljava/io/File;
 	public static final fun readLinesSafe (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
 	public static synthetic fun readLinesSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/util/List;
 	public static final fun readTextSafe (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/String;

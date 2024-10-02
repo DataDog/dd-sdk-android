@@ -41,6 +41,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
@@ -216,6 +217,7 @@ class SampleApplication : Application() {
 
     private fun initializeSessionReplay() {
         val shouldUseFgm = SecureRandom().nextInt(100) < USE_FGM_PCT
+        val systemRequirementsConfiguration = SystemRequirementsConfiguration.BASIC
 
         @Suppress("DEPRECATION")
         val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
@@ -232,6 +234,7 @@ class SampleApplication : Application() {
             }
             .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
             .addExtensionSupport(MaterialExtensionSupport())
+            .setSystemRequirements(systemRequirementsConfiguration)
             .build()
         SessionReplay.enable(sessionReplayConfig)
     }

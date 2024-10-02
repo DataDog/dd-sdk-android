@@ -10,7 +10,7 @@ import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
 import androidx.annotation.UiThread
-import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -28,9 +28,13 @@ internal class WindowsOnDrawListener(
     private val snapshotProducer: SnapshotProducer,
     private val textAndInputPrivacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
-    private val debouncer: Debouncer = Debouncer(),
     private val miscUtils: MiscUtils = MiscUtils,
-    private val internalLogger: InternalLogger,
+    private val sdkCore: FeatureSdkCore,
+    dynamicOptimizationEnabled: Boolean,
+    private val debouncer: Debouncer = Debouncer(
+        sdkCore = sdkCore,
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled
+    ),
     private val methodCallSamplingRate: Float
 ) : ViewTreeObserver.OnDrawListener {
 
@@ -53,7 +57,7 @@ internal class WindowsOnDrawListener(
             val systemInformation = miscUtils.resolveSystemInformation(context)
             val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
 
-            val nodes = internalLogger.measureMethodCallPerf(
+            val nodes = sdkCore.internalLogger.measureMethodCallPerf(
                 METHOD_CALL_CALLER_CLASS,
                 METHOD_CALL_CAPTURE_RECORD,
                 methodCallSamplingRate
