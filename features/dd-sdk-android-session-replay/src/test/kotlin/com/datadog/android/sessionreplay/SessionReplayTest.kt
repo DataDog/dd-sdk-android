@@ -24,8 +24,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -42,6 +45,9 @@ internal class SessionReplayTest {
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
 
+    @Mock
+    lateinit var mockSystemRequirementsConfiguration: SystemRequirementsConfiguration
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mock()
@@ -53,7 +59,20 @@ internal class SessionReplayTest {
         @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration
     ) {
         // When
-        SessionReplay.enable(fakeSessionReplayConfiguration, mockSdkCore)
+        val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
+            systemRequirementsConfiguration = mockSystemRequirementsConfiguration
+        )
+        whenever(
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(
+                eq(mockSdkCore), any(), any(), any()
+            )
+        ) doAnswer {
+            it.getArgument<() -> Unit>(3).invoke()
+        }
+        SessionReplay.enable(
+            fakeSessionReplayConfigurationWithMockRequirement,
+            mockSdkCore
+        )
 
         // Then
         argumentCaptor<SessionReplayFeature> {

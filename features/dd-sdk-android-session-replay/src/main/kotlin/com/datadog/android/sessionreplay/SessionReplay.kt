@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay
 
+import android.os.Handler
+import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
@@ -30,21 +32,37 @@ object SessionReplay {
         sessionReplayConfiguration: SessionReplayConfiguration,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
-        val sessionReplayFeature = SessionReplayFeature(
-            sdkCore = sdkCore as FeatureSdkCore,
-            customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
-            privacy = sessionReplayConfiguration.privacy,
-            imagePrivacy = sessionReplayConfiguration.imagePrivacy,
-            touchPrivacy = sessionReplayConfiguration.touchPrivacy,
-            textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
-            customMappers = sessionReplayConfiguration.customMappers,
-            customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
-            sampleRate = sessionReplayConfiguration.sampleRate,
-            startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
-            dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
-        )
+        enable(sessionReplayConfiguration, Handler(Looper.getMainLooper()), sdkCore)
+    }
 
-        sdkCore.registerFeature(sessionReplayFeature)
+    internal fun enable(
+        sessionReplayConfiguration: SessionReplayConfiguration,
+        uiHandler: Handler,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        val featureSdkCore = sdkCore as FeatureSdkCore
+        sessionReplayConfiguration.systemRequirementsConfiguration.let {
+            it.runIfRequirementsMet(
+                sdkCore = sdkCore,
+                uiHandler = uiHandler,
+                featureSdkCore.internalLogger
+            ) {
+                val sessionReplayFeature = SessionReplayFeature(
+                    sdkCore = featureSdkCore,
+                    customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
+                    privacy = sessionReplayConfiguration.privacy,
+                    imagePrivacy = sessionReplayConfiguration.imagePrivacy,
+                    touchPrivacy = sessionReplayConfiguration.touchPrivacy,
+                    textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
+                    customMappers = sessionReplayConfiguration.customMappers,
+                    customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
+                    sampleRate = sessionReplayConfiguration.sampleRate,
+                    startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
+                    dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
+                )
+                sdkCore.registerFeature(sessionReplayFeature)
+            }
+        }
     }
 
     /**
