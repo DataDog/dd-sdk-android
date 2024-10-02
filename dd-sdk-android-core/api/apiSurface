@@ -44,6 +44,7 @@ interface com.datadog.android.api.InternalLogger
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun logMetric(() -> String, Map<String, Any?>, Float)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
+  fun logApiUsage(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage, Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE)
   companion object 
     val UNBOUND: InternalLogger
 interface com.datadog.android.api.SdkCore
@@ -184,6 +185,7 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+fun <T> allowThreadDiskWrites(() -> T): T
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST

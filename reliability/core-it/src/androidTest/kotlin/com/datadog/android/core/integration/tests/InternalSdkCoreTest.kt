@@ -51,7 +51,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
@@ -174,35 +173,29 @@ class InternalSdkCoreTest : MockServerTest() {
     fun mustUseAtomicOperations_when_updateFeatureContext_addNewValues() {
         // Given
         val fakeKeyValues1 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val expectedKeyValues = fakeKeyValues1 + fakeKeyValues2
-        val countDownLatch = CountDownLatch(2)
-        testedInternalSdkCore.setContextUpdateReceiver(fakeFeatureName) { _, _ -> countDownLatch.countDown() }
-        Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
-                fakeKeyValues1.forEach { (key, value) ->
-                    it[key] = value
+
+        val updateAction = { newContext: Map<String, String> ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+                newContext.forEach { (key, value) ->
+                    featureContext[key] = value
                 }
             }
-        }.start()
-        Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
-                fakeKeyValues2.forEach { (key, value) ->
-                    it[key] = value
-                }
-            }
-        }.start()
-        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        }
+        forge
+            .shuffle(
+                listOf(
+                    Thread { updateAction(fakeKeyValues1) },
+                    Thread { updateAction(fakeKeyValues2) }
+                )
+            )
+            .map { it.apply { start() } }
+            .forEach { it.join(SHORT_WAIT_MS) }
 
         // When
         val context = testedInternalSdkCore.getDatadogContext()
@@ -218,46 +211,40 @@ class InternalSdkCoreTest : MockServerTest() {
     fun mustUseAtomicOperations_when_updateFeatureContext_modifyValues() {
         // Given
         val fakeKeyValues1 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeModifiedValues = fakeKeyValues2.mapValues { (_, _) -> forge.anAlphabeticalString() }
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
-        val countDownLatch = CountDownLatch(3)
-        testedInternalSdkCore.setContextUpdateReceiver(fakeFeatureName) { _, _ -> countDownLatch.countDown() }
-        Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
-                fakeKeyValues1.forEach { (key, value) ->
-                    it[key] = value
+
+        val updateAction = { newContext: Map<String, String> ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+                newContext.forEach { (key, value) ->
+                    featureContext[key] = value
                 }
             }
-        }.start()
+        }
+        forge
+            .shuffle(
+                listOf(
+                    Thread { updateAction(fakeKeyValues1) },
+                    Thread { updateAction(fakeKeyValues2) }
+                )
+            )
+            .map { it.apply { start() } }
+            .forEach { it.join(SHORT_WAIT_MS) }
+
         Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
-                fakeKeyValues2.forEach { (key, value) ->
-                    it[key] = value
-                }
-            }
-        }.start()
-        // Give some time to the first 2 threads to start
-        Thread.sleep(100)
-        Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
                 fakeKeyValues2.forEach { (key, _) ->
-                    it[key] = fakeModifiedValues[key]
+                    featureContext[key] = fakeModifiedValues[key]
                 }
             }
-        }.start()
-        // We need to wait more here as the last thread is waiting for the first 2 to finish
-        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
+        }
+            .apply { start() }
+            .join(SHORT_WAIT_MS)
 
         // When
         val context = testedInternalSdkCore.getDatadogContext()
@@ -273,46 +260,40 @@ class InternalSdkCoreTest : MockServerTest() {
     fun mustUseAtomicOperations_when_updateFeatureContext_removeValues() {
         // Given
         val fakeKeyValues1 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
-            size = forge.anInt(
-                min = 1,
-                max = 10
-            )
-        ) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+            size = forge.anInt(min = 1, max = 10)
+        ) { anAlphabeticalString() to anAlphabeticalString() }
         val expectedKeyValues = (fakeKeyValues1 + fakeKeyValues2).toMutableMap()
         val droppedKeyValues = expectedKeyValues.removeRandomEntries(forge)
-        val countDownLatch = CountDownLatch(3)
-        testedInternalSdkCore.setContextUpdateReceiver(fakeFeatureName) { _, _ -> countDownLatch.countDown() }
-        Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
-                fakeKeyValues1.forEach { (key, value) ->
-                    it[key] = value
+
+        val updateAction = { newContext: Map<String, String> ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+                newContext.forEach { (key, value) ->
+                    featureContext[key] = value
                 }
             }
-        }.start()
+        }
+        forge
+            .shuffle(
+                listOf(
+                    Thread { updateAction(fakeKeyValues1) },
+                    Thread { updateAction(fakeKeyValues2) }
+                )
+            )
+            .map { it.apply { start() } }
+            .forEach { it.join(SHORT_WAIT_MS) }
+
         Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
-                fakeKeyValues2.forEach { (key, value) ->
-                    it[key] = value
-                }
-            }
-        }.start()
-        // give some time to the firs 2 threads to start
-        Thread.sleep(100)
-        Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
                 droppedKeyValues.forEach { (key, _) ->
-                    it.remove(key)
+                    featureContext.remove(key)
                 }
             }
-        }.start()
-        // We need to wait more here as the last thread is waiting for the first 2 to finish
-        countDownLatch.await(SHORT_WAIT_MS * 3, TimeUnit.MILLISECONDS)
+        }
+            .apply { start() }
+            .join(SHORT_WAIT_MS)
 
         // When
         val context = testedInternalSdkCore.getDatadogContext()

@@ -116,6 +116,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/start_request"/>
 
+    <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/start_sse_request"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:text="@string/button_start_sse"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/start_404_request"/>
+
     <ProgressBar
         android:id="@+id/spinner_request"
         android:layout_width="48dp"
@@ -125,7 +135,7 @@
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintEnd_toStartOf="@+id/request_status"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/start_404_request"
+        app:layout_constraintTop_toBottomOf="@id/start_sse_request"
         android:visibility="invisible"/>
 
     <androidx.appcompat.widget.AppCompatImageView

@@ -60,6 +60,7 @@
     <string name="button_async_operation">Async Operation</string>
     <string name="button_network_request">Network Request</string>
     <string name="button_start">Start</string>
+    <string name="button_start_sse">Start Server Sent Event Request</string>
     <string name="button_start_404">Start 404 Request</string>
     <string name="button_save">Save</string>
     <string name="button_long_task">Long Task</string>
@@ -181,8 +182,11 @@
     <string name="start_async_operation">Start Async Operation</string>
     <string name="chained_contexts_test">Chained Otel Contexts Test</string>
     <string name="web_view_recording">Web View Recording</string>
+    <string name="view_group_button">View Groups</string>
     <string name="start_custom_rum_view">Start Custom Rum View</string>
     <string name="webview_recording">WebView Recording</string>
     <string name="linked_spans_test">Linked Spans Test</string>
     <string name="start_linked_spans_test">Start Linked Spans Test</string>
+    <string name="card_view">Card view</string>
+    <string name="material_card_view">Material Card view</string>
 </resources>

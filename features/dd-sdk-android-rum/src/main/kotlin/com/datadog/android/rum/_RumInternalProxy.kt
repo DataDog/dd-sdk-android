@@ -74,6 +74,7 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             return builder.setTelemetryConfigurationEventMapper(eventMapper)
         }
 
+        @Suppress("unused")
         fun setAdditionalConfiguration(
             builder: RumConfiguration.Builder,
             additionalConfig: Map<String, Any>

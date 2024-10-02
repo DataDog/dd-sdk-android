@@ -17,7 +17,16 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -52,36 +61,34 @@ internal class MiscUtilsTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    // region UnitTests
-
     @Test
     fun `M repeat max N times W retryWithDelay { success = false }`(forge: Forge) {
-        // GIVEN
+        // Given
         val fakeTimes = forge.anInt(min = 1, max = 10)
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
 
-        // WHEN
+        // When
         val wasSuccessful = retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger)
 
-        // THEN
+        // Then
         assertThat(wasSuccessful).isFalse()
         verify(mockedBlock, times(fakeTimes)).invoke()
     }
 
     @Test
     fun `M execute the block in a delayed loop W retryWithDelay`(forge: Forge) {
-        // GIVEN
+        // Given
         val fakeTimes = forge.anInt(min = 1, max = 4)
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
 
-        // WHEN
+        // When
         val executionTime = measureNanoTime { retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger) }
 
-        // THEN
+        // Then
         assertThat(executionTime).isCloseTo(
             fakeTimes * fakeDelay,
             Offset.offset(TimeUnit.SECONDS.toNanos(1))
@@ -90,40 +97,58 @@ internal class MiscUtilsTest {
 
     @Test
     fun `M do nothing W retryWithDelay { times less or equal than 0 }`(forge: Forge) {
-        // GIVEN
+        // Given
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
 
-        // WHEN
+        // When
         retryWithDelay(mockedBlock, forge.anInt(Int.MIN_VALUE, 1), fakeDelay, mockInternalLogger)
 
-        // THEN
+        // Then
         verifyNoInteractions(mockedBlock)
     }
 
     @Test
-    fun `M repeat until success W retryWithDelay`(forge: Forge) {
-        // GIVEN
+    fun `M repeat until success W retryWithDelay { result false }`(forge: Forge) {
+        // Given
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false).thenReturn(true)
 
-        // WHEN
+        // When
         val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelay, mockInternalLogger)
 
-        // THEN
+        // Then
+        assertThat(wasSuccessful).isTrue()
+        verify(mockedBlock, times(2)).invoke()
+    }
+
+    @Test
+    fun `M repeat until success W retryWithDelay { exception }`(
+        @Forgery exception: Exception,
+        forge: Forge
+    ) {
+        // Given
+        val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
+        val mockedBlock: () -> Boolean = mock()
+        whenever(mockedBlock.invoke()).thenThrow(exception).thenReturn(true)
+
+        // When
+        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelay, mockInternalLogger)
+
+        // Then
         assertThat(wasSuccessful).isTrue()
         verify(mockedBlock, times(2)).invoke()
     }
 
     @Test
     fun `M provide the relevant JsonElement W toJsonElement { on Kotlin object }`(forge: Forge) {
-        // GIVEN
+        // Given
         val attributes = forge.exhaustiveAttributes().toMutableMap()
         attributes[forge.aString()] = NULL_MAP_VALUE
         attributes[forge.aString()] = JsonNull.INSTANCE
 
-        // WHEN
+        // When
         attributes.forEach {
             // be careful here, we shouldn't pass `it`, because it has Map.Entry type, so will fall
             // always into `else` branch of underlying assertion
@@ -134,7 +159,7 @@ internal class MiscUtilsTest {
 
     @Test
     fun `M map values to JSON without throwing W safeMapValuesToJson()`(forge: Forge) {
-        // GIVEN
+        // Given
         val attributes = forge.exhaustiveAttributes().toMutableMap()
         val fakeException = forge.anException()
         val faultyKey = forge.anAlphabeticalString()
@@ -145,11 +170,11 @@ internal class MiscUtilsTest {
         }
         val mockInternalLogger = mock<InternalLogger>()
 
-        // WHEN
+        // When
         val mapped = attributes.apply { this += faultyKey to faultyItem }
             .safeMapValuesToJson(mockInternalLogger)
 
-        // THEN
+        // Then
         assertThat(mapped).hasSize(attributes.size - 1)
         assertThat(mapped.values).doesNotContainNull()
         assertThat(mapped).doesNotContainKey(faultyKey)
@@ -163,7 +188,93 @@ internal class MiscUtilsTest {
             )
     }
 
-    // endregion
+    @Test
+    fun `M return null W fromJsonElement() {JsonNull}`() {
+        // Given
+        val json = JsonNull.INSTANCE
+
+        // When
+        val mapped = json.fromJsonElement()
+
+        // Then
+        assertThat(mapped).isNull()
+    }
+
+    @Test
+    fun `M return value W fromJsonElement() {JsonPrimitive boolean}`(
+        @BoolForgery value: Boolean
+    ) {
+        // Given
+        val json = JsonPrimitive(value)
+
+        // When
+        val mapped = json.fromJsonElement()
+
+        // Then
+        assertThat(mapped).isEqualTo(value)
+    }
+
+    @Test
+    fun `M return value W fromJsonElement() {JsonPrimitive int}`(
+        @IntForgery value: Int
+    ) {
+        // Given
+        val json = JsonPrimitive(value)
+
+        // When
+        val mapped = json.fromJsonElement()
+
+        // Then
+        assertThat(mapped).isEqualTo(value)
+    }
+
+    @Test
+    fun `M return value W fromJsonElement() {JsonPrimitive float}`(
+        @FloatForgery value: Float
+    ) {
+        // Given
+        val json = JsonPrimitive(value)
+
+        // When
+        val mapped = json.fromJsonElement()
+
+        // Then
+        assertThat(mapped).isEqualTo(value)
+    }
+
+    @Test
+    fun `M return value W fromJsonElement() {JsonPrimitive String}`(
+        @StringForgery value: String
+    ) {
+        // Given
+        val json = JsonPrimitive(value)
+
+        // When
+        val mapped = json.fromJsonElement()
+
+        // Then
+        assertThat(mapped).isEqualTo(value)
+    }
+
+    @Test
+    fun `M return value W fromJsonElement() {Json Object}`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery()])
+        ) value: Map<String, String>
+    ) {
+        // Given
+        val json = JsonObject()
+        value.forEach { (k, v) ->
+            json.addProperty(k, v)
+        }
+
+        // When
+        val mapped = json.fromJsonElement()
+
+        // Then
+        assertThat(mapped).isEqualTo(value)
+    }
 
     // region Internal
 
@@ -184,6 +295,7 @@ internal class MiscUtilsTest {
             is Iterable<*> -> assertThat(jsonElement.asJsonArray).containsExactlyElementsOf(
                 kotlinObject.map { JsonSerializer.toJsonElement(it) }
             )
+
             is Map<*, *> -> assertThat(jsonElement.asJsonObject).satisfies {
                 assertThat(kotlinObject.keys.map { key -> key.toString() })
                     .containsExactlyElementsOf(it.keySet())
@@ -191,10 +303,13 @@ internal class MiscUtilsTest {
                     assertJsonElement(entry.value, it[entry.key.toString()])
                 }
             }
+
             is JSONArray -> assertThat(jsonElement.asJsonArray.toString())
                 .isEqualTo(kotlinObject.toString())
+
             is JSONObject -> assertThat(jsonElement.asJsonObject.toString())
                 .isEqualTo(kotlinObject.toString())
+
             else -> assertThat(jsonElement.asString).isEqualTo(kotlinObject.toString())
         }
     }

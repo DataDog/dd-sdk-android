@@ -60,5 +60,9 @@ internal class SingleFileOrchestrator(
         return null
     }
 
+    override fun getRootDirName(): String? {
+        return file.parentFile?.nameWithoutExtension
+    }
+
     // endregion
 }

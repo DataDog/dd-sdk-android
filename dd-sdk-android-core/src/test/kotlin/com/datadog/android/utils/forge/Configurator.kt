@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryApiUsageForgeryFactory
 import com.datadog.android.test.elmyr.PersistenceStrategyBatchForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -70,5 +71,8 @@ internal class Configurator :
         forge.addFactory(PersistenceStrategyBatchForgeryFactory())
 
         forge.useJvmFactories()
+
+        // telemetry
+        forge.addFactory(InternalTelemetryApiUsageForgeryFactory())
     }
 }

@@ -384,6 +384,7 @@ datadog:
       - "android.os.Process.getStartElapsedRealtime()"
       - "android.os.Process.myPid()"
       - "android.os.StrictMode.allowThreadDiskReads()"
+      - "android.os.StrictMode.allowThreadDiskWrites()"
       - "android.os.StrictMode.setThreadPolicy(android.os.StrictMode.ThreadPolicy?)"
       - "android.os.SystemClock.elapsedRealtime()"
       - "android.util.Log.e(kotlin.String?, kotlin.String)"
@@ -1240,6 +1241,7 @@ datadog:
       - "okhttp3.Response.code()"
       - "okhttp3.Response.header(kotlin.String, kotlin.String?)"
       - "okhttp3.ResponseBody.contentLength()"
+      - "okhttp3.ResponseBody.contentType()"
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json

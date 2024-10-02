@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.event.NoOpSpanEventMapper
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -70,6 +71,19 @@ internal class TraceConfigurationBuilderTest {
         assertThat(traceConfiguration.customEndpointUrl).isEqualTo(tracesEndpointUrl)
         assertThat(traceConfiguration.eventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)
+    }
+
+    @Test
+    fun `M build configuration with network info W setNetworkInfoEnabled() and build()`(
+        @BoolForgery networkInfo: Boolean
+    ) {
+        // When
+        val traceConfiguration = testedBuilder
+            .setNetworkInfoEnabled(networkInfo)
+            .build()
+
+        // Then
+        assertThat(traceConfiguration.networkInfoEnabled).isEqualTo(networkInfo)
     }
 
     @Test

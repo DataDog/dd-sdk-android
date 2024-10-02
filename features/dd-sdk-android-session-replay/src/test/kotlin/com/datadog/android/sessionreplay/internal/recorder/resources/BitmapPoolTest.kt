@@ -154,7 +154,8 @@ internal class BitmapPoolTest {
         testedCache.put(mockBitmap)
 
         // Then
-        val actualBitmap = testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockBitmap.config)
+        val actualBitmap =
+            testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockBitmap.config)
         assertThat(actualBitmap).isEqualTo(mockBitmap)
     }
 

@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.psi.KtModifierListOwner
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtPackageDirective
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.util.isAnnotated
 
 /**
  * A rule to detekt classes in the wrong package name.
@@ -57,11 +56,6 @@ class PackageNameVisibility(
 
     override fun visitNamedDeclaration(decl: KtNamedDeclaration) {
         val isDeclarationInternal = decl.isPrivate() || decl.isInternal()
-        println("Annotations?: ${decl.isAnnotated}")
-        decl.annotationEntries.forEach {
-            val annotationName = it.shortName?.asString()?.resolveFullType()
-            println("Annotation: $annotationName / ${it.shortName}")
-        }
         val isIgnoredAnnotation = decl.annotationEntries.any {
             it.shortName?.asString()?.resolveFullType() in ignoredAnnotations
         }

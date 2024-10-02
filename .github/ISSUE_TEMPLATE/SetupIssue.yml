@@ -5,12 +5,12 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before creating an issue, please ensure you go through the [troubleshooting page](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/troubleshooting/#debugging).
+        Before creating an issue, please ensure you go through the [troubleshooting page](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/troubleshooting/android/#debugging).
   - type: textarea
     id: issue
     attributes:
-      label: Describe the issue 
-      description: Provide a clear and concise description of the issue. Include compilation logs and SDK debug logs if relevant. 
+      label: Describe the issue
+      description: Provide a clear and concise description of the issue. Include compilation logs and SDK debug logs if relevant.
     validations:
       required: true
   - type: textarea
@@ -19,7 +19,7 @@ body:
       label: Reproduction steps
       description: |
         Provide a self-contained piece of code demonstrating the issue.
-        For a more complex setup consider creating a small app that showcases the problem. 
+        For a more complex setup consider creating a small app that showcases the problem.
         **Note** - Avoid sharing any business logic, credentials or tokens.
     validations:
       required: true
@@ -28,7 +28,7 @@ body:
     attributes:
       label: Device Information
       description: |
-        What are the common characteristics of devices you're seeing this issue in? 
+        What are the common characteristics of devices you're seeing this issue in?
         Simulators, specific models, OS versions, network state (wifi / cellular / offline), power state (plugged in / battery), etc.
     validations:
       required: false
@@ -42,17 +42,17 @@ body:
   - type: input
     id: kotlin_java_version
     attributes:
-      label: Kotlin / Java version 
+      label: Kotlin / Java version
   - type: input
     id: gradle_version
     attributes:
-      label: Gradle / AGP version 
+      label: Gradle / AGP version
   - type: textarea
     id: dependencies
     attributes:
-      label: Other dependencies versions                
+      label: Other dependencies versions
       description: |
-        Relevant third party dependency versions. 
+        Relevant third party dependency versions.
         e.g. okhttp 4.11.0
   - type: textarea
     id: other_info
@@ -60,4 +60,4 @@ body:
       label: Other relevant information
       description: |
         Other relevant information such as additional tooling in place, proxies, etc.
-        Anything that might be relevant for troubleshooting your setup. 
+        Anything that might be relevant for troubleshooting your setup.

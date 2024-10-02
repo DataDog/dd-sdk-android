@@ -1346,8 +1346,12 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     // region Internal
 
-    internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
-        return stubChain(chain) { forgeResponse(statusCode) }
+    internal fun stubChain(
+        chain: Interceptor.Chain,
+        statusCode: Int,
+        responseBuilder: Response.Builder.() -> Unit = {}
+    ) {
+        return stubChain(chain) { forgeResponse(statusCode, responseBuilder) }
     }
 
     internal fun stubChain(
@@ -1400,7 +1404,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         return builder.build()
     }
 
-    private fun forgeResponse(statusCode: Int): Response {
+    private fun forgeResponse(statusCode: Int, additionalConfig: Response.Builder.() -> Unit = {}): Response {
         val builder = Response.Builder()
             .request(fakeRequest)
             .protocol(Protocol.HTTP_2)
@@ -1410,6 +1414,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         if (fakeMediaType != null) {
             builder.header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
         }
+        builder.additionalConfig()
         return builder.build()
     }
 

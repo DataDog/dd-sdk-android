@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.allowThreadDiskReads
+import com.datadog.android.core.allowThreadDiskWrites
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.io.File
@@ -51,7 +52,7 @@ internal class NdkCrashReportsFeature(
             NDK_CRASH_REPORTS_FOLDER
         )
         try {
-            allowThreadDiskReads {
+            allowThreadDiskWrites {
                 ndkCrashesDirs.mkdirs()
             }
         } catch (e: SecurityException) {

@@ -1,6 +1,7 @@
 package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.graphics.Typeface
+import android.text.Layout
 import android.view.Gravity
 import android.widget.TextView
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
@@ -29,6 +31,12 @@ import com.datadog.android.sessionreplay.model.MobileSegment.Vertical.CENTER as 
 
 internal abstract class TextViewMapperTest :
     BaseAsyncBackgroundWireframeMapperTest<TextView, TextViewMapper<TextView>>() {
+
+    @Mock
+    lateinit var mockLayout: Layout
+
+    @StringForgery
+    lateinit var fakeLayoutText: String
 
     @StringForgery
     lateinit var fakeText: String
@@ -44,6 +52,7 @@ internal abstract class TextViewMapperTest :
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockLayout.text) doReturn fakeLayoutText
         whenever(
             mockColorStringFormatter.formatColorAndAlphaAsHexString(
                 fakeTextColor,
@@ -77,6 +86,7 @@ internal abstract class TextViewMapperTest :
     ) {
         // Given
         prepareMockView<TextView> { mockView ->
+            whenever(mockView.layout) doReturn mockLayout
             whenever(mockView.typeface) doReturn fakeTypeface
             whenever(mockView.textSize) doReturn fakeFontSize
             whenever(mockView.currentTextColor) doReturn fakeTextColor
@@ -110,7 +120,7 @@ internal abstract class TextViewMapperTest :
                     clip = null,
                     shapeStyle = null,
                     border = null,
-                    text = expectedPrivacyCompliantText(fakeText),
+                    text = expectedPrivacyCompliantText(fakeLayoutText),
                     textStyle = MobileSegment.TextStyle(
                         family = expectedFontFamily,
                         size = expectedFontSize,

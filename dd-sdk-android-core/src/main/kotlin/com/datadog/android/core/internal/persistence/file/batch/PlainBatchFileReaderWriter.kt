@@ -26,7 +26,7 @@ internal class PlainBatchFileReaderWriter(
     private val internalLogger: InternalLogger
 ) : BatchFileReaderWriter {
 
-    // region FileWriter+FileReader
+    // region FileWriter
 
     @WorkerThread
     override fun writeData(
@@ -55,6 +55,10 @@ internal class PlainBatchFileReaderWriter(
             false
         }
     }
+
+    // endregion
+
+    // region FileReader
 
     @WorkerThread
     override fun readData(
