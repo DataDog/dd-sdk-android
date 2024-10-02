@@ -12,7 +12,7 @@ package com.datadog.android.sessionreplay
  * @see TextAndInputPrivacy.MASK_ALL_INPUTS
  * @see TextAndInputPrivacy.MASK_ALL
  */
-enum class TextAndInputPrivacy : PrivacyLevel {
+enum class TextAndInputPrivacy {
 
     /**
      * All text and inputs considered sensitive will be masked.

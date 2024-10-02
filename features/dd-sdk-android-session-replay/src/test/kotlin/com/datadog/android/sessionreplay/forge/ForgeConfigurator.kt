@@ -55,7 +55,6 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(TouchEventRecordedDataQueueItemForgeryFactory())
         forge.addFactory(WireframeBoundsForgeryFactory())
         forge.addFactory(WebViewWireframeForgeryFactory())
-        forge.addFactory(PrivacyLevelForgeryFactory())
 
         forge.useJvmFactories()
     }

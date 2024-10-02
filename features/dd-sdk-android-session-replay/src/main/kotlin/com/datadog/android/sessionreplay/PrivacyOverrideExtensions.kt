@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.PrivacyOverrideManager
 
 /**
  * Allows setting a view to be "hidden" in the hierarchy in Session Replay.
@@ -16,10 +15,10 @@ import com.datadog.android.sessionreplay.internal.PrivacyOverrideManager
  *
  * @param hide pass `true` to hide the view, or `false` to remove the override
  */
-fun View.ddSessionReplayOverrideHidden(hide: Boolean) {
+fun View.datadogSessionReplayHidden(hide: Boolean) {
     if (hide) {
-        PrivacyOverrideManager.addHiddenOverride(this)
+        this.setTag(R.id.datadog_hidden, true)
     } else {
-        PrivacyOverrideManager.removeHiddenOverride(this)
+        this.setTag(R.id.datadog_hidden, null)
     }
 }

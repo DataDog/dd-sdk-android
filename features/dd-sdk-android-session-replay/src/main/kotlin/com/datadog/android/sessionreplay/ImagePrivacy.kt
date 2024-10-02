@@ -12,7 +12,7 @@ package com.datadog.android.sessionreplay
  * @see ImagePrivacy.MASK_LARGE_ONLY
  * @see ImagePrivacy.MASK_ALL
  */
-enum class ImagePrivacy : PrivacyLevel {
+enum class ImagePrivacy {
     /**
      * All images will be recorded, including those downloaded from the Internet during app runtime.
      */
