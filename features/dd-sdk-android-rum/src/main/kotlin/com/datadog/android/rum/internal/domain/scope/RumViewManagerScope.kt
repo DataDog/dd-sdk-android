@@ -13,6 +13,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
@@ -144,7 +145,24 @@ internal class RumViewManagerScope(
         val importanceForeground = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val isForegroundProcess = processFlag == importanceForeground
 
-        if (applicationDisplayed || !isForegroundProcess) {
+        if (event is RumRawEvent.AddViewLoadingTime) {
+            val internalLogger = sdkCore.internalLogger
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { MESSAGE_MISSING_VIEW }
+            )
+            internalLogger.logApiUsage(
+                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                    overwrite = event.overwrite,
+                    noView = true,
+                    noActiveView = false
+                )
+            )
+            // we should return here and not add the event to the session ended metric missed events as we already
+            // send the API usage telemetry
+            return
+        } else if (applicationDisplayed || !isForegroundProcess) {
             handleBackgroundEvent(event, writer)
         } else {
             val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes

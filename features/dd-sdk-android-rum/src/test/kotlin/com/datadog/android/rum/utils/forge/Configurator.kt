@@ -6,6 +6,12 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryApiUsageForgeryFactory
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryConfigurationForgeryFactory
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryDebugLogForgeryFactory
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryErrorLogForgeryFactory
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.InternalTelemetryMetricForgeryFactory
 import com.datadog.android.rum.tests.elmyr.ResourceIdForgeryFactory
 import com.datadog.android.rum.tests.elmyr.RumScopeKeyForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
@@ -35,15 +41,23 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ResourceTimingForgeryFactory())
         forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
-        forge.addFactory(TelemetryCoreConfigurationForgeryFactory())
         forge.addFactory(RumEventMetaForgeryFactory())
         forge.addFactory(ViewEventMetaForgeryFactory())
         forge.addFactory(RumScopeKeyForgeryFactory())
         forge.addFactory(ResourceIdForgeryFactory())
 
-        // Telemetry
+        // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())
         forge.addFactory(TelemetryErrorEventForgeryFactory())
         forge.addFactory(TelemetryConfigurationEventForgeryFactory())
+        forge.addFactory(TelemetryUsageEventForgeryFactory())
+
+        // Telemetry internal models
+        forge.addFactory(InternalTelemetryEventForgeryFactory())
+        forge.addFactory(InternalTelemetryMetricForgeryFactory())
+        forge.addFactory(InternalTelemetryDebugLogForgeryFactory())
+        forge.addFactory(InternalTelemetryErrorLogForgeryFactory())
+        forge.addFactory(InternalTelemetryConfigurationForgeryFactory())
+        forge.addFactory(InternalTelemetryApiUsageForgeryFactory())
     }
 }

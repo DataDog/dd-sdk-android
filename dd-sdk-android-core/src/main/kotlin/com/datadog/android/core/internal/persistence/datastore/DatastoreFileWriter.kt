@@ -9,7 +9,6 @@ package com.datadog.android.core.internal.persistence.datastore
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
-import com.datadog.android.core.internal.persistence.datastore.ext.toByteArray
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteDirectoryContentsSafe
 import com.datadog.android.core.internal.persistence.file.deleteSafe
@@ -17,6 +16,7 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
 import com.datadog.android.core.internal.utils.join
+import com.datadog.android.core.internal.utils.toByteArray
 import com.datadog.android.core.persistence.Serializer
 import java.io.File
 
@@ -36,8 +36,8 @@ internal class DatastoreFileWriter(
         version: Int
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
-            featureName = featureName,
             storageDir = storageDir,
+            featureName = featureName,
             key = key
         )
 
@@ -71,8 +71,8 @@ internal class DatastoreFileWriter(
     @WorkerThread
     internal fun delete(key: String, callback: DataStoreWriteCallback?) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
-            featureName = featureName,
             storageDir = storageDir,
+            featureName = featureName,
             key = key
         )
 

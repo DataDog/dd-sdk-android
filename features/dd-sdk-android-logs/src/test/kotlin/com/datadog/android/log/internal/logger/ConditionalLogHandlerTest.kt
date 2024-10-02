@@ -6,9 +6,13 @@
 
 package com.datadog.android.log.internal.logger
 
+import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -35,14 +39,17 @@ internal class ConditionalLogHandlerTest {
     lateinit var testedHandler: LogHandler
 
     @Mock
-    lateinit var mockDevLogHandler: LogHandler
+    lateinit var mockDelegateLogHandler: LogHandler
 
-    lateinit var fakeServiceName: String
-    lateinit var fakeLoggerName: String
+    @StringForgery
     lateinit var fakeMessage: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeTags: Set<String>
+
     lateinit var fakeAttributes: Map<String, Any?>
 
+    @IntForgery(min = 2, max = 8)
     var fakeLevel: Int = 0
 
     var fakeCondition = false
@@ -50,24 +57,30 @@ internal class ConditionalLogHandlerTest {
     @Forgery
     lateinit var fakeThrowable: Throwable
 
+    @StringForgery
+    lateinit var fakeErrorKind: String
+
+    @StringForgery
+    lateinit var fakeErrorMessage: String
+
+    @StringForgery
+    lateinit var fakeErrorStackTrace: String
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeServiceName = forge.anAlphabeticalString()
-        fakeLoggerName = forge.anAlphabeticalString()
-        fakeMessage = forge.anAlphabeticalString()
-        fakeLevel = forge.anInt(2, 8)
-        fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
-        fakeTags = forge.aList { anAlphabeticalString() }.toSet()
+        fakeAttributes = forge.exhaustiveAttributes()
 
-        testedHandler = ConditionalLogHandler(mockDevLogHandler) { _, _ ->
+        testedHandler = ConditionalLogHandler(mockDelegateLogHandler) { _, _ ->
             fakeCondition
         }
     }
 
     @Test
-    fun `forwards log (condition true)`() {
+    fun `M forward log W handleLog (throwable, condition true)`() {
+        // Given
         fakeCondition = true
 
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -76,7 +89,8 @@ internal class ConditionalLogHandlerTest {
             fakeTags
         )
 
-        verify(mockDevLogHandler).handleLog(
+        // Then
+        verify(mockDelegateLogHandler).handleLog(
             fakeLevel,
             fakeMessage,
             fakeThrowable,
@@ -86,9 +100,11 @@ internal class ConditionalLogHandlerTest {
     }
 
     @Test
-    fun `forwards log on background thread (condition true)`(forge: Forge) {
+    fun `M forward log on background thread W handleLog (throwable, condition true)`(
+        @StringForgery threadName: String
+    ) {
+        // Given
         fakeCondition = true
-        val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
         val thread = Thread(
             {
@@ -104,10 +120,12 @@ internal class ConditionalLogHandlerTest {
             threadName
         )
 
+        // When
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        verify(mockDevLogHandler).handleLog(
+        // Then
+        verify(mockDelegateLogHandler).handleLog(
             fakeLevel,
             fakeMessage,
             fakeThrowable,
@@ -117,9 +135,11 @@ internal class ConditionalLogHandlerTest {
     }
 
     @Test
-    fun `forwards minimal log (condition true)`() {
+    fun `M forward minimal log W handleLog (null throwable, condition true)`() {
+        // Given
         fakeCondition = true
 
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -128,7 +148,8 @@ internal class ConditionalLogHandlerTest {
             emptySet()
         )
 
-        verify(mockDevLogHandler).handleLog(
+        // Then
+        verify(mockDelegateLogHandler).handleLog(
             fakeLevel,
             fakeMessage,
             null,
@@ -138,9 +159,11 @@ internal class ConditionalLogHandlerTest {
     }
 
     @Test
-    fun `forwards log (condition false)`() {
+    fun `M not forward log W handleLog (throwable, condition false)`() {
+        // Given
         fakeCondition = false
 
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -149,13 +172,16 @@ internal class ConditionalLogHandlerTest {
             fakeTags
         )
 
-        verifyNoInteractions(mockDevLogHandler)
+        // Then
+        verifyNoInteractions(mockDelegateLogHandler)
     }
 
     @Test
-    fun `forwards log on background thread (condition false)`(forge: Forge) {
+    fun `M not forward log on background thread W handleLog (throwable, condition false)`(
+        @StringForgery threadName: String
+    ) {
+        // Given
         fakeCondition = false
-        val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
         val thread = Thread(
             {
@@ -171,16 +197,20 @@ internal class ConditionalLogHandlerTest {
             threadName
         )
 
+        // When
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        verifyNoInteractions(mockDevLogHandler)
+        // Then
+        verifyNoInteractions(mockDelegateLogHandler)
     }
 
     @Test
-    fun `forwards minimal log (condition false)`() {
+    fun `M not forward minimal log W handleLog (null throwable, condition false)`() {
+        // Given
         fakeCondition = false
 
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -189,6 +219,173 @@ internal class ConditionalLogHandlerTest {
             emptySet()
         )
 
-        verifyNoInteractions(mockDevLogHandler)
+        // Then
+        verifyNoInteractions(mockDelegateLogHandler)
+    }
+
+    @Test
+    fun `M forward log W handleLog (stacktrace, condition true)`() {
+        // Given
+        fakeCondition = true
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeErrorKind,
+            fakeErrorMessage,
+            fakeErrorStackTrace,
+            fakeAttributes,
+            fakeTags
+        )
+
+        // Then
+        verify(mockDelegateLogHandler).handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeErrorKind,
+            fakeErrorMessage,
+            fakeErrorStackTrace,
+            fakeAttributes,
+            fakeTags
+        )
+    }
+
+    @Test
+    fun `M forward log on background thread W handleLog (stacktrace, condition true)`(
+        @StringForgery threadName: String
+    ) {
+        // Given
+        fakeCondition = true
+        val countDownLatch = CountDownLatch(1)
+        val thread = Thread(
+            {
+                testedHandler.handleLog(
+                    fakeLevel,
+                    fakeMessage,
+                    fakeErrorKind,
+                    fakeErrorMessage,
+                    fakeErrorStackTrace,
+                    fakeAttributes,
+                    fakeTags
+                )
+                countDownLatch.countDown()
+            },
+            threadName
+        )
+
+        // When
+        thread.start()
+        countDownLatch.await(1, TimeUnit.SECONDS)
+
+        // Then
+        verify(mockDelegateLogHandler).handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeErrorKind,
+            fakeErrorMessage,
+            fakeErrorStackTrace,
+            fakeAttributes,
+            fakeTags
+        )
+    }
+
+    @Test
+    fun `M forward minimal log W handleLog (null stacktrace, condition true)`() {
+        // Given
+        fakeCondition = true
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            null,
+            null,
+            null,
+            emptyMap(),
+            emptySet()
+        )
+
+        // Then
+        verify(mockDelegateLogHandler).handleLog(
+            fakeLevel,
+            fakeMessage,
+            null,
+            null,
+            null,
+            emptyMap(),
+            emptySet()
+        )
+    }
+
+    @Test
+    fun `M not forward log W handleLog (stacktrace, condition false)`() {
+        // Given
+        fakeCondition = false
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeErrorKind,
+            fakeErrorMessage,
+            fakeErrorStackTrace,
+            fakeAttributes,
+            fakeTags
+        )
+
+        // Then
+        verifyNoInteractions(mockDelegateLogHandler)
+    }
+
+    @Test
+    fun `M not forward log on background thread W handleLog (stacktrace, condition false)`(
+        @StringForgery threadName: String
+    ) {
+        // Given
+        fakeCondition = false
+        val countDownLatch = CountDownLatch(1)
+        val thread = Thread(
+            {
+                testedHandler.handleLog(
+                    fakeLevel,
+                    fakeMessage,
+                    fakeErrorKind,
+                    fakeErrorMessage,
+                    fakeErrorStackTrace,
+                    fakeAttributes,
+                    fakeTags
+                )
+                countDownLatch.countDown()
+            },
+            threadName
+        )
+
+        // When
+        thread.start()
+        countDownLatch.await(1, TimeUnit.SECONDS)
+
+        // Then
+        verifyNoInteractions(mockDelegateLogHandler)
+    }
+
+    @Test
+    fun `M not forward minimal log W handleLog (null stacktrace, condition false)`() {
+        // Given
+        fakeCondition = false
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            null,
+            null,
+            null,
+            emptyMap(),
+            emptySet()
+        )
+
+        // Then
+        verifyNoInteractions(mockDelegateLogHandler)
     }
 }

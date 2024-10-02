@@ -49,16 +49,15 @@ internal sealed class UploadStatus(
             is DNSError,
             is HttpClientRateLimiting,
             is HttpRedirection,
+            is UnknownStatus,
             is NetworkError -> InternalLogger.Level.WARN
-
             is Success -> InternalLogger.Level.INFO
-
-            else -> InternalLogger.Level.VERBOSE
         }
 
         val targets = when (this) {
             is HttpClientError,
-            is HttpClientRateLimiting -> listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)
+            is HttpClientRateLimiting,
+            is UnknownStatus -> listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)
 
             is DNSError,
             is HttpRedirection,
@@ -69,8 +68,6 @@ internal sealed class UploadStatus(
             is Success,
             is UnknownException,
             is UnknownHttpError -> listOf(InternalLogger.Target.USER)
-
-            else -> emptyList()
         }
 
         logger.log(
@@ -95,37 +92,31 @@ internal sealed class UploadStatus(
                 append("Batch $requestId [$byteSize bytes] ($context)")
             }
 
-            if (this@UploadStatus is Success) {
-                append(" sent successfully.")
-            } else if (this@UploadStatus is UnknownStatus) {
-                append(" status is unknown")
-            } else {
-                append(" failed because ")
-                when (this@UploadStatus) {
-                    is DNSError -> append("of a DNS error")
-                    is HttpClientError -> append("of a processing error or invalid data")
-                    is HttpClientRateLimiting -> append("of an intake rate limitation")
-                    is HttpRedirection -> append("of a network redirection")
-                    is HttpServerError -> append("of a server processing error")
-                    is InvalidTokenError -> append("your token is invalid")
-                    is NetworkError -> append("of a network error")
-                    is RequestCreationError -> append("of an error when creating the request")
-                    is UnknownException -> append("of an unknown error")
-                    is UnknownHttpError -> append("of an unexpected HTTP error (status code = $code)")
-                    else -> {}
-                }
+            when (this@UploadStatus) {
+                is DNSError -> append(" failed because of a DNS error")
+                is HttpClientError -> append(" failed because of a processing error or invalid data")
+                is HttpClientRateLimiting -> append(" failed because of an intake rate limitation")
+                is HttpRedirection -> append(" failed because of a network redirection")
+                is HttpServerError -> append(" failed because of a server processing error")
+                is InvalidTokenError -> append(" failed because your token is invalid")
+                is NetworkError -> append(" failed because of a network error")
+                is RequestCreationError -> append(" failed because of an error when creating the request")
+                is UnknownException -> append(" failed because of an unknown error")
+                is UnknownHttpError -> append(" failed because of an unexpected HTTP error (status code = $code)")
+                is UnknownStatus -> append(" status is unknown")
+                is Success -> append(" sent successfully.")
+            }
 
-                if (throwable != null) {
-                    append(" (")
-                    append(throwable.message)
-                    append(")")
-                }
+            if (throwable != null) {
+                append(" (")
+                append(throwable.message)
+                append(")")
+            }
 
-                if (shouldRetry) {
-                    append("; we will retry later.")
-                } else {
-                    append("; the batch was dropped.")
-                }
+            if (shouldRetry) {
+                append("; we will retry later.")
+            } else if (this@UploadStatus !is Success) {
+                append("; the batch was dropped.")
             }
 
             if (this@UploadStatus is InvalidTokenError) {

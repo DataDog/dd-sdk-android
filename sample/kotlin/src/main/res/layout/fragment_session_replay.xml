@@ -128,7 +128,17 @@
             android:text="@string/web_view_recording"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/navigation_image_components"/>
+            app:layout_constraintTop_toBottomOf="@id/navigation_image_scaling" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_view_group"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/view_group_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_webview_recording" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

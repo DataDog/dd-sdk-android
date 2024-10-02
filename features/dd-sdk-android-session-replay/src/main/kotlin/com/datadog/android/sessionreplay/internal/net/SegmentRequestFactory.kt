@@ -27,7 +27,7 @@ internal class SegmentRequestFactory(
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
-        val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
+        val serializedSegmentPair = batchToSegmentsMapper.map(context, batchData.map { it.data })
         if (serializedSegmentPair.isEmpty()) {
             @Suppress("ThrowingInternalException")
             throw InvalidPayloadFormatException(

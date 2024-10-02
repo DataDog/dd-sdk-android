@@ -117,6 +117,8 @@ internal class ConsentAwareStorageTest {
     fun `set up`() {
         whenever(mockPendingOrchestrator.getRootDir()) doReturn File(mockPendingRootParentFile, fakeRootDirName)
         whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
+        whenever(mockPendingOrchestrator.getRootDirName()) doReturn fakeRootDirName
+        whenever(mockGrantedOrchestrator.getRootDirName()) doReturn fakeRootDirName
 
         whenever(
             mockInternalLogger.startPerformanceMeasure(
@@ -162,7 +164,7 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockGrantedOrchestrator).getWritableFile(forceNewBatch)
         verify(mockGrantedOrchestrator).getMetadataFile(file)
-        verify(mockGrantedOrchestrator).getRootDir()
+        verify(mockGrantedOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
@@ -191,7 +193,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile(forceNewBatch)
-        verify(mockGrantedOrchestrator).getRootDir()
+        verify(mockGrantedOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
@@ -225,7 +227,7 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockPendingOrchestrator).getWritableFile(forceNewBatch)
         verify(mockPendingOrchestrator).getMetadataFile(file)
-        verify(mockPendingOrchestrator).getRootDir()
+        verify(mockPendingOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
@@ -254,7 +256,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockPendingOrchestrator).getWritableFile(forceNewBatch)
-        verify(mockPendingOrchestrator).getRootDir()
+        verify(mockPendingOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
@@ -339,9 +341,9 @@ internal class ConsentAwareStorageTest {
             false
         )
         if (fakeDatadogContext.trackingConsent == TrackingConsent.PENDING) {
-            verify(mockPendingOrchestrator).getRootDir()
+            verify(mockPendingOrchestrator).getRootDirName()
         } else if (fakeDatadogContext.trackingConsent == TrackingConsent.GRANTED) {
-            verify(mockGrantedOrchestrator).getRootDir()
+            verify(mockGrantedOrchestrator).getRootDirName()
         }
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,

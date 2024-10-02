@@ -26,17 +26,20 @@ internal class NoOpFactoryProviderTest {
             "AnyGenericInterface.kt:NoOpAnyGenericInterface.kt",
             "EnumInterface.kt:NoOpEnumInterface.kt",
             "OverloadedInterface.kt:NoOpOverloadedInterface.kt",
-            "PublicImplementation.kt:NoOpPublicImplementation.kt"
+            "PublicImplementation.kt:NoOpPublicImplementation.kt",
+            "ExperimentalInterface.kt:NoOpExperimentalInterface.kt"
         ]
     )
     fun `implement a NoOp class from interface`(srcFileName: String, genFileName: String) {
         val srcFile = File(javaClass.getResource("/src/$srcFileName")!!.file)
+        val experimentalApiAnnotationFile = File(javaClass.getResource("/src/ExperimentalApi.kt")!!.file)
         val genFile = File(javaClass.getResource("/gen/$genFileName")!!.file)
         val kotlinSource = SourceFile.fromPath(srcFile)
+        val experimentalApiAnnotationSource = SourceFile.fromPath(experimentalApiAnnotationFile)
 
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(kotlinSource)
+            sources = listOf(kotlinSource, experimentalApiAnnotationSource)
             symbolProcessorProviders = listOf(NoOpFactoryProvider())
         }.compile()
 

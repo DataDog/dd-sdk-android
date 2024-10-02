@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.metric
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 
 class FakeInternalLogger : InternalLogger {
 
@@ -50,5 +51,9 @@ class FakeInternalLogger : InternalLogger {
     ): PerformanceMetric? {
         // do nothing
         return null
+    }
+
+    override fun logApiUsage(apiUsageEvent: InternalTelemetryEvent.ApiUsage, samplingRate: Float) {
+        // do nothing
     }
 }

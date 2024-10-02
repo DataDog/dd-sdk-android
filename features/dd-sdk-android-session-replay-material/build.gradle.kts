@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -69,3 +70,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "Session Replay Extension Support for Material UI components."
 )
+detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal", ":features:dd-sdk-android-session-replay")

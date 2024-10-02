@@ -68,6 +68,11 @@
         android:name="com.datadog.android.sample.sessionreplay.TextViewComponentsFragment"
         android:label="@string/text_view_components"/>
 
+    <fragment
+        android:id="@+id/fragment_view_group_components"
+        android:name="com.datadog.android.sample.sessionreplay.ViewGroupComponentsFragment"
+        android:label="@string/text_view_components" />
+
     <fragment android:id="@+id/fragment_picker_components"
         android:name="com.datadog.android.sample.sessionreplay.PickerComponentsFragment"
         android:label="@string/picker_components"/>

@@ -101,7 +101,7 @@
             "category": {
               "type": "string",
               "description": "The specific category of the error. It provides a high-level grouping for different types of errors.",
-              "enum": ["ANR", "App Hang", "Exception"],
+              "enum": ["ANR", "App Hang", "Exception", "Watchdog Termination", "Memory Warning"],
               "readOnly": true
             },
             "handling": {

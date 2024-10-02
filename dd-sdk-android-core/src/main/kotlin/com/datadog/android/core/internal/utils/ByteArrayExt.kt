@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
+import java.nio.ByteBuffer
 
 /**
  * Splits this [ByteArray] to a list of [ByteArray] around occurrences of the specified [delimiter].
@@ -127,5 +128,52 @@ internal fun ByteArray.copyTo(
         @Suppress("UnsafeThirdPartyFunctionCall")
         System.arraycopy(this, srcPos, dest, destPos, length)
         true
+    }
+}
+
+/**
+ * Reads a long from this byte array.
+ * Note that the ByteArray needs to be at least of size 8.
+ */
+internal fun ByteArray.toLong(): Long {
+    // wrap provides valid backing array
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    return ByteBuffer.wrap(this).getLong()
+}
+
+/**
+ * Reads an int from this byte array.
+ * Note that the ByteArray needs to be at least of size 4.
+ */
+internal fun ByteArray.toInt(): Int {
+    // wrap provides valid backing array
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    return ByteBuffer.wrap(this).getInt()
+}
+
+/**
+ * Reads a short from this byte array.
+ * Note that the ByteArray needs to be at least of size 2.
+ */
+internal fun ByteArray.toShort(): Short {
+    // wrap provides valid backing array
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    return ByteBuffer.wrap(this).getShort()
+}
+
+/**
+ * Creates a copy of a range within this ByteArray into a new Byte Array.
+ * If the copy would have thrown an exception, an empty byte array is returned instead.
+ * @param fromIndex the start of the range (inclusive) to copy.
+ * @param toIndex the end of the range (exclusive) to copy.
+ */
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
+internal fun ByteArray.copyOfRangeSafe(fromIndex: Int, toIndex: Int): ByteArray {
+    return try {
+        this.copyOfRange(fromIndex, toIndex)
+    } catch (e: IndexOutOfBoundsException) {
+        byteArrayOf()
+    } catch (e: IllegalArgumentException) {
+        byteArrayOf()
     }
 }

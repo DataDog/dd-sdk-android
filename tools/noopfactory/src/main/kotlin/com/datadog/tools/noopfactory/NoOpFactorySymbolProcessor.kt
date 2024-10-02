@@ -59,6 +59,7 @@ class NoOpFactorySymbolProcessor(
 ) : SymbolProcessor {
 
     private var invoked = false
+    private var requireOptInAnnotations: Set<KSType> = emptySet()
 
     /** @inheritdoc */
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -66,7 +67,7 @@ class NoOpFactorySymbolProcessor(
             logger.info("Already invoked, ignoring")
             return emptyList()
         }
-
+        resolveRequireOptInAnnotations(resolver)
         val result = mutableListOf<KSAnnotated>()
         resolver.getSymbolsWithAnnotation(NoOpImplementation::class.java.canonicalName)
             .filterIsInstance<KSClassDeclaration>()
@@ -84,6 +85,18 @@ class NoOpFactorySymbolProcessor(
 
         invoked = true
         return result
+    }
+
+    private fun resolveRequireOptInAnnotations(resolver: Resolver) {
+        requireOptInAnnotations = resolver
+            .getSymbolsWithAnnotation("kotlin.RequiresOptIn")
+            .filterIsInstance<KSClassDeclaration>()
+            .filter { it.classKind == ClassKind.ANNOTATION_CLASS }
+            .map {
+                logger.info("Found RequiresOptIn annotation: ${it.qualifiedName?.asString()}")
+                it.asType(emptyList())
+            }
+            .toSet()
     }
 
     // region Internal Generation
@@ -325,6 +338,7 @@ class NoOpFactorySymbolProcessor(
         val deprecatedAnnotation = functionDeclaration
             .getAnnotationsByType(Deprecated::class)
             .firstOrNull()
+
         if (deprecatedAnnotation != null) {
             funSpecBuilder.addAnnotation(
                 AnnotationSpec.builder(Deprecated::class)
@@ -333,6 +347,17 @@ class NoOpFactorySymbolProcessor(
             )
         }
 
+        // check if the function has any RequiresOptIn annotations and add OptIn annotation for the override function
+        functionDeclaration
+            .annotations
+            .filter { it.annotationType.resolve() in requireOptInAnnotations }
+            .forEach {
+                funSpecBuilder.addAnnotation(
+                    AnnotationSpec.builder(ClassName("kotlin", "OptIn"))
+                        .addMember("%T::class", it.annotationType.resolve().toTypeName())
+                        .build()
+                )
+            }
         val returnType = functionDeclaration.returnType?.resolve()
         if (returnType != null) {
             generateFunctionReturnStatement(funSpecBuilder, returnType, params, typeParamResolver)
