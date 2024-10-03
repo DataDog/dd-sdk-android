@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.net.Request
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.net.RequestFactory.Companion.HEADER_API_KEY
 import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN
@@ -20,6 +21,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory.Companion.APPLICATION_ID
 import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory.Companion.UPLOAD_DESCRIPTION
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -69,6 +71,9 @@ internal class ResourcesRequestFactoryTest {
     @Mock
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeExecutionContext: RequestExecutionContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         val fakeRumFeature = mapOf(APPLICATION_ID to fakeApplicationId)
@@ -103,6 +108,7 @@ internal class ResourcesRequestFactoryTest {
         // When
         val request = testedRequestFactory.create(
             fakeDatadogContext,
+            fakeExecutionContext,
             fakeRawBatchEvents,
             null
         )
@@ -138,6 +144,7 @@ internal class ResourcesRequestFactoryTest {
         // When
         val request = testedRequestFactory.create(
             fakeDatadogContext,
+            fakeExecutionContext,
             fakeRawBatchEvents,
             null
         )

@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
@@ -28,6 +29,7 @@ internal class LogsRequestFactory(
     /** @inheritdoc */
     override fun create(
         context: DatadogContext,
+        executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request? {

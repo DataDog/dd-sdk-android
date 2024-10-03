@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import java.util.Locale
 
 internal sealed class UploadStatus(
     val shouldRetry: Boolean = false,
@@ -16,8 +17,12 @@ internal sealed class UploadStatus(
 
     internal class Success(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
 
-    internal class NetworkError(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
-    internal class DNSError(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
+    internal class NetworkError(throwable: Throwable) :
+        UploadStatus(shouldRetry = true, throwable = throwable)
+
+    internal class DNSError(throwable: Throwable) :
+        UploadStatus(shouldRetry = true, throwable = throwable)
+
     internal class RequestCreationError(throwable: Throwable?) :
         UploadStatus(shouldRetry = false, throwable = throwable)
 
@@ -27,65 +32,68 @@ internal sealed class UploadStatus(
     internal class HttpServerError(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
     internal class HttpClientRateLimiting(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
     internal class UnknownHttpError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
-
     internal class UnknownException(throwable: Throwable) : UploadStatus(shouldRetry = true, throwable = throwable)
-
     internal object UnknownStatus : UploadStatus(shouldRetry = false, code = UNKNOWN_RESPONSE_CODE)
 
     fun logStatus(
         context: String,
         byteSize: Int,
         logger: InternalLogger,
+        attempts: Int,
         requestId: String? = null
     ) {
-        val level = when (this) {
-            is HttpClientError,
-            is HttpServerError,
-            is InvalidTokenError,
-            is RequestCreationError,
-            is UnknownException,
-            is UnknownHttpError -> InternalLogger.Level.ERROR
-
-            is DNSError,
-            is HttpClientRateLimiting,
-            is HttpRedirection,
-            is UnknownStatus,
-            is NetworkError -> InternalLogger.Level.WARN
-            is Success -> InternalLogger.Level.INFO
-        }
-
-        val targets = when (this) {
-            is HttpClientError,
-            is HttpClientRateLimiting,
-            is UnknownStatus -> listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)
-
-            is DNSError,
-            is HttpRedirection,
-            is HttpServerError,
-            is InvalidTokenError,
-            is NetworkError,
-            is RequestCreationError,
-            is Success,
-            is UnknownException,
-            is UnknownHttpError -> listOf(InternalLogger.Target.USER)
-        }
-
+        val level = resolveInternalLogLevel()
+        val targets = resolveInternalLogTarget()
         logger.log(
             level,
             targets,
             {
-                buildStatusMessage(requestId, byteSize, context, throwable)
+                buildStatusMessage(requestId, byteSize, context, throwable, attempts)
             }
         )
+    }
+
+    private fun resolveInternalLogTarget() = when (this) {
+        is HttpClientError,
+        is HttpClientRateLimiting,
+        is UnknownStatus -> listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)
+
+        is DNSError,
+        is HttpRedirection,
+        is HttpServerError,
+        is InvalidTokenError,
+        is NetworkError,
+        is RequestCreationError,
+        is Success,
+        is UnknownException,
+        is UnknownHttpError -> listOf(InternalLogger.Target.USER)
+    }
+
+    private fun resolveInternalLogLevel() = when (this) {
+        is HttpClientError,
+        is HttpServerError,
+        is InvalidTokenError,
+        is RequestCreationError,
+        is UnknownException,
+        is UnknownHttpError -> InternalLogger.Level.ERROR
+
+        is DNSError,
+        is HttpClientRateLimiting,
+        is HttpRedirection,
+        is UnknownStatus,
+        is NetworkError -> InternalLogger.Level.WARN
+
+        is Success -> InternalLogger.Level.INFO
     }
 
     private fun buildStatusMessage(
         requestId: String?,
         byteSize: Int,
         context: String,
-        throwable: Throwable?
+        throwable: Throwable?,
+        requestAttempts: Int
     ): String {
-        return buildString {
+        val buildString = buildString {
             if (requestId == null) {
                 append("Batch [$byteSize bytes] ($context)")
             } else {
@@ -125,10 +133,19 @@ internal sealed class UploadStatus(
                         "and you're targeting the relevant Datadog site."
                 )
             }
+            append(
+                ATTEMPTS_LOG_MESSAGE_FORMAT.format(
+                    Locale.US,
+                    requestAttempts,
+                    code
+                )
+            )
         }
+        return buildString
     }
 
     companion object {
         internal const val UNKNOWN_RESPONSE_CODE = 0
+        internal const val ATTEMPTS_LOG_MESSAGE_FORMAT = " This request was attempted %d time(s)."
     }
 }

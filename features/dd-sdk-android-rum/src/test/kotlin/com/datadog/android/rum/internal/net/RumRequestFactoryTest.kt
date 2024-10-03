@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
@@ -48,6 +49,9 @@ internal class RumRequestFactoryTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeExecutionContext: RequestExecutionContext
+
     @BeforeEach
     fun `set up`() {
         whenever(mockViewEventFilter.filterOutRedundantViewEvents(any())) doAnswer {
@@ -72,13 +76,20 @@ internal class RumRequestFactoryTest {
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
-        val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
+        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)
 
         // Then
         requireNotNull(request)
         assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
-        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        assertThat(
+            request.headers.minus(
+                listOf(
+                    RequestFactory.HEADER_REQUEST_ID,
+                    RequestFactory.DD_IDEMPOTENCY_KEY
+                )
+            )
+        ).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
@@ -87,6 +98,7 @@ internal class RumRequestFactoryTest {
         )
         assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.headers[RequestFactory.DD_IDEMPOTENCY_KEY]).matches("[a-f0-9]{40}")
         assertThat(request.description).isEqualTo("RUM Request")
         assertThat(request.body).isEqualTo(
             batchData.map { it.data }.join(
@@ -113,13 +125,20 @@ internal class RumRequestFactoryTest {
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
-        val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
+        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)
 
         // Then
         requireNotNull(request)
         assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
-        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+        assertThat(
+            request.headers.minus(
+                listOf(
+                    RequestFactory.HEADER_REQUEST_ID,
+                    RequestFactory.DD_IDEMPOTENCY_KEY
+                )
+            )
+        ).isEqualTo(
             mapOf(
                 RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
                 RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
@@ -128,6 +147,7 @@ internal class RumRequestFactoryTest {
         )
         assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.headers[RequestFactory.DD_IDEMPOTENCY_KEY]).matches("[a-f0-9]{40}")
         assertThat(request.description).isEqualTo("RUM Request")
         assertThat(request.body).isEqualTo(
             batchData.map { it.data }.join(
@@ -147,6 +167,10 @@ internal class RumRequestFactoryTest {
 
         if (fakeDatadogContext.variant.isNotEmpty()) {
             queryTags.add("${RumAttributes.VARIANT}:${fakeDatadogContext.variant}")
+        }
+        if (fakeExecutionContext.previousResponseCode != null) {
+            queryTags.add("${RumRequestFactory.RETRY_COUNT_KEY}:${fakeExecutionContext.attemptNumber}")
+            queryTags.add("${RumRequestFactory.LAST_FAILURE_STATUS_KEY}:${fakeExecutionContext.previousResponseCode}")
         }
 
         return "$endpointUrl/api/v2/rum?ddsource=${fakeDatadogContext.source}" +

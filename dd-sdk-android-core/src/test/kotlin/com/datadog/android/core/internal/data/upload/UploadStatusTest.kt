@@ -9,20 +9,19 @@ package com.datadog.android.core.internal.data.upload
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 
@@ -34,6 +33,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class UploadStatusTest {
 
+    @StringForgery
     lateinit var fakeContext: String
 
     @Mock
@@ -45,10 +45,8 @@ internal class UploadStatusTest {
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeRequestId: String
 
-    @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeContext = forge.anAlphabeticalString()
-    }
+    @IntForgery
+    var fakeRequestAttempts: Int = 0
 
     @Test
     fun `M log SUCCESS only to USER W logStatus() {no request id}`(
@@ -58,14 +56,16 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.INFO,
             listOf(InternalLogger.Target.USER),
-            "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
+            "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -79,14 +79,16 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
         mockLogger.verifyLog(
             InternalLogger.Level.INFO,
             listOf(InternalLogger.Target.USER),
-            "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) sent successfully."
+            "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) sent successfully." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -99,7 +101,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -107,7 +110,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network error (${status.throwable!!.message}); we will retry later."
+                "because of a network error (${status.throwable!!.message}); we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -121,7 +125,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -129,7 +134,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network error (${status.throwable!!.message}); we will retry later."
+                "because of a network error (${status.throwable!!.message}); we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -142,7 +148,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -150,7 +157,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a DNS error (${status.throwable!!.message}); we will retry later."
+                "because of a DNS error (${status.throwable!!.message}); we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -164,7 +172,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -172,7 +181,9 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a DNS error (${status.throwable!!.message}); we will retry later."
+                "because of a DNS error (${status.throwable!!.message}); we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
+
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -185,7 +196,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -195,7 +207,8 @@ internal class UploadStatusTest {
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because your token is invalid; the batch was dropped. " +
                 "Make sure that the provided token still " +
-                "exists and you're targeting the relevant Datadog site."
+                "exists and you're targeting the relevant Datadog site." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -209,7 +222,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -219,7 +233,8 @@ internal class UploadStatusTest {
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because your token is invalid; the batch was dropped. " +
                 "Make sure that the provided token still " +
-                "exists and you're targeting the relevant Datadog site."
+                "exists and you're targeting the relevant Datadog site." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -232,7 +247,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -240,7 +256,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network redirection; the batch was dropped."
+                "because of a network redirection; the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -254,7 +271,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -262,7 +280,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network redirection; the batch was dropped."
+                "because of a network redirection; the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -275,7 +294,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -284,7 +304,8 @@ internal class UploadStatusTest {
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because of a processing error or invalid data; " +
-                "the batch was dropped."
+                "the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -298,7 +319,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -307,7 +329,8 @@ internal class UploadStatusTest {
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because of a processing error or invalid data; " +
-                "the batch was dropped."
+                "the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -320,7 +343,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -328,7 +352,9 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed because of an intake rate limitation; " +
-                "we will retry later."
+                "we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
+
         )
     }
 
@@ -341,7 +367,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -349,7 +376,9 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed because of an intake rate limitation; " +
-                "we will retry later."
+                "we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
+
         )
     }
 
@@ -361,7 +390,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -369,7 +399,9 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a server processing error; we will retry later."
+                "because of a server processing error; we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
+
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -383,7 +415,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -391,7 +424,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a server processing error; we will retry later."
+                "because of a server processing error; we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -404,7 +438,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -412,7 +447,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unexpected HTTP error (status code = ${status.code}); the batch was dropped."
+                "because of an unexpected HTTP error (status code = ${status.code}); the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -425,7 +461,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -433,7 +470,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unexpected HTTP error (status code = ${status.code}); the batch was dropped."
+                "because of an unexpected HTTP error (status code = ${status.code}); the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -445,7 +483,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -453,7 +492,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error (${status.throwable!!.message}); we will retry later."
+                "because of an unknown error (${status.throwable!!.message}); we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -466,7 +506,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -474,7 +515,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error (${status.throwable!!.message}); we will retry later."
+                "because of an unknown error (${status.throwable!!.message}); we will retry later." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -486,7 +528,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -495,7 +538,8 @@ internal class UploadStatusTest {
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because of an error when creating the request (${status.throwable!!.message});" +
-                " the batch was dropped."
+                " the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -508,7 +552,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -517,7 +562,8 @@ internal class UploadStatusTest {
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
                 "because of an error when creating the request (${status.throwable!!.message});" +
-                " the batch was dropped."
+                " the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -528,7 +574,8 @@ internal class UploadStatusTest {
         status.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger
+            mockLogger,
+            attempts = fakeRequestAttempts
         )
 
         // Then
@@ -536,7 +583,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Batch [$fakeByteSize bytes] ($fakeContext) status is unknown;" +
-                " the batch was dropped."
+                " the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -548,7 +596,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeRequestId
+            attempts = fakeRequestAttempts,
+            requestId = fakeRequestId
         )
 
         // Then
@@ -556,7 +605,8 @@ internal class UploadStatusTest {
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) status is unknown;" +
-                " the batch was dropped."
+                " the batch was dropped." +
+                " This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 }
