@@ -31,8 +31,13 @@ internal class DataOkHttpUploader(
     val androidInfoProvider: AndroidInfoProvider
 ) : DataUploader {
 
-    private var attempts = 1
+    @Volatile
+    private var attempts: Int = 1
+
+    @Volatile
     private var previousUploadStatus: UploadStatus? = null
+
+    @Volatile
     private var previousUploadedBatchId: BatchId? = null
 
     // region DataUploader
