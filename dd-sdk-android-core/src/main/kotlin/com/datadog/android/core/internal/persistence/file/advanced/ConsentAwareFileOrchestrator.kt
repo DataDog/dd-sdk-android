@@ -27,6 +27,7 @@ internal open class ConsentAwareFileOrchestrator(
     internal val internalLogger: InternalLogger
 ) : FileOrchestrator, TrackingConsentProviderCallback {
 
+    @Volatile
     private lateinit var delegateOrchestrator: FileOrchestrator
 
     init {

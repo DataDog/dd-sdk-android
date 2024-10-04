@@ -31,6 +31,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumentation tests for the feature scope.
@@ -151,6 +153,50 @@ class FeatureScopeTest : MockServerTest() {
             MockWebServerAssert.assertThat(getMockServerWrapper())
                 .withConfiguration(fakeConfiguration)
                 .withTrackingConsent(trackingConsent)
+                .receivedData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(LONG_WAIT_MS)
+    }
+
+    @Test
+    fun mustReceiveTheEvents_whenFeatureWrite_trackingConsentPendingToGranted_switched_asynchronously() {
+        // Given
+        trackingConsent = TrackingConsent.PENDING
+        testedInternalSdkCore = Datadog.initialize(
+            context = ApplicationProvider.getApplicationContext(),
+            configuration = fakeConfiguration,
+            trackingConsent = trackingConsent
+        ) as InternalSdkCore
+        testedInternalSdkCore.registerFeature(stubFeature)
+        val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+        checkNotNull(featureScope)
+        val countDownLatch = CountDownLatch(1)
+        Thread {
+            fakeBatchData.forEach { rawBatchEvent ->
+                featureScope.withWriteContext { _, eventBatchWriter ->
+                    eventBatchWriter.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                    countDownLatch.countDown()
+                }
+            }
+        }.start()
+
+        // When
+        val switchConsentThread = Thread {
+            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+        }
+        switchConsentThread.start()
+        switchConsentThread.join()
+
+        // Then
+        countDownLatch.await(TimeUnit.SECONDS.toMillis(5), TimeUnit.MILLISECONDS)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(TrackingConsent.GRANTED)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
         }.doWait(LONG_WAIT_MS)
