@@ -6,8 +6,6 @@
 
 package com.datadog.android.sessionreplay
 
-import android.os.Handler
-import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
@@ -21,6 +19,8 @@ object SessionReplay {
 
     /**
      * Enables a SessionReplay feature based on the configuration provided.
+     * It is recommended to invoke this function as early as possible in the app's lifecycle,
+     * ideally within the `Application#onCreate` callback, to ensure proper initialization.
      *
      * @param sessionReplayConfiguration Configuration to use for the feature.
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
@@ -32,21 +32,9 @@ object SessionReplay {
         sessionReplayConfiguration: SessionReplayConfiguration,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
-        enable(sessionReplayConfiguration, Handler(Looper.getMainLooper()), sdkCore)
-    }
-
-    internal fun enable(
-        sessionReplayConfiguration: SessionReplayConfiguration,
-        uiHandler: Handler,
-        sdkCore: SdkCore = Datadog.getInstance()
-    ) {
         val featureSdkCore = sdkCore as FeatureSdkCore
-        sessionReplayConfiguration.systemRequirementsConfiguration.let {
-            it.runIfRequirementsMet(
-                sdkCore = sdkCore,
-                uiHandler = uiHandler,
-                featureSdkCore.internalLogger
-            ) {
+        sessionReplayConfiguration.systemRequirementsConfiguration
+            .runIfRequirementsMet(featureSdkCore.internalLogger) {
                 val sessionReplayFeature = SessionReplayFeature(
                     sdkCore = featureSdkCore,
                     customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
@@ -62,7 +50,6 @@ object SessionReplay {
                 )
                 sdkCore.registerFeature(sessionReplayFeature)
             }
-        }
     }
 
     /**

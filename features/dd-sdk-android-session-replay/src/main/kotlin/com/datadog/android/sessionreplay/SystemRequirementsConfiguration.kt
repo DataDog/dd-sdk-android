@@ -6,11 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
-import android.os.Handler
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.sessionreplay.internal.prerequisite.CPURequirementChecker
 import com.datadog.android.sessionreplay.internal.prerequisite.MemoryRequirementChecker
 import com.datadog.android.sessionreplay.internal.prerequisite.SystemRequirementChecker
@@ -24,8 +20,6 @@ class SystemRequirementsConfiguration internal constructor(
 ) {
 
     internal fun runIfRequirementsMet(
-        sdkCore: FeatureSdkCore,
-        uiHandler: Handler,
         internalLogger: InternalLogger,
         runnable: () -> Unit
     ) {
@@ -33,27 +27,23 @@ class SystemRequirementsConfiguration internal constructor(
             CPURequirementChecker(minCPUCores, internalLogger = internalLogger),
             MemoryRequirementChecker(minRAMSizeMb, internalLogger = internalLogger)
         )
-        (sdkCore as InternalSdkCore).getPersistenceExecutorService().submitSafe(OPERATION_NAME, internalLogger) {
-            val checkResult = checkers.all {
-                it.checkMinimumRequirement()
-            }
+        val checkResult = checkers.all {
+            it.checkMinimumRequirement()
+        }
 
-            if (checkResult) {
-                uiHandler.post {
-                    runnable()
-                }
-            } else {
-                internalLogger.log(
-                    level = InternalLogger.Level.INFO,
-                    listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.USER),
-                    messageBuilder = {
-                        "Session replay is disabled because the system doesn't meet the minimum " +
-                            "Session Replay requirements"
-                    },
-                    onlyOnce = true,
-                    additionalProperties = getCheckerReport(checkers)
-                )
-            }
+        if (checkResult) {
+            runnable()
+        } else {
+            internalLogger.log(
+                level = InternalLogger.Level.INFO,
+                listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.USER),
+                messageBuilder = {
+                    "Session replay is disabled because the system doesn't meet the minimum " +
+                        "Session Replay requirements"
+                },
+                onlyOnce = true,
+                additionalProperties = getCheckerReport(checkers)
+            )
         }
     }
 
@@ -107,7 +97,6 @@ class SystemRequirementsConfiguration internal constructor(
     companion object {
 
         private const val ATTRIBUTE_DEVICE_STATS_KEY = "device_stats"
-        private const val OPERATION_NAME = "Check Session Replay requirements"
 
         /**
          * A preconfigured instance representing the basic system requirements for enabling the Session Replay feature.

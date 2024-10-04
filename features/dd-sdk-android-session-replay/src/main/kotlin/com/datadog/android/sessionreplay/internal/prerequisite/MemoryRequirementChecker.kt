@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.prerequisite
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.core.internal.persistence.file.canReadSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.readLinesSafe
@@ -24,7 +25,10 @@ internal class MemoryRequirementChecker(
         if (minRamSizeMb == 0) {
             return true
         }
-        return getMaxRAMSize() >= minRamSizeMb
+        val actualMaxRamSizeMb = allowThreadDiskReads {
+            getMaxRAMSize()
+        }
+        return actualMaxRamSizeMb >= minRamSizeMb
     }
 
     override fun name(): String = MEMORY_CHECK_NAME

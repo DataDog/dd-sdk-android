@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.prerequisite
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import java.io.File
 
@@ -22,7 +23,10 @@ internal class CPURequirementChecker(
         if (minCPUCores == 0) {
             return true
         }
-        return readCPUCoreNumber() >= minCPUCores
+        val actualCPUCoreNumber = allowThreadDiskReads {
+            readCPUCoreNumber()
+        }
+        return actualCPUCoreNumber >= minCPUCores
     }
 
     override fun name(): String = CPU_CHECK_NAME
