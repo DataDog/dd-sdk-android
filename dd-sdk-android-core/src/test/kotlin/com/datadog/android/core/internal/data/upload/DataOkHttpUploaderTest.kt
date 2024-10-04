@@ -667,6 +667,45 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
+    fun `M pass the ExecutionContext to requestFactory W upload { same batchId retried, new thread each time }`(
+        // we are testing the same as the previous test, but we are making sure that the state of the uploader
+        // it is shared between threads (it should be kept in the heap and not thread local memory)
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String,
+        @IntForgery(2, 10) retries: Int,
+        @Forgery batchId: BatchId,
+        forge: Forge
+    ) {
+        // Given
+        val statusCodes = forge.aList(size = retries) { forge.anInt(400, 600) }
+        whenever(mockCall.execute()) doReturnConsecutively statusCodes.map { mockResponse(it, message) }
+
+        // When
+        repeat(retries) {
+            val thread = Thread {
+                testedUploader.upload(fakeContext, batch, batchMeta.toByteArray(), batchId)
+            }
+            thread.start()
+            thread.join()
+        }
+
+        // Then
+        argumentCaptor<RequestExecutionContext>() {
+            verify(mockRequestFactory, times(retries))
+                .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
+            allValues.forEachIndexed() { index, value ->
+                assertThat(value.attemptNumber).isEqualTo(index + 1)
+                if (index == 0) {
+                    assertThat(value.previousResponseCode).isNull()
+                } else {
+                    assertThat(value.previousResponseCode).isEqualTo(statusCodes[index - 1])
+                }
+            }
+        }
+    }
+
+    @Test
     fun `M pass empty ExecutionContext to requestFactory W upload { null batchId }`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
