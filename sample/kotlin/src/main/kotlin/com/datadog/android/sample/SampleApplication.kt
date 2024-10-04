@@ -217,7 +217,10 @@ class SampleApplication : Application() {
 
     private fun initializeSessionReplay() {
         val shouldUseFgm = SecureRandom().nextInt(100) < USE_FGM_PCT
-        val systemRequirementsConfiguration = SystemRequirementsConfiguration.BASIC
+        val systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
+            .setMinRAMSizeMb(1024)
+            .setMinCPUCoreNumber(1)
+            .build()
 
         @Suppress("DEPRECATION")
         val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)

@@ -28,7 +28,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -63,11 +62,9 @@ internal class SessionReplayTest {
             systemRequirementsConfiguration = mockSystemRequirementsConfiguration
         )
         whenever(
-            mockSystemRequirementsConfiguration.runIfRequirementsMet(
-                eq(mockSdkCore), any(), any(), any()
-            )
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(any(), any())
         ) doAnswer {
-            it.getArgument<() -> Unit>(3).invoke()
+            it.getArgument<() -> Unit>(1).invoke()
         }
         SessionReplay.enable(
             fakeSessionReplayConfigurationWithMockRequirement,
