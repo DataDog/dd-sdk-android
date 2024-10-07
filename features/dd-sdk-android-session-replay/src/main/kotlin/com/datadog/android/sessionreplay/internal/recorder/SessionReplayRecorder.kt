@@ -86,7 +86,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
         sdkCore: FeatureSdkCore,
-        resourceDataStoreManager: ResourceDataStoreManager
+        resourceDataStoreManager: ResourceDataStoreManager,
+        dynamicOptimizationEnabled: Boolean
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -180,7 +181,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                     )
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
-                sdkCore = sdkCore
+                sdkCore = sdkCore,
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled
             )
         )
         this.windowCallbackInterceptor = WindowCallbackInterceptor(

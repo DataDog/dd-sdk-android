@@ -12,6 +12,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -257,6 +258,25 @@ internal class SessionEndedMetricDispatcherTest {
         assertThat(fakeInternalLogger.getNtpAtEndOffset()).isEqualTo(fakeNtpOffsetAtEnd)
     }
 
+    @Test
+    fun `M has correct skipped frames count W start metric`(
+        @StringForgery fakeSessionId: String,
+        @IntForgery(min = 0, max = 100) skippedFramesCount: Int
+    ) {
+        // Given
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+
+        // When
+        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        repeat(skippedFramesCount) {
+            dispatcher.onSessionReplaySkippedFrameTracked(fakeSessionId)
+        }
+        dispatcher.endMetric(fakeSessionId, fakeNtpOffsetAtEnd)
+
+        // Then
+        assertThat(fakeInternalLogger.getSkippedFramesCount()).isEqualTo(skippedFramesCount)
+    }
+
     private fun FakeInternalLogger.getNtpAtStartOffset(): Long {
         return lastMetric?.second?.let { attributes ->
             val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
@@ -277,6 +297,13 @@ internal class SessionEndedMetricDispatcherTest {
         return lastMetric?.second?.let { attributes ->
             val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
             rse[SessionEndedMetric.HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY] as? Boolean
+        }
+    }
+
+    private fun FakeInternalLogger.getSkippedFramesCount(): Int? {
+        return lastMetric?.second?.let { attributes ->
+            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
+            rse[SessionEndedMetric.SESSION_REPLAY_SKIPPED_FRAMES_COUNT] as? Int
         }
     }
 

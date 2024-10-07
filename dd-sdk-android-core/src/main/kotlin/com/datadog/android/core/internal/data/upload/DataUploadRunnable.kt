@@ -115,7 +115,7 @@ internal class DataUploadRunnable(
         batch: List<RawBatchEvent>,
         batchMeta: ByteArray?
     ): UploadStatus {
-        val status = dataUploader.upload(context, batch, batchMeta)
+        val status = dataUploader.upload(context, batch, batchMeta, batchId)
         val removalReason = if (status is UploadStatus.RequestCreationError) {
             RemovalReason.Invalid
         } else {

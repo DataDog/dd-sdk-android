@@ -64,7 +64,7 @@ internal class DatadogRumMonitor(
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
-    sessionEndedMetricDispatcher: SessionMetricDispatcher,
+    private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
@@ -583,6 +583,14 @@ internal class DatadogRumMonitor(
 
     override fun setDebugListener(listener: RumDebugListener?) {
         debugListener = listener
+    }
+
+    override fun addSessionReplaySkippedFrame() {
+        getCurrentSessionId { sessionId ->
+            sessionId?.let {
+                sessionEndedMetricDispatcher.onSessionReplaySkippedFrameTracked(it)
+            }
+        }
     }
 
     override fun notifyInterceptorInstantiated() {

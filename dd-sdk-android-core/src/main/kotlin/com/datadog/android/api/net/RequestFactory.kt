@@ -17,12 +17,16 @@ fun interface RequestFactory {
     /**
      * Creates a request for the given batch.
      * @param context Datadog SDK context.
+     * @param executionContext Information about the execution context this request in case of a previous retry.
+     * This information is specific to a certain batch and will be reset for the next batch in case of a drop or
+     * a successful request.
      * @param batchData Raw data of the batch.
      * @param batchMetadata Raw metadata of the batch.
      * @throws [Exception] in case the request could not be created.
      */
     fun create(
         context: DatadogContext,
+        executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request?
@@ -67,5 +71,10 @@ fun interface RequestFactory {
          * Datadog tags query parameter name.
          */
         const val QUERY_PARAM_TAGS: String = "ddtags"
+
+        /**
+         * Datadog Idempotency key header, used to offer more insight into the request retry statistics.
+         */
+        const val DD_IDEMPOTENCY_KEY: String = "DD-IDEMPOTENCY-KEY"
     }
 }

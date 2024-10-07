@@ -125,8 +125,10 @@ interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
+data class com.datadog.android.api.net.RequestExecutionContext
+  constructor(Int = 0, Int? = null)
 interface com.datadog.android.api.net.RequestFactory
-  fun create(com.datadog.android.api.context.DatadogContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request?
+  fun create(com.datadog.android.api.context.DatadogContext, RequestExecutionContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request?
   companion object 
     const val CONTENT_TYPE_JSON: String
     const val CONTENT_TYPE_TEXT_UTF8: String
@@ -136,6 +138,7 @@ interface com.datadog.android.api.net.RequestFactory
     const val HEADER_REQUEST_ID: String
     const val QUERY_PARAM_SOURCE: String
     const val QUERY_PARAM_TAGS: String
+    const val DD_IDEMPOTENCY_KEY: String
 interface com.datadog.android.api.storage.DataWriter<T>
   fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
@@ -267,6 +270,7 @@ interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: 
   fun deserialize(P): R?
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.listFilesSafe(com.datadog.android.api.InternalLogger, java.io.FilenameFilter): Array<java.io.File>?
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
 interface com.datadog.android.core.internal.system.BuildSdkVersionProvider

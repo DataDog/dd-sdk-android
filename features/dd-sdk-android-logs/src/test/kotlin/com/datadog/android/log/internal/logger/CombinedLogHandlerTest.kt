@@ -6,10 +6,13 @@
 
 package com.datadog.android.log.internal.logger
 
+import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -34,34 +37,42 @@ internal class CombinedLogHandlerTest {
 
     lateinit var testedHandler: LogHandler
 
-    lateinit var mockDevLogHandlers: Array<LogHandler>
+    lateinit var mockDelegateLogHandlers: Array<LogHandler>
 
-    lateinit var fakeServiceName: String
-    lateinit var fakeLoggerName: String
+    @StringForgery
     lateinit var fakeMessage: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeTags: Set<String>
+
     lateinit var fakeAttributes: Map<String, Any?>
 
+    @IntForgery(min = 2, max = 8)
     var fakeLevel: Int = 0
 
     @Forgery
     lateinit var fakeThrowable: Throwable
 
+    @StringForgery
+    lateinit var fakeErrorKind: String
+
+    @StringForgery
+    lateinit var fakeErrorMessage: String
+
+    @StringForgery
+    lateinit var fakeErrorStackTrace: String
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockDevLogHandlers = forge.aList { mock<LogHandler>() }.toTypedArray()
-        fakeServiceName = forge.anAlphabeticalString()
-        fakeLoggerName = forge.anAlphabeticalString()
-        fakeMessage = forge.anAlphabeticalString()
-        fakeLevel = forge.anInt(2, 8)
-        fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
-        fakeTags = forge.aList { anAlphabeticalString() }.toSet()
+        mockDelegateLogHandlers = forge.aList { mock<LogHandler>() }.toTypedArray()
+        fakeAttributes = forge.exhaustiveAttributes()
 
-        testedHandler = CombinedLogHandler(*mockDevLogHandlers)
+        testedHandler = CombinedLogHandler(*mockDelegateLogHandlers)
     }
 
     @Test
-    fun `forwards log`() {
+    fun `M forward log to all delegates W handleLog {throwable}`() {
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -70,14 +81,17 @@ internal class CombinedLogHandlerTest {
             fakeTags
         )
 
-        mockDevLogHandlers.forEach {
+        // Then
+        mockDelegateLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, fakeThrowable, fakeAttributes, fakeTags)
         }
     }
 
     @Test
-    fun `forwards log on background thread`(forge: Forge) {
-        val threadName = forge.anAlphabeticalString()
+    fun `M forward log to all delegates W handleLog {throwable, background thread}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) threadName: String
+    ) {
+        // Given
         val countDownLatch = CountDownLatch(1)
         val thread = Thread(
             {
@@ -93,16 +107,19 @@ internal class CombinedLogHandlerTest {
             threadName
         )
 
+        // When
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        mockDevLogHandlers.forEach {
+        // Then
+        mockDelegateLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, fakeThrowable, fakeAttributes, fakeTags)
         }
     }
 
     @Test
-    fun `forwards minimal log`() {
+    fun `M forward log to all delegates W handleLog {null throwable}`() {
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -111,34 +128,33 @@ internal class CombinedLogHandlerTest {
             emptySet()
         )
 
-        mockDevLogHandlers.forEach {
+        // Then
+        mockDelegateLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, null, emptyMap(), emptySet())
         }
     }
 
     @Test
-    fun `forwards log with error strings`(
-        @StringForgery errorKind: String,
-        @StringForgery errorMessage: String,
-        @StringForgery errorStack: String
-    ) {
+    fun `M forward log to all delegates W handleLog {stacktrace}`() {
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
-            errorKind,
-            errorMessage,
-            errorStack,
+            fakeErrorKind,
+            fakeErrorMessage,
+            fakeErrorStackTrace,
             fakeAttributes,
             fakeTags
         )
 
-        mockDevLogHandlers.forEach {
+        // Then
+        mockDelegateLogHandlers.forEach {
             verify(it).handleLog(
                 fakeLevel,
                 fakeMessage,
-                errorKind,
-                errorMessage,
-                errorStack,
+                fakeErrorKind,
+                fakeErrorMessage,
+                fakeErrorStackTrace,
                 fakeAttributes,
                 fakeTags
             )
@@ -146,22 +162,19 @@ internal class CombinedLogHandlerTest {
     }
 
     @Test
-    fun `forwards log with error strings on background thread`(
-        @StringForgery errorKind: String,
-        @StringForgery errorMessage: String,
-        @StringForgery errorStack: String,
-        forge: Forge
+    fun `M forward log to all delegates W handleLog {stacktrace, background thread}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) threadName: String
     ) {
-        val threadName = forge.anAlphabeticalString()
+        // Given
         val countDownLatch = CountDownLatch(1)
         val thread = Thread(
             {
                 testedHandler.handleLog(
                     fakeLevel,
                     fakeMessage,
-                    errorKind,
-                    errorMessage,
-                    errorStack,
+                    fakeErrorKind,
+                    fakeErrorMessage,
+                    fakeErrorStackTrace,
                     fakeAttributes,
                     fakeTags
                 )
@@ -170,19 +183,40 @@ internal class CombinedLogHandlerTest {
             threadName
         )
 
+        // When
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        mockDevLogHandlers.forEach {
+        // Then
+        mockDelegateLogHandlers.forEach {
             verify(it).handleLog(
                 fakeLevel,
                 fakeMessage,
-                errorKind,
-                errorMessage,
-                errorStack,
+                fakeErrorKind,
+                fakeErrorMessage,
+                fakeErrorStackTrace,
                 fakeAttributes,
                 fakeTags
             )
+        }
+    }
+
+    @Test
+    fun `M forward log to all delegates W handleLog {null stacktrace}`() {
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            null,
+            null,
+            null,
+            emptyMap(),
+            emptySet()
+        )
+
+        // Then
+        mockDelegateLogHandlers.forEach {
+            verify(it).handleLog(fakeLevel, fakeMessage, null, null, null, emptyMap(), emptySet())
         }
     }
 }

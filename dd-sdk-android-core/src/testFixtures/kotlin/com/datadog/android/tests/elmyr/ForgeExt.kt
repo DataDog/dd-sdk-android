@@ -48,6 +48,7 @@ fun <T : Forge> T.useCoreFactories(): T {
     addFactory(UserInfoForgeryFactory())
     addFactory(RawBatchEventForgeryFactory())
     addFactory(ThreadDumpForgeryFactory())
+    addFactory(RequestExecutionContextForgeryFactory())
 
     return this
 }
