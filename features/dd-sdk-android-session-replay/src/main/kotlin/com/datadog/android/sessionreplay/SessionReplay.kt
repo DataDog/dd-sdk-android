@@ -19,6 +19,8 @@ object SessionReplay {
 
     /**
      * Enables a SessionReplay feature based on the configuration provided.
+     * It is recommended to invoke this function as early as possible in the app's lifecycle,
+     * ideally within the `Application#onCreate` callback, to ensure proper initialization.
      *
      * @param sessionReplayConfiguration Configuration to use for the feature.
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
@@ -30,20 +32,24 @@ object SessionReplay {
         sessionReplayConfiguration: SessionReplayConfiguration,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
-        val sessionReplayFeature = SessionReplayFeature(
-            sdkCore = sdkCore as FeatureSdkCore,
-            customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
-            privacy = sessionReplayConfiguration.privacy,
-            imagePrivacy = sessionReplayConfiguration.imagePrivacy,
-            touchPrivacy = sessionReplayConfiguration.touchPrivacy,
-            textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
-            customMappers = sessionReplayConfiguration.customMappers,
-            customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
-            sampleRate = sessionReplayConfiguration.sampleRate,
-            startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately
-        )
-
-        sdkCore.registerFeature(sessionReplayFeature)
+        val featureSdkCore = sdkCore as FeatureSdkCore
+        sessionReplayConfiguration.systemRequirementsConfiguration
+            .runIfRequirementsMet(featureSdkCore.internalLogger) {
+                val sessionReplayFeature = SessionReplayFeature(
+                    sdkCore = featureSdkCore,
+                    customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
+                    privacy = sessionReplayConfiguration.privacy,
+                    imagePrivacy = sessionReplayConfiguration.imagePrivacy,
+                    touchPrivacy = sessionReplayConfiguration.touchPrivacy,
+                    textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
+                    customMappers = sessionReplayConfiguration.customMappers,
+                    customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
+                    sampleRate = sessionReplayConfiguration.sampleRate,
+                    startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
+                    dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
+                )
+                sdkCore.registerFeature(sessionReplayFeature)
+            }
     }
 
     /**

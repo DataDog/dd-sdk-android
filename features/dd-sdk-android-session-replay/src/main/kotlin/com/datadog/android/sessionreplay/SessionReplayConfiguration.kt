@@ -22,7 +22,9 @@ data class SessionReplayConfiguration internal constructor(
     internal val imagePrivacy: ImagePrivacy,
     internal val startRecordingImmediately: Boolean,
     internal val touchPrivacy: TouchPrivacy,
-    internal val textAndInputPrivacy: TextAndInputPrivacy
+    internal val textAndInputPrivacy: TextAndInputPrivacy,
+    internal val dynamicOptimizationEnabled: Boolean,
+    internal val systemRequirementsConfiguration: SystemRequirementsConfiguration
 ) {
 
     /**
@@ -42,6 +44,8 @@ data class SessionReplayConfiguration internal constructor(
         private var touchPrivacy = TouchPrivacy.HIDE
         private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
+        private var dynamicOptimizationEnabled = true
+        private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -150,6 +154,27 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * This option controls whether optimization is enabled or disabled for recording Session Replay data.
+         * By default the value is true, meaning the dynamic optimization is enabled.
+         */
+        fun setDynamicOptimizationEnabled(dynamicOptimizationEnabled: Boolean): Builder {
+            this.dynamicOptimizationEnabled = dynamicOptimizationEnabled
+            return this
+        }
+
+        /**
+         * Defines the minimum system requirements for enabling the Session Replay feature.
+         * When [SessionReplay.enable] is invoked, the system configuration is verified against these requirements.
+         * If the system meets the specified criteria, Session Replay will be successfully enabled.
+         * If this function is not invoked, no minimum requirements will be enforced, and Session Replay will be
+         * enabled on all devices.
+         */
+        fun setSystemRequirements(systemRequirementsConfiguration: SystemRequirementsConfiguration): Builder {
+            this.systemRequirementsConfiguration = systemRequirementsConfiguration
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -162,7 +187,9 @@ data class SessionReplayConfiguration internal constructor(
                 customMappers = customMappers(),
                 customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
                 sampleRate = sampleRate,
-                startRecordingImmediately = startRecordingImmediately
+                startRecordingImmediately = startRecordingImmediately,
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                systemRequirementsConfiguration = systemRequirementsConfiguration
             )
         }
 

@@ -8,6 +8,7 @@ package com.datadog.android.api.feature.stub
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
@@ -26,6 +27,7 @@ class StubRequestFactory(
 
     override fun create(
         context: DatadogContext,
+        executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {

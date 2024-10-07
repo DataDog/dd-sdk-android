@@ -8,14 +8,17 @@ package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -41,9 +44,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -125,8 +130,11 @@ internal class DataOkHttpUploaderTest {
 
     private lateinit var fakeSdkUserAgent: String
 
+    private var fakeBatchId: BatchId? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeBatchId = forge.aNullable { getForgery() }
         whenever(mockCallFactory.newCall(any())) doReturn mockCall
 
         whenever(mockAndroidInfoProvider.osVersion) doReturn fakeDeviceVersion
@@ -156,7 +164,7 @@ internal class DataOkHttpUploaderTest {
             body = fakeRequestBody.toByteArray(),
             contentType = forge.aNullable { fakeContentType }
         )
-        whenever(mockRequestFactory.create(eq(fakeContext), any(), any())) doReturn
+        whenever(mockRequestFactory.create(eq(fakeContext), any(), any(), any())) doReturn
             fakeDatadogRequest
 
         fakeSystemUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
@@ -190,7 +198,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
@@ -213,7 +221,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
@@ -236,11 +244,11 @@ internal class DataOkHttpUploaderTest {
                 put(RequestFactory.HEADER_API_KEY, forge.anElementFrom("", invalidValue))
             }
         )
-        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata)) doReturn
+        whenever(mockRequestFactory.create(eq(fakeContext), any(), eq(batch), eq(batchMetadata))) doReturn
             fakeDatadogRequest
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
@@ -261,7 +269,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(202, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
@@ -281,7 +289,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(400, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientError::class.java)
@@ -301,7 +309,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(401, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
@@ -321,7 +329,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(403, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
@@ -341,7 +349,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(408, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientRateLimiting::class.java)
@@ -361,7 +369,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(413, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientError::class.java)
@@ -381,7 +389,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(429, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientRateLimiting::class.java)
@@ -401,7 +409,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(500, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -421,7 +429,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(502, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -441,7 +449,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(503, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -461,7 +469,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(504, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -481,7 +489,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(507, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -511,7 +519,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.UnknownHttpError::class.java)
@@ -531,7 +539,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doThrow IOException(message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.NetworkError::class.java)
@@ -550,7 +558,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doThrow UnknownHostException(message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.DNSError::class.java)
@@ -569,7 +577,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doThrow throwable
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.UnknownException::class.java)
@@ -585,11 +593,11 @@ internal class DataOkHttpUploaderTest {
     ) {
         // Given
         val batchMetadata = batchMeta.toByteArray()
-        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata))
+        whenever(mockRequestFactory.create(eq(fakeContext), any(), eq(batch), eq(batchMetadata)))
             .doThrow(fakeException)
 
         // When
-        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.RequestCreationError::class.java)
@@ -605,7 +613,7 @@ internal class DataOkHttpUploaderTest {
     ) {
         // Given
         val batchMetadata = batchMeta.toByteArray()
-        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata))
+        whenever(mockRequestFactory.create(eq(fakeContext), any(), eq(batch), eq(batchMetadata)))
             .doThrow(fakeException)
 
         // When
@@ -619,6 +627,138 @@ internal class DataOkHttpUploaderTest {
                 "The batch will be dropped.",
             fakeException
         )
+    }
+
+    // endregion
+
+    // region ExecutionContext
+
+    @Test
+    fun `M pass the ExecutionContext to requestFactory W upload { same batchId retried }`(
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String,
+        @IntForgery(2, 10) retries: Int,
+        @Forgery batchId: BatchId,
+        forge: Forge
+    ) {
+        // Given
+        val statusCodes = forge.aList(size = retries) { forge.anInt(400, 600) }
+        whenever(mockCall.execute()) doReturnConsecutively statusCodes.map { mockResponse(it, message) }
+
+        // When
+        repeat(retries) {
+            testedUploader.upload(fakeContext, batch, batchMeta.toByteArray(), batchId)
+        }
+
+        // Then
+        argumentCaptor<RequestExecutionContext>() {
+            verify(mockRequestFactory, times(retries))
+                .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
+            allValues.forEachIndexed() { index, value ->
+                assertThat(value.attemptNumber).isEqualTo(index + 1)
+                if (index == 0) {
+                    assertThat(value.previousResponseCode).isNull()
+                } else {
+                    assertThat(value.previousResponseCode).isEqualTo(statusCodes[index - 1])
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `M pass the ExecutionContext to requestFactory W upload { same batchId retried, new thread each time }`(
+        // we are testing the same as the previous test, but we are making sure that the state of the uploader
+        // it is shared between threads (it should be kept in the heap and not thread local memory)
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String,
+        @IntForgery(2, 10) retries: Int,
+        @Forgery batchId: BatchId,
+        forge: Forge
+    ) {
+        // Given
+        val statusCodes = forge.aList(size = retries) { forge.anInt(400, 600) }
+        whenever(mockCall.execute()) doReturnConsecutively statusCodes.map { mockResponse(it, message) }
+
+        // When
+        repeat(retries) {
+            val thread = Thread {
+                testedUploader.upload(fakeContext, batch, batchMeta.toByteArray(), batchId)
+            }
+            thread.start()
+            thread.join()
+        }
+
+        // Then
+        argumentCaptor<RequestExecutionContext>() {
+            verify(mockRequestFactory, times(retries))
+                .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
+            allValues.forEachIndexed() { index, value ->
+                assertThat(value.attemptNumber).isEqualTo(index + 1)
+                if (index == 0) {
+                    assertThat(value.previousResponseCode).isNull()
+                } else {
+                    assertThat(value.previousResponseCode).isEqualTo(statusCodes[index - 1])
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `M pass empty ExecutionContext to requestFactory W upload { null batchId }`(
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String,
+        @IntForgery(2, 10) retries: Int,
+        forge: Forge
+    ) {
+        // Given
+        val statusCodes = forge.aList(size = retries) { forge.anInt(400, 600) }
+        whenever(mockCall.execute()) doReturnConsecutively statusCodes.map { mockResponse(it, message) }
+
+        // When
+        repeat(retries) {
+            testedUploader.upload(fakeContext, batch, batchMeta.toByteArray(), null)
+        }
+
+        // Then
+        argumentCaptor<RequestExecutionContext>() {
+            verify(mockRequestFactory, times(retries))
+                .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
+            allValues.forEach { value ->
+                assertThat(value.attemptNumber).isEqualTo(1)
+                assertThat(value.previousResponseCode).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun `M pass the ExecutionContext to requestFactory W upload { different batchId upload }`(
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val batchIds: List<BatchId> = forge.aList(size = forge.anInt(min = 2, max = 10)) { getForgery() }
+        val statusCodes = forge.aList(size = batchIds.size) { forge.anInt(200, 300) }
+        whenever(mockCall.execute()) doReturnConsecutively statusCodes.map { mockResponse(it, message) }
+
+        // When
+        batchIds.forEach { batchId ->
+            testedUploader.upload(fakeContext, batch, batchMeta.toByteArray(), batchId)
+        }
+
+        // Then
+        argumentCaptor<RequestExecutionContext>() {
+            verify(mockRequestFactory, times(batchIds.size))
+                .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
+            allValues.forEach { value ->
+                assertThat(value.attemptNumber).isEqualTo(1)
+                assertThat(value.previousResponseCode).isNull()
+            }
+        }
     }
 
     // endregion
@@ -641,11 +781,11 @@ internal class DataOkHttpUploaderTest {
             }
         )
 
-        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata)) doReturn
+        whenever(mockRequestFactory.create(eq(fakeContext), any(), eq(batch), eq(batchMetadata))) doReturn
             fakeDatadogRequest
 
         // When
-        testedUploader.upload(fakeContext, batch, batchMetadata)
+        testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
 
         // Then
         mockLogger.verifyLog(

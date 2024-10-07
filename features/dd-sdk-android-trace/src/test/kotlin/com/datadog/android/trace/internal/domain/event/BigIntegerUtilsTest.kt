@@ -7,10 +7,12 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -27,15 +29,15 @@ internal class BigIntegerUtilsTest {
     @StringForgery(regex = "[a-f0-9]{32}")
     lateinit var fakeTraceIdAsHexString: String
 
-    @StringForgery(regex = "[a-f0-9]{16}")
-    lateinit var fakeHalfTraceIdHexString: String
+    @StringForgery(regex = REGEX_16_CHAR_HEX_NUMBER)
+    lateinit var fakeIrrelevantHexString: String
 
     // region leastSignificant64BitsAsHex
 
     @Test
-    fun `M use unsigned padded bits W leastSignificant64BitsAsHex { max low order trace id }`() {
+    fun `M use unsigned padded bits W leastSignificant64BitsAsHex { max value }`() {
         // Given
-        val traceId = BigInteger(fakeHalfTraceIdHexString + MAX_UNSIGNED_LONG_HEX_STRING, 16)
+        val traceId = BigInteger(fakeIrrelevantHexString + MAX_UNSIGNED_LONG_HEX_STRING, HEX_RADIX)
 
         // When
         var leastSignificantAsHexString: String
@@ -49,9 +51,9 @@ internal class BigIntegerUtilsTest {
     }
 
     @Test
-    fun `M use unsigned padded bits W leastSignificant64BitsAsHex { from min low order trace id }`() {
+    fun `M use unsigned padded bits W leastSignificant64BitsAsHex { min value }`() {
         // Given
-        val traceId = BigInteger(fakeHalfTraceIdHexString + MIN_UNSIGNED_LONG_HEX_STRING, 16)
+        val traceId = BigInteger(fakeIrrelevantHexString + MIN_UNSIGNED_LONG_HEX_STRING, HEX_RADIX)
 
         // When
         var leastSignificantAsHexString: String
@@ -64,22 +66,21 @@ internal class BigIntegerUtilsTest {
         assertThat(leastSignificantAsHexString).isEqualTo(MIN_UNSIGNED_LONG_HEX_STRING)
     }
 
-    @Test
-    fun `M extract unsigned least and most significant bits W extract LSB and MSB`() {
+    @RepeatedTest(8)
+    fun `M extract unsigned padded bits W leastSignificant64BitsAsHex`(
+        @StringForgery(regex = REGEX_16_CHAR_HEX_NUMBER) fakeLSB: String
+    ) {
         // Given
-        val traceId = BigInteger(fakeTraceIdAsHexString, 16)
+        val traceId = BigInteger(fakeIrrelevantHexString + fakeLSB, HEX_RADIX)
 
         // When
-
         var leastSignificantAsHexString: String
-        var mostSignificantAsHexString: String
         val executionTime = measureNanoTime {
             leastSignificantAsHexString = BigIntegerUtils.leastSignificant64BitsAsHex(traceId)
-            mostSignificantAsHexString = BigIntegerUtils.mostSignificant64BitsAsHex(traceId)
         }
 
         // Then
-        assertThat(mostSignificantAsHexString + leastSignificantAsHexString).isEqualTo(fakeTraceIdAsHexString)
+        assertThat(leastSignificantAsHexString).isEqualTo(fakeLSB)
         assertThat(executionTime).isLessThan(MAX_EXEC_TIME_IN_NANOS)
     }
 
@@ -88,9 +89,9 @@ internal class BigIntegerUtilsTest {
     // region mostSignificant64BitsAsHex
 
     @Test
-    fun `M use unsigned padded bits W mostSignificant64BitsAsHex { max high order trace id }`() {
+    fun `M use unsigned padded bits W mostSignificant64BitsAsHex { max value }`() {
         // Given
-        val traceId = BigInteger(MAX_UNSIGNED_LONG_HEX_STRING + fakeHalfTraceIdHexString, 16)
+        val traceId = BigInteger(MAX_UNSIGNED_LONG_HEX_STRING + fakeIrrelevantHexString, HEX_RADIX)
 
         // When
         var mostSignificantAsHexString: String
@@ -104,9 +105,9 @@ internal class BigIntegerUtilsTest {
     }
 
     @Test
-    fun `M use unsigned padded bits W mostSignificant64BitsAsHex { min high order trace id }`() {
+    fun `M use unsigned padded bits W mostSignificant64BitsAsHex { min value }`() {
         // Given
-        val traceId = BigInteger(MIN_UNSIGNED_LONG_HEX_STRING + fakeHalfTraceIdHexString, 16)
+        val traceId = BigInteger(MIN_UNSIGNED_LONG_HEX_STRING + fakeIrrelevantHexString, HEX_RADIX)
 
         // When
         var mostSignificantAsHexString: String
@@ -119,76 +120,90 @@ internal class BigIntegerUtilsTest {
         assertThat(executionTime).isLessThan(MAX_EXEC_TIME_IN_NANOS)
     }
 
+    @RepeatedTest(8)
+    fun `M extract unsigned padded bits W mostSignificant64BitsAsHex`(
+        @StringForgery(regex = REGEX_16_CHAR_HEX_NUMBER) fakeMSB: String
+    ) {
+        // Given
+        val traceId = BigInteger(fakeMSB + fakeIrrelevantHexString, HEX_RADIX)
+
+        // When
+        var mostSignificantAsHexString: String
+        val executionTime = measureNanoTime {
+            mostSignificantAsHexString = BigIntegerUtils.mostSignificant64BitsAsHex(traceId)
+        }
+
+        // Then
+        assertThat(mostSignificantAsHexString).isEqualTo(fakeMSB)
+        assertThat(executionTime).isLessThan(MAX_EXEC_TIME_IN_NANOS)
+    }
+
     // endregion
 
     // region leastSignificant64BitsAsDecimal
 
     @Test
-    fun `M use unsigned bits W leastSignificant64BitsAsDecimal { max low order trace id }`() {
+    fun `M extract unsigned bits W leastSignificant64BitsAsDecimal { max value }`() {
         // Given
-        val traceId = BigInteger(fakeHalfTraceIdHexString + MAX_UNSIGNED_LONG_HEX_STRING, 16)
+        val traceId = BigInteger(fakeIrrelevantHexString + MAX_UNSIGNED_LONG_HEX_STRING, HEX_RADIX)
 
         // When
-        var leastSignificantAsDecimalString: String
+        var leastSignificant64BitsAsDecimal: String
         val executionTime = measureNanoTime {
-            leastSignificantAsDecimalString = BigIntegerUtils.leastSignificant64BitsAsDecimal(traceId)
+            leastSignificant64BitsAsDecimal = BigIntegerUtils.leastSignificant64BitsAsDecimal(traceId)
         }
 
         // Then
-        val leastSignificant64BitTraceIdAsBigInt = BigInteger(leastSignificantAsDecimalString, 10)
-        assertThat(
-            leastSignificant64BitTraceIdAsBigInt.toString(16).padStart(16, '0')
-        ).isEqualTo(MAX_UNSIGNED_LONG_HEX_STRING)
+        assertThat(leastSignificant64BitsAsDecimal).isEqualTo(MAX_UNSIGNED_LONG_DEC_STRING)
         assertThat(executionTime).isLessThan(MAX_EXEC_TIME_IN_NANOS)
     }
 
     @Test
     fun `M use unsigned bits W leastSignificant64BitsAsDecimal { min low order trace id }`() {
         // Given
-        val traceId = BigInteger(fakeHalfTraceIdHexString + MIN_UNSIGNED_LONG_HEX_STRING, 16)
+        val traceId = BigInteger(fakeIrrelevantHexString + MIN_UNSIGNED_LONG_HEX_STRING, HEX_RADIX)
 
         // When
-        var leastSignificantAsDecimalString: String
+        var leastSignificant64BitsAsDecimal: String
         val executionTime = measureNanoTime {
-            leastSignificantAsDecimalString = BigIntegerUtils.leastSignificant64BitsAsDecimal(traceId)
+            leastSignificant64BitsAsDecimal = BigIntegerUtils.leastSignificant64BitsAsDecimal(traceId)
         }
 
         // Then
-        assertThat(
-            BigInteger(
-                leastSignificantAsDecimalString,
-                10
-            ).toString(16).padStart(16, '0')
-        ).isEqualTo(MIN_UNSIGNED_LONG_HEX_STRING)
+        assertThat(leastSignificant64BitsAsDecimal).isEqualTo(MIN_UNSIGNED_LONG_DEC_STRING)
         assertThat(executionTime).isLessThan(MAX_EXEC_TIME_IN_NANOS)
     }
 
-    @Test
-    fun `M extract unsigned least significant bits W leastSignificant64BitsAsDecimal`() {
+    @RepeatedTest(8)
+    fun `M extract unsigned bits W leastSignificant64BitsAsDecimal`(
+        @LongForgery(min = 0) fakeLSB: Long
+    ) {
         // Given
-        val traceId = BigInteger(fakeTraceIdAsHexString, 16)
+        val traceId = BigInteger(fakeIrrelevantHexString + fakeLSB.toString(HEX_RADIX).padStart(16, '0'), HEX_RADIX)
 
         // When
-        var leastSignificantAsDecimalString: String
+        var leastSignificant64BitsAsDecimal: String
         val executionTime = measureNanoTime {
-            leastSignificantAsDecimalString = BigIntegerUtils.leastSignificant64BitsAsDecimal(traceId)
+            leastSignificant64BitsAsDecimal = BigIntegerUtils.leastSignificant64BitsAsDecimal(traceId)
         }
 
         // Then
-        assertThat(
-            BigInteger(
-                leastSignificantAsDecimalString,
-                10
-            ).toString(16).padStart(16, '0')
-        ).isEqualTo(fakeTraceIdAsHexString.takeLast(16))
+        assertThat(leastSignificant64BitsAsDecimal).isEqualTo(fakeLSB.toString())
         assertThat(executionTime).isLessThan(MAX_EXEC_TIME_IN_NANOS)
     }
 
     // endregion
 
     companion object {
+
+        private const val REGEX_16_CHAR_HEX_NUMBER = "[a-f0-9]{16}"
+        private const val HEX_RADIX = 16
+
         private const val MAX_UNSIGNED_LONG_HEX_STRING = "ffffffffffffffff"
         private const val MIN_UNSIGNED_LONG_HEX_STRING = "0000000000000000"
+        private const val MAX_UNSIGNED_LONG_DEC_STRING = "18446744073709551615"
+        private const val MIN_UNSIGNED_LONG_DEC_STRING = "0"
+
         private val MAX_EXEC_TIME_IN_NANOS = TimeUnit.MILLISECONDS.toNanos(8)
     }
 }

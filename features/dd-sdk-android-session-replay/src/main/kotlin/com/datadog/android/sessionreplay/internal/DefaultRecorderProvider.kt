@@ -62,7 +62,8 @@ internal class DefaultRecorderProvider(
     private val imagePrivacy: ImagePrivacy,
     private val touchPrivacy: TouchPrivacy,
     private val customMappers: List<MapperTypeWrapper<*>>,
-    private val customOptionSelectorDetectors: List<OptionSelectorDetector>
+    private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
+    private val dynamicOptimizationEnabled: Boolean
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -83,7 +84,8 @@ internal class DefaultRecorderProvider(
             timeProvider = SessionReplayTimeProvider(sdkCore),
             mappers = customMappers + builtInMappers(),
             customOptionSelectorDetectors = customOptionSelectorDetectors,
-            sdkCore = sdkCore
+            sdkCore = sdkCore,
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled
         )
     }
 

@@ -29,6 +29,8 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun addLongTask(durationNs: Long, target: String)
 
+    fun addSessionReplaySkippedFrame()
+
     fun addCrash(
         message: String,
         source: RumErrorSource,

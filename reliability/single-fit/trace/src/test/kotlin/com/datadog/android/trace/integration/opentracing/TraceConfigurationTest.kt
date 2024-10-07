@@ -8,6 +8,7 @@ package com.datadog.android.trace.integration.opentracing
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
@@ -52,6 +53,9 @@ class TraceConfigurationTest {
 
     private lateinit var stubSdkCore: StubSDKCore
 
+    @Forgery
+    private lateinit var fakeRequestExecutionContext: RequestExecutionContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubSdkCore = StubSDKCore(forge)
@@ -79,7 +83,12 @@ class TraceConfigurationTest {
         // When
         val traceFeature = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
         val requestFactory = traceFeature?.requestFactory
-        val request = requestFactory?.create(stubSdkCore.getDatadogContext(), fakeBatch, fakeMetadata.toByteArray())
+        val request = requestFactory?.create(
+            stubSdkCore.getDatadogContext(),
+            fakeRequestExecutionContext,
+            fakeBatch,
+            fakeMetadata.toByteArray()
+        )
 
         // Then
         checkNotNull(request)
@@ -108,7 +117,12 @@ class TraceConfigurationTest {
         // When
         val traceFeature = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
         val requestFactory = traceFeature?.requestFactory
-        val request = requestFactory?.create(stubSdkCore.getDatadogContext(), fakeBatch, fakeMetadata.toByteArray())
+        val request = requestFactory?.create(
+            stubSdkCore.getDatadogContext(),
+            fakeRequestExecutionContext,
+            fakeBatch,
+            fakeMetadata.toByteArray()
+        )
 
         // Then
         checkNotNull(request)

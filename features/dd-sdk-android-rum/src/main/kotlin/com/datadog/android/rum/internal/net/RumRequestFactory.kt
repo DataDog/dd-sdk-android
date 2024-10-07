@@ -9,11 +9,16 @@ package com.datadog.android.rum.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
+import java.security.DigestException
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
 import java.util.Locale
 import java.util.UUID
 
@@ -25,20 +30,26 @@ internal class RumRequestFactory(
 
     override fun create(
         context: DatadogContext,
+        executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request? {
+    ): Request {
         val requestId = UUID.randomUUID().toString()
-
+        val body = viewEventFilter.filterOutRedundantViewEvents(batchData)
+            .map { it.data }
+            .join(
+                separator = PAYLOAD_SEPARATOR,
+                internalLogger = internalLogger
+            )
+        val idempotencyKey = idempotencyKey(body)
         return Request(
             id = requestId,
             description = "RUM Request",
-            url = buildUrl(context),
+            url = buildUrl(context, executionContext),
             headers = buildHeaders(
                 requestId,
-                context.clientToken,
-                context.source,
-                context.sdkVersion
+                idempotencyKey,
+                context
             ),
             body = viewEventFilter.filterOutRedundantViewEvents(batchData)
                 .map { it.data }
@@ -50,7 +61,7 @@ internal class RumRequestFactory(
         )
     }
 
-    private fun buildUrl(context: DatadogContext): String {
+    private fun buildUrl(context: DatadogContext, executionContext: RequestExecutionContext): String {
         val queryParams = mapOf(
             RequestFactory.QUERY_PARAM_SOURCE to context.source,
             RequestFactory.QUERY_PARAM_TAGS to buildTags(
@@ -58,8 +69,10 @@ internal class RumRequestFactory(
                 context.version,
                 context.sdkVersion,
                 context.env,
-                context.variant
+                context.variant,
+                executionContext
             )
+
         )
 
         val intakeUrl = "%s/api/v2/rum".format(
@@ -73,16 +86,19 @@ internal class RumRequestFactory(
 
     private fun buildHeaders(
         requestId: String,
-        clientToken: String,
-        source: String,
-        sdkVersion: String
+        idempotencyKey: String?,
+        context: DatadogContext
     ): Map<String, String> {
-        return mapOf(
-            RequestFactory.HEADER_API_KEY to clientToken,
-            RequestFactory.HEADER_EVP_ORIGIN to source,
-            RequestFactory.HEADER_EVP_ORIGIN_VERSION to sdkVersion,
+        val headers = mutableMapOf(
+            RequestFactory.HEADER_API_KEY to context.clientToken,
+            RequestFactory.HEADER_EVP_ORIGIN to context.source,
+            RequestFactory.HEADER_EVP_ORIGIN_VERSION to context.sdkVersion,
             RequestFactory.HEADER_REQUEST_ID to requestId
         )
+        if (idempotencyKey != null) {
+            headers[RequestFactory.DD_IDEMPOTENCY_KEY] = idempotencyKey
+        }
+        return headers
     }
 
     private fun buildTags(
@@ -90,7 +106,8 @@ internal class RumRequestFactory(
         version: String,
         sdkVersion: String,
         env: String,
-        variant: String
+        variant: String,
+        executionContext: RequestExecutionContext
     ): String {
         val elements = mutableListOf(
             "${RumAttributes.SERVICE_NAME}:$serviceName",
@@ -102,11 +119,58 @@ internal class RumRequestFactory(
         if (variant.isNotEmpty()) {
             elements.add("${RumAttributes.VARIANT}:$variant")
         }
+        if (executionContext.previousResponseCode != null) {
+            // we had a previous failure
+            elements.add("${RETRY_COUNT_KEY}:${executionContext.attemptNumber}")
+            elements.add("${LAST_FAILURE_STATUS_KEY}:${executionContext.previousResponseCode}")
+        }
 
         return elements.joinToString(",")
     }
 
+    @Suppress("TooGenericExceptionCaught")
+    private fun idempotencyKey(byteArray: ByteArray): String? {
+        try {
+            val digest = MessageDigest.getInstance("SHA-1")
+            val hashBytes = digest.digest(byteArray)
+            return hashBytes.toHexString()
+        } catch (e: DigestException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { SHA1_GENERATION_ERROR_MESSAGE },
+                e
+            )
+        } catch (e: IllegalArgumentException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { SHA1_GENERATION_ERROR_MESSAGE },
+                e
+            )
+        } catch (e: NoSuchAlgorithmException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { SHA1_NO_SUCH_ALGORITHM_EXCEPTION },
+                e
+            )
+        } catch (e: NullPointerException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { SHA1_GENERATION_ERROR_MESSAGE },
+                e
+            )
+        }
+        return null
+    }
+
     companion object {
         private val PAYLOAD_SEPARATOR = "\n".toByteArray(Charsets.UTF_8)
+        internal const val RETRY_COUNT_KEY = "retry_count"
+        internal const val LAST_FAILURE_STATUS_KEY = "last_failure_status"
+        private const val SHA1_GENERATION_ERROR_MESSAGE = "Cannot generate SHA-1 hash for rum request idempotency key."
+        private const val SHA1_NO_SUCH_ALGORITHM_EXCEPTION = "SHA-1 algorithm could not be found in MessageDigest."
     }
 }
