@@ -9,6 +9,7 @@ package com.datadog.android.sdk.rules
 import android.app.Activity
 import android.content.Intent
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.sessionreplay.overrideProcessImportance
 import com.datadog.android.sdk.utils.addExtras
 
 internal open class SessionReplayTestRule<T : Activity>(
@@ -29,6 +30,7 @@ internal open class SessionReplayTestRule<T : Activity>(
         Thread.sleep(2000)
         removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.beforeActivityLaunched()
+        overrideProcessImportance()
     }
 
     override fun afterActivityFinished() {
