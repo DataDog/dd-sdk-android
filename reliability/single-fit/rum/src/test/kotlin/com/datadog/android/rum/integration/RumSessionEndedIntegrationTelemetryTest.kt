@@ -7,13 +7,14 @@
 package com.datadog.android.rum.integration
 
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.core.stub.StubTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.integration.tests.assertj.TelemetryMetricAssert.Companion.assertThat
+import com.datadog.android.rum.integration.tests.assertj.StubTelemetryEventAssert.Companion.assertThat
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -79,7 +80,7 @@ class RumSessionEndedIntegrationTelemetryTest {
         rumMonitor.stopSession()
 
         // Then
-        assertThat(stubSdkCore.lastMetric()).isEmpty()
+        assertThat(stubSdkCore.lastMetric()).isNull()
     }
 
     @Test
@@ -219,7 +220,12 @@ class RumSessionEndedIntegrationTelemetryTest {
             .hasNoViewResourceEventCounts(missedResourceCount)
     }
 
+    private fun StubSDKCore.lastMetric(): StubTelemetryEvent? {
+        return telemetryEventsWritten().lastOrNull { it.type == StubTelemetryEvent.Type.METRIC }
+    }
+
     companion object {
+
         private val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider

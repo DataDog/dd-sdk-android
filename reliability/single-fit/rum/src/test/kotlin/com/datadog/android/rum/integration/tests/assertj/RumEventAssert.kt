@@ -103,6 +103,11 @@ class RumEventAssert(actual: JsonObject) :
 
     // region Error Attributes
 
+    fun hasErrorType(kind: String): RumEventAssert {
+        hasField("error.type", kind)
+        return this
+    }
+
     fun hasErrorMessage(message: String): RumEventAssert {
         hasField("error.message", message)
         return this
