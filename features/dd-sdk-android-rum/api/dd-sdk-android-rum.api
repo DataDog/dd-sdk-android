@@ -287,7 +287,7 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
 }
 
-public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor {
+public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {
 	public abstract fun addResourceTiming (Ljava/lang/Object;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public abstract fun notifyInterceptorInstantiated ()V
 	public abstract fun startResource (Lcom/datadog/android/rum/resource/ResourceId;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
@@ -5062,8 +5062,6 @@ public class com/datadog/android/rum/tracking/AcceptAllSupportFragments : com/da
 public abstract class com/datadog/android/rum/tracking/ActivityLifecycleTrackingStrategy : android/app/Application$ActivityLifecycleCallbacks, com/datadog/android/rum/tracking/TrackingStrategy {
 	protected field sdkCore Lcom/datadog/android/api/feature/FeatureSdkCore;
 	public fun <init> ()V
-	protected final fun convertToRumAttributes (Landroid/content/Intent;)Ljava/util/Map;
-	protected final fun convertToRumAttributes (Landroid/os/Bundle;)Ljava/util/Map;
 	protected final fun getSdkCore ()Lcom/datadog/android/api/feature/FeatureSdkCore;
 	public fun onActivityCreated (Landroid/app/Activity;Landroid/os/Bundle;)V
 	public fun onActivityDestroyed (Landroid/app/Activity;)V
@@ -5086,6 +5084,10 @@ public final class com/datadog/android/rum/tracking/ActivityViewTrackingStrategy
 	public fun hashCode ()I
 	public fun onActivityResumed (Landroid/app/Activity;)V
 	public fun onActivityStopped (Landroid/app/Activity;)V
+}
+
+public final class com/datadog/android/rum/tracking/BundleExtKt {
+	public static final fun convertToRumViewAttributes (Landroid/os/Bundle;)Ljava/util/Map;
 }
 
 public abstract interface class com/datadog/android/rum/tracking/ComponentPredicate {

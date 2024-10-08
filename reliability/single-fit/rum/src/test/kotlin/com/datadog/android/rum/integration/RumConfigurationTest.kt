@@ -7,6 +7,8 @@
 package com.datadog.android.rum.integration
 
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
@@ -15,10 +17,12 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.tests.assertj.StubEventsAssert
+import com.datadog.android.rum.integration.tests.utils.RumBatchEvent
+import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -55,6 +59,9 @@ class RumConfigurationTest {
     @StringForgery
     private lateinit var fakeApplicationId: String
 
+    @Forgery
+    private lateinit var fakeExecutionContext: RequestExecutionContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubSdkCore = StubSDKCore(forge)
@@ -67,7 +74,7 @@ class RumConfigurationTest {
     ) {
         // Given
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
-            .trackNonFatalAnrs(false)
+            .trackNonFatalAnrs(false) // required to prevent infinite loop in tests
             .setSessionSampleRate(0f)
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
@@ -79,7 +86,7 @@ class RumConfigurationTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten).hasSize(0)
+        assertThat(eventsWritten).hasSize(0)
     }
 
     @RepeatedTest(16)
@@ -170,7 +177,7 @@ class RumConfigurationTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasRumEvent(index = 1) {
                 hasResourceUrl(mappedResourceUrl)
             }
@@ -205,7 +212,7 @@ class RumConfigurationTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasRumEvent(index = 1) {
                 hasErrorMessage(mappedErrorMessage)
                 hasErrorFingerprint(mappedErrorFingerprint)
@@ -242,7 +249,7 @@ class RumConfigurationTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasRumEvent(index = 1) {
                 hasActionTargetName(mappedTargetName)
             }
@@ -272,12 +279,142 @@ class RumConfigurationTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasRumEvent(index = 0) {
                 hasViewName(mappedViewName)
                 hasViewUrl(mappedViewUrl)
             }
     }
+
+    @RepeatedTest(16)
+    fun `M use session listener W setSessionListener()`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String
+    ) {
+        // Given
+        var sessionIdCallback: String? = null
+        var isDiscardedCallback: Boolean? = null
+        val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
+            .trackNonFatalAnrs(false)
+            .setSessionListener(object : RumSessionListener {
+                override fun onSessionStarted(sessionId: String, isDiscarded: Boolean) {
+                    sessionIdCallback = sessionId
+                    isDiscardedCallback = isDiscarded
+                }
+            })
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        rumMonitor.startView(viewKey, viewName, emptyMap())
+
+        // Then
+        assertThat(sessionIdCallback).isNotNull()
+            .matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+        assertThat(isDiscardedCallback).isNotNull()
+    }
+
+    // region RequestFactory
+
+    @RepeatedTest(16)
+    fun `M createRequest to core site W RumConfiguration#Builder()`(
+        @Forgery fakeRumEvents: List<RumBatchEvent>,
+        @StringForgery fakeMetadata: String
+    ) {
+        // Given
+        val datadogContext = stubSdkCore.getDatadogContext()
+        val expectedSite = datadogContext.site
+        val expectedClientToken = datadogContext.clientToken
+        val expectedSource = datadogContext.source
+        val expectedSdkVersion = datadogContext.sdkVersion
+        val expectedTags = listOf(
+            "service" to datadogContext.service,
+            "version" to datadogContext.version,
+            "sdk_version" to expectedSdkVersion,
+            "env" to datadogContext.env,
+            "variant" to datadogContext.variant,
+            "retry_count" to fakeExecutionContext.previousResponseCode?.let { fakeExecutionContext.attemptNumber },
+            "last_failure_status" to fakeExecutionContext.previousResponseCode
+        )
+            .filter { it.second != null }
+            .joinToString(",") { it.first + ":" + it.second }
+        val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
+            .trackNonFatalAnrs(false) // required to prevent infinite loop in tests
+            .build()
+        val fakeBatch = fakeRumEvents.map { it.batchEvent }
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+
+        // When
+        val rumFeature = stubSdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
+        val requestFactory = rumFeature?.requestFactory
+        val request = requestFactory?.create(
+            datadogContext,
+            fakeExecutionContext,
+            fakeBatch,
+            fakeMetadata.toByteArray()
+        )
+
+        // Then
+        checkNotNull(request)
+        assertThat(
+            request.url
+        ).isEqualTo("${expectedSite.intakeEndpoint}/api/v2/rum?ddsource=$expectedSource&ddtags=$expectedTags")
+        assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
+        assertThat(request.contentType).isEqualTo("text/plain;charset=UTF-8")
+    }
+
+    @RepeatedTest(16)
+    fun `M createRequest to custom endpoint W RumConfiguration#Builder#useCustomEndpoint()`(
+        @StringForgery fakeEndpoint: String,
+        @Forgery fakeRumEvents: List<RumBatchEvent>,
+        @StringForgery fakeMetadata: String
+    ) {
+        // Given
+        val datadogContext = stubSdkCore.getDatadogContext()
+        val expectedClientToken = datadogContext.clientToken
+        val expectedSource = datadogContext.source
+        val expectedSdkVersion = datadogContext.sdkVersion
+        val expectedTags = listOf(
+            "service" to datadogContext.service,
+            "version" to datadogContext.version,
+            "sdk_version" to expectedSdkVersion,
+            "env" to datadogContext.env,
+            "variant" to datadogContext.variant,
+            "retry_count" to fakeExecutionContext.previousResponseCode?.let { fakeExecutionContext.attemptNumber },
+            "last_failure_status" to fakeExecutionContext.previousResponseCode
+        )
+            .filter { it.second != null }
+            .joinToString(",") { it.first + ":" + it.second }
+        val fakeBatch = fakeRumEvents.map { it.batchEvent }
+        val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
+            .trackNonFatalAnrs(false) // required to prevent infinite loop in tests
+            .useCustomEndpoint(fakeEndpoint)
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+
+        // When
+        val rumFeature = stubSdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
+        val requestFactory = rumFeature?.requestFactory
+        val request = requestFactory?.create(
+            datadogContext,
+            fakeExecutionContext,
+            fakeBatch,
+            fakeMetadata.toByteArray()
+        )
+
+        // Then
+        checkNotNull(request)
+        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/rum?ddsource=$expectedSource&ddtags=$expectedTags")
+        assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
+        assertThat(request.contentType).isEqualTo("text/plain;charset=UTF-8")
+    }
+
+    // endregion
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()

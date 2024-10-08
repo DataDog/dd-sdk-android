@@ -19,7 +19,9 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.tests.assertj.StubEventsAssert
+import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -42,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.net.URL
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -97,7 +100,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(1)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -124,7 +127,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -167,7 +170,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         print(eventsWritten[1].eventData)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -211,7 +214,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -281,7 +284,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -350,7 +353,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -373,6 +376,7 @@ class ManualTrackingRumTest {
                 hasType("resource")
                 hasViewUrl(key)
                 hasViewName(name)
+                hasResourceUrl(resourceUrl.toString())
             }
             .hasRumEvent(index = 2) {
                 // View updated with event
@@ -384,10 +388,80 @@ class ManualTrackingRumTest {
                 hasViewUrl(key)
                 hasViewName(name)
                 hasResourceCount(1)
-                doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 3) {
-                // View updated with FF
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+            }
+    }
+
+    @RepeatedTest(16)
+    fun `M send view event with resource W startView() + startResource() + stopResource() {using ResourceId}`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @StringForgery resourceKey: String,
+        @Forgery resourceUuid: UUID,
+        @Forgery resourceUrl: URL,
+        @IntForgery(200, 599) resourceStatus: Int,
+        @LongForgery(0) resourceSize: Long
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
+        val resourceId = ResourceId(resourceKey, resourceUuid.toString())
+
+        // When
+        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startResource(resourceId, RumResourceMethod.GET, resourceUrl.toString())
+        Thread.sleep(100)
+        rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE, emptyMap())
+        rumMonitor.stopView(key, emptyMap())
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(4)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasActionCount(0)
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Custom event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("resource")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasResourceUrl(resourceUrl.toString())
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasResourceCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // View stopped
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -421,7 +495,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -468,7 +542,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -518,7 +592,7 @@ class ManualTrackingRumTest {
         val expectedFirstViewLoadingTime = intermediateTime - startTime
         val expectedSecondViewLoadingTime = endTime - startTime
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(3)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -583,7 +657,7 @@ class ManualTrackingRumTest {
         // Then
         val expectedViewLoadingTime = intermediateTime - startTime
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 // Initial view

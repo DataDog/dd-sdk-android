@@ -15,6 +15,7 @@ import androidx.navigation.NavDestination
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.rum.tracking.ComponentPredicate
+import com.datadog.android.rum.tracking.convertToRumViewAttributes
 
 internal class ComposeNavigationObserver(
     private val trackArguments: Boolean = true,
@@ -64,29 +65,10 @@ internal class ComposeNavigationObserver(
             key = route,
             name = viewName,
             attributes = if (trackArguments) {
-                convertToRumAttributes(arguments)
+                arguments.convertToRumViewAttributes()
             } else {
                 emptyMap()
             }
         )
-    }
-
-    private fun convertToRumAttributes(bundle: Bundle?): Map<String, Any?> {
-        if (bundle == null) return emptyMap()
-
-        val attributes = mutableMapOf<String, Any?>()
-
-        bundle.keySet().forEach {
-            // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
-            // Issue is opened in the Google Issue Tracker.
-            @Suppress("DEPRECATION")
-            attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
-        }
-
-        return attributes
-    }
-
-    companion object {
-        private const val ARGUMENT_TAG: String = "view.arguments"
     }
 }

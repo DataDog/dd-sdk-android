@@ -73,7 +73,7 @@ internal constructor(
             if (rumFeature != null && rumMonitor != null) {
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
-                        if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+                        if (trackArguments) it.arguments.convertToRumViewAttributes() else emptyMap()
                     },
                     componentPredicate = supportFragmentComponentPredicate,
                     rumMonitor = rumMonitor,
@@ -96,7 +96,7 @@ internal constructor(
             ) {
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {
-                        if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+                        if (trackArguments) it.arguments.convertToRumViewAttributes() else emptyMap()
                     },
                     componentPredicate = defaultFragmentComponentPredicate,
                     rumMonitor = rumMonitor,

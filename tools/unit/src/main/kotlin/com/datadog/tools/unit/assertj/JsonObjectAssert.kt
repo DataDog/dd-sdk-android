@@ -643,9 +643,10 @@ open class JsonObjectAssert(
         /**
          * Create assertion for [JsonObject].
          * @param actual the actual object to assert on
+         *  @param lenientKeys whether keys should be evaluated leniently (default false)
          * @return the created assertion object.
          */
-        fun assertThat(actual: JsonObject): JsonObjectAssert =
-            JsonObjectAssert(actual)
+        fun assertThat(actual: JsonObject, lenientKeys: Boolean = false): JsonObjectAssert =
+            JsonObjectAssert(actual, lenientKeys)
     }
 }
