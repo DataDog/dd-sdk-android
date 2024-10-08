@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.Test
@@ -51,5 +52,59 @@ internal class PrivacyOverrideExtensionsTest {
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_hidden), isNull())
+    }
+
+    @Test
+    fun `M set tag W datadogSessionReplayImagePrivacy() { with privacy }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockView = mock<View>()
+        val mockPrivacy = forge.aValueFrom(ImagePrivacy::class.java)
+
+        // When
+        mockView.datadogSessionReplayImagePrivacy(mockPrivacy)
+
+        // Then
+        verify(mockView).setTag(eq(R.id.datadog_image_privacy), eq(mockPrivacy.toString()))
+    }
+
+    @Test
+    fun `M set tag to null W datadogSessionReplayImagePrivacy() { privacy is null }`() {
+        // Given
+        val mockView = mock<View>()
+
+        // When
+        mockView.datadogSessionReplayImagePrivacy(null)
+
+        // Then
+        verify(mockView).setTag(eq(R.id.datadog_image_privacy), isNull())
+    }
+
+    @Test
+    fun `M set tag W datadogSessionReplayTextAndInputPrivacy() { with privacy }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockView = mock<View>()
+        val mockPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+
+        // When
+        mockView.datadogSessionReplayTextAndInputPrivacy(mockPrivacy)
+
+        // Then
+        verify(mockView).setTag(eq(R.id.datadog_text_and_input_privacy), eq(mockPrivacy.toString()))
+    }
+
+    @Test
+    fun `M set tag to null W datadogSessionReplayTextAndInputPrivacy() { privacy is null }`() {
+        // Given
+        val mockView = mock<View>()
+
+        // When
+        mockView.datadogSessionReplayTextAndInputPrivacy(null)
+
+        // Then
+        verify(mockView).setTag(eq(R.id.datadog_text_and_input_privacy), isNull())
     }
 }
