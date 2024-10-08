@@ -222,7 +222,6 @@ class SampleApplication : Application() {
             .setMinCPUCoreNumber(1)
             .build()
 
-        @Suppress("DEPRECATION")
         val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
             .apply {
                 if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
@@ -235,7 +234,6 @@ class SampleApplication : Application() {
                     useLegacyConfiguration(this)
                 }
             }
-            .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
             .addExtensionSupport(MaterialExtensionSupport())
             .setSystemRequirements(systemRequirementsConfiguration)
             .build()
