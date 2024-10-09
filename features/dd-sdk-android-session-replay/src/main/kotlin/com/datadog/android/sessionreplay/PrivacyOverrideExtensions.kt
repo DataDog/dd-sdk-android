@@ -15,7 +15,7 @@ import android.view.View
  *
  * @param hide pass `true` to hide the view, or `false` to remove the override
  */
-fun View.datadogSessionReplayHidden(hide: Boolean) {
+fun View.setSessionReplayHidden(hide: Boolean) {
     if (hide) {
         this.setTag(R.id.datadog_hidden, true)
     } else {

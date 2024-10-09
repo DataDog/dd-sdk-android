@@ -30,24 +30,24 @@ import org.mockito.quality.Strictness
 internal class PrivacyOverrideExtensionsTest {
 
     @Test
-    fun `M set tag W datadogSessionReplayHidden() { hide is true }`() {
+    fun `M set tag W setSessionReplayHidden() { hide is true }`() {
         // Given
         val mockView = mock<View>()
 
         // When
-        mockView.datadogSessionReplayHidden(true)
+        mockView.setSessionReplayHidden(true)
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_hidden), eq(true))
     }
 
     @Test
-    fun `M set tag to null W datadogSessionReplayHidden() { hide is false }`() {
+    fun `M set tag to null W setSessionReplayHidden() { hide is false }`() {
         // Given
         val mockView = mock<View>()
 
         // When
-        mockView.datadogSessionReplayHidden(false)
+        mockView.setSessionReplayHidden(false)
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_hidden), isNull())
