@@ -29,7 +29,7 @@ fun View.setSessionReplayHidden(hide: Boolean) {
  * @param privacy the new privacy level to use for the view
  * or null to remove the override.
  */
-fun View.datadogSessionReplayImagePrivacy(privacy: ImagePrivacy?) {
+fun View.setSessionReplayImagePrivacy(privacy: ImagePrivacy?) {
     if (privacy == null) {
         this.setTag(R.id.datadog_image_privacy, null)
     } else {
@@ -43,7 +43,7 @@ fun View.datadogSessionReplayImagePrivacy(privacy: ImagePrivacy?) {
  * @param privacy the new privacy level to use for the view
  * or null to remove the override.
  */
-fun View.datadogSessionReplayTextAndInputPrivacy(privacy: TextAndInputPrivacy?) {
+fun View.setSessionReplayTextAndInputPrivacy(privacy: TextAndInputPrivacy?) {
     if (privacy == null) {
         this.setTag(R.id.datadog_text_and_input_privacy, null)
     } else {

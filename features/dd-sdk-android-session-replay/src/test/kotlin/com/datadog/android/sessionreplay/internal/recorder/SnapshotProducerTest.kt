@@ -12,14 +12,14 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.datadogSessionReplayImagePrivacy
-import com.datadog.android.sessionreplay.datadogSessionReplayTextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.setSessionReplayImagePrivacy
+import com.datadog.android.sessionreplay.setSessionReplayTextAndInputPrivacy
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -387,8 +387,8 @@ internal class SnapshotProducerTest {
         }
         val fakeImagePrivacy = forge.aValueFrom(ImagePrivacy::class.java)
         val fakeTextAndInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
-        mockRoot.datadogSessionReplayImagePrivacy(fakeImagePrivacy)
-        mockRoot.datadogSessionReplayTextAndInputPrivacy(fakeTextAndInputPrivacy)
+        mockRoot.setSessionReplayImagePrivacy(fakeImagePrivacy)
+        mockRoot.setSessionReplayTextAndInputPrivacy(fakeTextAndInputPrivacy)
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
             TraversalStrategy.TRAVERSE_ALL_CHILDREN

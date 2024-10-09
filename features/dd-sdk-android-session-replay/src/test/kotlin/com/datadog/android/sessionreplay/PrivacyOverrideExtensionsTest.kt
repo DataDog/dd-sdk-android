@@ -55,7 +55,7 @@ internal class PrivacyOverrideExtensionsTest {
     }
 
     @Test
-    fun `M set tag W datadogSessionReplayImagePrivacy() { with privacy }`(
+    fun `M set tag W setSessionReplayImagePrivacy() { with privacy }`(
         forge: Forge
     ) {
         // Given
@@ -63,26 +63,26 @@ internal class PrivacyOverrideExtensionsTest {
         val mockPrivacy = forge.aValueFrom(ImagePrivacy::class.java)
 
         // When
-        mockView.datadogSessionReplayImagePrivacy(mockPrivacy)
+        mockView.setSessionReplayImagePrivacy(mockPrivacy)
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_image_privacy), eq(mockPrivacy.toString()))
     }
 
     @Test
-    fun `M set tag to null W datadogSessionReplayImagePrivacy() { privacy is null }`() {
+    fun `M set tag to null W setSessionReplayImagePrivacy() { privacy is null }`() {
         // Given
         val mockView = mock<View>()
 
         // When
-        mockView.datadogSessionReplayImagePrivacy(null)
+        mockView.setSessionReplayImagePrivacy(null)
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_image_privacy), isNull())
     }
 
     @Test
-    fun `M set tag W datadogSessionReplayTextAndInputPrivacy() { with privacy }`(
+    fun `M set tag W setSessionReplayTextAndInputPrivacy() { with privacy }`(
         forge: Forge
     ) {
         // Given
@@ -90,19 +90,19 @@ internal class PrivacyOverrideExtensionsTest {
         val mockPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
 
         // When
-        mockView.datadogSessionReplayTextAndInputPrivacy(mockPrivacy)
+        mockView.setSessionReplayTextAndInputPrivacy(mockPrivacy)
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_text_and_input_privacy), eq(mockPrivacy.toString()))
     }
 
     @Test
-    fun `M set tag to null W datadogSessionReplayTextAndInputPrivacy() { privacy is null }`() {
+    fun `M set tag to null W setSessionReplayTextAndInputPrivacy() { privacy is null }`() {
         // Given
         val mockView = mock<View>()
 
         // When
-        mockView.datadogSessionReplayTextAndInputPrivacy(null)
+        mockView.setSessionReplayTextAndInputPrivacy(null)
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_text_and_input_privacy), isNull())
