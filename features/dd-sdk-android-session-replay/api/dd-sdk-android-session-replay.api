@@ -24,6 +24,8 @@ public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
 
 public final class com/datadog/android/sessionreplay/PrivacyOverrideExtensionsKt {
 	public static final fun setSessionReplayHidden (Landroid/view/View;Z)V
+	public static final fun setSessionReplayImagePrivacy (Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;)V
+	public static final fun setSessionReplayTextAndInputPrivacy (Landroid/view/View;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)V
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplay {

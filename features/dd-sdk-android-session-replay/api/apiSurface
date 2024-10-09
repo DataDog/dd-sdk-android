@@ -10,6 +10,8 @@ data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.V
   fun supportsView(android.view.View): Boolean
   fun getUnsafeMapper(): com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<android.view.View>
 fun android.view.View.setSessionReplayHidden(Boolean)
+fun android.view.View.setSessionReplayImagePrivacy(ImagePrivacy?)
+fun android.view.View.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy?)
 object com.datadog.android.sessionreplay.SessionReplay
   fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun startRecording(com.datadog.android.api.SdkCore = Datadog.getInstance())
