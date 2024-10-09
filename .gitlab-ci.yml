@@ -370,6 +370,22 @@ test-pyramid:legacy-integration-instrumented-median-api:
     - !reference [.snippets, install-android-sdk]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
+test-pyramid:detekt-api-coverage:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesDebug --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
+    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" --jvm-target 11 -cp $(cat sdk_classpath)
+    # For now we just print the uncovered apis, eventually we will fail if it's not empty
+    - grep -v -f apiUsage.log apiSurface.log
+
 test-pyramid:publish-e2e-synthetics:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -423,7 +439,6 @@ test-pyramid:publish-webview-synthetics:
     expire_in: 1 week
     paths:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
-
 
 test-pyramid:publish-staging-synthetics:
   tags: [ "arch:amd64" ]

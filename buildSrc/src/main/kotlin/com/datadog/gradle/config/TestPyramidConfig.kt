@@ -19,7 +19,6 @@ fun Project.registerSubModuleAggregationTask(
 ) {
     tasks.register(taskName) {
         project.subprojects.forEach { subProject ->
-            println("SubProject ${subProject.name} / ${subProject.path}")
             if (!exceptions.contains(subProject.name) &&
                 subProject.name.startsWith(subModuleNamePrefix) &&
                 subProject.path.startsWith(subModulePathPrefix)
