@@ -22,6 +22,10 @@ public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/sessionreplay/PrivacyOverrideExtensionsKt {
+	public static final fun setSessionReplayHidden (Landroid/view/View;Z)V
+}
+
 public final class com/datadog/android/sessionreplay/SessionReplay {
 	public static final field INSTANCE Lcom/datadog/android/sessionreplay/SessionReplay;
 	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;)V

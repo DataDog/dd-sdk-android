@@ -26,6 +26,7 @@ import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcesso
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
@@ -173,6 +174,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
                         decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
+                        hiddenViewMapper = HiddenViewMapper(
+                            viewBoundsResolver = viewBoundsResolver,
+                            viewIdentifierResolver = viewIdentifierResolver
+                        ),
                         viewUtilsInternal = ViewUtilsInternal(),
                         internalLogger = internalLogger
                     ),

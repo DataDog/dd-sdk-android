@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal.Companion.METHOD_CALL_MAP_PREFIX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -69,6 +70,9 @@ internal class TreeViewTraversalTest {
     lateinit var mockDecorViewMapper: DecorViewMapper
 
     @Mock
+    lateinit var mockHiddenViewMapper: HiddenViewMapper
+
+    @Mock
     lateinit var mockViewUtilsInternal: ViewUtilsInternal
 
     @Mock
@@ -84,6 +88,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -123,6 +128,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             fakeTypeMapperWrappers,
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -156,6 +162,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -190,6 +197,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -239,6 +247,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             fakeTypeMapperWrappers,
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -272,6 +281,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -306,6 +316,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
@@ -442,6 +453,7 @@ internal class TreeViewTraversalTest {
         testedTreeViewTraversal = TreeViewTraversal(
             listOf(mockMapper),
             mockDefaultViewMapper,
+            mockHiddenViewMapper,
             mockDecorViewMapper,
             mockViewUtilsInternal,
             mockInternalLogger
