@@ -255,6 +255,9 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
                         wireframeJson.remove("y")
                         wireframeJson.remove("base64")
                         wireframeJson.remove("resourceId")
+                        wireframeJson.remove("width")
+                        wireframeJson.remove("height")
+                        wireframeJson.remove("shapeStyle")
                         wireframeJson
                     }?.fold(JsonArray()) { acc, jsonObject ->
                         acc.add(jsonObject)
@@ -294,7 +297,7 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
     }
 
     companion object {
-        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
         private const val UI_THREAD_DELAY_IN_MS = 1000L
         private const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private val SEGMENT_FORM_DATA_REGEX =

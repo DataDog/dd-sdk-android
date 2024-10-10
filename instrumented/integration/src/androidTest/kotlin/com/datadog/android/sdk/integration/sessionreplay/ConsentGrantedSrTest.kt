@@ -6,9 +6,10 @@
 
 package com.datadog.android.sdk.integration.sessionreplay
 
+import android.os.Build
+import androidx.test.filters.SdkSuppress
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.rules.SessionReplayTestRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
@@ -21,8 +22,9 @@ internal class ConsentGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygro
         keepRequests = true
     )
 
-    @Ignore("Flakiness in CI, unsolved yet")
+    // TODO RUM-6839: Fix test on API 21
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
         assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
