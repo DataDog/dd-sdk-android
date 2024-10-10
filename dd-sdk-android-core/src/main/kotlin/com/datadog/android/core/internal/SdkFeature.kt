@@ -39,6 +39,7 @@ import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
+import com.datadog.android.core.internal.persistence.ThreadSafeConsentAwareStorage
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHandler
 import com.datadog.android.core.internal.persistence.datastore.DataStoreFileHelper
 import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader
@@ -336,7 +337,7 @@ internal class SdkFeature(
         )
         this.fileOrchestrator = fileOrchestrator
 
-        return ConsentAwareStorage(
+        return ThreadSafeConsentAwareStorage(
             executorService = coreFeature.persistenceExecutorService,
             grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
             pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
@@ -351,8 +352,27 @@ internal class SdkFeature(
             fileMover = FileMover(internalLogger),
             internalLogger = internalLogger,
             filePersistenceConfig = filePersistenceConfig,
-            metricsDispatcher = metricsDispatcher
+            metricsDispatcher = metricsDispatcher,
+            coreFeature.trackingConsentProvider,
+            featureName
         )
+//        return ConsentAwareStorage(
+//            executorService = coreFeature.persistenceExecutorService,
+//            grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
+//            pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
+//            batchEventsReaderWriter = BatchFileReaderWriter.create(
+//                internalLogger = internalLogger,
+//                encryption = coreFeature.localDataEncryption
+//            ),
+//            batchMetadataReaderWriter = FileReaderWriter.create(
+//                internalLogger = internalLogger,
+//                encryption = coreFeature.localDataEncryption
+//            ),
+//            fileMover = FileMover(internalLogger),
+//            internalLogger = internalLogger,
+//            filePersistenceConfig = filePersistenceConfig,
+//            metricsDispatcher = metricsDispatcher
+//        )
     }
 
     private fun createUploader(requestFactory: RequestFactory): DataUploader {
