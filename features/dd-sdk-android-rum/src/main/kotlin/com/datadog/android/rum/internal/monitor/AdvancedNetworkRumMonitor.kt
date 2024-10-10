@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -19,7 +20,7 @@ import com.datadog.android.rum.resource.ResourceId
  */
 @SuppressWarnings("UndocumentedPublicFunction")
 @InternalApi
-interface AdvancedNetworkRumMonitor {
+interface AdvancedNetworkRumMonitor : RumMonitor {
 
     @InternalApi
     fun waitForResourceTiming(key: Any)
