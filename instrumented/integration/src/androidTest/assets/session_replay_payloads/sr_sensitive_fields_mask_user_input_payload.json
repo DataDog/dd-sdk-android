@@ -1,8 +1,8 @@
 [{
   "type": 4,
   "data": {
-    "width": 411,
-    "height": 914
+    "width": 320,
+    "height": 640
   }
 }, {
   "type": 6,
@@ -14,8 +14,8 @@
   "data": {
     "wireframes": [
       {
-        "width": 411,
-        "height": 914,
+        "width": 320,
+        "height": 640,
         "shapeStyle": {
           "backgroundColor": "#303030ff",
           "opacity": 1.0
@@ -23,27 +23,27 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -52,27 +52,27 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -81,27 +81,27 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -110,27 +110,27 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -139,27 +139,27 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -168,27 +168,27 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -197,27 +197,27 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
+        "width": 304,
+        "height": 46,
         "type": "text",
         "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -226,10 +226,36 @@
         }
       },
       {
-        "width": 411,
+        "width": 320,
         "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
+        "shapeStyle": {
+          "backgroundColor": "#212121ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 280,
+        "height": 28,
+        "type": "text",
+        "text": "Session Replay Sensitive Fiel…﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 20,
+          "color": "#ffffffff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 0,
+            "bottom": 0,
+            "left": 0,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "top"
+          }
+        }
       }
     ]
   }

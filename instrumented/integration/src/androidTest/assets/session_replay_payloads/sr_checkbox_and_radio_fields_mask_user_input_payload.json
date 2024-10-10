@@ -1,8 +1,8 @@
 [{
   "type": 4,
   "data": {
-    "width": 411,
-    "height": 914
+    "width": 320,
+    "height": 640
   }
 }, {
   "type": 6,
@@ -14,8 +14,8 @@
   "data": {
     "wireframes": [
       {
-        "width": 411,
-        "height": 914,
+        "width": 320,
+        "height": 640,
         "shapeStyle": {
           "backgroundColor": "#303030ff",
           "opacity": 1.0
@@ -23,7 +23,7 @@
         "type": "shape"
       },
       {
-        "width": 395,
+        "width": 304,
         "height": 32,
         "type": "text",
         "text": "Default CheckBox",
@@ -46,8 +46,8 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
+        "width": 32,
+        "height": 32,
         "border": {
           "color": "#a538afff",
           "width": 1
@@ -55,7 +55,7 @@
         "type": "shape"
       },
       {
-        "width": 395,
+        "width": 304,
         "height": 32,
         "type": "text",
         "text": "App Compat CheckBox",
@@ -78,8 +78,8 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
+        "width": 32,
+        "height": 32,
         "border": {
           "color": "#cc0000ff",
           "width": 1
@@ -87,7 +87,7 @@
         "type": "shape"
       },
       {
-        "width": 395,
+        "width": 304,
         "height": 32,
         "type": "text",
         "text": "Material CheckBox",
@@ -110,8 +110,8 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
+        "width": 32,
+        "height": 32,
         "border": {
           "color": "#ffbb33ff",
           "width": 1
@@ -119,7 +119,7 @@
         "type": "shape"
       },
       {
-        "width": 395,
+        "width": 304,
         "height": 32,
         "type": "text",
         "text": "Default Radio",
@@ -142,8 +142,8 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
+        "width": 32,
+        "height": 32,
         "shapeStyle": {
           "opacity": 1.0,
           "cornerRadius": 10
@@ -155,7 +155,7 @@
         "type": "shape"
       },
       {
-        "width": 395,
+        "width": 304,
         "height": 32,
         "type": "text",
         "text": "App Compat Radio",
@@ -178,8 +178,8 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
+        "width": 32,
+        "height": 32,
         "shapeStyle": {
           "opacity": 1.0,
           "cornerRadius": 10
@@ -191,7 +191,7 @@
         "type": "shape"
       },
       {
-        "width": 395,
+        "width": 304,
         "height": 32,
         "type": "text",
         "text": "Material Radio",
@@ -214,8 +214,8 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
+        "width": 32,
+        "height": 32,
         "shapeStyle": {
           "opacity": 1.0,
           "cornerRadius": 10
@@ -227,10 +227,36 @@
         "type": "shape"
       },
       {
-        "width": 411,
+        "width": 320,
         "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
+        "shapeStyle": {
+          "backgroundColor": "#212121ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 280,
+        "height": 28,
+        "type": "text",
+        "text": "Session Replay Sensitive Fiel…﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 20,
+          "color": "#ffffffff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 0,
+            "bottom": 0,
+            "left": 0,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "top"
+          }
+        }
       }
     ]
   }
