@@ -75,6 +75,7 @@ dependencyLicense = "0.3"
 realm = "1.11.0"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
+coilCompose = "2.1.0"
 fresco = "2.3.0"
 glide = "4.11.0"
 picasso = "2.8"
@@ -209,6 +210,7 @@ jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.j
 # Integrations
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 
 frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }
 frescoOkHttp3 = { module = "com.facebook.fresco:imagepipeline-okhttp3", version.ref = "fresco" }

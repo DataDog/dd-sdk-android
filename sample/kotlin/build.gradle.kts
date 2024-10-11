@@ -199,6 +199,7 @@ dependencies {
 
     // Image Loading Library
     implementation(libs.coil)
+    implementation(libs.coilCompose)
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)
