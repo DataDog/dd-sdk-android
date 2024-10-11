@@ -7,7 +7,9 @@
 package com.datadog.android.sessionreplay.utils
 
 //noinspection SuspiciousImport
+import android.annotation.SuppressLint
 import android.graphics.Paint
+import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -118,15 +120,31 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
         }
 
         if (fillPaint == null) return null
-
-        val fillColor: Int = fillPaint.color
+        val filterColor = try {
+            mColorField?.get(fillPaint.colorFilter) as? Int ?: fillPaint.color
+        } catch (e: IllegalArgumentException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to read ColorFilter.mColorField field through reflection" },
+                e
+            )
+            fillPaint.color
+        } catch (e: IllegalAccessException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to read ColorFilter.mColorField field through reflection" },
+                e
+            )
+            fillPaint.color
+        }
         val fillAlpha = (fillPaint.alpha * drawable.alpha) / MAX_ALPHA_VALUE
 
         return if (fillAlpha == 0) {
             null
         } else {
-            // TODO RUM-3469 resolve other color filter types
-            mergeColorAndAlpha(fillColor, fillAlpha)
+            mergeColorAndAlpha(filterColor, fillAlpha)
         }
     }
 
@@ -151,9 +169,23 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
     }
 
     companion object {
+        @SuppressLint("DiscouragedPrivateApi")
         @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
         internal val fillPaintField = try {
             GradientDrawable::class.java.getDeclaredField("mFillPaint").apply {
+                this.isAccessible = true
+            }
+        } catch (e: NoSuchFieldException) {
+            null
+        } catch (e: SecurityException) {
+            null
+        } catch (e: NullPointerException) {
+            null
+        }
+
+        @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
+        internal val mColorField = try {
+            PorterDuffColorFilter::class.java.getDeclaredField("mColor").apply {
                 this.isAccessible = true
             }
         } catch (e: NoSuchFieldException) {
