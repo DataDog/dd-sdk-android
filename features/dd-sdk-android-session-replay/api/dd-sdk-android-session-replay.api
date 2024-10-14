@@ -3,7 +3,7 @@ public abstract interface class com/datadog/android/sessionreplay/ExtensionSuppo
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
 }
 
-public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum {
+public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
 	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static final field MASK_LARGE_ONLY Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static final field MASK_NONE Lcom/datadog/android/sessionreplay/ImagePrivacy;
@@ -20,6 +20,9 @@ public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
 	public fun hashCode ()I
 	public final fun supportsView (Landroid/view/View;)Z
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/PrivacyLevel {
 }
 
 public final class com/datadog/android/sessionreplay/PrivacyOverrideExtensionsKt {
@@ -85,7 +88,7 @@ public final class com/datadog/android/sessionreplay/SystemRequirementsConfigura
 	public final fun getNONE ()Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;
 }
 
-public final class com/datadog/android/sessionreplay/TextAndInputPrivacy : java/lang/Enum {
+public final class com/datadog/android/sessionreplay/TextAndInputPrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
 	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public static final field MASK_ALL_INPUTS Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public static final field MASK_SENSITIVE_INPUTS Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
@@ -93,7 +96,7 @@ public final class com/datadog/android/sessionreplay/TextAndInputPrivacy : java/
 	public static fun values ()[Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 }
 
-public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/Enum {
+public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
 	public static final field HIDE Lcom/datadog/android/sessionreplay/TouchPrivacy;
 	public static final field SHOW Lcom/datadog/android/sessionreplay/TouchPrivacy;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TouchPrivacy;
