@@ -8,13 +8,18 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.setSessionReplayImagePrivacy
+import com.datadog.android.sessionreplay.setSessionReplayTextAndInputPrivacy
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -60,6 +65,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockImageWireframeHelper: ImageWireframeHelper
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -77,7 +85,8 @@ internal class SnapshotProducerTest {
         testedSnapshotProducer = SnapshotProducer(
             mockImageWireframeHelper,
             mockTreeViewTraversal,
-            mockOptionSelectorDetector
+            mockOptionSelectorDetector,
+            mockInternalLogger
         )
     }
 
@@ -364,6 +373,103 @@ internal class SnapshotProducerTest {
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)
+    }
+
+    @Test
+    fun `M apply override privacy to parent and children W produce()`(
+        forge: Forge
+    ) {
+        // Given
+        val mockChildren: List<View> = forge.aList { mock() }
+        val mockRoot: ViewGroup = mock { root ->
+            whenever(root.childCount).thenReturn(mockChildren.size)
+            whenever(root.getChildAt(any())).thenAnswer { mockChildren[it.getArgument(0)] }
+        }
+        val fakeImagePrivacy = forge.aValueFrom(ImagePrivacy::class.java)
+        val fakeTextAndInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+        mockRoot.setSessionReplayImagePrivacy(fakeImagePrivacy)
+        mockRoot.setSessionReplayTextAndInputPrivacy(fakeTextAndInputPrivacy)
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
+        )
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
+            .thenReturn(fakeTraversedTreeView)
+            .thenReturn(
+                fakeTraversedTreeView.copy(
+                    nextActionStrategy =
+                    TraversalStrategy.STOP_AND_DROP_NODE
+                )
+            )
+
+        // When
+        testedSnapshotProducer.produce(
+            mockRoot,
+            fakeSystemInformation,
+            fakeTextAndInputPrivacy,
+            fakeImagePrivacy,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<MappingContext>()
+        verify(mockTreeViewTraversal, times(1 + mockChildren.size))
+            .traverse(any(), argumentCaptor.capture(), any())
+        argumentCaptor.allValues.forEach {
+            assertThat(it.imagePrivacy).isEqualTo(fakeImagePrivacy)
+            assertThat(it.textAndInputPrivacy).isEqualTo(fakeTextAndInputPrivacy)
+        }
+    }
+
+    @Test
+    fun `M log invalid privacy level W produce() { invalid override tag value }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockChildren: List<View> = forge.aList { mock() }
+        val mockRoot: ViewGroup = mock { root ->
+            whenever(root.childCount).thenReturn(mockChildren.size)
+            whenever(root.getChildAt(any())).thenAnswer { mockChildren[it.getArgument(0)] }
+            whenever(root.getTag(R.id.datadog_image_privacy)).thenReturn("arglblargl")
+            whenever(root.getTag(R.id.datadog_text_and_input_privacy)).thenReturn("arglblargl")
+        }
+        val fakeImagePrivacy = forge.aValueFrom(ImagePrivacy::class.java)
+        val fakeTextAndInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
+        )
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
+            .thenReturn(fakeTraversedTreeView)
+            .thenReturn(
+                fakeTraversedTreeView.copy(
+                    nextActionStrategy =
+                    TraversalStrategy.STOP_AND_DROP_NODE
+                )
+            )
+
+        // When
+        testedSnapshotProducer.produce(
+            mockRoot,
+            fakeSystemInformation,
+            fakeTextAndInputPrivacy,
+            fakeImagePrivacy,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(2)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                any(),
+                eq(false),
+                eq(null)
+            )
+            assertThat(lastValue.invoke()).isEqualTo(INVALID_PRIVACY_LEVEL_ERROR)
+        }
     }
 
     // region Internals

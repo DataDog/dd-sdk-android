@@ -183,7 +183,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                     ),
                     ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
-                    )
+                    ),
+                    internalLogger = internalLogger
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
