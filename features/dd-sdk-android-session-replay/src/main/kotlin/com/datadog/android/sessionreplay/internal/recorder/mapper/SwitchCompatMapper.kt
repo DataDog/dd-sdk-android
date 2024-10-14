@@ -78,7 +78,7 @@ internal open class SwitchCompatMapper(
                     setTintList(it)
                 }
             }?.let { drawable ->
-                mappingContext.imageWireframeHelper.createImageWireframe(
+                mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                     view = view,
                     imagePrivacy = mappingContext.imagePrivacy,
                     currentWireframeIndex = prevIndex + 1,
@@ -109,7 +109,7 @@ internal open class SwitchCompatMapper(
 
         return view.thumbDrawable?.let { drawable ->
             thumbBounds?.let { thumbBounds ->
-                mappingContext.imageWireframeHelper.createImageWireframe(
+                mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                     view = view,
                     imagePrivacy = mappingContext.imagePrivacy,
                     currentWireframeIndex = prevIndex + 1,

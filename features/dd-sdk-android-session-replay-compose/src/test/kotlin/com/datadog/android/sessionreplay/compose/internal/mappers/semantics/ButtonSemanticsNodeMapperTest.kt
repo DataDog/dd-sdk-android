@@ -12,6 +12,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -48,6 +49,9 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
 
     @Mock
     private lateinit var mockSemanticsUtils: SemanticsUtils
+
+    @Mock
+    private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     @LongForgery(min = 0L, max = 0xffffff)
     var fakeBackgroundColor: Long = 0L
@@ -96,7 +100,8 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
         // When
         val actual = testedButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
-            fakeUiContext
+            fakeUiContext,
+            mockAsyncJobStatusCallback
         )
 
         // Then

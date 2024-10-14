@@ -109,7 +109,7 @@ internal abstract class CheckableTextViewMapper<T>(
                 view,
                 mappingContext.systemInformation.screenDensity
             )
-            mappingContext.imageWireframeHelper.createImageWireframe(
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mappingContext.imagePrivacy,
                 currentWireframeIndex = 0,

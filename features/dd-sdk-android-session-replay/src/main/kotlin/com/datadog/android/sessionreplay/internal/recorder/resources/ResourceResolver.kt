@@ -40,6 +40,37 @@ internal class ResourceResolver(
 ) {
 
     // region internal
+
+    @MainThread
+    internal fun resolveResourceId(
+        bitmap: Bitmap,
+        resourceResolverCallback: ResourceResolverCallback
+    ) {
+        threadPoolExecutor.executeSafe("resolveResourceId", logger) {
+            val compressedBitmapBytes = webPImageCompression.compressBitmap(bitmap)
+
+            // failed to compress bitmap
+            if (compressedBitmapBytes.isEmpty()) {
+                resourceResolverCallback.onFailure()
+            } else {
+                resolveBitmapHash(
+                    compressedBitmapBytes = compressedBitmapBytes,
+                    resolveResourceCallback = object : ResolveResourceCallback {
+                        override fun onResolved(resourceId: String, resourceData: ByteArray) {
+                            resourceItemCreationHandler.queueItem(resourceId, resourceData)
+                            resourceResolverCallback.onSuccess(resourceId)
+                        }
+
+                        override fun onFailed() {
+                            resourceResolverCallback.onFailure()
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    // endregion
     @MainThread
     internal fun resolveResourceId(
         resources: Resources,
@@ -125,6 +156,29 @@ internal class ResourceResolver(
                 resolveResourceCallback = resolveResourceCallback
             )
         }
+    }
+
+    @WorkerThread
+    private fun resolveBitmapHash(
+        compressedBitmapBytes: ByteArray,
+        resolveResourceCallback: ResolveResourceCallback
+    ) {
+        // failed to get image data
+        if (compressedBitmapBytes.isEmpty()) {
+            // we are already logging the failure in webpImageCompression
+            resolveResourceCallback.onFailed()
+            return
+        }
+
+        val resourceId = md5HashGenerator.generate(compressedBitmapBytes)
+
+        // failed to resolve bitmap identifier
+        if (resourceId == null) {
+            // logging md5 generation failures inside md5HashGenerator
+            resolveResourceCallback.onFailed()
+            return
+        }
+        resolveResourceCallback.onResolved(resourceId, compressedBitmapBytes)
     }
 
     @Suppress("ReturnCount")

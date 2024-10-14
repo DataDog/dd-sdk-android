@@ -35,6 +35,8 @@ internal object ComposeReflection {
 
     val OwnerField = WrappedCompositionClass?.getDeclaredFieldSafe("owner")
 
+    val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
+    val LayoutNodeOwnerField = LayoutNodeClass?.getDeclaredFieldSafe("owner")
     val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
     val SemanticsOwner = AndroidComposeViewClass?.getDeclaredFieldSafe("semanticsOwner")
 
@@ -44,6 +46,30 @@ internal object ComposeReflection {
     val BackgroundElementClass = getClassSafe("androidx.compose.foundation.BackgroundElement")
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
     val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
+
+    val PainterElementClass = getClassSafe("androidx.compose.ui.draw.PainterElement")
+    val PainterField = PainterElementClass?.getDeclaredFieldSafe("painter")
+
+    val VectorPainterClass = getClassSafe("androidx.compose.ui.graphics.vector.VectorPainter")
+    val VectorField = VectorPainterClass?.getDeclaredFieldSafe("vector")
+
+    val BitmapPainterClass = getClassSafe("androidx.compose.ui.graphics.painter.BitmapPainter")
+    val ImageField = BitmapPainterClass?.getDeclaredFieldSafe("image")
+
+    val VectorComponent = getClassSafe("androidx.compose.ui.graphics.vector.VectorComponent")
+    val CacheDrawScopeField = VectorComponent?.getDeclaredFieldSafe("cacheDrawScope")
+
+    val DrawCacheClass = getClassSafe("androidx.compose.ui.graphics.vector.DrawCache")
+    val CachedImageField = DrawCacheClass?.getDeclaredFieldSafe("mCachedImage")
+
+    val AndroidImageBitmapClass = getClassSafe("androidx.compose.ui.graphics.AndroidImageBitmap")
+    val BitmapField = AndroidImageBitmapClass?.getDeclaredFieldSafe("bitmap")
+
+    val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
+    val PainterFieldOfContentPainter = ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+
+    val AsyncImagePainterClass = getClassSafe("coil.compose.AsyncImagePainter")
+    val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")
 }
 
 internal fun Field.accessible(): Field {

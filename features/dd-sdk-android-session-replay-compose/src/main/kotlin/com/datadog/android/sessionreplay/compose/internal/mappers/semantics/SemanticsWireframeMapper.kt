@@ -32,7 +32,8 @@ internal class SemanticsWireframeMapper(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
         // TODO RUM-6189 Add Mappers for each Semantics Role
-        Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter)
+        Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter),
+        Role.Image to ImageSemanticsNodeMapper(colorStringFormatter)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(colorStringFormatter)
@@ -51,7 +52,7 @@ internal class SemanticsWireframeMapper(
         val density = mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
         val privacy = mappingContext.privacy
         return semanticsUtils.findRootSemanticsNode(view)?.let { node ->
-            createComposeWireframes(node, density, privacy)
+            createComposeWireframes(node, density, mappingContext, privacy, asyncJobStatusCallback)
         } ?: emptyList()
     }
 
@@ -65,7 +66,9 @@ internal class SemanticsWireframeMapper(
     private fun createComposeWireframes(
         semanticsNode: SemanticsNode,
         density: Float,
-        privacy: SessionReplayPrivacy
+        mappingContext: MappingContext,
+        privacy: SessionReplayPrivacy,
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
         createComposerWireframes(
@@ -74,8 +77,10 @@ internal class SemanticsWireframeMapper(
             parentUiContext = UiContext(
                 parentContentColor = null,
                 density = density,
-                privacy = privacy
-            )
+                privacy = privacy,
+                imageWireframeHelper = mappingContext.imageWireframeHelper
+            ),
+            asyncJobStatusCallback = asyncJobStatusCallback
         )
         return wireframes
     }
@@ -83,15 +88,19 @@ internal class SemanticsWireframeMapper(
     private fun createComposerWireframes(
         semanticsNode: SemanticsNode,
         wireframes: MutableList<MobileSegment.Wireframe>,
-        parentUiContext: UiContext
+        parentUiContext: UiContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ) {
-        getSemanticsNodeMapper(semanticsNode)
-            .map(semanticsNode, parentUiContext)?.wireframe?.let {
-                wireframes.add(it)
-            }
+        getSemanticsNodeMapper(semanticsNode).map(
+            semanticsNode = semanticsNode,
+            parentContext = parentUiContext,
+            asyncJobStatusCallback = asyncJobStatusCallback
+        )?.wireframe?.let {
+            wireframes.add(it)
+        }
         val children = semanticsNode.children
         children.forEach {
-            createComposerWireframes(it, wireframes, parentUiContext)
+            createComposerWireframes(it, wireframes, parentUiContext, asyncJobStatusCallback)
         }
     }
 }

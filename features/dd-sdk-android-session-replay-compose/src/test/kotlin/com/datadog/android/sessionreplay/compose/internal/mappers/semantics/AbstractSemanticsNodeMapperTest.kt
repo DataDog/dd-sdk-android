@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Density
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
@@ -85,7 +86,7 @@ internal open class AbstractCompositionGroupMapperTest {
         val mockNode = mockSemanticsNodeWithBound()
 
         // When
-        val result = testedMapper.resolveBounds(mockNode)
+        val result = testedMapper.stubResolveBounds(mockNode)
 
         // Then
         assertThat(result.x).isEqualTo((fakeBounds.left / fakeDensity).toLong())
@@ -131,12 +132,16 @@ internal class StubAbstractSemanticsNodeMapper(
 
     var mappedWireframe: ComposeWireframe? = null
 
-    override fun map(semanticsNode: SemanticsNode, parentContext: UiContext): ComposeWireframe? {
+    override fun map(
+        semanticsNode: SemanticsNode,
+        parentContext: UiContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): ComposeWireframe? {
         return null
     }
 
-    fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        return super.resolveBound(semanticsNode)
+    fun stubResolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
+        return super.resolveBounds(semanticsNode)
     }
 
     fun covertColor(color: Long): String? {

@@ -229,7 +229,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M send onReady W resolveResourceId() { failed to get image data }`() {
+    fun `M send onReady W resolveResourceId(Drawable) { failed to get image data }`() {
         // Given
         whenever(mockBitmap.isRecycled)
             .thenReturn(true)
@@ -248,6 +248,28 @@ internal class ResourceResolverTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+    }
+
+    @Test
+    fun `M send onReady W resolveResourceId(Bitmap) { failed to get image data }`() {
+        // Given
+        whenever(mockBitmap.isRecycled)
+            .thenReturn(true)
+            .thenReturn(false)
+
+        val emptyByteArray = ByteArray(0)
+
+        whenever(mockWebPImageCompression.compressBitmap(any()))
+            .thenReturn(emptyByteArray)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            bitmap = mockBitmap,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -636,7 +658,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M return all callbacks W resolveResourceId() { multiple threads, first takes longer }`(
+    fun `M return all callbacks W resolveResourceId(Drawable) { multiple threads, first takes longer }`(
         @Mock mockFirstCallback: ResourceResolverCallback,
         @Mock mockSecondCallback: ResourceResolverCallback,
         @Mock mockFirstDrawable: Drawable,
@@ -672,6 +694,51 @@ internal class ResourceResolverTest {
                 drawable = mockSecondDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
+                resourceResolverCallback = mockSecondCallback
+            )
+            Thread.sleep(500)
+            countDownLatch.countDown()
+        }
+
+        // When
+        thread1.start()
+        thread2.start()
+
+        // Then
+        countDownLatch.await()
+        verify(mockFirstCallback).onSuccess(fakeFirstResourceId)
+        verify(mockSecondCallback).onSuccess(fakeSecondResourceId)
+    }
+
+    @Test
+    fun `M return all callbacks W resolveResourceId(Bitmap) { multiple threads, first takes longer }`(
+        @Mock mockFirstCallback: ResourceResolverCallback,
+        @Mock mockSecondCallback: ResourceResolverCallback,
+        @Mock mockFirstBitmap: Bitmap,
+        @Mock mockSecondBitmap: Bitmap,
+        @StringForgery fakeFirstResourceId: String,
+        @StringForgery fakeSecondResourceId: String,
+        forge: Forge
+    ) {
+        // Given
+        val firstBitmapCompression = forge.aString().toByteArray()
+        val secondBitmapCompression = forge.aString().toByteArray()
+        whenever(mockWebPImageCompression.compressBitmap(mockFirstBitmap)).thenReturn(firstBitmapCompression)
+        whenever(mockWebPImageCompression.compressBitmap(mockSecondBitmap)).thenReturn(secondBitmapCompression)
+        whenever(mockMD5HashGenerator.generate(firstBitmapCompression)).thenReturn(fakeFirstResourceId)
+        whenever(mockMD5HashGenerator.generate(secondBitmapCompression)).thenReturn(fakeSecondResourceId)
+        val countDownLatch = CountDownLatch(2)
+        val thread1 = Thread {
+            testedResourceResolver.resolveResourceId(
+                bitmap = mockFirstBitmap,
+                resourceResolverCallback = mockFirstCallback
+            )
+            Thread.sleep(1500)
+            countDownLatch.countDown()
+        }
+        val thread2 = Thread {
+            testedResourceResolver.resolveResourceId(
+                bitmap = mockSecondBitmap,
                 resourceResolverCallback = mockSecondCallback
             )
             Thread.sleep(500)

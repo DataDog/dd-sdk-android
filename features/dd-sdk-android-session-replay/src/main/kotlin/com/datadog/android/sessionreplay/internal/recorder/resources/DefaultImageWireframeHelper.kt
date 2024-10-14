@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
@@ -21,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.Locale
@@ -38,7 +40,70 @@ internal class DefaultImageWireframeHelper(
 
     @Suppress("ReturnCount", "LongMethod")
     @UiThread
-    override fun createImageWireframe(
+    override fun createImageWireframeByBitmap(
+        id: Long,
+        globalBounds: GlobalBounds,
+        bitmap: Bitmap,
+        density: Float,
+        isContextualImage: Boolean,
+        imagePrivacy: ImagePrivacy,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        clipping: MobileSegment.WireframeClip?,
+        shapeStyle: MobileSegment.ShapeStyle?,
+        border: MobileSegment.ShapeBorder?
+    ): MobileSegment.Wireframe {
+        if (imagePrivacy == ImagePrivacy.MASK_ALL) {
+            return createContentPlaceholderWireframe(
+                id = id,
+                globalBounds = globalBounds,
+                density = density,
+                label = MASK_ALL_CONTENT_LABEL
+            )
+        }
+
+        // in case we suspect the image is PII, return a placeholder
+        if (isContextualImage && ImagePrivacy.MASK_LARGE_ONLY == imagePrivacy) {
+            return createContentPlaceholderWireframe(
+                id = id,
+                globalBounds = globalBounds,
+                density = density,
+                label = MASK_CONTEXTUAL_CONTENT_LABEL
+            )
+        }
+
+        val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = id,
+            globalBounds.x,
+            globalBounds.y,
+            width = globalBounds.width,
+            height = globalBounds.height,
+            shapeStyle = shapeStyle,
+            border = border,
+            clip = clipping,
+            isEmpty = true
+        )
+
+        asyncJobStatusCallback.jobStarted()
+
+        resourceResolver.resolveResourceId(
+            bitmap = bitmap,
+            resourceResolverCallback = object : ResourceResolverCallback {
+                override fun onSuccess(resourceId: String) {
+                    populateResourceIdInWireframe(resourceId, imageWireframe)
+                    asyncJobStatusCallback.jobFinished()
+                }
+
+                override fun onFailure() {
+                    asyncJobStatusCallback.jobFinished()
+                }
+            }
+        )
+        return imageWireframe
+    }
+
+    @Suppress("ReturnCount", "LongMethod")
+    @UiThread
+    override fun createImageWireframeByDrawable(
         view: View,
         imagePrivacy: ImagePrivacy,
         currentWireframeIndex: Int,
@@ -183,7 +248,7 @@ internal class DefaultImageWireframeHelper(
                     position = compoundDrawablePosition
                 )
 
-                createImageWireframe(
+                createImageWireframeByDrawable(
                     view = textView,
                     imagePrivacy = mappingContext.imagePrivacy,
                     currentWireframeIndex = ++wireframeIndex,
@@ -234,6 +299,22 @@ internal class DefaultImageWireframeHelper(
             is GradientDrawable -> DrawableProperties(drawable, view.width, view.height)
             else -> DrawableProperties(drawable, width, height)
         }
+    }
+
+    private fun createContentPlaceholderWireframe(
+        id: Long,
+        globalBounds: GlobalBounds,
+        density: Float,
+        label: String
+    ): MobileSegment.Wireframe.PlaceholderWireframe {
+        return MobileSegment.Wireframe.PlaceholderWireframe(
+            id,
+            globalBounds.x.densityNormalized(density),
+            globalBounds.y.densityNormalized(density),
+            globalBounds.width.densityNormalized(density),
+            globalBounds.height.densityNormalized(density),
+            label = label
+        )
     }
 
     private fun createContentPlaceholderWireframe(

@@ -10,6 +10,7 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import org.mockito.kotlin.mock
 
 internal class UIContextForgeryFactory : ForgeryFactory<UiContext> {
     override fun getForgery(forge: Forge): UiContext {
@@ -17,7 +18,8 @@ internal class UIContextForgeryFactory : ForgeryFactory<UiContext> {
             parentContentColor = forge.anAlphabeticalString(),
             density = forge.aFloat(0.01f, 100f),
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java),
-            isInUserInputLayout = forge.aBool()
+            isInUserInputLayout = forge.aBool(),
+            imageWireframeHelper = mock()
         )
     }
 }
