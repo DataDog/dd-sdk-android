@@ -25,7 +25,8 @@ import androidx.navigation.compose.composable
 @Composable
 internal fun SampleSelectionScreen(
     onTypographyClicked: () -> Unit,
-    onLegacyClicked: () -> Unit
+    onLegacyClicked: () -> Unit,
+    onImageClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -39,6 +40,10 @@ internal fun SampleSelectionScreen(
         StyledButton(
             text = "Typography Sample",
             onClick = onTypographyClicked
+        )
+        StyledButton(
+            text = "Image Sample",
+            onClick = onImageClicked
         )
         StyledButton(
             text = "Legacy Sample",
@@ -68,6 +73,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             onTypographyClicked = {
                 navController.navigate(SampleScreen.Typography.navigationRoute)
             },
+            onImageClicked = {
+                navController.navigate(SampleScreen.Image.navigationRoute)
+            },
             onLegacyClicked = {
                 navController.navigate(SampleScreen.Legacy.navigationRoute)
             }
@@ -76,6 +84,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
 
     composable(SampleScreen.Typography.navigationRoute) {
         TypographySample()
+    }
+
+    composable(SampleScreen.Image.navigationRoute) {
+        ImageSample()
     }
 
     activity(SampleScreen.Legacy.navigationRoute) {
@@ -89,6 +101,7 @@ internal sealed class SampleScreen(
 
     object Root : SampleScreen(COMPOSE_ROOT)
     object Typography : SampleScreen("$COMPOSE_ROOT/typography")
+    object Image : SampleScreen("$COMPOSE_ROOT/image")
     object Legacy : SampleScreen("$COMPOSE_ROOT/legacy")
 
     companion object {
@@ -102,6 +115,8 @@ internal sealed class SampleScreen(
 private fun PreviewSampleSelectionScreen() {
     SampleSelectionScreen(
         onLegacyClicked = {
+        },
+        onImageClicked = {
         },
         onTypographyClicked = {
         }
