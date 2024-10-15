@@ -9,7 +9,6 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
@@ -106,57 +105,6 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     // endregion
 
-    // region Utils
-
-    /**
-     * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
-     * @param intent the [Intent] we need to transform. Returns an empty Map if this is null.
-     */
-    protected fun convertToRumAttributes(intent: Intent?): Map<String, Any?> {
-        if (intent == null) return emptyMap()
-
-        val attributes = mutableMapOf<String, Any?>()
-
-        intent.action?.let {
-            attributes[INTENT_ACTION_TAG] = it
-        }
-        intent.dataString?.let {
-            attributes[INTENT_URI_TAG] = it
-        }
-
-        intent.safeExtras?.let { bundle ->
-            bundle.keySet().forEach {
-                // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
-                // Issue is opened in the Google Issue Tracker.
-                @Suppress("DEPRECATION")
-                attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
-            }
-        }
-
-        return attributes
-    }
-
-    /**
-     * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
-     * @param bundle the Bundle we need to transform. Returns an empty Map if this is null.
-     */
-    protected fun convertToRumAttributes(bundle: Bundle?): Map<String, Any?> {
-        if (bundle == null) return emptyMap()
-
-        val attributes = mutableMapOf<String, Any?>()
-
-        bundle.keySet().forEach {
-            // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
-            // Issue is opened in the Google Issue Tracker.
-            @Suppress("DEPRECATION")
-            attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
-        }
-
-        return attributes
-    }
-
-    // endregion
-
     // region Helper
 
     /**
@@ -181,24 +129,9 @@ abstract class ActivityLifecycleTrackingStrategy :
         }
     }
 
-    private val Intent.safeExtras: Bundle?
-        get() = try {
-            // old Androids can throw different exceptions here making native calls
-            extras
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Error getting Intent extras, ignoring it." },
-                e
-            )
-            null
-        }
+    // endregion
 
     internal companion object {
-        internal const val ARGUMENT_TAG = "view.arguments"
-        internal const val INTENT_ACTION_TAG = "view.intent.action"
-        internal const val INTENT_URI_TAG = "view.intent.uri"
 
         internal const val EXTRA_SYNTHETICS_TEST_ID = "_dd.synthetics.test_id"
         internal const val EXTRA_SYNTHETICS_RESULT_ID = "_dd.synthetics.result_id"

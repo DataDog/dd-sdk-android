@@ -94,7 +94,7 @@ class NavigationViewTrackingStrategy(
     ) {
         val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
         componentPredicate.runIfValid(destination, internalLogger) {
-            val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
+            val attributes = if (trackArguments) arguments.convertToRumViewAttributes() else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
             rumMonitor?.startView(destination, viewName, attributes)
         }
