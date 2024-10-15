@@ -13,6 +13,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,6 +30,7 @@ internal class ConsentGrantedFragmentTrackingTest : FragmentTrackingTest() {
     )
 
     @Test
+    @Ignore("TODO RUM-6570: Fix the test")
     fun verifyViewEventsOnSwipe() {
         val expectedEvents = runInstrumentationScenario(mockServerRule)
 

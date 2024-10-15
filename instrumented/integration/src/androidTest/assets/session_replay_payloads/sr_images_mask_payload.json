@@ -1,8 +1,8 @@
 [{
   "type": 4,
   "data": {
-    "width": 411,
-    "height": 914
+    "width": 320,
+    "height": 640
   }
 }, {
   "type": 6,
@@ -14,8 +14,8 @@
   "data": {
     "wireframes": [
       {
-        "width": 411,
-        "height": 914,
+        "width": 320,
+        "height": 640,
         "shapeStyle": {
           "backgroundColor": "#303030ff",
           "opacity": 1.0
@@ -24,33 +24,59 @@
       },
       {
         "width": 80,
-        "height": 84,
+        "height": 85,
         "clip": {
           "top": 2,
-          "bottom": 2,
+          "bottom": 3,
           "left": 0,
           "right": 0
         },
-        "type": "image",
-        "isEmpty": false
+        "type": "placeholder",
+        "label": "Image"
       },
       {
         "width": 80,
-        "height": 84,
+        "height": 85,
         "clip": {
           "top": 2,
-          "bottom": 2,
+          "bottom": 3,
           "left": 0,
           "right": 0
         },
-        "type": "image",
-        "isEmpty": false
+        "type": "placeholder",
+        "label": "Image"
       },
       {
-        "width": 411,
+        "width": 320,
         "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
+        "shapeStyle": {
+          "backgroundColor": "#212121ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 280,
+        "height": 28,
+        "type": "text",
+        "text": "xxxxxxx xxxxxx xxxxxx xxxx xxxxxxx",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 20,
+          "color": "#ffffffff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 0,
+            "bottom": 0,
+            "left": 0,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "top"
+          }
+        }
       }
     ]
   }

@@ -13,6 +13,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest.MatchingStrategy.CONTAINS
+import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest.MatchingStrategy.EXACT
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
@@ -294,7 +296,7 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
     }
 
     companion object {
-        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
         private const val UI_THREAD_DELAY_IN_MS = 1000L
         private const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private val SEGMENT_FORM_DATA_REGEX =
