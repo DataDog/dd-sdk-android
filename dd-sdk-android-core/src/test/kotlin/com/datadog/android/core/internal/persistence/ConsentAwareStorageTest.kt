@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.privacy.TrackingConsent
@@ -113,8 +114,15 @@ internal class ConsentAwareStorageTest {
     @Forgery
     lateinit var mockGrantedRootParentFile: File
 
+    @Mock
+    lateinit var mockConsentProvider: ConsentProvider
+
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        whenever(mockConsentProvider.getConsent()) doReturn forge.aValueFrom(TrackingConsent::class.java)
         whenever(mockPendingOrchestrator.getRootDir()) doReturn File(mockPendingRootParentFile, fakeRootDirName)
         whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
         whenever(mockPendingOrchestrator.getRootDirName()) doReturn fakeRootDirName
@@ -125,7 +133,7 @@ internal class ConsentAwareStorageTest {
                 "com.datadog.android.core.internal.persistence.ConsentAwareStorage",
                 TelemetryMetricType.MethodCalled,
                 0.001f,
-                "writeCurrentBatch[$fakeRootDirName]"
+                "writeCurrentBatch[$fakeFeatureName]"
             )
         ) doReturn mockMetric
 
@@ -139,7 +147,9 @@ internal class ConsentAwareStorageTest {
             mockFileMover,
             mockInternalLogger,
             mockFilePersistenceConfig,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockConsentProvider,
+            fakeFeatureName
         )
     }
 
@@ -153,18 +163,17 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
         whenever(mockGrantedOrchestrator.getWritableFile(forceNewBatch)) doReturn file
         val mockMetaFile: File? = forge.aNullable { mock() }
         whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile(forceNewBatch)
         verify(mockGrantedOrchestrator).getMetadataFile(file)
-        verify(mockGrantedOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
@@ -185,15 +194,14 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
         whenever(mockGrantedOrchestrator.getWritableFile(forceNewBatch)) doReturn null
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile(forceNewBatch)
-        verify(mockGrantedOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
@@ -216,18 +224,17 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
         whenever(mockPendingOrchestrator.getWritableFile(forceNewBatch)) doReturn file
         val mockMetaFile: File? = forge.aNullable { mock() }
         whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
 
         // Then
         verify(mockPendingOrchestrator).getWritableFile(forceNewBatch)
         verify(mockPendingOrchestrator).getMetadataFile(file)
-        verify(mockPendingOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
@@ -248,15 +255,14 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
         whenever(mockPendingOrchestrator.getWritableFile(forceNewBatch)) doReturn null
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
 
         // Then
         verify(mockPendingOrchestrator).getWritableFile(forceNewBatch)
-        verify(mockPendingOrchestrator).getRootDirName()
         argumentCaptor<EventBatchWriter> {
             verify(mockCallback).invoke(capture())
             assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
@@ -277,7 +283,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.NOT_GRANTED
         whenever(
             mockInternalLogger.startPerformanceMeasure(
                 "com.datadog.android.core.internal.persistence.ConsentAwareStorage",
@@ -288,7 +294,7 @@ internal class ConsentAwareStorageTest {
         ) doReturn mockMetric
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -324,7 +330,9 @@ internal class ConsentAwareStorageTest {
             mockFileMover,
             mockInternalLogger,
             mockFilePersistenceConfig,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockConsentProvider,
+            fakeFeatureName
         )
 
         // When
@@ -340,11 +348,6 @@ internal class ConsentAwareStorageTest {
             RejectedExecutionException::class.java,
             false
         )
-        if (fakeDatadogContext.trackingConsent == TrackingConsent.PENDING) {
-            verify(mockPendingOrchestrator).getRootDirName()
-        } else if (fakeDatadogContext.trackingConsent == TrackingConsent.GRANTED) {
-            verify(mockGrantedOrchestrator).getRootDirName()
-        }
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
@@ -372,7 +375,9 @@ internal class ConsentAwareStorageTest {
             mockFileMover,
             mockInternalLogger,
             mockFilePersistenceConfig,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockConsentProvider,
+            fakeFeatureName
         )
         var accumulator: Byte = 0
         val event = forge.aString().toByteArray()
@@ -389,7 +394,7 @@ internal class ConsentAwareStorageTest {
                 eventType = fakeEventType
             )
         }
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
         whenever(mockGrantedOrchestrator.getWritableFile(forceNewBatch)) doReturn file
         val mockMetaFile = mock<File>().apply { whenever(exists()) doReturn true }
         whenever(mockMetaReaderWriter.readData(mockMetaFile)) doAnswer {
@@ -410,7 +415,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         repeat(threadsCount) {
-            testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = callback)
+            testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = callback)
         }
         executor.shutdown()
         executor.awaitTermination(1, TimeUnit.SECONDS)
@@ -549,7 +554,9 @@ internal class ConsentAwareStorageTest {
             mockFileMover,
             mockInternalLogger,
             mockFilePersistenceConfig,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockConsentProvider,
+            fakeFeatureName
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
@@ -670,7 +677,9 @@ internal class ConsentAwareStorageTest {
             mockFileMover,
             mockInternalLogger,
             mockFilePersistenceConfig,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockConsentProvider,
+            fakeFeatureName
         )
 
         whenever(mockGrantedOrchestrator.getAllFiles()) doReturn listOf(grantedFile)
@@ -725,7 +734,9 @@ internal class ConsentAwareStorageTest {
             mockFileMover,
             mockInternalLogger,
             mockFilePersistenceConfig,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockConsentProvider,
+            fakeFeatureName
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturnConsecutively files
