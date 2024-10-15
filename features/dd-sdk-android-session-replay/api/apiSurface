@@ -1,7 +1,7 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
-enum com.datadog.android.sessionreplay.ImagePrivacy
+enum com.datadog.android.sessionreplay.ImagePrivacy : PrivacyLevel
   - MASK_NONE
   - MASK_LARGE_ONLY
   - MASK_ALL
@@ -9,6 +9,7 @@ data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.V
   constructor(Class<T>, com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T>)
   fun supportsView(android.view.View): Boolean
   fun getUnsafeMapper(): com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<android.view.View>
+interface com.datadog.android.sessionreplay.PrivacyLevel
 fun android.view.View.setSessionReplayHidden(Boolean)
 fun android.view.View.setSessionReplayImagePrivacy(ImagePrivacy?)
 fun android.view.View.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy?)
@@ -41,11 +42,11 @@ class com.datadog.android.sessionreplay.SystemRequirementsConfiguration
   companion object 
     val BASIC: SystemRequirementsConfiguration
     val NONE: SystemRequirementsConfiguration
-enum com.datadog.android.sessionreplay.TextAndInputPrivacy
+enum com.datadog.android.sessionreplay.TextAndInputPrivacy : PrivacyLevel
   - MASK_SENSITIVE_INPUTS
   - MASK_ALL_INPUTS
   - MASK_ALL
-enum com.datadog.android.sessionreplay.TouchPrivacy
+enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
   - SHOW
   - HIDE
 data class com.datadog.android.sessionreplay.recorder.MappingContext
