@@ -20,8 +20,8 @@ import com.datadog.android.core.internal.HashGenerator
 import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.unboundInternalLogger
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import java.util.Locale
