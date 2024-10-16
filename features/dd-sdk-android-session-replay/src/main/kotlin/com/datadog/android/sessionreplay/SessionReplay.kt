@@ -6,17 +6,26 @@
 
 package com.datadog.android.sessionreplay
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import java.lang.ref.WeakReference
 
 /**
  * An entry point to Datadog Session Replay feature.
  */
 object SessionReplay {
+
+    @VisibleForTesting internal var currentRegisteredCore: WeakReference<SdkCore>? = null
+
+    internal const val IS_ALREADY_REGISTERED_WARNING =
+        "Session Replay is already enabled and does not support multiple instances. " +
+            "The existing instance will continue to be used."
 
     /**
      * Enables a SessionReplay feature based on the configuration provided.
@@ -51,7 +60,13 @@ object SessionReplay {
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
                 )
-                sdkCore.registerFeature(sessionReplayFeature)
+
+                if (isAlreadyRegistered()) {
+                    logAlreadyRegisteredWarning(sdkCore.internalLogger)
+                } else {
+                    currentRegisteredCore = WeakReference(sdkCore)
+                    sdkCore.registerFeature(sessionReplayFeature)
+                }
             }
     }
 
@@ -86,4 +101,14 @@ object SessionReplay {
 
         sessionReplayFeature?.manuallyStopRecording()
     }
+
+    private fun isAlreadyRegistered() =
+        currentRegisteredCore?.get() != null
+
+    private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) =
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
+        )
 }
