@@ -53,10 +53,7 @@ stages:
     - set +e
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" )
-    - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
-    - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
-    - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
