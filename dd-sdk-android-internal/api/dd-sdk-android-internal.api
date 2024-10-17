@@ -87,6 +87,8 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getKind ()Ljava/lang/String;
 	public final fun getStacktrace ()Ljava/lang/String;
+	public final fun resolveKind ()Ljava/lang/String;
+	public final fun resolveStacktrace ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Metric : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
@@ -104,6 +106,10 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/ThrowableExtKt {
+	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {

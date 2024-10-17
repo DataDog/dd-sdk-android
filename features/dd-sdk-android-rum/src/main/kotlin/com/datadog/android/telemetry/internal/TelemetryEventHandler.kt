@@ -87,8 +87,8 @@ internal class TelemetryEventHandler(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
                         message = event.message,
-                        stack = event.stacktrace,
-                        kind = event.kind,
+                        stack = event.resolveStacktrace(),
+                        kind = event.resolveKind(),
                         additionalProperties = event.additionalProperties
                     )
                 }

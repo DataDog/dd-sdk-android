@@ -4,16 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.utils
+package com.datadog.android.internal.utils
 
-import com.datadog.android.lint.InternalApi
 import java.io.PrintWriter
 import java.io.StringWriter
 
 /**
  * Converts stacktrace to string format.
  */
-@InternalApi
 fun Throwable.loggableStackTrace(): String {
     val stringWriter = StringWriter()
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here

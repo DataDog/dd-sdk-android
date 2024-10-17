@@ -290,7 +290,6 @@ fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
-fun Throwable.loggableStackTrace(): String
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
   constructor(Float)
   - ALL

@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes

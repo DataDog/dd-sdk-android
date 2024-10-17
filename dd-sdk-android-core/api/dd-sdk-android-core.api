@@ -783,10 +783,6 @@ public final class com/datadog/android/core/internal/utils/ThreadExtKt {
 	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;
 }
 
-public final class com/datadog/android/core/internal/utils/ThrowableExtKt {
-	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
-}
-
 public final class com/datadog/android/core/metrics/MethodCallSamplingRate : java/lang/Enum {
 	public static final field ALL Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static final field HIGH Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
