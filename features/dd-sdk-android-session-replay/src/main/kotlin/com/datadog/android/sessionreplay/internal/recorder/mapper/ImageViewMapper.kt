@@ -61,7 +61,7 @@ internal class ImageViewMapper(
 
         if (contentDrawable != null) {
             // resolve foreground
-            mappingContext.imageWireframeHelper.createImageWireframe(
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mappingContext.imagePrivacy,
                 currentWireframeIndex = wireframes.size,

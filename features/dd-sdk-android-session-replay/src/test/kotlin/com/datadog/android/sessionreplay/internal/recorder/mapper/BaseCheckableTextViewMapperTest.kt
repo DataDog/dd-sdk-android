@@ -213,7 +213,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         val expectedY = testedCheckableTextViewMapper
             .resolveCheckableBounds(mockCheckableTextView, fakeMappingContext.systemInformation.screenDensity).y
         // Then
-        verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
+        verify(fakeMappingContext.imageWireframeHelper).createImageWireframeByDrawable(
             view = eq(mockCheckableTextView),
             imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
             currentWireframeIndex = anyInt(),
@@ -256,7 +256,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         val expectedY = testedCheckableTextViewMapper
             .resolveCheckableBounds(mockCheckableTextView, fakeMappingContext.systemInformation.screenDensity).y
         // Then
-        verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
+        verify(fakeMappingContext.imageWireframeHelper).createImageWireframeByDrawable(
             view = eq(mockCheckableTextView),
             imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
             currentWireframeIndex = anyInt(),

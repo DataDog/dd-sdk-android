@@ -129,7 +129,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         val drawableCopy = view.background?.constantState?.newDrawable(resources)
 
         return if (drawableCopy != null) {
-            mappingContext.imageWireframeHelper.createImageWireframe(
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mappingContext.imagePrivacy,
                 currentWireframeIndex = 0,

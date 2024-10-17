@@ -17,7 +17,7 @@ internal abstract class AbstractSemanticsNodeMapper(
     private val colorStringFormatter: ColorStringFormatter
 ) : SemanticsNodeMapper {
 
-    protected fun resolveBound(semanticsNode: SemanticsNode): GlobalBounds {
+    protected fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
         val rect = semanticsNode.boundsInRoot
         val density = semanticsNode.layoutInfo.density.density
         val width = ((rect.right - rect.left) / density).toLong()

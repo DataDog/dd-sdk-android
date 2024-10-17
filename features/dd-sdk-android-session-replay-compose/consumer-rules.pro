@@ -16,10 +16,37 @@
 -keepclassmembers class androidx.compose.ui.platform.AndroidComposeView {
      <fields>;
 }
-
 -keepclassmembers class androidx.compose.foundation.text.modifiers.TextStringSimpleElement {
      <fields>;
 }
 -keepclassmembers class androidx.compose.foundation.BackgroundElement {
      <fields>;
 }
+-keepclassmembers class androidx.compose.ui.node.LayoutNode {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.draw.PainterElement {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.graphics.vector.VectorPainter {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.graphics.painter.BitmapPainter {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.graphics.vector.VectorComponent {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.graphics.vector.DrawCache {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.graphics.AndroidImageBitmap {
+     <fields>;
+}
+-keepclassmembers class coil.compose.ContentPainterModifier {
+     <fields>;
+}
+-keepclassmembers class coil.compose.AsyncImagePainter {
+     <fields>;
+}
+

@@ -111,7 +111,11 @@ class SemanticsWireframeMapperTest {
         )
 
         // Then
-        verify(mockTextSemanticsNodeMapper, times(1)).map(eq(mockSemanticsNode), any())
+        verify(mockTextSemanticsNodeMapper, times(1)).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
     }
 
     private fun mockSemanticsNode(role: Role?): SemanticsNode {

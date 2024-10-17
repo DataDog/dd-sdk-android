@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.TextCompositionGroupMapper.Companion.DEFAULT_FONT_FAMILY
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -59,6 +60,9 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
 
     @Mock
     private lateinit var mockTextLayoutResult: TextLayoutResult
+
+    @Mock
+    private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeTextColorHexString: String
@@ -110,7 +114,8 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
         }
         val actual = testedTextSemanticsNodeMapper.map(
             mockNode,
-            fakeUiContext
+            fakeUiContext,
+            mockAsyncJobStatusCallback
         )
 
         val expected = MobileSegment.Wireframe.TextWireframe(

@@ -12,6 +12,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -20,9 +21,13 @@ internal class ButtonSemanticsNodeMapper(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter) {
 
-    override fun map(semanticsNode: SemanticsNode, parentContext: UiContext): ComposeWireframe {
+    override fun map(
+        semanticsNode: SemanticsNode,
+        parentContext: UiContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): ComposeWireframe {
         val density = semanticsNode.layoutInfo.density
-        val bounds = resolveBound(semanticsNode)
+        val bounds = resolveBounds(semanticsNode)
         val buttonStyle = resolveSemanticsButtonStyle(semanticsNode, bounds, density)
         return ComposeWireframe(
             MobileSegment.Wireframe.ShapeWireframe(

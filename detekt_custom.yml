@@ -128,6 +128,7 @@ datadog:
       - "android.database.sqlite.SQLiteDatabase.endTransaction():java.lang.IllegalStateException"
       - "android.database.sqlite.SQLiteDatabase.setTransactionSuccessful():java.lang.IllegalStateException"
       - "android.graphics.Bitmap.compress(android.graphics.Bitmap.CompressFormat, kotlin.Int, java.io.OutputStream):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "android.graphics.Bitmap.copy(android.graphics.Bitmap.Config, kotlin.Boolean):java.lang.IllegalArgumentException"
       - "android.graphics.Bitmap.createBitmap(android.util.DisplayMetrics?, kotlin.Int, kotlin.Int, android.graphics.Bitmap.Config):java.lang.IllegalArgumentException"
       - "android.graphics.Bitmap.createScaledBitmap(android.graphics.Bitmap, kotlin.Int, kotlin.Int, kotlin.Boolean):java.lang.IllegalArgumentException"
       - "android.graphics.Canvas.constructor(android.graphics.Bitmap):java.lang.IllegalStateException"

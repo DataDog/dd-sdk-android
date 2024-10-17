@@ -22,14 +22,19 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class TextSemanticsNodeMapper(colorStringFormatter: ColorStringFormatter) :
     AbstractSemanticsNodeMapper(colorStringFormatter) {
-    override fun map(semanticsNode: SemanticsNode, parentContext: UiContext): ComposeWireframe {
+    override fun map(
+        semanticsNode: SemanticsNode,
+        parentContext: UiContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): ComposeWireframe {
         val text = resolveText(semanticsNode.config)
         val textStyle = resolveTextStyle(semanticsNode, parentContext) ?: defaultTextStyle
-        val bounds = resolveBound(semanticsNode)
+        val bounds = resolveBounds(semanticsNode)
         return ComposeWireframe(
             MobileSegment.Wireframe.TextWireframe(
                 id = semanticsNode.id.toLong(),

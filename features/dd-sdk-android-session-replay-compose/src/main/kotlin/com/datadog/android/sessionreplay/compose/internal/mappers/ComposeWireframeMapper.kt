@@ -25,6 +25,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
@@ -71,6 +72,7 @@ internal class ComposeWireframeMapper(
                 composer = composer,
                 density = density,
                 privacy = privacy,
+                imageWireframeHelper = mappingContext.imageWireframeHelper,
                 internalLogger = internalLogger
             )
             wireframes
@@ -102,6 +104,7 @@ internal class ComposeWireframeMapper(
         composer: Composer,
         density: Float,
         privacy: SessionReplayPrivacy,
+        imageWireframeHelper: ImageWireframeHelper,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
@@ -113,7 +116,8 @@ internal class ComposeWireframeMapper(
             parentUiContext = UiContext(
                 parentContentColor = null,
                 density = density,
-                privacy = privacy
+                privacy = privacy,
+                imageWireframeHelper = imageWireframeHelper
             ),
             internalLogger = internalLogger
         )

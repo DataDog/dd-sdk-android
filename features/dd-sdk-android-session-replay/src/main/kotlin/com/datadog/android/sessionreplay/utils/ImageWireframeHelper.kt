@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.utils
 
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.TextView
@@ -18,6 +19,32 @@ import com.datadog.android.sessionreplay.recorder.MappingContext
  * A Helper to handle capturing images in Session replay wireframes.
  */
 interface ImageWireframeHelper {
+
+    /**
+     * Asks the helper to create an image wireframe based on a given bitmap.
+     * @param id the unique id for the wireframe.
+     * @param globalBounds the global bounds of the bitmap.
+     * @param bitmap the bitmap to capture.
+     * @param density the density of the screen.
+     * @param isContextualImage if the image is contextual.
+     * @param imagePrivacy defines which images should be hidden.
+     * @param asyncJobStatusCallback the callback for the async capture process.
+     * @param clipping the bounds of the image that are actually visible.
+     * @param shapeStyle provides a custom shape (e.g. rounded corners) to the image wireframe.
+     * @param border provides a custom border to the image wireframe.
+     */
+    fun createImageWireframeByBitmap(
+        id: Long,
+        globalBounds: GlobalBounds,
+        bitmap: Bitmap,
+        density: Float,
+        isContextualImage: Boolean,
+        imagePrivacy: ImagePrivacy,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        clipping: MobileSegment.WireframeClip? = null,
+        shapeStyle: MobileSegment.ShapeStyle? = null,
+        border: MobileSegment.ShapeBorder? = null
+    ): MobileSegment.Wireframe?
 
     /**
      * Asks the helper to create an image wireframe, and process the provided drawable in the background.
@@ -37,7 +64,7 @@ interface ImageWireframeHelper {
      * @param prefix a prefix identifying the drawable in the parent view's context
      */
     // TODO RUM-3666 limit the number of params to this function
-    fun createImageWireframe(
+    fun createImageWireframeByDrawable(
         view: View,
         imagePrivacy: ImagePrivacy,
         currentWireframeIndex: Int,
