@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.unit.Density
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
+import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -136,7 +137,7 @@ internal class StubAbstractSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): ComposeWireframe? {
+    ): SemanticsWireframe? {
         return null
     }
 

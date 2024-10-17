@@ -17,7 +17,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.GenericFontFamily
 import androidx.compose.ui.text.style.TextAlign
-import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
+import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
@@ -31,12 +31,12 @@ internal class TextSemanticsNodeMapper(colorStringFormatter: ColorStringFormatte
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): ComposeWireframe {
+    ): SemanticsWireframe {
         val text = resolveText(semanticsNode.config)
         val textStyle = resolveTextStyle(semanticsNode, parentContext) ?: defaultTextStyle
         val bounds = resolveBounds(semanticsNode)
-        return ComposeWireframe(
-            MobileSegment.Wireframe.TextWireframe(
+        return SemanticsWireframe(
+            wireframes = MobileSegment.Wireframe.TextWireframe(
                 id = semanticsNode.id.toLong(),
                 x = bounds.x,
                 y = bounds.y,
@@ -45,7 +45,7 @@ internal class TextSemanticsNodeMapper(colorStringFormatter: ColorStringFormatte
                 text = text ?: "",
                 textStyle = textStyle,
                 textPosition = resolveTextAlign(semanticsNode)
-            ),
+            ).let { listOf(it) },
             null
         )
     }

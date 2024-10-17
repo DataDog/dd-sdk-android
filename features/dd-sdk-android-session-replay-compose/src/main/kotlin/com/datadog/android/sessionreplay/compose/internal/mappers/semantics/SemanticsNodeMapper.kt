@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
-import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
+import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 
@@ -17,5 +17,5 @@ internal interface SemanticsNodeMapper {
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): ComposeWireframe?
+    ): SemanticsWireframe?
 }

@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
+import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
@@ -34,7 +34,7 @@ internal class ImageSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): ComposeWireframe? {
+    ): SemanticsWireframe {
         val bounds = resolveBounds(semanticsNode)
         val bitmapInfo = resolveSemanticsPainter(semanticsNode)
         val imageWireframe = if (bitmapInfo != null) {
@@ -54,12 +54,10 @@ internal class ImageSemanticsNodeMapper(
         } else {
             null
         }
-        return imageWireframe?.let {
-            ComposeWireframe(
-                imageWireframe,
-                null
-            )
-        }
+        return SemanticsWireframe(
+            wireframes = listOfNotNull(imageWireframe),
+            uiContext = null
+        )
     }
 
     private fun resolveSemanticsPainter(

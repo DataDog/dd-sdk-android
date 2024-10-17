@@ -135,7 +135,7 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
             )
         )
 
-        assertThat(actual.wireframe).isEqualTo(expected)
+        assertThat(actual.wireframes).contains(expected)
     }
 
     private fun resolveTextAlign(textAlign: TextAlign): MobileSegment.Alignment {

@@ -32,7 +32,7 @@ internal class SemanticsWireframeMapper(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
         // TODO RUM-6189 Add Mappers for each Semantics Role
-        Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter),
+        Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Image to ImageSemanticsNodeMapper(colorStringFormatter)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
@@ -95,8 +95,8 @@ internal class SemanticsWireframeMapper(
             semanticsNode = semanticsNode,
             parentContext = parentUiContext,
             asyncJobStatusCallback = asyncJobStatusCallback
-        )?.wireframe?.let {
-            wireframes.add(it)
+        )?.wireframes?.let {
+            wireframes.addAll(it)
         }
         val children = semanticsNode.children
         children.forEach {
