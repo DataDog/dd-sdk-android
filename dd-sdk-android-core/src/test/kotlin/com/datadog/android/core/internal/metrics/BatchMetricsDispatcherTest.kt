@@ -11,7 +11,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -30,7 +29,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -63,15 +61,11 @@ internal class BatchMetricsDispatcherTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Mock
-    lateinit var mockSampler: Sampler
-
     @Forgery
     lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockSampler.sample()).doReturn(true)
         fakeFeatureName = forge.anElementFrom(
             listOf(
                 Feature.RUM_FEATURE_NAME,
@@ -87,8 +81,7 @@ internal class BatchMetricsDispatcherTest {
             fakeUploadConfiguration,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockDateTimeProvider,
-            mockSampler
+            mockDateTimeProvider
         )
     }
 
@@ -287,36 +280,6 @@ internal class BatchMetricsDispatcherTest {
     }
 
     @Test
-    fun `M do nothing W sendBatchDeletedMetric { sampled out }`(forge: Forge) {
-        // Given
-        reset(mockSampler)
-        whenever(mockSampler.sample()).doReturn(false)
-        val fakeReason = forge.forgeIncludeInMetricReason()
-        val fakeFile: File = forge.forgeValidFile()
-
-        // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
-
-        // Then
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M do nothing W sendBatchDeletedMetric { reason notIncludedInMetrics }`(forge: Forge) {
-        // Given
-        reset(mockSampler)
-        whenever(mockSampler.sample()).doReturn(false)
-        val fakeReason: RemovalReason.Flushed = forge.getForgery()
-        val fakeFile: File = forge.forgeValidFile()
-
-        // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
-
-        // Then
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
     fun `M do nothing W sendBatchDeletedMetric { feature unknown }`(forge: Forge) {
         // Given
         val fakeUnknownFeature = forge.anAlphabeticalString()
@@ -325,8 +288,7 @@ internal class BatchMetricsDispatcherTest {
             fakeUploadConfiguration,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockDateTimeProvider,
-            mockSampler
+            mockDateTimeProvider
         )
         val fakeReason: RemovalReason.Flushed = forge.getForgery()
         val fakeFile: File = forge.forgeValidFile()
@@ -561,26 +523,8 @@ internal class BatchMetricsDispatcherTest {
             fakeUploadConfiguration,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockDateTimeProvider,
-            mockSampler
+            mockDateTimeProvider
         )
-        val fakeFile: File = forge.forgeValidClosedFile()
-
-        // When
-        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
-
-        // Then
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M do nothing W sendBatchClosedMetric { sampled out }`(
-        @Forgery fakeMetadata: BatchClosedMetadata,
-        forge: Forge
-    ) {
-        // Given
-        reset(mockSampler)
-        whenever(mockSampler.sample()).doReturn(false)
         val fakeFile: File = forge.forgeValidClosedFile()
 
         // When
