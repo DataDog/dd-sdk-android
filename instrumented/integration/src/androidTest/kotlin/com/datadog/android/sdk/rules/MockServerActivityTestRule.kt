@@ -19,6 +19,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
+import com.datadog.android.sdk.utils.overrideProcessImportance
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import okhttp3.mockwebserver.Dispatcher
@@ -92,7 +93,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             RuntimeConfig.rumEndpointUrl = "$it/$RUM_URL_SUFFIX"
             RuntimeConfig.sessionReplayEndpointUrl = "$it/$SESSION_REPlAY_URL_SUFFIX"
         }
-
+        overrideProcessImportance()
         super.beforeActivityLaunched()
     }
 
