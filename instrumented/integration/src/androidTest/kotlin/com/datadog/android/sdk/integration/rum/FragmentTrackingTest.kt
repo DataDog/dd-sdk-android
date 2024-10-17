@@ -55,7 +55,7 @@ internal abstract class FragmentTrackingTest :
         )
 
         // swipe to change the fragment
-        onView(ViewMatchers.withId(R.id.tab_layout)).perform(ViewActions.swipeLeft())
+        onView(ViewMatchers.withId(R.id.btn_next)).perform(ViewActions.click())
         instrumentation.waitForIdleSync()
         Thread.sleep(200) // give time to the view id to update
         val fragmentBViewUrl = currentFragmentViewUrl(activity)
@@ -71,7 +71,7 @@ internal abstract class FragmentTrackingTest :
         )
 
         // swipe to close the view
-        onView(ViewMatchers.withId(R.id.tab_layout)).perform(ViewActions.swipeRight())
+        onView(ViewMatchers.withId(R.id.btn_last)).perform(ViewActions.click())
         instrumentation.waitForIdleSync()
         Thread.sleep(200) // give time to the view id to update
 
