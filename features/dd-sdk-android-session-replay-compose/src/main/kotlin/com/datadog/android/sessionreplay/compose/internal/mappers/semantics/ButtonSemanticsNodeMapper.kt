@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.unit.Density
-import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
+import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -25,19 +25,19 @@ internal class ButtonSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): ComposeWireframe {
+    ): SemanticsWireframe {
         val density = semanticsNode.layoutInfo.density
         val bounds = resolveBounds(semanticsNode)
         val buttonStyle = resolveSemanticsButtonStyle(semanticsNode, bounds, density)
-        return ComposeWireframe(
-            MobileSegment.Wireframe.ShapeWireframe(
+        return SemanticsWireframe(
+            wireframes = MobileSegment.Wireframe.ShapeWireframe(
                 id = semanticsNode.id.toLong(),
                 x = bounds.x,
                 y = bounds.y,
                 width = bounds.width,
                 height = bounds.height,
                 shapeStyle = buttonStyle
-            ),
+            ).let { listOf(it) },
             uiContext = parentContext.copy(
                 parentContentColor = buttonStyle.backgroundColor ?: parentContext.parentContentColor
             )

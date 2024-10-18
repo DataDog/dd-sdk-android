@@ -116,6 +116,6 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
                 cornerRadius = fakeCornerRadius
             )
         )
-        assertThat(actual.wireframe).isEqualTo(expected)
+        assertThat(actual.wireframes).contains(expected)
     }
 }
