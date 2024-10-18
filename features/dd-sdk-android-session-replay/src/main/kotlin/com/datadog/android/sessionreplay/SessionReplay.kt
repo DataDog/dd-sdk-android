@@ -6,16 +6,26 @@
 
 package com.datadog.android.sessionreplay
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import java.lang.ref.WeakReference
 
 /**
  * An entry point to Datadog Session Replay feature.
  */
 object SessionReplay {
+
+    // core on which session replay was enabled
+    @VisibleForTesting internal var sdkCoreEnabledOn: WeakReference<SdkCore>? = null
+
+    internal const val FEATURE_ALREADY_REGISTERED_WARNING =
+        "Session Replay is already enabled and does not support multiple instances. " +
+            "The existing instance will continue to be used."
 
     /**
      * Enables a SessionReplay feature based on the configuration provided.
@@ -48,7 +58,18 @@ object SessionReplay {
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
                 )
-                sdkCore.registerFeature(sessionReplayFeature)
+
+                val prevRecordedCore = sdkCoreEnabledOn?.get()
+                if (prevRecordedCore == null) {
+                    sdkCoreEnabledOn = WeakReference(sdkCore)
+                    sdkCore.registerFeature(sessionReplayFeature)
+                } else {
+                    sdkCore.internalLogger.log(
+                        level = InternalLogger.Level.WARN,
+                        targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                        messageBuilder = { FEATURE_ALREADY_REGISTERED_WARNING }
+                    )
+                }
             }
     }
 

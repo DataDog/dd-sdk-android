@@ -717,6 +717,7 @@ datadog:
       - "java.lang.ref.WeakReference.constructor(android.content.Context?)"
       - "java.lang.ref.WeakReference.constructor(android.view.View?)"
       - "java.lang.ref.WeakReference.constructor(android.view.Window?)"
+      - "java.lang.ref.WeakReference.constructor(com.datadog.android.api.SdkCore?)"
       - "java.lang.ref.WeakReference.constructor(kotlin.Any?)"
       - "java.lang.ref.WeakReference.constructor(kotlin.Nothing?)"
       - "java.lang.ref.WeakReference.constructor(kotlin.String?)"

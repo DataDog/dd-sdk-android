@@ -6,12 +6,15 @@
 
 package com.datadog.android.sessionreplay
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.SessionReplay.FEATURE_ALREADY_REGISTERED_WARNING
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
+import com.datadog.android.sessionreplay.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -50,6 +53,7 @@ internal class SessionReplayTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mock()
+        SessionReplay.sdkCoreEnabledOn = null
     }
 
     @Test
@@ -118,5 +122,42 @@ internal class SessionReplayTest {
 
         // Then
         verify(mockSessionReplayFeature).manuallyStopRecording()
+    }
+
+    @Test
+    fun `M warn and send telemetry W enable { session replay feature already registered with another core }`(
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
+        @Mock mockCore1: FeatureSdkCore,
+        @Mock mockCore2: FeatureSdkCore,
+        @Mock mockInternalLogger: InternalLogger
+    ) {
+        // Given
+        whenever(mockCore1.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore2.internalLogger).thenReturn(mockInternalLogger)
+        val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
+            systemRequirementsConfiguration = mockSystemRequirementsConfiguration
+        )
+        whenever(
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(any(), any())
+        ) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+        }
+        SessionReplay.enable(
+            sessionReplayConfiguration = fakeSessionReplayConfigurationWithMockRequirement,
+            sdkCore = mockCore1
+        )
+
+        // When
+        SessionReplay.enable(
+            sessionReplayConfiguration = fakeSessionReplayConfigurationWithMockRequirement,
+            sdkCore = mockCore2
+        )
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = FEATURE_ALREADY_REGISTERED_WARNING
+        )
     }
 }
