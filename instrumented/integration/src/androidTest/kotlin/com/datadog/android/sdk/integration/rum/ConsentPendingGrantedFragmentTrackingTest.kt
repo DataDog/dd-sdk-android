@@ -6,6 +6,7 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -31,6 +32,10 @@ internal class ConsentPendingGrantedFragmentTrackingTest : FragmentTrackingTest(
 
     @Test
     fun verifyViewEventsOnSwipe() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            // We skip this test on Android 28 and below because Espresso doesn't work well with ViewPager
+            return
+        }
         val expectedEvents = runInstrumentationScenario(mockServerRule)
 
         // update the tracking consent
