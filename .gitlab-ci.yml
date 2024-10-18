@@ -156,7 +156,7 @@ analysis:detekt-custom:
 # TODO RUM-1622 cleanup this section
 # TESTS
 
-test:debug:
+.test-debug-template: &test-debug-template
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -180,6 +180,15 @@ test:debug:
     reports:
       junit: "**/build/test-results/testDebugUnitTest/*.xml"
 
+test:debug:
+  <<: *test-debug-template
+
+test:debug:itr:
+  <<: *test-debug-template
+  allow_failure: true
+  variables:
+    DD_SERVICE: "dd-sdk-android-itr"
+
 test:tools:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -196,7 +205,7 @@ test:tools:
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
-test:kover:
+.test-kover-template: &test-kover-template
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -223,6 +232,15 @@ test:kover:
     expire_in: 1 week
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
+test:kover:
+  <<: *test-kover-template
+
+test:kover:itr:
+  <<: *test-kover-template
+  allow_failure: true
+  variables:
+    DD_SERVICE: "dd-sdk-android-itr"
 
 # TEST PYRAMID
 # the steps in this section should reflect our test pyramid strategy
@@ -266,7 +284,7 @@ test-pyramid:core-it-median-api:
     - !reference [.snippets, install-android-sdk]
     - !reference [.snippets, run-core-it-instrumented]
 
-test-pyramid:single-fit-logs:
+.test-pyramid-single-fit-logs-template: &test-pyramid-single-fit-logs-template
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -287,7 +305,16 @@ test-pyramid:single-fit-logs:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
-test-pyramid:single-fit-rum:
+test-pyramid:single-fit-logs:
+  <<: *test-pyramid-single-fit-logs-template
+
+test-pyramid:single-fit-logs:itr:
+  <<: *test-pyramid-single-fit-logs-template
+  allow_failure: true
+  variables:
+    DD_SERVICE: "dd-sdk-android-itr"
+
+.test-pyramid-single-fit-rum-template: &test-pyramid-single-fit-rum-template
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -308,7 +335,16 @@ test-pyramid:single-fit-rum:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
-test-pyramid:single-fit-trace:
+test-pyramid:single-fit-rum:
+  <<: *test-pyramid-single-fit-rum-template
+
+test-pyramid:single-fit-rum:itr:
+  <<: *test-pyramid-single-fit-rum-template
+  allow_failure: true
+  variables:
+    DD_SERVICE: "dd-sdk-android-itr"
+
+.test-pyramid-single-fit-trace-template: &test-pyramid-single-fit-trace-template
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -328,6 +364,15 @@ test-pyramid:single-fit-trace:
     expire_in: 1 week
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
+test-pyramid:single-fit-trace:
+  <<: *test-pyramid-single-fit-trace-template
+
+test-pyramid:single-fit-trace:itr:
+  <<: *test-pyramid-single-fit-trace-template
+  allow_failure: true
+  variables:
+    DD_SERVICE: "dd-sdk-android-itr"
 
 # RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
 
