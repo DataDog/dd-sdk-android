@@ -188,6 +188,7 @@ test:debug:itr:
   allow_failure: true
   variables:
     DD_SERVICE: "dd-sdk-android-itr"
+    DD_CIVISIBILITY_JACOCO_PLUGIN_VERSION: "0.8.12"
 
 test:tools:
   tags: [ "arch:amd64" ]
@@ -241,6 +242,7 @@ test:kover:itr:
   allow_failure: true
   variables:
     DD_SERVICE: "dd-sdk-android-itr"
+    DD_CIVISIBILITY_JACOCO_PLUGIN_VERSION: "0.8.12"
 
 # TEST PYRAMID
 # the steps in this section should reflect our test pyramid strategy
@@ -313,6 +315,7 @@ test-pyramid:single-fit-logs:itr:
   allow_failure: true
   variables:
     DD_SERVICE: "dd-sdk-android-itr"
+    DD_CIVISIBILITY_JACOCO_PLUGIN_VERSION: "0.8.12"
 
 .test-pyramid-single-fit-rum-template: &test-pyramid-single-fit-rum-template
   tags: [ "arch:amd64" ]
@@ -343,6 +346,7 @@ test-pyramid:single-fit-rum:itr:
   allow_failure: true
   variables:
     DD_SERVICE: "dd-sdk-android-itr"
+    DD_CIVISIBILITY_JACOCO_PLUGIN_VERSION: "0.8.12"
 
 .test-pyramid-single-fit-trace-template: &test-pyramid-single-fit-trace-template
   tags: [ "arch:amd64" ]
@@ -373,6 +377,7 @@ test-pyramid:single-fit-trace:itr:
   allow_failure: true
   variables:
     DD_SERVICE: "dd-sdk-android-itr"
+    DD_CIVISIBILITY_JACOCO_PLUGIN_VERSION: "0.8.12"
 
 # RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
 
