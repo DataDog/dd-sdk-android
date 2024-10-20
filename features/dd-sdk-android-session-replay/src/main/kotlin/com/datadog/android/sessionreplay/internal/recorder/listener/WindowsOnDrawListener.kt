@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
@@ -31,6 +32,7 @@ internal class WindowsOnDrawListener(
     private val miscUtils: MiscUtils = MiscUtils,
     private val sdkCore: FeatureSdkCore,
     dynamicOptimizationEnabled: Boolean,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val debouncer: Debouncer = Debouncer(
         sdkCore = sdkCore,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled
@@ -86,6 +88,8 @@ internal class WindowsOnDrawListener(
             if (item.isReady()) {
                 recordedDataQueueHandler.tryToConsumeItems()
             }
+
+            touchPrivacyManager.copyNextSnapshotToCurrentSnapshot()
         }
     }
 

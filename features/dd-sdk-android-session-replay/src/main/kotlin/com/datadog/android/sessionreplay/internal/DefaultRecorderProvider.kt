@@ -25,7 +25,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
@@ -60,7 +59,7 @@ internal class DefaultRecorderProvider(
     private val sdkCore: FeatureSdkCore,
     private val textAndInputPrivacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
-    private val touchPrivacy: TouchPrivacy,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val customMappers: List<MapperTypeWrapper<*>>,
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     private val dynamicOptimizationEnabled: Boolean
@@ -78,7 +77,7 @@ internal class DefaultRecorderProvider(
             resourcesWriter = resourceWriter,
             rumContextProvider = SessionReplayRumContextProvider(sdkCore),
             imagePrivacy = imagePrivacy,
-            touchPrivacy = touchPrivacy,
+            touchPrivacyManager = touchPrivacyManager,
             textAndInputPrivacy = textAndInputPrivacy,
             recordWriter = recordWriter,
             timeProvider = SessionReplayTimeProvider(sdkCore),

@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
@@ -14,6 +15,8 @@ import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
@@ -23,6 +26,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapp
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.NoOpAsyncJobStatusCallback
+import java.util.Locale
 
 internal class TreeViewTraversal(
     private val mappers: List<MapperTypeWrapper<*>>,
@@ -30,7 +34,8 @@ internal class TreeViewTraversal(
     private val hiddenViewMapper: HiddenViewMapper,
     private val decorViewMapper: WireframeMapper<View>,
     private val viewUtilsInternal: ViewUtilsInternal,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val touchPrivacyManager: TouchPrivacyManager
 ) {
 
     @Suppress("ReturnCount")
@@ -53,6 +58,7 @@ internal class TreeViewTraversal(
 
         // try to resolve from the exhaustive type mappers
         var mapper = findMapperForView(view)
+        updateTouchOverrideAreas(view)
 
         if (isHidden(view)) {
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
@@ -114,6 +120,30 @@ internal class TreeViewTraversal(
 
     private fun isHidden(view: View): Boolean =
         view.getTag(R.id.datadog_hidden) == true
+
+    private fun updateTouchOverrideAreas(view: View) {
+        val touchPrivacy = view.getTag(R.id.datadog_touch_privacy)
+
+        if (touchPrivacy != null) {
+            val coords = IntArray(2)
+
+            // this will always have size >= 2
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            view.getLocationOnScreen(coords)
+
+            val x = coords[0]
+            val y = coords[1]
+            val rect = Rect(
+                x - view.paddingLeft,
+                y - view.paddingTop,
+                x + view.width + view.paddingRight,
+                y + view.height + view.paddingBottom
+            )
+
+            val privacyLevel = TouchPrivacy.valueOf(touchPrivacy.toString().uppercase(Locale.US))
+            touchPrivacyManager.addTouchOverrideArea(rect, privacyLevel)
+        }
+    }
 
     data class TraversedTreeView(
         val mappedWireframes: List<MobileSegment.Wireframe>,

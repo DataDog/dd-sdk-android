@@ -18,6 +18,7 @@ import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
@@ -77,6 +78,9 @@ internal class WindowsOnDrawListenerTest {
 
     @Mock
     lateinit var mockDebouncer: Debouncer
+
+    @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -173,7 +177,8 @@ internal class WindowsOnDrawListenerTest {
             miscUtils = mockMiscUtils,
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
-            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
     }
 
@@ -226,7 +231,8 @@ internal class WindowsOnDrawListenerTest {
             miscUtils = mockMiscUtils,
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
-            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
         testedListener.onDraw()
 

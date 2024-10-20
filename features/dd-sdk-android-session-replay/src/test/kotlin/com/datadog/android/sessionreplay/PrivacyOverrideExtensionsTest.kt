@@ -30,6 +30,8 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class PrivacyOverrideExtensionsTest {
 
+    // region setSessionReplayHidden
+
     @Test
     fun `M set tag W setSessionReplayHidden() { hide is true }`() {
         // Given
@@ -53,6 +55,10 @@ internal class PrivacyOverrideExtensionsTest {
         // Then
         verify(mockView).setTag(eq(R.id.datadog_hidden), isNull())
     }
+
+    // endregion
+
+    // region setSessionReplayImagePrivacy
 
     @Test
     fun `M set tag W setSessionReplayImagePrivacy() { with privacy }`(
@@ -81,6 +87,10 @@ internal class PrivacyOverrideExtensionsTest {
         verify(mockView).setTag(eq(R.id.datadog_image_privacy), isNull())
     }
 
+    // endregion
+
+    // region setSessionReplayTextAndInputPrivacy
+
     @Test
     fun `M set tag W setSessionReplayTextAndInputPrivacy() { with privacy }`(
         forge: Forge
@@ -107,4 +117,37 @@ internal class PrivacyOverrideExtensionsTest {
         // Then
         verify(mockView).setTag(eq(R.id.datadog_text_and_input_privacy), isNull())
     }
+
+    // endregion
+
+    // region setSessionReplayTouchPrivacy
+
+    @Test
+    fun `M set tag W setSessionReplayTouchPrivacy() { with privacy }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockView = mock<View>()
+        val mockPrivacy = forge.aValueFrom(TouchPrivacy::class.java)
+
+        // When
+        mockView.setSessionReplayTouchPrivacy(mockPrivacy)
+
+        // Then
+        verify(mockView).setTag(eq(R.id.datadog_touch_privacy), eq(mockPrivacy.toString()))
+    }
+
+    @Test
+    fun `M set tag to null W setSessionReplayTouchPrivacy() { privacy is null }`() {
+        // Given
+        val mockView = mock<View>()
+
+        // When
+        mockView.setSessionReplayTouchPrivacy(null)
+
+        // Then
+        verify(mockView).setTag(eq(R.id.datadog_touch_privacy), isNull())
+    }
+
+    // endregion
 }
