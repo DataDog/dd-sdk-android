@@ -17,6 +17,7 @@ import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat
 import java.lang.Long.max
+import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
 internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>> {
@@ -28,8 +29,10 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         handledRequests: List<HandledRequest>,
         expectedEvents: List<ExpectedEvent>
     ) {
-        val sentGestureEvents = mutableListOf<JsonObject>()
-        val sentLaunchEvents = mutableListOf<JsonObject>()
+        val sentViewEvents = LinkedList<JsonObject>()
+        val sentActionEvents = LinkedList<JsonObject>()
+        val sentResourceEvents = LinkedList<JsonObject>()
+        val sentLaunchEvents = LinkedList<JsonObject>()
         handledRequests
             .filter { it.url?.isRumUrl() ?: false }
             .forEach { request ->
@@ -44,25 +47,39 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                         .forEach {
                             if (it.isEventRelatedToApplicationLaunch) {
                                 sentLaunchEvents += it
-                            } else {
-                                sentGestureEvents += it
+                            } else if (it.isViewEvent) {
+                                sentViewEvents += it
+                            } else if (it.isActionEvent) {
+                                sentActionEvents += it
+                            } else if (it.isResourceEvent) {
+                                sentResourceEvents += it
                             }
                         }
                 }
             }
-        // Because launch events can be weirdly order dependent, consider them separately
         val launchEventPredicate = { event: ExpectedEvent ->
             event is ExpectedApplicationLaunchViewEvent || event is ExpectedApplicationStartActionEvent
         }
         val expectedLaunchEvents = expectedEvents.filter(launchEventPredicate)
-        sentLaunchEvents
-            .reduceViewEvents()
-            .verifyEventMatches(expectedLaunchEvents)
-
-        val otherExpectedEvents = expectedEvents.filterNot(launchEventPredicate)
-        sentGestureEvents
-            .reduceViewEvents()
-            .verifyEventMatches(otherExpectedEvents)
+        val expectedViewEvents = expectedEvents.filterIsInstance<ExpectedViewEvent>()
+        val expectedActionEvents = expectedEvents.filterIsInstance<ExpectedGestureEvent>()
+        val expectedResourceEvents = expectedEvents.filterIsInstance<ExpectedResourceEvent>()
+        if (expectedLaunchEvents.isNotEmpty()) {
+            sentLaunchEvents
+                .reduceViewEvents()
+                .verifyEventMatches(expectedLaunchEvents)
+        }
+        if (expectedViewEvents.isNotEmpty()) {
+            sentViewEvents
+                .reduceViewEvents()
+                .verifyViewEventsMatches(expectedViewEvents)
+        }
+        if (expectedActionEvents.isNotEmpty()) {
+            sentActionEvents.verifyEventMatches(expectedActionEvents)
+        }
+        if (expectedResourceEvents.isNotEmpty()) {
+            sentResourceEvents.verifyEventMatches(expectedResourceEvents)
+        }
     }
 
     protected fun verifyNoRumPayloadSent(
@@ -87,6 +104,12 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
     private val JsonObject.isViewEvent
         get() = get("type")?.asString == "view"
+
+    private val JsonObject.isActionEvent
+        get() = get("type")?.asString == "action"
+
+    private val JsonObject.isResourceEvent
+        get() = get("type")?.asString == "resource"
 
     private val JsonObject.isTelemetryEvent
         get() = get("type")?.asString == "telemetry"

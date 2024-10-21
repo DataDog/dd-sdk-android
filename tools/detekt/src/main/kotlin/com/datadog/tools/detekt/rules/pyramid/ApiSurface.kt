@@ -13,12 +13,13 @@ import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Severity
 import io.gitlab.arturbosch.detekt.api.config
 import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
+import io.gitlab.arturbosch.detekt.rules.isOverride
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
-import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtParameterList
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
@@ -26,7 +27,6 @@ import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.getChildrenOfType
-import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
@@ -40,6 +40,9 @@ class ApiSurface(
 
     private val outputFileName: String by config(defaultValue = "apiSurface.log")
     private val outputFile: File by lazy { File(outputFileName) }
+    private val internalPackagePrefix: String by config(defaultValue = "")
+    private val ignoredAnnotations: List<String> by config(defaultValue = emptyList())
+    private val ignoredClasses: List<String> by config(defaultValue = emptyList())
 
     // region Rule
 
@@ -50,20 +53,45 @@ class ApiSurface(
         Debt.FIVE_MINS
     )
 
+    override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
+        val hasIgnoredKeyword = ignoredKeywords.any { declaration.hasModifier(it) }
+        val isIgnoredClass = declaration.fqName?.asString() in ignoredClasses
+        val hasIgnoredAnnotation = declaration.annotationEntries.any {
+            it.shortName?.asString()?.resolveFullType() in ignoredAnnotations
+        }
+
+        @Suppress("ComplexCondition")
+        if (isIgnoredClass || hasIgnoredKeyword || hasIgnoredAnnotation) {
+            return
+        }
+
+        super.visitObjectDeclaration(declaration)
+    }
+
     override fun visitClass(klass: KtClass) {
-        if (klass.hasModifier(KtTokens.PRIVATE_KEYWORD) || klass.hasModifier(KtTokens.INTERNAL_KEYWORD)) {
+        val hasIgnoredKeyword = ignoredKeywords.any { klass.hasModifier(it) }
+        val isInterface = klass.isInterface()
+        val isEnum = klass.isEnum()
+        val isIgnoredClass = klass.fqName?.asString() in ignoredClasses
+        val hasIgnoredAnnotation = klass.annotationEntries.any {
+            it.shortName?.asString()?.resolveFullType() in ignoredAnnotations
+        }
+
+        @Suppress("ComplexCondition")
+        if (isIgnoredClass || hasIgnoredKeyword || isInterface || isEnum || hasIgnoredAnnotation) {
             return
         }
-        if (klass.isInterface()) {
-            return
-        }
+
         super.visitClass(klass)
     }
 
     override fun visitPrimaryConstructor(constructor: KtPrimaryConstructor) {
-        if (constructor.hasModifier(KtTokens.PRIVATE_KEYWORD) || constructor.hasModifier(KtTokens.INTERNAL_KEYWORD)) {
+        val hasIgnoredKeyword = ignoredKeywords.any { constructor.hasModifier(it) }
+
+        if (hasIgnoredKeyword) {
             return
         }
+
         val parentName = constructor.containingClassOrObject?.fqName
             ?: constructor.containingKtFile.packageFqName
         outputFile.appendText("$parentName.constructor(")
@@ -78,37 +106,47 @@ class ApiSurface(
         outputFile.appendText(")\n")
     }
 
-    @Suppress("ReturnCount")
     override fun visitNamedFunction(function: KtNamedFunction) {
-        if (function.hasModifier(KtTokens.PRIVATE_KEYWORD) || function.hasModifier(KtTokens.INTERNAL_KEYWORD)) {
+        val hasIgnoredKeyword = ignoredKeywords.any { function.hasModifier(it) }
+        val hasIgnoredName = function.name in ignoredFunctionNames
+        val hasIgnoredAnnotation = function.annotationEntries.any {
+            it.shortName?.asString()?.resolveFullType() in ignoredAnnotations
+        }
+        val isOverride = function.isOverride()
+
+        @Suppress("ComplexCondition")
+        if (hasIgnoredKeyword || hasIgnoredName || hasIgnoredAnnotation || isOverride) {
             return
         }
-        val parameterList = function.getChildrenOfType<KtParameterList>().firstOrNull()
-        if (function.name == "toString" && parameterList?.children.isNullOrEmpty()) {
-            return
-        }
-        if (function.getStrictParentOfType<KtObjectLiteralExpression>() != null) {
-            // Function is overriding something in an anonymous object
-            // e.g.: val x = object : Interface { override fun foo() {} }
-            return
-        }
-        if (function.isExtensionDeclaration()) {
-            val target = function.receiverTypeReference?.nameForReceiverLabel()
-            val fqName = target?.resolveFullType()
-            outputFile.appendText("$fqName.${function.nameAsSafeName}(")
+
+        val containerFqName = if (function.isExtensionDeclaration()) {
+            val receiverType = function.receiverTypeReference?.typeElement
+            val target = if (receiverType is KtNullableType) {
+                receiverType.innerType?.fullType()
+            } else {
+                receiverType?.fullType()
+            }
+            val parentType = function.typeParameters.filter { it.name == target }
+                .map { it.extendsBound?.typeElement?.fullType() }
+                .firstOrNull()
+            parentType ?: target ?: "null"
         } else {
-            val parentName = function.containingClassOrObject?.fqName
-                ?: function.containingKtFile.packageFqName
-            outputFile.appendText("$parentName.${function.nameAsSafeName}(")
+            function.containingClassOrObject?.fqName?.asString()
+                ?: function.containingKtFile.packageFqName.asString()
         }
 
-        parameterList?.children?.filterIsInstance<KtParameter>()?.forEachIndexed { idx, p ->
-            val typeElement = p.typeReference?.typeElement
-            if (idx > 0) outputFile.appendText(", ")
-            outputFile.appendText(typeElement?.fullType() ?: "???")
-        }
+        if (internalPackagePrefix.isBlank() || containerFqName.startsWith(internalPackagePrefix)) {
+            outputFile.appendText("$containerFqName.${function.nameAsSafeName}(")
 
-        outputFile.appendText(")\n")
+            val parameterList = function.getChildrenOfType<KtParameterList>().firstOrNull()
+            parameterList?.children?.filterIsInstance<KtParameter>()?.forEachIndexed { idx, p ->
+                val typeElement = p.typeReference?.typeElement
+                if (idx > 0) outputFile.appendText(", ")
+                outputFile.appendText(typeElement?.fullType() ?: "???")
+            }
+
+            outputFile.appendText(")\n")
+        }
     }
 
     // endregion
@@ -137,4 +175,14 @@ class ApiSurface(
     }
 
     // endregion
+
+    companion object {
+        private val ignoredFunctionNames = setOf("toString", "equals", "hashCode")
+
+        private val ignoredKeywords = setOf(
+            KtTokens.PRIVATE_KEYWORD,
+            KtTokens.PROTECTED_KEYWORD,
+            KtTokens.INTERNAL_KEYWORD
+        )
+    }
 }

@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "12"
+  CURRENT_CI_IMAGE: "13"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -53,10 +53,7 @@ stages:
     - set +e
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" )
-    - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
-    - $ANDROID_HOME/platform-tools/adb install -t -d $( (( $ANDROID_API >= 23 )) && echo "-g" ) -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
-    - $ANDROID_HOME/platform-tools/adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
@@ -370,6 +367,22 @@ test-pyramid:legacy-integration-instrumented-median-api:
     - !reference [.snippets, install-android-sdk]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
+test-pyramid:detekt-api-coverage:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesDebug --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
+    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" --jvm-target 11 -cp $(cat sdk_classpath)
+    # For now we just print the uncovered apis, eventually we will fail if it's not empty
+    - grep -v -f apiUsage.log apiSurface.log
+
 test-pyramid:publish-e2e-synthetics:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -423,7 +436,6 @@ test-pyramid:publish-webview-synthetics:
     expire_in: 1 week
     paths:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
-
 
 test-pyramid:publish-staging-synthetics:
   tags: [ "arch:amd64" ]

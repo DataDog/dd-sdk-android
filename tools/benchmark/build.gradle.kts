@@ -7,7 +7,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java17
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
@@ -28,7 +28,7 @@ android {
     }
     namespace = "com.datadog.tools.benchmark"
     compileOptions {
-        java17()
+        java11()
     }
 }
 

@@ -31,8 +31,9 @@ data class SessionReplayConfiguration internal constructor(
      * A Builder class for a [SessionReplayConfiguration].
      * @param sampleRate must be a value between 0 and 100. A value of 0
      * means no session will be recorded, 100 means all sessions will be recorded.
+     * If this value is not provided then Session Replay will default to a 100 sample rate.
      */
-    class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float) {
+    class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float = SAMPLE_IN_ALL_SESSIONS) {
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
 
@@ -195,6 +196,10 @@ data class SessionReplayConfiguration internal constructor(
 
         private fun customMappers(): List<MapperTypeWrapper<*>> {
             return extensionSupport.getCustomViewMappers()
+        }
+
+        internal companion object {
+            internal const val SAMPLE_IN_ALL_SESSIONS = 100.0f
         }
     }
 }
