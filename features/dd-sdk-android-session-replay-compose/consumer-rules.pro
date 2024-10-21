@@ -7,7 +7,7 @@
 -keepnames class androidx.compose.runtime.Composition
 -keepnames class androidx.compose.ui.platform.ComposeView
 -keepnames class androidx.compose.material.DefaultButtonColors
--keepclassmembers class androidx.compose.ui.platform.WrappedComposition {
+-keep class androidx.compose.ui.platform.WrappedComposition {
     <fields>;
 }
 -keepclassmembers class androidx.compose.ui.platform.AbstractComposeView {
@@ -22,8 +22,8 @@
 -keepclassmembers class androidx.compose.foundation.BackgroundElement {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.node.LayoutNode {
-     <fields>;
+-keep class androidx.compose.ui.node.LayoutNode {
+     *;
 }
 -keepclassmembers class androidx.compose.ui.draw.PainterElement {
      <fields>;
@@ -43,10 +43,16 @@
 -keepclassmembers class androidx.compose.ui.graphics.AndroidImageBitmap {
      <fields>;
 }
--keepclassmembers class coil.compose.ContentPainterModifier {
+-keep class coil.compose.ContentPainterModifier {
      <fields>;
 }
--keepclassmembers class coil.compose.AsyncImagePainter {
+-keep class coil.compose.AsyncImagePainter {
      <fields>;
+}
+-keepclassmembers class androidx.compose.foundation.layout.PaddingElement{
+    <fields>;
+}
+-keepclassmembers class "androidx.compose.ui.graphics.GraphicsLayerElement"{
+    <fields>;
 }
 
