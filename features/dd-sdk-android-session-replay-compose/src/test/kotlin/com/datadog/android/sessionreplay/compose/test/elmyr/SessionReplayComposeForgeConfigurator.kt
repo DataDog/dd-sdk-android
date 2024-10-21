@@ -33,5 +33,6 @@ class SessionReplayComposeForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ComposeWireframeForgeryFactory())
         forge.addFactory(MappingContextForgeryFactory())
         forge.addFactory(SystemInformationForgeryFactory())
+        forge.addFactory(GlobalBoundsForgeryFactory())
     }
 }

@@ -9,22 +9,18 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import kotlin.math.roundToInt
 
 internal abstract class AbstractSemanticsNodeMapper(
-    private val colorStringFormatter: ColorStringFormatter
+    private val colorStringFormatter: ColorStringFormatter,
+    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : SemanticsNodeMapper {
 
     protected fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        val rect = semanticsNode.boundsInRoot
-        val density = semanticsNode.layoutInfo.density.density
-        val width = ((rect.right - rect.left) / density).toLong()
-        val height = ((rect.bottom - rect.top) / density).toLong()
-        val x = (rect.left / density).toLong()
-        val y = (rect.top / density).toLong()
-        return GlobalBounds(x, y, width, height)
+        return semanticsUtils.resolveInnerBounds(semanticsNode)
     }
 
     protected fun convertColor(color: Long): String? {

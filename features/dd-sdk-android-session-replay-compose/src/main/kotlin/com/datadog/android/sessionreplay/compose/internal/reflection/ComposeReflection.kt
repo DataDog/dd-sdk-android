@@ -10,6 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import java.lang.reflect.Field
+import java.lang.reflect.Method
 
 internal object ComposeReflection {
     val WrappedCompositionClass = getClassSafe("androidx.compose.ui.platform.WrappedComposition")
@@ -36,7 +37,9 @@ internal object ComposeReflection {
     val OwnerField = WrappedCompositionClass?.getDeclaredFieldSafe("owner")
 
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
-    val LayoutNodeOwnerField = LayoutNodeClass?.getDeclaredFieldSafe("owner")
+
+    val GetInnerLayerCoordinatorMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInnerLayerCoordinator")
+
     val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
     val SemanticsOwner = AndroidComposeViewClass?.getDeclaredFieldSafe("semanticsOwner")
 
@@ -77,6 +80,11 @@ internal fun Field.accessible(): Field {
     return this
 }
 
+internal fun Method.accessible(): Method {
+    isAccessible = true
+    return this
+}
+
 @Suppress("TooGenericExceptionCaught")
 internal fun Field.getSafe(target: Any?): Any? {
     return try {
@@ -98,12 +106,7 @@ internal fun Field.getSafe(target: Any?): Any? {
         )
         null
     } catch (e: NullPointerException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name through reflection, target is null" },
-            e
-        )
+        logNullPointerException(name, LOG_TYPE_FIELD, e)
         null
     } catch (e: ExceptionInInitializerError) {
         (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
@@ -136,15 +139,7 @@ internal fun getClassSafe(className: String): Class<*>? {
         )
         null
     } catch (e: ClassNotFoundException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            {
-                "Unable to get class $className through reflection, " +
-                    "either because of obfuscation or dependency version mismatch"
-            },
-            e
-        )
+        logNoSuchException(className, LOG_TYPE_CLASS, e)
         null
     }
 }
@@ -154,35 +149,67 @@ internal fun Class<*>.getDeclaredFieldSafe(fieldName: String): Field? {
     return try {
         getDeclaredField(fieldName).accessible()
     } catch (e: SecurityException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            {
-                "Unable to get field $fieldName through reflection"
-            },
-            e
-        )
+        logSecurityException(fieldName, LOG_TYPE_FIELD, e)
         null
     } catch (e: NullPointerException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            {
-                "Unable to get field $fieldName through reflection, name is null"
-            },
-            e
-        )
+        logNullPointerException(fieldName, LOG_TYPE_FIELD, e)
         null
     } catch (e: NoSuchFieldException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            {
-                "Unable to get field $fieldName through reflection, " +
-                    "either because of obfuscation or dependency version mismatch"
-            },
-            e
-        )
+        logNoSuchException(fieldName, LOG_TYPE_FIELD, e)
         null
     }
 }
+
+@Suppress("TooGenericExceptionCaught")
+internal fun Class<*>.getDeclaredMethodSafe(methodName: String): Method? {
+    return try {
+        getDeclaredMethod(methodName).accessible()
+    } catch (e: SecurityException) {
+        logSecurityException(methodName, LOG_TYPE_METHOD, e)
+        null
+    } catch (e: NullPointerException) {
+        logNullPointerException(methodName, LOG_TYPE_METHOD, e)
+        null
+    } catch (e: NoSuchMethodException) {
+        logNoSuchException(methodName, LOG_TYPE_METHOD, e)
+        null
+    }
+}
+
+private fun logSecurityException(name: String, type: String, e: SecurityException) {
+    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+        InternalLogger.Level.ERROR,
+        InternalLogger.Target.MAINTAINER,
+        {
+            "Unable to get $type $name through reflection"
+        },
+        e
+    )
+}
+
+private fun logNullPointerException(name: String, type: String, e: NullPointerException) {
+    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+        InternalLogger.Level.ERROR,
+        InternalLogger.Target.MAINTAINER,
+        {
+            "Unable to get $type $name through reflection, name is null"
+        },
+        e
+    )
+}
+
+private fun logNoSuchException(name: String, type: String, e: ReflectiveOperationException) {
+    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+        InternalLogger.Level.ERROR,
+        InternalLogger.Target.MAINTAINER,
+        {
+            "Unable to get $type $name through reflection, " +
+                "either because of obfuscation or dependency version mismatch"
+        },
+        e
+    )
+}
+
+private const val LOG_TYPE_METHOD = "method"
+private const val LOG_TYPE_FIELD = "field"
+private const val LOG_TYPE_CLASS = "field"

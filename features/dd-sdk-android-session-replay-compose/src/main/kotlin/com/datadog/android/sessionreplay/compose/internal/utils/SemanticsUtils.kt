@@ -12,11 +12,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.unit.Density
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -40,6 +42,26 @@ internal class SemanticsUtils {
     ): Long? {
         val modifier = resolveSemanticsModifier(semanticsNode)
         return ComposeReflection.ColorField?.getSafe(modifier) as? Long
+    }
+
+    internal fun resolveInnerBounds(semanticsNode: SemanticsNode): GlobalBounds {
+        val offset = semanticsNode.positionInRoot
+        // Resolve the measured size.
+        val size = resolveInnerSize(semanticsNode)
+        val density = semanticsNode.layoutInfo.density.density
+        val width = (size.width / density).toLong()
+        val height = (size.height / density).toLong()
+        val x = (offset.x / density).toLong()
+        val y = (offset.y / density).toLong()
+        return GlobalBounds(x, y, width, height)
+    }
+
+    private fun resolveInnerSize(semanticsNode: SemanticsNode): Size {
+        val innerLayerCoordinator = GetInnerLayerCoordinatorMethod?.invoke(semanticsNode.layoutInfo)
+        val placeable = innerLayerCoordinator as? Placeable
+        val height = placeable?.height ?: 0
+        val width = placeable?.width ?: 0
+        return Size(width = width.toFloat(), height = height.toFloat())
     }
 
     internal fun resolveSemanticsModifierCornerRadius(

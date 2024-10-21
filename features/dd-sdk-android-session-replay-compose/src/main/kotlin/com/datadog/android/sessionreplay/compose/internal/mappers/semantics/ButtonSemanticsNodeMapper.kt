@@ -19,7 +19,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 internal class ButtonSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
     private val semanticsUtils: SemanticsUtils = SemanticsUtils()
-) : AbstractSemanticsNodeMapper(colorStringFormatter) {
+) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
 
     override fun map(
         semanticsNode: SemanticsNode,

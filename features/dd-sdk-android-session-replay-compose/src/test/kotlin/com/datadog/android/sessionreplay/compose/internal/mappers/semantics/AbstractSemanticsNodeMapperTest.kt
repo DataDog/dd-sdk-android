@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Density
 import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -50,7 +51,7 @@ internal open class AbstractCompositionGroupMapperTest {
     private lateinit var testedMapper: StubAbstractSemanticsNodeMapper
 
     @Forgery
-    private lateinit var fakeWireframe: ComposeWireframe
+    lateinit var fakeGlobalBounds: GlobalBounds
 
     @IntForgery
     var fakeSemanticsId: Int = 0
@@ -66,6 +67,9 @@ internal open class AbstractCompositionGroupMapperTest {
     @Mock
     lateinit var mockDensity: Density
 
+    @Mock
+    lateinit var mockSemanticsUtils: SemanticsUtils
+
     @FloatForgery
     var fakeDensity = 0f
 
@@ -77,23 +81,20 @@ internal open class AbstractCompositionGroupMapperTest {
             right = forge.aFloat(),
             bottom = forge.aFloat()
         )
-        testedMapper = StubAbstractSemanticsNodeMapper(mockColorStringFormatter)
+        testedMapper = StubAbstractSemanticsNodeMapper(mockSemanticsUtils, mockColorStringFormatter)
     }
 
     @Test
     fun `M return correct bound W resolveBounds`() {
         // Given
-        testedMapper.mappedWireframe = fakeWireframe
-        val mockNode = mockSemanticsNodeWithBound()
+        val semanticsNode = mock<SemanticsNode>()
+        whenever(mockSemanticsUtils.resolveInnerBounds(semanticsNode)) doReturn fakeGlobalBounds
 
         // When
-        val result = testedMapper.stubResolveBounds(mockNode)
+        val result = testedMapper.stubResolveBounds(semanticsNode)
 
         // Then
-        assertThat(result.x).isEqualTo((fakeBounds.left / fakeDensity).toLong())
-        assertThat(result.y).isEqualTo((fakeBounds.top / fakeDensity).toLong())
-        assertThat(result.height).isEqualTo((fakeBounds.size.height / fakeDensity).toLong())
-        assertThat(result.width).isEqualTo((fakeBounds.size.width / fakeDensity).toLong())
+        assertThat(result).isEqualTo(fakeGlobalBounds)
     }
 
     protected fun mockSemanticsNodeWithBound(additionalMock: SemanticsNode.() -> Unit = {}): SemanticsNode {
@@ -117,6 +118,14 @@ internal open class AbstractCompositionGroupMapperTest {
         ).thenReturn(colorHexStr)
     }
 
+    protected fun rectToBounds(rect: Rect, density: Float): GlobalBounds {
+        val width = ((rect.right - rect.left) / density).toLong()
+        val height = ((rect.bottom - rect.top) / density).toLong()
+        val x = (rect.left / density).toLong()
+        val y = (rect.top / density).toLong()
+        return GlobalBounds(x, y, width, height)
+    }
+
     private fun convertColorIntAlpha(color: Long): Pair<Int, Int> {
         val c = Color(color)
         return Pair(c.toArgb(), (c.alpha * MAX_ALPHA).roundToInt())
@@ -128,8 +137,9 @@ internal open class AbstractCompositionGroupMapperTest {
 }
 
 internal class StubAbstractSemanticsNodeMapper(
+    semanticsUtils: SemanticsUtils,
     colorStringFormatter: ColorStringFormatter
-) : AbstractSemanticsNodeMapper(colorStringFormatter) {
+) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
 
     var mappedWireframe: ComposeWireframe? = null
 

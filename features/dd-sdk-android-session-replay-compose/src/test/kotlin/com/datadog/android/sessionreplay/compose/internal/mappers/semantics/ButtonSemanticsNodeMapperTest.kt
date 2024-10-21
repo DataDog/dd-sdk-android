@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
-import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -48,9 +47,6 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
     private lateinit var mockSemanticsNode: SemanticsNode
 
     @Mock
-    private lateinit var mockSemanticsUtils: SemanticsUtils
-
-    @Mock
     private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     @LongForgery(min = 0L, max = 0xffffff)
@@ -86,6 +82,10 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
     fun `M return the correct wireframe W map`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode()
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
+            fakeBounds,
+            fakeDensity
+        )
         whenever(mockSemanticsUtils.resolveSemanticsModifierColor(mockSemanticsNode)).thenReturn(
             Color(fakeBackgroundColor).value.toLong()
         )
