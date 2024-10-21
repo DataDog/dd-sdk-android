@@ -45,7 +45,6 @@ internal abstract class FragmentTrackingTest :
         val fragmentAViewUrl = currentFragmentViewUrl(activity)
         // ignore view event for view start, it will be reduced
 
-        // view stopped
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
@@ -55,13 +54,14 @@ internal abstract class FragmentTrackingTest :
         )
 
         // swipe to change the fragment
-        onView(ViewMatchers.withId(R.id.tab_layout)).perform(ViewActions.swipeLeft())
         instrumentation.waitForIdleSync()
-        Thread.sleep(200) // give time to the view id to update
+        onView(ViewMatchers.withId(R.id.btn_next)).perform(ViewActions.click())
+        instrumentation.waitForIdleSync()
         val fragmentBViewUrl = currentFragmentViewUrl(activity)
         mockServerRule.activity.supportFragmentManager.fragments
         // ignore view event for updating the time, it will be reduced
         // view stopped
+        waitForPendingRUMEvents()
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentBViewUrl,
@@ -71,10 +71,9 @@ internal abstract class FragmentTrackingTest :
         )
 
         // swipe to close the view
-        onView(ViewMatchers.withId(R.id.tab_layout)).perform(ViewActions.swipeRight())
+        onView(ViewMatchers.withId(R.id.btn_last)).perform(ViewActions.click())
         instrumentation.waitForIdleSync()
-        Thread.sleep(200) // give time to the view id to update
-
+        waitForPendingRUMEvents()
         // for updating the time
         expectedEvents.add(
             ExpectedViewEvent(
@@ -83,15 +82,6 @@ internal abstract class FragmentTrackingTest :
                 currentFragmentExtras(activity)
             )
         )
-
-        // view stopped
-//        expectedEvents.add(
-//            ExpectedViewEvent(
-//                fragmentAViewUrl,
-//                3,
-//                currentFragmentExtras(activity)
-//            )
-//        )
 
         instrumentation.runOnMainSync {
             instrumentation.callActivityOnStop(mockServerRule.activity)

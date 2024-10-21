@@ -15,7 +15,7 @@ import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -60,7 +60,6 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @IntForgery(min = 512, max = 65536)
     var fakeMaxValue: Int = 0
 
-    @FloatForgery(min = 0f, max = 1f)
     var fakeProgress: Float = 0f
 
     @IntForgery
@@ -104,7 +103,8 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     lateinit var expectedThumbWireframe: MobileSegment.Wireframe
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeProgress = forge.anInt(0, 100) / 100f
         testedWireframeMapper = SeekBarWireframeMapper(
             mockViewIdentifierResolver,
             mockColorStringFormatter,

@@ -16,8 +16,6 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -28,8 +26,7 @@ internal class BatchMetricsDispatcher(
     private val uploadConfiguration: DataUploadConfiguration?,
     private val filePersistenceConfig: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
-    private val dateTimeProvider: TimeProvider,
-    private val sampler: Sampler = RateBasedSampler(METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE)
+    private val dateTimeProvider: TimeProvider
 
 ) : MetricsDispatcher, ProcessLifecycleMonitor.Callback {
 
@@ -39,7 +36,7 @@ internal class BatchMetricsDispatcher(
     // region MetricsDispatcher
 
     override fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason) {
-        if (!removalReason.includeInMetrics() || trackName == null || !sampler.sample()) {
+        if (!removalReason.includeInMetrics() || trackName == null) {
             return
         }
         resolveBatchDeletedMetricAttributes(batchFile, removalReason)?.let {
@@ -52,7 +49,7 @@ internal class BatchMetricsDispatcher(
     }
 
     override fun sendBatchClosedMetric(batchFile: File, batchMetadata: BatchClosedMetadata) {
-        if (trackName == null || !sampler.sample() || !batchFile.existsSafe(internalLogger)) {
+        if (trackName == null || !batchFile.existsSafe(internalLogger)) {
             return
         }
         resolveBatchClosedMetricAttributes(batchFile, batchMetadata)?.let {
@@ -189,8 +186,6 @@ internal class BatchMetricsDispatcher(
         internal const val TRACE_TRACK_NAME = "trace"
         internal const val SR_TRACK_NAME = "sr"
         internal const val SR_RESOURCES_TRACK_NAME = "sr-resources"
-
-        private const val METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE = 1.5f
 
         internal const val WRONG_FILE_NAME_MESSAGE_FORMAT =
             "Unable to parse the file name as a timestamp: %s"

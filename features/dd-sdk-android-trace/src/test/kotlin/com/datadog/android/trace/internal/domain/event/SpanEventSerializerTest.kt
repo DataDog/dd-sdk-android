@@ -87,7 +87,7 @@ internal class SpanEventSerializerTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeSanitizedAttributes = forge.exhaustiveAttributes()
+        val fakeSanitizedAttributes = forge.exhaustiveAttributes(setOf(KEY_USR_ID, KEY_USR_NAME, KEY_USR_EMAIL))
         whenever(
             mockDatadogConstraints
                 .validateAttributes(

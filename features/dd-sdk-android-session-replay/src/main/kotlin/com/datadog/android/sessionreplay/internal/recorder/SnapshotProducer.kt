@@ -9,7 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -22,7 +24,8 @@ import java.util.LinkedList
 internal class SnapshotProducer(
     private val imageWireframeHelper: ImageWireframeHelper,
     private val treeViewTraversal: TreeViewTraversal,
-    private val optionSelectorDetector: OptionSelectorDetector
+    private val optionSelectorDetector: OptionSelectorDetector,
+    private val internalLogger: InternalLogger
 ) {
 
     @UiThread
@@ -55,7 +58,8 @@ internal class SnapshotProducer(
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
         return withinSRBenchmarkSpan(view::class.java.simpleName, view is ViewGroup) {
-            val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
+            val localMappingContext = resolvePrivacyOverrides(view, mappingContext)
+            val traversedTreeView = treeViewTraversal.traverse(view, localMappingContext, recordedDataQueueRefs)
             val nextTraversalStrategy = traversedTreeView.nextActionStrategy
             val resolvedWireframes = traversedTreeView.mappedWireframes
             if (nextTraversalStrategy == TraversalStrategy.STOP_AND_DROP_NODE) {
@@ -70,7 +74,7 @@ internal class SnapshotProducer(
                 view.childCount > 0 &&
                 nextTraversalStrategy == TraversalStrategy.TRAVERSE_ALL_CHILDREN
             ) {
-                val childMappingContext = resolveChildMappingContext(view, mappingContext)
+                val childMappingContext = resolveChildMappingContext(view, localMappingContext)
                 val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
                 for (i in 0 until view.childCount) {
                     val viewChild = view.getChildAt(i) ?: continue
@@ -96,5 +100,51 @@ internal class SnapshotProducer(
         } else {
             parentMappingContext
         }
+    }
+
+    private fun resolvePrivacyOverrides(view: View, mappingContext: MappingContext): MappingContext {
+        val imagePrivacy =
+            try {
+                val privacy = view.getTag(R.id.datadog_image_privacy) as? String
+                if (privacy == null) {
+                    mappingContext.imagePrivacy
+                } else {
+                    ImagePrivacy.valueOf(privacy)
+                }
+            } catch (e: IllegalArgumentException) {
+                logInvalidPrivacyLevelError(e)
+                mappingContext.imagePrivacy
+            }
+
+        val textAndInputPrivacy =
+            try {
+                val privacy = view.getTag(R.id.datadog_text_and_input_privacy) as? String
+                if (privacy == null) {
+                    mappingContext.textAndInputPrivacy
+                } else {
+                    TextAndInputPrivacy.valueOf(privacy)
+                }
+            } catch (e: IllegalArgumentException) {
+                logInvalidPrivacyLevelError(e)
+                mappingContext.textAndInputPrivacy
+            }
+
+        return mappingContext.copy(
+            imagePrivacy = imagePrivacy,
+            textAndInputPrivacy = textAndInputPrivacy
+        )
+    }
+
+    private fun logInvalidPrivacyLevelError(e: Exception) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { INVALID_PRIVACY_LEVEL_ERROR },
+            e
+        )
+    }
+
+    internal companion object {
+        internal const val INVALID_PRIVACY_LEVEL_ERROR = "Invalid privacy level"
     }
 }

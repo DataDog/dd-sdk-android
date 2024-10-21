@@ -30,7 +30,7 @@ internal class AbstractStorage(
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     internal val storageConfiguration: FeatureStorageConfiguration,
-    consentProvider: ConsentProvider
+    private val consentProvider: ConsentProvider
 ) : Storage, TrackingConsentProviderCallback {
 
     private val grantedPersistenceStrategy: PersistenceStrategy by lazy {
@@ -64,13 +64,8 @@ internal class AbstractStorage(
         forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
-        val strategy = when (datadogContext.trackingConsent) {
-            TrackingConsent.GRANTED -> grantedPersistenceStrategy
-            TrackingConsent.PENDING -> pendingPersistenceStrategy
-            TrackingConsent.NOT_GRANTED -> notGrantedPersistenceStrategy
-        }
-
         executorService.submitSafe("Data write", internalLogger) {
+            val strategy = resolvePersistenceStrategy()
             val writer = object : EventBatchWriter {
                 @WorkerThread
                 override fun currentMetadata(): ByteArray? {
@@ -85,6 +80,14 @@ internal class AbstractStorage(
             callback.invoke(writer)
         }
     }
+
+    @WorkerThread
+    private fun resolvePersistenceStrategy() =
+        when (consentProvider.getConsent()) {
+            TrackingConsent.GRANTED -> grantedPersistenceStrategy
+            TrackingConsent.PENDING -> pendingPersistenceStrategy
+            TrackingConsent.NOT_GRANTED -> notGrantedPersistenceStrategy
+        }
 
     @WorkerThread
     override fun readNextBatch(): BatchData? {

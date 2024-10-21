@@ -82,9 +82,27 @@ datadog-test-pyramid:
   active: true
   ApiUsage:
     active: true
-    includes: ['**/reliability/**']
+    includes: [ '**/reliability/**' ]
+    internalPackagePrefix: 'com.datadog'
   ApiSurface:
     active: true
-    includes: ['**/dd-sdk-android-*/**']
-    excludes: ['**/build/**', '**/test/**', '**/testDebug/**','**/testRelease/**', '**/androidTest/**', '**/testFixtures/**', '**/buildSrc/**', '**/*.kts', '**/instrumented/**', '**/sample/**', '**/tools/**']
-
+    includes: [ '**/dd-sdk-android-*/**' ]
+    excludes:
+      - '**/build/**'
+      - '**/test/**'
+      - '**/testDebug/**'
+      - '**/testRelease/**'
+      - '**/androidTest/**'
+      - '**/testFixtures/**'
+      - '**/buildSrc/**'
+      - '**/*.kts'
+      - '**/instrumented/**'
+      - '**/sample/**'
+      - '**/tools/**'
+      - '**/dd-sdk-android-internal/**'
+    internalPackagePrefix: 'com.datadog'
+    ignoredAnnotations:
+      - "com.datadog.android.lint.InternalApi"
+    ignoredClasses:
+      - "com.datadog.android._InternalProxy"
+      - "com.datadog.android.rum._RumInternalProxy"
