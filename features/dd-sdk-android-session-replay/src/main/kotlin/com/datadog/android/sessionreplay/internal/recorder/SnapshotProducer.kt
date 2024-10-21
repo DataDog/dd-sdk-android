@@ -13,6 +13,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.PrivacyHelper
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -25,7 +26,8 @@ internal class SnapshotProducer(
     private val imageWireframeHelper: ImageWireframeHelper,
     private val treeViewTraversal: TreeViewTraversal,
     private val optionSelectorDetector: OptionSelectorDetector,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val privacyHelper: PrivacyHelper = PrivacyHelper(internalLogger)
 ) {
 
     @UiThread
@@ -112,7 +114,7 @@ internal class SnapshotProducer(
                     ImagePrivacy.valueOf(privacy)
                 }
             } catch (e: IllegalArgumentException) {
-                logInvalidPrivacyLevelError(e)
+                privacyHelper.logInvalidPrivacyLevelError(e)
                 mappingContext.imagePrivacy
             }
 
@@ -125,7 +127,7 @@ internal class SnapshotProducer(
                     TextAndInputPrivacy.valueOf(privacy)
                 }
             } catch (e: IllegalArgumentException) {
-                logInvalidPrivacyLevelError(e)
+                privacyHelper.logInvalidPrivacyLevelError(e)
                 mappingContext.textAndInputPrivacy
             }
 
@@ -133,18 +135,5 @@ internal class SnapshotProducer(
             imagePrivacy = imagePrivacy,
             textAndInputPrivacy = textAndInputPrivacy
         )
-    }
-
-    private fun logInvalidPrivacyLevelError(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { INVALID_PRIVACY_LEVEL_ERROR },
-            e
-        )
-    }
-
-    internal companion object {
-        internal const val INVALID_PRIVACY_LEVEL_ERROR = "Invalid privacy level"
     }
 }
