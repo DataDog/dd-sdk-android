@@ -266,6 +266,8 @@ internal class DatadogCore(
         return coreFeature.createScheduledExecutorService(executorContext)
     }
 
+    override fun isCoreActive(): Boolean = isActive
+
     // endregion
 
     // region InternalSdkCore

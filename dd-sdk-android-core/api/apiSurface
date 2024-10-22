@@ -51,6 +51,7 @@ interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
   val service: String
+  fun isCoreActive(): Boolean
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserProperties(Map<String, Any?>)

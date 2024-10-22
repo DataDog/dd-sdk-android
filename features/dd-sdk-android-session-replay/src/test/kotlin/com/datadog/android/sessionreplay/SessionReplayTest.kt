@@ -132,6 +132,7 @@ internal class SessionReplayTest {
         @Mock mockInternalLogger: InternalLogger
     ) {
         // Given
+        whenever(mockCore1.isCoreActive()).thenReturn(true)
         whenever(mockCore1.internalLogger).thenReturn(mockInternalLogger)
         whenever(mockCore2.internalLogger).thenReturn(mockInternalLogger)
         val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
@@ -159,5 +160,42 @@ internal class SessionReplayTest {
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             message = IS_ALREADY_REGISTERED_WARNING
         )
+        assertThat(SessionReplay.currentRegisteredCore?.get()).isEqualTo(mockCore1)
+    }
+
+    @Test
+    fun `M allow changing cores W enable { Session Replay already enabled but old core inactive }`(
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
+        @Mock mockCore1: FeatureSdkCore,
+        @Mock mockCore2: FeatureSdkCore,
+        @Mock mockInternalLogger: InternalLogger
+    ) {
+        // Given
+        whenever(mockCore1.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore2.internalLogger).thenReturn(mockInternalLogger)
+        val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
+            systemRequirementsConfiguration = mockSystemRequirementsConfiguration
+        )
+        whenever(
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(any(), any())
+        ) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+        }
+        whenever(mockCore1.isCoreActive()).thenReturn(true)
+        SessionReplay.enable(
+            sessionReplayConfiguration = fakeSessionReplayConfigurationWithMockRequirement,
+            sdkCore = mockCore1
+        )
+        assertThat(SessionReplay.currentRegisteredCore?.get()).isEqualTo(mockCore1)
+
+        // When
+        whenever(mockCore1.isCoreActive()).thenReturn(false)
+        SessionReplay.enable(
+            sessionReplayConfiguration = fakeSessionReplayConfigurationWithMockRequirement,
+            sdkCore = mockCore2
+        )
+
+        // Then
+        assertThat(SessionReplay.currentRegisteredCore?.get()).isEqualTo(mockCore2)
     }
 }

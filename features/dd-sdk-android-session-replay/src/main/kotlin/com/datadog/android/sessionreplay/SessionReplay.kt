@@ -103,7 +103,7 @@ object SessionReplay {
     }
 
     private fun isAlreadyRegistered() =
-        currentRegisteredCore?.get() != null
+        currentRegisteredCore?.get()?.isCoreActive() == true
 
     private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) =
         internalLogger.log(
