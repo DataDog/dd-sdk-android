@@ -72,6 +72,10 @@ internal class ImageSemanticsNodeMapper(
             }
         }
         // TODO RUM-6535: support more painters.
+        if (ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true) {
+            isContextualImage = true
+            painter = PainterFieldOfAsyncImagePainter?.getSafe(painter) as? Painter
+        }
         val bitmap = when (painter) {
             is BitmapPainter -> tryParseBitmapPainterToBitmap(painter)
             is VectorPainter -> tryParseVectorPainterToBitmap(painter)
@@ -82,7 +86,7 @@ internal class ImageSemanticsNodeMapper(
 
         val newBitmap = bitmap?.let {
             @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
-            it.copy(it.config, false)
+            it.copy(Bitmap.Config.ARGB_8888, false)
         }
         return newBitmap?.let {
             BitmapInfo(it, isContextualImage)
@@ -93,19 +97,23 @@ internal class ImageSemanticsNodeMapper(
         val vector = ComposeReflection.VectorField?.getSafe(vectorPainter)
         val cacheDrawScope = ComposeReflection.CacheDrawScopeField?.getSafe(vector)
         val mCachedImage = ComposeReflection.CachedImageField?.getSafe(cacheDrawScope)
-        return BitmapField?.getSafe(mCachedImage) as? Bitmap
+        return mCachedImage?.let {
+            BitmapField?.getSafe(it) as? Bitmap
+        }
     }
 
     private fun tryParseBitmapPainterToBitmap(bitmapPainter: BitmapPainter): Bitmap? {
         val image = ImageField?.getSafe(bitmapPainter)
-        return BitmapField?.getSafe(image) as? Bitmap
+        return image?.let {
+            BitmapField?.getSafe(image) as? Bitmap
+        }
     }
 
     private fun tryParseLocalImagePainter(semanticsNode: SemanticsNode): Painter? {
         val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
             PainterElementClass?.isInstance(it.modifier) == true
         }?.modifier
-        return PainterField?.getSafe(modifier) as? Painter
+        return modifier?.let { PainterField?.getSafe(it) as? Painter }
     }
 
     private fun tryParseAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
