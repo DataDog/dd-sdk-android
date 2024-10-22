@@ -11,6 +11,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 
 /**
  * An entry point to Datadog Session Replay feature.
@@ -35,12 +36,14 @@ object SessionReplay {
         val featureSdkCore = sdkCore as FeatureSdkCore
         sessionReplayConfiguration.systemRequirementsConfiguration
             .runIfRequirementsMet(featureSdkCore.internalLogger) {
+                val touchPrivacyManager = TouchPrivacyManager(sessionReplayConfiguration.touchPrivacy)
                 val sessionReplayFeature = SessionReplayFeature(
                     sdkCore = featureSdkCore,
                     customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
                     privacy = sessionReplayConfiguration.privacy,
                     imagePrivacy = sessionReplayConfiguration.imagePrivacy,
                     touchPrivacy = sessionReplayConfiguration.touchPrivacy,
+                    touchPrivacyManager = touchPrivacyManager,
                     textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
                     customMappers = sessionReplayConfiguration.customMappers,
                     customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,

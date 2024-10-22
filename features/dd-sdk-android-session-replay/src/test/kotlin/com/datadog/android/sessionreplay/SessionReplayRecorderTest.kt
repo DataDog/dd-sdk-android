@@ -12,6 +12,7 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -65,9 +66,6 @@ internal class SessionReplayRecorderTest {
     @Forgery
     private lateinit var fakeImagePrivacy: ImagePrivacy
 
-    @Forgery
-    private lateinit var fakeTouchPrivacy: TouchPrivacy
-
     @Mock
     private lateinit var mockTimeProvider: TimeProvider
 
@@ -85,6 +83,9 @@ internal class SessionReplayRecorderTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
     @Mock
     lateinit var mockDataStoreManager: ResourceDataStoreManager
@@ -112,7 +113,7 @@ internal class SessionReplayRecorderTest {
             rumContextProvider = mockRumContextProvider,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy,
-            touchPrivacy = fakeTouchPrivacy,
+            touchPrivacyManager = mockTouchPrivacyManager,
             recordWriter = mockRecordWriter,
             timeProvider = mockTimeProvider,
             mappers = mock(),
