@@ -226,6 +226,7 @@ datadog:
       - "java.lang.Character.toChars(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.lang.Class.forName(kotlin.String?):java.lang.LinkageError,java.lang.ExceptionInInitializerError,java.lang.ClassNotFoundException"
       - "java.lang.Class.getDeclaredField(kotlin.String?):java.lang.NoSuchFieldException,java.lang.SecurityException,java.lang.NullPointerException"
+      - "java.lang.Class.getDeclaredMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.getMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.isAssignableFrom(java.lang.Class?):java.lang.NullPointerException"
       - "java.lang.Runtime.addShutdownHook(java.lang.Thread):java.lang.IllegalArgumentException,java.lang.IllegalStateException,java.lang.SecurityException"

@@ -99,7 +99,10 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
             textAlign = fakeTextAlign
         )
         whenever(mockTextLayoutResult.layoutInput) doReturn mockTextLayoutInput
-        testedTextSemanticsNodeMapper = TextSemanticsNodeMapper(colorStringFormatter = mockColorStringFormatter)
+        testedTextSemanticsNodeMapper = TextSemanticsNodeMapper(
+            colorStringFormatter = mockColorStringFormatter,
+            semanticsUtils = mockSemanticsUtils
+        )
     }
 
     @Test
@@ -112,6 +115,10 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
                 AccessibilityAction("", stubTextLayoutResultAction)
             whenever(config) doReturn mockSemanticsConfiguration
         }
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
+            fakeBounds,
+            fakeDensity
+        )
         val actual = testedTextSemanticsNodeMapper.map(
             mockNode,
             fakeUiContext,

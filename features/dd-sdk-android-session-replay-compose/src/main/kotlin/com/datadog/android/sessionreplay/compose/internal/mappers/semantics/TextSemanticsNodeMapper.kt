@@ -21,12 +21,15 @@ import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWirefram
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
-internal class TextSemanticsNodeMapper(colorStringFormatter: ColorStringFormatter) :
-    AbstractSemanticsNodeMapper(colorStringFormatter) {
+internal class TextSemanticsNodeMapper(
+    colorStringFormatter: ColorStringFormatter,
+    semanticsUtils: SemanticsUtils = SemanticsUtils()
+) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
