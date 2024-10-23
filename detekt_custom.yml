@@ -924,6 +924,7 @@ datadog:
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.model.ActionEvent.Type)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.compose.internal.data.Parameter)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.internal.processor.MutationResolver.Entry)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.Add)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord)"

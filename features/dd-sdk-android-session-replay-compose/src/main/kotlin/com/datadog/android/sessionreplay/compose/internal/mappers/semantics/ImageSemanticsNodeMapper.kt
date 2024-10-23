@@ -37,6 +37,7 @@ internal class ImageSemanticsNodeMapper(
     ): SemanticsWireframe {
         val bounds = resolveBounds(semanticsNode)
         val bitmapInfo = resolveSemanticsPainter(semanticsNode)
+        val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
         val imageWireframe = if (bitmapInfo != null) {
             parentContext.imageWireframeHelper.createImageWireframeByBitmap(
                 id = semanticsNode.id.toLong(),
@@ -54,8 +55,11 @@ internal class ImageSemanticsNodeMapper(
         } else {
             null
         }
+        imageWireframe?.let {
+            containerFrames.add(it)
+        }
         return SemanticsWireframe(
-            wireframes = listOfNotNull(imageWireframe),
+            wireframes = containerFrames,
             uiContext = null
         )
     }

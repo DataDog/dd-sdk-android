@@ -25,6 +25,9 @@
 -keep class androidx.compose.ui.node.LayoutNode {
      *;
 }
+-keepclassmembers class androidx.compose.ui.semantics.SemanticsNode {
+     <fields>;
+}
 -keepclassmembers class androidx.compose.ui.draw.PainterElement {
      <fields>;
 }
