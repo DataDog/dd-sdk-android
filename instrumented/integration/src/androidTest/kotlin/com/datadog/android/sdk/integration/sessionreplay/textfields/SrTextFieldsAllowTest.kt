@@ -27,7 +27,9 @@ internal class SrTextFieldsAllowTest : BaseSessionReplayTest<SessionReplayTextFi
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.ALLOW)
     )
 
-    // TODO RUM-6839: Fix test on API 21
+    // TODO RUM-6839: Fix test on API 21, the test failure is caused by different drawable
+    //  on the text background among API versions. the background wireframes on higher version are
+    //  images, on lower version are shapes.
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
     fun assessRecordedScreenPayload() {
