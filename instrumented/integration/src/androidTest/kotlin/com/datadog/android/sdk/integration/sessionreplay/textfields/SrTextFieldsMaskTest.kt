@@ -6,13 +6,14 @@
 
 package com.datadog.android.sdk.integration.sessionreplay.textfields
 
+import android.os.Build
+import androidx.test.filters.SdkSuppress
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayTextFieldsActivity
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
@@ -26,9 +27,9 @@ internal class SrTextFieldsMaskTest : BaseSessionReplayTest<SessionReplayTextFie
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.MASK)
     )
 
-    // TODO: RUM-5873 Fix these tests and remove the @Ignore annotation
+    // TODO RUM-6839: Fix test on API 21
     @Test
-    @Ignore("These tests were not maintained anymore and they need to be fixed")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
         assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)

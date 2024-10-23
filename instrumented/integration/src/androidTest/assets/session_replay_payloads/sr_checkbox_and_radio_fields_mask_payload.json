@@ -1,8 +1,8 @@
 [{
   "type": 4,
   "data": {
-    "width": 411,
-    "height": 914
+    "width": 320,
+    "height": 640
   }
 }, {
   "type": 6,
@@ -14,17 +14,9 @@
   "data": {
     "wireframes": [
       {
-        "width": 411,
-        "height": 914,
-        "shapeStyle": {
-          "backgroundColor": "#303030ff",
-          "opacity": 1.0
-        },
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "xxxxxxx xxxxxxxx",
         "textStyle": {
@@ -46,8 +38,6 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
         "border": {
           "color": "#a538afff",
           "width": 1
@@ -55,8 +45,6 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "xxx xxxxxx xxxxxxxx",
         "textStyle": {
@@ -78,8 +66,6 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
         "border": {
           "color": "#cc0000ff",
           "width": 1
@@ -87,8 +73,6 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "xxxxxxxx xxxxxxxx",
         "textStyle": {
@@ -110,8 +94,6 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
         "border": {
           "color": "#ffbb33ff",
           "width": 1
@@ -119,8 +101,6 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "xxxxxxx xxxxx",
         "textStyle": {
@@ -142,12 +122,6 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "shapeStyle": {
-          "opacity": 1.0,
-          "cornerRadius": 10
-        },
         "border": {
           "color": "#a538afff",
           "width": 1
@@ -155,8 +129,6 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "xxx xxxxxx xxxxx",
         "textStyle": {
@@ -178,12 +150,6 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "shapeStyle": {
-          "opacity": 1.0,
-          "cornerRadius": 10
-        },
         "border": {
           "color": "#cc0000ff",
           "width": 1
@@ -191,8 +157,6 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "xxxxxxxx xxxxx",
         "textStyle": {
@@ -214,23 +178,11 @@
         }
       },
       {
-        "width": 16,
-        "height": 16,
-        "shapeStyle": {
-          "opacity": 1.0,
-          "cornerRadius": 10
-        },
         "border": {
           "color": "#ffbb33ff",
           "width": 1
         },
         "type": "shape"
-      },
-      {
-        "width": 411,
-        "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
       }
     ]
   }
