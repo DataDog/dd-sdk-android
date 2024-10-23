@@ -74,7 +74,7 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
 
     var fakeTextAlign: TextAlign = TextAlign.Left
 
-    @LongForgery(min = 0L, max = 0xffffff)
+    @LongForgery(min = 0xffffffff)
     var fakeTextColor: Long = 0x12346778L
 
     @Forgery
@@ -93,7 +93,7 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
         mockColorStringFormatter(fakeTextColor, fakeTextColorHexString)
 
         whenever(mockTextLayoutInput.style) doReturn TextStyle(
-            color = Color(fakeTextColor),
+            color = Color(fakeTextColor shr 32),
             fontFamily = FontFamily.Default,
             fontSize = fakeFontSize.sp,
             textAlign = fakeTextAlign

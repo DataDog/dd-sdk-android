@@ -9,7 +9,9 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import kotlin.math.roundToInt
@@ -21,6 +23,29 @@ internal abstract class AbstractSemanticsNodeMapper(
 
     protected fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
         return semanticsUtils.resolveInnerBounds(semanticsNode)
+    }
+
+    protected fun resolveModifierWireframes(semanticsNode: SemanticsNode): List<MobileSegment.Wireframe> {
+        return semanticsUtils.resolveBackgroundInfo(semanticsNode).map {
+            convertBackgroundInfoToWireframes(backgroundInfo = it)
+        }
+    }
+
+    private fun convertBackgroundInfoToWireframes(
+        backgroundInfo: BackgroundInfo
+    ): MobileSegment.Wireframe {
+        val shapeStyle = MobileSegment.ShapeStyle(
+            backgroundColor = backgroundInfo.color?.let { convertColor(it) },
+            cornerRadius = backgroundInfo.cornerRadius
+        )
+        return MobileSegment.Wireframe.ShapeWireframe(
+            id = semanticsUtils.resolveBackgroundInfoId(backgroundInfo),
+            x = backgroundInfo.globalBounds.x,
+            y = backgroundInfo.globalBounds.y,
+            width = backgroundInfo.globalBounds.width,
+            height = backgroundInfo.globalBounds.height,
+            shapeStyle = shapeStyle
+        )
     }
 
     protected fun convertColor(color: Long): String? {
