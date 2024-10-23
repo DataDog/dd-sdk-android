@@ -56,12 +56,14 @@ internal class SessionReplayFeature(
 
     private val currentRumSessionId = AtomicReference<String>()
 
+    @Suppress("LongParameterList")
     internal constructor(
         sdkCore: FeatureSdkCore,
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
         textAndInputPrivacy: TextAndInputPrivacy,
         touchPrivacy: TouchPrivacy,
+        touchPrivacyManager: TouchPrivacyManager,
         imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
@@ -81,7 +83,7 @@ internal class SessionReplayFeature(
             sdkCore,
             textAndInputPrivacy,
             imagePrivacy,
-            touchPrivacy,
+            touchPrivacyManager,
             customMappers,
             customOptionSelectorDetectors,
             dynamicOptimizationEnabled

@@ -13,6 +13,7 @@ interface com.datadog.android.sessionreplay.PrivacyLevel
 fun android.view.View.setSessionReplayHidden(Boolean)
 fun android.view.View.setSessionReplayImagePrivacy(ImagePrivacy?)
 fun android.view.View.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy?)
+fun android.view.View.setSessionReplayTouchPrivacy(TouchPrivacy?)
 object com.datadog.android.sessionreplay.SessionReplay
   fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun startRecording(com.datadog.android.api.SdkCore = Datadog.getInstance())

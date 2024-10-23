@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 
@@ -25,7 +26,8 @@ internal class DefaultOnDrawListenerProducer(
     override fun create(
         decorViews: List<View>,
         textAndInputPrivacy: TextAndInputPrivacy,
-        imagePrivacy: ImagePrivacy
+        imagePrivacy: ImagePrivacy,
+        touchPrivacyManager: TouchPrivacyManager
     ): ViewTreeObserver.OnDrawListener {
         return WindowsOnDrawListener(
             zOrderedDecorViews = decorViews,
@@ -35,7 +37,8 @@ internal class DefaultOnDrawListenerProducer(
             imagePrivacy = imagePrivacy,
             sdkCore = sdkCore,
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
-            dynamicOptimizationEnabled = dynamicOptimizationEnabled
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            touchPrivacyManager = touchPrivacyManager
         )
     }
 }

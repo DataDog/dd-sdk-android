@@ -50,3 +50,17 @@ fun View.setSessionReplayTextAndInputPrivacy(privacy: TextAndInputPrivacy?) {
         this.setTag(R.id.datadog_text_and_input_privacy, privacy.toString())
     }
 }
+
+/**
+ * Allows overriding the touch privacy for a view in Session Replay.
+ *
+ * @param privacy the new privacy level to use for the view
+ * or null to remove the override.
+ */
+fun View.setSessionReplayTouchPrivacy(privacy: TouchPrivacy?) {
+    if (privacy == null) {
+        this.setTag(R.id.datadog_touch_privacy, null)
+    } else {
+        this.setTag(R.id.datadog_touch_privacy, privacy.toString())
+    }
+}

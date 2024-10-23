@@ -8,4 +8,5 @@
     <item name="datadog_hidden" type="id"/>
     <item name="datadog_image_privacy" type="id"/>
     <item name="datadog_text_and_input_privacy" type="id"/>
+    <item name="datadog_touch_privacy" type="id"/>
 </resources>
