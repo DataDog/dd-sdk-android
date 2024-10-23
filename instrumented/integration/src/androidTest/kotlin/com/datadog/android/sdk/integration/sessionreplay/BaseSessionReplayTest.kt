@@ -198,9 +198,10 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
         val buf = ByteArray(1024)
         val decompressor = Inflater()
         decompressor.setInput(input, 0, input.size)
-        while (!decompressor.finished()) {
-            val resultLength = decompressor.inflate(buf)
-            bos.write(buf, 0, resultLength)
+        var uncompressedBytes = Int.MAX_VALUE
+        while (uncompressedBytes > 0) {
+            uncompressedBytes = decompressor.inflate(buf)
+            bos.write(buf, 0, uncompressedBytes)
         }
         decompressor.end()
         return bos.toByteArray()
