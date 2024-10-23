@@ -885,6 +885,34 @@ internal class DatadogCoreTest {
         }
     }
 
+    @Test
+    fun `M return false W isActiveCore() { CoreFeature inactive }`() {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.initialized).thenReturn(AtomicBoolean(false))
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        val isActive = testedCore.isCoreActive()
+
+        // Then
+        assertThat(isActive).isFalse()
+    }
+
+    @Test
+    fun `M return true W isActiveCore() { CoreFeature active }`() {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.initialized).thenReturn(AtomicBoolean(true))
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        val isActive = testedCore.isCoreActive()
+
+        // Then
+        assertThat(isActive).isTrue()
+    }
+
     class ErrorRecordingRunnable(
         private val collector: MutableList<Throwable>,
         private val delegate: Runnable

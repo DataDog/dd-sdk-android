@@ -33,6 +33,12 @@ interface SdkCore {
     val service: String
 
     /**
+     * Returns true if the core is active.
+     */
+    @AnyThread
+    fun isCoreActive(): Boolean
+
+    /**
      * Sets the tracking consent regarding the data collection for this instance of the Datadog SDK.
      *
      * @param consent which can take one of the values

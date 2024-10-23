@@ -116,6 +116,7 @@ public abstract interface class com/datadog/android/api/SdkCore {
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getService ()Ljava/lang/String;
 	public abstract fun getTime ()Lcom/datadog/android/api/context/TimeInfo;
+	public abstract fun isCoreActive ()Z
 	public abstract fun setTrackingConsent (Lcom/datadog/android/privacy/TrackingConsent;)V
 	public abstract fun setUserInfo (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 }
