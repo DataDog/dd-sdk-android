@@ -217,6 +217,7 @@ test:tools:
       - cache/caches/
       - cache/notifications/
   script:
+    - wget -O $DD_TRACER_FOLDER/dd-java-agent.jar 'https://output.circle-artifacts.com/output/job/317e0cef-c4a6-4e15-b659-0520d386f3df/artifacts/0/libs/dd-java-agent-1.42.0-SNAPSHOT.jar'
     - pip3 install datadog
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
