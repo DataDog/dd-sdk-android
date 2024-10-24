@@ -111,7 +111,7 @@ internal abstract class CheckableTextViewMapper<T>(
             )
             mappingContext.imageWireframeHelper.createImageWireframe(
                 view = view,
-                imagePrivacy = mappingContext.imagePrivacy,
+                imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
                 currentWireframeIndex = 0,
                 x = checkBoxBounds.x,
                 y = checkBoxBounds.y,
