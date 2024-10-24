@@ -121,7 +121,9 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
 
         if (fillPaint == null) return null
         val filterColor = try {
-            mColorField?.get(fillPaint.colorFilter) as? Int ?: fillPaint.color
+            fillPaint.colorFilter?.let {
+                mColorField?.get(it) as? Int
+            } ?: fillPaint.color
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -155,7 +157,7 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveInsetDrawable(drawable: InsetDrawable, internalLogger: InternalLogger): Int? {
-        return null
+        return drawable.drawable?.let { mapDrawableToColor(it, internalLogger) }
     }
 
     /**

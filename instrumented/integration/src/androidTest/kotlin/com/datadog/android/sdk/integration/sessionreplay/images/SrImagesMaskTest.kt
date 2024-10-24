@@ -6,8 +6,6 @@
 
 package com.datadog.android.sdk.integration.sessionreplay.images
 
-import android.os.Build
-import androidx.test.filters.SdkSuppress
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImagesActivity
@@ -28,9 +26,7 @@ internal class SrImagesMaskTest :
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.MASK)
     )
 
-    // TODO RUM-6839: Fix test on API 21
     @Test
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
         assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
