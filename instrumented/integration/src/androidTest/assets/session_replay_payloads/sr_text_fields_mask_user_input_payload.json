@@ -1,8 +1,8 @@
 [{
   "type": 4,
   "data": {
-    "width": 411,
-    "height": 914
+    "width": 320,
+    "height": 640
   }
 }, {
   "type": 6,
@@ -14,17 +14,9 @@
   "data": {
     "wireframes": [
       {
-        "width": 411,
-        "height": 914,
-        "shapeStyle": {
-          "backgroundColor": "#303030ff",
-          "opacity": 1.0
-        },
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 19,
         "type": "text",
         "text": "Default Text View",
         "textStyle": {
@@ -46,8 +38,6 @@
         }
       },
       {
-        "width": 395,
-        "height": 19,
         "type": "text",
         "text": "Material Text View",
         "textStyle": {
@@ -69,8 +59,6 @@
         }
       },
       {
-        "width": 395,
-        "height": 19,
         "type": "text",
         "text": "App Compat Text View",
         "textStyle": {
@@ -92,27 +80,23 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "text",
         "text": "Edit Text View",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#a538afff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -121,27 +105,23 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "text",
         "text": "Default Auto Complete Text View",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffbb33ff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -150,27 +130,23 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "text",
         "text": "App Compat Edit Text View",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#ffbb33ff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -179,27 +155,23 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "text",
         "text": "App Compat Auto Complete Text View",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#a538afff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
-            "bottom": 11,
-            "left": 3,
-            "right": 3
+            "top": 20,
+            "bottom": 21,
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -208,27 +180,23 @@
         }
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "image",
         "isEmpty": false
       },
       {
-        "width": 395,
-        "height": 44,
         "type": "text",
         "text": "Material Auto Complete Text View",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 17,
+          "size": 18,
           "color": "#a538afff"
         },
         "textPosition": {
           "padding": {
-            "top": 9,
+            "top": 10,
             "bottom": 11,
-            "left": 3,
-            "right": 3
+            "left": 4,
+            "right": 4
           },
           "alignment": {
             "horizontal": "left",
@@ -237,8 +205,6 @@
         }
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "Checked Text View",
         "textStyle": {
@@ -249,7 +215,7 @@
         "textPosition": {
           "padding": {
             "top": 0,
-            "bottom": 12,
+            "bottom": 13,
             "left": 0,
             "right": 32
           },
@@ -260,8 +226,6 @@
         }
       },
       {
-        "width": 19,
-        "height": 19,
         "border": {
           "color": "#ffffffff",
           "width": 1
@@ -269,8 +233,6 @@
         "type": "shape"
       },
       {
-        "width": 395,
-        "height": 32,
         "type": "text",
         "text": "App Compat Checked Text View",
         "textStyle": {
@@ -281,7 +243,7 @@
         "textPosition": {
           "padding": {
             "top": 0,
-            "bottom": 12,
+            "bottom": 13,
             "left": 0,
             "right": 32
           },
@@ -292,19 +254,11 @@
         }
       },
       {
-        "width": 19,
-        "height": 19,
         "border": {
           "color": "#ffffffff",
           "width": 1
         },
         "type": "shape"
-      },
-      {
-        "width": 411,
-        "height": 56,
-        "type": "placeholder",
-        "label": "Toolbar"
       }
     ]
   }

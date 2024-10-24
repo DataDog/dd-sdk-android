@@ -54,6 +54,7 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
         )
         featureActivations.shuffled(Random(intent.getForgeSeed()))
             .forEach { it() }
+        supportActionBar?.hide()
     }
 
     @Suppress("DEPRECATION")
