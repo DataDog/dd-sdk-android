@@ -6,6 +6,8 @@
 
 package com.datadog.android.trace.assertj
 
+import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
@@ -312,6 +314,77 @@ internal class SpanEventAssert(actual: SpanEvent) :
         assertThat(actual.meta.usr.additionalProperties)
             .hasSameSizeAs(userInfo.additionalProperties)
             .containsAllEntriesOf(userInfo.additionalProperties)
+        return this
+    }
+
+    fun hasDeviceInfo(deviceInfo: DeviceInfo): SpanEventAssert {
+        val expectedType: SpanEvent.Type = when (deviceInfo.deviceType) {
+            DeviceType.MOBILE -> SpanEvent.Type.MOBILE
+            DeviceType.TABLET -> SpanEvent.Type.TABLET
+            DeviceType.DESKTOP -> SpanEvent.Type.DESKTOP
+            DeviceType.TV -> SpanEvent.Type.TV
+            DeviceType.OTHER -> SpanEvent.Type.OTHER
+        }
+        assertThat(actual.meta.device.type)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device type: " +
+                    "$expectedType but " +
+                    "instead was: ${actual.meta.device.type}"
+            )
+            .isEqualTo(expectedType)
+        assertThat(actual.meta.device.name)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device name: " +
+                    "${deviceInfo.deviceName} but " +
+                    "instead was: ${actual.meta.device.name}"
+            )
+            .isEqualTo(deviceInfo.deviceName)
+        assertThat(actual.meta.device.model)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device model: " +
+                    "${deviceInfo.deviceModel} but " +
+                    "instead was: ${actual.meta.device.model}"
+            )
+            .isEqualTo(deviceInfo.deviceModel)
+        assertThat(actual.meta.device.brand)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device brand: " +
+                    "${deviceInfo.deviceBrand} but " +
+                    "instead was: ${actual.meta.device.brand}"
+            )
+            .isEqualTo(deviceInfo.deviceBrand)
+        assertThat(actual.meta.device.architecture)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device architecture: " +
+                    "${deviceInfo.architecture} but " +
+                    "instead was: ${actual.meta.device.architecture}"
+            )
+            .isEqualTo(deviceInfo.architecture)
+        return this
+    }
+
+    fun hasOsInfo(deviceInfo: DeviceInfo): SpanEventAssert {
+        assertThat(actual.meta.os.name)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have os name: " +
+                    "${deviceInfo.osName} but " +
+                    "instead was: ${actual.meta.os.name}"
+            )
+            .isEqualTo(deviceInfo.osName)
+        assertThat(actual.meta.os.versionMajor)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have os major version: " +
+                    "${deviceInfo.osMajorVersion} but " +
+                    "instead was: ${actual.meta.os.versionMajor}"
+            )
+            .isEqualTo(deviceInfo.osMajorVersion)
+        assertThat(actual.meta.os.version)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have os version: " +
+                    "${deviceInfo.osVersion} but " +
+                    "instead was: ${actual.meta.os.version}"
+            )
+            .isEqualTo(deviceInfo.osVersion)
         return this
     }
 

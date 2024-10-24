@@ -44,7 +44,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Metrics
       fun fromJsonObject(com.google.gson.JsonObject): Metrics
   data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network? = null, Device, Os, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Meta
@@ -79,6 +79,18 @@ data class com.datadog.android.trace.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Network
       fun fromJsonObject(com.google.gson.JsonObject): Network
+  data class Device
+    constructor(Type, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Application
     constructor(kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -109,3 +121,15 @@ data class com.datadog.android.trace.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): SimCarrier
       fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
+  enum Type
+    constructor(kotlin.String)
+    - MOBILE
+    - DESKTOP
+    - TABLET
+    - TV
+    - GAMING_CONSOLE
+    - BOT
+    - OTHER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type

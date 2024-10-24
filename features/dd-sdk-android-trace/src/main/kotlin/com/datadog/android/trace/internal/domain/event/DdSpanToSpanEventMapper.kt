@@ -7,7 +7,6 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
@@ -16,7 +15,7 @@ import com.datadog.opentracing.DDSpan
 internal class DdSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean,
     private val bigIntegerUtils: BigIntegerUtils = BigIntegerUtils
-) : ContextAwareMapper<DDSpan, SpanEvent> {
+) : BaseSpanEventMapper<DDSpan>() {
 
     // region Mapper
 
@@ -50,31 +49,15 @@ internal class DdSpanToSpanEventMapper(
     )
 
     private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
-        val networkInfoMeta = if (networkInfoEnabled) {
-            val networkInfo = datadogContext.networkInfo
-            val simCarrier = resolveSimCarrier(networkInfo)
-            val networkInfoClient = SpanEvent.Client(
-                simCarrier = simCarrier,
-                signalStrength = networkInfo.strength?.toString(),
-                downlinkKbps = networkInfo.downKbps?.toString(),
-                uplinkKbps = networkInfo.upKbps?.toString(),
-                connectivity = networkInfo.connectivity.toString()
-            )
-            SpanEvent.Network(networkInfoClient)
-        } else {
-            null
-        }
+        val networkInfoMeta = if (networkInfoEnabled) resolveNetworkInfo(datadogContext.networkInfo) else null
+        val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
+        val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val userInfo = datadogContext.userInfo
         val mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(event.traceId)
         val additionalProperties = mutableMapOf<String, String>()
         additionalProperties[TRACE_ID_META_KEY] = mostSignificantTraceId
         additionalProperties += event.meta
-        val usrMeta = SpanEvent.Usr(
-            id = userInfo.id,
-            name = userInfo.name,
-            email = userInfo.email,
-            additionalProperties = userInfo.additionalProperties.toMutableMap()
-        )
+        val usrMeta = resolveUserInfo(userInfo)
         val dd = SpanEvent.Dd(
             source = datadogContext.source,
             application = event.tags[LogAttributes.RUM_APPLICATION_ID]?.let { SpanEvent.Application(it as? String) },
@@ -90,19 +73,10 @@ internal class DdSpanToSpanEventMapper(
             ),
             usr = usrMeta,
             network = networkInfoMeta,
+            device = deviceInfo,
+            os = osInfo,
             additionalProperties = additionalProperties
         )
-    }
-
-    private fun resolveSimCarrier(networkInfo: NetworkInfo): SpanEvent.SimCarrier? {
-        return if (networkInfo.carrierId != null || networkInfo.carrierName != null) {
-            SpanEvent.SimCarrier(
-                id = networkInfo.carrierId?.toString(),
-                name = networkInfo.carrierName
-            )
-        } else {
-            null
-        }
     }
 
     // endregion
