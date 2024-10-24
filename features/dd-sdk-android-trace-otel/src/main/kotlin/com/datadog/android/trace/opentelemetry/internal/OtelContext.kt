@@ -29,7 +29,7 @@ internal class OtelContext(
     }
 
     @Suppress("ReturnCount")
-    override fun <V> with(k1: ContextKey<V>, v1: V): Context {
+    override fun <V> with(k1: ContextKey<V>, v1: V & Any): Context {
         if (OTEL_CONTEXT_SPAN_KEY == k1.toString()) {
             return OtelContext(wrapped, v1 as Span, rootSpan)
         } else if (OTEL_CONTEXT_ROOT_SPAN_KEY == k1.toString()) {

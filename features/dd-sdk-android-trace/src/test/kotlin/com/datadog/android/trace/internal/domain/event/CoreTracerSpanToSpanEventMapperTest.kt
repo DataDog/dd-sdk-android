@@ -91,6 +91,8 @@ internal class CoreTracerSpanToSpanEventMapperTest {
                     doesntHaveNetworkInfo()
                 }
             }
+            .hasDeviceInfo(fakeDatadogContext.deviceInfo)
+            .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasUserInfo(fakeDatadogContext.userInfo)
             .hasMeta(expectedMeta)
             .hasMetrics(expectedMetrics)
@@ -147,6 +149,8 @@ internal class CoreTracerSpanToSpanEventMapperTest {
                     doesntHaveNetworkInfo()
                 }
             }.hasUserInfo(fakeDatadogContext.userInfo)
+            .hasDeviceInfo(fakeDatadogContext.deviceInfo)
+            .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasMeta(expectedMeta)
             .hasMetrics(expectedMetrics)
     }
