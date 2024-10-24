@@ -218,7 +218,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Then
         verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
             view = eq(mockCheckableTextView),
-            imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
+            imagePrivacy = eq(ImagePrivacy.MASK_NONE),
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),
@@ -261,7 +261,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         // Then
         verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
             view = eq(mockCheckableTextView),
-            imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
+            imagePrivacy = eq(ImagePrivacy.MASK_NONE),
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),
