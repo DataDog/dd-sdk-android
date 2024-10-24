@@ -89,7 +89,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
             verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframe(
                 view = eq(mockSwitch),
-                imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
+                imagePrivacy = eq(ImagePrivacy.MASK_NONE),
                 currentWireframeIndex = ArgumentMatchers.anyInt(),
                 x = xCaptor.capture(),
                 y = yCaptor.capture(),
