@@ -138,6 +138,8 @@ android {
             isMinifyEnabled = false
             if (e2ePassword != null) {
                 signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }

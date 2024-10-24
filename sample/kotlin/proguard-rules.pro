@@ -25,5 +25,10 @@
 -dontwarn org.slf4j.impl.StaticLoggerBinder
 -dontwarn org.slf4j.impl.StaticMDCBinder
 -dontwarn reactor.blockhound.integration.BlockHoundIntegration
+-dontwarn io.netty.internal.tcnative.AsyncSSLPrivateKeyMethod
+-dontwarn io.netty.internal.tcnative.AsyncTask
+-dontwarn io.netty.internal.tcnative.CertificateCompressionAlgo
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean
 # These annotations are introduced by OpenTelemetry API and we need to make sure R8 will not complain about them
 -dontwarn  com.google.**
