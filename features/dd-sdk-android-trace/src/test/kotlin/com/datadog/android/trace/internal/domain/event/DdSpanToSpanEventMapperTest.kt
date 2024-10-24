@@ -101,6 +101,8 @@ internal class DdSpanToSpanEventMapperTest {
             }
             .hasUserInfo(fakeDatadogContext.userInfo)
             .hasMeta(fakeSpan.meta)
+            .hasDeviceInfo(fakeDatadogContext.deviceInfo)
+            .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasMetrics(fakeSpan.metrics)
     }
 
@@ -146,6 +148,8 @@ internal class DdSpanToSpanEventMapperTest {
             }
             .hasUserInfo(fakeDatadogContext.userInfo)
             .hasMeta(fakeSpan.meta)
+            .hasDeviceInfo(fakeDatadogContext.deviceInfo)
+            .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasMetrics(fakeSpan.metrics)
     }
 
