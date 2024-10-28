@@ -393,10 +393,11 @@ internal class DefaultImageWireframeHelperTest {
                 any(),
                 any(),
                 any(),
+                any(),
                 any()
             )
         ).thenAnswer {
-            val callback = it.arguments[6] as ResourceResolverCallback
+            val callback = it.arguments[7] as ResourceResolverCallback
             callback.onSuccess(fakeResourceId)
         }
 
@@ -436,6 +437,7 @@ internal class DefaultImageWireframeHelperTest {
             applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = any()
@@ -501,6 +503,7 @@ internal class DefaultImageWireframeHelperTest {
             applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = argumentCaptor.capture()
@@ -541,6 +544,7 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
         verify(mockResourceResolver, times(2)).resolveResourceId(
+            any(),
             any(),
             any(),
             any(),
@@ -614,6 +618,7 @@ internal class DefaultImageWireframeHelperTest {
             applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             resourceResolverCallback = any()
@@ -646,6 +651,7 @@ internal class DefaultImageWireframeHelperTest {
             applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             resourceResolverCallback = any()
@@ -723,6 +729,7 @@ internal class DefaultImageWireframeHelperTest {
             applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = any()

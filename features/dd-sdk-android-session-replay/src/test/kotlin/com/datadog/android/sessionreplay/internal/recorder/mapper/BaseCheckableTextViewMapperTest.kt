@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_CHECKED_DRAWABLE_INDEX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
+import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -109,6 +110,9 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
 
     @Mock
     lateinit var mockClonedDrawable: Drawable
+
+    @Mock
+    lateinit var mockDrawableCopier: DrawableCopier
 
     @IntForgery
     var mockCloneDrawableIntrinsicHeight: Int = 0
@@ -225,7 +229,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             width = eq(mockCloneDrawableIntrinsicWidth),
             height = eq(mockCloneDrawableIntrinsicHeight),
             usePIIPlaceholder = anyBoolean(),
-            drawable = eq(mockClonedDrawable),
+            drawable = any(),
+            drawableCopier = any(),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
             clipping = eq(MobileSegment.WireframeClip()),
             shapeStyle = isNull(),
@@ -269,6 +274,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             height = eq(mockCloneDrawableIntrinsicHeight),
             usePIIPlaceholder = anyBoolean(),
             drawable = eq(mockClonedDrawable),
+            drawableCopier = any(),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
             clipping = eq(MobileSegment.WireframeClip()),
             shapeStyle = isNull(),
