@@ -137,7 +137,7 @@ internal class DefaultImageWireframeHelper(
             resources = resources,
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
-            drawable = drawableProperties.drawable,
+            originalDrawable = drawableProperties.drawable,
             drawableWidth = width,
             drawableHeight = height,
             resourceResolverCallback = object : ResourceResolverCallback {
