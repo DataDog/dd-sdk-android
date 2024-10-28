@@ -48,6 +48,7 @@ internal class DefaultImageWireframeHelper(
         height: Int,
         usePIIPlaceholder: Boolean,
         drawable: Drawable,
+        drawableCopier: DrawableCopier,
         asyncJobStatusCallback: AsyncJobStatusCallback,
         clipping: MobileSegment.WireframeClip?,
         shapeStyle: MobileSegment.ShapeStyle?,
@@ -138,6 +139,7 @@ internal class DefaultImageWireframeHelper(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             originalDrawable = drawableProperties.drawable,
+            drawableCopier = drawableCopier,
             drawableWidth = width,
             drawableHeight = height,
             resourceResolverCallback = object : ResourceResolverCallback {

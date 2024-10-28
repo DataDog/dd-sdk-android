@@ -46,6 +46,7 @@ internal class ResourceResolver(
         applicationContext: Context,
         displayMetrics: DisplayMetrics,
         originalDrawable: Drawable,
+        drawableCopier: DrawableCopier,
         drawableWidth: Int,
         drawableHeight: Int,
         resourceResolverCallback: ResourceResolverCallback
@@ -61,7 +62,7 @@ internal class ResourceResolver(
             return
         }
 
-        val copiedDrawable = originalDrawable.constantState?.newDrawable(resources) ?: return
+        val copiedDrawable = drawableCopier.copy(originalDrawable, resources) ?: return
 
         val bitmapFromDrawable =
             if (copiedDrawable is BitmapDrawable && shouldUseDrawableBitmap(copiedDrawable)) {
