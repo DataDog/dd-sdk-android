@@ -91,6 +91,7 @@ internal class CoreTracerSpanToSpanEventMapper(
         meta.putAll(event.baggage)
         meta.putAll(tags)
         meta[TRACE_ID_META_KEY] = mostSignificantTraceId
+        meta[APPLICATION_VARIANT_KEY] = datadogContext.variant
         resolveSpanLinks(event)?.let { meta[SPAN_LINKS_KEY] = it }
         return SpanEvent.Meta(
             version = datadogContext.version,

@@ -91,6 +91,7 @@ internal class DdSpanToSpanEventMapperTest {
             .hasSpanStartTime(fakeSpan.startTime + fakeDatadogContext.time.serverTimeOffsetNs)
             .hasSpanDuration(fakeSpan.durationNano)
             .hasTracerVersion(fakeDatadogContext.sdkVersion)
+            .hasVariant(fakeDatadogContext.variant)
             .hasClientPackageVersion(fakeDatadogContext.version)
             .apply {
                 if (fakeNetworkInfoEnabled) {
@@ -138,6 +139,7 @@ internal class DdSpanToSpanEventMapperTest {
             .hasSpanStartTime(fakeSpan.startTime + fakeDatadogContext.time.serverTimeOffsetNs)
             .hasSpanDuration(fakeSpan.durationNano)
             .hasTracerVersion(fakeDatadogContext.sdkVersion)
+            .hasVariant(fakeDatadogContext.variant)
             .hasClientPackageVersion(fakeDatadogContext.version)
             .apply {
                 if (fakeNetworkInfoEnabled) {

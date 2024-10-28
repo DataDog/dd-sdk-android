@@ -94,6 +94,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
             .hasDeviceInfo(fakeDatadogContext.deviceInfo)
             .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasUserInfo(fakeDatadogContext.userInfo)
+            .hasVariant(fakeDatadogContext.variant)
             .hasMeta(expectedMeta)
             .hasMetrics(expectedMetrics)
     }
@@ -151,6 +152,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
             }.hasUserInfo(fakeDatadogContext.userInfo)
             .hasDeviceInfo(fakeDatadogContext.deviceInfo)
             .hasOsInfo(fakeDatadogContext.deviceInfo)
+            .hasVariant(fakeDatadogContext.variant)
             .hasMeta(expectedMeta)
             .hasMetrics(expectedMetrics)
     }

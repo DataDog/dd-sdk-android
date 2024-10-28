@@ -56,6 +56,7 @@ internal class DdSpanToSpanEventMapper(
         val mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(event.traceId)
         val additionalProperties = mutableMapOf<String, String>()
         additionalProperties[TRACE_ID_META_KEY] = mostSignificantTraceId
+        additionalProperties[APPLICATION_VARIANT_KEY] = datadogContext.variant
         additionalProperties += event.meta
         val usrMeta = resolveUserInfo(userInfo)
         val dd = SpanEvent.Dd(

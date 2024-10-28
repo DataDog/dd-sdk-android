@@ -183,6 +183,16 @@ internal class SpanEventAssert(actual: SpanEvent) :
         return this
     }
 
+    fun hasVariant(variant: String): SpanEventAssert {
+        assertThat(actual.meta.additionalProperties["variant"])
+            .overridingErrorMessage(
+                "Expected SpanEvent to have variant: $variant" +
+                    " but instead was: ${actual.meta.additionalProperties["variant"]}"
+            )
+            .isEqualTo(variant)
+        return this
+    }
+
     fun hasClientPackageVersion(clientPackageVersion: String): SpanEventAssert {
         assertThat(actual.meta.version)
             .overridingErrorMessage(
