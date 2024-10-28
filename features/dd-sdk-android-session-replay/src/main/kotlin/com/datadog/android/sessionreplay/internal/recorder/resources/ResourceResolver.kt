@@ -45,14 +45,14 @@ internal class ResourceResolver(
         resources: Resources,
         applicationContext: Context,
         displayMetrics: DisplayMetrics,
-        drawable: Drawable,
+        originalDrawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
         resourceResolverCallback: ResourceResolverCallback
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
 
-        val resourceId = tryToGetResourceFromCache(drawable = drawable)
+        val resourceId = tryToGetResourceFromCache(drawable = originalDrawable)
 
         if (resourceId != null) {
             // if we got here it means we saw the bitmap before,
@@ -61,9 +61,11 @@ internal class ResourceResolver(
             return
         }
 
+        val copiedDrawable = originalDrawable.constantState?.newDrawable(resources) ?: return
+
         val bitmapFromDrawable =
-            if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) {
-                drawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
+            if (copiedDrawable is BitmapDrawable && shouldUseDrawableBitmap(copiedDrawable)) {
+                copiedDrawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
             } else {
                 null
             }
@@ -72,7 +74,7 @@ internal class ResourceResolver(
         threadPoolExecutor.executeSafe("resolveResourceId", logger) {
             createBitmap(
                 resources = resources,
-                drawable = drawable,
+                drawable = originalDrawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,

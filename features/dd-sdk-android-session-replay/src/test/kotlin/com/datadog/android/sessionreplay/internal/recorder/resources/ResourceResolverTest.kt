@@ -11,6 +11,7 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Drawable.ConstantState
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
@@ -103,6 +104,12 @@ internal class ResourceResolverTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    lateinit var mockConstantState: ConstantState
+
+    @Mock
+    lateinit var mockBitmapConstantState: ConstantState
+
     private var fakeBitmapWidth: Int = 1
 
     private var fakeBitmapHeight: Int = 1
@@ -117,6 +124,11 @@ internal class ResourceResolverTest {
 
     @BeforeEach
     fun setup(forge: Forge) {
+        whenever(mockBitmapDrawable.constantState).thenReturn(mockBitmapConstantState)
+        whenever(mockBitmapConstantState.newDrawable(any())).thenReturn(mockBitmapDrawable)
+
+        whenever(mockDrawable.constantState).thenReturn(mockConstantState)
+        whenever(mockConstantState.newDrawable(any())).thenReturn(mockDrawable)
         fakeImageCompressionByteArray = forge.aString().toByteArray()
 
         fakeBitmapWidth = forge.anInt(min = 1)
@@ -173,7 +185,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
+            originalDrawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -209,7 +221,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -245,7 +257,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
+            originalDrawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -265,7 +277,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
+            originalDrawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -308,7 +320,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockDrawable,
+            originalDrawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -356,7 +368,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockStateListDrawable,
+            originalDrawable = mockStateListDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -376,7 +388,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -405,7 +417,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -431,7 +443,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -454,7 +466,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -487,7 +499,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -521,7 +533,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -552,7 +564,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -583,7 +595,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -605,7 +617,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -619,13 +631,15 @@ internal class ResourceResolverTest {
     fun `M cache bitmap W resolveResourceId() { not a BitmapDrawable }`() {
         // Given
         val mockLayerDrawable = mock<LayerDrawable>()
+        whenever(mockLayerDrawable.constantState).thenReturn(mockConstantState)
+        whenever(mockConstantState.newDrawable()).thenReturn(mockLayerDrawable)
 
         // When
         testedResourceResolver.resolveResourceId(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockLayerDrawable,
+            originalDrawable = mockLayerDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -656,7 +670,7 @@ internal class ResourceResolverTest {
                 resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
-                drawable = mockFirstDrawable,
+                originalDrawable = mockFirstDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
                 resourceResolverCallback = mockFirstCallback
@@ -669,7 +683,7 @@ internal class ResourceResolverTest {
                 resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
-                drawable = mockSecondDrawable,
+                originalDrawable = mockSecondDrawable,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
                 resourceResolverCallback = mockSecondCallback
@@ -717,7 +731,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -768,7 +782,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -781,7 +795,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
             resourceResolverCallback = mockSerializerCallback
@@ -798,7 +812,7 @@ internal class ResourceResolverTest {
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
-            drawable = mockBitmapDrawable,
+            originalDrawable = mockBitmapDrawable,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
             resourceResolverCallback = mockSerializerCallback

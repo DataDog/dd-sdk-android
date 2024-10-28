@@ -435,7 +435,7 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = any()
@@ -500,7 +500,7 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = argumentCaptor.capture()
@@ -613,7 +613,7 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             resourceResolverCallback = any()
@@ -645,7 +645,7 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             resourceResolverCallback = any()
@@ -722,7 +722,7 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = any()
