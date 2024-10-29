@@ -127,7 +127,7 @@ internal open class AbstractCompositionGroupMapperTest {
     }
 
     private fun convertColorIntAlpha(color: Long): Pair<Int, Int> {
-        val c = Color(color)
+        val c = Color(color shr 32)
         return Pair(c.toArgb(), (c.alpha * MAX_ALPHA).roundToInt())
     }
 

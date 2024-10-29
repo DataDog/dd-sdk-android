@@ -38,6 +38,9 @@ internal object ComposeReflection {
 
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
 
+    val SemanticsNodeClass = getClassSafe("androidx.compose.ui.semantics.SemanticsNode")
+    val LayoutNodeField = SemanticsNodeClass?.getDeclaredFieldSafe("layoutNode")
+
     val GetInnerLayerCoordinatorMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInnerLayerCoordinator")
 
     val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
@@ -48,7 +51,15 @@ internal object ComposeReflection {
 
     val BackgroundElementClass = getClassSafe("androidx.compose.foundation.BackgroundElement")
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
-    val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
+
+    val PaddingElementClass = getClassSafe("androidx.compose.foundation.layout.PaddingElement")
+    val StartField = PaddingElementClass?.getDeclaredFieldSafe("start")
+    val EndField = PaddingElementClass?.getDeclaredFieldSafe("end")
+    val BottomField = PaddingElementClass?.getDeclaredFieldSafe("bottom")
+    val TopField = PaddingElementClass?.getDeclaredFieldSafe("top")
+
+    val GraphicsLayerElementClass = getClassSafe("androidx.compose.ui.graphics.GraphicsLayerElement")
+    val ClipShapeField = GraphicsLayerElementClass?.getDeclaredFieldSafe("shape")
 
     val PainterElementClass = getClassSafe("androidx.compose.ui.draw.PainterElement")
     val PainterField = PainterElementClass?.getDeclaredFieldSafe("painter")

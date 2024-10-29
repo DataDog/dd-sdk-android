@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -27,9 +27,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -49,7 +47,7 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
     @Mock
     private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
-    @LongForgery(min = 0L, max = 0xffffff)
+    @LongForgery(min = 0xffffffff)
     var fakeBackgroundColor: Long = 0L
 
     @FloatForgery
@@ -82,20 +80,19 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
     fun `M return the correct wireframe W map`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode()
+        val fakeBackgroundInfo = BackgroundInfo(
+            globalBounds = rectToBounds(fakeBounds, fakeDensity),
+            color = fakeBackgroundColor,
+            cornerRadius = fakeCornerRadius
+        )
         whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
             fakeBounds,
             fakeDensity
         )
-        whenever(mockSemanticsUtils.resolveSemanticsModifierColor(mockSemanticsNode)).thenReturn(
-            Color(fakeBackgroundColor).value.toLong()
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn listOf(
+            fakeBackgroundInfo
         )
-        whenever(
-            mockSemanticsUtils.resolveSemanticsModifierCornerRadius(
-                eq(mockSemanticsNode),
-                any(),
-                eq(mockDensity)
-            )
-        ).thenReturn(fakeCornerRadius)
+        whenever(mockSemanticsUtils.resolveBackgroundInfoId(fakeBackgroundInfo)) doReturn fakeSemanticsId.toLong()
 
         // When
         val actual = testedButtonSemanticsNodeMapper.map(

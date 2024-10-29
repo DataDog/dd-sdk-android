@@ -7,14 +7,11 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.unit.Density
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
-import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
-import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class ButtonSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
@@ -26,34 +23,9 @@ internal class ButtonSemanticsNodeMapper(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
-        val density = semanticsNode.layoutInfo.density
-        val bounds = resolveBounds(semanticsNode)
-        val buttonStyle = resolveSemanticsButtonStyle(semanticsNode, bounds, density)
         return SemanticsWireframe(
-            wireframes = MobileSegment.Wireframe.ShapeWireframe(
-                id = semanticsNode.id.toLong(),
-                x = bounds.x,
-                y = bounds.y,
-                width = bounds.width,
-                height = bounds.height,
-                shapeStyle = buttonStyle
-            ).let { listOf(it) },
-            uiContext = parentContext.copy(
-                parentContentColor = buttonStyle.backgroundColor ?: parentContext.parentContentColor
-            )
-        )
-    }
-
-    private fun resolveSemanticsButtonStyle(
-        semanticsNode: SemanticsNode,
-        globalBounds: GlobalBounds,
-        density: Density
-    ): MobileSegment.ShapeStyle {
-        val color = semanticsUtils.resolveSemanticsModifierColor(semanticsNode)
-        val cornerRadius = semanticsUtils.resolveSemanticsModifierCornerRadius(semanticsNode, globalBounds, density)
-        return MobileSegment.ShapeStyle(
-            backgroundColor = color?.let { convertColor(it) },
-            cornerRadius = cornerRadius
+            wireframes = resolveModifierWireframes(semanticsNode),
+            uiContext = parentContext
         )
     }
 }
