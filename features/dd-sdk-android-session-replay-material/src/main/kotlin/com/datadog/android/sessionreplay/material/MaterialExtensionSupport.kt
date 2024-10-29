@@ -10,6 +10,7 @@ import androidx.cardview.widget.CardView
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.material.internal.CardWireframeMapper
+import com.datadog.android.sessionreplay.material.internal.MaterialDrawableToColorMapper
 import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
 import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
@@ -34,7 +35,9 @@ class MaterialExtensionSupport : ExtensionSupport {
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
-    private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+    private val materialDrawableToColorMapper = MaterialDrawableToColorMapper()
+    private val drawableToColorMapper: DrawableToColorMapper =
+        DrawableToColorMapper.getDefault(listOf(materialDrawableToColorMapper))
 
     override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
         val sliderWireframeMapper = SliderWireframeMapper(
@@ -70,5 +73,9 @@ class MaterialExtensionSupport : ExtensionSupport {
 
     override fun getOptionSelectorDetectors(): List<OptionSelectorDetector> {
         return listOf(MaterialOptionSelectorDetector())
+    }
+
+    override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
+        return listOf(materialDrawableToColorMapper)
     }
 }

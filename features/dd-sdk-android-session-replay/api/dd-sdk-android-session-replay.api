@@ -1,4 +1,5 @@
 public abstract interface class com/datadog/android/sessionreplay/ExtensionSupport {
+	public abstract fun getCustomDrawableMapper ()Ljava/util/List;
 	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
 }
@@ -44,8 +45,8 @@ public final class com/datadog/android/sessionreplay/SessionReplay {
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -1478,6 +1479,8 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/mappe
 
 public class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper : com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper {
 	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected fun resolveInsetDrawable (Landroid/graphics/drawable/InsetDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 	protected fun resolveRippleDrawable (Landroid/graphics/drawable/RippleDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 }
@@ -1485,6 +1488,8 @@ public class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapp
 public class com/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper : com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper$Companion;
 	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected fun resolveGradientDrawable (Landroid/graphics/drawable/GradientDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 }
 
@@ -1530,7 +1535,8 @@ public abstract interface class com/datadog/android/sessionreplay/utils/Drawable
 }
 
 public final class com/datadog/android/sessionreplay/utils/DrawableToColorMapper$Companion {
-	public final fun getDefault ()Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
+	public final fun getDefault (Ljava/util/List;)Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
+	public static synthetic fun getDefault$default (Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper$Companion;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
 }
 
 public final class com/datadog/android/sessionreplay/utils/GlobalBounds {
@@ -1566,6 +1572,8 @@ public final class com/datadog/android/sessionreplay/utils/ImageWireframeHelper$
 public class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper : com/datadog/android/sessionreplay/utils/DrawableToColorMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper$Companion;
 	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun mapDrawableToColor (Landroid/graphics/drawable/Drawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 	protected final fun mergeColorAndAlpha (II)I
 	protected fun resolveColorDrawable (Landroid/graphics/drawable/ColorDrawable;)Ljava/lang/Integer;
@@ -1574,6 +1582,7 @@ public class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper
 	protected fun resolveLayerDrawable (Landroid/graphics/drawable/LayerDrawable;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function2;)Ljava/lang/Integer;
 	public static synthetic fun resolveLayerDrawable$default (Lcom/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper;Landroid/graphics/drawable/LayerDrawable;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Integer;
 	protected fun resolveRippleDrawable (Landroid/graphics/drawable/RippleDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
+	protected fun resolveShapeDrawable (Landroid/graphics/drawable/ShapeDrawable;Lcom/datadog/android/api/InternalLogger;)I
 }
 
 public final class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper$Companion {

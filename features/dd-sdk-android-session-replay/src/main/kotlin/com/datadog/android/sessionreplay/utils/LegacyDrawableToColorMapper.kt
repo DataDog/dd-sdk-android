@@ -10,27 +10,42 @@ package com.datadog.android.sessionreplay.utils
 import android.annotation.SuppressLint
 import android.graphics.Paint
 import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.VectorDrawable
 import com.datadog.android.api.InternalLogger
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
-open class LegacyDrawableToColorMapper : DrawableToColorMapper {
+open class LegacyDrawableToColorMapper(
+    private val extensionMappers: List<DrawableToColorMapper> = emptyList()
+) : DrawableToColorMapper {
 
     override fun mapDrawableToColor(drawable: Drawable, internalLogger: InternalLogger): Int? {
+        // First check if extension mappers can resolve the drawable
+        extensionMappers.forEach {
+            val result = it.mapDrawableToColor(drawable, internalLogger)
+            if (result != null) {
+                return result
+            }
+        }
         val result = when (drawable) {
             is ColorDrawable -> resolveColorDrawable(drawable)
             is RippleDrawable -> resolveRippleDrawable(drawable, internalLogger)
             is LayerDrawable -> resolveLayerDrawable(drawable, internalLogger)
             is InsetDrawable -> resolveInsetDrawable(drawable, internalLogger)
             is GradientDrawable -> resolveGradientDrawable(drawable, internalLogger)
+            is ShapeDrawable -> resolveShapeDrawable(drawable, internalLogger)
+            is BitmapDrawable,
+            is VectorDrawable -> null // return null without reporting them by telemetry.
             else -> {
                 val drawableType = drawable.javaClass.canonicalName ?: drawable.javaClass.name
                 internalLogger.log(
@@ -48,6 +63,19 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
         }
 
         return result
+    }
+
+    /**
+     * Resolves the color from a [ShapeDrawable].
+     * @param drawable the shape drawable
+     * @param internalLogger the internalLogger to report warnings
+     * @return the color to map to or null if not applicable
+     */
+    protected open fun resolveShapeDrawable(
+        drawable: ShapeDrawable,
+        internalLogger: InternalLogger
+    ): Int {
+        return drawable.paint.color
     }
 
     /**

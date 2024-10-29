@@ -56,6 +56,7 @@ object SessionReplay {
                     textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
                     customMappers = sessionReplayConfiguration.customMappers,
                     customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
+                    customDrawableMappers = sessionReplayConfiguration.customDrawableMappers,
                     sampleRate = sessionReplayConfiguration.sampleRate,
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled

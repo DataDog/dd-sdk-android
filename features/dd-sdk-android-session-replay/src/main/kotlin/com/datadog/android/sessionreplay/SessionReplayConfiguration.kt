@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay
 import androidx.annotation.FloatRange
 import com.datadog.android.sessionreplay.internal.NoOpExtensionSupport
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
  * Describes configuration to be used for the Session Replay feature.
@@ -18,6 +19,7 @@ data class SessionReplayConfiguration internal constructor(
     internal val privacy: SessionReplayPrivacy,
     internal val customMappers: List<MapperTypeWrapper<*>>,
     internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
+    internal val customDrawableMappers: List<DrawableToColorMapper>,
     internal val sampleRate: Float,
     internal val imagePrivacy: ImagePrivacy,
     internal val startRecordingImmediately: Boolean,
@@ -187,6 +189,7 @@ data class SessionReplayConfiguration internal constructor(
                 textAndInputPrivacy = textAndInputPrivacy,
                 customMappers = customMappers(),
                 customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
+                customDrawableMappers = extensionSupport.getCustomDrawableMapper(),
                 sampleRate = sampleRate,
                 startRecordingImmediately = startRecordingImmediately,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
