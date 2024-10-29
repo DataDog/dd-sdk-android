@@ -62,6 +62,7 @@ internal class DefaultRecorderProvider(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val customMappers: List<MapperTypeWrapper<*>>,
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
+    private val customDrawableMappers: List<DrawableToColorMapper>,
     private val dynamicOptimizationEnabled: Boolean
 ) : RecorderProvider {
 
@@ -83,6 +84,7 @@ internal class DefaultRecorderProvider(
             timeProvider = SessionReplayTimeProvider(sdkCore),
             mappers = customMappers + builtInMappers(),
             customOptionSelectorDetectors = customOptionSelectorDetectors,
+            customDrawableMappers = customDrawableMappers,
             sdkCore = sdkCore,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled
         )

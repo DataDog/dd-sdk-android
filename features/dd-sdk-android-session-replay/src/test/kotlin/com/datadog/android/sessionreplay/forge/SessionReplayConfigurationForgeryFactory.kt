@@ -26,6 +26,7 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             touchPrivacy = forge.aValueFrom(TouchPrivacy::class.java),
             customMappers = forge.aList { mock() },
             customOptionSelectorDetectors = forge.aList { mock() },
+            customDrawableMappers = forge.aList { mock() },
             startRecordingImmediately = forge.aBool(),
             sampleRate = forge.aFloat(min = 0f, max = 100f),
             dynamicOptimizationEnabled = forge.aBool(),

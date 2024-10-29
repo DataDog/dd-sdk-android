@@ -1001,6 +1001,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ResourceEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ViewEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.internal.MaterialDrawableToColorMapper)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord.ViewEndRecord)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
