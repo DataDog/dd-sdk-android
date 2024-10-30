@@ -11,6 +11,8 @@ import android.view.View
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultDrawableCopier
+import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 
@@ -30,6 +32,7 @@ interface ImageWireframeHelper {
      * @param height the width of the image
      * @param usePIIPlaceholder whether to replace the image content with a placeholder when we suspect it contains PII
      * @param drawable the drawable to capture
+     * @param drawableCopier the callback to copy the original drawable to a new one.
      * @param asyncJobStatusCallback the callback for the async capture process
      * @param clipping the bounds of the image that are actually visible
      * @param shapeStyle provides a custom shape (e.g. rounded corners) to the image wireframe
@@ -47,6 +50,7 @@ interface ImageWireframeHelper {
         height: Int,
         usePIIPlaceholder: Boolean,
         drawable: Drawable,
+        drawableCopier: DrawableCopier = DefaultDrawableCopier(),
         asyncJobStatusCallback: AsyncJobStatusCallback,
         clipping: MobileSegment.WireframeClip? = null,
         shapeStyle: MobileSegment.ShapeStyle? = null,
