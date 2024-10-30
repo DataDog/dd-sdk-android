@@ -19,7 +19,9 @@ import com.datadog.android.api.InternalLogger
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
 @RequiresApi(Build.VERSION_CODES.M)
-open class AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper() {
+open class AndroidMDrawableToColorMapper(
+    extensionMappers: List<DrawableToColorMapper> = emptyList()
+) : LegacyDrawableToColorMapper(extensionMappers) {
 
     override fun resolveRippleDrawable(drawable: RippleDrawable, internalLogger: InternalLogger): Int? {
         // A ripple drawable can have a layer marked as mask, and which is not drawn

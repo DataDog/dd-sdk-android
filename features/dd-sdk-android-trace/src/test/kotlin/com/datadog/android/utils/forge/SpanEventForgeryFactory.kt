@@ -6,6 +6,8 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.internal.utils.toHexString
@@ -33,6 +35,7 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         val tracerVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
         val userInfo: UserInfo? = forge.aNullable()
         val networkInfo: NetworkInfo? = forge.aNullable()
+        val deviceInfo: DeviceInfo = forge.getForgery()
 
         return SpanEvent(
             spanId = spanId,
@@ -70,10 +73,32 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                         connectivity = networkInfo?.connectivity?.toString().orEmpty()
                     )
                 ),
+                device = SpanEvent.Device(
+                    type = resolveDeviceType(deviceInfo.deviceType),
+                    name = deviceInfo.deviceName,
+                    model = deviceInfo.deviceModel,
+                    brand = deviceInfo.deviceBrand,
+                    architecture = deviceInfo.architecture
+                ),
+                os = SpanEvent.Os(
+                    name = deviceInfo.osName,
+                    version = deviceInfo.osVersion,
+                    versionMajor = deviceInfo.osMajorVersion
+                ),
                 additionalProperties = meta
             ),
             metrics = SpanEvent.Metrics(topLevel = isTopLevel, additionalProperties = metrics)
         )
+    }
+
+    private fun resolveDeviceType(deviceType: DeviceType): SpanEvent.Type {
+        return when (deviceType) {
+            DeviceType.MOBILE -> SpanEvent.Type.MOBILE
+            DeviceType.TABLET -> SpanEvent.Type.TABLET
+            DeviceType.TV -> SpanEvent.Type.TV
+            DeviceType.DESKTOP -> SpanEvent.Type.DESKTOP
+            else -> SpanEvent.Type.OTHER
+        }
     }
 
     private fun Forge.exhaustiveMetrics(): MutableMap<String, Number> {
@@ -89,7 +114,6 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
     private fun Forge.exhaustiveMeta(): MutableMap<String, String> {
         return listOf(
             aString()
-        ).map { anAlphabeticalString() to it }
-            .toMap(mutableMapOf())
+        ).associateByTo(mutableMapOf()) { anAlphabeticalString() }
     }
 }

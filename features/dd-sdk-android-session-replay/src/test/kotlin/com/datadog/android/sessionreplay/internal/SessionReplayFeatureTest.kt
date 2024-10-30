@@ -139,6 +139,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacyManager = mockTouchPrivacyManager,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
+            customDrawableMappers = emptyList(),
             startRecordingImmediately = true,
             sampleRate = fakeConfiguration.sampleRate,
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
@@ -165,6 +166,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacyManager = mockTouchPrivacyManager,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
+            customDrawableMappers = emptyList(),
             sampleRate = fakeConfiguration.sampleRate,
             startRecordingImmediately = true,
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
