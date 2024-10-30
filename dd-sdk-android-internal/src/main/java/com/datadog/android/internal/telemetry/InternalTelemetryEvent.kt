@@ -6,6 +6,8 @@
 
 package com.datadog.android.internal.telemetry
 
+import com.datadog.android.internal.utils.loggableStackTrace
+
 @Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "UndocumentedPublicProperty")
 sealed class InternalTelemetryEvent {
 
@@ -18,7 +20,15 @@ sealed class InternalTelemetryEvent {
             val error: Throwable? = null,
             val stacktrace: String? = null,
             val kind: String? = null
-        ) : Log(message, additionalProperties)
+        ) : Log(message, additionalProperties) {
+            fun resolveKind(): String? {
+                return kind ?: error?.javaClass?.canonicalName ?: error?.javaClass?.simpleName
+            }
+
+            fun resolveStacktrace(): String? {
+                return stacktrace ?: error?.loggableStackTrace()
+            }
+        }
     }
 
     data class Configuration(

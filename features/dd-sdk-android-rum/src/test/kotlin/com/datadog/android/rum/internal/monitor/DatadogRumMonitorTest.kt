@@ -79,6 +79,7 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.same
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -131,7 +132,7 @@ internal class DatadogRumMonitorTest {
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
     @Mock
-    lateinit var sessionEndedMetricDispatcher: SessionMetricDispatcher
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -182,7 +183,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -204,7 +205,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -263,7 +264,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -300,7 +301,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1632,7 +1633,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1677,7 +1678,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1709,7 +1710,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1872,6 +1873,43 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.event).isEqualTo(fakeInternalTelemetryEvent)
         }
+    }
+
+    @Test
+    fun `M call sessionEndedMetricDispatcher W addSkippedFrame`(
+        @IntForgery(min = 0, max = 100) count: Int,
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
+    ) {
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.startView(key, name, attributes)
+        // Given
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            100.0f,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockSessionEndedMetricDispatcher,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener,
+            mockExecutorService
+        )
+        testedMonitor.startView(key, name, attributes)
+        // When
+        repeat(count) {
+            testedMonitor.addSessionReplaySkippedFrame()
+        }
+
+        // Then
+        verify(mockSessionEndedMetricDispatcher, times(count)).onSessionReplaySkippedFrameTracked(any())
     }
 
     @Test

@@ -15,8 +15,8 @@ import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -74,6 +74,9 @@ internal class RecorderWindowCallbackTest {
     lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
 
     @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
+    @Mock
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
@@ -114,6 +117,8 @@ internal class RecorderWindowCallbackTest {
             .thenReturn(fakeTouchEventRecordedDataQueueItem)
         whenever(mockContext.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
+        whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
+            .thenReturn(true)
         testedWindowCallback = RecorderWindowCallback(
             appContext = mockContext,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
@@ -122,7 +127,7 @@ internal class RecorderWindowCallbackTest {
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
             imagePrivacy = ImagePrivacy.MASK_NONE,
-            touchPrivacy = TouchPrivacy.SHOW,
+            touchPrivacyManager = mockTouchPrivacyManager,
             privacy = fakeTextAndInputPrivacy,
             copyEvent = { it },
             motionEventUtils = mockEventUtils,
@@ -230,6 +235,10 @@ internal class RecorderWindowCallbackTest {
     @Test
     fun `M update the positions and flush them W onTouchEvent() { ActionUp }`(forge: Forge) {
         // Given
+        val fakeDownEvent = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val downMotionEvent = fakeDownEvent.asMotionEvent()
+        testedWindowCallback.dispatchTouchEvent(downMotionEvent)
+
         val fakeRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
         val relatedMotionEvent = fakeRecords.asMotionEvent()
 
@@ -238,7 +247,7 @@ internal class RecorderWindowCallbackTest {
 
         // Then
         assertThat(testedWindowCallback.pointerInteractions).isEmpty()
-        verify(mockRecordedDataQueueHandler).addTouchEventItem(fakeRecords)
+        verify(mockRecordedDataQueueHandler).addTouchEventItem(fakeDownEvent + fakeRecords)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
     }
 
@@ -468,7 +477,7 @@ internal class RecorderWindowCallbackTest {
             internalLogger = mockInternalLogger,
             privacy = fakeTextAndInputPrivacy,
             imagePrivacy = ImagePrivacy.MASK_NONE,
-            touchPrivacy = TouchPrivacy.SHOW,
+            touchPrivacyManager = mockTouchPrivacyManager,
             copyEvent = { it },
             motionEventUtils = mockEventUtils,
             motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
@@ -499,6 +508,8 @@ internal class RecorderWindowCallbackTest {
         val relatedMotionEvent2 = fakeEvent2Records.asMotionEvent()
         val fakeEvent3Records = forge.touchRecords(MobileSegment.PointerEventType.UP)
         val relatedMotionEvent3 = fakeEvent3Records.asMotionEvent()
+        whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
+            .thenReturn(false)
 
         testedWindowCallback = RecorderWindowCallback(
             appContext = mockContext,
@@ -509,7 +520,7 @@ internal class RecorderWindowCallbackTest {
             internalLogger = mockInternalLogger,
             privacy = fakeTextAndInputPrivacy,
             imagePrivacy = ImagePrivacy.MASK_NONE,
-            touchPrivacy = TouchPrivacy.HIDE,
+            touchPrivacyManager = mockTouchPrivacyManager,
             copyEvent = { it },
             motionEventUtils = mockEventUtils,
             motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,

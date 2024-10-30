@@ -7,7 +7,9 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
+import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.SAMPLE_IN_ALL_SESSIONS
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -46,7 +48,7 @@ internal class SessionReplayConfigurationBuilderTest {
     fun `set up`() {
         fakeExpectedCustomMappers = listOf(MapperTypeWrapper(View::class.java, mock()))
         whenever(mockExtensionSupport.getCustomViewMappers()).thenReturn(fakeExpectedCustomMappers)
-        testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)
+        testedBuilder = SessionReplayConfiguration.Builder()
     }
 
     @Test
@@ -59,9 +61,10 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK)
         assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
         assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
+        assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(SAMPLE_IN_ALL_SESSIONS)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
-        assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
+        assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
     }
 
     @Test
@@ -69,6 +72,7 @@ internal class SessionReplayConfigurationBuilderTest {
         @StringForgery(regex = "https://[a-z]+\\.com") sessionReplayUrl: String
     ) {
         // When
+        testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)
         val sessionReplayConfiguration = testedBuilder
             .useCustomEndpoint(sessionReplayUrl)
             .build()
@@ -144,6 +148,20 @@ internal class SessionReplayConfigurationBuilderTest {
         // Then
         assertThat(sessionReplayConfiguration.customMappers)
             .isEqualTo(fakeExpectedCustomMappers)
+    }
+
+    @Test
+    fun `M use the given dynamic optimization W setDynamicOptimization()`(
+        @BoolForgery fakeDynamicOptimizationEnabled: Boolean
+    ) {
+        // Given
+        val sessionReplayConfiguration = testedBuilder
+            .setDynamicOptimizationEnabled(fakeDynamicOptimizationEnabled)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled)
+            .isEqualTo(fakeDynamicOptimizationEnabled)
     }
 
     @Test

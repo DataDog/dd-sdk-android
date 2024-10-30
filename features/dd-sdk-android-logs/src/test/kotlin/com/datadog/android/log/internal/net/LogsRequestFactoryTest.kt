@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
@@ -51,6 +52,7 @@ internal class LogsRequestFactoryTest {
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
+        @Forgery executionContext: RequestExecutionContext,
         @StringForgery batchMetadata: String,
         forge: Forge
     ) {
@@ -58,7 +60,7 @@ internal class LogsRequestFactoryTest {
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
-        val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
+        val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
 
         // Then
         requireNotNull(request)
@@ -94,6 +96,7 @@ internal class LogsRequestFactoryTest {
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
+        @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
         // Given
@@ -104,7 +107,7 @@ internal class LogsRequestFactoryTest {
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
-        val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
+        val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
 
         // Then
         requireNotNull(request)

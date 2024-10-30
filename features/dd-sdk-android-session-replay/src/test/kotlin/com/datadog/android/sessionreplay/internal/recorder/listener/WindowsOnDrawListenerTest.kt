@@ -12,11 +12,13 @@ import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
@@ -26,6 +28,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -77,7 +80,13 @@ internal class WindowsOnDrawListenerTest {
     lateinit var mockDebouncer: Debouncer
 
     @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
+    @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockPerformanceMetric: PerformanceMetric
@@ -113,11 +122,15 @@ internal class WindowsOnDrawListenerTest {
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
 
+    @BoolForgery
+    var fakeDynamicOptimizationEnabled: Boolean = false
+
     @FloatForgery
     var fakeMethodCallSamplingRate: Float = 0f
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
             .thenReturn(fakeSystemInformation)
         fakeMockedDecorViews = forge.aMockedDecorViewList().onEach {
@@ -145,6 +158,7 @@ internal class WindowsOnDrawListenerTest {
                 .ORIENTATION_LANDSCAPE,
             Configuration.ORIENTATION_PORTRAIT
         )
+        fakeDynamicOptimizationEnabled = forge.aBool()
         configuration.orientation = fakeOrientation
         mockResources = mock {
             whenever(it.configuration).thenReturn(configuration)
@@ -161,8 +175,10 @@ internal class WindowsOnDrawListenerTest {
             imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            internalLogger = mockInternalLogger,
-            methodCallSamplingRate = fakeMethodCallSamplingRate
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
     }
 
@@ -213,8 +229,10 @@ internal class WindowsOnDrawListenerTest {
             imagePrivacy = fakeImagePrivacy,
             debouncer = mockDebouncer,
             miscUtils = mockMiscUtils,
-            internalLogger = mockInternalLogger,
-            methodCallSamplingRate = fakeMethodCallSamplingRate
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
         testedListener.onDraw()
 

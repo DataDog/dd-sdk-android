@@ -6,10 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.Resources
+import android.graphics.drawable.Drawable
 import androidx.annotation.UiThread
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
@@ -71,28 +74,35 @@ internal open class SwitchCompatMapper(
             mappingContext.systemInformation.screenDensity
         )
         return trackBounds?.let {
-            return view.trackDrawable.constantState?.newDrawable(view.resources)?.apply {
-                setState(view.trackDrawable.state)
-                bounds = view.trackDrawable.bounds
-                view.trackTintList?.let {
-                    setTintList(it)
+            val trackDrawable = view.trackDrawable
+            val drawableCopier = object : DrawableCopier {
+                override fun copy(originalDrawable: Drawable, resources: Resources): Drawable? {
+                    return originalDrawable.constantState?.newDrawable(view.resources)?.apply {
+                        setState(view.trackDrawable.state)
+                        bounds = view.trackDrawable.bounds
+                        view.trackTintList?.let {
+                            setTintList(it)
+                        }
+                    }
                 }
-            }?.let { drawable ->
-                mappingContext.imageWireframeHelper.createImageWireframe(
-                    view = view,
-                    imagePrivacy = mappingContext.imagePrivacy,
-                    currentWireframeIndex = prevIndex + 1,
-                    x = trackBounds.x.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
-                    y = trackBounds.y.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
-                    width = trackBounds.width,
-                    height = trackBounds.height,
-                    drawable = drawable,
-                    shapeStyle = null,
-                    border = null,
-                    usePIIPlaceholder = true,
-                    asyncJobStatusCallback = asyncJobStatusCallback
-                )
             }
+            return mappingContext.imageWireframeHelper.createImageWireframe(
+                view = view,
+                imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
+                currentWireframeIndex = prevIndex + 1,
+                x = it.x.densityNormalized(mappingContext.systemInformation.screenDensity)
+                    .toLong(),
+                y = it.y.densityNormalized(mappingContext.systemInformation.screenDensity)
+                    .toLong(),
+                width = it.width,
+                height = it.height,
+                drawable = trackDrawable,
+                drawableCopier = drawableCopier,
+                shapeStyle = null,
+                border = null,
+                usePIIPlaceholder = true,
+                asyncJobStatusCallback = asyncJobStatusCallback
+            )
         }
     }
 
@@ -107,24 +117,37 @@ internal open class SwitchCompatMapper(
             mappingContext.systemInformation.screenDensity
         )
 
-        return view.thumbDrawable?.let { drawable ->
-            thumbBounds?.let { thumbBounds ->
-                mappingContext.imageWireframeHelper.createImageWireframe(
-                    view = view,
-                    imagePrivacy = mappingContext.imagePrivacy,
-                    currentWireframeIndex = prevIndex + 1,
-                    x = thumbBounds.x.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
-                    y = thumbBounds.y.densityNormalized(mappingContext.systemInformation.screenDensity).toLong(),
-                    width = drawable.intrinsicWidth,
-                    height = drawable.intrinsicHeight,
-                    drawable = drawable,
-                    shapeStyle = null,
-                    border = null,
-                    usePIIPlaceholder = true,
-                    clipping = null,
-                    asyncJobStatusCallback = asyncJobStatusCallback
-                )
+        val thumbDrawable = view.thumbDrawable
+        val drawableCopier = object : DrawableCopier {
+            override fun copy(originalDrawable: Drawable, resources: Resources): Drawable? {
+                return originalDrawable.constantState?.newDrawable(view.resources)?.apply {
+                    setState(view.thumbDrawable.state)
+                    bounds = view.thumbDrawable.bounds
+                    view.thumbTintList?.let {
+                        setTintList(it)
+                    }
+                }
             }
+        }
+        return thumbBounds?.let {
+            mappingContext.imageWireframeHelper.createImageWireframe(
+                view = view,
+                imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
+                currentWireframeIndex = prevIndex + 1,
+                x = it.x.densityNormalized(mappingContext.systemInformation.screenDensity)
+                    .toLong(),
+                y = it.y.densityNormalized(mappingContext.systemInformation.screenDensity)
+                    .toLong(),
+                width = thumbDrawable.intrinsicWidth,
+                height = thumbDrawable.intrinsicHeight,
+                drawable = thumbDrawable,
+                drawableCopier = drawableCopier,
+                shapeStyle = null,
+                border = null,
+                usePIIPlaceholder = true,
+                clipping = null,
+                asyncJobStatusCallback = asyncJobStatusCallback
+            )
         }
     }
 

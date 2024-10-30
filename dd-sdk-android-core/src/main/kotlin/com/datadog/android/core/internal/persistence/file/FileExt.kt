@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
 import java.io.File
 import java.io.FileFilter
+import java.io.FilenameFilter
 import java.nio.charset.Charset
 
 /*
@@ -112,6 +113,17 @@ internal fun File.listFilesSafe(internalLogger: InternalLogger): Array<File>? {
 }
 
 internal fun File.listFilesSafe(filter: FileFilter, internalLogger: InternalLogger): Array<File>? {
+    return safeCall(default = null, internalLogger) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        listFiles(filter)
+    }
+}
+
+/**
+ * Non-throwing version of [File.listFiles]. If exception happens, null is returned.
+ */
+@InternalApi
+fun File.listFilesSafe(internalLogger: InternalLogger, filter: FilenameFilter): Array<File>? {
     return safeCall(default = null, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         listFiles(filter)

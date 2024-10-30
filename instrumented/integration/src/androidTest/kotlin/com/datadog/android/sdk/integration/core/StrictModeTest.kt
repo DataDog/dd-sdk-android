@@ -11,6 +11,7 @@ import android.os.StrictMode.ThreadPolicy
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.datadog.android.core.allowThreadDiskReads
+import com.datadog.android.core.allowThreadDiskWrites
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
@@ -86,5 +87,34 @@ class StrictModeTest {
         // Then
         assertThat(error).isNotNull()
         assertThat(sdcardExists).isNull()
+    }
+
+    @Test
+    fun M_disable_disk_write_checks_W_allowThreadDiskWrites() {
+        // Given
+        val threadPolicy = ThreadPolicy.Builder()
+            .detectAll()
+            .penaltyDeath()
+            .build()
+        StrictMode.setThreadPolicy(threadPolicy)
+
+        // When
+        var error: RuntimeException? = null
+        val sdCardFile = try {
+            allowThreadDiskWrites {
+                val sdcard = File("/sdcard")
+                sdcard.mkdirs()
+                sdcard
+            }
+        } catch (e: RuntimeException) {
+            error = e
+            false
+        }
+
+        // Then
+        assertThat(error).isNull()
+        assertThat(sdCardFile).isNotNull
+        val afterPolicy = StrictMode.getThreadPolicy()
+        assertThat(threadPolicy.toString()).isEqualTo(afterPolicy.toString())
     }
 }

@@ -10,6 +10,7 @@ package com.datadog.android.sdk.integration.rum
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -24,6 +25,8 @@ import com.datadog.android.sdk.utils.getTrackingConsent
 
 internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var viewPager: ViewPager
+    lateinit var btnNext: Button
+    lateinit var btnLast: Button
 
     @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,8 +48,16 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
 
         setContentView(R.layout.fragment_tracking_layout)
         viewPager = findViewById(R.id.pager)
+        btnNext = findViewById(R.id.btn_next)
+        btnLast = findViewById(R.id.btn_last)
         viewPager.apply {
             adapter = ViewPagerAdapter(supportFragmentManager)
+        }
+        btnNext.setOnClickListener {
+            viewPager.setCurrentItem(viewPager.currentItem + 1, true)
+        }
+        btnLast.setOnClickListener {
+            viewPager.setCurrentItem(viewPager.currentItem - 1, true)
         }
 
         // attach the fragment view tracking strategy

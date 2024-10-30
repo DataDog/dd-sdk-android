@@ -89,7 +89,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
             verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframe(
                 view = eq(mockSwitch),
-                imagePrivacy = eq(ImagePrivacy.MASK_LARGE_ONLY),
+                imagePrivacy = eq(ImagePrivacy.MASK_NONE),
                 currentWireframeIndex = ArgumentMatchers.anyInt(),
                 x = xCaptor.capture(),
                 y = yCaptor.capture(),
@@ -97,6 +97,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
                 height = heightCaptor.capture(),
                 usePIIPlaceholder = ArgumentMatchers.anyBoolean(),
                 drawable = drawableCaptor.capture(),
+                drawableCopier = any(),
                 asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
                 clipping = eq(null),
                 shapeStyle = eq(null),
@@ -114,7 +115,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
                 mockThumbDrawable.intrinsicHeight,
                 (fakeTrackBounds.height())
             )
-            assertThat(drawableCaptor.allValues).containsOnly(mockThumbDrawable, mockCloneDrawable)
+            assertThat(drawableCaptor.allValues).containsOnly(mockThumbDrawable, mockTrackDrawable)
         }
     }
 
@@ -195,6 +196,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             height = any(),
             usePIIPlaceholder = any(),
             drawable = any(),
+            drawableCopier = any(),
             asyncJobStatusCallback = any(),
             clipping = any(),
             shapeStyle = any(),

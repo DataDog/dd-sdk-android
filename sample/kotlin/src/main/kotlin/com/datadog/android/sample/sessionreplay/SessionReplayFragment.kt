@@ -63,7 +63,7 @@ internal class SessionReplayFragment :
             R.id.navigation_image_components -> R.id.fragment_image_components
             R.id.navigation_image_scaling -> R.id.fragment_image_scaling
             R.id.navigation_webview_recording -> R.id.fragment_webview_record
-
+            R.id.navigation_view_group -> R.id.fragment_view_group_components
             else -> null
         }
         if (destination != null) {

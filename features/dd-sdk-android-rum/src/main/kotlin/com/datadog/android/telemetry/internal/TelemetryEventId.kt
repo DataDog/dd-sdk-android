@@ -17,7 +17,7 @@ internal data class TelemetryEventId(
 internal val InternalTelemetryEvent.identity: TelemetryEventId
     get() {
         return when (this) {
-            is InternalTelemetryEvent.Log.Error -> TelemetryEventId(type(), message, kind)
+            is InternalTelemetryEvent.Log.Error -> TelemetryEventId(type(), message, resolveKind())
             is InternalTelemetryEvent.Log.Debug -> TelemetryEventId(type(), message, null)
             else -> TelemetryEventId(type(), "", null)
         }

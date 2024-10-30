@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.metrics.RemovalReason
+import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import java.util.LinkedList
 import java.util.Queue
@@ -87,6 +88,7 @@ internal class UploadWorker(
             val nextBatchData = storage.readNextBatch()
             if (nextBatchData != null) {
                 val uploadStatus = consumeBatch(
+                    nextBatchData.id,
                     context,
                     nextBatchData.data,
                     nextBatchData.metadata,
@@ -105,12 +107,13 @@ internal class UploadWorker(
         }
 
         private fun consumeBatch(
+            batchId: BatchId,
             context: DatadogContext,
             batch: List<RawBatchEvent>,
             batchMeta: ByteArray?,
             uploader: DataUploader
         ): UploadStatus {
-            return uploader.upload(context, batch, batchMeta)
+            return uploader.upload(context, batch, batchMeta, batchId)
         }
     }
 

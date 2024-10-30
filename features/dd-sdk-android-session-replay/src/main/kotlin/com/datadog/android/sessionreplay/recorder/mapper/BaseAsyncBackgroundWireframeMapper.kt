@@ -124,30 +124,23 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MobileSegment.Wireframe? {
-        val resources = view.resources
-
-        val drawableCopy = view.background?.constantState?.newDrawable(resources)
-
-        return if (drawableCopy != null) {
-            mappingContext.imageWireframeHelper.createImageWireframe(
-                view = view,
-                imagePrivacy = mappingContext.imagePrivacy,
-                currentWireframeIndex = 0,
-                x = bounds.x,
-                y = bounds.y,
-                width = width,
-                height = height,
-                usePIIPlaceholder = false,
-                drawable = drawableCopy,
-                asyncJobStatusCallback = asyncJobStatusCallback,
-                clipping = MobileSegment.WireframeClip(),
-                shapeStyle = null,
-                border = null,
-                prefix = PREFIX_BACKGROUND_DRAWABLE
-            )
-        } else {
-            null
-        }
+        val background = view.background ?: return null
+        return mappingContext.imageWireframeHelper.createImageWireframe(
+            view = view,
+            imagePrivacy = mappingContext.imagePrivacy,
+            currentWireframeIndex = 0,
+            x = bounds.x,
+            y = bounds.y,
+            width = width,
+            height = height,
+            usePIIPlaceholder = false,
+            drawable = background,
+            asyncJobStatusCallback = asyncJobStatusCallback,
+            clipping = MobileSegment.WireframeClip(),
+            shapeStyle = null,
+            border = null,
+            prefix = PREFIX_BACKGROUND_DRAWABLE
+        )
     }
 
     companion object {

@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -53,6 +54,9 @@ internal class ViewOnDrawInterceptorTest {
     @Mock
     lateinit var mockOnDrawListener: ViewTreeObserver.OnDrawListener
 
+    @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
     @Forgery
     lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
 
@@ -67,15 +71,17 @@ internal class ViewOnDrawInterceptorTest {
 
         whenever(
             mockOnDrawListenerProducer.create(
-                fakeDecorViews,
-                fakeTextAndInputPrivacy,
-                fakeImagePrivacy
+                decorViews = fakeDecorViews,
+                textAndInputPrivacy = fakeTextAndInputPrivacy,
+                imagePrivacy = fakeImagePrivacy,
+                touchPrivacyManager = mockTouchPrivacyManager
             )
         ) doReturn mockOnDrawListener
 
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
-            onDrawListenerProducer = mockOnDrawListenerProducer
+            onDrawListenerProducer = mockOnDrawListenerProducer,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
     }
 
@@ -98,7 +104,8 @@ internal class ViewOnDrawInterceptorTest {
         // Given
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
-            onDrawListenerProducer = { _, privacy, _ ->
+            touchPrivacyManager = mockTouchPrivacyManager,
+            onDrawListenerProducer = { _, privacy, _, _ ->
                 check(privacy == fakeTextAndInputPrivacy) {
                     "Expected to create an OnDrawListener with privacy $fakeTextAndInputPrivacy but was $privacy"
                 }
@@ -120,8 +127,9 @@ internal class ViewOnDrawInterceptorTest {
         // Given
         val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
         testedInterceptor = ViewOnDrawInterceptor(
-            internalLogger = mockInternalLogger
-        ) { _, _, _ -> mockOnDrawListener }
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
+        ) { _, _, _, _ -> mockOnDrawListener }
 
         // When
         testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)

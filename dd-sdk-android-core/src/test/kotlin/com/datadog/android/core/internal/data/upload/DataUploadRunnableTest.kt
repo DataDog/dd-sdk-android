@@ -12,7 +12,6 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
-import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
@@ -178,7 +177,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn fakeUploadStatus
 
@@ -191,7 +191,7 @@ internal class DataUploadRunnableTest {
             any(),
             eq(true)
         )
-        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
             fakeFeatureName,
             fakeMaxBatchesPerJob,
@@ -226,7 +226,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn fakeUploadStatus
 
@@ -239,7 +240,7 @@ internal class DataUploadRunnableTest {
             any(),
             eq(true)
         )
-        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
             fakeFeatureName,
             fakeMaxBatchesPerJob,
@@ -273,7 +274,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn fakeUploadStatus
 
@@ -286,7 +288,7 @@ internal class DataUploadRunnableTest {
             any(),
             eq(true)
         )
-        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
             fakeFeatureName,
             fakeMaxBatchesPerJob,
@@ -416,7 +418,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn fakeUploadStatus
 
@@ -425,7 +428,7 @@ internal class DataUploadRunnableTest {
 
         // Then
         verify(mockStorage, times(fakeMaxBatchesPerJob)).confirmBatchRead(any(), any(), eq(true))
-        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader, times(fakeMaxBatchesPerJob)).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
             fakeFeatureName,
             fakeMaxBatchesPerJob,
@@ -453,7 +456,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn uploadStatus
 
@@ -462,7 +466,7 @@ internal class DataUploadRunnableTest {
 
         // Then
         verify(mockStorage).confirmBatchRead(eq(batchId), any(), eq(false))
-        verify(mockDataUploader).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
             fakeFeatureName,
             1,
@@ -490,7 +494,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn uploadStatus
 
@@ -501,7 +506,7 @@ internal class DataUploadRunnableTest {
 
         // Then
         verify(mockStorage, times(runCount)).confirmBatchRead(eq(batchId), any(), eq(false))
-        verify(mockDataUploader, times(runCount)).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader, times(runCount)).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy, times(runCount)).getMsDelayUntilNextUpload(
             fakeFeatureName,
             1,
@@ -529,7 +534,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader.upload(
                 fakeContext,
                 batch,
-                batchMetadata
+                batchMetadata,
+                batchId
             )
         ) doReturn uploadStatus
 
@@ -538,7 +544,7 @@ internal class DataUploadRunnableTest {
 
         // Then
         verify(mockStorage).confirmBatchRead(eq(batchId), any(), eq(true))
-        verify(mockDataUploader).upload(fakeContext, batch, batchMetadata)
+        verify(mockDataUploader).upload(fakeContext, batch, batchMetadata, batchId)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
             fakeFeatureName,
             1,
@@ -552,8 +558,7 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `M handle the maxBatchesPerJob W run{maxBatchesPerJob smaller availableBatches}`(
-        forge: Forge,
-        @Forgery fakeConfiguration: DataUploadConfiguration
+        forge: Forge
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
@@ -570,8 +575,8 @@ internal class DataUploadRunnableTest {
         )
         val batches = forge.aList(
             size = forge.anInt(
-                min = fakeConfiguration.maxBatchesPerUploadJob + 1,
-                max = fakeConfiguration.maxBatchesPerUploadJob + 1000
+                min = fakeMaxBatchesPerJob + 1,
+                max = fakeMaxBatchesPerJob + 1000
             )
         ) {
             aList { getForgery<RawBatchEvent>() }
@@ -584,7 +589,8 @@ internal class DataUploadRunnableTest {
                 mockDataUploader.upload(
                     fakeContext,
                     batch,
-                    batchMetadata[index]
+                    batchMetadata[index],
+                    batchIds[index]
                 )
             ) doReturn forge.getForgery(UploadStatus.Success::class.java)
         }
@@ -595,7 +601,7 @@ internal class DataUploadRunnableTest {
         // Then
         repeat(fakeMaxBatchesPerJob) { index ->
             val batch = batches[index]
-            verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index])
+            verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index], batchIds[index])
             verify(mockStorage).confirmBatchRead(
                 eq(batchIds[index]),
                 any(),
@@ -608,8 +614,7 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `M exhaust the available batches W run {maxBatchesPerJob higher or equal availableBatches}`(
-        forge: Forge,
-        @Forgery fakeConfiguration: DataUploadConfiguration
+        forge: Forge
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
@@ -626,7 +631,7 @@ internal class DataUploadRunnableTest {
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
-            max = fakeConfiguration.maxBatchesPerUploadJob + 4
+            max = fakeMaxBatchesPerJob + 1
         )
         val batches = forge.aList(size = fakeBatchesCount) { aList { getForgery<RawBatchEvent>() } }
         val batchIds: List<BatchId> = batches.map { mock() }
@@ -639,7 +644,8 @@ internal class DataUploadRunnableTest {
                 mockDataUploader.upload(
                     fakeContext,
                     batch,
-                    batchMetadata[index]
+                    batchMetadata[index],
+                    batchIds[index]
                 )
             ) doReturn fakeUploadStatus
         }
@@ -648,9 +654,8 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        repeat(fakeMaxBatchesPerJob) { index ->
-            val batch = batches[index]
-            verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index])
+        batches.forEachIndexed { index, batch ->
+            verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index], batchIds[index])
             verify(mockStorage).confirmBatchRead(
                 eq(batchIds[index]),
                 any(),

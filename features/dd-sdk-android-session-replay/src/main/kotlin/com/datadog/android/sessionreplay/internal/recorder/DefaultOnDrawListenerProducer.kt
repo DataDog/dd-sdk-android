@@ -12,19 +12,22 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 
 internal class DefaultOnDrawListenerProducer(
     private val snapshotProducer: SnapshotProducer,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
-    private val sdkCore: FeatureSdkCore
+    private val sdkCore: FeatureSdkCore,
+    private val dynamicOptimizationEnabled: Boolean
 ) : OnDrawListenerProducer {
 
     override fun create(
         decorViews: List<View>,
         textAndInputPrivacy: TextAndInputPrivacy,
-        imagePrivacy: ImagePrivacy
+        imagePrivacy: ImagePrivacy,
+        touchPrivacyManager: TouchPrivacyManager
     ): ViewTreeObserver.OnDrawListener {
         return WindowsOnDrawListener(
             zOrderedDecorViews = decorViews,
@@ -32,8 +35,10 @@ internal class DefaultOnDrawListenerProducer(
             snapshotProducer = snapshotProducer,
             textAndInputPrivacy = textAndInputPrivacy,
             imagePrivacy = imagePrivacy,
-            internalLogger = sdkCore.internalLogger,
-            methodCallSamplingRate = MethodCallSamplingRate.LOW.rate
+            sdkCore = sdkCore,
+            methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            touchPrivacyManager = touchPrivacyManager
         )
     }
 }

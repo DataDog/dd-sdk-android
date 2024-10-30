@@ -56,6 +56,14 @@ class StubSDKCore(
     }
 
     /**
+     * Lists all the telemetry events written to this sdk instance.
+     * @return a list of [StubEvent]
+     */
+    fun telemetryEventsWritten(): List<StubTelemetryEvent> {
+        return (internalLogger as StubInternalLogger).telemetryEventsWritten
+    }
+
+    /**
      * Lists all the events sent to the given feature.
      * @param featureName the name of the feature
      * @return a list of objects
@@ -70,14 +78,6 @@ class StubSDKCore(
      */
     fun stubNetworkInfo(networkInfo: NetworkInfo) {
         datadogContext = datadogContext.copy(networkInfo = networkInfo)
-    }
-
-    /**
-     * Returns the last metric is sent by [StubInternalLogger].
-     */
-    fun lastMetric(): Map<String, Any> {
-        return (internalLogger as StubInternalLogger)
-            .telemetryEventsWritten.lastOrNull { it["type"] == "mobile_metric" }.orEmpty()
     }
 
     /**

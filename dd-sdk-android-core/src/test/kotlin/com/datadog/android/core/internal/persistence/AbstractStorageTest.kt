@@ -109,7 +109,7 @@ internal class AbstractStorageTest {
         @Forgery fakeBatchEvent: RawBatchEvent
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
@@ -118,7 +118,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -138,7 +138,7 @@ internal class AbstractStorageTest {
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
         whenever(mockGrantedPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
@@ -148,7 +148,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -165,7 +165,8 @@ internal class AbstractStorageTest {
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
+        whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn null
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn null
         var resultMetadata: ByteArray? = null
@@ -174,7 +175,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isNull()
@@ -192,7 +193,7 @@ internal class AbstractStorageTest {
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
         whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn batchMetadata
@@ -202,7 +203,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isEqualTo(batchMetadata)
@@ -221,7 +222,7 @@ internal class AbstractStorageTest {
         @Forgery fakeBatchEvent: RawBatchEvent
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
         var result: Boolean? = null
@@ -230,7 +231,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -250,7 +251,7 @@ internal class AbstractStorageTest {
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
         whenever(mockPendingPersistenceStrategy.write(any(), anyOrNull(), any())) doReturn fakeResult
@@ -260,7 +261,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -277,7 +278,7 @@ internal class AbstractStorageTest {
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         var resultMetadata: ByteArray? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
@@ -286,7 +287,7 @@ internal class AbstractStorageTest {
         whenever(mockPendingPersistenceStrategy.currentMetadata()) doReturn null
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isNull()
@@ -304,7 +305,7 @@ internal class AbstractStorageTest {
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
         var resultMetadata: ByteArray? = null
@@ -314,7 +315,7 @@ internal class AbstractStorageTest {
         whenever(mockPendingPersistenceStrategy.currentMetadata()) doReturn batchMetadata
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isEqualTo(batchMetadata)
@@ -333,7 +334,7 @@ internal class AbstractStorageTest {
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.NOT_GRANTED
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         val batchMetadata = fakeBatchMetadata.toByteArray()
         var result: Boolean? = null
@@ -342,7 +343,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(result).isFalse()
@@ -358,7 +359,7 @@ internal class AbstractStorageTest {
         @BoolForgery forceNewBatch: Boolean
     ) {
         // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
+        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.NOT_GRANTED
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
         var resultMetadata: ByteArray? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
@@ -366,7 +367,7 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, mockWriteCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isNull()

@@ -17,15 +17,16 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
@@ -57,7 +58,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val rumContextProvider: RumContextProvider
     private val textAndInputPrivacy: TextAndInputPrivacy
     private val imagePrivacy: ImagePrivacy
-    private val touchPrivacy: TouchPrivacy
+    private val touchPrivacyManager: TouchPrivacyManager
     private val recordWriter: RecordWriter
     private val timeProvider: TimeProvider
     private val mappers: List<MapperTypeWrapper<*>>
@@ -79,14 +80,15 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         rumContextProvider: RumContextProvider,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        touchPrivacy: TouchPrivacy,
+        touchPrivacyManager: TouchPrivacyManager,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector,
         sdkCore: FeatureSdkCore,
-        resourceDataStoreManager: ResourceDataStoreManager
+        resourceDataStoreManager: ResourceDataStoreManager,
+        dynamicOptimizationEnabled: Boolean
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -108,7 +110,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.rumContextProvider = rumContextProvider
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
-        this.touchPrivacy = touchPrivacy
+        this.touchPrivacyManager = touchPrivacyManager
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers
@@ -172,16 +174,24 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
                         decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
+                        hiddenViewMapper = HiddenViewMapper(
+                            viewBoundsResolver = viewBoundsResolver,
+                            viewIdentifierResolver = viewIdentifierResolver
+                        ),
                         viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger
+                        internalLogger = internalLogger,
+                        touchPrivacyManager = touchPrivacyManager
                     ),
                     ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
-                    )
+                    ),
+                    internalLogger = internalLogger
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
-                sdkCore = sdkCore
-            )
+                sdkCore = sdkCore,
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled
+            ),
+            touchPrivacyManager = touchPrivacyManager
         )
         this.windowCallbackInterceptor = WindowCallbackInterceptor(
             recordedDataQueueHandler,
@@ -189,8 +199,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             timeProvider,
             internalLogger,
             imagePrivacy,
-            touchPrivacy,
-            textAndInputPrivacy
+            textAndInputPrivacy,
+            touchPrivacyManager
         )
         this.sessionReplayLifecycleCallback = SessionReplayLifecycleCallback(this)
         this.uiHandler = Handler(Looper.getMainLooper())
@@ -204,7 +214,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         rumContextProvider: RumContextProvider,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        touchPrivacy: TouchPrivacy,
+        touchPrivacyManager: TouchPrivacyManager,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
@@ -222,7 +232,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.rumContextProvider = rumContextProvider
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
-        this.touchPrivacy = touchPrivacy
+        this.touchPrivacyManager = touchPrivacyManager
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers

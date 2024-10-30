@@ -13,6 +13,7 @@ import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -101,6 +102,39 @@ internal class TelemetryEventExtTest {
         // When
         val mockInternalLogger = mock<InternalLogger>()
         TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
+        )
+    }
+
+    // endregion
+
+    // region TelemetryUsageEvent
+
+    @Test
+    fun `M resolve the TelemetryUsageEvent source W telemetryUsageEventSource`() {
+        assertThat(
+            TelemetryUsageEvent.Source.tryFromSource(fakeValidTelemetrySource, mock())
+                ?.toJson()?.asString
+        )
+            .isEqualTo(fakeValidTelemetrySource)
+    }
+
+    @Test
+    fun `M return null W telemetryUsageEventSource { unknown source }`() {
+        assertThat(TelemetryUsageEvent.Source.tryFromSource(fakeInvalidSource, mock())).isNull()
+    }
+
+    @Test
+    fun `M send an error dev log W telemetryUsageEventSource { unknown source }`() {
+        // When
+        val mockInternalLogger = mock<InternalLogger>()
+        TelemetryUsageEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
         mockInternalLogger.verifyLog(

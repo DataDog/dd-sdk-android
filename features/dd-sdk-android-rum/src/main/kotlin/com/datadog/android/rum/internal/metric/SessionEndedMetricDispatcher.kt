@@ -72,6 +72,10 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
         metricsBySessionId[sessionId]?.onMissedEventTracked(missedEventType)
     }
 
+    override fun onSessionReplaySkippedFrameTracked(sessionId: String) {
+        metricsBySessionId[sessionId]?.onSessionReplaySkippedFrameTracked()
+    }
+
     private fun buildSdkErrorTrackError(sessionId: String, errorKind: String?): String {
         return "Failed to track $errorKind error, session $sessionId has ended"
     }

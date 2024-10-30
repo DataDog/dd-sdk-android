@@ -15,10 +15,10 @@ internal class BitmapPoolHelper(
     internal fun generateKey(bitmap: Bitmap) =
         generateKey(bitmap.width, bitmap.height, bitmap.config)
 
-    internal fun generateKey(width: Int, height: Int, config: Bitmap.Config) =
+    internal fun generateKey(width: Int, height: Int, config: Bitmap.Config?) =
         "$width-$height-$config"
 
-    internal fun<R> safeCall(call: () -> R): R? =
+    internal fun <R> safeCall(call: () -> R): R? =
         invocationUtils.safeCallWithErrorLogging(
             call = { call() },
             failureMessage = BITMAP_OPERATION_FAILED

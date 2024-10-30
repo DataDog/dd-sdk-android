@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.Checkable
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -50,6 +51,14 @@ internal abstract class CheckableWireframeMapper<T>(
             return mainWireframes + wireframes
         }
         return mainWireframes
+    }
+
+    protected fun mapInputPrivacyToImagePrivacy(inputPrivacy: TextAndInputPrivacy): ImagePrivacy {
+        return when (inputPrivacy) {
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS -> ImagePrivacy.MASK_NONE
+            TextAndInputPrivacy.MASK_ALL_INPUTS,
+            TextAndInputPrivacy.MASK_ALL -> ImagePrivacy.MASK_ALL
+        }
     }
 
     @UiThread

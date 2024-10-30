@@ -84,6 +84,9 @@ internal class SessionReplayFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
+    @Mock
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
@@ -133,10 +136,12 @@ internal class SessionReplayFeatureTest {
             textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
+            touchPrivacyManager = mockTouchPrivacyManager,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             startRecordingImmediately = true,
-            sampleRate = fakeConfiguration.sampleRate
+            sampleRate = fakeConfiguration.sampleRate,
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
         )
 
         // When
@@ -157,10 +162,12 @@ internal class SessionReplayFeatureTest {
             textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
+            touchPrivacyManager = mockTouchPrivacyManager,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
             sampleRate = fakeConfiguration.sampleRate,
-            startRecordingImmediately = true
+            startRecordingImmediately = true,
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
         )
 
         // When
