@@ -27,6 +27,7 @@ internal open class ConsentAwareFileOrchestrator(
     internal val internalLogger: InternalLogger
 ) : FileOrchestrator, TrackingConsentProviderCallback {
 
+    @Volatile
     private lateinit var delegateOrchestrator: FileOrchestrator
 
     init {
@@ -54,6 +55,10 @@ internal open class ConsentAwareFileOrchestrator(
 
     @WorkerThread
     override fun getRootDir(): File? {
+        return null
+    }
+
+    override fun getRootDirName(): String? {
         return null
     }
 

@@ -28,3 +28,4 @@ config/*
 
 gh_token
 sdk_classpath
+detekt_classpath

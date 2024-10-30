@@ -21,9 +21,11 @@ import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal.Companion.METHOD_CALL_MAP_PREFIX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -69,6 +71,12 @@ internal class TreeViewTraversalTest {
     lateinit var mockDecorViewMapper: DecorViewMapper
 
     @Mock
+    lateinit var mockHiddenViewMapper: HiddenViewMapper
+
+    @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
+    @Mock
     lateinit var mockViewUtilsInternal: ViewUtilsInternal
 
     @Mock
@@ -82,11 +90,13 @@ internal class TreeViewTraversalTest {
         whenever(mockViewUtilsInternal.isNotVisible(any())).thenReturn(false)
         whenever(mockViewUtilsInternal.isSystemNoise(any())).thenReturn(false)
         testedTreeViewTraversal = TreeViewTraversal(
-            emptyList(),
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
     }
 
@@ -121,11 +131,13 @@ internal class TreeViewTraversalTest {
         )
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
-            fakeTypeMapperWrappers,
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = fakeTypeMapperWrappers,
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When
@@ -154,11 +166,13 @@ internal class TreeViewTraversalTest {
         whenever(mockDefaultViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
-            emptyList(),
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When
@@ -188,11 +202,13 @@ internal class TreeViewTraversalTest {
         whenever(mockDefaultViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
-            emptyList(),
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When
@@ -237,11 +253,13 @@ internal class TreeViewTraversalTest {
         )
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
-            fakeTypeMapperWrappers,
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = fakeTypeMapperWrappers,
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When
@@ -270,11 +288,13 @@ internal class TreeViewTraversalTest {
         whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
-            emptyList(),
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When
@@ -304,11 +324,13 @@ internal class TreeViewTraversalTest {
         whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any(), eq(mockInternalLogger)))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
-            emptyList(),
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When
@@ -440,11 +462,13 @@ internal class TreeViewTraversalTest {
         whenever(mockMapper.getUnsafeMapper()).thenReturn(mockWireFrameMapper)
 
         testedTreeViewTraversal = TreeViewTraversal(
-            listOf(mockMapper),
-            mockDefaultViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal,
-            mockInternalLogger
+            mappers = listOf(mockMapper),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            touchPrivacyManager = mockTouchPrivacyManager
         )
 
         // When

@@ -63,7 +63,8 @@ internal class ComposeWireframeMapper(
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val density = mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
-        val privacy = mappingContext.privacy
+        // TODO RUM 6192: Apply FGM for compose
+        val privacy = SessionReplayPrivacy.ALLOW
         val composer = findComposer(view)
         return if (composer == null) {
             createPlaceholderWireframe(view, density)

@@ -141,7 +141,7 @@ internal class NodeFlattenerTest {
 
     private fun generateTreeFromList(list: List<MobileSegment.Wireframe>): Node {
         val mutableList = list.toMutableList()
-        val root = mutableList.removeFirst().toNode()
+        val root = mutableList.removeAt(0).toNode()
         val middle = mutableList.size / 2
         // add left
         // we need to create a new list as Kotlin .subList re - uses the old list
@@ -155,7 +155,7 @@ internal class NodeFlattenerTest {
         if (leafs.isEmpty()) {
             return
         }
-        val leafToAdd = leafs.removeFirst().toNode()
+        val leafToAdd = leafs.removeAt(0).toNode()
         parent.addChild(leafToAdd)
         val middle = leafs.size / 2
         // add left

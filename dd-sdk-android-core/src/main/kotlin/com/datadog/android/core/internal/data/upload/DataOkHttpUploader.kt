@@ -9,8 +9,10 @@ package com.datadog.android.core.internal.data.upload
 import android.net.TrafficStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -29,16 +31,27 @@ internal class DataOkHttpUploader(
     val androidInfoProvider: AndroidInfoProvider
 ) : DataUploader {
 
+    @Volatile
+    private var attempts: Int = 1
+
+    @Volatile
+    private var previousUploadStatus: UploadStatus? = null
+
+    @Volatile
+    private var previousUploadedBatchId: BatchId? = null
+
     // region DataUploader
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
     override fun upload(
         context: DatadogContext,
         batch: List<RawBatchEvent>,
-        batchMeta: ByteArray?
+        batchMeta: ByteArray?,
+        batchId: BatchId?
     ): UploadStatus {
+        val executionContext = resolveExecutionContext(batchId)
         val request = try {
-            requestFactory.create(context, batch, batchMeta)
+            requestFactory.create(context, executionContext, batch, batchMeta)
                 ?: return UploadStatus.RequestCreationError(null)
         } catch (e: Exception) {
             internalLogger.log(
@@ -85,9 +98,10 @@ internal class DataOkHttpUploader(
             request.description,
             request.body.size,
             internalLogger,
+            attempts = executionContext.attemptNumber,
             requestId = request.id
         )
-
+        previousUploadStatus = uploadStatus
         return uploadStatus
     }
 
@@ -104,6 +118,21 @@ internal class DataOkHttpUploader(
     }
 
     // region Internal
+    private fun resolveExecutionContext(batchID: BatchId?): RequestExecutionContext {
+        val previousResponseCode: Int?
+        if ((batchID != null && previousUploadedBatchId != null) && (previousUploadedBatchId == batchID)) {
+            attempts++
+            previousResponseCode = previousUploadStatus?.code
+        } else {
+            attempts = 1
+            previousResponseCode = null
+        }
+        previousUploadedBatchId = batchID
+        return RequestExecutionContext(
+            attemptNumber = attempts,
+            previousResponseCode = previousResponseCode
+        )
+    }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun executeUploadRequest(
@@ -127,7 +156,9 @@ internal class DataOkHttpUploader(
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-    private fun buildOkHttpRequest(request: DatadogRequest): Request {
+    private fun buildOkHttpRequest(
+        request: DatadogRequest
+    ): Request {
         val mediaType = if (request.contentType == null) {
             null
         } else {
@@ -172,12 +203,16 @@ internal class DataOkHttpUploader(
     ): UploadStatus {
         return when (code) {
             HTTP_ACCEPTED -> UploadStatus.Success(code)
-            HTTP_BAD_REQUEST -> UploadStatus.HttpClientError(code)
-            HTTP_UNAUTHORIZED -> UploadStatus.InvalidTokenError(code)
+
+            HTTP_UNAUTHORIZED,
             HTTP_FORBIDDEN -> UploadStatus.InvalidTokenError(code)
-            HTTP_CLIENT_TIMEOUT -> UploadStatus.HttpClientRateLimiting(code)
-            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HttpClientError(code)
+
+            HTTP_CLIENT_TIMEOUT,
             HTTP_TOO_MANY_REQUESTS -> UploadStatus.HttpClientRateLimiting(code)
+
+            HTTP_BAD_REQUEST,
+            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HttpClientError(code)
+
             HTTP_INTERNAL_ERROR,
             HTTP_BAD_GATEWAY,
             HTTP_UNAVAILABLE,
@@ -198,7 +233,6 @@ internal class DataOkHttpUploader(
     companion object {
 
         const val HTTP_ACCEPTED = 202
-
         const val HTTP_BAD_REQUEST = 400
         const val HTTP_UNAUTHORIZED = 401
         const val HTTP_FORBIDDEN = 403

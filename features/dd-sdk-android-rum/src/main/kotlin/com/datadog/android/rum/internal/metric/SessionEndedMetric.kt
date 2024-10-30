@@ -12,6 +12,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Metric for rum session ended event.
@@ -29,6 +30,8 @@ internal class SessionEndedMetric(
     private val errorKindFrequencies = mutableMapOf<String, Int>()
 
     private val missedEventCountByType = mutableMapOf<MissedEventType, Int>()
+
+    private var sessionReplaySkippedFramesCount: AtomicInteger = AtomicInteger(0)
 
     private var firstTrackedView: TrackedView? = null
     private var lastTrackedView: TrackedView? = null
@@ -69,6 +72,10 @@ internal class SessionEndedMetric(
         missedEventCountByType[missedEventType] = (missedEventCountByType[missedEventType] ?: 0) + 1
     }
 
+    fun onSessionReplaySkippedFrameTracked() {
+        sessionReplaySkippedFramesCount.incrementAndGet()
+    }
+
     fun toMetricAttributes(ntpOffsetAtEndMs: Long): Map<String, Any?> {
         return mapOf(
             METRIC_TYPE_KEY to METRIC_TYPE_VALUE,
@@ -94,7 +101,8 @@ internal class SessionEndedMetric(
             SDK_ERRORS_COUNT_KEY to resolveSDKErrorsCountAttributes(),
             NO_VIEW_EVENTS_COUNT_KEY to resolveNoViewCountsAttributes(),
             HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY to hasTrackBackgroundEventsEnabled,
-            NTP_OFFSET_KEY to resolveNtpOffsetAttributes(ntpOffsetAtEnd)
+            NTP_OFFSET_KEY to resolveNtpOffsetAttributes(ntpOffsetAtEnd),
+            SESSION_REPLAY_SKIPPED_FRAMES_COUNT to sessionReplaySkippedFramesCount.get()
         )
     }
 
@@ -301,6 +309,11 @@ internal class SessionEndedMetric(
          * Placeholder of error kind if the attribute is absent.
          */
         internal const val SDK_ERROR_DEFAULT_KIND = "Empty error kind"
+
+        /**
+         * Key of the counts the total frames skipped in session replay by dynamic optimisation.
+         */
+        internal const val SESSION_REPLAY_SKIPPED_FRAMES_COUNT = "sr_skipped_frames_count"
     }
 
     /**

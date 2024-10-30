@@ -11,16 +11,19 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.AppVersionProvider
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -49,12 +52,11 @@ internal class InternalProxyTest {
         proxy._telemetry.debug(message)
 
         // Then
-        verify(mockRumFeatureScope).sendEvent(
-            mapOf(
-                "type" to "telemetry_debug",
-                "message" to message
-            )
-        )
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
+            assertThat(logEvent.message).isEqualTo(message)
+        }
     }
 
     @Test
@@ -73,14 +75,13 @@ internal class InternalProxyTest {
         proxy._telemetry.error(message, stack, kind)
 
         // Then
-        verify(mockRumFeatureScope).sendEvent(
-            mapOf(
-                "type" to "telemetry_error",
-                "message" to message,
-                "stacktrace" to stack,
-                "kind" to kind
-            )
-        )
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Error
+            assertThat(logEvent.message).isEqualTo(message)
+            assertThat(logEvent.stacktrace).isEqualTo(stack)
+            assertThat(logEvent.kind).isEqualTo(kind)
+        }
     }
 
     @Test
@@ -98,13 +99,12 @@ internal class InternalProxyTest {
         proxy._telemetry.error(message, throwable)
 
         // Then
-        verify(mockRumFeatureScope).sendEvent(
-            mapOf(
-                "type" to "telemetry_error",
-                "message" to message,
-                "throwable" to throwable
-            )
-        )
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val logEvent = firstValue as InternalTelemetryEvent.Log.Error
+            assertThat(logEvent.message).isEqualTo(message)
+            assertThat(logEvent.error).isEqualTo(throwable)
+        }
     }
 
     @Test

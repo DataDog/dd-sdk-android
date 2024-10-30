@@ -68,7 +68,8 @@ class MetricRequestBodyBuilderTest {
                         "os_version:${benchmarkContext.osVersion}",
                         "run:${benchmarkContext.run}",
                         "scenario:${benchmarkContext.scenario}",
-                        "application_id:${benchmarkContext.applicationId}"
+                        "application_id:${benchmarkContext.applicationId}",
+                        "env:${benchmarkContext.env}"
                     )
                 )
                 hasMetricType(resolveMetricType(metricData[metricIndex].type).value)

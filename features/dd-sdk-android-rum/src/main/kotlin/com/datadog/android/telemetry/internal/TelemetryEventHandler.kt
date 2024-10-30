@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -27,9 +28,11 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import java.util.Locale
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
+@Suppress("TooManyFunctions")
 internal class TelemetryEventHandler(
     internal val sdkCore: InternalSdkCore,
     internal val eventSampler: Sampler,
@@ -44,19 +47,20 @@ internal class TelemetryEventHandler(
     private var totalEventsSeenInCurrentSession = 0
 
     @AnyThread
+    @Suppress("LongMethod")
     fun handleEvent(
-        event: RumRawEvent.SendTelemetry,
+        wrappedEvent: RumRawEvent.TelemetryEventWrapper,
         writer: DataWriter<Any>
     ) {
+        val event = wrappedEvent.event
         if (!canWrite(event)) return
 
         eventIDsSeenInCurrentSession.add(event.identity)
         totalEventsSeenInCurrentSession++
-
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, eventBatchWriter ->
-            val timestamp = event.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
-            val telemetryEvent: Any? = when (event.type) {
-                TelemetryType.DEBUG -> {
+            val timestamp = wrappedEvent.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
+            val telemetryEvent: Any? = when (event) {
+                is InternalTelemetryEvent.Log.Debug -> {
                     createDebugEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
@@ -65,7 +69,16 @@ internal class TelemetryEventHandler(
                     )
                 }
 
-                TelemetryType.ERROR -> {
+                is InternalTelemetryEvent.Metric -> {
+                    createDebugEvent(
+                        datadogContext = datadogContext,
+                        timestamp = timestamp,
+                        message = event.message,
+                        additionalProperties = event.additionalProperties
+                    )
+                }
+
+                is InternalTelemetryEvent.Log.Error -> {
                     sessionEndedMetricDispatcher.onSdkErrorTracked(
                         sessionId = datadogContext.rumContext().sessionId,
                         errorKind = event.kind
@@ -74,38 +87,33 @@ internal class TelemetryEventHandler(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
                         message = event.message,
-                        stack = event.stack,
-                        kind = event.kind,
+                        stack = event.resolveStacktrace(),
+                        kind = event.resolveKind(),
                         additionalProperties = event.additionalProperties
                     )
                 }
 
-                TelemetryType.CONFIGURATION -> {
-                    val coreConfiguration = event.coreConfiguration
-                    if (coreConfiguration == null) {
-                        createErrorEvent(
-                            datadogContext = datadogContext,
-                            timestamp = timestamp,
-                            message = "Trying to send configuration event with null config",
-                            stack = null,
-                            kind = null,
-                            additionalProperties = null
-                        )
-                    } else {
-                        createConfigurationEvent(
-                            datadogContext,
-                            timestamp,
-                            coreConfiguration
-                        )
-                    }
+                is InternalTelemetryEvent.Configuration -> {
+                    createConfigurationEvent(
+                        datadogContext,
+                        timestamp,
+                        event
+                    )
                 }
 
-                TelemetryType.INTERCEPTOR_SETUP -> {
+                is InternalTelemetryEvent.ApiUsage -> {
+                    createApiUsageEvent(
+                        datadogContext = datadogContext,
+                        timestamp = timestamp,
+                        event = event
+                    )
+                }
+
+                is InternalTelemetryEvent.InterceptorInstantiated -> {
                     trackNetworkRequests = true
                     null
                 }
             }
-
             if (telemetryEvent != null) {
                 writer.write(eventBatchWriter, telemetryEvent, EventType.TELEMETRY)
             }
@@ -120,16 +128,16 @@ internal class TelemetryEventHandler(
     // region private
 
     @Suppress("ReturnCount")
-    private fun canWrite(event: RumRawEvent.SendTelemetry): Boolean {
+    private fun canWrite(event: InternalTelemetryEvent): Boolean {
         if (!eventSampler.sample()) return false
 
-        if (event.type == TelemetryType.CONFIGURATION && !configurationExtraSampler.sample()) {
+        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample()) {
             return false
         }
 
         val eventIdentity = event.identity
 
-        if (!event.isMetric && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
+        if (isLog(event) && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
@@ -148,6 +156,10 @@ internal class TelemetryEventHandler(
         }
 
         return true
+    }
+
+    private fun isLog(event: InternalTelemetryEvent): Boolean {
+        return event is InternalTelemetryEvent.Log
     }
 
     private fun createDebugEvent(
@@ -243,17 +255,21 @@ internal class TelemetryEventHandler(
     private fun createConfigurationEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        coreConfiguration: TelemetryCoreConfiguration
+        event: InternalTelemetryEvent.Configuration
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val sessionReplayFeatureContext =
             sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
             as? Long
-        val startSessionReplayManually =
-            sessionReplayFeatureContext[SESSION_REPLAY_MANUAL_RECORDING_KEY] as? Boolean
-        val sessionReplayPrivacy = sessionReplayFeatureContext[SESSION_REPLAY_PRIVACY_KEY]
-            as? String
+        val startRecordingImmediately =
+            sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
+        val sessionReplayImagePrivacy =
+            sessionReplayFeatureContext[SESSION_REPLAY_IMAGE_PRIVACY_KEY] as? String
+        val sessionReplayTouchPrivacy =
+            sessionReplayFeatureContext[SESSION_REPLAY_TOUCH_PRIVACY_KEY] as? String
+        val sessionReplayTextAndInputPrivacy =
+            sessionReplayFeatureContext[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] as? String
         val rumConfig = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>()
             ?.configuration
@@ -298,28 +314,74 @@ internal class TelemetryEventHandler(
                 configuration = TelemetryConfigurationEvent.Configuration(
                     sessionSampleRate = rumConfig?.sampleRate?.toLong(),
                     telemetrySampleRate = rumConfig?.telemetrySampleRate?.toLong(),
-                    useProxy = coreConfiguration.useProxy,
+                    useProxy = event.useProxy,
                     trackFrustrations = rumConfig?.trackFrustrations,
-                    useLocalEncryption = coreConfiguration.useLocalEncryption,
+                    useLocalEncryption = event.useLocalEncryption,
                     viewTrackingStrategy = viewTrackingStrategy,
                     trackBackgroundEvents = rumConfig?.backgroundEventTracking,
                     trackInteractions = rumConfig?.userActionTracking != null,
-                    trackErrors = coreConfiguration.trackErrors,
+                    trackErrors = event.trackErrors,
                     trackNativeLongTasks = rumConfig?.longTaskTrackingStrategy != null,
-                    batchSize = coreConfiguration.batchSize,
-                    batchUploadFrequency = coreConfiguration.batchUploadFrequency,
+                    batchSize = event.batchSize,
+                    batchUploadFrequency = event.batchUploadFrequency,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
                     useTracing = useTracing,
                     tracerApi = tracerApi?.name,
                     tracerApiVersion = openTelemetryApiVersion,
                     trackNetworkRequests = trackNetworkRequests,
                     sessionReplaySampleRate = sessionReplaySampleRate,
-                    defaultPrivacyLevel = sessionReplayPrivacy,
-                    startSessionReplayRecordingManually = startSessionReplayManually,
-                    batchProcessingLevel = coreConfiguration.batchProcessingLevel.toLong()
+                    imagePrivacyLevel = sessionReplayImagePrivacy,
+                    touchPrivacyLevel = sessionReplayTouchPrivacy,
+                    textAndInputPrivacyLevel = sessionReplayTextAndInputPrivacy,
+                    startRecordingImmediately = startRecordingImmediately,
+                    batchProcessingLevel = event.batchProcessingLevel.toLong()
                 )
             )
         )
+    }
+
+    private fun createApiUsageEvent(
+        datadogContext: DatadogContext,
+        timestamp: Long,
+        event: InternalTelemetryEvent.ApiUsage
+    ): TelemetryUsageEvent? {
+        val rumContext = datadogContext.rumContext()
+        return when (event) {
+            is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> {
+                TelemetryUsageEvent(
+                    dd = TelemetryUsageEvent.Dd(),
+                    date = timestamp,
+                    source = TelemetryUsageEvent.Source.tryFromSource(
+                        datadogContext.source,
+                        sdkCore.internalLogger
+                    ) ?: TelemetryUsageEvent.Source.ANDROID,
+                    service = TELEMETRY_SERVICE_NAME,
+                    version = datadogContext.sdkVersion,
+                    application = TelemetryUsageEvent.Application(rumContext.applicationId),
+                    session = TelemetryUsageEvent.Session(rumContext.sessionId),
+                    view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
+                    action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
+                    telemetry = TelemetryUsageEvent.Telemetry(
+                        additionalProperties = event.additionalProperties,
+                        device = TelemetryUsageEvent.Device(
+                            architecture = datadogContext.deviceInfo.architecture,
+                            brand = datadogContext.deviceInfo.deviceBrand,
+                            model = datadogContext.deviceInfo.deviceModel
+                        ),
+                        os = TelemetryUsageEvent.Os(
+                            build = datadogContext.deviceInfo.deviceBuildId,
+                            version = datadogContext.deviceInfo.osVersion,
+                            name = datadogContext.deviceInfo.osName
+                        ),
+                        usage = TelemetryUsageEvent.Usage.AddViewLoadingTime(
+                            overwritten = event.overwrite,
+                            noView = event.noView,
+                            noActiveView = event.noActiveView
+                        )
+                    )
+                )
+            }
+        }
     }
 
     private fun isGlobalTracerRegistered(): Boolean {
@@ -393,8 +455,10 @@ internal class TelemetryEventHandler(
         internal const val IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY = "is_opentelemetry_enabled"
         internal const val OPENTELEMETRY_API_VERSION_CONTEXT_KEY = "opentelemetry_api_version"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
-        internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
-        internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
-            "session_replay_requires_manual_recording"
+        internal const val SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY = "session_replay_text_and_input_privacy"
+        internal const val SESSION_REPLAY_IMAGE_PRIVACY_KEY = "session_replay_image_privacy"
+        internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
+        internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
+            "session_replay_start_immediate_recording"
     }
 }

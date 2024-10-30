@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 internal class NoOpExtensionSupport : ExtensionSupport {
 
@@ -17,6 +18,10 @@ internal class NoOpExtensionSupport : ExtensionSupport {
     }
 
     override fun getOptionSelectorDetectors(): List<OptionSelectorDetector> {
+        return emptyList()
+    }
+
+    override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
         return emptyList()
     }
 }

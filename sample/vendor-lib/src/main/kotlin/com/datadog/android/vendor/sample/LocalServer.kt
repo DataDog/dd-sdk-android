@@ -20,23 +20,32 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
-import io.ktor.application.call
-import io.ktor.application.install
-import io.ktor.features.ContentNegotiation
-import io.ktor.gson.gson
-import io.ktor.response.respondRedirect
-import io.ktor.routing.get
-import io.ktor.routing.routing
-import io.ktor.server.engine.ApplicationEngine
+import io.ktor.server.application.install
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.ktor.server.sse.SSE
+import io.ktor.server.sse.sse
+import io.ktor.sse.ServerSentEvent
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.shareIn
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A class to create a local server used to redirect local calls to remote urls.
  */
+@OptIn(DelicateCoroutinesApi::class)
 public class LocalServer {
 
-    private var engine: ApplicationEngine? = null
+    private var engine: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>? = null
 
     private lateinit var logger: Logger
 
@@ -80,15 +89,17 @@ public class LocalServer {
      * Start redirecting calls to the given url.
      * @param redirectedUrl the url to redirect to
      */
+    @Suppress("MagicNumber")
     fun start(redirectedUrl: String) {
         logger.i("Starting the server")
         engine = embeddedServer(Netty, PORT) {
             val tracerProvider = OtelTracerProvider.Builder().setService(SERVICE_NAME).build()
             val tracer = tracerProvider.get("ktor")
 
-            install(ContentNegotiation) { gson() }
+//            install(ContentNegotiation) { gson() }
+            install(SSE)
             routing {
-                get(PATH) {
+                get(GET_PATH) {
                     logger.i(
                         "Redirecting request",
                         attributes = mapOf(
@@ -102,9 +113,20 @@ public class LocalServer {
                     call.respondRedirect(redirectedUrl, false)
                     redirectSpan.end()
                 }
+                sse(SSE_PATH) {
+                    val sseFlow = flow {
+                        statuses.forEach {
+                            emit(SseEvent(data = it))
+                            delay(5.seconds)
+                        }
+                    }.shareIn(GlobalScope, SharingStarted.WhileSubscribed(5_000))
+
+                    sseFlow.collect { sseEvent ->
+                        send(ServerSentEvent(data = sseEvent.toJson()))
+                    }
+                }
             }
-        }
-        engine?.start(wait = false)
+        }.start(wait = false)
     }
 
     /**
@@ -119,11 +141,19 @@ public class LocalServer {
     }
 
     /**
-     * Returns the URL to this local server.
+     * Returns the URL to this local server for a GET request.
      * @return the url
      */
     fun getUrl(): String {
-        return LOCAL_URL
+        return LOCAL_URL + GET_PATH
+    }
+
+    /**
+     * Returns the URL to this local server for an SSE request.
+     * @return the url
+     */
+    fun sseUrl(): String {
+        return LOCAL_URL + SSE_PATH
     }
 
     companion object {
@@ -133,10 +163,13 @@ public class LocalServer {
 
         private const val HOST = "127.0.0.1"
         private const val PORT = 8080
-        private const val PATH = "/"
-        private const val LOCAL_URL = "http://$HOST:$PORT/"
+        private const val GET_PATH = "/page"
+        private const val SSE_PATH = "/events"
+        private const val LOCAL_URL = "http://$HOST:$PORT"
 
         private const val SHUTDOWN_MS = 500L
         private const val STOP_TIMEOUT_MS = 1500L
+
+        private val statuses = arrayOf("foo", "bar", "baz", "spam", "eggs", "bacon", "blip", "plop")
     }
 }

@@ -17,6 +17,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import java.util.Locale
 
 internal data class RumEventMapper(
@@ -61,6 +62,7 @@ internal data class RumEventMapper(
             is LongTaskEvent -> longTaskEventMapper.map(event)
             is TelemetryConfigurationEvent -> telemetryConfigurationMapper.map(event)
             is TelemetryDebugEvent,
+            is TelemetryUsageEvent,
             is TelemetryErrorEvent -> event
             else -> {
                 internalLogger.log(

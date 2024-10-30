@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 
 internal class SdkInternalLogger(
     private val sdkCore: FeatureSdkCore?,
@@ -98,16 +99,12 @@ internal class SdkInternalLogger(
         samplingRate: Float
     ) {
         if (!RateBasedSampler(samplingRate).sample()) return
-
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        val message = messageBuilder()
-        val telemetryEvent =
-            mapOf(
-                TYPE_KEY to "mobile_metric",
-                MESSAGE_KEY to message,
-                ADDITIONAL_PROPERTIES_KEY to additionalProperties
-            )
-        rumFeature.sendEvent(telemetryEvent)
+        val metricEvent = InternalTelemetryEvent.Metric(
+            message = messageBuilder(),
+            additionalProperties = additionalProperties
+        )
+        rumFeature.sendEvent(metricEvent)
     }
 
     override fun startPerformanceMeasure(
@@ -127,6 +124,15 @@ internal class SdkInternalLogger(
                 )
             }
         }
+    }
+
+    override fun logApiUsage(
+        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
+        samplingRate: Float
+    ) {
+        if (!RateBasedSampler(samplingRate).sample()) return
+        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        rumFeature.sendEvent(apiUsageEvent)
     }
 
     // endregion
@@ -210,24 +216,16 @@ internal class SdkInternalLogger(
             level == InternalLogger.Level.WARN ||
             error != null
         ) {
-            mutableMapOf<String, Any?>(
-                TYPE_KEY to "telemetry_error",
-                MESSAGE_KEY to message,
-                THROWABLE_KEY to error
-            ).apply {
-                if (!additionalProperties.isNullOrEmpty()) {
-                    put(ADDITIONAL_PROPERTIES_KEY, additionalProperties)
-                }
-            }
+            InternalTelemetryEvent.Log.Error(
+                message = message,
+                additionalProperties = additionalProperties,
+                error = error
+            )
         } else {
-            mutableMapOf<String, Any?>(
-                TYPE_KEY to "telemetry_debug",
-                MESSAGE_KEY to message
-            ).apply {
-                if (!additionalProperties.isNullOrEmpty()) {
-                    put(ADDITIONAL_PROPERTIES_KEY, additionalProperties)
-                }
-            }
+            InternalTelemetryEvent.Log.Debug(
+                message = message,
+                additionalProperties = additionalProperties
+            )
         }
         rumFeature.sendEvent(telemetryEvent)
     }
@@ -254,10 +252,6 @@ internal class SdkInternalLogger(
     companion object {
         internal const val SDK_LOG_TAG = "DD_LOG"
         internal const val DEV_LOG_TAG = "Datadog"
-        private const val MESSAGE_KEY = "message"
-        private const val TYPE_KEY = "type"
-        private const val THROWABLE_KEY = "throwable"
-        private const val ADDITIONAL_PROPERTIES_KEY = "additionalProperties"
     }
 
     // endregion

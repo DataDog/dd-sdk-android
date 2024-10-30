@@ -138,6 +138,8 @@ android {
             isMinifyEnabled = false
             if (e2ePassword != null) {
                 signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
@@ -222,6 +224,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.okHttp)
     implementation(libs.gson)
+    implementation("com.launchdarkly:okhttp-eventsource:2.5.0")
 
     // Misc
     implementation(libs.timber)

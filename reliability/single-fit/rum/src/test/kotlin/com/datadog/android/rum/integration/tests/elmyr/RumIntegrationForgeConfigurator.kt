@@ -16,5 +16,14 @@ class RumIntegrationForgeConfigurator : BaseConfigurator() {
         super.configure(forge)
         forge.useJvmFactories()
         forge.useCoreFactories()
+
+        forge.addFactory(ActionEventForgeryFactory())
+        forge.addFactory(ErrorEventForgeryFactory())
+        forge.addFactory(ResourceEventForgeryFactory())
+        forge.addFactory(ResourceTimingForgeryFactory())
+        forge.addFactory(LongTaskEventForgeryFactory())
+        forge.addFactory(ViewEventForgeryFactory())
+
+        forge.addFactory(RumBatchEventForgeryFactory())
     }
 }

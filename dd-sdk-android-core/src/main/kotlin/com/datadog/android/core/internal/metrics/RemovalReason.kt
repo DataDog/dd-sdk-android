@@ -11,7 +11,7 @@ internal sealed class RemovalReason {
     internal fun includeInMetrics(): Boolean {
         return this !is Flushed
     }
-    internal class IntakeCode(private val responseCode: Int) : RemovalReason() {
+    internal data class IntakeCode(private val responseCode: Int) : RemovalReason() {
         override fun toString(): String {
             return "intake-code-$responseCode"
         }

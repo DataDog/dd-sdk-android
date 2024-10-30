@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.asString
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.triggerUploadWorker
+import com.datadog.android.internal.utils.loggableStackTrace
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -90,7 +91,7 @@ internal class DatadogExceptionHandler(
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
             if (WorkManager.isInitialized()) {
-                triggerUploadWorker(it, sdkCore.internalLogger)
+                triggerUploadWorker(it, sdkCore.name, sdkCore.internalLogger)
             }
         }
 

@@ -17,6 +17,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import androidx.fragment.app.Fragment
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 import com.datadog.android.webview.WebViewTracking
@@ -34,6 +35,7 @@ internal class WebViewRecordFragment : Fragment() {
         setHasOptionsMenu(true)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -47,12 +49,18 @@ internal class WebViewRecordFragment : Fragment() {
         )
         startCustomRumViewButton = rootView.findViewById(R.id.start_custom_rum_view_button)
         webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
+            }
+        }
         webView.settings.javaScriptEnabled = true
         WebViewTracking.enable(webView, webViewTrackingHosts)
         startCustomRumViewButton.setOnClickListener {
             GlobalRumMonitor.get().startView(this, "Custom RUM View")
         }
+        // add webview on load listener
         return rootView
     }
 

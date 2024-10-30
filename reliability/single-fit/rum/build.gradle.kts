@@ -30,8 +30,10 @@ android {
 
 dependencies {
     implementation(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
+    implementation(libs.bundles.androidXNavigation)
 
     // Testing
     testImplementation(project(":tools:unit")) {
@@ -44,6 +46,7 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(libs.bundles.androidXNavigation)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)

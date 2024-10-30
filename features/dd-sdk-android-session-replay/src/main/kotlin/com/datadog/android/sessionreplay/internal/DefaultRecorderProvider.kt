@@ -24,7 +24,7 @@ import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
@@ -57,10 +57,13 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
 internal class DefaultRecorderProvider(
     private val sdkCore: FeatureSdkCore,
-    private val privacy: SessionReplayPrivacy,
+    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val customMappers: List<MapperTypeWrapper<*>>,
-    private val customOptionSelectorDetectors: List<OptionSelectorDetector>
+    private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
+    private val customDrawableMappers: List<DrawableToColorMapper>,
+    private val dynamicOptimizationEnabled: Boolean
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -74,13 +77,16 @@ internal class DefaultRecorderProvider(
             resourceDataStoreManager = resourceDataStoreManager,
             resourcesWriter = resourceWriter,
             rumContextProvider = SessionReplayRumContextProvider(sdkCore),
-            privacy = privacy,
             imagePrivacy = imagePrivacy,
+            touchPrivacyManager = touchPrivacyManager,
+            textAndInputPrivacy = textAndInputPrivacy,
             recordWriter = recordWriter,
             timeProvider = SessionReplayTimeProvider(sdkCore),
             mappers = customMappers + builtInMappers(),
             customOptionSelectorDetectors = customOptionSelectorDetectors,
-            sdkCore = sdkCore
+            customDrawableMappers = customDrawableMappers,
+            sdkCore = sdkCore,
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled
         )
     }
 

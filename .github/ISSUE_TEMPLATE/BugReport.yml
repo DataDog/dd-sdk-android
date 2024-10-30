@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Ensure you go through our [troubleshooting](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/troubleshooting/#debugging) page before creating a new issue. 
+        Ensure you go through our [troubleshooting](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/troubleshooting/android/#debugging) page before creating a new issue.
         Before getting started, if the problem is urgent or easier to investigate with access to your organization's data please use our [official support channel](https://www.datadoghq.com/support/).
   - type: textarea
     id: description
@@ -19,8 +19,8 @@ body:
     attributes:
       label: Reproduction steps
       description: |
-        Provide a self-contained piece of code demonstrating the bug. 
-        For a more complex setup consider creating a small app that showcases the problem. 
+        Provide a self-contained piece of code demonstrating the bug.
+        For a more complex setup consider creating a small app that showcases the problem.
         **Note** - Avoid sharing any business logic, credentials or tokens.
     validations:
       required: true
@@ -29,7 +29,7 @@ body:
     attributes:
       label: Logcat logs
       description: |
-        Please provide Logcat logs before, during and after the bug occurs. 
+        Please provide Logcat logs before, during and after the bug occurs.
     validations:
       required: false
   - type: textarea
@@ -43,7 +43,7 @@ body:
     id: affected_sdk_versions
     attributes:
       label: Affected SDK versions
-      description: What are the SDK versions you're seeing this bug in? 
+      description: What are the SDK versions you're seeing this bug in?
     validations:
       required: true
   - type: input
@@ -54,7 +54,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: checked_lastest_sdk
+    id: checked_latest_sdk
     attributes:
       label: Did you confirm if the latest SDK version fixes the bug?
       options:
@@ -65,24 +65,24 @@ body:
   - type: input
     id: kotlin_java_version
     attributes:
-      label: Kotlin / Java version 
+      label: Kotlin / Java version
   - type: input
     id: gradle_version
     attributes:
-      label: Gradle / AGP version 
+      label: Gradle / AGP version
   - type: textarea
     id: dependencies
     attributes:
-      label: Other dependencies versions                
+      label: Other dependencies versions
       description: |
-        Relevant third party dependency versions. 
+        Relevant third party dependency versions.
         e.g. okhttp 4.11.0
   - type: textarea
     id: device_info
     attributes:
       label: Device Information
       description: |
-        What are the common characteristics of devices you're seeing this bug in. 
+        What are the common characteristics of devices you're seeing this bug in.
         Specific models, OS versions, network state (wifi / cellular / offline), power state (plugged in / battery), etc.
     validations:
       required: false
@@ -91,5 +91,5 @@ body:
     attributes:
       label: Other relevant information
       description: |
-        Other relevant information such as additional tooling in place, proxies, etc. 
-        Anything that might be relevant for troubleshooting this bug. 
+        Other relevant information such as additional tooling in place, proxies, etc.
+        Anything that might be relevant for troubleshooting this bug.

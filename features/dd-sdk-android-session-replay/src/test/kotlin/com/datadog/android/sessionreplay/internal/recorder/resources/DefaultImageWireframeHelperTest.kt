@@ -434,10 +434,11 @@ internal class DefaultImageWireframeHelperTest {
                 any(),
                 any(),
                 any(),
+                any(),
                 any()
             )
         ).thenAnswer {
-            val callback = it.arguments[6] as ResourceResolverCallback
+            val callback = it.arguments[7] as ResourceResolverCallback
             callback.onSuccess(fakeResourceId)
         }
 
@@ -476,7 +477,8 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = any()
@@ -596,7 +598,8 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = argumentCaptor.capture()
@@ -637,6 +640,7 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
         verify(mockResourceResolver, times(2)).resolveResourceId(
+            any(),
             any(),
             any(),
             any(),
@@ -709,7 +713,8 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             resourceResolverCallback = any()
@@ -741,7 +746,8 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             resourceResolverCallback = any()
@@ -766,13 +772,6 @@ internal class DefaultImageWireframeHelperTest {
         mockDisplayMetrics.density = 1f
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer { location ->
-                val coords = location.arguments[0] as IntArray
-                coords[0] = fakeGlobalX
-                coords[1] = fakeGlobalY
-                null
-            }
-
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.context).thenReturn(mockContext)
         }
@@ -782,8 +781,8 @@ internal class DefaultImageWireframeHelperTest {
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = forge.aPositiveInt(),
-            x = forge.aPositiveLong(),
-            y = forge.aPositiveLong(),
+            x = fakeGlobalX.toLong(),
+            y = fakeGlobalY.toLong(),
             width = forge.aPositiveInt(),
             height = forge.aPositiveInt(),
             drawable = mockDrawable,
@@ -825,7 +824,8 @@ internal class DefaultImageWireframeHelperTest {
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
-            drawable = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
             resourceResolverCallback = any()

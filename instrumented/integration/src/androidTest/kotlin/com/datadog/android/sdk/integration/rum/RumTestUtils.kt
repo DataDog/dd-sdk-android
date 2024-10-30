@@ -36,11 +36,9 @@ internal fun List<JsonObject>.verifyEventMatches(
                 this.joinToString("\n") { "\t>> $it" }
         )
         .isEqualTo(expected.size)
-
     this.forEachIndexed { index, event ->
         when (val expectedEvent = expected[index]) {
             is ExpectedApplicationLaunchViewEvent -> event.verifyEventMatches(expectedEvent)
-            is ExpectedViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedApplicationStartActionEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedResourceEvent -> event.verifyEventMatches(expectedEvent)
@@ -49,6 +47,43 @@ internal fun List<JsonObject>.verifyEventMatches(
                 // Do nothing
             }
         }
+    }
+}
+
+internal fun List<JsonObject>.verifyViewEventsMatches(
+    expected: List<ExpectedViewEvent>
+) {
+    Assertions.assertThat(this.size)
+        .withFailMessage(
+            "We were expecting ${expected.size} rum " +
+                "view events instead they were ${this.size}: \n" +
+                " -- EXPECTED -- \n" +
+                expected.joinToString("\n") { "\t>> $it" } +
+                "\n -- ACTUAL -- \n" +
+                this.joinToString("\n") { "\t>> $it" }
+        )
+        .isEqualTo(expected.size)
+    // in case of views because they are reduced by their document version and they are not going to follow
+    // the exact order of the expected events, we need to match them by their context and view id
+    expected.forEach { expectedEvent ->
+        val matchingEvent = this.find { actualEvent ->
+            val viewId = actualEvent
+                .getAsJsonObject("view")
+                .getAsJsonPrimitive("id").asString
+            val applicationId = actualEvent
+                .getAsJsonObject("application")
+                .getAsJsonPrimitive("id").asString
+            val sessionId = actualEvent
+                .getAsJsonObject("session")
+                .getAsJsonPrimitive("id").asString
+            expectedEvent.rumContext.viewId == viewId &&
+                expectedEvent.rumContext.applicationId == applicationId &&
+                expectedEvent.rumContext.sessionId == sessionId
+        }
+        checkNotNull(matchingEvent) {
+            "No matching event found for $expectedEvent"
+        }
+        matchingEvent.verifyEventMatches(expectedEvent)
     }
 }
 
@@ -111,10 +146,15 @@ private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
         .hasField("view") {
             hasField("url", event.viewUrl)
         }
-        .hasField("_dd") {
-            hasField("document_version", event.docVersion)
-        }
-
+    this.getAsJsonObject("_dd").apply {
+        val documentVersion = getAsJsonPrimitive("document_version").asInt
+        Assertions.assertThat(documentVersion)
+            .withFailMessage(
+                "Expected document version for view with url: ${event.viewUrl} " +
+                    "to be greater than or equal to ${event.docVersion} but instead was $documentVersion"
+            )
+            .isGreaterThanOrEqualTo(event.docVersion)
+    }
     assertThat(this).containsAttributes(event.extraAttributes)
     val viewArguments = event.viewArguments
         .map { "$VIEW_ARGUMENTS_PREFIX${it.key}" to it.value }
@@ -167,14 +207,28 @@ private fun JsonObject.verifyEventMatches(event: ExpectedErrorEvent) {
 }
 
 private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {
-    assertThat(this)
-        .hasField("application") {
-            hasField("id", event.rumContext.applicationId)
-        }
-        .hasField("session") {
-            hasField("id", event.rumContext.sessionId)
-        }
-        .hasField("view") {
-            hasField("id", event.rumContext.viewId)
-        }
+    val applicationId = getAsJsonObject("application")
+        .getAsJsonPrimitive("id").asString
+    val sessionId = getAsJsonObject("session")
+        .getAsJsonPrimitive("id").asString
+    val viewId = getAsJsonObject("view")
+        .getAsJsonPrimitive("id").asString
+    Assertions.assertThat(applicationId)
+        .withFailMessage(
+            "Expected event \n $this \n to have same application " +
+                "id as \n $event \n but instead was $applicationId"
+        )
+        .isEqualTo(event.rumContext.applicationId)
+    Assertions.assertThat(sessionId)
+        .withFailMessage(
+            "Expected event \n $this \n to have same session " +
+                "id as \n $event \n but instead was $sessionId"
+        )
+        .isEqualTo(event.rumContext.sessionId)
+    Assertions.assertThat(viewId)
+        .withFailMessage(
+            "Expected event \n $this \n to have same view " +
+                "id as \n $event \n but instead was $viewId"
+        )
+        .isEqualTo(event.rumContext.viewId)
 }

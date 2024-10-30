@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.metrics.TelemetryMetricType
@@ -36,7 +37,9 @@ internal class ConsentAwareStorage(
     private val fileMover: FileMover,
     private val internalLogger: InternalLogger,
     internal val filePersistenceConfig: FilePersistenceConfig,
-    private val metricsDispatcher: MetricsDispatcher
+    private val metricsDispatcher: MetricsDispatcher,
+    private val consentProvider: ConsentProvider,
+    private val featureName: String
 ) : Storage {
 
     /**
@@ -53,28 +56,27 @@ internal class ConsentAwareStorage(
         forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
-        val orchestrator = when (datadogContext.trackingConsent) {
-            TrackingConsent.GRANTED -> grantedOrchestrator
-            TrackingConsent.PENDING -> pendingOrchestrator
-            TrackingConsent.NOT_GRANTED -> null
-        }
-
         val metric = internalLogger.startPerformanceMeasure(
             callerClass = ConsentAwareStorage::class.java.name,
             metric = TelemetryMetricType.MethodCalled,
             samplingRate = MethodCallSamplingRate.RARE.rate,
-            operationName = "writeCurrentBatch[${orchestrator?.getRootDir()?.nameWithoutExtension}]"
+            operationName = "writeCurrentBatch[$featureName]"
         )
-
         executorService.submitSafe("Data write", internalLogger) {
+            val orchestrator = resolveOrchestrator()
+            if (orchestrator == null) {
+                callback.invoke(NoOpEventBatchWriter())
+                metric?.stopAndSend(false)
+                return@submitSafe
+            }
             synchronized(writeLock) {
-                val batchFile = orchestrator?.getWritableFile(forceNewBatch)
+                val batchFile = orchestrator.getWritableFile(forceNewBatch)
                 val metadataFile = if (batchFile != null) {
                     orchestrator.getMetadataFile(batchFile)
                 } else {
                     null
                 }
-                val writer = if (orchestrator == null || batchFile == null) {
+                val writer = if (batchFile == null) {
                     NoOpEventBatchWriter()
                 } else {
                     FileEventBatchWriter(
@@ -150,6 +152,16 @@ internal class ConsentAwareStorage(
                     deleteBatch(it, metaFile, RemovalReason.Flushed)
                 }
             }
+        }
+    }
+
+    @WorkerThread
+    private fun resolveOrchestrator(): FileOrchestrator? {
+        val consent = consentProvider.getConsent()
+        return when (consent) {
+            TrackingConsent.GRANTED -> grantedOrchestrator
+            TrackingConsent.PENDING -> pendingOrchestrator
+            TrackingConsent.NOT_GRANTED -> null
         }
     }
 

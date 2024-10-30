@@ -7,28 +7,45 @@
 package com.datadog.android.sessionreplay.utils
 
 //noinspection SuspiciousImport
+import android.annotation.SuppressLint
 import android.graphics.Paint
+import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.VectorDrawable
 import com.datadog.android.api.InternalLogger
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
-open class LegacyDrawableToColorMapper : DrawableToColorMapper {
+open class LegacyDrawableToColorMapper(
+    private val extensionMappers: List<DrawableToColorMapper> = emptyList()
+) : DrawableToColorMapper {
 
     override fun mapDrawableToColor(drawable: Drawable, internalLogger: InternalLogger): Int? {
+        // First check if extension mappers can resolve the drawable
+        extensionMappers.forEach {
+            val result = it.mapDrawableToColor(drawable, internalLogger)
+            if (result != null) {
+                return result
+            }
+        }
         val result = when (drawable) {
             is ColorDrawable -> resolveColorDrawable(drawable)
             is RippleDrawable -> resolveRippleDrawable(drawable, internalLogger)
             is LayerDrawable -> resolveLayerDrawable(drawable, internalLogger)
             is InsetDrawable -> resolveInsetDrawable(drawable, internalLogger)
             is GradientDrawable -> resolveGradientDrawable(drawable, internalLogger)
+            is ShapeDrawable -> resolveShapeDrawable(drawable, internalLogger)
+            is BitmapDrawable,
+            is VectorDrawable -> null // return null without reporting them by telemetry.
             else -> {
                 val drawableType = drawable.javaClass.canonicalName ?: drawable.javaClass.name
                 internalLogger.log(
@@ -46,6 +63,19 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
         }
 
         return result
+    }
+
+    /**
+     * Resolves the color from a [ShapeDrawable].
+     * @param drawable the shape drawable
+     * @param internalLogger the internalLogger to report warnings
+     * @return the color to map to or null if not applicable
+     */
+    protected open fun resolveShapeDrawable(
+        drawable: ShapeDrawable,
+        internalLogger: InternalLogger
+    ): Int {
+        return drawable.paint.color
     }
 
     /**
@@ -110,15 +140,34 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
         }
 
         if (fillPaint == null) return null
-
-        val fillColor: Int = fillPaint.color
+        val filterColor = try {
+            fillPaint.colorFilter?.let {
+                @Suppress("UnsafeThirdPartyFunctionCall") // Can't throw NPE here
+                mColorField?.get(it) as? Int
+            } ?: fillPaint.color
+        } catch (e: IllegalArgumentException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to read ColorFilter.mColorField field through reflection" },
+                e
+            )
+            fillPaint.color
+        } catch (e: IllegalAccessException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to read ColorFilter.mColorField field through reflection" },
+                e
+            )
+            fillPaint.color
+        }
         val fillAlpha = (fillPaint.alpha * drawable.alpha) / MAX_ALPHA_VALUE
 
         return if (fillAlpha == 0) {
             null
         } else {
-            // TODO RUM-3469 resolve other color filter types
-            mergeColorAndAlpha(fillColor, fillAlpha)
+            mergeColorAndAlpha(filterColor, fillAlpha)
         }
     }
 
@@ -129,7 +178,7 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveInsetDrawable(drawable: InsetDrawable, internalLogger: InternalLogger): Int? {
-        return null
+        return drawable.drawable?.let { mapDrawableToColor(it, internalLogger) }
     }
 
     /**
@@ -143,9 +192,23 @@ open class LegacyDrawableToColorMapper : DrawableToColorMapper {
     }
 
     companion object {
+        @SuppressLint("DiscouragedPrivateApi")
         @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
         internal val fillPaintField = try {
             GradientDrawable::class.java.getDeclaredField("mFillPaint").apply {
+                this.isAccessible = true
+            }
+        } catch (e: NoSuchFieldException) {
+            null
+        } catch (e: SecurityException) {
+            null
+        } catch (e: NullPointerException) {
+            null
+        }
+
+        @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
+        internal val mColorField = try {
+            PorterDuffColorFilter::class.java.getDeclaredField("mColor").apply {
                 this.isAccessible = true
             }
         } catch (e: NoSuchFieldException) {

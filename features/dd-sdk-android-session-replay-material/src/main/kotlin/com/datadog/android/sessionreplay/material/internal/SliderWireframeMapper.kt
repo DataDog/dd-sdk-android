@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.material.internal
 import android.content.res.ColorStateList
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
@@ -122,7 +122,7 @@ internal open class SliderWireframeMapper(
             )
         )
 
-        return if (mappingContext.privacy == SessionReplayPrivacy.ALLOW) {
+        return if (mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
             listOf(trackNonActiveWireframe, trackActiveWireframe, thumbWireframe)
         } else {
             listOf(trackNonActiveWireframe)

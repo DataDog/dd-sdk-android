@@ -9,6 +9,7 @@ package com.datadog.android.api
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -132,7 +133,21 @@ interface InternalLogger {
         operationName: String
     ): PerformanceMetric?
 
+    /**
+     * Logs an API usage from the internal implementation.
+     * @param apiUsageEvent the API event being tracked
+     * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
+     * event will be applied in addition to the global telemetry sampling rate. By default, the sampling rate is 15%.
+     */
+    @InternalApi
+    fun logApiUsage(
+        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
+        samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE
+    )
+
     companion object {
+
+        private const val DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE = 15f
 
         /**
          * Logger for the cases when SDK instance is not yet available. Try to use the logger

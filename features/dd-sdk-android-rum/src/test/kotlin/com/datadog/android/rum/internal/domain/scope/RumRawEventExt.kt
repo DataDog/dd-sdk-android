@@ -112,6 +112,10 @@ internal fun Forge.addErrorEvent(): RumRawEvent.AddError {
     )
 }
 
+internal fun Forge.addViewLoadingTimeEvent(): RumRawEvent.AddViewLoadingTime {
+    return RumRawEvent.AddViewLoadingTime(overwrite = aBool())
+}
+
 internal fun Forge.addLongTaskEvent(): RumRawEvent.AddLongTask {
     return RumRawEvent.AddLongTask(
         durationNs = aLong(min = 1),
@@ -178,7 +182,8 @@ internal fun Forge.invalidBackgroundEvent(): RumRawEvent {
             stopActionEvent(),
             stopResourceEvent(),
             stopResourceWithErrorEvent(),
-            stopResourceWithStacktraceEvent()
+            stopResourceWithStacktraceEvent(),
+            addViewLoadingTimeEvent()
         )
     )
 }
@@ -197,7 +202,8 @@ internal fun Forge.anyRumEvent(excluding: List<Type> = listOf()): RumRawEvent {
         addLongTaskEvent(),
         addFeatureFlagEvaluationEvent(),
         addCustomTimingEvent(),
-        updatePerformanceMetricEvent()
+        updatePerformanceMetricEvent(),
+        addViewLoadingTimeEvent()
     )
     return this.anElementFrom(
         allEvents.filter {

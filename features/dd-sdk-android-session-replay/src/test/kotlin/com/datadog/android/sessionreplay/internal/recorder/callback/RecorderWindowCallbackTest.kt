@@ -14,8 +14,9 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -73,6 +74,9 @@ internal class RecorderWindowCallbackTest {
     lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
 
     @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
+    @Mock
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
@@ -101,10 +105,7 @@ internal class RecorderWindowCallbackTest {
     lateinit var mockEventUtils: MotionEventUtils
 
     @Forgery
-    lateinit var fakePrivacy: SessionReplayPrivacy
-
-    @Forgery
-    lateinit var fakeImagePrivacy: ImagePrivacy
+    lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
 
     @BeforeEach
     fun `set up`() {
@@ -116,6 +117,8 @@ internal class RecorderWindowCallbackTest {
             .thenReturn(fakeTouchEventRecordedDataQueueItem)
         whenever(mockContext.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
+        whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
+            .thenReturn(true)
         testedWindowCallback = RecorderWindowCallback(
             appContext = mockContext,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
@@ -123,8 +126,9 @@ internal class RecorderWindowCallbackTest {
             timeProvider = mockTimeProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
-            privacy = fakePrivacy,
-            imagePrivacy = fakeImagePrivacy,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            privacy = fakeTextAndInputPrivacy,
             copyEvent = { it },
             motionEventUtils = mockEventUtils,
             motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
@@ -231,6 +235,10 @@ internal class RecorderWindowCallbackTest {
     @Test
     fun `M update the positions and flush them W onTouchEvent() { ActionUp }`(forge: Forge) {
         // Given
+        val fakeDownEvent = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val downMotionEvent = fakeDownEvent.asMotionEvent()
+        testedWindowCallback.dispatchTouchEvent(downMotionEvent)
+
         val fakeRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
         val relatedMotionEvent = fakeRecords.asMotionEvent()
 
@@ -239,7 +247,7 @@ internal class RecorderWindowCallbackTest {
 
         // Then
         assertThat(testedWindowCallback.pointerInteractions).isEmpty()
-        verify(mockRecordedDataQueueHandler).addTouchEventItem(fakeRecords)
+        verify(mockRecordedDataQueueHandler).addTouchEventItem(fakeDownEvent + fakeRecords)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
     }
 
@@ -427,7 +435,7 @@ internal class RecorderWindowCallbackTest {
         // Then
         inOrder(mockViewOnDrawInterceptor) {
             verify(mockViewOnDrawInterceptor).stopIntercepting()
-            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakePrivacy, fakeImagePrivacy)
+            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, fakeTextAndInputPrivacy, ImagePrivacy.MASK_NONE)
         }
     }
 
@@ -442,6 +450,92 @@ internal class RecorderWindowCallbackTest {
 
         // Then
         verifyNoInteractions(mockViewOnDrawInterceptor)
+    }
+
+    // endregion
+
+    // region touchPrivacy
+
+    @Test
+    fun `M capture touch events W onTouchEvent { TouchPrivacy SHOW }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent1Records = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val relatedMotionEvent1 = fakeEvent1Records.asMotionEvent()
+        val fakeEvent2Records = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val relatedMotionEvent2 = fakeEvent2Records.asMotionEvent()
+        val fakeEvent3Records = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val relatedMotionEvent3 = fakeEvent3Records.asMotionEvent()
+
+        testedWindowCallback = RecorderWindowCallback(
+            appContext = mockContext,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            wrappedCallback = mockWrappedCallback,
+            timeProvider = mockTimeProvider,
+            viewOnDrawInterceptor = mockViewOnDrawInterceptor,
+            internalLogger = mockInternalLogger,
+            privacy = fakeTextAndInputPrivacy,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            copyEvent = { it },
+            motionEventUtils = mockEventUtils,
+            motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
+            flushPositionBufferThresholdInNs = TEST_FLUSH_BUFFER_THRESHOLD_NS,
+            windowInspector = mockWindowInspector
+        )
+
+        // When
+        testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
+        testedWindowCallback.dispatchTouchEvent(relatedMotionEvent2)
+        testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
+
+        // Then
+        val expectedRecords = fakeEvent1Records + fakeEvent2Records + fakeEvent3Records
+        verify(mockRecordedDataQueueHandler).addTouchEventItem(expectedRecords)
+        verify(mockRecordedDataQueueHandler).tryToConsumeItems()
+        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
+    }
+
+    @Test
+    fun `M not capture touch events W onTouchEvent { TouchPrivacy HIDE }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent1Records = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val relatedMotionEvent1 = fakeEvent1Records.asMotionEvent()
+        val fakeEvent2Records = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val relatedMotionEvent2 = fakeEvent2Records.asMotionEvent()
+        val fakeEvent3Records = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val relatedMotionEvent3 = fakeEvent3Records.asMotionEvent()
+        whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
+            .thenReturn(false)
+
+        testedWindowCallback = RecorderWindowCallback(
+            appContext = mockContext,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            wrappedCallback = mockWrappedCallback,
+            timeProvider = mockTimeProvider,
+            viewOnDrawInterceptor = mockViewOnDrawInterceptor,
+            internalLogger = mockInternalLogger,
+            privacy = fakeTextAndInputPrivacy,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            copyEvent = { it },
+            motionEventUtils = mockEventUtils,
+            motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
+            flushPositionBufferThresholdInNs = TEST_FLUSH_BUFFER_THRESHOLD_NS,
+            windowInspector = mockWindowInspector
+        )
+
+        // When
+        testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
+        testedWindowCallback.dispatchTouchEvent(relatedMotionEvent2)
+        testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
+
+        // Then
+        verifyNoInteractions(mockRecordedDataQueueHandler)
+        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
     }
 
     // endregion

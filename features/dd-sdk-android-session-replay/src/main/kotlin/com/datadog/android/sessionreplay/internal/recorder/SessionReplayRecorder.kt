@@ -16,15 +16,17 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
@@ -54,8 +56,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     private val appContext: Application
     private val rumContextProvider: RumContextProvider
-    private val privacy: SessionReplayPrivacy
+    private val textAndInputPrivacy: TextAndInputPrivacy
     private val imagePrivacy: ImagePrivacy
+    private val touchPrivacyManager: TouchPrivacyManager
     private val recordWriter: RecordWriter
     private val timeProvider: TimeProvider
     private val mappers: List<MapperTypeWrapper<*>>
@@ -71,19 +74,23 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val uiHandler: Handler
     private var shouldRecord = false
 
+    @Suppress("LongParameterList")
     constructor(
         appContext: Application,
         resourcesWriter: ResourcesWriter,
         rumContextProvider: RumContextProvider,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
+        touchPrivacyManager: TouchPrivacyManager,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
+        customDrawableMappers: List<DrawableToColorMapper>,
         windowInspector: WindowInspector = WindowInspector,
         sdkCore: FeatureSdkCore,
-        resourceDataStoreManager: ResourceDataStoreManager
+        resourceDataStoreManager: ResourceDataStoreManager,
+        dynamicOptimizationEnabled: Boolean
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -103,8 +110,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
-        this.privacy = privacy
+        this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
+        this.touchPrivacyManager = touchPrivacyManager
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers
@@ -124,7 +132,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
         val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
-        val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+        val drawableToColorMapper: DrawableToColorMapper =
+            DrawableToColorMapper.getDefault(customDrawableMappers)
 
         val defaultVWM = ViewWireframeMapper(
             viewIdentifierResolver,
@@ -168,24 +177,33 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
                         decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
+                        hiddenViewMapper = HiddenViewMapper(
+                            viewBoundsResolver = viewBoundsResolver,
+                            viewIdentifierResolver = viewIdentifierResolver
+                        ),
                         viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger
+                        internalLogger = internalLogger,
+                        touchPrivacyManager = touchPrivacyManager
                     ),
                     ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
-                    )
+                    ),
+                    internalLogger = internalLogger
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
-                sdkCore = sdkCore
-            )
+                sdkCore = sdkCore,
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled
+            ),
+            touchPrivacyManager = touchPrivacyManager
         )
         this.windowCallbackInterceptor = WindowCallbackInterceptor(
             recordedDataQueueHandler,
             viewOnDrawInterceptor,
             timeProvider,
             internalLogger,
-            privacy,
-            imagePrivacy
+            imagePrivacy,
+            textAndInputPrivacy,
+            touchPrivacyManager
         )
         this.sessionReplayLifecycleCallback = SessionReplayLifecycleCallback(this)
         this.uiHandler = Handler(Looper.getMainLooper())
@@ -197,8 +215,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     constructor(
         appContext: Application,
         rumContextProvider: RumContextProvider,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
+        touchPrivacyManager: TouchPrivacyManager,
         recordWriter: RecordWriter,
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
@@ -214,8 +233,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     ) {
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
-        this.privacy = privacy
+        this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
+        this.touchPrivacyManager = touchPrivacyManager
         this.recordWriter = recordWriter
         this.timeProvider = timeProvider
         this.mappers = mappers
@@ -248,7 +268,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, privacy, imagePrivacy)
+            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
 
@@ -265,7 +285,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, privacy, imagePrivacy)
+            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
 
@@ -274,7 +294,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.stopIntercepting(windows)
-            viewOnDrawInterceptor.intercept(decorViews, privacy, imagePrivacy)
+            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
 }

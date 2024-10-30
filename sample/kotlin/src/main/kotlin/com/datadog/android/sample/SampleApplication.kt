@@ -19,7 +19,6 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -31,12 +30,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.event.ViewEventMapper
-import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.model.ErrorEvent
-import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
@@ -44,9 +37,13 @@ import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
@@ -70,11 +67,12 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
+import java.security.SecureRandom
 
 /**
  * The main [Application] for the sample project.
  */
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "TooManyFunctions")
 class SampleApplication : Application() {
 
     private val tracedHosts = listOf(
@@ -158,43 +156,13 @@ class SampleApplication : Application() {
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)
 
-        val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
-            .apply {
-                if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
-                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
-                }
-            }
-            .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
-            .addExtensionSupport(MaterialExtensionSupport())
-            .addExtensionSupport(ComposeExtensionSupport())
-            .build()
-        SessionReplay.enable(sessionReplayConfig)
-
-        val logsConfig = LogsConfiguration.Builder().apply {
-            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
-                useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-            }
-        }.build()
-        Logs.enable(logsConfig)
-
-        val tracesConfig = TraceConfiguration.Builder().apply {
-            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
-                useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
-            }
-        }.build()
-        Trace.enable(tracesConfig)
+        initializeSessionReplay()
+        initializeLogs()
+        initializeTraces()
 
         NdkCrashReports.enable()
 
-        Datadog.setUserInfo(
-            id = preferences.getUserId(),
-            name = preferences.getUserName(),
-            email = preferences.getUserEmail(),
-            extraInfo = mapOf(
-                UserFragment.GENDER_KEY to preferences.getUserGender(),
-                UserFragment.AGE_KEY to preferences.getUserAge()
-            )
-        )
+        initializeUserInfo(preferences)
 
         GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder()
@@ -218,6 +186,101 @@ class SampleApplication : Application() {
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
+    private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
+        Datadog.setUserInfo(
+            id = preferences.getUserId(),
+            name = preferences.getUserName(),
+            email = preferences.getUserEmail(),
+            extraInfo = mapOf(
+                UserFragment.GENDER_KEY to preferences.getUserGender(),
+                UserFragment.AGE_KEY to preferences.getUserAge()
+            )
+        )
+    }
+
+    private fun initializeTraces() {
+        val tracesConfig = TraceConfiguration.Builder().apply {
+            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+            }
+        }.build()
+        Trace.enable(tracesConfig)
+    }
+
+    private fun initializeLogs() {
+        val logsConfig = LogsConfiguration.Builder().apply {
+            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+            }
+        }.build()
+        Logs.enable(logsConfig)
+    }
+
+    private fun initializeSessionReplay() {
+        val shouldUseFgm = SecureRandom().nextInt(100) < USE_FGM_PCT
+        val systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
+            .setMinRAMSizeMb(1024)
+            .setMinCPUCoreNumber(1)
+            .build()
+
+        val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
+                }
+
+                if (shouldUseFgm) {
+                    useFgmConfiguration(this)
+                } else {
+                    useLegacyConfiguration(this)
+                }
+            }
+            .addExtensionSupport(MaterialExtensionSupport())
+            .addExtensionSupport(ComposeExtensionSupport())
+            .setSystemRequirements(systemRequirementsConfiguration)
+            .build()
+        SessionReplay.enable(sessionReplayConfig)
+    }
+
+    private fun useFgmConfiguration(builder: SessionReplayConfiguration.Builder) {
+        val shouldMaskAll = SecureRandom().nextInt(100) < MASK_SESSION_PCT // 25%
+
+        val imagePrivacy = if (shouldMaskAll) {
+            ImagePrivacy.MASK_ALL
+        } else {
+            ImagePrivacy.MASK_NONE
+        }
+
+        val textAndInputPrivacy = if (shouldMaskAll) {
+            TextAndInputPrivacy.MASK_ALL
+        } else {
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        }
+
+        val touchPrivacy = if (shouldMaskAll) {
+            TouchPrivacy.HIDE
+        } else {
+            TouchPrivacy.SHOW
+        }
+
+        GlobalRumMonitor.get().addAttribute("imagePrivacy", imagePrivacy)
+        GlobalRumMonitor.get().addAttribute("textAndInputPrivacy", textAndInputPrivacy)
+        GlobalRumMonitor.get().addAttribute("touchPrivacy", touchPrivacy)
+
+        builder.setImagePrivacy(imagePrivacy)
+        builder.setTouchPrivacy(touchPrivacy)
+        builder.setTextAndInputPrivacy(textAndInputPrivacy)
+    }
+
+    @Suppress("Deprecation")
+    private fun useLegacyConfiguration(builder: SessionReplayConfiguration.Builder) {
+        if (SecureRandom().nextInt(100) <= SESSION_REPLAY_PRIVACY_SAMPLING) {
+            builder.setPrivacy(SessionReplayPrivacy.ALLOW)
+        } else {
+            builder.setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
+        }
+    }
+
     private fun createRumConfiguration(): RumConfiguration {
         return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
             .apply {
@@ -236,36 +299,26 @@ class SampleApplication : Application() {
             .trackUserInteractions()
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
-            .setViewEventMapper(object : ViewEventMapper {
-                override fun map(event: ViewEvent): ViewEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setActionEventMapper(object : EventMapper<ActionEvent> {
-                override fun map(event: ActionEvent): ActionEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setResourceEventMapper(object : EventMapper<ResourceEvent> {
-                override fun map(event: ResourceEvent): ResourceEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setErrorEventMapper(object : EventMapper<ErrorEvent> {
-                override fun map(event: ErrorEvent): ErrorEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
-            .setLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
-                override fun map(event: LongTaskEvent): LongTaskEvent {
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    return event
-                }
-            })
+            .setViewEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setActionEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setResourceEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setErrorEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setLongTaskEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
             .build()
     }
 
@@ -328,7 +381,10 @@ class SampleApplication : Application() {
     }
 
     companion object {
+        private const val USE_FGM_PCT = 10
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
+        private const val MASK_SESSION_PCT = 25
+        private const val SESSION_REPLAY_PRIVACY_SAMPLING = 75
 
         init {
             System.loadLibrary("datadog-native-sample-lib")
@@ -355,7 +411,7 @@ class SampleApplication : Application() {
             return application.retrofitBaseDataSource
         }
 
-        internal fun getLocalServer(context: Context): LocalServer {
+        private fun getLocalServer(context: Context): LocalServer {
             val application = context.applicationContext as SampleApplication
             return application.localServer
         }

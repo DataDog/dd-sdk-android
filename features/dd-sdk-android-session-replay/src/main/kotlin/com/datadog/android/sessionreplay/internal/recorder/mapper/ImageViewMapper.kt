@@ -57,28 +57,25 @@ internal class ImageViewMapper(
         val contentYPosInDp = contentRect.top.densityNormalized(density).toLong()
         val contentWidthPx = contentRect.width()
         val contentHeightPx = contentRect.height()
-        val contentDrawable = drawable.constantState?.newDrawable(resources)
 
-        if (contentDrawable != null) {
-            // resolve foreground
-            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
-                view = view,
-                imagePrivacy = mappingContext.imagePrivacy,
-                currentWireframeIndex = wireframes.size,
-                x = contentXPosInDp,
-                y = contentYPosInDp,
-                width = contentWidthPx,
-                height = contentHeightPx,
-                usePIIPlaceholder = true,
-                drawable = contentDrawable,
-                asyncJobStatusCallback = asyncJobStatusCallback,
-                clipping = clipping,
-                shapeStyle = null,
-                border = null,
-                prefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME
-            )?.let {
-                wireframes.add(it)
-            }
+        // resolve foreground
+        mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
+            view = view,
+            imagePrivacy = mappingContext.imagePrivacy,
+            currentWireframeIndex = wireframes.size,
+            x = contentXPosInDp,
+            y = contentYPosInDp,
+            width = contentWidthPx,
+            height = contentHeightPx,
+            usePIIPlaceholder = true,
+            drawable = drawable,
+            asyncJobStatusCallback = asyncJobStatusCallback,
+            clipping = clipping,
+            shapeStyle = null,
+            border = null,
+            prefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME
+        )?.let {
+            wireframes.add(it)
         }
 
         return wireframes

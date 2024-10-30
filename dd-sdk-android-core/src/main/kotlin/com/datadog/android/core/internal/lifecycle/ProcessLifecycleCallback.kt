@@ -16,6 +16,7 @@ import java.lang.ref.WeakReference
 
 internal class ProcessLifecycleCallback(
     appContext: Context,
+    internal val instanceName: String,
     private val internalLogger: InternalLogger
 ) :
     ProcessLifecycleMonitor.Callback {
@@ -25,7 +26,7 @@ internal class ProcessLifecycleCallback(
     override fun onStarted() {
         contextWeakRef.get()?.let {
             if (WorkManager.isInitialized()) {
-                cancelUploadWorker(it, internalLogger)
+                cancelUploadWorker(it, instanceName, internalLogger)
             }
         }
     }
@@ -37,7 +38,7 @@ internal class ProcessLifecycleCallback(
     override fun onStopped() {
         contextWeakRef.get()?.let {
             if (WorkManager.isInitialized()) {
-                triggerUploadWorker(it, internalLogger)
+                triggerUploadWorker(it, instanceName, internalLogger)
             }
         }
     }

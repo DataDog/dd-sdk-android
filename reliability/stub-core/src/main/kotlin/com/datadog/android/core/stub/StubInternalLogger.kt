@@ -9,11 +9,13 @@ package com.datadog.android.core.stub
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 
 @Suppress("UnsafeThirdPartyFunctionCall")
 internal class StubInternalLogger : InternalLogger {
 
-    val telemetryEventsWritten = mutableListOf<Map<String, Any>>()
+    val telemetryEventsWritten = mutableListOf<StubTelemetryEvent>()
+
     override fun log(
         level: InternalLogger.Level,
         target: InternalLogger.Target,
@@ -22,9 +24,21 @@ internal class StubInternalLogger : InternalLogger {
         onlyOnce: Boolean,
         additionalProperties: Map<String, Any?>?
     ) {
-        println("${level.name.first()} [${target.name.first()}]: ${messageBuilder()}")
+        val message = messageBuilder()
+        println("${level.name.first()} [${target.name.first()}]: $message")
         additionalProperties?.log()
         throwable?.printStackTrace()
+
+        if (target == InternalLogger.Target.TELEMETRY) {
+            val telemetryEvent = StubTelemetryEvent(
+                type = StubTelemetryEvent.Type.LOG,
+                message = message,
+                additionalProperties = additionalProperties.orEmpty(),
+                level = level,
+                samplingRate = if (onlyOnce) -1f else 100f
+            )
+            telemetryEventsWritten.add(telemetryEvent)
+        }
     }
 
     override fun log(
@@ -35,21 +49,31 @@ internal class StubInternalLogger : InternalLogger {
         onlyOnce: Boolean,
         additionalProperties: Map<String, Any?>?
     ) {
-        println("${level.name.first()} [${targets.joinToString { it.name.first().toString() }}]: ${messageBuilder()}")
+        val message = messageBuilder()
+        println("${level.name.first()} [${targets.joinToString { it.name.first().toString() }}]: $message")
         additionalProperties?.log()
         throwable?.printStackTrace()
+        if (InternalLogger.Target.TELEMETRY in targets) {
+            val telemetryEvent = StubTelemetryEvent(
+                type = StubTelemetryEvent.Type.LOG,
+                message = message,
+                additionalProperties = additionalProperties.orEmpty(),
+                level = level
+            )
+            telemetryEventsWritten.add(telemetryEvent)
+        }
     }
 
     override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>, samplingRate: Float) {
         println("M [T]: ${messageBuilder()} | $samplingRate%")
         additionalProperties.log()
         val message = messageBuilder()
-        val telemetryEvent =
-            mapOf(
-                "type" to "mobile_metric",
-                "message" to message,
-                "additionalProperties" to additionalProperties
-            )
+        val telemetryEvent = StubTelemetryEvent(
+            type = StubTelemetryEvent.Type.METRIC,
+            message = message,
+            additionalProperties = additionalProperties,
+            samplingRate = samplingRate
+        )
         telemetryEventsWritten.add(telemetryEvent)
     }
 
@@ -61,6 +85,21 @@ internal class StubInternalLogger : InternalLogger {
     ): PerformanceMetric? {
         println("P [T]: $operationName ($callerClass)")
         return null
+    }
+
+    override fun logApiUsage(
+        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
+        samplingRate: Float
+    ) {
+        println("U [T]: ${apiUsageEvent.javaClass.simpleName} | $samplingRate%")
+        apiUsageEvent.additionalProperties.log()
+        val telemetryEvent = StubTelemetryEvent(
+            type = StubTelemetryEvent.Type.API_USAGE,
+            message = apiUsageEvent.javaClass.name,
+            additionalProperties = apiUsageEvent.additionalProperties,
+            samplingRate = samplingRate
+        )
+        telemetryEventsWritten.add(telemetryEvent)
     }
 
     private fun <K, T> Map<K, T>.log() {

@@ -1,11 +1,11 @@
 name: Crash Report
-description: Report crashes caused by the SDK. 
+description: Report crashes caused by the SDK.
 labels: ["crash"]
 body:
   - type: markdown
     attributes:
       value: |
-        Report crashes caused by the SDK. Please try to be as detailed as possible. 
+        Report crashes caused by the SDK. Please try to be as detailed as possible.
         Before getting started, if the problem is urgent please use our [official support channel](https://www.datadoghq.com/support/).
   - type: textarea
     id: stacktrace
@@ -19,8 +19,8 @@ body:
     attributes:
       label: Reproduction steps
       description: |
-        Provide a self-contained piece of code demonstrating the crash if you can. 
-        For a more complex setup consider creating a small app that showcases the problem. 
+        Provide a self-contained piece of code demonstrating the crash if you can.
+        For a more complex setup consider creating a small app that showcases the problem.
         **Note** - Avoid sharing any business logic, credentials or tokens.
     validations:
       required: false
@@ -35,7 +35,7 @@ body:
     id: affected_sdk_versions
     attributes:
       label: Affected SDK versions
-      description: What are the SDK versions you're seeing this crash in? 
+      description: What are the SDK versions you're seeing this crash in?
     validations:
       required: true
   - type: input
@@ -46,7 +46,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: checked_lastest_sdk
+    id: checked_latest_sdk
     attributes:
       label: Does the crash manifest in the latest SDK version?
       options:
@@ -57,24 +57,24 @@ body:
   - type: input
     id: kotlin_java_version
     attributes:
-      label: Kotlin / Java version 
+      label: Kotlin / Java version
   - type: input
     id: gradle_version
     attributes:
-      label: Gradle / AGP version 
+      label: Gradle / AGP version
   - type: textarea
     id: dependencies
     attributes:
-      label: Other dependencies versions                
+      label: Other dependencies versions
       description: |
-        Relevant third party dependency versions. 
+        Relevant third party dependency versions.
         e.g. okhttp 4.11.0
   - type: textarea
     id: device_info
     attributes:
       label: Device Information
       description: |
-        What are the common characteristics of devices you're seeing this crash in? 
+        What are the common characteristics of devices you're seeing this crash in?
         Specific models, OS versions, etc.
     validations:
       required: false
@@ -82,4 +82,4 @@ body:
     id: other_info
     attributes:
       label: Other relevant information
-      description: Anything that might be relevant to pinpoint the source of the crash. 
+      description: Anything that might be relevant to pinpoint the source of the crash.

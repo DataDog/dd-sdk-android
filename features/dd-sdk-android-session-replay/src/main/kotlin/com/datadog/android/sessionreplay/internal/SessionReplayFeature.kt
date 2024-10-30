@@ -21,6 +21,8 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
@@ -32,6 +34,7 @@ import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -39,42 +42,72 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
  */
+@Suppress("TooManyFunctions")
 internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
     private val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
-    internal val imagePrivacy: ImagePrivacy?,
+    internal val textAndInputPrivacy: TextAndInputPrivacy,
+    internal val touchPrivacy: TouchPrivacy,
+    internal val imagePrivacy: ImagePrivacy,
     private val rateBasedSampler: Sampler,
+    private val startRecordingImmediately: Boolean,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
 
+    @Suppress("LongParameterList")
     internal constructor(
         sdkCore: FeatureSdkCore,
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
+        touchPrivacy: TouchPrivacy,
+        touchPrivacyManager: TouchPrivacyManager,
         imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
-        sampleRate: Float
+        customDrawableMappers: List<DrawableToColorMapper>,
+        sampleRate: Float,
+        startRecordingImmediately: Boolean,
+        dynamicOptimizationEnabled: Boolean
     ) : this(
         sdkCore,
         customEndpointUrl,
         privacy,
+        textAndInputPrivacy,
+        touchPrivacy,
         imagePrivacy,
         RateBasedSampler(sampleRate),
+        startRecordingImmediately,
         DefaultRecorderProvider(
             sdkCore,
-            privacy,
+            textAndInputPrivacy,
             imagePrivacy,
+            touchPrivacyManager,
             customMappers,
-            customOptionSelectorDetectors
+            customOptionSelectorDetectors,
+            customDrawableMappers,
+            dynamicOptimizationEnabled
         )
     )
 
     private lateinit var appContext: Context
+
+    // should we record the session - a combination of rum sampling, sr sampling
+    // and sr stop/start state
+    private var shouldRecord = AtomicBoolean(startRecordingImmediately)
+
+    // used to monitor changes to an active session due to manual stop/start
+    private var recordingStateChanged = AtomicBoolean(false)
+
+    // are we recording at the moment
     private var isRecording = AtomicBoolean(false)
+
+    // is the current session sampled in
+    private var isSessionSampledIn = AtomicBoolean(false)
+
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
@@ -85,11 +118,7 @@ internal class SessionReplayFeature(
 
     override fun onInitialize(appContext: Context) {
         if (appContext !is Application) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
-            )
+            logMissingApplicationContextError()
             return
         }
 
@@ -116,11 +145,10 @@ internal class SessionReplayFeature(
         initialized.set(true)
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
-            it[SESSION_REPLAY_PRIVACY_KEY] = privacy.toString().lowercase(Locale.US)
-            // False by default. This will be changed once we will conform to the browser SR
-            // implementation where a parameter will be passed in the Configuration constructor
-            // to enable manual recording.
-            it[SESSION_REPLAY_MANUAL_RECORDING_KEY] = false
+            it[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] = startRecordingImmediately
+            it[SESSION_REPLAY_TOUCH_PRIVACY_KEY] = touchPrivacy.toString().lowercase(Locale.US)
+            it[SESSION_REPLAY_IMAGE_PRIVACY_KEY] = imagePrivacy.toString().lowercase(Locale.US)
+            it[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] = textAndInputPrivacy.toString().lowercase(Locale.US)
         }
     }
 
@@ -156,7 +184,27 @@ internal class SessionReplayFeature(
             return
         }
 
+        if (!checkIfInitialized()) {
+            return
+        }
+
         handleRumSession(event)
+    }
+
+    // endregion
+
+    // region Manual Recording
+
+    internal fun manuallyStopRecording() {
+        if (shouldRecord.compareAndSet(true, false)) {
+            recordingStateChanged.set(true)
+        }
+    }
+
+    internal fun manuallyStartRecording() {
+        if (shouldRecord.compareAndSet(false, true)) {
+            recordingStateChanged.set(true)
+        }
     }
 
     // endregion
@@ -167,7 +215,15 @@ internal class SessionReplayFeature(
         if (sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] ==
             RUM_SESSION_RENEWED_BUS_MESSAGE
         ) {
-            checkStatusAndApplySample(sessionMetadata)
+            parseSessionMetadata(sessionMetadata)
+                ?.let { sessionData ->
+                    val alreadySeenSession = currentRumSessionId.get() == sessionData.sessionId
+                    if (shouldHandleSession(alreadySeenSession)) {
+                        applySampling(alreadySeenSession)
+                        modifyShouldRecordState(sessionData)
+                        handleRecording(sessionData)
+                    }
+                }
         } else {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -182,50 +238,88 @@ internal class SessionReplayFeature(
         }
     }
 
-    @Suppress("ReturnCount")
-    private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
+    private data class SessionData(
+        val keepSession: Boolean,
+        val sessionId: String
+    )
+
+    private fun parseSessionMetadata(sessionMetadata: Map<*, *>): SessionData? {
         val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
         val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
 
         if (keepSession == null || sessionId == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { EVENT_MISSING_MANDATORY_FIELDS }
-            )
-            return
+            logEventMissingMandatoryFieldsError()
+            return null
         }
 
-        if (currentRumSessionId.get() == sessionId) {
-            // we already handled this session
-            return
-        }
+        return SessionData(keepSession, sessionId)
+    }
 
-        if (!checkIfInitialized()) {
-            return
-        }
+    private fun shouldHandleSession(alreadySeenSession: Boolean): Boolean {
+        return !alreadySeenSession || recordingStateChanged.get()
+    }
 
-        if (keepSession && rateBasedSampler.sample()) {
+    private fun applySampling(alreadySeenSession: Boolean) {
+        if (!alreadySeenSession) {
+            isSessionSampledIn.set(rateBasedSampler.sample())
+        }
+    }
+
+    private fun modifyShouldRecordState(sessionData: SessionData) {
+        val isSampledIn = sessionData.keepSession && isSessionSampledIn.get()
+        if (!isSampledIn) {
+            if (shouldRecord.compareAndSet(true, false)) {
+                logSampledOutMessage()
+            }
+        }
+    }
+
+    private fun logMissingApplicationContextError() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
+        )
+    }
+
+    private fun logEventMissingMandatoryFieldsError() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { EVENT_MISSING_MANDATORY_FIELDS }
+        )
+    }
+
+    private fun logSampledOutMessage() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            { SESSION_SAMPLED_OUT_MESSAGE }
+        )
+    }
+
+    private fun logNotInitializedError() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { CANNOT_START_RECORDING_NOT_INITIALIZED }
+        )
+    }
+
+    private fun handleRecording(sessionData: SessionData) {
+        if (shouldRecord.get()) {
             startRecording()
         } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { SESSION_SAMPLED_OUT_MESSAGE }
-            )
             stopRecording()
         }
 
-        currentRumSessionId.set(sessionId)
+        recordingStateChanged.set(false)
+        currentRumSessionId.set(sessionData.sessionId)
     }
 
     private fun checkIfInitialized(): Boolean {
         if (!initialized.get()) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { CANNOT_START_RECORDING_NOT_INITIALIZED }
-            )
+            logNotInitializedError()
             return false
         }
         return true
@@ -311,9 +405,11 @@ internal class SessionReplayFeature(
         const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
-        internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
-        internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
-            "session_replay_requires_manual_recording"
+        internal const val SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY = "session_replay_text_and_input_privacy"
+        internal const val SESSION_REPLAY_IMAGE_PRIVACY_KEY = "session_replay_image_privacy"
+        internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
+        internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
+            "session_replay_start_immediate_recording"
         internal const val SESSION_REPLAY_ENABLED_KEY =
             "session_replay_is_enabled"
     }
