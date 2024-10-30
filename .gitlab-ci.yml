@@ -32,16 +32,8 @@ stages:
   - notify
 
 .snippets:
-  install-android-sdk:
-    - curl -sSL -o commandlinetools.zip https://dl.google.com/android/repository/$ANDROID_SDK_VERSION.zip
-    - rm -rf ~/android_sdk
-    - rm -rf ~/cmdline-tools
-    - unzip -q commandlinetools -d ~/
-    - mkdir -p ~/android_sdk/cmdline-tools/latest
-    - mv ~/cmdline-tools/* ~/android_sdk/cmdline-tools/latest
-    - rm ./commandlinetools.zip
-    - export ANDROID_HOME="$HOME/android_sdk/"
-    - export ANDROID_SDK_ROOT="$HOME/android_sdk/"
+  # macOS AMI will already have cmdline-tools installed
+  install-android-api-components:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
@@ -225,7 +217,7 @@ test:kover:
 # the steps in this section should reflect our test pyramid strategy
 
 test-pyramid:core-it-min-api:
-  tags: [ "macos:sonoma" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -234,11 +226,11 @@ test-pyramid:core-it-min-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-latest-api:
-  tags: [ "macos:sonoma" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -247,11 +239,11 @@ test-pyramid:core-it-latest-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-median-api:
-  tags: [ "macos:sonoma" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -260,7 +252,7 @@ test-pyramid:core-it-median-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:single-fit-logs:
@@ -329,7 +321,7 @@ test-pyramid:single-fit-trace:
 # RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:
-  tags: [ "macos:sonoma" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -338,11 +330,11 @@ test-pyramid:legacy-integration-instrumented-min-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-latest-api:
-  tags: [ "macos:sonoma" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -351,11 +343,11 @@ test-pyramid:legacy-integration-instrumented-latest-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-median-api:
-  tags: [ "macos:sonoma" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -364,7 +356,7 @@ test-pyramid:legacy-integration-instrumented-median-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-sdk]
+    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:detekt-api-coverage:
