@@ -9349,14 +9349,14 @@ internal class RumViewScopeTest {
             testedScope.handleEvent(
                 forge.anyRumEvent(
                     excluding = listOf(
-                        RumRawEvent.StartView::class.java,
-                        RumRawEvent.StopView::class.java,
-                        RumRawEvent.StartAction::class.java,
-                        RumRawEvent.StopAction::class.java,
-                        RumRawEvent.StartResource::class.java,
-                        RumRawEvent.StopResource::class.java,
-                        RumRawEvent.StopResourceWithError::class.java,
-                        RumRawEvent.StopResourceWithStackTrace::class.java
+                        RumRawEvent.StartView::class,
+                        RumRawEvent.StopView::class,
+                        RumRawEvent.StartAction::class,
+                        RumRawEvent.StopAction::class,
+                        RumRawEvent.StartResource::class,
+                        RumRawEvent.StopResource::class,
+                        RumRawEvent.StopResourceWithError::class,
+                        RumRawEvent.StopResourceWithStackTrace::class
                     )
                 ),
                 mockWriter

@@ -962,14 +962,14 @@ internal class RumSessionScopeTest {
         initializeTestedScope(backgroundTrackingEnabled = false)
         val fakeNonInteractionEvent1 = forge.anyRumEvent(
             excluding = listOf(
-                RumRawEvent.StartView::class.java,
-                RumRawEvent.StartAction::class.java
+                RumRawEvent.StartView::class,
+                RumRawEvent.StartAction::class
             )
         )
         val fakeNonInteractionEvent2 = forge.anyRumEvent(
             excluding = listOf(
-                RumRawEvent.StartView::class.java,
-                RumRawEvent.StartAction::class.java
+                RumRawEvent.StartView::class,
+                RumRawEvent.StartAction::class
             )
         )
         testedScope.handleEvent(fakeNonInteractionEvent1, mockWriter)
