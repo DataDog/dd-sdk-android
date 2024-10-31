@@ -232,8 +232,69 @@
             }
           },
           "readOnly": true
+        },
+        "device": {
+          "type": "object",
+          "description": "Device properties",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Device type info",
+              "enum": ["mobile", "desktop", "tablet", "tv", "gaming_console", "bot", "other"],
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "description": "Device marketing name, e.g. Xiaomi Redmi Note 8 Pro, Pixel 5, etc.",
+              "readOnly": true
+            },
+            "model": {
+              "type": "string",
+              "description": "Device SKU model, e.g. Samsung SM-988GN, etc. Quite often name and model can be the same.",
+              "readOnly": true
+            },
+            "brand": {
+              "type": "string",
+              "description": "Device marketing brand, e.g. Apple, OPPO, Xiaomi, etc.",
+              "readOnly": true
+            },
+            "architecture": {
+              "type": "string",
+              "description": "The CPU architecture of the device that is reporting the error",
+              "readOnly": true
+            }
+          }
+        },
+        "os": {
+          "type": "object",
+          "description": "Operating system properties",
+          "required": ["name", "version", "version_major"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Operating system name, e.g. Android, iOS",
+              "readOnly": true
+            },
+            "version": {
+              "type": "string",
+              "description": "Full operating system version, e.g. 8.1.1",
+              "readOnly": true
+            },
+            "build": {
+              "type": "string",
+              "description": "Operating system build number, e.g. 15D21",
+              "readOnly": true
+            },
+            "version_major": {
+              "type": "string",
+              "description": "Major operating system version, e.g. 8",
+              "readOnly": true
+            }
+          }
         }
       },
+
       "required": [
         "version",
         "_dd",

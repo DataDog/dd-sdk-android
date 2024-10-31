@@ -7,3 +7,6 @@
 -keepnames class com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 -keepnames class * extends com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 -keepnames class * extends com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem
+
+# Keep the fine grained masking level enums
+-keepnames enum * extends com.datadog.android.sessionreplay.PrivacyLevel { *; }

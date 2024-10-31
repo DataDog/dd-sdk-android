@@ -11,7 +11,7 @@ import android.view.Gravity
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
  */
+@Suppress("TooManyFunctions")
 open class TextViewMapper<in T : TextView>(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
@@ -82,24 +83,24 @@ open class TextViewMapper<in T : TextView>(
     /**
      * Resolves the text to record for this TextView.
      * @param textView the textView being mapped
-     * @param privacy the current privacy setting
+     * @param textAndInputPrivacy the current text and input privacy setting
      * @param isOption whether the textview is part of an option menu
      */
     protected open fun resolveCapturedText(
         textView: T,
-        privacy: SessionReplayPrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
         isOption: Boolean
     ): String {
-        val originalText = textView.text?.toString().orEmpty()
-        return when (privacy) {
-            SessionReplayPrivacy.ALLOW -> originalText
-            SessionReplayPrivacy.MASK -> if (isOption) {
+        val originalText = resolveLayoutText(textView)
+        return when (textAndInputPrivacy) {
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS -> originalText
+            TextAndInputPrivacy.MASK_ALL -> if (isOption) {
                 FIXED_INPUT_MASK
             } else {
                 StringObfuscator.getStringObfuscator().obfuscate(originalText)
             }
 
-            SessionReplayPrivacy.MASK_USER_INPUT -> if (isOption) FIXED_INPUT_MASK else originalText
+            TextAndInputPrivacy.MASK_ALL_INPUTS -> if (isOption) FIXED_INPUT_MASK else originalText
         }
     }
 
@@ -107,12 +108,20 @@ open class TextViewMapper<in T : TextView>(
 
     // region Internal
 
+    private fun resolveLayoutText(textView: T): String {
+        return (textView.layout?.text ?: textView.text)?.toString().orEmpty()
+    }
+
     private fun createTextWireframe(
         textView: T,
         mappingContext: MappingContext,
         viewGlobalBounds: GlobalBounds
     ): MobileSegment.Wireframe.TextWireframe {
-        val capturedText = resolveCapturedText(textView, mappingContext.privacy, mappingContext.hasOptionSelectorParent)
+        val capturedText = resolveCapturedText(
+            textView,
+            mappingContext.textAndInputPrivacy,
+            mappingContext.hasOptionSelectorParent
+        )
         return MobileSegment.Wireframe.TextWireframe(
             id = resolveViewId(textView),
             x = viewGlobalBounds.x,

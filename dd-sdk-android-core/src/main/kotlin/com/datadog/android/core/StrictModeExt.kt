@@ -28,3 +28,23 @@ fun <T> allowThreadDiskReads(
         StrictMode.setThreadPolicy(oldPolicy)
     }
 }
+
+/**
+ * This utility function wraps a call to a method that needs to perform a disk write operation
+ * on the main thread.
+ * This prevents adding LogCat noise when customer enable StrictMode logging.
+ * @param T the type returned by the operation
+ * @param operation the operation
+ * @return the value returned by the operation
+ */
+@InternalApi
+fun <T> allowThreadDiskWrites(
+    operation: () -> T
+): T {
+    val oldPolicy = StrictMode.allowThreadDiskWrites()
+    try {
+        return operation()
+    } finally {
+        StrictMode.setThreadPolicy(oldPolicy)
+    }
+}

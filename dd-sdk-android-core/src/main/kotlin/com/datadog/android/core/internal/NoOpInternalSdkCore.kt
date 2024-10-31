@@ -89,6 +89,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun clearAllData() = Unit
 
+    override fun isCoreActive(): Boolean = false
+
     // endregion
 
     // region FeatureSdkCore

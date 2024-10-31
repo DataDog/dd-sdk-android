@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -804,6 +805,20 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M register process lifecycle monitor W initialize()`() {
+        // Then
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
+            verify(appContext.mockInstance)
+                .registerActivityLifecycleCallbacks(capture())
+            assertThat(lastValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+            val callback = (lastValue as ProcessLifecycleMonitor).callback
+            assertThat(callback).isInstanceOf(ProcessLifecycleCallback::class.java)
+            val processLifecycleCallback = callback as ProcessLifecycleCallback
+            assertThat(processLifecycleCallback.instanceName).isEqualTo(fakeInstanceName)
+        }
+    }
+
+    @Test
     fun `M unregister process lifecycle monitor W stop()`() {
         // Given
         val expectedInvocations = if (fakeConfiguration.crashReportsEnabled) 2 else 1
@@ -812,7 +827,7 @@ internal class DatadogCoreTest {
         testedCore.stop()
 
         // Then
-        argumentCaptor<ProcessLifecycleMonitor> {
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
             verify(appContext.mockInstance, times(expectedInvocations))
                 .unregisterActivityLifecycleCallbacks(capture())
             assertThat(lastValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
@@ -868,6 +883,34 @@ internal class DatadogCoreTest {
                 .cause(errorCollector.first())
                 .buildAndThrow()
         }
+    }
+
+    @Test
+    fun `M return false W isActiveCore() { CoreFeature inactive }`() {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.initialized).thenReturn(AtomicBoolean(false))
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        val isActive = testedCore.isCoreActive()
+
+        // Then
+        assertThat(isActive).isFalse()
+    }
+
+    @Test
+    fun `M return true W isActiveCore() { CoreFeature active }`() {
+        // Given
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.initialized).thenReturn(AtomicBoolean(true))
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        val isActive = testedCore.isCoreActive()
+
+        // Then
+        assertThat(isActive).isTrue()
     }
 
     class ErrorRecordingRunnable(

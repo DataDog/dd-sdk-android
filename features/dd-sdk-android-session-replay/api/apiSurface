@@ -1,7 +1,8 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
-enum com.datadog.android.sessionreplay.ImagePrivacy
+  fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+enum com.datadog.android.sessionreplay.ImagePrivacy : PrivacyLevel
   - MASK_NONE
   - MASK_LARGE_ONLY
   - MASK_ALL
@@ -9,25 +10,57 @@ data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.V
   constructor(Class<T>, com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T>)
   fun supportsView(android.view.View): Boolean
   fun getUnsafeMapper(): com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<android.view.View>
+interface com.datadog.android.sessionreplay.PrivacyLevel
+fun android.view.View.setSessionReplayHidden(Boolean)
+fun android.view.View.setSessionReplayImagePrivacy(ImagePrivacy?)
+fun android.view.View.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy?)
+fun android.view.View.setSessionReplayTouchPrivacy(TouchPrivacy?)
 object com.datadog.android.sessionreplay.SessionReplay
   fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun startRecording(com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun stopRecording(com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.sessionreplay.SessionReplayConfiguration
   class Builder
-    constructor(Float)
+    constructor(Float = SAMPLE_IN_ALL_SESSIONS)
     fun addExtensionSupport(ExtensionSupport): Builder
     fun useCustomEndpoint(String): Builder
-    fun setPrivacy(SessionReplayPrivacy): Builder
+    DEPRECATED fun setPrivacy(SessionReplayPrivacy): Builder
+    fun setImagePrivacy(ImagePrivacy): Builder
+    fun setTouchPrivacy(TouchPrivacy): Builder
+    fun startRecordingImmediately(Boolean): Builder
+    fun setTextAndInputPrivacy(TextAndInputPrivacy): Builder
+    fun setDynamicOptimizationEnabled(Boolean): Builder
+    fun setSystemRequirements(SystemRequirementsConfiguration): Builder
     fun build(): SessionReplayConfiguration
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
   - MASK
   - MASK_USER_INPUT
+class com.datadog.android.sessionreplay.SystemRequirementsConfiguration
+  class Builder
+    fun setMinCPUCoreNumber(Int): Builder
+    fun setMinRAMSizeMb(Int): Builder
+    fun build(): SystemRequirementsConfiguration
+  companion object 
+    val BASIC: SystemRequirementsConfiguration
+    val NONE: SystemRequirementsConfiguration
+enum com.datadog.android.sessionreplay.TextAndInputPrivacy : PrivacyLevel
+  - MASK_SENSITIVE_INPUTS
+  - MASK_ALL_INPUTS
+  - MASK_ALL
+enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
+  - SHOW
+  - HIDE
 interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
   fun obfuscate(String): String
   companion object 
     fun getStringObfuscator(): StringObfuscator
+class com.datadog.android.sessionreplay.internal.recorder.resources.DefaultDrawableCopier : DrawableCopier
+  override fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
+interface com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
+  fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
 data class com.datadog.android.sessionreplay.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.SessionReplayPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, Boolean = false)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, Boolean = false)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -43,19 +76,21 @@ abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMa
   protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float, com.datadog.android.api.InternalLogger): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
 class com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper : TextViewMapper<android.widget.EditText>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
-  override fun resolveCapturedText(android.widget.EditText, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean): String
+  override fun resolveCapturedText(android.widget.EditText, com.datadog.android.sessionreplay.TextAndInputPrivacy, Boolean): String
   companion object 
 open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper<T: android.widget.TextView> : BaseAsyncBackgroundWireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
-  protected open fun resolveCapturedText(T, com.datadog.android.sessionreplay.SessionReplayPrivacy, Boolean): String
+  protected open fun resolveCapturedText(T, com.datadog.android.sessionreplay.TextAndInputPrivacy, Boolean): String
 interface com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper<T: android.view.ViewGroup> : WireframeMapper<T>
 interface com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T: android.view.View>
   fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 open class com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper
+  constructor(List<DrawableToColorMapper> = emptyList())
   override fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
   override fun resolveInsetDrawable(android.graphics.drawable.InsetDrawable, com.datadog.android.api.InternalLogger): Int?
 open class com.datadog.android.sessionreplay.utils.AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper
+  constructor(List<DrawableToColorMapper> = emptyList())
   override fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable, com.datadog.android.api.InternalLogger): Int?
   companion object 
 interface com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -78,16 +113,18 @@ object com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver : V
 interface com.datadog.android.sessionreplay.utils.DrawableToColorMapper
   fun mapDrawableToColor(android.graphics.drawable.Drawable, com.datadog.android.api.InternalLogger): Int?
   companion object 
-    fun getDefault(): DrawableToColorMapper
+    fun getDefault(List<DrawableToColorMapper> = emptyList()): DrawableToColorMapper
 data class com.datadog.android.sessionreplay.utils.GlobalBounds
   constructor(Long, Long, Long, Long)
 interface com.datadog.android.sessionreplay.utils.ImageWireframeHelper
   fun createImageWireframeByBitmap(Long, GlobalBounds, android.graphics.Bitmap, Float, Boolean, com.datadog.android.sessionreplay.ImagePrivacy, AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
-  fun createImageWireframeByDrawable(android.view.View, com.datadog.android.sessionreplay.ImagePrivacy, Int, Long, Long, Int, Int, Boolean, android.graphics.drawable.Drawable, AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null, String? = DRAWABLE_CHILD_NAME): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
+  fun createImageWireframeByDrawable(android.view.View, com.datadog.android.sessionreplay.ImagePrivacy, Int, Long, Long, Int, Int, Boolean, android.graphics.drawable.Drawable, com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier = DefaultDrawableCopier(), AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null, String? = DRAWABLE_CHILD_NAME): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
   fun createCompoundDrawableWireframes(android.widget.TextView, com.datadog.android.sessionreplay.recorder.MappingContext, Int, AsyncJobStatusCallback): MutableList<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   companion object 
 open class com.datadog.android.sessionreplay.utils.LegacyDrawableToColorMapper : DrawableToColorMapper
+  constructor(List<DrawableToColorMapper> = emptyList())
   override fun mapDrawableToColor(android.graphics.drawable.Drawable, com.datadog.android.api.InternalLogger): Int?
+  protected open fun resolveShapeDrawable(android.graphics.drawable.ShapeDrawable, com.datadog.android.api.InternalLogger): Int
   protected open fun resolveColorDrawable(android.graphics.drawable.ColorDrawable): Int?
   protected open fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
   protected open fun resolveLayerDrawable(android.graphics.drawable.LayerDrawable, com.datadog.android.api.InternalLogger, (Int, android.graphics.drawable.Drawable) -> Boolean = { _, _ -> true }): Int?
@@ -375,6 +412,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     - IOS
     - FLUTTER
     - REACT_NATIVE
+    - KOTLIN_MULTIPLATFORM
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source

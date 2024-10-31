@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -28,6 +29,7 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyApiUsage
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -55,6 +57,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
@@ -814,6 +817,39 @@ internal class RumViewManagerScopeTest {
 
         // Then
         assertThat(testedScope.childrenScopes).isEmpty()
+    }
+
+    // endregion
+
+    // region AddViewLoadingTime
+
+    @Test
+    fun `M send a warning log and api usage telemetry W handleEvent { AddViewLoadingTime, no active view }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.addViewLoadingTimeEvent()
+        testedScope.applicationDisplayed = true
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumViewManagerScope.MESSAGE_MISSING_VIEW
+        )
+        mockInternalLogger.verifyApiUsage(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                overwrite = fakeEvent.overwrite,
+                noView = true,
+                noActiveView = false
+            ),
+            15f
+        )
+        verifyNoMoreInteractions(mockInternalLogger)
+        verifyNoInteractions(mockWriter)
     }
 
     // endregion

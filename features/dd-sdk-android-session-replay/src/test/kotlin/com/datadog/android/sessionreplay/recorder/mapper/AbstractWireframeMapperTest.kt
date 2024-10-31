@@ -10,7 +10,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.view.View
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -81,8 +81,8 @@ internal abstract class AbstractWireframeMapperTest<V : View, WM : WireframeMapp
 
     // region MappingContext
 
-    fun withPrivacy(privacy: SessionReplayPrivacy) {
-        fakeMappingContext = fakeMappingContext.copy(privacy = privacy)
+    fun withTextAndInputPrivacy(textAndInputPrivacy: TextAndInputPrivacy) {
+        fakeMappingContext = fakeMappingContext.copy(textAndInputPrivacy = textAndInputPrivacy)
     }
 
     fun withSystemThemeColor(themeColor: String?) {

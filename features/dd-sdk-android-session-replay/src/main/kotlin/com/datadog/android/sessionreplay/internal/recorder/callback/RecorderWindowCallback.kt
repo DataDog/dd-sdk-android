@@ -7,12 +7,14 @@
 package com.datadog.android.sessionreplay.internal.recorder.callback
 
 import android.content.Context
+import android.graphics.Point
 import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
@@ -30,8 +32,9 @@ internal class RecorderWindowCallback(
     private val timeProvider: TimeProvider,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val internalLogger: InternalLogger,
-    private val privacy: SessionReplayPrivacy,
+    private val privacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
@@ -45,19 +48,27 @@ internal class RecorderWindowCallback(
     internal var pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
     private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
+    private var shouldRecordMotion: Boolean = false
 
     // region Window.Callback
 
     @MainThread
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
-            // we copy it and delegate it to the gesture detector for analysis
-            @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
-            val copy = copyEvent(event)
-            try {
-                handleEvent(copy)
-            } finally {
-                copy.recycle()
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                val touchLocation = Point(event.x.toInt(), event.y.toInt())
+                shouldRecordMotion = touchPrivacyManager.shouldRecordTouch(touchLocation)
+            }
+
+            if (shouldRecordMotion) {
+                // we copy it and delegate it to the gesture detector for analysis
+                @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
+                val copy = copyEvent(event)
+                try {
+                    handleEvent(copy)
+                } finally {
+                    copy.recycle()
+                }
             }
         } else {
             internalLogger.log(
@@ -178,7 +189,7 @@ internal class RecorderWindowCallback(
             viewOnDrawInterceptor.stopIntercepting()
             viewOnDrawInterceptor.intercept(
                 decorViews = rootViews,
-                sessionReplayPrivacy = privacy,
+                textAndInputPrivacy = privacy,
                 imagePrivacy = imagePrivacy
             )
         }

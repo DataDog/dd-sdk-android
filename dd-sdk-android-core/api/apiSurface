@@ -44,12 +44,14 @@ interface com.datadog.android.api.InternalLogger
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun logMetric(() -> String, Map<String, Any?>, Float)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
+  fun logApiUsage(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage, Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE)
   companion object 
     val UNBOUND: InternalLogger
 interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
   val service: String
+  fun isCoreActive(): Boolean
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserProperties(Map<String, Any?>)
@@ -124,8 +126,10 @@ interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
+data class com.datadog.android.api.net.RequestExecutionContext
+  constructor(Int = 0, Int? = null)
 interface com.datadog.android.api.net.RequestFactory
-  fun create(com.datadog.android.api.context.DatadogContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request?
+  fun create(com.datadog.android.api.context.DatadogContext, RequestExecutionContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request?
   companion object 
     const val CONTENT_TYPE_JSON: String
     const val CONTENT_TYPE_TEXT_UTF8: String
@@ -135,6 +139,7 @@ interface com.datadog.android.api.net.RequestFactory
     const val HEADER_REQUEST_ID: String
     const val QUERY_PARAM_SOURCE: String
     const val QUERY_PARAM_TAGS: String
+    const val DD_IDEMPOTENCY_KEY: String
 interface com.datadog.android.api.storage.DataWriter<T>
   fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
@@ -184,6 +189,7 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+fun <T> allowThreadDiskWrites(() -> T): T
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST
@@ -265,6 +271,7 @@ interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: 
   fun deserialize(P): R?
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.listFilesSafe(com.datadog.android.api.InternalLogger, java.io.FilenameFilter): Array<java.io.File>?
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
 interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
@@ -284,7 +291,6 @@ fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
-fun Throwable.loggableStackTrace(): String
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
   constructor(Float)
   - ALL

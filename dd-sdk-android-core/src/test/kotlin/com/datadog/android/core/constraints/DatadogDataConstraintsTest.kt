@@ -12,6 +12,7 @@ import com.datadog.android.utils.times
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -324,6 +325,24 @@ internal class DatadogDataConstraintsTest {
         // THEN
         assertThat(sanitizedAttributes)
             .containsExactlyEntriesOf(attributes.filterNot { reservedKeys.contains(it.key) })
+    }
+
+    @Test
+    fun `M drop the reserved attributes W validateAttributes { null keys }`(
+        @StringForgery value: String
+    ) {
+        // GIVEN
+        val attributes = mapOf<String?, Any?>(null to value) as Map<*, *>
+
+        @Suppress("UNCHECKED_CAST") // simulate an unsafe map sent from Java
+        val unsafeAttributes = attributes as Map<String, Any>
+
+        // WHEN
+
+        val sanitizedAttributes = testedConstraints.validateAttributes(unsafeAttributes)
+
+        // THEN
+        assertThat(sanitizedAttributes).isEmpty()
     }
 
     // endregion

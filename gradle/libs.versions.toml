@@ -7,7 +7,7 @@ okHttp = "4.12.0"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
-androidToolsPlugin = "8.5.2"
+androidToolsPlugin = "8.6.1"
 androidDesugaringSdk = "2.0.4"
 androidXAnnotations = "1.1.0"
 androidXAppCompat = "1.3.0"
@@ -67,6 +67,10 @@ nexusPublishGradlePlugin = "1.1.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
+# version d4384e4d90 of com.github.drieks.antlr-kotlin:antlr-kotlin-runtime
+# referenced by com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm cannot be found
+# so explicitly overriding with the version which can be found
+kotlinAntlrRuntime = "v0.1.0"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.13.2"
 dependencyLicense = "0.3"
@@ -85,7 +89,8 @@ timber = "5.0.1"
 coroutines = "1.4.2"
 
 # Local Server
-ktor = "1.6.0"
+ktor = "1.6.8"
+ktorServer = "3.0.0-rc-1"
 
 # Otel
 jctools = "3.3.0"
@@ -205,6 +210,7 @@ kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
 kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
 kotlinGrammarParser = { module = "com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm", version.ref = "kotlinGrammarParser" }
+kotlinAntlrRuntime = { module = "com.github.drieks.antlr-kotlin:antlr-kotlin-runtime", version.ref = "kotlinAntlrRuntime" }
 jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
 
 # Integrations
@@ -231,8 +237,10 @@ coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", ver
 
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
-ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
+ktorServerCore = { module = "io.ktor:ktor-server-core", version.ref = "ktorServer" }
+ktorServerNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktorServer" }
+ktorServerSSE = { module = "io.ktor:ktor-server-sse", version.ref = "ktorServer" }
 
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
@@ -312,8 +320,12 @@ glide = [
 
 ktor = [
     "ktorCore",
-    "ktorNetty",
-    "ktorGson"
+    "ktorGson",
+]
+ktorServer = [
+    "ktorServerCore",
+    "ktorServerNetty",
+    "ktorServerSSE"
 ]
 
 traceCore = [

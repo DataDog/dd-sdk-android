@@ -8,6 +8,7 @@ package com.datadog.android.rum.integration
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
@@ -18,11 +19,14 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.tests.assertj.StubEventsAssert
+import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -30,14 +34,18 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.net.URL
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -92,7 +100,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(1)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -119,7 +127,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -162,7 +170,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         print(eventsWritten[1].eventData)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -206,7 +214,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -276,7 +284,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -345,7 +353,7 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        StubEventsAssert.assertThat(eventsWritten)
+        assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
@@ -368,6 +376,7 @@ class ManualTrackingRumTest {
                 hasType("resource")
                 hasViewUrl(key)
                 hasViewName(name)
+                hasResourceUrl(resourceUrl.toString())
             }
             .hasRumEvent(index = 2) {
                 // View updated with event
@@ -379,10 +388,9 @@ class ManualTrackingRumTest {
                 hasViewUrl(key)
                 hasViewName(name)
                 hasResourceCount(1)
-                doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 3) {
-                // View updated with FF
+                // View stopped
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -390,6 +398,292 @@ class ManualTrackingRumTest {
                 hasType("view")
                 hasViewUrl(key)
                 hasViewName(name)
+            }
+    }
+
+    @RepeatedTest(16)
+    fun `M send view event with resource W startView() + startResource() + stopResource() {using ResourceId}`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @StringForgery resourceKey: String,
+        @Forgery resourceUuid: UUID,
+        @Forgery resourceUrl: URL,
+        @IntForgery(200, 599) resourceStatus: Int,
+        @LongForgery(0) resourceSize: Long
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
+        val resourceId = ResourceId(resourceKey, resourceUuid.toString())
+
+        // When
+        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startResource(resourceId, RumResourceMethod.GET, resourceUrl.toString())
+        Thread.sleep(100)
+        rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE, emptyMap())
+        rumMonitor.stopView(key, emptyMap())
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(4)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasActionCount(0)
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Custom event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("resource")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasResourceUrl(resourceUrl.toString())
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasResourceCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+            }
+    }
+
+    // endregion
+
+    // region AddViewLoading time
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M attach view loading time W addViewLoadingTime { active view available }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @BoolForgery overwrite: Boolean
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        val startTime = System.nanoTime()
+        rumMonitor.startView(key, name, emptyMap())
+
+        // When
+        val endTime = System.nanoTime()
+        val expectedViewLoadingTime = endTime - startTime
+        rumMonitor.addViewLoadingTime(overwrite)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(2)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasActionCount(0)
+                doesNotHaveViewLoadingTime()
+            }
+            .hasRumEvent(index = 1) {
+                // view updated with loading time
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasViewLoadingTime(
+                    expectedViewLoadingTime,
+                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
+                )
+            }
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M not attach view loading time W addViewLoadingTime { view was stopped }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @BoolForgery overwrite: Boolean
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.stopView(key, emptyMap())
+
+        // When
+        rumMonitor.addViewLoadingTime(overwrite)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(2)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasActionCount(0)
+                doesNotHaveViewLoadingTime()
+            }
+            .hasRumEvent(index = 1) {
+                // view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                doesNotHaveViewLoadingTime()
+            }
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M renew view loading time W addViewLoadingTime { loading time was already added, overwrite is true }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @BoolForgery overwrite: Boolean
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        val startTime = System.nanoTime()
+        rumMonitor.startView(key, name, emptyMap())
+        val intermediateTime = System.nanoTime()
+        rumMonitor.addViewLoadingTime(overwrite)
+
+        // When
+        Thread.sleep(100)
+        val endTime = System.nanoTime()
+        rumMonitor.addViewLoadingTime(true)
+
+        // Then
+        val expectedFirstViewLoadingTime = intermediateTime - startTime
+        val expectedSecondViewLoadingTime = endTime - startTime
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(3)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasActionCount(0)
+                doesNotHaveViewLoadingTime()
+            }
+            .hasRumEvent(index = 1) {
+                // first view loading time
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasViewLoadingTime(
+                    expectedFirstViewLoadingTime,
+                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
+                )
+            }
+            .hasRumEvent(index = 2) {
+                // second view loading time
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasViewLoadingTime(
+                    expectedSecondViewLoadingTime,
+                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
+                )
+            }
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M not renew view loading time W addViewLoadingTime { loading time was already added, overwrite is false }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @BoolForgery overwrite: Boolean
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        val startTime = System.nanoTime()
+        rumMonitor.startView(key, name, emptyMap())
+        val intermediateTime = System.nanoTime()
+        rumMonitor.addViewLoadingTime(overwrite)
+
+        // When
+        Thread.sleep(100)
+        rumMonitor.addViewLoadingTime(false)
+
+        // Then
+        val expectedViewLoadingTime = intermediateTime - startTime
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(2)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasActionCount(0)
+                doesNotHaveViewLoadingTime()
+            }
+            .hasRumEvent(index = 1) {
+                // first view loading time
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasViewLoadingTime(
+                    expectedViewLoadingTime,
+                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
+                )
             }
     }
 

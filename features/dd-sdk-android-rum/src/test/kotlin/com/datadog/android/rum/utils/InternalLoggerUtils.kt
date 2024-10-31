@@ -9,6 +9,8 @@
 package com.datadog.android.rum.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.rum.utils.assertj.InternalApiUsageEventAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.ArgumentMatchers.isA
 import org.mockito.kotlin.argumentCaptor
@@ -17,6 +19,17 @@ import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.verification.VerificationMode
+
+fun InternalLogger.verifyApiUsage(
+    apiUsage: InternalTelemetryEvent.ApiUsage,
+    samplingRate: Float
+) {
+    argumentCaptor<InternalTelemetryEvent.ApiUsage> {
+        verify(this@verifyApiUsage).logApiUsage(capture(), eq(samplingRate))
+        val event = firstValue
+        InternalApiUsageEventAssert.assertThat(event).isEqualTo(apiUsage)
+    }
+}
 
 fun InternalLogger.verifyLog(
     level: InternalLogger.Level,

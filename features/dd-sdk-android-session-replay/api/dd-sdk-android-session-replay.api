@@ -1,9 +1,10 @@
 public abstract interface class com/datadog/android/sessionreplay/ExtensionSupport {
+	public abstract fun getCustomDrawableMapper ()Ljava/util/List;
 	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
 }
 
-public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum {
+public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
 	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static final field MASK_LARGE_ONLY Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static final field MASK_NONE Lcom/datadog/android/sessionreplay/ImagePrivacy;
@@ -22,26 +23,48 @@ public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/sessionreplay/PrivacyLevel {
+}
+
+public final class com/datadog/android/sessionreplay/PrivacyOverrideExtensionsKt {
+	public static final fun setSessionReplayHidden (Landroid/view/View;Z)V
+	public static final fun setSessionReplayImagePrivacy (Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;)V
+	public static final fun setSessionReplayTextAndInputPrivacy (Landroid/view/View;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)V
+	public static final fun setSessionReplayTouchPrivacy (Landroid/view/View;Lcom/datadog/android/sessionreplay/TouchPrivacy;)V
+}
+
 public final class com/datadog/android/sessionreplay/SessionReplay {
 	public static final field INSTANCE Lcom/datadog/android/sessionreplay/SessionReplay;
 	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun enable$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public final fun startRecording (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun startRecording$default (Lcom/datadog/android/sessionreplay/SessionReplay;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public final fun stopRecording (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun stopRecording$default (Lcom/datadog/android/sessionreplay/SessionReplay;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$Builder {
+	public fun <init> ()V
 	public fun <init> (F)V
+	public synthetic fun <init> (FILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun addExtensionSupport (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun setDynamicOptimizationEnabled (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun setImagePrivacy (Lcom/datadog/android/sessionreplay/ImagePrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun setSystemRequirements (Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun setTextAndInputPrivacy (Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun setTouchPrivacy (Lcom/datadog/android/sessionreplay/TouchPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun startRecordingImmediately (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
 
@@ -53,6 +76,37 @@ public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java
 	public static fun values ()[Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 }
 
+public final class com/datadog/android/sessionreplay/SystemRequirementsConfiguration {
+	public static final field Companion Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration$Companion;
+}
+
+public final class com/datadog/android/sessionreplay/SystemRequirementsConfiguration$Builder {
+	public fun <init> ()V
+	public final fun build ()Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;
+	public final fun setMinCPUCoreNumber (I)Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration$Builder;
+	public final fun setMinRAMSizeMb (I)Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration$Builder;
+}
+
+public final class com/datadog/android/sessionreplay/SystemRequirementsConfiguration$Companion {
+	public final fun getBASIC ()Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;
+	public final fun getNONE ()Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;
+}
+
+public final class com/datadog/android/sessionreplay/TextAndInputPrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
+	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+	public static final field MASK_ALL_INPUTS Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+	public static final field MASK_SENSITIVE_INPUTS Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+}
+
+public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
+	public static final field HIDE Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static final field SHOW Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/TouchPrivacy;
+}
+
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion;
 	public abstract fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
@@ -60,6 +114,15 @@ public abstract interface class com/datadog/android/sessionreplay/internal/recor
 
 public final class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion {
 	public final fun getStringObfuscator ()Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/resources/DefaultDrawableCopier : com/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier {
+	public fun <init> ()V
+	public fun copy (Landroid/graphics/drawable/Drawable;Landroid/content/res/Resources;)Landroid/graphics/drawable/Drawable;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier {
+	public abstract fun copy (Landroid/graphics/drawable/Drawable;Landroid/content/res/Resources;)Landroid/graphics/drawable/Drawable;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment {
@@ -731,6 +794,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Source 
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Source$Companion;
 	public static final field FLUTTER Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final field IOS Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
+	public static final field KOTLIN_MULTIPLATFORM Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -1345,21 +1409,21 @@ public final class com/datadog/android/sessionreplay/model/ResourceMetadata$Comp
 }
 
 public final class com/datadog/android/sessionreplay/recorder/MappingContext {
-	public fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Z)V
-	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Z)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/sessionreplay/recorder/SystemInformation;
 	public final fun component2 ()Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;
-	public final fun component3 ()Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+	public final fun component3 ()Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public final fun component4 ()Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public final fun component5 ()Z
-	public final fun copy (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Z)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
+	public final fun copy (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Z)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHasOptionSelectorParent ()Z
 	public final fun getImagePrivacy ()Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public final fun getImageWireframeHelper ()Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;
-	public final fun getPrivacy ()Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public final fun getSystemInformation ()Lcom/datadog/android/sessionreplay/recorder/SystemInformation;
+	public final fun getTextAndInputPrivacy ()Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1411,7 +1475,7 @@ public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseWire
 public final class com/datadog/android/sessionreplay/recorder/mapper/EditTextMapper : com/datadog/android/sessionreplay/recorder/mapper/TextViewMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/recorder/mapper/EditTextMapper$Companion;
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
-	public synthetic fun resolveCapturedText (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Z)Ljava/lang/String;
+	public synthetic fun resolveCapturedText (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Z)Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/recorder/mapper/EditTextMapper$Companion {
@@ -1421,7 +1485,7 @@ public class com/datadog/android/sessionreplay/recorder/mapper/TextViewMapper : 
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
 	public synthetic fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
 	public fun map (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
-	protected fun resolveCapturedText (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Z)Ljava/lang/String;
+	protected fun resolveCapturedText (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Z)Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/sessionreplay/recorder/mapper/TraverseAllChildrenMapper : com/datadog/android/sessionreplay/recorder/mapper/WireframeMapper {
@@ -1433,6 +1497,8 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/mappe
 
 public class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper : com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper {
 	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected fun resolveInsetDrawable (Landroid/graphics/drawable/InsetDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 	protected fun resolveRippleDrawable (Landroid/graphics/drawable/RippleDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 }
@@ -1440,6 +1506,8 @@ public class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapp
 public class com/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper : com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper$Companion;
 	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected fun resolveGradientDrawable (Landroid/graphics/drawable/GradientDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 }
 
@@ -1485,7 +1553,8 @@ public abstract interface class com/datadog/android/sessionreplay/utils/Drawable
 }
 
 public final class com/datadog/android/sessionreplay/utils/DrawableToColorMapper$Companion {
-	public final fun getDefault ()Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
+	public final fun getDefault (Ljava/util/List;)Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
+	public static synthetic fun getDefault$default (Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper$Companion;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
 }
 
 public final class com/datadog/android/sessionreplay/utils/GlobalBounds {
@@ -1509,7 +1578,7 @@ public abstract interface class com/datadog/android/sessionreplay/utils/ImageWir
 	public static final field Companion Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper$Companion;
 	public abstract fun createCompoundDrawableWireframes (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/recorder/MappingContext;ILcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)Ljava/util/List;
 	public abstract fun createImageWireframeByBitmap (JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/graphics/Bitmap;FZLcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
-	public abstract fun createImageWireframeByDrawable (Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public abstract fun createImageWireframeByDrawable (Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
 public final class com/datadog/android/sessionreplay/utils/ImageWireframeHelper$Companion {
@@ -1517,12 +1586,14 @@ public final class com/datadog/android/sessionreplay/utils/ImageWireframeHelper$
 
 public final class com/datadog/android/sessionreplay/utils/ImageWireframeHelper$DefaultImpls {
 	public static synthetic fun createImageWireframeByBitmap$default (Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/graphics/Bitmap;FZLcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
-	public static synthetic fun createImageWireframeByDrawable$default (Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public static synthetic fun createImageWireframeByDrawable$default (Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
 public class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper : com/datadog/android/sessionreplay/utils/DrawableToColorMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper$Companion;
 	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun mapDrawableToColor (Landroid/graphics/drawable/Drawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
 	protected final fun mergeColorAndAlpha (II)I
 	protected fun resolveColorDrawable (Landroid/graphics/drawable/ColorDrawable;)Ljava/lang/Integer;
@@ -1531,6 +1602,7 @@ public class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper
 	protected fun resolveLayerDrawable (Landroid/graphics/drawable/LayerDrawable;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function2;)Ljava/lang/Integer;
 	public static synthetic fun resolveLayerDrawable$default (Lcom/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper;Landroid/graphics/drawable/LayerDrawable;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Integer;
 	protected fun resolveRippleDrawable (Landroid/graphics/drawable/RippleDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
+	protected fun resolveShapeDrawable (Landroid/graphics/drawable/ShapeDrawable;Lcom/datadog/android/api/InternalLogger;)I
 }
 
 public final class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper$Companion {

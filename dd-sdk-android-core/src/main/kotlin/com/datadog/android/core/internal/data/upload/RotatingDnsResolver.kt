@@ -55,15 +55,15 @@ internal class RotatingDnsResolver(
         }
     }
 
+    // endregion
+
+    // region Internal
+
     private fun safeCopy(list: List<InetAddress>): List<InetAddress> {
         return synchronized(list) {
             list.toList()
         }
     }
-
-    // endregion
-
-    // region Internal
 
     private fun isValid(knownHost: ResolvedHost): Boolean {
         return knownHost.getAge() < ttl && knownHost.addresses.isNotEmpty()

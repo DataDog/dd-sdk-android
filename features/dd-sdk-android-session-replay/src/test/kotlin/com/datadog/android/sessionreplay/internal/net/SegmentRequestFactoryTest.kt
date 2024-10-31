@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -58,6 +59,9 @@ internal class SegmentRequestFactoryTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeExecutionContext: RequestExecutionContext
+
     @Mock
     lateinit var mockRequestBody: RequestBody
 
@@ -87,7 +91,7 @@ internal class SegmentRequestFactoryTest {
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
         whenever(mockSegmentRequestBodyFactory.create(fakeDataGroup))
             .thenReturn(mockRequestBody)
-        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
+        whenever(mockBatchesToSegmentsMapper.map(fakeDatadogContext, fakeBatchData.map { it.data }))
             .thenReturn(fakeDataGroup)
         testedRequestFactory = SegmentRequestFactory(
             customEndpointUrl = null,
@@ -103,6 +107,7 @@ internal class SegmentRequestFactoryTest {
         // When
         val request = testedRequestFactory.create(
             fakeDatadogContext,
+            fakeExecutionContext,
             fakeBatchData,
             fakeBatchMetadata
         )
@@ -136,6 +141,7 @@ internal class SegmentRequestFactoryTest {
         )
         val request = testedRequestFactory.create(
             fakeDatadogContext,
+            fakeExecutionContext,
             fakeBatchData,
             fakeBatchMetadata
         )
@@ -160,12 +166,17 @@ internal class SegmentRequestFactoryTest {
     @Test
     fun `M throw exception W create(){ payload is broken }`() {
         // Given
-        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
+        whenever(mockBatchesToSegmentsMapper.map(fakeDatadogContext, fakeBatchData.map { it.data }))
             .thenReturn(emptyList())
 
         // When
         assertThatThrownBy {
-            testedRequestFactory.create(fakeDatadogContext, fakeBatchData, fakeBatchMetadata)
+            testedRequestFactory.create(
+                fakeDatadogContext,
+                fakeExecutionContext,
+                fakeBatchData,
+                fakeBatchMetadata
+            )
         }
             .isInstanceOf(InvalidPayloadFormatException::class.java)
             .hasMessage(

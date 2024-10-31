@@ -233,6 +233,16 @@ internal class LoggerBuilderTest {
     }
 
     @Test
+    fun `builder can disable the bundle with rum feature`() {
+        val logger = Logger.Builder(mockSdkCore)
+            .setBundleWithRumEnabled(false)
+            .build()
+
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
+        assertThat(handler.bundleWithRum).isFalse
+    }
+
+    @Test
     fun `builder can set a sample rate`(@Forgery forge: Forge) {
         val expectedSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 

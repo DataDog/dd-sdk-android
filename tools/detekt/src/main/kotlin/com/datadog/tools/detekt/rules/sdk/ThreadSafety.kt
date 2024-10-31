@@ -116,9 +116,6 @@ class ThreadSafety(
             } else {
                 null
             }
-            if (wrapCallWith == null) {
-                println("Non thread switching call:$call")
-            }
         } else {
             val callee = expression.calleeExpression
             if (callee is KtNameReferenceExpression) {

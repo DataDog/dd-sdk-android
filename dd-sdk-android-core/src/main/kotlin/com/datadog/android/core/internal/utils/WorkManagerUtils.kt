@@ -8,13 +8,13 @@ package com.datadog.android.core.internal.utils
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.data.upload.UploadWorker
-import java.lang.IllegalStateException
 import java.util.concurrent.TimeUnit
 
 internal const val CANCEL_ERROR_MESSAGE = "Error cancelling the UploadWorker"
@@ -25,10 +25,14 @@ internal const val TAG_DATADOG_UPLOAD = "DatadogBackgroundUpload"
 
 internal const val DELAY_MS: Long = 5000
 
-internal fun cancelUploadWorker(context: Context, internalLogger: InternalLogger) {
+internal fun cancelUploadWorker(
+    context: Context,
+    instanceName: String,
+    internalLogger: InternalLogger
+) {
     try {
         val workManager = WorkManager.getInstance(context)
-        workManager.cancelAllWorkByTag(TAG_DATADOG_UPLOAD)
+        workManager.cancelAllWorkByTag("$TAG_DATADOG_UPLOAD/$instanceName")
     } catch (e: IllegalStateException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -40,7 +44,11 @@ internal fun cancelUploadWorker(context: Context, internalLogger: InternalLogger
 }
 
 @Suppress("TooGenericExceptionCaught")
-internal fun triggerUploadWorker(context: Context, internalLogger: InternalLogger) {
+internal fun triggerUploadWorker(
+    context: Context,
+    instanceName: String,
+    internalLogger: InternalLogger
+) {
     try {
         val workManager = WorkManager.getInstance(context)
         val constraints = Constraints.Builder()
@@ -48,8 +56,9 @@ internal fun triggerUploadWorker(context: Context, internalLogger: InternalLogge
             .build()
         val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
             .setConstraints(constraints)
-            .addTag(TAG_DATADOG_UPLOAD)
+            .addTag("$TAG_DATADOG_UPLOAD/$instanceName")
             .setInitialDelay(DELAY_MS, TimeUnit.MILLISECONDS)
+            .setInputData(Data.Builder().putString(UploadWorker.DATADOG_INSTANCE_NAME, instanceName).build())
             .build()
         workManager.enqueueUniqueWork(
             UPLOAD_WORKER_NAME,

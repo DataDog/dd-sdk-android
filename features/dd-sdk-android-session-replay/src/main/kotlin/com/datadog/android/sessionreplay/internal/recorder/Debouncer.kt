@@ -8,11 +8,16 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import java.util.concurrent.TimeUnit
 
 internal class Debouncer(
     private val handler: Handler = Handler(Looper.getMainLooper()),
-    private val maxRecordDelayInNs: Long = MAX_DELAY_THRESHOLD_NS
+    private val maxRecordDelayInNs: Long = MAX_DELAY_THRESHOLD_NS,
+    private val timeBank: TimeBank = RecordingTimeBank(),
+    private val sdkCore: FeatureSdkCore,
+    private val dynamicOptimizationEnabled: Boolean
 ) {
 
     private var lastTimeRecordWasPerformed = 0L
@@ -37,8 +42,31 @@ internal class Debouncer(
     }
 
     private fun executeRunnable(runnable: Runnable) {
-        runnable.run()
+        if (dynamicOptimizationEnabled) {
+            runInTimeBalance {
+                runnable.run()
+            }
+        } else {
+            runnable.run()
+        }
         lastTimeRecordWasPerformed = System.nanoTime()
+    }
+
+    private fun runInTimeBalance(block: () -> Unit) {
+        if (timeBank.updateAndCheck(System.nanoTime())) {
+            val startTimeInNano = System.nanoTime()
+            block()
+            val endTimeInNano = System.nanoTime()
+            timeBank.consume(endTimeInNano - startTimeInNano)
+        } else {
+            logSkippedFrame()
+        }
+    }
+
+    private fun logSkippedFrame() {
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val telemetryEvent = mapOf(TYPE_KEY to TYPE_VALUE)
+        rumFeature.sendEvent(telemetryEvent)
     }
 
     companion object {
@@ -47,5 +75,8 @@ internal class Debouncer(
 
         // one frame time
         internal const val DEBOUNCE_TIME_IN_MS: Long = 64
+
+        private const val TYPE_VALUE = "sr_skipped_frame"
+        private const val TYPE_KEY = "type"
     }
 }

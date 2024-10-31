@@ -28,6 +28,8 @@ class ApiUsage(
     private val outputFileName: String by config(defaultValue = "apiUsage.log")
     private val outputFile: File by lazy { File(outputFileName) }
 
+    private val internalPackagePrefix: String by config(defaultValue = "")
+
     private var visitingTestFunction = false
 
     // region Rule
@@ -63,8 +65,10 @@ class ApiUsage(
         expression: KtCallExpression,
         resolvedCall: ResolvedFunCall
     ) {
-        outputFile.appendText(resolvedCall.call)
-        outputFile.appendText("\n")
+        if (internalPackagePrefix.isBlank() || resolvedCall.containerFqName.startsWith(internalPackagePrefix)) {
+            outputFile.appendText(resolvedCall.call)
+            outputFile.appendText("\n")
+        }
     }
 
     // endregion

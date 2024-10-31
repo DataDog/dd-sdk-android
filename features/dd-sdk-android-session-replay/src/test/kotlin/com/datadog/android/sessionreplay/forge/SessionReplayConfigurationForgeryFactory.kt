@@ -9,6 +9,9 @@ package com.datadog.android.sessionreplay.forge
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
@@ -18,10 +21,19 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
         return SessionReplayConfiguration(
             customEndpointUrl = forge.aNullable { aStringMatching("https://[a-z]+\\.com") },
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java),
+            textAndInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java),
             imagePrivacy = forge.aValueFrom(ImagePrivacy::class.java),
+            touchPrivacy = forge.aValueFrom(TouchPrivacy::class.java),
             customMappers = forge.aList { mock() },
             customOptionSelectorDetectors = forge.aList { mock() },
-            sampleRate = forge.aFloat(min = 0f, max = 100f)
+            customDrawableMappers = forge.aList { mock() },
+            startRecordingImmediately = forge.aBool(),
+            sampleRate = forge.aFloat(min = 0f, max = 100f),
+            dynamicOptimizationEnabled = forge.aBool(),
+            systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
+                .setMinRAMSizeMb(forge.aSmallInt())
+                .setMinCPUCoreNumber(forge.aSmallInt())
+                .build()
         )
     }
 }

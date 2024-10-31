@@ -47,4 +47,8 @@ class ComposeExtensionSupport : ExtensionSupport {
     override fun getOptionSelectorDetectors(): List<OptionSelectorDetector> {
         return emptyList()
     }
+
+    override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
+        return emptyList()
+    }
 }

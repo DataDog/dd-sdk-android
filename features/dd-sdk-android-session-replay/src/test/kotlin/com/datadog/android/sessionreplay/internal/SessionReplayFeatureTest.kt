@@ -26,6 +26,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +34,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -42,6 +46,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -53,6 +58,7 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -78,6 +84,9 @@ internal class SessionReplayFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
+    @Mock
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
@@ -99,7 +108,10 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            startRecordingImmediately = true,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
     }
@@ -121,10 +133,16 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            touchPrivacyManager = mockTouchPrivacyManager,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
-            sampleRate = fakeConfiguration.sampleRate
+            customDrawableMappers = emptyList(),
+            startRecordingImmediately = true,
+            sampleRate = fakeConfiguration.sampleRate,
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
         )
 
         // When
@@ -142,10 +160,16 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            touchPrivacyManager = mockTouchPrivacyManager,
             customMappers = emptyList(),
             customOptionSelectorDetectors = emptyList(),
-            sampleRate = fakeConfiguration.sampleRate
+            customDrawableMappers = emptyList(),
+            sampleRate = fakeConfiguration.sampleRate,
+            startRecordingImmediately = true,
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
         )
 
         // When
@@ -161,10 +185,14 @@ internal class SessionReplayFeatureTest {
             firstValue.invoke(updatedContext)
             assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_SAMPLE_RATE_KEY])
                 .isEqualTo(fakeConfiguration.sampleRate.toLong())
-            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_PRIVACY_KEY])
-                .isEqualTo(fakeConfiguration.privacy.toString().lowercase(Locale.US))
-            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_MANUAL_RECORDING_KEY])
-                .isEqualTo(false)
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY])
+                .isEqualTo(true)
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_IMAGE_PRIVACY_KEY])
+                .isEqualTo(fakeConfiguration.imagePrivacy.toString().lowercase(Locale.US))
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_TOUCH_PRIVACY_KEY])
+                .isEqualTo(fakeConfiguration.touchPrivacy.toString().lowercase(Locale.US))
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY])
+                .isEqualTo(fakeConfiguration.textAndInputPrivacy.toString().lowercase(Locale.US))
         }
     }
 
@@ -175,7 +203,10 @@ internal class SessionReplayFeatureTest {
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
             imagePrivacy = fakeConfiguration.imagePrivacy,
+            startRecordingImmediately = true,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
         ) { _, _, _, _ -> mockRecorder }
 
@@ -819,7 +850,8 @@ internal class SessionReplayFeatureTest {
 
     @Test
     fun `M log warning and do nothing W onReceive() { unknown type property value }`(
-        forge: Forge
+        forge: Forge,
+        @Mock fakeContext: Application
     ) {
         // Given
         val event = mapOf(
@@ -828,6 +860,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -839,11 +872,13 @@ internal class SessionReplayFeatureTest {
             expectedMessage
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
-    fun `M log warning and do nothing W onReceive() { missing mandatory fields }`() {
+    fun `M log warning and do nothing W onReceive() { missing mandatory fields }`(
+        @Mock fakeContext: Application
+    ) {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -851,6 +886,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -860,11 +896,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
-    fun `M log warning and do nothing W onReceive() { missing keep  state field }`() {
+    fun `M log warning and do nothing W onReceive() { missing keep  state field }`(
+        @Mock fakeContext: Application
+    ) {
         // Given
         val event = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -873,6 +911,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -882,12 +921,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
     fun `M log warning and do nothing W onReceive() { missing session id field }`(
-        @BoolForgery fakeKeep: Boolean
+        @BoolForgery fakeKeep: Boolean,
+        @Mock fakeContext: Application
     ) {
         // Given
         val event = mapOf(
@@ -897,6 +937,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -906,12 +947,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
     fun `M log warning and do nothing W onReceive() { mandatory fields have wrong format }`(
-        forge: Forge
+        forge: Forge,
+        @Mock fakeContext: Application
     ) {
         // Given
         val event = mapOf(
@@ -924,6 +966,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
+        testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
         // Then
@@ -933,7 +976,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
-        verifyNoInteractions(mockRecorder)
+        verify(mockRecorder, never()).resumeRecorders()
     }
 
     @Test
@@ -957,6 +1000,158 @@ internal class SessionReplayFeatureTest {
             .isEqualTo(SessionReplayFeature.STORAGE_CONFIGURATION)
     }
 
+    // region startRecordingImmediately
+
+    @ParameterizedTest
+    @MethodSource("recordingScenarioProvider")
+    fun `M start recording W startRecordingImmediately`(
+        scenario: SessionRecordingScenario
+    ) {
+        // Given
+        val fakeContext = mock<Application>()
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to scenario.keepSession,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
+        )
+
+        whenever(mockSampler.sample()).thenReturn(scenario.sampleInSession)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = scenario.startRecordingImmediately,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.onReceive(event)
+
+        // Then
+        if (scenario.expectedResult) {
+            verify(mockRecorder).resumeRecorders()
+        } else {
+            verify(mockRecorder, never()).resumeRecorders()
+        }
+    }
+
+    // endregion
+
+    // region manual stop/start
+
+    @Test
+    fun `M start recorders only once W onReceive { sessionId is the same and recordingState did not change }`(
+        @Mock fakeContext: Application
+    ) {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
+        )
+        whenever(mockSampler.sample()).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = true,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.onReceive(event)
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRecorder, times(1)).resumeRecorders()
+    }
+
+    @Test
+    fun `M call resumeRecorders W manuallyStartRecording`(
+        @Mock fakeContext: Application
+    ) {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
+        )
+        whenever(mockSampler.sample()).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = false,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.manuallyStartRecording()
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRecorder).resumeRecorders()
+    }
+
+    @Test
+    fun `M call stopRecorders W manuallyStopRecording { if already recording }`(
+        @Mock fakeContext: Application,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
+        )
+
+        whenever(mockSampler.sample()).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = true,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.onReceive(event)
+        testedFeature.manuallyStopRecording()
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRecorder).stopRecorders()
+    }
+
+    // endregion
+
+    internal data class SessionRecordingScenario(
+        val startRecordingImmediately: Boolean,
+        val keepSession: Boolean,
+        val sampleInSession: Boolean,
+        val expectedResult: Boolean
+    )
+
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
@@ -965,6 +1160,76 @@ internal class SessionReplayFeatureTest {
         @Suppress("unused") // this is actually used
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(appContext)
+        }
+
+        @JvmStatic
+        fun recordingScenarioProvider(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = true,
+                        keepSession = true,
+                        sampleInSession = true,
+                        expectedResult = true
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = true,
+                        keepSession = false,
+                        sampleInSession = true,
+                        expectedResult = false
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = true,
+                        keepSession = true,
+                        sampleInSession = false,
+                        expectedResult = false
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = true,
+                        keepSession = false,
+                        sampleInSession = false,
+                        expectedResult = false
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = false,
+                        keepSession = true,
+                        sampleInSession = true,
+                        expectedResult = false
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = false,
+                        keepSession = false,
+                        sampleInSession = true,
+                        expectedResult = false
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = false,
+                        keepSession = true,
+                        sampleInSession = false,
+                        expectedResult = false
+                    )
+                ),
+                Arguments.of(
+                    SessionRecordingScenario(
+                        startRecordingImmediately = false,
+                        keepSession = false,
+                        sampleInSession = false,
+                        expectedResult = false
+                    )
+                )
+            )
         }
     }
 }

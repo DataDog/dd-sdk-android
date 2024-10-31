@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.DatadogCore
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 
 /**
@@ -45,28 +46,28 @@ class _InternalProxy internal constructor(
             }
 
         fun debug(message: String) {
-            rumFeature?.sendEvent(mapOf("type" to "telemetry_debug", "message" to message))
+            val telemetryEvent = InternalTelemetryEvent.Log.Debug(
+                message = message,
+                additionalProperties = null
+            )
+            rumFeature?.sendEvent(telemetryEvent)
         }
 
         fun error(message: String, throwable: Throwable? = null) {
-            rumFeature?.sendEvent(
-                mapOf(
-                    "type" to "telemetry_error",
-                    "message" to message,
-                    "throwable" to throwable
-                )
+            val telemetryEvent = InternalTelemetryEvent.Log.Error(
+                message = message,
+                error = throwable
             )
+            rumFeature?.sendEvent(telemetryEvent)
         }
 
         fun error(message: String, stack: String?, kind: String?) {
-            rumFeature?.sendEvent(
-                mapOf(
-                    "type" to "telemetry_error",
-                    "message" to message,
-                    "stacktrace" to stack,
-                    "kind" to kind
-                )
+            val telemetryEvent = InternalTelemetryEvent.Log.Error(
+                message = message,
+                stacktrace = stack,
+                kind = kind
             )
+            rumFeature?.sendEvent(telemetryEvent)
         }
     }
 

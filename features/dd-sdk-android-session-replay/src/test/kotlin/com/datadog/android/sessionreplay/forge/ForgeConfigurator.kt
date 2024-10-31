@@ -15,6 +15,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
 
     override fun configure(forge: Forge) {
         super.configure(forge)
+        forge.useJvmFactories()
 
         // Core
         forge.useCoreFactories()

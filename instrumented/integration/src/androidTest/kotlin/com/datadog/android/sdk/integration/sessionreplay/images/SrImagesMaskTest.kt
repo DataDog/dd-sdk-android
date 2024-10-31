@@ -12,7 +12,6 @@ import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImagesActi
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,9 +26,7 @@ internal class SrImagesMaskTest :
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.MASK)
     )
 
-    // TODO: RUM-5873 Fix these tests and remove the @Ignore annotation
     @Test
-    @Ignore("These tests were not maintained anymore and they need to be fixed")
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
         assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)

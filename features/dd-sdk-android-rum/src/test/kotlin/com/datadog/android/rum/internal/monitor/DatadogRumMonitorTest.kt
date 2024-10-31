@@ -16,8 +16,9 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -44,9 +45,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
-import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
-import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -80,6 +79,7 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.same
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -132,7 +132,7 @@ internal class DatadogRumMonitorTest {
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
     @Mock
-    lateinit var sessionEndedMetricDispatcher: SessionMetricDispatcher
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -183,7 +183,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -205,7 +205,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -264,7 +264,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -301,7 +301,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -870,6 +870,22 @@ internal class DatadogRumMonitorTest {
             val event = firstValue
             check(event is RumRawEvent.AddCustomTiming)
             assertThat(event.name).isEqualTo(name)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M delegate event to rootScope W addViewLoadTime()`(
+        @BoolForgery fakeOverwrite: Boolean
+    ) {
+        testedMonitor.addViewLoadingTime(fakeOverwrite)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            val event = firstValue
+            check(event is RumRawEvent.AddViewLoadingTime)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1617,7 +1633,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1662,7 +1678,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1694,7 +1710,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            sessionEndedMetricDispatcher,
+            mockSessionEndedMetricDispatcher,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1845,178 +1861,55 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M handle debug telemetry event W sendDebugTelemetryEvent()`(
-        @StringForgery message: String,
-        forge: Forge
+    fun `M handle telemetry event W sendTelemetryEvent()`(@Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent) {
+        // When
+        testedMonitor.sendTelemetryEvent(fakeInternalTelemetryEvent)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.event).isEqualTo(fakeInternalTelemetryEvent)
+        }
+    }
+
+    @Test
+    fun `M call sessionEndedMetricDispatcher W addSkippedFrame`(
+        @IntForgery(min = 0, max = 100) count: Int,
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
     ) {
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.startView(key, name, attributes)
         // Given
-        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
-
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            100.0f,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockSessionEndedMetricDispatcher,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener,
+            mockExecutorService
+        )
+        testedMonitor.startView(key, name, attributes)
         // When
-        testedMonitor.sendDebugTelemetryEvent(message, fakeAdditionalProperties)
+        repeat(count) {
+            testedMonitor.addSessionReplaySkippedFrame()
+        }
 
         // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle error telemetry event W sendErrorTelemetryEvent() {stack+kind}`(
-        @StringForgery message: String,
-        @StringForgery stackTrace: String,
-        @StringForgery kind: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
-
-        // When
-        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind, fakeAdditionalProperties)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.stack).isEqualTo(stackTrace)
-            assertThat(lastValue.kind).isEqualTo(kind)
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle error telemetry event W sendErrorTelemetryEvent() {throwable}`(
-        @StringForgery message: String,
-        forge: Forge
-    ) {
-        // Given
-        val throwable = forge.aNullable { forge.aThrowable() }
-        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
-
-        // When
-        testedMonitor.sendErrorTelemetryEvent(message, throwable, fakeAdditionalProperties)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
-            assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle configuration telemetry event W sendConfigurationTelemetryEvent()`(
-        @Forgery fakeConfiguration: TelemetryCoreConfiguration
-    ) {
-        // When
-        testedMonitor.sendConfigurationTelemetryEvent(fakeConfiguration)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEmpty()
-            assertThat(lastValue.type).isEqualTo(TelemetryType.CONFIGURATION)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isSameAs(fakeConfiguration)
-        }
-    }
-
-    @Test
-    fun `M handle metric event W sendMetricEvent()`(
-        @StringForgery message: String,
-        forge: Forge
-    ) {
-        // When
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        testedMonitor.sendMetricEvent(message, fakeAdditionalProperties)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.isMetric).isTrue
-            assertThat(lastValue.additionalProperties)
-                .containsExactlyInAnyOrderEntriesOf(fakeAdditionalProperties)
-        }
-    }
-
-    @Test
-    fun `M handle metric event W sendMetricEvent(){additionalProperties is null}`(
-        @StringForgery message: String
-    ) {
-        // When
-        testedMonitor.sendMetricEvent(message, null)
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEqualTo(message)
-            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.coreConfiguration).isNull()
-            assertThat(lastValue.isMetric).isTrue
-            assertThat(lastValue.additionalProperties).isNull()
-        }
-    }
-
-    @Test
-    fun `M handle interceptor event W notifyInterceptorInstantiated()`() {
-        // When
-        testedMonitor.notifyInterceptorInstantiated()
-
-        // Then
-        argumentCaptor<RumRawEvent.SendTelemetry> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            assertThat(lastValue.message).isEmpty()
-            assertThat(lastValue.type).isEqualTo(TelemetryType.INTERCEPTOR_SETUP)
-            assertThat(lastValue.stack).isNull()
-            assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.isMetric).isFalse
-            assertThat(lastValue.coreConfiguration).isNull()
-        }
+        verify(mockSessionEndedMetricDispatcher, times(count)).onSessionReplaySkippedFrameTracked(any())
     }
 
     @Test

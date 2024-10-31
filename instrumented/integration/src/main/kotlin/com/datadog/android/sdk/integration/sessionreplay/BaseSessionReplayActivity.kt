@@ -54,8 +54,10 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
         )
         featureActivations.shuffled(Random(intent.getForgeSeed()))
             .forEach { it() }
+        supportActionBar?.hide()
     }
 
+    @Suppress("DEPRECATION")
     open fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
         return RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
             .setPrivacy(privacy)

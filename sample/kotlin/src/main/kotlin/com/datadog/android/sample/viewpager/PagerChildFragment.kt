@@ -15,6 +15,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 import com.datadog.android.webview.WebViewTracking
 
@@ -31,6 +33,7 @@ internal open class PagerChildFragment : Fragment() {
     )
     private lateinit var webView: WebView
 
+    @OptIn(ExperimentalRumApi::class)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -42,7 +45,12 @@ internal open class PagerChildFragment : Fragment() {
 
         webView = view.findViewById<WebView>(R.id.webview)
 
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
+            }
+        }
         webView.settings.javaScriptEnabled = true
         WebViewTracking.enable(webView, webViewTrackingHosts)
 
