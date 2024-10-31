@@ -926,6 +926,7 @@ datadog:
       - "kotlin.collections.MutableList.removeAll(kotlin.Function1)"
       - "kotlin.collections.MutableList.removeFirstOrNull()"
       - "kotlin.collections.MutableList.toMutableList()"
+      - "kotlin.collections.MutableList.toList()"
       - "kotlin.collections.MutableList.toSet()"
       - "kotlin.collections.MutableList.toTypedArray()"
       - "kotlin.collections.MutableList.withIndex()"
