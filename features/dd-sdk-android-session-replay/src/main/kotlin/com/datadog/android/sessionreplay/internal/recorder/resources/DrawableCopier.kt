@@ -14,7 +14,7 @@ import com.datadog.android.lint.InternalApi
  * Interface of copying drawable to a new one.
  */
 @InternalApi
-interface DrawableCopier {
+fun interface DrawableCopier {
 
     /**
      * Called to copy the drawable.

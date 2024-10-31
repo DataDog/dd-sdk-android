@@ -103,10 +103,10 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
                 null
             }
         }
-        return originCheckableDrawable?.let { cloneCheckableDrawable(view, it) }
+        return originCheckableDrawable
     }
 
-    private fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable? {
+    override fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable? {
         return drawable.constantState?.newDrawable(view.resources)?.apply {
             // Set state to make the drawable have correct tint.
             setState(view.drawableState)
