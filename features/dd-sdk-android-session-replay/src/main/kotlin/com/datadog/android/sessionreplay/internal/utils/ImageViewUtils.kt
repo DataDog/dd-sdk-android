@@ -19,12 +19,15 @@ internal object ImageViewUtils {
         // this will always have size >= 2
         @Suppress("UnsafeThirdPartyFunctionCall")
         view.getLocationOnScreen(coords)
-
+        val leftPadding = view.paddingLeft
+        val rightPadding = view.paddingRight
+        val topPadding = view.paddingTop
+        val bottomPadding = view.paddingBottom
         return Rect(
-            coords[0],
-            coords[1],
-            coords[0] + view.width,
-            coords[1] + view.height
+            coords[0] + leftPadding,
+            coords[1] + topPadding,
+            coords[0] + view.width - rightPadding,
+            coords[1] + view.height - bottomPadding
         )
     }
 

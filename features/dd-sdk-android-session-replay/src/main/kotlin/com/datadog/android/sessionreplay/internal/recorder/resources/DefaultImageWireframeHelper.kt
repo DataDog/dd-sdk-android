@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.view.View
@@ -238,7 +237,6 @@ internal class DefaultImageWireframeHelper(
                 }
             }
 
-            is GradientDrawable -> DrawableProperties(drawable, view.width, view.height)
             else -> DrawableProperties(drawable, width, height)
         }
     }
