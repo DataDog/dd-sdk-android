@@ -11,6 +11,7 @@ import android.widget.Checkable
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
@@ -109,6 +110,7 @@ internal abstract class CheckableTextViewMapper<T>(
                 view,
                 mappingContext.systemInformation.screenDensity
             )
+            val drawableCopier = DrawableCopier { _, _ -> cloneCheckableDrawable(view, it) }
             mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
@@ -117,6 +119,7 @@ internal abstract class CheckableTextViewMapper<T>(
                 y = checkBoxBounds.y,
                 width = it.intrinsicWidth,
                 height = it.intrinsicHeight,
+                drawableCopier = drawableCopier,
                 drawable = it,
                 shapeStyle = null,
                 border = null,
@@ -126,6 +129,8 @@ internal abstract class CheckableTextViewMapper<T>(
             )
         }
     }
+
+    abstract fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable?
 
     @UiThread
     abstract fun getCheckableDrawable(view: T): Drawable?

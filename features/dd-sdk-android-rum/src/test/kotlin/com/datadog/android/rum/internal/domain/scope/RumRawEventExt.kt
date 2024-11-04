@@ -14,9 +14,9 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
-import java.lang.reflect.Type
 import java.net.URL
 import java.util.UUID
+import kotlin.reflect.KClass
 
 internal fun Forge.interactiveRumRawEvent(): RumRawEvent {
     return anElementFrom(
@@ -168,48 +168,50 @@ internal fun Forge.addCustomTimingEvent(): RumRawEvent.AddCustomTiming {
 internal fun Forge.validBackgroundEvent(): RumRawEvent {
     return this.anElementFrom(
         listOf(
-            startActionEvent(),
-            addErrorEvent(),
-            startResourceEvent()
+            { startActionEvent() },
+            { addErrorEvent() },
+            { startResourceEvent() }
         )
-    )
+    ).invoke()
 }
 
 internal fun Forge.invalidBackgroundEvent(): RumRawEvent {
     return this.anElementFrom(
         listOf(
-            addLongTaskEvent(),
-            stopActionEvent(),
-            stopResourceEvent(),
-            stopResourceWithErrorEvent(),
-            stopResourceWithStacktraceEvent(),
-            addViewLoadingTimeEvent()
+            { addLongTaskEvent() },
+            { stopActionEvent() },
+            { stopResourceEvent() },
+            { stopResourceWithErrorEvent() },
+            { stopResourceWithStacktraceEvent() },
+            { addViewLoadingTimeEvent() }
         )
-    )
+    ).invoke()
 }
 
-internal fun Forge.anyRumEvent(excluding: List<Type> = listOf()): RumRawEvent {
-    val allEvents = listOf(
-        startViewEvent(),
-        stopViewEvent(),
-        startActionEvent(),
-        stopActionEvent(),
-        startResourceEvent(),
-        stopResourceEvent(),
-        stopResourceWithErrorEvent(),
-        stopResourceWithStacktraceEvent(),
-        addErrorEvent(),
-        addLongTaskEvent(),
-        addFeatureFlagEvaluationEvent(),
-        addCustomTimingEvent(),
-        updatePerformanceMetricEvent(),
-        addViewLoadingTimeEvent()
+internal fun Forge.anyRumEvent(excluding: List<KClass<out RumRawEvent>> = listOf()): RumRawEvent {
+    fun <T : RumRawEvent> strictSameTypePair(key: KClass<T>, value: () -> T) = key to value
+    val allEventsFactories = mapOf<KClass<out RumRawEvent>, () -> RumRawEvent>(
+        strictSameTypePair(RumRawEvent.StartView::class, { startViewEvent() }),
+        strictSameTypePair(RumRawEvent.StopView::class, { stopViewEvent() }),
+        strictSameTypePair(RumRawEvent.StartAction::class, { startActionEvent() }),
+        strictSameTypePair(RumRawEvent.StopAction::class, { stopActionEvent() }),
+        strictSameTypePair(RumRawEvent.StartResource::class, { startResourceEvent() }),
+        strictSameTypePair(RumRawEvent.StopResource::class, { stopResourceEvent() }),
+        strictSameTypePair(RumRawEvent.StopResourceWithError::class, { stopResourceWithErrorEvent() }),
+        strictSameTypePair(RumRawEvent.StopResourceWithStackTrace::class, { stopResourceWithStacktraceEvent() }),
+        strictSameTypePair(RumRawEvent.AddError::class, { addErrorEvent() }),
+        strictSameTypePair(RumRawEvent.AddLongTask::class, { addLongTaskEvent() }),
+        strictSameTypePair(RumRawEvent.AddFeatureFlagEvaluation::class, { addFeatureFlagEvaluationEvent() }),
+        strictSameTypePair(RumRawEvent.AddCustomTiming::class, { addCustomTimingEvent() }),
+        strictSameTypePair(RumRawEvent.UpdatePerformanceMetric::class, { updatePerformanceMetricEvent() }),
+        strictSameTypePair(RumRawEvent.AddViewLoadingTime::class, { addViewLoadingTimeEvent() })
     )
     return this.anElementFrom(
-        allEvents.filter {
-            it.javaClass !in excluding
-        }
-    )
+        allEventsFactories
+            .filter { !excluding.contains(it.key) }
+            .values
+            .toList()
+    ).invoke()
 }
 
 internal fun Forge.invalidAppLaunchEvent(): RumRawEvent {
