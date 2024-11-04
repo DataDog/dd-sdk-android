@@ -1,3 +1,8 @@
+# 2.15.1 / 2024-11-04
+
+* [MAINTENANCE] Fix `resolveResourceId` not correctly calling job finished when drawable cloning
+  failed [#2367](https://github.com/DataDog/dd-sdk-android/pull/2367)
+
 # 2.15.0 / 2024-10-28
 
 * [FEATURE] Add `TimeBank` in Session Replay recorder for dynamic optimisation See [#2247](https://github.com/DataDog/dd-sdk-android/pull/2247)
