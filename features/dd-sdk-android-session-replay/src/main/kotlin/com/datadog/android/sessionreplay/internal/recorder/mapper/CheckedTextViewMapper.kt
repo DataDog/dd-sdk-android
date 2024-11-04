@@ -75,7 +75,11 @@ internal open class CheckedTextViewMapper(
 
         return (view.checkMarkDrawable?.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
             checkableDrawableIndex
-        )?.constantState?.newDrawable(view.resources)?.apply {
+        )
+    }
+
+    override fun cloneCheckableDrawable(view: CheckedTextView, drawable: Drawable): Drawable? {
+        return drawable.constantState?.newDrawable(view.resources)?.apply {
             // Set state to make the drawable have correct tint according to the state.
             setState(view.drawableState)
             // Set tint list to drawable if the button has declared `checkMarkTint` attribute.
