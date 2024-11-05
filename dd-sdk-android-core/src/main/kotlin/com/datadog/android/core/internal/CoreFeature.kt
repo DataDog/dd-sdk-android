@@ -626,6 +626,13 @@ internal class CoreFeature(
         } else {
             appContext.packageName == currentProcess.processName
         }
+        if (!isMainProcess) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { SDK_INITIALIZED_IN_SECONDARY_PROCESS_WARNING_MESSAGE }
+            )
+        }
     }
 
     private fun shutDownExecutors() {
@@ -676,6 +683,10 @@ internal class CoreFeature(
     // endregion
 
     companion object {
+        internal const val SDK_INITIALIZED_IN_SECONDARY_PROCESS_WARNING_MESSAGE =
+            "Datadog SDK was initialized in a secondary process: although data will still be captured," +
+                " nothing will be uploaded from this process. Make sure to also initialize the SDK from the main" +
+                " process of your application."
 
         internal val DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY =
             FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy ->
