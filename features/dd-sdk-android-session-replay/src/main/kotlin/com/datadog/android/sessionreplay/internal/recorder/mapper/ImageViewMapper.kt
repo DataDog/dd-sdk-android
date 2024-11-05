@@ -52,7 +52,12 @@ internal class ImageViewMapper(
 
         val resources = view.resources
         val density = resources.displayMetrics.density
-        val clipping = imageViewUtils.calculateClipping(parentRect, contentRect, density)
+
+        val clipping = if (view.cropToPadding) {
+            imageViewUtils.calculateClipping(parentRect, contentRect, density)
+        } else {
+            null
+        }
         val contentXPosInDp = contentRect.left.densityNormalized(density).toLong()
         val contentYPosInDp = contentRect.top.densityNormalized(density).toLong()
         val contentWidthPx = contentRect.width()
