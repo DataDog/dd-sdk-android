@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.mapper
+package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.content.Context
 import android.content.res.Resources
@@ -22,7 +22,6 @@ import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
-import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -194,7 +193,6 @@ internal class ImageViewMapperTest {
         )
 
         testedMapper = ImageViewMapper(
-            stubImageViewUtils,
             mockViewIdentifierResolver,
             mockColorStringFormatter,
             mockViewBoundsResolver,
