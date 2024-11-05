@@ -112,7 +112,13 @@ open class TextViewMapper<in T : TextView>(
         return (textView.layout?.text ?: textView.text)?.toString().orEmpty()
     }
 
-    private fun createTextWireframe(
+    /**
+     * Creates text wireframe for the captured text.
+     * @param textView the textView being mapped.
+     * @param mappingContext the mapping context.
+     * @param viewGlobalBounds global bounds of the view.
+     */
+    protected fun createTextWireframe(
         textView: T,
         mappingContext: MappingContext,
         viewGlobalBounds: GlobalBounds

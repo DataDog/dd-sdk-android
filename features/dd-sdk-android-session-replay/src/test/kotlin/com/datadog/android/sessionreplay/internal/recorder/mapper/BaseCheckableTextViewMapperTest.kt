@@ -87,9 +87,6 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     @Mock
     lateinit var mockConstantState: DrawableContainer.DrawableContainerState
 
-    @Mock
-    lateinit var mockCheckedConstantState: DrawableContainer.DrawableContainerState
-
     @IntForgery(min = 0, max = 0xffffff)
     var fakeCurrentTextColor: Int = 0
 
@@ -109,34 +106,26 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     lateinit var mockNotCheckedDrawable: Drawable
 
     @Mock
-    lateinit var mockClonedDrawable: Drawable
-
-    @Mock
     lateinit var mockDrawableCopier: DrawableCopier
 
     @IntForgery
-    var mockCloneDrawableIntrinsicHeight: Int = 0
+    var fakeDrawableIntrinsicHeight: Int = 0
 
     @IntForgery
-    var mockCloneDrawableIntrinsicWidth: Int = 0
+    var fakeDrawableIntrinsicWidth: Int = 0
 
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
 
     @BeforeEach
     fun `set up`() {
-        mockClonedDrawable = mock {
-            whenever(it.intrinsicHeight) doReturn mockCloneDrawableIntrinsicHeight
-            whenever(it.intrinsicWidth) doReturn mockCloneDrawableIntrinsicWidth
-        }
-        mockCheckedConstantState = mock {
-            whenever(it.newDrawable(mockResources)) doReturn mockClonedDrawable
-        }
         mockCheckedDrawable = mock {
-            whenever(it.constantState) doReturn mockCheckedConstantState
+            whenever(it.intrinsicHeight) doReturn fakeDrawableIntrinsicHeight
+            whenever(it.intrinsicWidth) doReturn fakeDrawableIntrinsicWidth
         }
         mockNotCheckedDrawable = mock {
-            whenever(it.constantState) doReturn mockCheckedConstantState
+            whenever(it.intrinsicHeight) doReturn fakeDrawableIntrinsicHeight
+            whenever(it.intrinsicWidth) doReturn fakeDrawableIntrinsicWidth
         }
         mockConstantState = mock {
             whenever(it.getChild(CHECK_BOX_CHECKED_DRAWABLE_INDEX)) doReturn mockCheckedDrawable
@@ -226,8 +215,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),
-            width = eq(mockCloneDrawableIntrinsicWidth),
-            height = eq(mockCloneDrawableIntrinsicHeight),
+            width = eq(fakeDrawableIntrinsicWidth),
+            height = eq(fakeDrawableIntrinsicHeight),
             usePIIPlaceholder = anyBoolean(),
             drawable = any(),
             drawableCopier = any(),
@@ -270,10 +259,10 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             currentWireframeIndex = anyInt(),
             x = eq(expectedX),
             y = eq(expectedY),
-            width = eq(mockCloneDrawableIntrinsicWidth),
-            height = eq(mockCloneDrawableIntrinsicHeight),
+            width = eq(fakeDrawableIntrinsicWidth),
+            height = eq(fakeDrawableIntrinsicHeight),
             usePIIPlaceholder = anyBoolean(),
-            drawable = eq(mockClonedDrawable),
+            drawable = eq(mockNotCheckedDrawable),
             drawableCopier = any(),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
             clipping = eq(MobileSegment.WireframeClip()),

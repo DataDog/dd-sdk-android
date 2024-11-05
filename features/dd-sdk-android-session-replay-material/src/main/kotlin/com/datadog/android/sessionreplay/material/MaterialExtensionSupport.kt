@@ -10,6 +10,7 @@ import androidx.cardview.widget.CardView
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.material.internal.CardWireframeMapper
+import com.datadog.android.sessionreplay.material.internal.ChipWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.MaterialDrawableToColorMapper
 import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
 import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
@@ -23,6 +24,7 @@ import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import com.google.android.material.chip.Chip
 import com.google.android.material.slider.Slider
 import com.google.android.material.tabs.TabLayout
 
@@ -63,11 +65,18 @@ class MaterialExtensionSupport : ExtensionSupport {
             viewBoundsResolver,
             drawableToColorMapper
         )
+        val chipWireframeMapper = ChipWireframeMapper(
+            viewIdentifierResolver,
+            colorStringFormatter,
+            viewBoundsResolver,
+            drawableToColorMapper
+        )
 
         return listOf(
             MapperTypeWrapper(Slider::class.java, sliderWireframeMapper),
             MapperTypeWrapper(TabLayout.TabView::class.java, tabWireframeMapper),
-            MapperTypeWrapper(CardView::class.java, cardWireframeMapper)
+            MapperTypeWrapper(CardView::class.java, cardWireframeMapper),
+            MapperTypeWrapper(Chip::class.java, chipWireframeMapper)
         )
     }
 

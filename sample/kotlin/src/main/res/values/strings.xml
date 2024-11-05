@@ -153,6 +153,7 @@
     <string name="default_radio">Default Radio</string>
     <string name="app_compat_radio">App Compat Radio</string>
     <string name="material_radio">Material Radio</string>
+    <string name="text_chip">This is a chip</string>
     <string name="default_spinner">Default spinner</string>
     <string name="app_compat_spinner">App Compat Spinner</string>
     <string name="app_compat_switch">App Compat Switch</string>

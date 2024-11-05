@@ -977,6 +977,7 @@ datadog:
       - "kotlin.collections.MutableList.removeAt(kotlin.Int)"
       - "kotlin.collections.MutableList.removeFirstOrNull()"
       - "kotlin.collections.MutableList.toMutableList()"
+      - "kotlin.collections.MutableList.toList()"
       - "kotlin.collections.MutableList.toSet()"
       - "kotlin.collections.MutableList.toTypedArray()"
       - "kotlin.collections.MutableList.withIndex()"

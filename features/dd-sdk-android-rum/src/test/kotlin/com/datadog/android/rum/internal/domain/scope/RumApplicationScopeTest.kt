@@ -379,8 +379,8 @@ internal class RumApplicationScopeTest {
         val fakeEvents = forge.aList {
             forge.anyRumEvent(
                 excluding = listOf(
-                    RumRawEvent.ApplicationStarted::class.java,
-                    RumRawEvent.SdkInit::class.java
+                    RumRawEvent.ApplicationStarted::class,
+                    RumRawEvent.SdkInit::class
                 )
             )
         }
@@ -428,8 +428,8 @@ internal class RumApplicationScopeTest {
         val fakeEvents = forge.aList {
             forge.anyRumEvent(
                 excluding = listOf(
-                    RumRawEvent.ApplicationStarted::class.java,
-                    RumRawEvent.SdkInit::class.java
+                    RumRawEvent.ApplicationStarted::class,
+                    RumRawEvent.SdkInit::class
                 )
             )
         }
