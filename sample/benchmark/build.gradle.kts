@@ -34,6 +34,12 @@ android {
         java17()
     }
 
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
+    }
     val bmPassword = System.getenv("BM_STORE_PASSWD")
     signingConfigs {
         if (bmPassword != null) {
@@ -76,6 +82,8 @@ dependencies {
     implementation(libs.googleMaterial)
     implementation(libs.glideCore)
     implementation(libs.timber)
+    implementation(platform(libs.androidXComposeBom))
+    implementation(libs.bundles.androidXCompose)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
