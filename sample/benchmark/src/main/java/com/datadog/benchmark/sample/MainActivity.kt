@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
             DatadogBenchmark.Config.resolveSyntheticsBundle(intent.extras)
         )
         if (datadogBenchmark.isComposeEnabled) {
+            supportActionBar?.hide()
             setContent {
                 MainView()
             }
