@@ -89,6 +89,16 @@ internal class SemanticsUtils {
         return backgroundInfoList
     }
 
+    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? {
+        val backgroundModifierInfo =
+            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
+                ComposeReflection.BackgroundElementClass?.isInstance(modifierInfo.modifier) == true
+            }
+        return backgroundModifierInfo?.let {
+            ComposeReflection.ColorField?.getSafe(it.modifier) as? Long
+        }
+    }
+
     internal fun resolveBackgroundInfoId(backgroundInfo: BackgroundInfo): Long {
         return System.identityHashCode(backgroundInfo).toLong()
     }
