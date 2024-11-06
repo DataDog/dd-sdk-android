@@ -6,3 +6,6 @@ public final class com/datadog/android/sessionreplay/compose/ComposeExtensionSup
 	public fun getOptionSelectorDetectors ()Ljava/util/List;
 }
 
+public abstract interface annotation class com/datadog/android/sessionreplay/compose/ExperimentalSessionReplayApi : java/lang/annotation/Annotation {
+}
+

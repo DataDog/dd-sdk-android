@@ -2,3 +2,4 @@ class com.datadog.android.sessionreplay.compose.ComposeExtensionSupport : com.da
   override fun getCustomViewMappers(): List<com.datadog.android.sessionreplay.MapperTypeWrapper<*>>
   override fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
   override fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+annotation com.datadog.android.sessionreplay.compose.ExperimentalSessionReplayApi
