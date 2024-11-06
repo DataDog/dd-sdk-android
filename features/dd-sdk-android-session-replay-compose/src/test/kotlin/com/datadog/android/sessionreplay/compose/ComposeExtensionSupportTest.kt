@@ -21,6 +21,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(ExtendWith(MockitoExtension::class))
 @MockitoSettings(strictness = Strictness.LENIENT)
+@OptIn(ExperimentalSessionReplayApi::class)
 class ComposeExtensionSupportTest {
 
     lateinit var testedExtensionSupport: ExtensionSupport

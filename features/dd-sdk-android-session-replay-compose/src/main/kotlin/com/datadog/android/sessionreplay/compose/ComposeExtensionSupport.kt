@@ -23,6 +23,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  * Jetpack Compose extension support implementation to be used in the Session Replay
  * configuration.
  */
+@ExperimentalSessionReplayApi
 class ComposeExtensionSupport : ExtensionSupport {
 
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
