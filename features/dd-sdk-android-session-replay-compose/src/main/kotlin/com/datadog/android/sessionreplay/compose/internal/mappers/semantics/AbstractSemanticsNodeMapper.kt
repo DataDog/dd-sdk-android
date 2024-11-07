@@ -21,6 +21,12 @@ internal abstract class AbstractSemanticsNodeMapper(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : SemanticsNodeMapper {
 
+    protected fun resolveId(semanticsNode: SemanticsNode, currentIndex: Int = 0): Long {
+        // Use semantics node intrinsic id as the higher endian of Long type and the index of
+        // the wireframe inside the node as the lower endian to generate a unique id.
+        return semanticsNode.id.toLong() shl SEMANTICS_ID_BIT_SHIFT + currentIndex
+    }
+
     protected fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
         return semanticsUtils.resolveInnerBounds(semanticsNode)
     }
@@ -65,5 +71,6 @@ internal abstract class AbstractSemanticsNodeMapper(
         private const val UNSPECIFIED_COLOR = 16L
         private const val COMPOSE_COLOR_SHIFT = 32
         private const val MAX_ALPHA = 255
+        private const val SEMANTICS_ID_BIT_SHIFT = 32
     }
 }

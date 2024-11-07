@@ -27,6 +27,7 @@ internal fun SampleSelectionScreen(
     onTypographyClicked: () -> Unit,
     onLegacyClicked: () -> Unit,
     onImageClicked: () -> Unit,
+    onToggleClicked: () -> Unit,
     onTabsClicked: () -> Unit
 ) {
     Column(
@@ -45,6 +46,10 @@ internal fun SampleSelectionScreen(
         StyledButton(
             text = "Image Sample",
             onClick = onImageClicked
+        )
+        StyledButton(
+            text = "Toggle Buttons Sample",
+            onClick = onToggleClicked
         )
         StyledButton(
             text = "Tabs Sample",
@@ -81,6 +86,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             onImageClicked = {
                 navController.navigate(SampleScreen.Image.navigationRoute)
             },
+            onToggleClicked = {
+                navController.navigate(SampleScreen.Toggle.navigationRoute)
+            },
             onTabsClicked = {
                 navController.navigate(SampleScreen.Tabs.navigationRoute)
             },
@@ -96,6 +104,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
 
     composable(SampleScreen.Image.navigationRoute) {
         ImageSample()
+    }
+
+    composable(SampleScreen.Toggle.navigationRoute) {
+        ToggleSample()
     }
 
     composable(SampleScreen.Tabs.navigationRoute) {
@@ -114,6 +126,7 @@ internal sealed class SampleScreen(
     object Root : SampleScreen(COMPOSE_ROOT)
     object Typography : SampleScreen("$COMPOSE_ROOT/typography")
     object Image : SampleScreen("$COMPOSE_ROOT/image")
+    object Toggle : SampleScreen("$COMPOSE_ROOT/toggle")
     object Tabs : SampleScreen("$COMPOSE_ROOT/tabs")
     object Legacy : SampleScreen("$COMPOSE_ROOT/legacy")
 
@@ -130,6 +143,8 @@ private fun PreviewSampleSelectionScreen() {
         onLegacyClicked = {
         },
         onImageClicked = {
+        },
+        onToggleClicked = {
         },
         onTypographyClicked = {
         },
