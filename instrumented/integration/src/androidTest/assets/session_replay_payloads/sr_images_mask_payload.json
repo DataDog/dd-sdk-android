@@ -17,22 +17,10 @@
         "type": "shape"
       },
       {
-        "clip": {
-          "top": 2,
-          "bottom": 3,
-          "left": 0,
-          "right": 0
-        },
         "type": "placeholder",
         "label": "Image"
       },
       {
-        "clip": {
-          "top": 2,
-          "bottom": 3,
-          "left": 0,
-          "right": 0
-        },
         "type": "placeholder",
         "label": "Image"
       }
