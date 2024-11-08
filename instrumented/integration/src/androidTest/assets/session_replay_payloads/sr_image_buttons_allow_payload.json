@@ -20,12 +20,6 @@
         "type": "shape"
       },
       {
-        "clip": {
-          "top": 2,
-          "bottom": 3,
-          "left": 0,
-          "right": 0
-        },
         "type": "image",
         "isEmpty": false
       },
@@ -33,12 +27,6 @@
         "type": "shape"
       },
       {
-        "clip": {
-          "top": 2,
-          "bottom": 3,
-          "left": 0,
-          "right": 0
-        },
         "type": "image",
         "isEmpty": false
       },
@@ -46,12 +34,6 @@
         "type": "shape"
       },
       {
-        "clip": {
-          "top": 2,
-          "bottom": 3,
-          "left": 0,
-          "right": 0
-        },
         "type": "image",
         "isEmpty": false
       }

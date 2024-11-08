@@ -34,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -252,6 +253,32 @@ internal class ResourceResolverTest {
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(emptyByteArray)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+    }
+
+    @Test
+    fun `M call onFailure W copy bitmap return null`() {
+        // Given
+        whenever(
+            mockDrawableCopier.copy(
+                originalDrawable = mockDrawable,
+                resources = mockResources
+            )
+        ).doReturn(null)
 
         // When
         testedResourceResolver.resolveResourceId(
