@@ -38,7 +38,13 @@ internal class SemanticsWireframeMapper(
         Role.Image to ImageSemanticsNodeMapper(colorStringFormatter)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
-    private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(colorStringFormatter)
+    private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(
+        colorStringFormatter
+    ),
+    private val containerSemanticsNodeMapper: ContainerSemanticsNodeMapper = ContainerSemanticsNodeMapper(
+        colorStringFormatter,
+        semanticsUtils
+    )
 ) : BaseWireframeMapper<ComposeView>(
     viewIdentifierResolver,
     colorStringFormatter,
@@ -63,9 +69,21 @@ internal class SemanticsWireframeMapper(
         semanticsNode: SemanticsNode
     ): SemanticsNodeMapper {
         val role = semanticsNode.config.getOrNull(SemanticsProperties.Role)
-        return semanticsNodeMapper[role] ?: textSemanticsNodeMapper
+        val mapper = semanticsNodeMapper[role]
+        if (mapper != null) {
+            return mapper
+        }
+        return if (isTextNode(semanticsNode)) {
+            textSemanticsNodeMapper
+        } else {
+            containerSemanticsNodeMapper
+        }
     }
 
+    private fun isTextNode(semanticsNode: SemanticsNode): Boolean {
+        // Some text semantics nodes don't have an explicit `Role` but the text exists in the config
+        return semanticsNode.config.getOrNull(SemanticsProperties.Text)?.isNotEmpty() == true
+    }
     private fun createComposeWireframes(
         semanticsNode: SemanticsNode,
         density: Float,
@@ -94,16 +112,19 @@ internal class SemanticsWireframeMapper(
         parentUiContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ) {
-        getSemanticsNodeMapper(semanticsNode).map(
+        val semanticsWireframe = getSemanticsNodeMapper(semanticsNode).map(
             semanticsNode = semanticsNode,
             parentContext = parentUiContext,
             asyncJobStatusCallback = asyncJobStatusCallback
-        )?.wireframes?.let {
-            wireframes.addAll(it)
+        )
+        var currentUiContext = parentUiContext
+        semanticsWireframe?.let {
+            wireframes.addAll(it.wireframes)
+            currentUiContext = it.uiContext ?: currentUiContext
         }
         val children = semanticsNode.children
         children.forEach {
-            createComposerWireframes(it, wireframes, parentUiContext, asyncJobStatusCallback)
+            createComposerWireframes(it, wireframes, currentUiContext, asyncJobStatusCallback)
         }
     }
 }

@@ -92,7 +92,6 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
         whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn listOf(
             fakeBackgroundInfo
         )
-        whenever(mockSemanticsUtils.resolveBackgroundInfoId(fakeBackgroundInfo)) doReturn fakeSemanticsId.toLong()
 
         // When
         val actual = testedButtonSemanticsNodeMapper.map(
@@ -103,7 +102,7 @@ internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTes
 
         // Then
         val expected = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeSemanticsId.toLong(),
+            id = (fakeSemanticsId.toLong() shl 32),
             x = (fakeBounds.left / fakeDensity).toLong(),
             y = (fakeBounds.top / fakeDensity).toLong(),
             width = (fakeBounds.size.width / fakeDensity).toLong(),

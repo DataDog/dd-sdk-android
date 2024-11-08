@@ -85,6 +85,22 @@ internal open class AbstractCompositionGroupMapperTest {
     }
 
     @Test
+    fun `M return correct Id W resolveId`(@IntForgery fakeIndex: Int) {
+        // Given
+        val semanticsNode = mock<SemanticsNode>()
+        whenever(semanticsNode.id) doReturn fakeSemanticsId
+
+        // When
+        val result = testedMapper.stubResolveId(semanticsNode, fakeIndex)
+        val expectedId = (result - fakeIndex) shr 32
+        val expectedIndex = result.toInt()
+
+        // Then
+        assertThat(fakeSemanticsId).isEqualTo(expectedId)
+        assertThat(fakeIndex).isEqualTo(expectedIndex)
+    }
+
+    @Test
     fun `M return correct bound W resolveBounds`() {
         // Given
         val semanticsNode = mock<SemanticsNode>()
@@ -149,6 +165,10 @@ internal class StubAbstractSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe? {
         return null
+    }
+
+    fun stubResolveId(semanticsNode: SemanticsNode, index: Int): Long {
+        return super.resolveId(semanticsNode, index)
     }
 
     fun stubResolveBounds(semanticsNode: SemanticsNode): GlobalBounds {

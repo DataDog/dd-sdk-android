@@ -52,6 +52,9 @@ class SemanticsWireframeMapperTest {
     private lateinit var mockTextSemanticsNodeMapper: TextSemanticsNodeMapper
 
     @Mock
+    private lateinit var mockContainerSemanticsNodeMapper: ContainerSemanticsNodeMapper
+
+    @Mock
     private lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
 
     @Mock
@@ -92,7 +95,8 @@ class SemanticsWireframeMapperTest {
             mockDrawableToColorMapper,
             mockSemanticsUtils,
             mapOf(),
-            mockTextSemanticsNodeMapper
+            mockTextSemanticsNodeMapper,
+            mockContainerSemanticsNodeMapper
         )
     }
 
@@ -111,7 +115,7 @@ class SemanticsWireframeMapperTest {
         )
 
         // Then
-        verify(mockTextSemanticsNodeMapper, times(1)).map(
+        verify(mockContainerSemanticsNodeMapper).map(
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)

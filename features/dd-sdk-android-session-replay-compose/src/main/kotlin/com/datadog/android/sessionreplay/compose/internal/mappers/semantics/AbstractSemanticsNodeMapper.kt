@@ -24,28 +24,37 @@ internal abstract class AbstractSemanticsNodeMapper(
     protected fun resolveId(semanticsNode: SemanticsNode, currentIndex: Int = 0): Long {
         // Use semantics node intrinsic id as the higher endian of Long type and the index of
         // the wireframe inside the node as the lower endian to generate a unique id.
-        return semanticsNode.id.toLong() shl SEMANTICS_ID_BIT_SHIFT + currentIndex
+        return (semanticsNode.id.toLong() shl SEMANTICS_ID_BIT_SHIFT) + currentIndex
     }
 
     protected fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
         return semanticsUtils.resolveInnerBounds(semanticsNode)
     }
 
-    protected fun resolveModifierWireframes(semanticsNode: SemanticsNode): List<MobileSegment.Wireframe> {
-        return semanticsUtils.resolveBackgroundInfo(semanticsNode).map {
-            convertBackgroundInfoToWireframes(backgroundInfo = it)
-        }
+    protected fun resolveModifierWireframes(
+        semanticsNode: SemanticsNode
+    ): List<MobileSegment.Wireframe> {
+        return semanticsUtils.resolveBackgroundInfo(semanticsNode)
+            .mapIndexed { index, backgroundInfo ->
+                convertBackgroundInfoToWireframes(
+                    semanticsNode = semanticsNode,
+                    backgroundInfo = backgroundInfo,
+                    index = index
+                )
+            }
     }
 
     private fun convertBackgroundInfoToWireframes(
-        backgroundInfo: BackgroundInfo
+        semanticsNode: SemanticsNode,
+        backgroundInfo: BackgroundInfo,
+        index: Int
     ): MobileSegment.Wireframe {
         val shapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = backgroundInfo.color?.let { convertColor(it) },
             cornerRadius = backgroundInfo.cornerRadius
         )
         return MobileSegment.Wireframe.ShapeWireframe(
-            id = semanticsUtils.resolveBackgroundInfoId(backgroundInfo),
+            id = resolveId(semanticsNode, index),
             x = backgroundInfo.globalBounds.x,
             y = backgroundInfo.globalBounds.y,
             width = backgroundInfo.globalBounds.width,

@@ -123,7 +123,7 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapp
 
         // Then
         val boxFrame = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeSemanticsId.toLong() shl 32,
+            id = (fakeSemanticsId.toLong() shl 32),
             x = (fakeBounds.left / fakeDensity).toLong(),
             y = (fakeBounds.top / fakeDensity).toLong(),
             width = (fakeBounds.size.width / fakeDensity).toLong(),
@@ -138,7 +138,7 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapp
         )
 
         val dotFrame = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeSemanticsId.toLong() shl 32 + 1,
+            id = (fakeSemanticsId.toLong() shl 32) + 1,
             x = (fakeBounds.left / fakeDensity).toLong() + DOT_PADDING_DP,
             y = (fakeBounds.top / fakeDensity).toLong() + DOT_PADDING_DP,
             width = (fakeBounds.size.width / fakeDensity).toLong() - 2 * DOT_PADDING_DP,

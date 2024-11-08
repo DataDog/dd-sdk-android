@@ -99,8 +99,8 @@ internal class SemanticsUtils {
         }
     }
 
-    internal fun resolveBackgroundInfoId(backgroundInfo: BackgroundInfo): Long {
-        return System.identityHashCode(backgroundInfo).toLong()
+    internal fun resolveBackgroundInfoId(backgroundInfo: BackgroundInfo): Int {
+        return System.identityHashCode(backgroundInfo)
     }
 
     private fun shrinkInnerBounds(
