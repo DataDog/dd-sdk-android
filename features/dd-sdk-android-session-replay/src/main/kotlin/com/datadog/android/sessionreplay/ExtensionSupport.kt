@@ -20,6 +20,12 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 interface ExtensionSupport {
 
     /**
+     * Identifier for the extension.
+     * @return the name of this extension.
+     */
+    fun name(): String
+
+    /**
      * Use this method if you want to apply a custom [WireframeMapper] for a specific [View].
      * @return the list of [MapperTypeWrapper]
      */

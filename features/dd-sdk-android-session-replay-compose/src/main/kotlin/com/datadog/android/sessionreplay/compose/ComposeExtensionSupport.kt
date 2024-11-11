@@ -52,4 +52,11 @@ class ComposeExtensionSupport : ExtensionSupport {
     override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
         return emptyList()
     }
+
+    override fun name(): String =
+        COMPOSE_EXTENSION_SUPPORT_NAME
+
+    internal companion object {
+        internal const val COMPOSE_EXTENSION_SUPPORT_NAME = "ComposeExtensionSupport"
+    }
 }
