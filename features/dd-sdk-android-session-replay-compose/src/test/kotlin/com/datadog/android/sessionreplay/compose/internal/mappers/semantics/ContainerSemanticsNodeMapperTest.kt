@@ -8,10 +8,12 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -35,18 +37,18 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class TabSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest() {
+internal class ContainerSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest() {
 
-    private lateinit var testedTabSemanticsNodeMapper: TabSemanticsNodeMapper
-
-    @Mock
-    private lateinit var mockSemanticsNode: SemanticsNode
+    private lateinit var testedContainerSemanticsNodeMapper: ContainerSemanticsNodeMapper
 
     @Mock
     private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
 
     @LongForgery(min = 0xffffffff)
     var fakeBackgroundColor: Long = 0L
+
+    @FloatForgery
+    var fakeCornerRadius: Float = 0f
 
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeBackgroundColorHexString: String
@@ -59,7 +61,7 @@ internal class TabSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest()
         super.`set up`(forge)
         mockColorStringFormatter(fakeBackgroundColor, fakeBackgroundColorHexString)
 
-        testedTabSemanticsNodeMapper = TabSemanticsNodeMapper(
+        testedContainerSemanticsNodeMapper = ContainerSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,
             semanticsUtils = mockSemanticsUtils
         )
@@ -69,13 +71,18 @@ internal class TabSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest()
     fun `M return the correct wireframe W map`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode()
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
+        val fakeBackgroundInfo = BackgroundInfo(
+            globalBounds = rectToBounds(fakeBounds, fakeDensity),
+            color = fakeBackgroundColor,
+            cornerRadius = fakeCornerRadius
         )
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn listOf(
+            fakeBackgroundInfo
+        )
+        whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
 
         // When
-        val actual = testedTabSemanticsNodeMapper.map(
+        val actual = testedContainerSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
             mockAsyncJobStatusCallback
@@ -83,21 +90,25 @@ internal class TabSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest()
 
         // Then
         val expected = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeSemanticsId.toLong(),
+            id = (fakeSemanticsId.toLong() shl 32),
             x = (fakeBounds.left / fakeDensity).toLong(),
             y = (fakeBounds.top / fakeDensity).toLong(),
             width = (fakeBounds.size.width / fakeDensity).toLong(),
             height = (fakeBounds.size.height / fakeDensity).toLong(),
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = fakeUiContext.parentContentColor
+                backgroundColor = fakeBackgroundColorHexString,
+                cornerRadius = fakeCornerRadius
             )
         )
         assertThat(actual.wireframes).contains(expected)
+        assertThat(actual.uiContext).isEqualTo(
+            fakeUiContext.copy(
+                parentContentColor = fakeBackgroundColorHexString
+            )
+        )
     }
 
     private fun mockSemanticsNode(): SemanticsNode {
-        return mockSemanticsNodeWithBound {
-            whenever(mockSemanticsNode.layoutInfo).doReturn(mockLayoutInfo)
-        }
+        return mockSemanticsNodeWithBound {}
     }
 }

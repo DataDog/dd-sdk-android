@@ -38,18 +38,21 @@ internal class TextSemanticsNodeMapper(
         val text = resolveText(semanticsNode.config)
         val textStyle = resolveTextStyle(semanticsNode, parentContext) ?: defaultTextStyle
         val bounds = resolveBounds(semanticsNode)
-        return SemanticsWireframe(
-            wireframes = MobileSegment.Wireframe.TextWireframe(
+        val textWireframe = text?.let {
+            MobileSegment.Wireframe.TextWireframe(
                 id = semanticsNode.id.toLong(),
                 x = bounds.x,
                 y = bounds.y,
                 width = bounds.width,
                 height = bounds.height,
-                text = text ?: "",
+                text = text,
                 textStyle = textStyle,
                 textPosition = resolveTextAlign(semanticsNode)
-            ).let { listOf(it) },
-            null
+            )
+        }
+        return SemanticsWireframe(
+            wireframes = listOfNotNull(textWireframe),
+            parentContext
         )
     }
 

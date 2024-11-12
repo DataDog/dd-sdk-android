@@ -10,34 +10,27 @@ import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
-import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
-internal class TabSemanticsNodeMapper(
+internal class ContainerSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    semanticsUtils: SemanticsUtils = SemanticsUtils()
+    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
-
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
-        val globalBounds = resolveBounds(semanticsNode)
-        val shapeStyle =
-            MobileSegment.ShapeStyle(backgroundColor = parentContext.parentContentColor)
-        val wireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = semanticsNode.id.toLong(),
-            x = globalBounds.x,
-            y = globalBounds.y,
-            width = globalBounds.width,
-            height = globalBounds.height,
-            shapeStyle = shapeStyle
-        )
+        val wireframes = resolveModifierWireframes(semanticsNode)
+        val backgroundColor = semanticsUtils.resolveBackgroundColor(semanticsNode)?.let {
+            convertColor(it)
+        }
         return SemanticsWireframe(
-            wireframes = listOf(wireframe),
-            uiContext = parentContext
+            wireframes = wireframes,
+            uiContext = parentContext.copy(
+                parentContentColor = backgroundColor ?: parentContext.parentContentColor
+            )
         )
     }
 }
