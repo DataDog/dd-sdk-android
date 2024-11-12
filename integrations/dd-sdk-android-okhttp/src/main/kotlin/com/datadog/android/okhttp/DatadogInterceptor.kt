@@ -72,13 +72,12 @@ import java.util.Locale
  *         .build()
  * ```
  */
-open class DatadogInterceptor
-internal constructor(
+open class DatadogInterceptor internal constructor(
     sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
-    traceSampler: Sampler,
+    traceSampler: Sampler<Span>,
     traceContextInjection: TraceContextInjection,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
@@ -128,7 +127,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHostsWithHeaderType,
@@ -177,7 +176,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHosts.associateWith {
@@ -222,7 +221,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = emptyMap(),

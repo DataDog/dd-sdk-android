@@ -121,7 +121,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockTraceSampler: Sampler
+    lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -171,7 +171,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId
-        whenever(mockTraceSampler.sample()) doReturn true
+        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
 
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
         fakeMediaType = if (forge.aBool()) {
@@ -250,7 +250,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -278,7 +278,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -306,7 +306,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -332,7 +332,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -393,7 +393,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
@@ -419,7 +419,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts = forge.aMap {
             forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
                 TracingHeaderType.B3MULTI
@@ -451,7 +451,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts = forge.aMap {
             forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
                 TracingHeaderType.B3
@@ -481,7 +481,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts = forge.aMap {
             forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
                 TracingHeaderType.TRACECONTEXT
@@ -592,7 +592,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -625,7 +625,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -658,7 +658,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -691,7 +691,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -731,7 +731,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -767,7 +767,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -806,7 +806,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -840,7 +840,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -868,7 +868,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
 
@@ -999,6 +999,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
+        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
@@ -1030,6 +1031,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
+        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
@@ -1119,7 +1121,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
 
@@ -1167,7 +1169,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable

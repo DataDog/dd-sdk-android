@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
@@ -25,11 +26,11 @@ internal class WebViewLogEventConsumer(
     sampleRate: Float
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
-    val sampler = RateBasedSampler(sampleRate)
+    val sampler: Sampler<Unit> = RateBasedSampler(sampleRate)
 
     override fun consume(event: Pair<JsonObject, String>) {
         if (event.second == USER_LOG_EVENT_TYPE) {
-            if (sampler.sample()) {
+            if (sampler.sample(Unit)) {
                 sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
                     ?.withWriteContext { datadogContext, eventBatchWriter ->
                         val rumContext = rumContextProvider.getRumContext(datadogContext)

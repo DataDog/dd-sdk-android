@@ -13,10 +13,11 @@ import java.security.SecureRandom
 /**
  * [Sampler] with the given sample rate which can be fixed or dynamic.
  *
+ * @param T the type of items to sample.
  * @param sampleRateProvider Provider for the sample rate value which will be called each time
  * the sampling decision needs to be made. All the values should be on the scale [0;100].
  */
-class RateBasedSampler(private val sampleRateProvider: () -> Float) : Sampler {
+open class RateBasedSampler<T : Any>(private val sampleRateProvider: () -> Float) : Sampler<T> {
 
     /**
      * Creates a new instance of [RateBasedSampler] with the given sample rate.
@@ -36,7 +37,7 @@ class RateBasedSampler(private val sampleRateProvider: () -> Float) : Sampler {
 
     /** @inheritDoc */
     @Suppress("MagicNumber")
-    override fun sample(): Boolean {
+    override fun sample(item: T): Boolean {
         return when (val sampleRate = getSampleRate()) {
             0f -> false
             SAMPLE_ALL_RATE -> true
