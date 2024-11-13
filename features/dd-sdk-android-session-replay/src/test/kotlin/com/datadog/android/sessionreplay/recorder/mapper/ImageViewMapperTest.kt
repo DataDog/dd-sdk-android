@@ -193,10 +193,11 @@ internal class ImageViewMapperTest {
         )
 
         testedMapper = ImageViewMapper(
-            mockViewIdentifierResolver,
-            mockColorStringFormatter,
-            mockViewBoundsResolver,
-            mockDrawableToColorMapper
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            colorStringFormatter = mockColorStringFormatter,
+            viewBoundsResolver = mockViewBoundsResolver,
+            drawableToColorMapper = mockDrawableToColorMapper,
+            imageViewUtils = stubImageViewUtils
         )
     }
 

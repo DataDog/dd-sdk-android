@@ -23,17 +23,38 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 /**
  * A [WireframeMapper] implementation to map an [ImageView] component.
  */
-open class ImageViewMapper(
-    viewIdentifierResolver: ViewIdentifierResolver,
-    colorStringFormatter: ColorStringFormatter,
-    viewBoundsResolver: ViewBoundsResolver,
-    drawableToColorMapper: DrawableToColorMapper
-) : BaseAsyncBackgroundWireframeMapper<ImageView>(
-    viewIdentifierResolver,
-    colorStringFormatter,
-    viewBoundsResolver,
-    drawableToColorMapper
-) {
+open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
+    private val imageViewUtils: ImageViewUtils
+
+    @Suppress("Unused") // used by external mappers
+    constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper
+    ) : this(
+        viewIdentifierResolver,
+        colorStringFormatter,
+        viewBoundsResolver,
+        drawableToColorMapper,
+        ImageViewUtils
+    )
+
+    internal constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper,
+        imageViewUtils: ImageViewUtils
+    ) : super(
+        viewIdentifierResolver,
+        colorStringFormatter,
+        viewBoundsResolver,
+        drawableToColorMapper
+    ) {
+        this.imageViewUtils = imageViewUtils
+    }
+
     @UiThread
     override fun map(
         view: ImageView,
@@ -48,17 +69,18 @@ open class ImageViewMapper(
 
         val drawable = view.drawable?.current ?: return wireframes
 
-        val parentRect = ImageViewUtils.resolveParentRectAbsPosition(view)
-        val contentRect = ImageViewUtils.resolveContentRectWithScaling(view, drawable)
+        val parentRect = imageViewUtils.resolveParentRectAbsPosition(view)
+        val contentRect = imageViewUtils.resolveContentRectWithScaling(view, drawable)
 
         val resources = view.resources
         val density = resources.displayMetrics.density
 
         val clipping = if (view.cropToPadding) {
-            ImageViewUtils.calculateClipping(parentRect, contentRect, density)
+            imageViewUtils.calculateClipping(parentRect, contentRect, density)
         } else {
             null
         }
+
         val contentXPosInDp = contentRect.left.densityNormalized(density).toLong()
         val contentYPosInDp = contentRect.top.densityNormalized(density).toLong()
         val contentWidthPx = contentRect.width()
