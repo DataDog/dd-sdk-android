@@ -14,22 +14,6 @@ import java.lang.reflect.Method
 
 internal object ComposeReflection {
     val WrappedCompositionClass = getClassSafe("androidx.compose.ui.platform.WrappedComposition")
-    val WrappedCompositionOriginalField = WrappedCompositionClass?.getDeclaredFieldSafe("original")
-
-    val CompositionImplClass = getClassSafe("androidx.compose.runtime.CompositionImpl")
-    val CompositionImplComposerField = CompositionImplClass?.getDeclaredFieldSafe("composer")
-
-    val CompositionContextHolderClass = getClassSafe("androidx.compose.runtime.ComposerImpl\$CompositionContextHolder")
-    val CompositionContextHolderRefField = CompositionContextHolderClass?.getDeclaredFieldSafe("ref")
-
-    val CompositionContextImplClass = getClassSafe("androidx.compose.runtime.ComposerImpl\$CompositionContextImpl")
-    val CompositionContextImplComposersField = CompositionContextImplClass?.getDeclaredFieldSafe("composers")
-
-    val AnchorClass = getClassSafe("androidx.compose.runtime.Anchor")
-    val AnchorLocationField = AnchorClass?.getDeclaredFieldSafe("location")
-
-    val RecomposeScopeImplClass = getClassSafe("androidx.compose.runtime.RecomposeScopeImpl")
-    val RecomposeScopeImplBlockField = RecomposeScopeImplClass?.getDeclaredFieldSafe("block")
 
     val AbstractComposeViewClass = getClassSafe("androidx.compose.ui.platform.AbstractComposeView")
     val CompositionField = AbstractComposeViewClass?.getDeclaredFieldSafe("composition")
