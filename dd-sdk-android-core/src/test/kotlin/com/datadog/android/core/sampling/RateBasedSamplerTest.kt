@@ -30,7 +30,7 @@ import kotlin.math.sqrt
 @ForgeConfiguration(Configurator::class)
 internal class RateBasedSamplerTest {
 
-    private lateinit var testedSampler: RateBasedSampler
+    private lateinit var testedSampler: RateBasedSampler<Unit>
 
     @FloatForgery(min = 0f, max = 100f)
     var randomSampleRate: Float = 0.0f
@@ -51,7 +51,7 @@ internal class RateBasedSamplerTest {
         repeat(testRepeats) {
             var validated = 0
             repeat(dataSize) {
-                val isValid = if (testedSampler.sample()) 1 else 0
+                val isValid = if (testedSampler.sample(Unit)) 1 else 0
                 validated += isValid
             }
             val computedSampleRate = (validated.toDouble() / dataSize.toDouble()) * 100
@@ -93,7 +93,7 @@ internal class RateBasedSamplerTest {
         repeat(testRepeats) {
             var validated = 0
             repeat(dataSize) {
-                val isValid = if (testedSampler.sample()) 1 else 0
+                val isValid = if (testedSampler.sample(Unit)) 1 else 0
                 validated += isValid
             }
             val computedSampleRate = (validated.toDouble() / dataSize.toDouble()) * 100
@@ -120,7 +120,7 @@ internal class RateBasedSamplerTest {
         val dataSize = 10
 
         repeat(dataSize) {
-            val isValid = if (testedSampler.sample()) 1 else 0
+            val isValid = if (testedSampler.sample(Unit)) 1 else 0
             validated += isValid
         }
 
@@ -135,7 +135,7 @@ internal class RateBasedSamplerTest {
         val dataSize = 10
 
         repeat(dataSize) {
-            val isValid = if (testedSampler.sample()) 1 else 0
+            val isValid = if (testedSampler.sample(Unit)) 1 else 0
             validated += isValid
         }
 

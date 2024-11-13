@@ -867,18 +867,18 @@ public final class com/datadog/android/core/persistence/datastore/DataStoreConte
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/core/sampling/RateBasedSampler : com/datadog/android/core/sampling/Sampler {
+public class com/datadog/android/core/sampling/RateBasedSampler : com/datadog/android/core/sampling/Sampler {
 	public static final field SAMPLE_ALL_RATE F
 	public fun <init> (D)V
 	public fun <init> (F)V
 	public fun <init> (Lkotlin/jvm/functions/Function0;)V
 	public fun getSampleRate ()Ljava/lang/Float;
-	public fun sample ()Z
+	public fun sample (Ljava/lang/Object;)Z
 }
 
 public abstract interface class com/datadog/android/core/sampling/Sampler {
 	public abstract fun getSampleRate ()Ljava/lang/Float;
-	public abstract fun sample ()Z
+	public abstract fun sample (Ljava/lang/Object;)Z
 }
 
 public abstract interface class com/datadog/android/core/thread/FlushableExecutorService : java/util/concurrent/ExecutorService {

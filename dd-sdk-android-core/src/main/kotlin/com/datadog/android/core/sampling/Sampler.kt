@@ -10,14 +10,15 @@ import androidx.annotation.FloatRange
 
 /**
  * Interface representing the sampling.
+ * @param T the type of items to sample.
  */
-interface Sampler {
+interface Sampler<T : Any> {
 
     /**
-     * Sampling method.
-     * @return true if you want to keep the value, false otherwise.
+     * @param item the item to sample
+     * @return true to keep the item, false to discard it
      */
-    fun sample(): Boolean
+    fun sample(item: T): Boolean
 
     /**
      * @return the sample rate if applicable, as a float between 0 and 100,
