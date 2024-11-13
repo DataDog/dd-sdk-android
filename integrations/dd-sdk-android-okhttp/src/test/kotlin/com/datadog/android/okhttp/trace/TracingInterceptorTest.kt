@@ -11,7 +11,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
@@ -227,9 +226,8 @@ internal open class TracingInterceptorTest {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(RateBasedSampler::class.java)
-        val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            .isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
@@ -257,9 +255,8 @@ internal open class TracingInterceptorTest {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(RateBasedSampler::class.java)
-        val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            .isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
