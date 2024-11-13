@@ -323,6 +323,12 @@ interface com.datadog.android.core.persistence.Serializer<T: Any>
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
 data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
   constructor(Int, T?)
+open class com.datadog.android.core.sampling.DeterministicSampler<T: Any> : Sampler<T>
+  constructor((T) -> ULong, () -> Float)
+  constructor((T) -> ULong, Float)
+  constructor((T) -> ULong, Double)
+  override fun sample(T): Boolean
+  override fun getSampleRate(): Float
 open class com.datadog.android.core.sampling.RateBasedSampler<T: Any> : Sampler<T>
   constructor(() -> Float)
   constructor(Float)
