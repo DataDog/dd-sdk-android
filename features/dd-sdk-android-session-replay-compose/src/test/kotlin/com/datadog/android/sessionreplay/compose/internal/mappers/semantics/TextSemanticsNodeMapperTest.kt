@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
-import com.datadog.android.sessionreplay.compose.internal.mappers.TextCompositionGroupMapper.Companion.DEFAULT_FONT_FAMILY
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -166,5 +165,9 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
     private fun generateFakeTextAlign(forge: Forge): TextAlign {
         val index = forge.anInt(0, TextAlign.values().size)
         return TextAlign.values()[index]
+    }
+
+    companion object {
+        private const val DEFAULT_FONT_FAMILY = "Roboto, sans-serif"
     }
 }
