@@ -59,10 +59,8 @@ public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$
 	public synthetic fun <init> (FILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun addExtensionSupport (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public final fun getLogger ()Lcom/datadog/android/api/InternalLogger;
 	public final fun setDynamicOptimizationEnabled (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setImagePrivacy (Lcom/datadog/android/sessionreplay/ImagePrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
-	public final fun setLogger (Lcom/datadog/android/api/InternalLogger;)V
 	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setSystemRequirements (Lcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setTextAndInputPrivacy (Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;

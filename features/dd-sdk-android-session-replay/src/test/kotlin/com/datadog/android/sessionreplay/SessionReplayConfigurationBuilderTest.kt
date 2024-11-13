@@ -264,9 +264,8 @@ internal class SessionReplayConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.customDrawableMappers).containsAll(
-            setOf(mockFirstDrawableMapper, mockSecondDrawableMapper)
-        )
+        assertThat(config.customDrawableMappers)
+            .containsOnly(mockFirstDrawableMapper, mockSecondDrawableMapper)
     }
 
     @Test
@@ -292,9 +291,8 @@ internal class SessionReplayConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.customOptionSelectorDetectors).containsAll(
-            setOf(mockFirstOptionSelectorDetector, mockSecondOptionSelectorDetector)
-        )
+        assertThat(config.customOptionSelectorDetectors)
+            .containsOnly(mockFirstOptionSelectorDetector, mockSecondOptionSelectorDetector)
     }
 
     @Test
@@ -330,9 +328,8 @@ internal class SessionReplayConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.customMappers).containsAll(
-            setOf(fakeTextMapperTypeWrapper, fakeImageMapperTypeWrapper)
-        )
+        assertThat(config.customMappers)
+            .containsOnly(fakeTextMapperTypeWrapper, fakeImageMapperTypeWrapper)
     }
 
     @Test

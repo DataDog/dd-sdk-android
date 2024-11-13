@@ -32,19 +32,31 @@ data class SessionReplayConfiguration internal constructor(
 
     /**
      * A Builder class for a [SessionReplayConfiguration].
-     * @param sampleRate must be a value between 0 and 100. A value of 0
-     * means no session will be recorded, 100 means all sessions will be recorded.
-     * If this value is not provided then Session Replay will default to a 100 sample rate.
      */
     @Suppress("TooManyFunctions")
-    class Builder(
-        @FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float = SAMPLE_IN_ALL_SESSIONS
-    ) {
-        private var logger = InternalLogger.UNBOUND
+    class Builder {
+        private val logger: InternalLogger
+        private val sampleRate: Float
+
+        /**
+         * Calling this constructor will default to a 100% session sampling rate.
+         */
+        constructor() : this(SAMPLE_IN_ALL_SESSIONS, InternalLogger.UNBOUND)
+
+        /**
+         * @param sampleRate must be a value between 0 and 100. A value of 0
+         * means no session will be recorded, 100 means all sessions will be recorded.
+         * If this value is not provided then Session Replay will default to a 100 sample rate.
+         */
+        constructor(
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float = SAMPLE_IN_ALL_SESSIONS
+        ) : this(sampleRate, InternalLogger.UNBOUND)
+
         internal constructor(
-            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float = SAMPLE_IN_ALL_SESSIONS,
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float,
             logger: InternalLogger
-        ) : this(sampleRate) {
+        ) {
+            this.sampleRate = sampleRate
             this.logger = logger
         }
 
