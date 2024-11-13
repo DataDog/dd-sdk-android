@@ -62,13 +62,13 @@ internal object ImageViewUtils {
     }
 
     internal fun resolveContentRectWithScaling(
-        view: ImageView,
+        imageView: ImageView,
         drawable: Drawable
     ): Rect {
         val drawableWidthPx = drawable.intrinsicWidth
         val drawableHeightPx = drawable.intrinsicHeight
 
-        val parentRect = resolveParentRectAbsPosition(view)
+        val parentRect = resolveParentRectAbsPosition(imageView)
 
         val childRect = Rect(
             0,
@@ -79,7 +79,7 @@ internal object ImageViewUtils {
 
         val resultRect: Rect
 
-        when (view.scaleType) {
+        when (imageView.scaleType) {
             ImageView.ScaleType.FIT_START -> {
                 val contentRect = scaleRectToFitParent(parentRect, childRect)
                 resultRect = positionRectAtStart(parentRect, contentRect)
