@@ -14,7 +14,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
@@ -26,6 +25,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -58,7 +58,9 @@ internal open class RumViewScope(
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
     private val trackFrustrations: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    private val networkSettledMetricResolver: NetworkSettledMetricResolver =
+        NetworkSettledMetricResolver(internalLogger = sdkCore.internalLogger)
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -159,6 +161,7 @@ internal open class RumViewScope(
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=${rumContext.sessionId}")
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
         }
+        networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
     }
 
     // region RumScope
@@ -323,6 +326,7 @@ internal open class RumViewScope(
         event: RumRawEvent.StopView,
         writer: DataWriter<Any>
     ) {
+        networkSettledMetricResolver.viewWasStopped()
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
@@ -431,7 +435,8 @@ internal open class RumViewScope(
             firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
             featuresContextResolver,
-            sampleRate
+            sampleRate,
+            networkSettledMetricResolver
         )
         pendingResourceCount++
     }
@@ -812,6 +817,7 @@ internal open class RumViewScope(
     @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>, eventType: EventType = EventType.DEFAULT) {
         val viewComplete = isViewComplete()
+        val timeToSettled = networkSettledMetricResolver.resolveMetric()
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -909,6 +915,7 @@ internal open class RumViewScope(
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
+                    networkSettledTime = timeToSettled,
                     loadingTime = viewLoadingTime
                 ),
                 usr = if (user.hasUserData()) {

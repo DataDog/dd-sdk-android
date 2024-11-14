@@ -28,13 +28,11 @@
     },
     "service": {
       "type": "string",
-      "description": "The service name for this application",
-      "readOnly": true
+      "description": "The service name for this application"
     },
     "version": {
       "type": "string",
-      "description": "The version for this application",
-      "readOnly": true
+      "description": "The version for this application"
     },
     "build_version": {
       "type": "string",
