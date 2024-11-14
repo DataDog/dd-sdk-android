@@ -69,7 +69,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompiler.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
 
     testOptions {
@@ -155,6 +155,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":integrations:dd-sdk-android-trace-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rum-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rx"))
@@ -200,6 +201,7 @@ dependencies {
 
     // Image Loading Library
     implementation(libs.coil)
+    implementation(libs.coilCompose)
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)

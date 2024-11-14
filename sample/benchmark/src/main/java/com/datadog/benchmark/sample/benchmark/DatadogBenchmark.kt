@@ -33,9 +33,12 @@ internal class DatadogBenchmark(config: Config) {
             .build()
     )
 
+    val isComposeEnabled = config.scenario == SyntheticsScenario.SessionReplayCompose
+
     init {
         if (config.run == SyntheticsRun.Instrumented) {
             when (config.scenario) {
+                SyntheticsScenario.SessionReplayCompose,
                 SyntheticsScenario.SessionReplay -> enableSessionReplay()
                 else -> {} // do nothing for now
             }

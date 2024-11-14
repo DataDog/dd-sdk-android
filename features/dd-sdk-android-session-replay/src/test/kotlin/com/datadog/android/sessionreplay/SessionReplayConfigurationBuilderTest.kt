@@ -7,8 +7,17 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
+import android.widget.ImageView
+import android.widget.TextView
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_EXTENSION_DETECTED
+import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_MAPPER_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.SAMPLE_IN_ALL_SESSIONS
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -26,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -229,5 +239,186 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
         assertThat(sessionReplayConfiguration.touchPrivacy).isEqualTo(TouchPrivacy.HIDE)
         assertThat(sessionReplayConfiguration.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_ALL)
+    }
+
+    @Test
+    fun `M add custom drawable mappers W addExtensionSupport { multiple calls }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockFirstDrawableMapper: DrawableToColorMapper,
+        @Mock mockSecondDrawableMapper: DrawableToColorMapper
+    ) {
+        // Given
+        whenever(mockFirstExtension.getCustomDrawableMapper())
+            .thenReturn(listOf(mockFirstDrawableMapper))
+
+        whenever(mockSecondExtension.getCustomDrawableMapper())
+            .thenReturn(listOf(mockSecondDrawableMapper))
+
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.customDrawableMappers)
+            .containsOnly(mockFirstDrawableMapper, mockSecondDrawableMapper)
+    }
+
+    @Test
+    fun `M add custom options selector detectors W addExtensionSupport { multiple calls }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockFirstOptionSelectorDetector: OptionSelectorDetector,
+        @Mock mockSecondOptionSelectorDetector: OptionSelectorDetector
+    ) {
+        // Given
+        whenever(mockFirstExtension.getOptionSelectorDetectors())
+            .thenReturn(listOf(mockFirstOptionSelectorDetector))
+
+        whenever(mockSecondExtension.getOptionSelectorDetectors())
+            .thenReturn(listOf(mockSecondOptionSelectorDetector))
+
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.customOptionSelectorDetectors)
+            .containsOnly(mockFirstOptionSelectorDetector, mockSecondOptionSelectorDetector)
+    }
+
+    @Test
+    fun `M add custom view mappers W addExtensionSupport { multiple calls }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockFirstMapper: WireframeMapper<TextView>,
+        @Mock mockSecondMapper: WireframeMapper<ImageView>
+    ) {
+        // Given
+        val fakeTextMapperTypeWrapper = MapperTypeWrapper(
+            TextView::class.java,
+            mockFirstMapper
+        )
+
+        val fakeImageMapperTypeWrapper = MapperTypeWrapper(
+            ImageView::class.java,
+            mockSecondMapper
+        )
+
+        whenever(mockFirstExtension.getCustomViewMappers())
+            .thenReturn(listOf(fakeTextMapperTypeWrapper))
+
+        whenever(mockSecondExtension.getCustomViewMappers())
+            .thenReturn(listOf(fakeImageMapperTypeWrapper))
+
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.customMappers)
+            .containsOnly(fakeTextMapperTypeWrapper, fakeImageMapperTypeWrapper)
+    }
+
+    @Test
+    fun `M take first value W addExtensionSupport { duplicate mappers }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockMapper: WireframeMapper<ImageView>
+    ) {
+        // Given
+        val fakeMapperTypeWrapper = MapperTypeWrapper(
+            ImageView::class.java,
+            mockMapper
+        )
+
+        whenever(mockFirstExtension.getCustomViewMappers())
+            .thenReturn(listOf(fakeMapperTypeWrapper))
+
+        whenever(mockSecondExtension.getCustomViewMappers())
+            .thenReturn(listOf(fakeMapperTypeWrapper))
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.customMappers).isEqualTo(mockFirstExtension.getCustomViewMappers())
+    }
+
+    @Test
+    fun `M warn W addExtensionSupport { duplicate mappers }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockMapper: WireframeMapper<ImageView>,
+        @Mock mockLogger: InternalLogger
+    ) {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(100f, mockLogger)
+        val fakeMapperTypeWrapper = MapperTypeWrapper(
+            ImageView::class.java,
+            mockMapper
+        )
+
+        whenever(mockFirstExtension.getCustomViewMappers())
+            .thenReturn(listOf(fakeMapperTypeWrapper))
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+
+        whenever(mockSecondExtension.getCustomViewMappers())
+            .thenReturn(listOf(fakeMapperTypeWrapper))
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+
+        testedBuilder.build()
+
+        val expected = String.format(DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
+
+        // Then
+        mockLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            message = expected
+        )
+    }
+
+    @Test
+    fun `M warn W addExtensionSupport { duplicate extensions }`(
+        @Mock mockExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @StringForgery fakeName: String,
+        @Mock mockLogger: InternalLogger
+    ) {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(100f, mockLogger)
+        whenever(mockExtension.name()).thenReturn(fakeName)
+        whenever(mockSecondExtension.name()).thenReturn(fakeName)
+        val expected = String.format(Locale.US, DUPLICATE_EXTENSION_DETECTED, fakeName)
+
+        // When
+        testedBuilder.addExtensionSupport(mockExtension)
+        testedBuilder.addExtensionSupport(mockExtension)
+
+        // Then
+        mockLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            message = expected
+        )
     }
 }

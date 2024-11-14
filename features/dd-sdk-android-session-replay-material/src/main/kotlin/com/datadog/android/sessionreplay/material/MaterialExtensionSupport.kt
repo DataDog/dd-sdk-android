@@ -87,4 +87,11 @@ class MaterialExtensionSupport : ExtensionSupport {
     override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
         return listOf(materialDrawableToColorMapper)
     }
+
+    override fun name(): String =
+        MATERIAL_EXTENSION_SUPPORT_NAME
+
+    internal companion object {
+        internal const val MATERIAL_EXTENSION_SUPPORT_NAME = "MaterialExtensionSupport"
+    }
 }

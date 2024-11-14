@@ -7,10 +7,12 @@
 package com.datadog.benchmark.sample
 
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import com.datadog.benchmark.sample.benchmark.DatadogBenchmark
+import com.datadog.benchmark.sample.compose.MainView
 import com.datadog.sample.benchmark.R
 
 /**
@@ -22,10 +24,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var datadogBenchmark: DatadogBenchmark
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+
         datadogBenchmark = DatadogBenchmark(
             DatadogBenchmark.Config.resolveSyntheticsBundle(intent.extras)
         )
+        if (datadogBenchmark.isComposeEnabled) {
+            supportActionBar?.hide()
+            setContent {
+                MainView()
+            }
+        } else {
+            setContentView(R.layout.activity_main)
+        }
     }
 
     override fun onStart() {
@@ -40,6 +50,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        navController = Navigation.findNavController(this, R.id.nav_host_fragment)
+        if (!datadogBenchmark.isComposeEnabled) {
+            navController = Navigation.findNavController(this, R.id.nav_host_fragment)
+        }
     }
 }

@@ -28,10 +28,13 @@ open class AndroidQDrawableToColorMapper(
     override fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
         @Suppress("SwallowedException")
         val fillPaint = try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
             fillPaintField?.get(drawable) as? Paint
         } catch (e: IllegalArgumentException) {
             null
         } catch (e: IllegalAccessException) {
+            null
+        } catch (e: ExceptionInInitializerError) {
             null
         }
 

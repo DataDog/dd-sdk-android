@@ -127,29 +127,22 @@ open class LegacyDrawableToColorMapper(
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
+        @Suppress("SwallowedException")
         val fillPaint = try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Can't throw NPE here
             fillPaintField?.get(drawable) as? Paint
         } catch (e: IllegalArgumentException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to read GradientDrawable.mFillPaint field through reflection" },
-                e
-            )
             null
         } catch (e: IllegalAccessException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to read GradientDrawable.mFillPaint field through reflection" },
-                e
-            )
+            null
+        } catch (e: ExceptionInInitializerError) {
             null
         }
 
         if (fillPaint == null) return null
         val filterColor = try {
             fillPaint.colorFilter?.let {
+                @Suppress("UnsafeThirdPartyFunctionCall") // Can't throw NPE here
                 mColorField?.get(it) as? Int
             } ?: fillPaint.color
         } catch (e: IllegalArgumentException) {

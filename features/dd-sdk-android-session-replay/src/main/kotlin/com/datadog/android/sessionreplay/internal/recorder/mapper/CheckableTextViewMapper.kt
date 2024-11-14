@@ -111,7 +111,7 @@ internal abstract class CheckableTextViewMapper<T>(
                 mappingContext.systemInformation.screenDensity
             )
             val drawableCopier = DrawableCopier { _, _ -> cloneCheckableDrawable(view, it) }
-            mappingContext.imageWireframeHelper.createImageWireframe(
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
                 currentWireframeIndex = 0,

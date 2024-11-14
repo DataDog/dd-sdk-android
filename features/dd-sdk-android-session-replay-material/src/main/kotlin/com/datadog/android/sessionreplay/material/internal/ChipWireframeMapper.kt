@@ -43,19 +43,20 @@ internal class ChipWireframeMapper(
         )
         val density = mappingContext.systemInformation.screenDensity
         val drawableBounds = view.chipDrawable.bounds
-        val backgroundWireframe = mappingContext.imageWireframeHelper.createImageWireframe(
-            view = view,
-            // Background drawable doesn't need to be masked.
-            imagePrivacy = ImagePrivacy.MASK_NONE,
-            currentWireframeIndex = 0,
-            x = viewGlobalBounds.x + drawableBounds.left.toLong().densityNormalized(density),
-            y = viewGlobalBounds.y + drawableBounds.top.toLong().densityNormalized(density),
-            width = view.chipDrawable.intrinsicWidth,
-            height = view.chipDrawable.intrinsicHeight,
-            usePIIPlaceholder = false,
-            drawable = view.chipDrawable,
-            asyncJobStatusCallback = asyncJobStatusCallback
-        )
+        val backgroundWireframe =
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
+                view = view,
+                // Background drawable doesn't need to be masked.
+                imagePrivacy = ImagePrivacy.MASK_NONE,
+                currentWireframeIndex = 0,
+                x = viewGlobalBounds.x + drawableBounds.left.toLong().densityNormalized(density),
+                y = viewGlobalBounds.y + drawableBounds.top.toLong().densityNormalized(density),
+                width = view.chipDrawable.intrinsicWidth,
+                height = view.chipDrawable.intrinsicHeight,
+                usePIIPlaceholder = false,
+                drawable = view.chipDrawable,
+                asyncJobStatusCallback = asyncJobStatusCallback
+            )
         backgroundWireframe?.let {
             wireframes.add(it)
         }

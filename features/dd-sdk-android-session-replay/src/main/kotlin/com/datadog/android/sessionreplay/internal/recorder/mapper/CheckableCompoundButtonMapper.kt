@@ -84,6 +84,8 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
         } else {
             // view.buttonDrawable is not available below API 23, so reflection is used to retrieve it.
             try {
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                // Exceptions have been caught.
                 mButtonDrawableField?.get(view) as? Drawable
             } catch (e: IllegalAccessException) {
                 internalLogger.log(

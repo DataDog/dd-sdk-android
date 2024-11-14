@@ -154,7 +154,7 @@ class ChipWireframeMapperTest {
         // Then
         val density = fakeMappingContext.systemInformation.screenDensity
 
-        verify(fakeMappingContext.imageWireframeHelper).createImageWireframe(
+        verify(fakeMappingContext.imageWireframeHelper).createImageWireframeByDrawable(
             view = eq(mockChipView),
             // Background drawable doesn't need to be masked.
             imagePrivacy = eq(ImagePrivacy.MASK_NONE),

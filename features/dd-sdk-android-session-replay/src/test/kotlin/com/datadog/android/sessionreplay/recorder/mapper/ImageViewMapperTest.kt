@@ -283,7 +283,7 @@ internal class ImageViewMapperTest {
     fun `M call async callback W map() { }`() {
         // Given
         whenever(
-            mockImageWireframeHelper.createImageWireframe(
+            mockImageWireframeHelper.createImageWireframeByDrawable(
                 view = any(),
                 imagePrivacy = any(),
                 currentWireframeIndex = any(),
@@ -315,7 +315,7 @@ internal class ImageViewMapperTest {
         assertThat(wireframes[0]).isEqualTo(expectedImageWireframe)
 
         verify(mockImageWireframeHelper)
-            .createImageWireframe(
+            .createImageWireframeByDrawable(
                 view = any(),
                 imagePrivacy = any(),
                 currentWireframeIndex = any(),
@@ -445,7 +445,7 @@ internal class ImageViewMapperTest {
         returnedWireframe: MobileSegment.Wireframe
     ) {
         whenever(
-            mockImageWireframeHelper.createImageWireframe(
+            mockImageWireframeHelper.createImageWireframeByDrawable(
                 view = eq(expectedView),
                 imagePrivacy = eq(expectedImagePrivacy),
                 currentWireframeIndex = eq(expectedIndex),

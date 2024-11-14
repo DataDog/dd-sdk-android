@@ -34,6 +34,12 @@ android {
         java17()
     }
 
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
+    }
     val bmPassword = System.getenv("BM_STORE_PASSWD")
     signingConfigs {
         if (bmPassword != null) {
@@ -76,6 +82,9 @@ dependencies {
     implementation(libs.googleMaterial)
     implementation(libs.glideCore)
     implementation(libs.timber)
+    implementation(platform(libs.androidXComposeBom))
+    implementation(libs.bundles.androidXCompose)
+    implementation(libs.coilCompose)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -84,6 +93,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":tools:benchmark"))
 
     testImplementation(libs.bundles.jUnit5)

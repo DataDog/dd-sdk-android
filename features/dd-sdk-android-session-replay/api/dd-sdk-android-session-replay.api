@@ -2,6 +2,7 @@ public abstract interface class com/datadog/android/sessionreplay/ExtensionSuppo
 	public abstract fun getCustomDrawableMapper ()Ljava/util/List;
 	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
+	public abstract fun name ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
@@ -105,6 +106,15 @@ public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/En
 	public static final field SHOW Lcom/datadog/android/sessionreplay/TouchPrivacy;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TouchPrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/TouchPrivacy;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
+	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion;
+	public abstract fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion {
+	public final fun getStringObfuscator ()Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator;
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/resources/DefaultDrawableCopier : com/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier {
@@ -1575,14 +1585,16 @@ public final class com/datadog/android/sessionreplay/utils/GlobalBounds {
 public abstract interface class com/datadog/android/sessionreplay/utils/ImageWireframeHelper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper$Companion;
 	public abstract fun createCompoundDrawableWireframes (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/recorder/MappingContext;ILcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)Ljava/util/List;
-	public abstract fun createImageWireframe (Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public abstract fun createImageWireframeByBitmap (JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/graphics/Bitmap;FZLcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public abstract fun createImageWireframeByDrawable (Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
 public final class com/datadog/android/sessionreplay/utils/ImageWireframeHelper$Companion {
 }
 
 public final class com/datadog/android/sessionreplay/utils/ImageWireframeHelper$DefaultImpls {
-	public static synthetic fun createImageWireframe$default (Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public static synthetic fun createImageWireframeByBitmap$default (Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/graphics/Bitmap;FZLcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public static synthetic fun createImageWireframeByDrawable$default (Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Landroid/view/View;Lcom/datadog/android/sessionreplay/ImagePrivacy;IJJIIZLandroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
 public class com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper : com/datadog/android/sessionreplay/utils/DrawableToColorMapper {

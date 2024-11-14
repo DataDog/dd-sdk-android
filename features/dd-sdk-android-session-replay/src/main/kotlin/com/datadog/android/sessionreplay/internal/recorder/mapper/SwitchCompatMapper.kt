@@ -82,7 +82,7 @@ internal open class SwitchCompatMapper(
                     }
                 }
             }
-            return mappingContext.imageWireframeHelper.createImageWireframe(
+            return mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
                 currentWireframeIndex = prevIndex + 1,
@@ -125,7 +125,7 @@ internal open class SwitchCompatMapper(
                 }
             }
         return thumbBounds?.let {
-            mappingContext.imageWireframeHelper.createImageWireframe(
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
                 currentWireframeIndex = prevIndex + 1,

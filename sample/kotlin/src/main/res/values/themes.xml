@@ -14,6 +14,12 @@
         <item name="colorPrimaryDark">@color/datadog_violet_dark</item>
     </style>
 
+    <style name="Sample.Theme.Compose" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowBackground">@color/white</item>
+
+        <item name="colorPrimary">@color/datadog_violet</item>
+        <item name="colorPrimaryDark">@color/datadog_violet_dark</item>
+    </style>
 
 
     <style name="Sample.Theme.Custom" parent="Theme.MaterialComponents.Light.DarkActionBar">

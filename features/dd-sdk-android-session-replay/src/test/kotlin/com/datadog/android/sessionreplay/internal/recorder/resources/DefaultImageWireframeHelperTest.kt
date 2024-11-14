@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
@@ -32,6 +33,8 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import com.datadog.android.utils.isCloseTo
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -62,6 +65,7 @@ import java.util.Locale
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
+@Suppress("MaxLineLength")
 internal class DefaultImageWireframeHelperTest {
     private lateinit var testedHelper: ImageWireframeHelper
 
@@ -98,9 +102,6 @@ internal class DefaultImageWireframeHelperTest {
     @Mock
     lateinit var mockDrawable: Drawable
 
-    @Mock // TODO RUM-000 use forgery instead of mock !
-    lateinit var mockBounds: GlobalBounds
-
     @Mock
     lateinit var mockResources: Resources
 
@@ -108,16 +109,19 @@ internal class DefaultImageWireframeHelperTest {
     lateinit var mockDisplayMetrics: DisplayMetrics
 
     @Mock
+    lateinit var mockBitmap: Bitmap
+
+    @Mock
     lateinit var mockContext: Context
+
+    @LongForgery
+    var fakeViewId: Long = 0L
+
+    @FloatForgery(min = 1f, max = 10f)
+    var fakeDensity: Float = 0.0f
 
     @LongForgery(min = 1)
     var fakeGeneratedIdentifier: Long = 0L
-
-    @IntForgery(min = 1, max = 300)
-    var fakeDrawableWidth: Int = 0
-
-    @IntForgery(min = 1, max = 300)
-    var fakeDrawableHeight: Int = 0
 
     private lateinit var fakeDrawableXY: Pair<Long, Long>
 
@@ -127,21 +131,24 @@ internal class DefaultImageWireframeHelperTest {
     @StringForgery
     lateinit var fakeResourceId: String
 
+    @Forgery
+    lateinit var fakeBounds: GlobalBounds
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val fakeScreenWidth = 1000
-        val fakeScreenHeight = 1000
+        val fakeScreenWidth = 655367L
+        val fakeScreenHeight = 655367L
 
-        val randomXLocation = forge.aLong(min = 1, max = (fakeScreenWidth - fakeDrawableWidth).toLong())
-        val randomYLocation = forge.aLong(min = 1, max = (fakeScreenHeight - fakeDrawableHeight).toLong())
+        val randomXLocation = forge.aLong(min = 1, max = (fakeScreenWidth - fakeBounds.width))
+        val randomYLocation = forge.aLong(min = 1, max = (fakeScreenHeight - fakeBounds.height))
         fakeDrawableXY = Pair(randomXLocation, randomYLocation)
         whenever(mockMappingContext.imagePrivacy).thenReturn(ImagePrivacy.MASK_LARGE_ONLY)
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockSystemInformation.screenDensity).thenReturn(0f)
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(mockView, "drawable"))
             .thenReturn(fakeGeneratedIdentifier)
-        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeDrawableWidth)
-        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeBounds.width.toInt())
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeBounds.height.toInt())
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockView.resources).thenReturn(mockResources)
         whenever(mockView.context).thenReturn(mockContext)
@@ -149,9 +156,9 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockTextView.resources).thenReturn(mockResources)
         whenever(mockTextView.context).thenReturn(mockContext)
         whenever(mockViewUtilsInternal.resolveDrawableBounds(any(), any(), any()))
-            .thenReturn(mockBounds)
-        whenever(mockTextView.width).thenReturn(fakeDrawableWidth)
-        whenever(mockTextView.height).thenReturn(fakeDrawableHeight)
+            .thenReturn(fakeBounds)
+        whenever(mockTextView.width).thenReturn(fakeBounds.width.toInt())
+        whenever(mockTextView.height).thenReturn(fakeBounds.height.toInt())
         whenever(mockTextView.paddingStart).thenReturn(fakePadding)
         whenever(mockTextView.paddingEnd).thenReturn(fakePadding)
         whenever(mockTextView.paddingTop).thenReturn(fakePadding)
@@ -162,10 +169,6 @@ internal class DefaultImageWireframeHelperTest {
                 DRAWABLE_CHILD_NAME + 1
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockBounds.width).thenReturn(fakeDrawableWidth.toLong())
-        whenever(mockBounds.height).thenReturn(fakeDrawableHeight.toLong())
-        whenever(mockBounds.x).thenReturn(0L)
-        whenever(mockBounds.y).thenReturn(0L)
 
         testedHelper = DefaultImageWireframeHelper(
             logger = mockLogger,
@@ -179,9 +182,9 @@ internal class DefaultImageWireframeHelperTest {
     // region createImageWireframe
 
     @Test
-    fun `M return content placeholder W createImageWireframe() { ImagePrivacy MASK_ALL }`() {
+    fun `M return content placeholder W createImageWireframeByDrawable() { ImagePrivacy MASK_ALL }`() {
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_ALL,
             currentWireframeIndex = 0,
@@ -201,9 +204,28 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return image wireframe W createImageWireframe() { ImagePrivacy MASK_NONE }`() {
+    fun `M return content placeholder W createImageWireframeByBitmap() { ImagePrivacy MASK_ALL }`() {
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByBitmap(
+            id = fakeViewId,
+            bitmap = mockBitmap,
+            density = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            isContextualImage = false,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
+
+    @Test
+    fun `M not return image wireframe W createImageWireframe(usePIIPlaceholder = true) { ImagePrivacy MASK_NONE }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_NONE,
             currentWireframeIndex = 0,
@@ -223,12 +245,31 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
+    fun `M not return image wireframe W createImageWireframe { ImagePrivacy MASK_LARGE_ONLY & isContextual image}`() {
+        // When
+        val wireframe = testedHelper.createImageWireframeByBitmap(
+            id = fakeViewId,
+            bitmap = mockBitmap,
+            density = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            isContextualImage = true,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
+
+    @Test
     fun `M return null W createImageWireframe() { application context is null }`() {
         // Given
         whenever(mockView.context.applicationContext).thenReturn(null)
 
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -248,12 +289,12 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M send telemetry W createImageWireframe() { application context is null }`() {
+    fun `M send telemetry W createImageWireframeByDrawable() { application context is null }`() {
         // Given
         whenever(mockView.context.applicationContext).thenReturn(null)
 
         // When
-        testedHelper.createImageWireframe(
+        testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -277,12 +318,12 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M log error W createImageWireframe() { resources is null }`() {
+    fun `M log error W createImageWireframeByDrawable() { resources is null }`() {
         // Given
         whenever(mockView.resources).thenReturn(null)
 
         // When
-        testedHelper.createImageWireframe(
+        testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -306,13 +347,13 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { id is null }`() {
+    fun `M return null W createImageWireframeByDrawable() { id is null }`() {
         // Given
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(null)
 
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -333,9 +374,9 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { drawable has no width }`() {
+    fun `M return null W createImageWireframeByDrawable() { drawable has no width }`() {
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -355,9 +396,9 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { drawable has no height }`() {
+    fun `M return null W createImageWireframeByDrawable() { drawable has no height }`() {
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -377,7 +418,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return wireframe W createImageWireframe()`(
+    fun `M return wireframe W createImageWireframeByDrawable()`(
         @Mock mockShapeStyle: MobileSegment.ShapeStyle,
         @Mock mockBorder: MobileSegment.ShapeBorder,
         @Mock stubWireframeClip: MobileSegment.WireframeClip
@@ -405,8 +446,8 @@ internal class DefaultImageWireframeHelperTest {
             id = fakeGeneratedIdentifier,
             x = fakeDrawableXY.first,
             y = fakeDrawableXY.second,
-            width = fakeDrawableWidth.toLong(),
-            height = fakeDrawableHeight.toLong(),
+            width = fakeBounds.width,
+            height = fakeBounds.height,
             shapeStyle = mockShapeStyle,
             border = mockBorder,
             resourceId = fakeResourceId,
@@ -415,14 +456,14 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // When
-        val wireframe = testedHelper.createImageWireframe(
+        val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = fakeDrawableXY.first,
             y = fakeDrawableXY.second,
-            width = fakeDrawableWidth,
-            height = fakeDrawableHeight,
+            width = fakeBounds.width.toInt(),
+            height = fakeBounds.height.toInt(),
             drawable = mockDrawable,
             shapeStyle = mockShapeStyle,
             border = mockBorder,
@@ -440,6 +481,61 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
+            resourceResolverCallback = any()
+        )
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
+        assertThat(wireframe).isEqualTo(expectedWireframe)
+    }
+
+    @Test
+    fun `M return wireframe W createImageWireframeByBitmap()`(
+        @Mock mockShapeStyle: MobileSegment.ShapeStyle,
+        @Mock mockBorder: MobileSegment.ShapeBorder,
+        @Mock stubWireframeClip: MobileSegment.WireframeClip
+    ) {
+        // Given
+        whenever(
+            mockResourceResolver.resolveResourceId(
+                bitmap = any(),
+                resourceResolverCallback = any()
+            )
+        ).thenAnswer {
+            val callback = it.arguments[1] as ResourceResolverCallback
+            callback.onSuccess(fakeResourceId)
+        }
+
+        val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = fakeGeneratedIdentifier,
+            x = fakeBounds.x,
+            y = fakeBounds.y,
+            width = fakeBounds.width,
+            height = fakeBounds.height,
+            shapeStyle = mockShapeStyle,
+            border = mockBorder,
+            resourceId = fakeResourceId,
+            clip = stubWireframeClip,
+            isEmpty = false
+        )
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByBitmap(
+            id = fakeGeneratedIdentifier,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            density = fakeDensity,
+            globalBounds = fakeBounds,
+            bitmap = mockBitmap,
+            shapeStyle = mockShapeStyle,
+            border = mockBorder,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            isContextualImage = false,
+            clipping = stubWireframeClip
+        )
+
+        // Then
+        verify(mockResourceResolver).resolveResourceId(
+            bitmap = any(),
             resourceResolverCallback = any()
         )
         verify(mockAsyncJobStatusCallback).jobStarted()
@@ -481,7 +577,7 @@ internal class DefaultImageWireframeHelperTest {
                 any(),
                 any()
             )
-        ).thenReturn(mockBounds)
+        ).thenReturn(fakeBounds)
         val fakeDrawables = arrayOf(null, mockDrawable, null, null)
         whenever(mockTextView.compoundDrawables)
             .thenReturn(fakeDrawables)
@@ -527,7 +623,7 @@ internal class DefaultImageWireframeHelperTest {
                 any()
             )
         )
-            .thenReturn(mockBounds)
+            .thenReturn(fakeBounds)
         val fakeDrawables = arrayOf(null, mockDrawable, null, mockDrawable)
         whenever(mockTextView.compoundDrawables)
             .thenReturn(fakeDrawables)
@@ -596,7 +692,7 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockInsetDrawable.drawable).thenReturn(mockGradientDrawable)
 
         // When
-        testedHelper.createImageWireframe(
+        testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -629,14 +725,14 @@ internal class DefaultImageWireframeHelperTest {
     @Test
     fun `M resolve drawable width and height W createImageWireframe() { TextView }`() {
         // When
-        testedHelper.createImageWireframe(
+        testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = fakeDrawableWidth,
-            height = fakeDrawableHeight,
+            width = fakeBounds.width.toInt(),
+            height = fakeBounds.height.toInt(),
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
@@ -657,7 +753,7 @@ internal class DefaultImageWireframeHelperTest {
             resourceResolverCallback = any()
 
         )
-        assertThat(captor.allValues).containsExactly(fakeDrawableWidth, fakeDrawableHeight)
+        assertThat(captor.allValues).containsExactly(fakeBounds.width.toInt(), fakeBounds.height.toInt())
     }
 
     @Test
@@ -681,7 +777,7 @@ internal class DefaultImageWireframeHelperTest {
         }
 
         // When
-        val result = testedHelper.createImageWireframe(
+        val result = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = forge.aPositiveInt(),
@@ -708,7 +804,7 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(false)
 
         // When
-        testedHelper.createImageWireframe(
+        testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,
@@ -742,7 +838,7 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
 
         // When
-        val actualWireframe = testedHelper.createImageWireframe(
+        val actualWireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
             imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
             currentWireframeIndex = 0,

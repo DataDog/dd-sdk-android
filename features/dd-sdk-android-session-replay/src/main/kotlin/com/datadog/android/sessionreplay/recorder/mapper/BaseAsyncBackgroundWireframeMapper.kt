@@ -125,7 +125,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MobileSegment.Wireframe? {
         val background = view.background ?: return null
-        return mappingContext.imageWireframeHelper.createImageWireframe(
+        return mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
             view = view,
             imagePrivacy = mappingContext.imagePrivacy,
             currentWireframeIndex = 0,
