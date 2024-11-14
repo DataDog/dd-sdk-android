@@ -12,11 +12,11 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.internal.rum.buildResourceId
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
+import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -110,7 +110,7 @@ open class DatadogInterceptor internal constructor(
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
      * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
@@ -127,7 +127,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHostsWithHeaderType,
@@ -159,7 +159,7 @@ open class DatadogInterceptor internal constructor(
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
      * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
@@ -176,7 +176,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHosts.associateWith {
@@ -205,7 +205,7 @@ open class DatadogInterceptor internal constructor(
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
      * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
@@ -221,7 +221,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = emptyMap(),
