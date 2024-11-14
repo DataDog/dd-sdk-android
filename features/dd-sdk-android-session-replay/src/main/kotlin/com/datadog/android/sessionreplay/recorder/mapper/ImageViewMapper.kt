@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.mapper
+package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.widget.ImageView
 import androidx.annotation.UiThread
@@ -13,7 +13,6 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
-import com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -21,18 +20,41 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class ImageViewMapper(
-    private val imageViewUtils: ImageViewUtils,
-    viewIdentifierResolver: ViewIdentifierResolver,
-    colorStringFormatter: ColorStringFormatter,
-    viewBoundsResolver: ViewBoundsResolver,
-    drawableToColorMapper: DrawableToColorMapper
-) : BaseAsyncBackgroundWireframeMapper<ImageView>(
-    viewIdentifierResolver,
-    colorStringFormatter,
-    viewBoundsResolver,
-    drawableToColorMapper
-) {
+/**
+ * A [WireframeMapper] implementation to map an [ImageView] component.
+ */
+open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
+    private val imageViewUtils: ImageViewUtils
+
+    @Suppress("Unused") // used by external mappers
+    constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper
+    ) : this(
+        viewIdentifierResolver,
+        colorStringFormatter,
+        viewBoundsResolver,
+        drawableToColorMapper,
+        ImageViewUtils
+    )
+
+    internal constructor(
+        viewIdentifierResolver: ViewIdentifierResolver,
+        colorStringFormatter: ColorStringFormatter,
+        viewBoundsResolver: ViewBoundsResolver,
+        drawableToColorMapper: DrawableToColorMapper,
+        imageViewUtils: ImageViewUtils
+    ) : super(
+        viewIdentifierResolver,
+        colorStringFormatter,
+        viewBoundsResolver,
+        drawableToColorMapper
+    ) {
+        this.imageViewUtils = imageViewUtils
+    }
+
     @UiThread
     override fun map(
         view: ImageView,
@@ -58,6 +80,7 @@ internal class ImageViewMapper(
         } else {
             null
         }
+
         val contentXPosInDp = contentRect.left.densityNormalized(density).toLong()
         val contentYPosInDp = contentRect.top.densityNormalized(density).toLong()
         val contentWidthPx = contentRect.width()

@@ -82,6 +82,9 @@ class com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper : TextVie
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun resolveCapturedText(android.widget.EditText, com.datadog.android.sessionreplay.TextAndInputPrivacy, Boolean): String
   companion object 
+open class com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper : BaseAsyncBackgroundWireframeMapper<android.widget.ImageView>
+  constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
+  override fun map(android.widget.ImageView, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper<T: android.widget.TextView> : BaseAsyncBackgroundWireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>

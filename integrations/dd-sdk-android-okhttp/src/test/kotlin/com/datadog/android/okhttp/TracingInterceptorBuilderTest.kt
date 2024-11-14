@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,7 +49,7 @@ internal class TracingInterceptorBuilderTest {
     lateinit var mockTracedRequestListener: TracedRequestListener
 
     @Mock
-    lateinit var mockSampler: Sampler
+    lateinit var mockSampler: Sampler<Span>
 
     @StringForgery
     lateinit var fakeOrigin: String

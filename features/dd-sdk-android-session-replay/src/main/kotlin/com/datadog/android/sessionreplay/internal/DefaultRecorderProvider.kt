@@ -31,7 +31,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarConta
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ProgressBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
@@ -45,6 +44,7 @@ import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
+import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -97,11 +97,11 @@ internal class DefaultRecorderProvider(
         val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
         val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
         val imageViewMapper = ImageViewMapper(
-            ImageViewUtils,
-            viewIdentifierResolver,
-            colorStringFormatter,
-            viewBoundsResolver,
-            drawableToColorMapper
+            viewIdentifierResolver = viewIdentifierResolver,
+            colorStringFormatter = colorStringFormatter,
+            viewBoundsResolver = viewBoundsResolver,
+            drawableToColorMapper = drawableToColorMapper,
+            imageViewUtils = ImageViewUtils
         )
         val textViewMapper = TextViewMapper<TextView>(
             viewIdentifierResolver,

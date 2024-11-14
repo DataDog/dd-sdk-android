@@ -278,7 +278,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -326,7 +326,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -374,7 +374,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -422,7 +422,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -477,7 +477,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -525,7 +525,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -577,7 +577,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -627,7 +627,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -673,7 +673,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 
@@ -718,7 +718,7 @@ internal class ImageViewUtilsTest {
 
         // When
         val result = testedImageViewUtils.resolveContentRectWithScaling(
-            view = mockImageView,
+            imageView = mockImageView,
             drawable = mockDrawable
         )
 

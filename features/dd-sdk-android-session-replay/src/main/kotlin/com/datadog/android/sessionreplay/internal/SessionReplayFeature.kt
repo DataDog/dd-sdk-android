@@ -50,7 +50,7 @@ internal class SessionReplayFeature(
     internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val touchPrivacy: TouchPrivacy,
     internal val imagePrivacy: ImagePrivacy,
-    private val rateBasedSampler: Sampler,
+    private val rateBasedSampler: Sampler<Unit>,
     private val startRecordingImmediately: Boolean,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -261,7 +261,7 @@ internal class SessionReplayFeature(
 
     private fun applySampling(alreadySeenSession: Boolean) {
         if (!alreadySeenSession) {
-            isSessionSampledIn.set(rateBasedSampler.sample())
+            isSessionSampledIn.set(rateBasedSampler.sample(Unit))
         }
     }
 

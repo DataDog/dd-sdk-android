@@ -108,6 +108,7 @@ public abstract class com/datadog/android/okhttp/trace/TracingInterceptor$BaseBu
 	public abstract fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceContextInjection (Lcom/datadog/android/okhttp/TraceContextInjection;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setTraceSampleRate (F)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTracedRequestListener (Lcom/datadog/android/okhttp/trace/TracedRequestListener;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 }
