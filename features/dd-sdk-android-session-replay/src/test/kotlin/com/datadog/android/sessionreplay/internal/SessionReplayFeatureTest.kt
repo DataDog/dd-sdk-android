@@ -90,7 +90,7 @@ internal class SessionReplayFeatureTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockSampler: Sampler
+    lateinit var mockSampler: Sampler<Unit>
 
     private lateinit var fakeSessionId: String
 
@@ -450,7 +450,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M startRecording W rum session updated { keep, sampled in }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
         val rumSessionUpdateBusMessage = mapOf(
@@ -475,7 +475,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M doNothing W rum session updated { keep, sessionId is null }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
         val rumSessionUpdateBusMessage = mapOf(
@@ -496,7 +496,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W rum session updated { keep false, sampled in }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
         val rumSessionUpdateBusMessage = mapOf(
@@ -523,7 +523,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M only startRecording once W rum session updated { same session Id }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -557,7 +557,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W rum session updated { keep true, sampled out }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(false)
+        whenever(mockSampler.sample(any())).thenReturn(false)
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
         val rumSessionUpdateBusMessage = mapOf(
@@ -585,7 +585,7 @@ internal class SessionReplayFeatureTest {
     fun `M stopRecording W rum session updated { keep false, sample in }`() {
         // Given
         val fakeSessionId2 = UUID.randomUUID().toString()
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -626,7 +626,7 @@ internal class SessionReplayFeatureTest {
     fun `M stopRecording W rum session updated { keep true, sample out }`() {
         // Given
         val fakeSessionId2 = UUID.randomUUID().toString()
-        whenever(mockSampler.sample()).thenReturn(true).thenReturn(false)
+        whenever(mockSampler.sample(any())).thenReturn(true).thenReturn(false)
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -665,7 +665,7 @@ internal class SessionReplayFeatureTest {
     fun `M stopRecording W rum session updated { keep false, sample out }`() {
         // Given
         val fakeSessionId2 = UUID.randomUUID().toString()
-        whenever(mockSampler.sample()).thenReturn(true).thenReturn(false)
+        whenever(mockSampler.sample(any())).thenReturn(true).thenReturn(false)
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -705,7 +705,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M log warning W rum session updated before initialization { keep true, sample in }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -729,7 +729,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M log warning W rum session updated before initialization { keep true, sample out }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(false)
+        whenever(mockSampler.sample(any())).thenReturn(false)
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -753,7 +753,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M log warning W rum session updated before initialization { keep false, sample in }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -777,7 +777,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M log warning W rum session updated before initialization { keep false, sample out }`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(false)
+        whenever(mockSampler.sample(any())).thenReturn(false)
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -801,7 +801,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M start recording W rum session is initialized after first message`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -1016,7 +1016,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
         )
 
-        whenever(mockSampler.sample()).thenReturn(scenario.sampleInSession)
+        whenever(mockSampler.sample(any())).thenReturn(scenario.sampleInSession)
 
         // When
         testedFeature = SessionReplayFeature(
@@ -1055,7 +1055,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
             SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
         )
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
 
         // When
         testedFeature = SessionReplayFeature(
@@ -1087,7 +1087,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
             SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
         )
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
 
         // When
         testedFeature = SessionReplayFeature(
@@ -1121,7 +1121,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId
         )
 
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(any())).thenReturn(true)
 
         // When
         testedFeature = SessionReplayFeature(

@@ -35,8 +35,9 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrack
 @Suppress("TooManyFunctions")
 internal class TelemetryEventHandler(
     internal val sdkCore: InternalSdkCore,
-    internal val eventSampler: Sampler,
-    internal val configurationExtraSampler: Sampler = RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLE_RATE),
+    internal val eventSampler: Sampler<InternalTelemetryEvent>,
+    internal val configurationExtraSampler: Sampler<InternalTelemetryEvent> =
+        RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLE_RATE),
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
@@ -125,13 +126,13 @@ internal class TelemetryEventHandler(
         totalEventsSeenInCurrentSession = 0
     }
 
-    // region private
+    // region Internal
 
     @Suppress("ReturnCount")
     private fun canWrite(event: InternalTelemetryEvent): Boolean {
-        if (!eventSampler.sample()) return false
+        if (!eventSampler.sample(event)) return false
 
-        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample()) {
+        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample(event)) {
             return false
         }
 

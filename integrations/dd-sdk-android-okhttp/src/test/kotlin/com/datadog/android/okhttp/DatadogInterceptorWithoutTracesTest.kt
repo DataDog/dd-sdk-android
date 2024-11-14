@@ -37,6 +37,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -108,7 +109,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockSpan: DDSpan
 
     @Mock
-    lateinit var mockTraceSampler: Sampler
+    lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -148,7 +149,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
-        whenever(mockTraceSampler.sample()) doReturn true
+        whenever(mockTraceSampler.sample(any())) doReturn true
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()

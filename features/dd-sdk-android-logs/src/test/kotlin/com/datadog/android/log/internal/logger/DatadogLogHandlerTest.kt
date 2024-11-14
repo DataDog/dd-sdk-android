@@ -106,7 +106,7 @@ internal class DatadogLogHandlerTest {
     lateinit var mockWriter: DataWriter<LogEvent>
 
     @Mock
-    lateinit var mockSampler: Sampler
+    lateinit var mockSampler: Sampler<Unit>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -937,7 +937,7 @@ internal class DatadogLogHandlerTest {
     @Test
     fun `it will sample out the logs when required`() {
         // Given
-        whenever(mockSampler.sample()).thenReturn(false)
+        whenever(mockSampler.sample(Unit)).thenReturn(false)
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
@@ -967,7 +967,7 @@ internal class DatadogLogHandlerTest {
     fun `it will sample in the logs when required`() {
         // Given
         val now = System.currentTimeMillis()
-        whenever(mockSampler.sample()).thenReturn(true)
+        whenever(mockSampler.sample(Unit)).thenReturn(true)
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(

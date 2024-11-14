@@ -27,7 +27,7 @@ internal class DatadogLogHandler(
     internal val attachNetworkInfo: Boolean,
     internal val bundleWithTraces: Boolean = true,
     internal val bundleWithRum: Boolean = true,
-    internal val sampler: Sampler = RateBasedSampler(DEFAULT_SAMPLE_RATE),
+    internal val sampler: Sampler<Unit> = RateBasedSampler(DEFAULT_SAMPLE_RATE),
     internal val minLogPriority: Int = -1
 ) : LogHandler {
 
@@ -52,7 +52,7 @@ internal class DatadogLogHandler(
             combinedAttributes.putAll(logsFeature.unwrap<LogsFeature>().getAttributes().toMutableMap())
         }
         combinedAttributes.putAll(attributes)
-        if (sampler.sample()) {
+        if (sampler.sample(Unit)) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
                 logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
@@ -123,7 +123,7 @@ internal class DatadogLogHandler(
         }
         combinedAttributes.putAll(attributes)
 
-        if (sampler.sample()) {
+        if (sampler.sample(Unit)) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
                 logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
