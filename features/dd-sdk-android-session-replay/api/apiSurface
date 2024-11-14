@@ -1,4 +1,5 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
+  fun name(): String
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
   fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
@@ -10,6 +11,8 @@ data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.V
   constructor(Class<T>, com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T>)
   fun supportsView(android.view.View): Boolean
   fun getUnsafeMapper(): com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<android.view.View>
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 interface com.datadog.android.sessionreplay.PrivacyLevel
 fun android.view.View.setSessionReplayHidden(Boolean)
 fun android.view.View.setSessionReplayImagePrivacy(ImagePrivacy?)
@@ -21,6 +24,7 @@ object com.datadog.android.sessionreplay.SessionReplay
   fun stopRecording(com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.sessionreplay.SessionReplayConfiguration
   class Builder
+    constructor()
     constructor(Float = SAMPLE_IN_ALL_SESSIONS)
     fun addExtensionSupport(ExtensionSupport): Builder
     fun useCustomEndpoint(String): Builder

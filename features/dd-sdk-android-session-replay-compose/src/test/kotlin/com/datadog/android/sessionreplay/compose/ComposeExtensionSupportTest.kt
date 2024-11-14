@@ -43,4 +43,13 @@ class ComposeExtensionSupportTest {
         val composeMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
         assertThat(composeMapper).isInstanceOf(SemanticsWireframeMapper::class.java)
     }
+
+    @Test
+    fun `M return name W name()`() {
+        // When
+        val name = testedExtensionSupport.name()
+
+        // Then
+        assertThat(name).isEqualTo(ComposeExtensionSupport.COMPOSE_EXTENSION_SUPPORT_NAME)
+    }
 }

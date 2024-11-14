@@ -3,5 +3,6 @@ public final class com/datadog/android/sessionreplay/material/MaterialExtensionS
 	public fun getCustomDrawableMapper ()Ljava/util/List;
 	public fun getCustomViewMappers ()Ljava/util/List;
 	public fun getOptionSelectorDetectors ()Ljava/util/List;
+	public fun name ()Ljava/lang/String;
 }
 

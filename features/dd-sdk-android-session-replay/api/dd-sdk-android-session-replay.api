@@ -2,6 +2,7 @@ public abstract interface class com/datadog/android/sessionreplay/ExtensionSuppo
 	public abstract fun getCustomDrawableMapper ()Ljava/util/List;
 	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
+	public abstract fun name ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
