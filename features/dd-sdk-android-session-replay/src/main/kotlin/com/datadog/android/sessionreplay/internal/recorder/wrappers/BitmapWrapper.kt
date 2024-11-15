@@ -36,6 +36,7 @@ internal class BitmapWrapper(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     internal fun createScaledBitmap(
         src: Bitmap,
         dstWidth: Int,
@@ -51,6 +52,16 @@ internal class BitmapWrapper(
             logger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
+                { FAILED_TO_CREATE_SCALED_BITMAP },
+                e
+            )
+            null
+        } catch (e: RuntimeException) {
+            // It's still possible that RuntimeException is thrown after checking the bitmap
+            // is not recycled.
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
                 { FAILED_TO_CREATE_SCALED_BITMAP },
                 e
             )
