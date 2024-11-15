@@ -6,29 +6,20 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
-import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
-import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
-import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
-import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class SemanticsWireframeMapper(
-    viewIdentifierResolver: ViewIdentifierResolver,
-    colorStringFormatter: ColorStringFormatter,
-    viewBoundsResolver: ViewBoundsResolver,
-    drawableToColorMapper: DrawableToColorMapper,
+internal class RootSemanticsNodeMapper(
+    private val colorStringFormatter: ColorStringFormatter,
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
         // TODO RUM-6189 Add Mappers for each Semantics Role
@@ -45,46 +36,9 @@ internal class SemanticsWireframeMapper(
         colorStringFormatter,
         semanticsUtils
     )
-) : BaseWireframeMapper<ComposeView>(
-    viewIdentifierResolver,
-    colorStringFormatter,
-    viewBoundsResolver,
-    drawableToColorMapper
 ) {
-    override fun map(
-        view: ComposeView,
-        mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
-    ): List<MobileSegment.Wireframe> {
-        val density = mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
-        // TODO RUM 6192: Apply FGM for compose
-        val privacy = SessionReplayPrivacy.ALLOW
-        return semanticsUtils.findRootSemanticsNode(view)?.let { node ->
-            createComposeWireframes(node, density, mappingContext, privacy, asyncJobStatusCallback)
-        } ?: emptyList()
-    }
 
-    private fun getSemanticsNodeMapper(
-        semanticsNode: SemanticsNode
-    ): SemanticsNodeMapper {
-        val role = semanticsNode.config.getOrNull(SemanticsProperties.Role)
-        val mapper = semanticsNodeMapper[role]
-        if (mapper != null) {
-            return mapper
-        }
-        return if (isTextNode(semanticsNode)) {
-            textSemanticsNodeMapper
-        } else {
-            containerSemanticsNodeMapper
-        }
-    }
-
-    private fun isTextNode(semanticsNode: SemanticsNode): Boolean {
-        // Some text semantics nodes don't have an explicit `Role` but the text exists in the config
-        return semanticsNode.config.getOrNull(SemanticsProperties.Text)?.isNotEmpty() == true
-    }
-    private fun createComposeWireframes(
+    internal fun createComposeWireframes(
         semanticsNode: SemanticsNode,
         density: Float,
         mappingContext: MappingContext,
@@ -126,5 +80,21 @@ internal class SemanticsWireframeMapper(
         children.forEach {
             createComposerWireframes(it, wireframes, currentUiContext, asyncJobStatusCallback)
         }
+    }
+
+    private fun getSemanticsNodeMapper(
+        semanticsNode: SemanticsNode
+    ): SemanticsNodeMapper {
+        val role = semanticsNode.config.getOrNull(SemanticsProperties.Role)
+        return semanticsNodeMapper[role] ?: if (isTextNode(semanticsNode)) {
+            textSemanticsNodeMapper
+        } else {
+            containerSemanticsNodeMapper
+        }
+    }
+
+    private fun isTextNode(semanticsNode: SemanticsNode): Boolean {
+        // Some text semantics nodes don't have an explicit `Role` but the text exists in the config
+        return semanticsNode.config.getOrNull(SemanticsProperties.Text)?.isNotEmpty() == true
     }
 }

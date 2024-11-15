@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.compose
 
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.sessionreplay.ExtensionSupport
-import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SemanticsWireframeMapper
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ComposeViewMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,7 +41,7 @@ class ComposeExtensionSupportTest {
 
         // Then
         val composeMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
-        assertThat(composeMapper).isInstanceOf(SemanticsWireframeMapper::class.java)
+        assertThat(composeMapper).isInstanceOf(ComposeViewMapper::class.java)
     }
 
     @Test

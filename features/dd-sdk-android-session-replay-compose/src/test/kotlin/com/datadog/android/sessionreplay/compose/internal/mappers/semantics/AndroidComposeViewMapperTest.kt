@@ -4,16 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.AndroidComposeView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -31,11 +34,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -46,13 +46,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-class SemanticsWireframeMapperTest {
+class AndroidComposeViewMapperTest {
 
     @Mock
-    private lateinit var mockTextSemanticsNodeMapper: TextSemanticsNodeMapper
-
-    @Mock
-    private lateinit var mockContainerSemanticsNodeMapper: ContainerSemanticsNodeMapper
+    private lateinit var mockRootSemanticsNodeMapper: RootSemanticsNodeMapper
 
     @Mock
     private lateinit var mockViewIdentifierResolver: ViewIdentifierResolver
@@ -67,7 +64,7 @@ class SemanticsWireframeMapperTest {
     private lateinit var mockDrawableToColorMapper: DrawableToColorMapper
 
     @Mock
-    private lateinit var mockView: ComposeView
+    private lateinit var mockAndroidComposeView: AndroidComposeView
 
     @Mock
     private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
@@ -76,7 +73,7 @@ class SemanticsWireframeMapperTest {
     private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    private lateinit var mockSemanticsUtils: SemanticsUtils
+    private lateinit var mockSemanticsOwner: SemanticsOwner
 
     @Mock
     private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
@@ -84,41 +81,41 @@ class SemanticsWireframeMapperTest {
     @Forgery
     private lateinit var fakeMappingContext: MappingContext
 
-    private lateinit var testedSemanticsWireframeMapper: SemanticsWireframeMapper
+    private lateinit var testedAndroidComposeViewMapper: AndroidComposeViewMapper
 
     @BeforeEach
     fun `set up`() {
-        testedSemanticsWireframeMapper = SemanticsWireframeMapper(
+        testedAndroidComposeViewMapper = AndroidComposeViewMapper(
             mockViewIdentifierResolver,
             mockColorStringFormatter,
             mockViewBoundsResolver,
             mockDrawableToColorMapper,
-            mockSemanticsUtils,
-            mapOf(),
-            mockTextSemanticsNodeMapper,
-            mockContainerSemanticsNodeMapper
+            mockRootSemanticsNodeMapper
         )
     }
 
     @Test
-    fun `M use TextSemanticsNodeMapper W map { role is missing }`() {
+    fun `M invoke rootSemanticsNodeMapper createComposeWireframes W map`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(null)
-        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(mockSemanticsNode)
+        whenever(mockAndroidComposeView.semanticsOwner).thenReturn(mockSemanticsOwner)
+        whenever(mockSemanticsOwner.unmergedRootSemanticsNode).thenReturn(mockSemanticsNode)
 
         // When
-        testedSemanticsWireframeMapper.map(
-            mockView,
+        testedAndroidComposeViewMapper.map(
+            mockAndroidComposeView,
             fakeMappingContext,
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
 
         // Then
-        verify(mockContainerSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+        verify(mockRootSemanticsNodeMapper).createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            SessionReplayPrivacy.ALLOW,
+            mockAsyncJobStatusCallback
         )
     }
 
