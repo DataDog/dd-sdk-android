@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.getOrNull
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.withinComposeBenchmarkSpan
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -46,17 +47,19 @@ internal class RootSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
-        createComposerWireframes(
-            semanticsNode = semanticsNode,
-            wireframes = wireframes,
-            parentUiContext = UiContext(
-                parentContentColor = null,
-                density = density,
-                privacy = privacy,
-                imageWireframeHelper = mappingContext.imageWireframeHelper
-            ),
-            asyncJobStatusCallback = asyncJobStatusCallback
-        )
+        withinComposeBenchmarkSpan(ROOT_NODE_SPAN_NAME, true) {
+            createComposerWireframes(
+                semanticsNode = semanticsNode,
+                wireframes = wireframes,
+                parentUiContext = UiContext(
+                    parentContentColor = null,
+                    density = density,
+                    privacy = privacy,
+                    imageWireframeHelper = mappingContext.imageWireframeHelper
+                ),
+                asyncJobStatusCallback = asyncJobStatusCallback
+            )
+        }
         return wireframes
     }
 
@@ -66,19 +69,25 @@ internal class RootSemanticsNodeMapper(
         parentUiContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ) {
-        val semanticsWireframe = getSemanticsNodeMapper(semanticsNode).map(
-            semanticsNode = semanticsNode,
-            parentContext = parentUiContext,
-            asyncJobStatusCallback = asyncJobStatusCallback
-        )
-        var currentUiContext = parentUiContext
-        semanticsWireframe?.let {
-            wireframes.addAll(it.wireframes)
-            currentUiContext = it.uiContext ?: currentUiContext
-        }
-        val children = semanticsNode.children
-        children.forEach {
-            createComposerWireframes(it, wireframes, currentUiContext, asyncJobStatusCallback)
+        val mapper = getSemanticsNodeMapper(semanticsNode)
+        withinComposeBenchmarkSpan(
+            mapper::class.java.simpleName,
+            isContainer = mapper is ContainerSemanticsNodeMapper
+        ) {
+            val semanticsWireframe = mapper.map(
+                semanticsNode = semanticsNode,
+                parentContext = parentUiContext,
+                asyncJobStatusCallback = asyncJobStatusCallback
+            )
+            var currentUiContext = parentUiContext
+            semanticsWireframe?.let {
+                wireframes.addAll(it.wireframes)
+                currentUiContext = it.uiContext ?: currentUiContext
+            }
+            val children = semanticsNode.children
+            children.forEach {
+                createComposerWireframes(it, wireframes, currentUiContext, asyncJobStatusCallback)
+            }
         }
     }
 
@@ -96,5 +105,9 @@ internal class RootSemanticsNodeMapper(
     private fun isTextNode(semanticsNode: SemanticsNode): Boolean {
         // Some text semantics nodes don't have an explicit `Role` but the text exists in the config
         return semanticsNode.config.getOrNull(SemanticsProperties.Text)?.isNotEmpty() == true
+    }
+
+    companion object {
+        private const val ROOT_NODE_SPAN_NAME = "RootNode"
     }
 }
