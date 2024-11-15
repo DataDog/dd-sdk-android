@@ -30,12 +30,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.datadog.android.BuildConfig
+import com.datadog.android.compose.ExperimentalTrackingApi
+import com.datadog.android.compose.NavigationViewTrackingEffect
+import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 
 @Composable
 internal fun MainView() {
     AppScaffold()
 }
 
+@OptIn(ExperimentalTrackingApi::class)
 @Composable
 internal fun AppScaffold() {
     val navController = rememberNavController()
@@ -53,6 +57,11 @@ internal fun AppScaffold() {
             BottomNavigationBar(navHostController = navController)
         }
     ) { padding ->
+        NavigationViewTrackingEffect(
+            navController = navController,
+            trackArguments = true,
+            destinationPredicate = AcceptAllNavDestinations()
+        )
         NavHost(
             navController = navController,
             startDestination = Screen.Text.route,
