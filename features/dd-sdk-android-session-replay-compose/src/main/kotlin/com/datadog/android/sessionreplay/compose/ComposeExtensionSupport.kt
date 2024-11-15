@@ -4,12 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package com.datadog.android.sessionreplay.compose
 
+import androidx.compose.ui.platform.AndroidComposeView
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
-import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SemanticsWireframeMapper
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.AndroidComposeViewMapper
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ComposeViewMapper
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RootSemanticsNodeMapper
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -30,16 +35,28 @@ class ComposeExtensionSupport : ExtensionSupport {
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+    private val rootSemanticsNodeMapper = RootSemanticsNodeMapper(colorStringFormatter)
 
     override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
         return listOf(
             MapperTypeWrapper(
                 ComposeView::class.java,
-                SemanticsWireframeMapper(
+                ComposeViewMapper(
                     viewIdentifierResolver,
                     colorStringFormatter,
                     viewBoundsResolver,
-                    drawableToColorMapper
+                    drawableToColorMapper,
+                    rootSemanticsNodeMapper = rootSemanticsNodeMapper
+                )
+            ),
+            MapperTypeWrapper(
+                AndroidComposeView::class.java,
+                AndroidComposeViewMapper(
+                    viewIdentifierResolver,
+                    colorStringFormatter,
+                    viewBoundsResolver,
+                    drawableToColorMapper,
+                    rootSemanticsNodeMapper
                 )
             )
         )
