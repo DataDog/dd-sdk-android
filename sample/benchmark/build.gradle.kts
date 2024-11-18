@@ -65,6 +65,8 @@ android {
             isMinifyEnabled = true
             signingConfigs.findByName("release")?.let {
                 signingConfig = it
+            } ?: kotlin.run {
+                signingConfig = signingConfigs.findByName("debug")
             }
         }
     }
