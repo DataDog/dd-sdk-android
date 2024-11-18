@@ -20,25 +20,25 @@
 -keep class androidx.compose.ui.node.LayoutNode {
      *;
 }
--keepclassmembers class androidx.compose.ui.semantics.SemanticsNode {
+-keep class androidx.compose.ui.semantics.SemanticsNode {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.draw.PainterElement {
+-keep class androidx.compose.ui.draw.PainterElement {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.graphics.vector.VectorPainter {
+-keep class androidx.compose.ui.graphics.vector.VectorPainter {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.graphics.painter.BitmapPainter {
+-keep class androidx.compose.ui.graphics.painter.BitmapPainter {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.graphics.vector.VectorComponent {
+-keep class androidx.compose.ui.graphics.vector.VectorComponent {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.graphics.vector.DrawCache {
+-keep class androidx.compose.ui.graphics.vector.DrawCache {
      <fields>;
 }
--keepclassmembers class androidx.compose.ui.graphics.AndroidImageBitmap {
+-keep class androidx.compose.ui.graphics.AndroidImageBitmap {
      <fields>;
 }
 -keep class coil.compose.ContentPainterModifier {
@@ -47,10 +47,10 @@
 -keep class coil.compose.AsyncImagePainter {
      <fields>;
 }
--keepclassmembers class androidx.compose.foundation.layout.PaddingElement{
+-keep class androidx.compose.foundation.layout.PaddingElement{
     <fields>;
 }
--keepclassmembers class "androidx.compose.ui.graphics.GraphicsLayerElement"{
+-keep class androidx.compose.ui.graphics.GraphicsLayerElement{
     <fields>;
 }
 
