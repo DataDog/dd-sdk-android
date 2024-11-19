@@ -11,12 +11,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.text.font.GenericFontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
-import com.datadog.android.sessionreplay.compose.internal.data.ComposeWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -24,6 +26,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +49,7 @@ import kotlin.math.roundToInt
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal open class AbstractCompositionGroupMapperTest {
+internal open class AbstractSemanticsNodeMapperTest {
 
     private lateinit var testedMapper: StubAbstractSemanticsNodeMapper
 
@@ -113,6 +116,58 @@ internal open class AbstractCompositionGroupMapperTest {
         assertThat(result).isEqualTo(fakeGlobalBounds)
     }
 
+    @Test
+    fun `M return correct TextStyle W resolve TextLayoutInfo`(
+        @Forgery fakeTextLayoutInfo: TextLayoutInfo,
+        @Forgery fakeUiContext: UiContext,
+        @StringForgery fakeColorHexString: String
+    ) {
+        // Given
+        val expected = MobileSegment.TextStyle(
+            family = when (val value = fakeTextLayoutInfo.fontFamily) {
+                is GenericFontFamily -> value.name
+                else -> DEFAULT_FONT_FAMILY
+            },
+            size = fakeTextLayoutInfo.fontSize,
+            color = fakeColorHexString
+        )
+        mockColorStringFormatter(fakeTextLayoutInfo.color.toLong(), fakeColorHexString)
+
+        // When
+        val result = testedMapper.stubTextLayoutInfoToTextStyle(fakeUiContext, fakeTextLayoutInfo)
+
+        // Then
+        assertThat(result).isEqualTo(expected)
+    }
+
+    @Test
+    fun `M return correct TextAlign W resolve TextLayoutInfo`(@Forgery fakeTextLayoutInfo: TextLayoutInfo) {
+        // Given
+        val expectedAlign = when (fakeTextLayoutInfo.textAlign) {
+            TextAlign.Start,
+            TextAlign.Left -> MobileSegment.Horizontal.LEFT
+
+            TextAlign.End,
+            TextAlign.Right -> MobileSegment.Horizontal.RIGHT
+
+            TextAlign.Justify,
+            TextAlign.Center -> MobileSegment.Horizontal.CENTER
+
+            else -> MobileSegment.Horizontal.LEFT
+        }
+        val expected = MobileSegment.TextPosition(
+            alignment = MobileSegment.Alignment(
+                horizontal = expectedAlign
+            )
+        )
+
+        // When
+        val result = testedMapper.stubResolveTextAlign(fakeTextLayoutInfo)
+
+        // Then
+        assertThat(result).isEqualTo(expected)
+    }
+
     protected fun mockSemanticsNodeWithBound(additionalMock: SemanticsNode.() -> Unit = {}): SemanticsNode {
         return mock<SemanticsNode?>().apply {
             whenever(id) doReturn fakeSemanticsId
@@ -149,6 +204,8 @@ internal open class AbstractCompositionGroupMapperTest {
 
     companion object {
         private const val MAX_ALPHA = 255
+        private const val DEFAULT_FONT_FAMILY = "Roboto, sans-serif"
+        protected const val DEFAULT_TEXT_COLOR = "#000000FF"
     }
 }
 
@@ -156,8 +213,6 @@ internal class StubAbstractSemanticsNodeMapper(
     semanticsUtils: SemanticsUtils,
     colorStringFormatter: ColorStringFormatter
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
-
-    var mappedWireframe: ComposeWireframe? = null
 
     override fun map(
         semanticsNode: SemanticsNode,
@@ -175,7 +230,14 @@ internal class StubAbstractSemanticsNodeMapper(
         return super.resolveBounds(semanticsNode)
     }
 
-    fun covertColor(color: Long): String? {
-        return super.convertColor(color)
+    fun stubResolveTextAlign(textLayoutInfo: TextLayoutInfo): MobileSegment.TextPosition {
+        return super.resolveTextAlign(textLayoutInfo)
+    }
+
+    fun stubTextLayoutInfoToTextStyle(
+        parentContext: UiContext,
+        textLayoutInfo: TextLayoutInfo
+    ): MobileSegment.TextStyle {
+        return super.resolveTextLayoutInfoToTextStyle(parentContext, textLayoutInfo)
     }
 }
