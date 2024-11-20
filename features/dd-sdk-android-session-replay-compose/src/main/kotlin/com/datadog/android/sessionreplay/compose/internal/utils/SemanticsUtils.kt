@@ -13,9 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.TextLayoutInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
@@ -23,6 +28,7 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
+@Suppress("TooManyFunctions")
 internal class SemanticsUtils {
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
@@ -82,7 +88,8 @@ internal class SemanticsUtils {
                 currentBounds = shrinkInnerBounds(modifierInfo.modifier, currentBounds)
                 currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds)
             } else if (ComposeReflection.GraphicsLayerElementClass?.isInstance(modifierInfo.modifier) == true) {
-                val cornerRadius = resolveCornerRadius(modifierInfo.modifier, currentBounds, density)
+                val cornerRadius =
+                    resolveClipShape(modifierInfo.modifier, currentBounds, density) ?: 0f
                 currentBackgroundInfo = currentBackgroundInfo.copy(cornerRadius = cornerRadius)
             }
         }
@@ -97,10 +104,6 @@ internal class SemanticsUtils {
         return backgroundModifierInfo?.let {
             ComposeReflection.ColorField?.getSafe(it.modifier) as? Long
         }
-    }
-
-    internal fun resolveBackgroundInfoId(backgroundInfo: BackgroundInfo): Int {
-        return System.identityHashCode(backgroundInfo)
     }
 
     private fun shrinkInnerBounds(
@@ -149,21 +152,54 @@ internal class SemanticsUtils {
         }
     }
 
-    private fun resolveCornerRadius(modifier: Modifier, currentBounds: GlobalBounds, density: Density): Float {
+    private fun resolveClipShape(
+        modifier: Modifier,
+        currentBounds: GlobalBounds,
+        density: Density
+    ): Float? {
         val shape = ComposeReflection.ClipShapeField?.getSafe(modifier) as? Shape
         return shape?.let {
-            val size = Size(
-                currentBounds.width.toFloat() * density.density,
-                currentBounds.height.toFloat() * density.density
-            )
-            // We only have a single value for corner radius, so we default to using the
-            // top left (i.e.: topStart) corner's value and apply it to all corners
-            // it.topStart.toPx(size, density) / density.density
-            if (it is RoundedCornerShape) {
-                it.topStart.toPx(size, density) / density.density
-            } else {
-                0f
-            }
-        } ?: 0f
+            resolveCornerRadius(it, currentBounds, density)
+        }
+    }
+
+    internal fun resolveCornerRadius(
+        shape: Shape,
+        currentBounds: GlobalBounds,
+        density: Density
+    ): Float {
+        val size = Size(
+            currentBounds.width.toFloat() * density.density,
+            currentBounds.height.toFloat() * density.density
+        )
+        // We only have a single value for corner radius, so we default to using the
+        // top left (i.e.: topStart) corner's value and apply it to all corners
+        // it.topStart.toPx(size, density) / density.density
+        return if (shape is RoundedCornerShape) {
+            shape.topStart.toPx(size, density) / density.density
+        } else {
+            0f
+        }
+    }
+
+    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode): TextLayoutInfo? {
+        val textLayoutResults = mutableListOf<TextLayoutResult>()
+        semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(
+            textLayoutResults
+        )
+        val layoutInput = textLayoutResults.firstOrNull()?.layoutInput
+        return layoutInput?.let {
+            convertTextLayoutInfo(it)
+        }
+    }
+
+    private fun convertTextLayoutInfo(layoutInput: TextLayoutInput): TextLayoutInfo {
+        return TextLayoutInfo(
+            text = resolveAnnotatedString(layoutInput.text),
+            color = layoutInput.style.color.value,
+            textAlign = layoutInput.style.textAlign,
+            fontSize = layoutInput.style.fontSize.value.toLong(),
+            fontFamily = layoutInput.style.fontFamily
+        )
     }
 }
