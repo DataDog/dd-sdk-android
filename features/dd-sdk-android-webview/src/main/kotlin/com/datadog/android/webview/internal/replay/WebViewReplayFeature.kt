@@ -37,7 +37,7 @@ internal class WebViewReplayFeature(
     }
 
     override val storageConfiguration: FeatureStorageConfiguration =
-        FeatureStorageConfiguration.DEFAULT
+        STORAGE_CONFIGURATION
 
     override fun onStop() {
         dataWriter = NoOpDataWriter()
@@ -55,5 +55,18 @@ internal class WebViewReplayFeature(
 
     companion object {
         internal const val WEB_REPLAY_FEATURE_NAME = "web-replay"
+
+        /**
+         * Storage configuration with the following parameters:
+         * max item size = 10 MB,
+         * max items per batch = 500,
+         * max batch size = 10 MB, SR intake batch limit is 10MB
+         * old batch threshold = 18 hours.
+         */
+        internal val STORAGE_CONFIGURATION: FeatureStorageConfiguration =
+            FeatureStorageConfiguration.DEFAULT.copy(
+                maxItemSize = 10 * 1024 * 1024,
+                maxBatchSize = 10 * 1024 * 1024
+            )
     }
 }
