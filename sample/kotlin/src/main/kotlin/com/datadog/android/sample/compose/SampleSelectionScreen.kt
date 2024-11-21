@@ -27,6 +27,7 @@ internal fun SampleSelectionScreen(
     onTypographyClicked: () -> Unit,
     onLegacyClicked: () -> Unit,
     onImageClicked: () -> Unit,
+    onInputClicked: () -> Unit,
     onToggleClicked: () -> Unit,
     onSelectorsClicked: () -> Unit,
     onTabsClicked: () -> Unit
@@ -47,6 +48,10 @@ internal fun SampleSelectionScreen(
         StyledButton(
             text = "Image Sample",
             onClick = onImageClicked
+        )
+        StyledButton(
+            text = "Input Sample",
+            onClick = onInputClicked
         )
         StyledButton(
             text = "Toggle Buttons Sample",
@@ -91,6 +96,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             onImageClicked = {
                 navController.navigate(SampleScreen.Image.navigationRoute)
             },
+            onInputClicked = {
+                navController.navigate(SampleScreen.Input.navigationRoute)
+            },
             onToggleClicked = {
                 navController.navigate(SampleScreen.Toggle.navigationRoute)
             },
@@ -112,6 +120,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
 
     composable(SampleScreen.Image.navigationRoute) {
         ImageSample()
+    }
+
+    composable(SampleScreen.Input.navigationRoute) {
+        InputSample()
     }
 
     composable(SampleScreen.Toggle.navigationRoute) {
@@ -138,6 +150,7 @@ internal sealed class SampleScreen(
     object Root : SampleScreen(COMPOSE_ROOT)
     object Typography : SampleScreen("$COMPOSE_ROOT/typography")
     object Image : SampleScreen("$COMPOSE_ROOT/image")
+    object Input : SampleScreen("$COMPOSE_ROOT/input")
     object Toggle : SampleScreen("$COMPOSE_ROOT/toggle")
     object Tabs : SampleScreen("$COMPOSE_ROOT/tabs")
     object Selectors : SampleScreen("$COMPOSE_ROOT/selectors")
@@ -156,6 +169,8 @@ private fun PreviewSampleSelectionScreen() {
         onLegacyClicked = {
         },
         onImageClicked = {
+        },
+        onInputClicked = {
         },
         onToggleClicked = {
         },

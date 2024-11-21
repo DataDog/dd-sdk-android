@@ -106,6 +106,16 @@ internal class SemanticsUtils {
         }
     }
 
+    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? {
+        val backgroundModifierInfo =
+            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
+                ComposeReflection.BackgroundElementClass?.isInstance(modifierInfo.modifier) == true
+            }
+        return backgroundModifierInfo?.let {
+            ComposeReflection.ShapeField?.getSafe(it.modifier) as? Shape
+        }
+    }
+
     private fun shrinkInnerBounds(
         modifier: Modifier,
         currentBounds: GlobalBounds
