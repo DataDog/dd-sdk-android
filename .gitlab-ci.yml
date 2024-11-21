@@ -665,6 +665,18 @@ publish:release-session-replay-material:
     - !reference [.snippets, set-publishing-credentials]
     - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
 
+publish:release-session-replay-compose:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :features:dd-sdk-android-session-replay-compose:publishToSonatype --stacktrace --no-daemon
+
 publish:release-logs:
   tags: [ "arch:amd64" ]
   only:

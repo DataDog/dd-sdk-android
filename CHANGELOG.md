@@ -1,3 +1,69 @@
+# 2.16.0 / 2024-11-20
+
+* [FEATURE] Session Replay: Create Session Replay Compose module.
+  See [#1879](https://github.com/DataDog/dd-sdk-android/pull/1879)
+* [FEATURE] Session Replay: Add `Tab` and `TabRow` Composable groups mappers.
+  See [#2171](https://github.com/DataDog/dd-sdk-android/pull/2171)
+* [FEATURE] Session Replay: Add Abstract and Text semantics mapper for Compose Session Replay.
+  See [#2292](https://github.com/DataDog/dd-sdk-android/pull/2292)
+* [FEATURE] Session Replay: Add Semantics Mapper for Button role.
+  See [#2296](https://github.com/DataDog/dd-sdk-android/pull/2296)
+* [FEATURE] Session Replay: Add `ImageSemanticsNodeMapper` to support image role for Session Replay.
+  See [#2322](https://github.com/DataDog/dd-sdk-android/pull/2322)
+* [FEATURE] Session Replay: Add Tab semantics mapper.
+  See [#2378](https://github.com/DataDog/dd-sdk-android/pull/2378)
+* [FEATURE] Session Replay: Add `RadioButton` Semantics Node Mapper.
+  See [#2381](https://github.com/DataDog/dd-sdk-android/pull/2381)
+* [FEATURE] Session Replay: Add Material Chip mapper and improve `CompoundButton` telemetry.
+  See [#2364](https://github.com/DataDog/dd-sdk-android/pull/2364)
+* [FEATURE] Session Replay: Add Compose Session Replay scenario for benchmark sample application.
+  See [#2379](https://github.com/DataDog/dd-sdk-android/pull/2379)
+* [FEATURE] Session Replay: Add multiple extension support.
+  See [#2384](https://github.com/DataDog/dd-sdk-android/pull/2384)
+* [FEATURE] Session Replay: Add Compose Session Replay selector sample screen.
+  See [#2394](https://github.com/DataDog/dd-sdk-android/pull/2394)
+* [FEATURE] Session Replay: Add `AndroidComposeViewMapper` to support popup.
+  See [#2395](https://github.com/DataDog/dd-sdk-android/pull/2395)
+* [FEATURE] Session Replay: Integrate benchmark profiler in Compose mapper.
+  See [#2397](https://github.com/DataDog/dd-sdk-android/pull/2397)
+* [IMPROVEMENT] Add `MethodCall` telemetry for compose mapper.
+  See [#2123](https://github.com/DataDog/dd-sdk-android/pull/2123)
+* [IMPROVEMENT] Apply privacy settings to `TextCompositionGroupMapper` for Compose.
+  See [#2121](https://github.com/DataDog/dd-sdk-android/pull/2121)
+* [IMPROVEMENT] Use `SurfaceCompositionGroupMapper` to support container components in Session
+  Replay.
+  See [#2182](https://github.com/DataDog/dd-sdk-android/pull/2182)
+* [IMPROVEMENT] Fix padding and resizing issue for `ImageView` mapper.
+  See [#2372](https://github.com/DataDog/dd-sdk-android/pull/2372)
+* [IMPROVEMENT] Add warning log when initializing the SDK outside of the main process.
+  See [#2376](https://github.com/DataDog/dd-sdk-android/pull/2376)
+* [IMPROVEMENT] breaking API change: Allow typed `Sampler`.
+  See [#2385](https://github.com/DataDog/dd-sdk-android/pull/2385)
+* [IMPROVEMENT] Create the `DeterministicSampler`.
+  See [#2387](https://github.com/DataDog/dd-sdk-android/pull/2387)
+* [IMPROVEMENT] Use deterministic sampling by default when tracing.
+  See [#2388](https://github.com/DataDog/dd-sdk-android/pull/2388)
+* [IMPROVEMENT] Align log levels for Session Replay already enabled.
+  See [#2399](https://github.com/DataDog/dd-sdk-android/pull/2399)
+* [IMPROVEMENT] Adjust Webview Replay storage configuration limits.
+  See [#2400](https://github.com/DataDog/dd-sdk-android/pull/2400)
+* [MAINTENANCE] Update Gradle to version `8.10.2`.
+  See [#2359](https://github.com/DataDog/dd-sdk-android/pull/2359)
+* [MAINTENANCE] Fix `ButtonCompositionGroupMapper` crash while calculating the corner radius.
+  See [#2173](https://github.com/DataDog/dd-sdk-android/pull/2173)
+* [MAINTENANCE] Fix Image reflection issue and update ProGuard rules.
+  See [#2337](https://github.com/DataDog/dd-sdk-android/pull/2337)
+* [MAINTENANCE] Fix `CompoundButton` mapper drawable clone issue.
+  See [#2365](https://github.com/DataDog/dd-sdk-android/pull/2365)
+* [MAINTENANCE] Fix crash while using recycled bitmap in Session Replay.
+  See [#2396](https://github.com/DataDog/dd-sdk-android/pull/2396)
+* [MAINTENANCE] Add experimental annotation for Session Replay for Compose.
+  See [#2377](https://github.com/DataDog/dd-sdk-android/pull/2377)
+* [MAINTENANCE] Lazy RUM raw event creation in event generator methods.
+  See [#2363](https://github.com/DataDog/dd-sdk-android/pull/2363)
+* [MAINTENANCE] Remove legacy code using Compose `sourceInfo`.
+  See [#2386](https://github.com/DataDog/dd-sdk-android/pull/2386)
+
 # 2.15.1 / 2024-11-04
 
 * [MAINTENANCE] Fix `resolveResourceId` not correctly calling job finished when drawable cloning
