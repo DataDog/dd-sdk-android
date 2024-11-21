@@ -35,6 +35,7 @@ internal object ComposeReflection {
 
     val BackgroundElementClass = getClassSafe("androidx.compose.foundation.BackgroundElement")
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
+    val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
 
     val PaddingElementClass = getClassSafe("androidx.compose.foundation.layout.PaddingElement")
     val StartField = PaddingElementClass?.getDeclaredFieldSafe("start")

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -31,6 +32,9 @@ internal class RootSemanticsNodeMapper(
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(
+        colorStringFormatter
+    ),
+    private val textFieldSemanticsNodeMapper: TextFieldSemanticsNodeMapper = TextFieldSemanticsNodeMapper(
         colorStringFormatter
     ),
     private val containerSemanticsNodeMapper: ContainerSemanticsNodeMapper = ContainerSemanticsNodeMapper(
@@ -95,7 +99,9 @@ internal class RootSemanticsNodeMapper(
         semanticsNode: SemanticsNode
     ): SemanticsNodeMapper {
         val role = semanticsNode.config.getOrNull(SemanticsProperties.Role)
-        return semanticsNodeMapper[role] ?: if (isTextNode(semanticsNode)) {
+        return semanticsNodeMapper[role] ?: if (isTextFieldNode(semanticsNode)) {
+            textFieldSemanticsNodeMapper
+        } else if (isTextNode(semanticsNode)) {
             textSemanticsNodeMapper
         } else {
             containerSemanticsNodeMapper
@@ -105,6 +111,10 @@ internal class RootSemanticsNodeMapper(
     private fun isTextNode(semanticsNode: SemanticsNode): Boolean {
         // Some text semantics nodes don't have an explicit `Role` but the text exists in the config
         return semanticsNode.config.getOrNull(SemanticsProperties.Text)?.isNotEmpty() == true
+    }
+
+    private fun isTextFieldNode(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.config.contains(SemanticsActions.SetText)
     }
 
     companion object {
