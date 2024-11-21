@@ -149,7 +149,8 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
             height = (fakeBounds.size.height / fakeDensity).toLong(),
             text = fakeEditText,
             textStyle = MobileSegment.TextStyle(
-                family = (fakeTextLayoutInfo.fontFamily as GenericFontFamily).name,
+                family = (fakeTextLayoutInfo.fontFamily as? GenericFontFamily)?.name
+                    ?: DEFAULT_FONT_FAMILY,
                 size = fakeTextLayoutInfo.fontSize,
                 color = fakeTextColorHexString
             ),
@@ -171,5 +172,9 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         return mockSemanticsNodeWithBound {
             whenever(mockSemanticsNode.layoutInfo).doReturn(mockLayoutInfo)
         }
+    }
+
+    companion object {
+        private const val DEFAULT_FONT_FAMILY = "Roboto, sans-serif"
     }
 }
