@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay
 import android.view.View
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
  * In case you need to provide different configuration for a specific Android UI framework that
@@ -17,6 +18,12 @@ import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
  * @see [SessionReplayConfiguration.Builder.addExtensionSupport]
  */
 interface ExtensionSupport {
+
+    /**
+     * Identifier for the extension.
+     * @return the name of this extension.
+     */
+    fun name(): String
 
     /**
      * Use this method if you want to apply a custom [WireframeMapper] for a specific [View].
@@ -30,4 +37,10 @@ interface ExtensionSupport {
      * @return a list of custom [OptionSelectorDetector].
      */
     fun getOptionSelectorDetectors(): List<OptionSelectorDetector>
+
+    /**
+     * Implement this method if you need to add some specific mapper of drawable for extensions.
+     * @return a list of custom [DrawableToColorMapper] implementation.
+     */
+    fun getCustomDrawableMapper(): List<DrawableToColorMapper>
 }

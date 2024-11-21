@@ -52,6 +52,16 @@ class DatadogBenchmarkTest {
     }
 
     @Test
+    fun `M build correct config W resolve bundle {scenario = 'sr_compose', run = 'instrumented'}`() {
+        whenever(mockedBundle.getString("synthetics.benchmark.scenario")).thenReturn("sr_compose")
+        whenever(mockedBundle.getString("synthetics.benchmark.run")).thenReturn("instrumented")
+
+        val config = DatadogBenchmark.Config.resolveSyntheticsBundle(mockedBundle)
+        Assertions.assertThat(config.scenario).isEqualTo(SyntheticsScenario.SessionReplayCompose)
+        Assertions.assertThat(config.run).isEqualTo(SyntheticsRun.Instrumented)
+    }
+
+    @Test
     fun `M build empty config W resolve invalid bundle`() {
         whenever(mockedBundle.getString("synthetics.benchmark.scenario")).thenReturn("")
         whenever(mockedBundle.getString("synthetics.benchmark.run")).thenReturn("")

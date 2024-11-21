@@ -21,15 +21,20 @@ import com.datadog.android.api.InternalLogger
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
 @RequiresApi(Build.VERSION_CODES.Q)
-open class AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper() {
+open class AndroidQDrawableToColorMapper(
+    extensionMappers: List<DrawableToColorMapper> = emptyList()
+) : AndroidMDrawableToColorMapper(extensionMappers) {
 
     override fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
         @Suppress("SwallowedException")
         val fillPaint = try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
             fillPaintField?.get(drawable) as? Paint
         } catch (e: IllegalArgumentException) {
             null
         } catch (e: IllegalAccessException) {
+            null
+        } catch (e: ExceptionInInitializerError) {
             null
         }
 

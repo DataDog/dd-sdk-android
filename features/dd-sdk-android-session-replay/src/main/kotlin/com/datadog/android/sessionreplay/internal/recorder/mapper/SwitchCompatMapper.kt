@@ -6,8 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.content.res.Resources
-import android.graphics.drawable.Drawable
 import androidx.annotation.UiThread
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
@@ -75,18 +73,16 @@ internal open class SwitchCompatMapper(
         )
         return trackBounds?.let {
             val trackDrawable = view.trackDrawable
-            val drawableCopier = object : DrawableCopier {
-                override fun copy(originalDrawable: Drawable, resources: Resources): Drawable? {
-                    return originalDrawable.constantState?.newDrawable(view.resources)?.apply {
-                        setState(view.trackDrawable.state)
-                        bounds = view.trackDrawable.bounds
-                        view.trackTintList?.let {
-                            setTintList(it)
-                        }
+            val drawableCopier = DrawableCopier { originalDrawable, resources ->
+                originalDrawable.constantState?.newDrawable(resources)?.apply {
+                    setState(view.trackDrawable.state)
+                    bounds = view.trackDrawable.bounds
+                    view.trackTintList?.let { tintList ->
+                        setTintList(tintList)
                     }
                 }
             }
-            return mappingContext.imageWireframeHelper.createImageWireframe(
+            return mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
                 currentWireframeIndex = prevIndex + 1,
@@ -118,9 +114,9 @@ internal open class SwitchCompatMapper(
         )
 
         val thumbDrawable = view.thumbDrawable
-        val drawableCopier = object : DrawableCopier {
-            override fun copy(originalDrawable: Drawable, resources: Resources): Drawable? {
-                return originalDrawable.constantState?.newDrawable(view.resources)?.apply {
+        val drawableCopier =
+            DrawableCopier { originalDrawable, resources ->
+                originalDrawable.constantState?.newDrawable(resources)?.apply {
                     setState(view.thumbDrawable.state)
                     bounds = view.thumbDrawable.bounds
                     view.thumbTintList?.let {
@@ -128,9 +124,8 @@ internal open class SwitchCompatMapper(
                     }
                 }
             }
-        }
         return thumbBounds?.let {
-            mappingContext.imageWireframeHelper.createImageWireframe(
+            mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
                 currentWireframeIndex = prevIndex + 1,

@@ -75,6 +75,12 @@ public final class com/datadog/android/okhttp/TraceContextInjection : java/lang/
 	public static fun values ()[Lcom/datadog/android/okhttp/TraceContextInjection;
 }
 
+public class com/datadog/android/okhttp/trace/DeterministicTraceSampler : com/datadog/android/core/sampling/DeterministicSampler {
+	public fun <init> (D)V
+	public fun <init> (F)V
+	public fun <init> (Lkotlin/jvm/functions/Function0;)V
+}
+
 public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {
 	public static final fun parentSpan (Lokhttp3/Request$Builder;Lio/opentracing/Span;)Lokhttp3/Request$Builder;
 }
@@ -108,6 +114,7 @@ public abstract class com/datadog/android/okhttp/trace/TracingInterceptor$BaseBu
 	public abstract fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceContextInjection (Lcom/datadog/android/okhttp/TraceContextInjection;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
+	public final fun setTraceSampleRate (F)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTracedRequestListener (Lcom/datadog/android/okhttp/trace/TracedRequestListener;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 }

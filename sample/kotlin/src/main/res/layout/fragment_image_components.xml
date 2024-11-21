@@ -339,7 +339,8 @@
                 <ImageView
                     android:id="@+id/imageView_remote"
                     android:layout_width="160dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="160dp"
+                    android:padding="32dp"
                     android:scaleType="fitCenter"
                     android:contentDescription="@null"
                     android:layout_marginEnd="8dp"

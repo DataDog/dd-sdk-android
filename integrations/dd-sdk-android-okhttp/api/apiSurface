@@ -16,9 +16,9 @@ class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
     constructor(String? = null)
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.okhttp.trace.TracingInterceptor
-  DEPRECATED constructor(String? = null, Map<String, Set<com.datadog.android.trace.TracingHeaderType>>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
-  DEPRECATED constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
-  DEPRECATED constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
+  DEPRECATED constructor(String? = null, Map<String, Set<com.datadog.android.trace.TracingHeaderType>>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
+  DEPRECATED constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
+  DEPRECATED constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
@@ -33,13 +33,17 @@ data class com.datadog.android.okhttp.TraceContext
 enum com.datadog.android.okhttp.TraceContextInjection
   - All
   - Sampled
+open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<io.opentracing.Span>
+  constructor(() -> Float)
+  constructor(Float)
+  constructor(Double)
 fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
 interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor
-  DEPRECATED constructor(String? = null, List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
-  DEPRECATED constructor(String? = null, Map<String, Set<com.datadog.android.trace.TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
-  DEPRECATED constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
+  DEPRECATED constructor(String? = null, List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
+  DEPRECATED constructor(String? = null, Map<String, Set<com.datadog.android.trace.TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
+  DEPRECATED constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   class Builder : BaseBuilder<TracingInterceptor, Builder>
@@ -51,6 +55,7 @@ open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interce
     constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
     fun setSdkInstanceName(String): R
     fun setTracedRequestListener(TracedRequestListener): R
-    fun setTraceSampler(com.datadog.android.core.sampling.Sampler): R
+    fun setTraceSampleRate(Float): R
+    fun setTraceSampler(com.datadog.android.core.sampling.Sampler<io.opentracing.Span>): R
     fun setTraceContextInjection(com.datadog.android.okhttp.TraceContextInjection): R
     abstract fun build(): T

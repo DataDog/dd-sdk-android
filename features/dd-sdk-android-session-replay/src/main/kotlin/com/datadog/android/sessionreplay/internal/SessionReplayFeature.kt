@@ -34,6 +34,7 @@ import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -49,7 +50,7 @@ internal class SessionReplayFeature(
     internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val touchPrivacy: TouchPrivacy,
     internal val imagePrivacy: ImagePrivacy,
-    private val rateBasedSampler: Sampler,
+    private val rateBasedSampler: Sampler<Unit>,
     private val startRecordingImmediately: Boolean,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -67,6 +68,7 @@ internal class SessionReplayFeature(
         imagePrivacy: ImagePrivacy,
         customMappers: List<MapperTypeWrapper<*>>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
+        customDrawableMappers: List<DrawableToColorMapper>,
         sampleRate: Float,
         startRecordingImmediately: Boolean,
         dynamicOptimizationEnabled: Boolean
@@ -86,6 +88,7 @@ internal class SessionReplayFeature(
             touchPrivacyManager,
             customMappers,
             customOptionSelectorDetectors,
+            customDrawableMappers,
             dynamicOptimizationEnabled
         )
     )
@@ -258,7 +261,7 @@ internal class SessionReplayFeature(
 
     private fun applySampling(alreadySeenSession: Boolean) {
         if (!alreadySeenSession) {
-            isSessionSampledIn.set(rateBasedSampler.sample())
+            isSessionSampledIn.set(rateBasedSampler.sample(Unit))
         }
     }
 

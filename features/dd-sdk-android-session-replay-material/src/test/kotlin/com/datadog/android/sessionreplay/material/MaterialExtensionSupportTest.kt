@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.material
 
+import com.datadog.android.sessionreplay.material.MaterialExtensionSupport.Companion.MATERIAL_EXTENSION_SUPPORT_NAME
 import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
 import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
@@ -25,7 +26,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class MaterialExtensionSupportTest {
 
-    lateinit var testedMaterialExtensionSupport: MaterialExtensionSupport
+    private lateinit var testedMaterialExtensionSupport: MaterialExtensionSupport
 
     @BeforeEach
     fun `set up`() {
@@ -66,5 +67,11 @@ class MaterialExtensionSupportTest {
         // Then
         assertThat(customDetectors.size).isEqualTo(1)
         assertThat(customDetectors[0]).isInstanceOf(MaterialOptionSelectorDetector::class.java)
+    }
+
+    @Test
+    fun `M return name of extension W name`() {
+        // Then
+        assertThat(testedMaterialExtensionSupport.name()).isEqualTo(MATERIAL_EXTENSION_SUPPORT_NAME)
     }
 }

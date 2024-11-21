@@ -9,8 +9,8 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
@@ -144,9 +144,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(RateBasedSampler::class.java)
-        val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            .isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
@@ -173,9 +172,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(RateBasedSampler::class.java)
-        val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            .isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
@@ -366,7 +364,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(any())).thenReturn(false)
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         // no span -> shouldn't have trace/spans IDs
@@ -505,7 +503,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(any())).thenReturn(false)
         stubChain(mockChain) {
             Response.Builder()
                 .request(fakeRequest)
@@ -553,7 +551,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(any())).thenReturn(false)
         stubChain(mockChain) {
             Response.Builder()
                 .request(fakeRequest)
@@ -664,7 +662,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         forge: Forge
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(any())).thenReturn(false)
         stubChain(mockChain) {
             Response.Builder()
                 .request(fakeRequest)
@@ -766,7 +764,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(any())).thenReturn(false)
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         // no span -> shouldn't have trace/spans IDs

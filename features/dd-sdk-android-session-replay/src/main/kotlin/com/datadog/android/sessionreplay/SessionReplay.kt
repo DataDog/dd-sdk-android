@@ -56,6 +56,7 @@ object SessionReplay {
                     textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
                     customMappers = sessionReplayConfiguration.customMappers,
                     customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
+                    customDrawableMappers = sessionReplayConfiguration.customDrawableMappers,
                     sampleRate = sessionReplayConfiguration.sampleRate,
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
@@ -105,10 +106,17 @@ object SessionReplay {
     private fun isAlreadyRegistered() =
         currentRegisteredCore?.get()?.isCoreActive() == true
 
-    private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) =
+    private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) {
         internalLogger.log(
-            level = InternalLogger.Level.WARN,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER),
             messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
         )
+
+        internalLogger.log(
+            level = InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.TELEMETRY),
+            messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
+        )
+    }
 }

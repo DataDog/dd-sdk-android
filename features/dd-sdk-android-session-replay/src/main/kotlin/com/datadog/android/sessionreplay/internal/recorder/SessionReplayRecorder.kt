@@ -74,6 +74,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val uiHandler: Handler
     private var shouldRecord = false
 
+    @Suppress("LongParameterList")
     constructor(
         appContext: Application,
         resourcesWriter: ResourcesWriter,
@@ -85,6 +86,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         timeProvider: TimeProvider,
         mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
+        customDrawableMappers: List<DrawableToColorMapper>,
         windowInspector: WindowInspector = WindowInspector,
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
@@ -130,7 +132,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
         val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
-        val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
+        val drawableToColorMapper: DrawableToColorMapper =
+            DrawableToColorMapper.getDefault(customDrawableMappers)
 
         val defaultVWM = ViewWireframeMapper(
             viewIdentifierResolver,

@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp
 
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,7 +49,7 @@ internal class TracingInterceptorBuilderTest {
     lateinit var mockTracedRequestListener: TracedRequestListener
 
     @Mock
-    lateinit var mockSampler: Sampler
+    lateinit var mockSampler: Sampler<Span>
 
     @StringForgery
     lateinit var fakeOrigin: String
@@ -77,7 +78,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -99,7 +100,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -116,7 +117,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstaceName)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -133,7 +134,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceContextInjection).isEqualTo(fakeTraceContextInjection)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -150,7 +151,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(fakeOrigin)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -167,7 +168,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isSameAs(mockTracedRequestListener)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
     }

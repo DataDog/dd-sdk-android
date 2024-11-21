@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay
 
 import androidx.annotation.FloatRange
-import com.datadog.android.sessionreplay.internal.NoOpExtensionSupport
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import java.util.Locale
 
 /**
  * Describes configuration to be used for the Session Replay feature.
@@ -18,6 +20,7 @@ data class SessionReplayConfiguration internal constructor(
     internal val privacy: SessionReplayPrivacy,
     internal val customMappers: List<MapperTypeWrapper<*>>,
     internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
+    internal val customDrawableMappers: List<DrawableToColorMapper>,
     internal val sampleRate: Float,
     internal val imagePrivacy: ImagePrivacy,
     internal val startRecordingImmediately: Boolean,
@@ -29,11 +32,34 @@ data class SessionReplayConfiguration internal constructor(
 
     /**
      * A Builder class for a [SessionReplayConfiguration].
-     * @param sampleRate must be a value between 0 and 100. A value of 0
-     * means no session will be recorded, 100 means all sessions will be recorded.
-     * If this value is not provided then Session Replay will default to a 100 sample rate.
      */
-    class Builder(@FloatRange(from = 0.0, to = 100.0) private val sampleRate: Float = SAMPLE_IN_ALL_SESSIONS) {
+    @Suppress("TooManyFunctions")
+    class Builder {
+        private val logger: InternalLogger
+        private val sampleRate: Float
+
+        /**
+         * Calling this constructor will default to a 100% session sampling rate.
+         */
+        constructor() : this(SAMPLE_IN_ALL_SESSIONS, InternalLogger.UNBOUND)
+
+        /**
+         * @param sampleRate must be a value between 0 and 100. A value of 0
+         * means no session will be recorded, 100 means all sessions will be recorded.
+         * If this value is not provided then Session Replay will default to a 100 sample rate.
+         */
+        constructor(
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float = SAMPLE_IN_ALL_SESSIONS
+        ) : this(sampleRate, InternalLogger.UNBOUND)
+
+        internal constructor(
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float,
+            logger: InternalLogger
+        ) {
+            this.sampleRate = sampleRate
+            this.logger = logger
+        }
+
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK
 
@@ -44,7 +70,7 @@ data class SessionReplayConfiguration internal constructor(
         private var startRecordingImmediately = true
         private var touchPrivacy = TouchPrivacy.HIDE
         private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
-        private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
+        private var extensionSupportSet: MutableSet<ExtensionSupport> = mutableSetOf()
         private var dynamicOptimizationEnabled = true
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
 
@@ -55,7 +81,16 @@ data class SessionReplayConfiguration internal constructor(
          * @see [ExtensionSupport.getLegacyCustomViewMappers]
          */
         fun addExtensionSupport(extensionSupport: ExtensionSupport): Builder {
-            this.extensionSupport = extensionSupport
+            if (this.extensionSupportSet.any { it.name() == extensionSupport.name() }) {
+                logger.log(
+                    target = InternalLogger.Target.MAINTAINER,
+                    level = InternalLogger.Level.WARN,
+                    messageBuilder = { DUPLICATE_EXTENSION_DETECTED.format(Locale.US, extensionSupport.name()) }
+                )
+            } else {
+                this.extensionSupportSet.add(extensionSupport)
+            }
+
             return this
         }
 
@@ -186,7 +221,8 @@ data class SessionReplayConfiguration internal constructor(
                 touchPrivacy = touchPrivacy,
                 textAndInputPrivacy = textAndInputPrivacy,
                 customMappers = customMappers(),
-                customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
+                customOptionSelectorDetectors = optionsSelectorDetectors(),
+                customDrawableMappers = customDrawableMappers(),
                 sampleRate = sampleRate,
                 startRecordingImmediately = startRecordingImmediately,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
@@ -195,11 +231,32 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         private fun customMappers(): List<MapperTypeWrapper<*>> {
-            return extensionSupport.getCustomViewMappers()
+            val allItems = extensionSupportSet.flatMap { it.getCustomViewMappers() }
+
+            allItems.groupBy { it }
+                .filter { it.value.size > 1 }
+                .forEach { (item, _) ->
+                    logger.log(
+                        target = InternalLogger.Target.MAINTAINER,
+                        level = InternalLogger.Level.WARN,
+                        messageBuilder = { DUPLICATE_MAPPER_DETECTED.format(Locale.US, item.type) }
+                    )
+                }
+
+            return allItems.distinct().toList()
         }
+
+        private fun customDrawableMappers(): List<DrawableToColorMapper> =
+            extensionSupportSet.flatMap { it.getCustomDrawableMapper() }.toList()
+
+        private fun optionsSelectorDetectors(): List<OptionSelectorDetector> =
+            extensionSupportSet.flatMap { it.getOptionSelectorDetectors() }.toList()
 
         internal companion object {
             internal const val SAMPLE_IN_ALL_SESSIONS = 100.0f
+            internal const val DUPLICATE_EXTENSION_DETECTED =
+                "Attempting to add support twice for the same extension %s. The duplicate will be ignored."
+            internal const val DUPLICATE_MAPPER_DETECTED = "Duplicate mapper for %s. The duplicate will be ignored."
         }
     }
 }

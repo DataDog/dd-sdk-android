@@ -781,6 +781,11 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isFalse()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            CoreFeature.SDK_INITIALIZED_IN_SECONDARY_PROCESS_WARNING_MESSAGE
+        )
     }
 
     @Test

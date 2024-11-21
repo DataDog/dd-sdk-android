@@ -69,7 +69,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompiler.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
 
     testOptions {
@@ -138,6 +138,8 @@ android {
             isMinifyEnabled = false
             if (e2ePassword != null) {
                 signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
@@ -153,6 +155,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":integrations:dd-sdk-android-trace-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rum-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rx"))
@@ -178,11 +181,8 @@ dependencies {
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
-    implementation(libs.androidXConstraintLayout)
-    implementation(libs.androidXComposeNavigation)
-    implementation(libs.androidXComposeUi)
-    implementation(libs.androidXComposeUiTooling)
-    implementation(libs.androidXComposeMaterial)
+    implementation(libs.bundles.androidXCompose)
+    implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)
     implementation(libs.googleAccompanistPager)
     implementation(libs.googleAccompanistPagerIndicators)
@@ -198,6 +198,7 @@ dependencies {
 
     // Image Loading Library
     implementation(libs.coil)
+    implementation(libs.coilCompose)
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)

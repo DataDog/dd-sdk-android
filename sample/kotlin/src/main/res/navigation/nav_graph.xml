@@ -81,6 +81,11 @@
         android:name="com.datadog.android.sample.sessionreplay.RadioCheckBoxesFragment"
         android:label="@string/radio_and_check_box_components"/>
 
+    <fragment
+        android:id="@+id/fragment_tabs"
+        android:name="com.datadog.android.sample.sessionreplay.TabsFragment"
+        android:label="@string/tab_component" />
+
     <fragment android:id="@+id/fragment_dropdowns_switchers_components"
         android:name="com.datadog.android.sample.sessionreplay.DropDownSwitchersFragment"
         android:label="@string/dropdowns_and_switchers_components"/>

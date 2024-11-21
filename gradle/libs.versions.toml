@@ -15,15 +15,14 @@ androidXCore = "1.3.1"
 androidXMultidex = "2.0.1"
 androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
-androidXWorkManager = "2.8.1"
-androidXConstraintLayout = "2.0.4"
-androidXComposeCompiler = "1.5.14"
-androidXComposeRuntime = "1.4.3"
-androidXComposeNavigation = "2.6.0"
-androidXComposeUi = "1.4.3"
-androidXComposeMaterial = "1.4.3"
-androidXMetrics = "1.0.0-alpha04"
 androidXCollection = "1.1.0"
+androidXComposeBom = "2023.10.01"
+androidXComposeCompilerExtension = "1.5.14"
+androidXComposeNavigation = "2.6.0"
+androidXComposeRuntime = "1.5.14"
+androidXConstraintLayout = "2.0.4"
+androidXMetrics = "1.0.0-alpha04"
+androidXWorkManager = "2.8.1"
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 androidXLeanback = "1.0.0"
@@ -80,6 +79,7 @@ dependencyLicense = "0.3"
 realm = "1.11.0"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
+coilCompose = "2.1.0"
 fresco = "2.3.0"
 glide = "4.11.0"
 picasso = "2.8"
@@ -98,6 +98,7 @@ openTelemetry = "1.4.0"
 # Only for internal benchmark use
 openTelemetryBenchmark = "1.40.0"
 re2j = "1.7"
+material3Android = "1.3.1"
 
 
 [libraries]
@@ -140,11 +141,6 @@ androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime",
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
 androidXConstraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidXConstraintLayout" }
-androidXComposeRuntime = { module = "androidx.compose.runtime:runtime", version.ref = "androidXComposeRuntime" }
-androidXComposeNavigation = { module = "androidx.navigation:navigation-compose", version.ref = "androidXComposeNavigation" }
-androidXComposeUi = { module = "androidx.compose.ui:ui", version.ref = "androidXComposeUi" }
-androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "androidXComposeUi" }
-androidXComposeMaterial = { module = "androidx.compose.material:material", version.ref = "androidXComposeMaterial" }
 androidXMetrics = { module = "androidx.metrics:metrics-performance", version.ref = "androidXMetrics" }
 androidXCollection = { module = "androidx.collection:collection", version.ref = "androidXCollection" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
@@ -152,6 +148,14 @@ googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", 
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
 googleMaterial = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
 androidXLeanback = { module = "androidx.leanback:leanback", version.ref = "androidXLeanback" }
+
+androidXComposeBom = { module = "androidx.compose:compose-bom", version.ref = "androidXComposeBom" }
+androidXComposeNavigation = { module = "androidx.navigation:navigation-compose", version.ref = "androidXComposeNavigation" }
+androidXComposeRuntime = { module = "androidx.compose.runtime:runtime" }
+androidXComposeUi = { module = "androidx.compose.ui:ui" }
+androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
+androidXComposeMaterial = { module = "androidx.compose.material:material" }
+material3Android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 
 # DD-TRACE-OT
 openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
@@ -214,6 +218,7 @@ jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.j
 # Integrations
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 
 frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }
 frescoOkHttp3 = { module = "com.facebook.fresco:imagepipeline-okhttp3", version.ref = "fresco" }
@@ -274,6 +279,14 @@ androidXSupportBase = [
     "androidXAppCompat",
     "androidXConstraintLayout",
     "googleMaterial"
+]
+
+androidXCompose = [
+    "androidXComposeNavigation",
+    "androidXComposeRuntime",
+    "androidXComposeUi",
+    "androidXComposeUiTooling",
+    "androidXComposeMaterial",
 ]
 
 openTracing = [

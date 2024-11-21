@@ -15,6 +15,7 @@ include(":features:dd-sdk-android-ndk")
 include(":features:dd-sdk-android-trace")
 include(":features:dd-sdk-android-webview")
 include(":features:dd-sdk-android-session-replay")
+include(":features:dd-sdk-android-session-replay-compose")
 include(":features:dd-sdk-android-session-replay-material")
 include(":features:dd-sdk-android-trace-otel")
 

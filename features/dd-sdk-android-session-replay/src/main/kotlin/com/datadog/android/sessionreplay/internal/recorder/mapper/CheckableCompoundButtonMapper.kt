@@ -63,12 +63,29 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
             } else {
                 CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
             }
-            (view.buttonDrawable?.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
-                checkableDrawableIndex
-            )
+            view.buttonDrawable?.let {
+                (it.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
+                    checkableDrawableIndex
+                )
+            } ?: kotlin.run {
+                internalLogger.log(
+                    level = InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    messageBuilder = { NULL_BUTTON_DRAWABLE_MSG },
+                    additionalProperties = mapOf(
+                        "replay.compound.view" to view.javaClass.canonicalName
+                    )
+                )
+                null
+            }
         } else {
             // view.buttonDrawable is not available below API 23, so reflection is used to retrieve it.
             try {
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                // Exceptions have been caught.
                 mButtonDrawableField?.get(view) as? Drawable
             } catch (e: IllegalAccessException) {
                 internalLogger.log(
@@ -88,17 +105,10 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
                 null
             }
         }
-        return originCheckableDrawable?.let { cloneCheckableDrawable(view, it) } ?: run {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = { GET_DRAWABLE_FAIL_MESSAGE }
-            )
-            null
-        }
+        return originCheckableDrawable
     }
 
-    private fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable? {
+    override fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable? {
         return drawable.constantState?.newDrawable(view.resources)?.apply {
             // Set state to make the drawable have correct tint.
             setState(view.drawableState)
@@ -115,6 +125,8 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
         internal const val DEFAULT_CHECKABLE_HEIGHT_IN_DP = 32L
         internal const val GET_DRAWABLE_FAIL_MESSAGE =
             "Failed to get buttonDrawable from the checkable compound button."
+        internal const val NULL_BUTTON_DRAWABLE_MSG =
+            "ButtonDrawable of the compound button is null"
 
         // Reflects the field at the initialization of the class instead of reflecting it for every wireframe generation
         @Suppress("PrivateApi", "SwallowedException", "TooGenericExceptionCaught")

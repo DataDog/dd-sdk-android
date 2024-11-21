@@ -11,7 +11,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
@@ -125,7 +124,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockTraceSampler: Sampler
+    lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -175,7 +174,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.traceId).thenReturn(fakeTraceId)
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId.toString()
-        whenever(mockTraceSampler.sample()) doReturn true
+        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeLocalHosts =
@@ -228,9 +227,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(RateBasedSampler::class.java)
-        val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            .isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
@@ -258,9 +256,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(RateBasedSampler::class.java)
-        val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            .isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
@@ -318,7 +315,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         val datadogContextKeyValue = forge.anAlphabeticalString()
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -353,7 +350,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -381,7 +378,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -406,7 +403,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -661,7 +658,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -694,7 +691,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -728,7 +725,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -762,7 +759,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -819,7 +816,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -853,7 +850,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -890,7 +887,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -922,7 +919,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         }
         stubChain(mockChain, statusCode)
-        whenever(mockTraceSampler.sample()).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -1097,6 +1094,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
+        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceIdAsString
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
@@ -1131,6 +1129,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
+        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceIdAsString
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
@@ -1227,7 +1226,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
 
@@ -1276,7 +1275,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable

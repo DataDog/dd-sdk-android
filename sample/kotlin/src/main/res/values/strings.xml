@@ -149,9 +149,11 @@
     <string name="material_checkbox_disabled_checked">Material CheckBox Disabled Checked With custom tint</string>
     <string name="material_checkbox_disabled_not_checked">Material CheckBox With  Disabled Not Checked custom tint</string>
     <string name="radio_and_check_box_components">Radio and CheckBox Components</string>
+    <string name="tab_component">Tabs</string>
     <string name="default_radio">Default Radio</string>
     <string name="app_compat_radio">App Compat Radio</string>
     <string name="material_radio">Material Radio</string>
+    <string name="text_chip">This is a chip</string>
     <string name="default_spinner">Default spinner</string>
     <string name="app_compat_spinner">App Compat Spinner</string>
     <string name="app_compat_switch">App Compat Switch</string>
@@ -183,10 +185,15 @@
     <string name="chained_contexts_test">Chained Otel Contexts Test</string>
     <string name="web_view_recording">Web View Recording</string>
     <string name="view_group_button">View Groups</string>
+    <string name="tabs_component">Tabs</string>
     <string name="start_custom_rum_view">Start Custom Rum View</string>
     <string name="webview_recording">WebView Recording</string>
     <string name="linked_spans_test">Linked Spans Test</string>
     <string name="start_linked_spans_test">Start Linked Spans Test</string>
     <string name="card_view">Card view</string>
     <string name="material_card_view">Material Card view</string>
+    <string name="nav_item_saved">Saved</string>
+    <string name="nav_item_search">Search</string>
+    <string name="nav_item_suggested_edits">Edits</string>
+    <string name="nav_item_more">More</string>
 </resources>

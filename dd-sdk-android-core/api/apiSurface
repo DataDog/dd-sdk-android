@@ -323,14 +323,20 @@ interface com.datadog.android.core.persistence.Serializer<T: Any>
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
 data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
   constructor(Int, T?)
-class com.datadog.android.core.sampling.RateBasedSampler : Sampler
+open class com.datadog.android.core.sampling.DeterministicSampler<T: Any> : Sampler<T>
+  constructor((T) -> ULong, () -> Float)
+  constructor((T) -> ULong, Float)
+  constructor((T) -> ULong, Double)
+  override fun sample(T): Boolean
+  override fun getSampleRate(): Float
+open class com.datadog.android.core.sampling.RateBasedSampler<T: Any> : Sampler<T>
   constructor(() -> Float)
   constructor(Float)
   constructor(Double)
-  override fun sample(): Boolean
+  override fun sample(T): Boolean
   override fun getSampleRate(): Float
-interface com.datadog.android.core.sampling.Sampler
-  fun sample(): Boolean
+interface com.datadog.android.core.sampling.Sampler<T: Any>
+  fun sample(T): Boolean
   fun getSampleRate(): Float?
 interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
   fun drainTo(MutableCollection<Runnable>)

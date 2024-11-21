@@ -90,10 +90,10 @@ internal class TelemetryEventHandlerTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockSampler: Sampler
+    lateinit var mockSampler: Sampler<InternalTelemetryEvent>
 
     @Mock
-    lateinit var mockConfigurationSampler: Sampler
+    lateinit var mockConfigurationSampler: Sampler<InternalTelemetryEvent>
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -170,8 +170,8 @@ internal class TelemetryEventHandlerTest {
             deviceInfo = mockDeviceInfo
         )
 
-        whenever(mockSampler.sample()) doReturn true
-        whenever(mockConfigurationSampler.sample()) doReturn true
+        whenever(mockSampler.sample(any())) doReturn true
+        whenever(mockConfigurationSampler.sample(any())) doReturn true
 
         whenever(
             mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
@@ -744,7 +744,7 @@ internal class TelemetryEventHandlerTest {
         // Given
         val fakeInternalTelemetryEvent = forge.forgeWritableInternalTelemetryEvent()
         val rawEvent = RumRawEvent.TelemetryEventWrapper(fakeInternalTelemetryEvent)
-        whenever(mockSampler.sample()) doReturn false
+        whenever(mockSampler.sample(any())) doReturn false
 
         // When
         testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
@@ -763,8 +763,8 @@ internal class TelemetryEventHandlerTest {
             forge.getForgery<InternalTelemetryEvent.Log.Debug>()
         )
         val rawEvent = RumRawEvent.TelemetryEventWrapper(logeEvent)
-        whenever(mockSampler.sample()) doReturn true
-        whenever(mockConfigurationSampler.sample()) doReturn false
+        whenever(mockSampler.sample(any())) doReturn true
+        whenever(mockConfigurationSampler.sample(any())) doReturn false
 
         // When
         testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
@@ -786,8 +786,8 @@ internal class TelemetryEventHandlerTest {
     ) {
         // Given
         val rawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
-        whenever(mockSampler.sample()) doReturn true
-        whenever(mockConfigurationSampler.sample()) doReturn false
+        whenever(mockSampler.sample(any())) doReturn true
+        whenever(mockConfigurationSampler.sample(any())) doReturn false
 
         // When
         testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
@@ -930,7 +930,7 @@ internal class TelemetryEventHandlerTest {
     fun `M count the limit only after the sampling W handleEvent()`(forge: Forge) {
         // Given
         // sample out 50%
-        whenever(mockSampler.sample()) doAnswer object : Answer<Boolean> {
+        whenever(mockSampler.sample(any())) doAnswer object : Answer<Boolean> {
             var invocationCount = 0
             override fun answer(invocation: InvocationOnMock): Boolean {
                 invocationCount++
@@ -1008,8 +1008,8 @@ internal class TelemetryEventHandlerTest {
         }
     }
 
-// endregion
-// region Api Usage
+    // endregion
+    // region Api Usage
 
     @Test
     fun `M create api usage event W handleEvent(api usage event)`(
@@ -1081,9 +1081,10 @@ internal class TelemetryEventHandlerTest {
             message = TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
         )
     }
-// endregion
 
-// region Assertions
+    // endregion
+
+    // region Assertions
 
     private fun assertApiUsageMatchesInternalEvent(
         actual: TelemetryUsageEvent,
@@ -1257,7 +1258,7 @@ internal class TelemetryEventHandlerTest {
         )
     }
 
-// endregion
+    // endregion
 
     companion object {
 

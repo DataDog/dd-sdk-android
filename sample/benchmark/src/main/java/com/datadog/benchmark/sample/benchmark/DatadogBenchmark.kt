@@ -10,6 +10,8 @@ import android.os.Bundle
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
+import com.datadog.android.sessionreplay.compose.ExperimentalSessionReplayApi
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.DatadogMeter
@@ -33,9 +35,12 @@ internal class DatadogBenchmark(config: Config) {
             .build()
     )
 
+    val isComposeEnabled = config.scenario == SyntheticsScenario.SessionReplayCompose
+
     init {
         if (config.run == SyntheticsRun.Instrumented) {
             when (config.scenario) {
+                SyntheticsScenario.SessionReplayCompose,
                 SyntheticsScenario.SessionReplay -> enableSessionReplay()
                 else -> {} // do nothing for now
             }
@@ -50,12 +55,14 @@ internal class DatadogBenchmark(config: Config) {
         meter.stopGauges()
     }
 
+    @OptIn(ExperimentalSessionReplayApi::class)
     @Suppress("DEPRECATION")
     private fun enableSessionReplay() {
         val sessionReplayConfig = SessionReplayConfiguration
             .Builder(SAMPLE_IN_ALL_SESSIONS)
             .setPrivacy(SessionReplayPrivacy.ALLOW)
             .addExtensionSupport(MaterialExtensionSupport())
+            .addExtensionSupport(ComposeExtensionSupport())
             .build()
         SessionReplay.enable(sessionReplayConfig)
     }

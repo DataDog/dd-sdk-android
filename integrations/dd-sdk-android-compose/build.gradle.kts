@@ -43,13 +43,15 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompiler.get()
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
 }
 
 dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
+
+    implementation(platform(libs.androidXComposeBom))
     implementation(libs.androidXComposeRuntime)
     implementation(libs.androidXComposeMaterial)
     implementation(libs.androidXComposeNavigation)

@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp.trace
 
+import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -15,8 +16,6 @@ import com.datadog.android.core.SdkReference
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
@@ -80,7 +79,7 @@ internal constructor(
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
-    internal val traceSampler: Sampler,
+    internal val traceSampler: Sampler<Span>,
     internal val traceContextInjection: TraceContextInjection,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : Interceptor {
@@ -110,7 +109,7 @@ internal constructor(
      * nor propagate tracing information to the backend.
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
@@ -125,7 +124,7 @@ internal constructor(
         sdkInstanceName: String? = null,
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
         tracedHosts.associateWith {
@@ -156,7 +155,7 @@ internal constructor(
      * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
@@ -171,7 +170,7 @@ internal constructor(
         sdkInstanceName: String? = null,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
         tracedHostsWithHeaderType,
@@ -191,7 +190,7 @@ internal constructor(
      * Instrumentation won't be working until SDK instance is ready.
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
@@ -205,7 +204,7 @@ internal constructor(
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
         emptyMap(),
@@ -315,8 +314,8 @@ internal constructor(
         request: Request,
         tracer: Tracer
     ): Response {
-        val isSampled = extractSamplingDecision(request) ?: traceSampler.sample()
         val span = buildSpan(tracer, request)
+        val isSampled = extractSamplingDecision(request) ?: traceSampler.sample(span)
 
         val updatedRequest = try {
             updateRequest(sdkCore, request, tracer, span, isSampled).build()
@@ -762,7 +761,7 @@ internal constructor(
         internal var sdkInstanceName: String? = null
         internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
         internal var traceOrigin: String? = null
-        internal var traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer =
             { sdkCore, tracingHeaderTypes ->
                 AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
@@ -789,15 +788,22 @@ internal constructor(
         }
 
         /**
+         * Set the trace sample rate controlling the sampling of APM traces created for
+         * auto-instrumented requests.
+         * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 20f).
+         */
+        fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): R {
+            this.traceSampler = DeterministicTraceSampler(sampleRate)
+            return getThis()
+        }
+
+        /**
          * Set the trace sampler controlling the sampling of APM traces created for
          * auto-instrumented requests.
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
-         * By default it is [RateBasedSampler], which either can accept
-         * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-         * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-         * be kept (default value is `20.0`).
+         * By default it is a sampler accepting 20% of the traces.
          */
-        fun setTraceSampler(traceSampler: Sampler): R {
+        fun setTraceSampler(traceSampler: Sampler<Span>): R {
             this.traceSampler = traceSampler
             return getThis()
         }

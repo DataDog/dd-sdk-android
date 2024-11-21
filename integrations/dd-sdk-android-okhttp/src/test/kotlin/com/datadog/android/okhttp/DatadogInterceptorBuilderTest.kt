@@ -6,9 +6,9 @@
 
 package com.datadog.android.okhttp
 
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.rum.RumResourceAttributesProvider
@@ -16,9 +16,11 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,7 +56,7 @@ internal class DatadogInterceptorBuilderTest {
     private lateinit var fakeTracedHosts: List<String>
 
     @Mock
-    lateinit var mockSampler: Sampler
+    lateinit var mockSampler: Sampler<Span>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -81,7 +83,7 @@ internal class DatadogInterceptorBuilderTest {
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -106,7 +108,7 @@ internal class DatadogInterceptorBuilderTest {
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -126,7 +128,7 @@ internal class DatadogInterceptorBuilderTest {
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -146,7 +148,7 @@ internal class DatadogInterceptorBuilderTest {
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -166,7 +168,7 @@ internal class DatadogInterceptorBuilderTest {
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isSameAs(mockTracedRequestListener)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -184,7 +186,30 @@ internal class DatadogInterceptorBuilderTest {
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.rumResourceAttributesProvider).isSameAs(mockRumResourceAttributesProvider)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
+        assertThat(interceptor.localTracerFactory).isNotNull()
+    }
+
+    @Test
+    fun `M set traceSampler W build { setTraceSampleRate }`(
+        @FloatForgery(0f, 100f) fakeSampleRate: Float
+    ) {
+        // When
+        val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType)
+            .setTraceSampleRate(fakeSampleRate)
+            .build()
+
+        // Then
+        assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.sdkInstanceName).isNull()
+        assertThat(
+            interceptor.rumResourceAttributesProvider
+        ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
+        assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }

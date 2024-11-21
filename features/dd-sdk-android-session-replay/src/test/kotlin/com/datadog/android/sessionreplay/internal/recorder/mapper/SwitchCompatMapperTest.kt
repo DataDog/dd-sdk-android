@@ -87,7 +87,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         } else {
             assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
 
-            verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframe(
+            verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframeByDrawable(
                 view = eq(mockSwitch),
                 imagePrivacy = eq(ImagePrivacy.MASK_NONE),
                 currentWireframeIndex = ArgumentMatchers.anyInt(),
@@ -186,7 +186,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
         // Then
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes)
-        verify(fakeMappingContext.imageWireframeHelper, never()).createImageWireframe(
+        verify(fakeMappingContext.imageWireframeHelper, never()).createImageWireframeByDrawable(
             view = any(),
             imagePrivacy = any(),
             currentWireframeIndex = any(),

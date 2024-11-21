@@ -98,7 +98,7 @@ internal class SdkInternalLogger(
         additionalProperties: Map<String, Any?>,
         samplingRate: Float
     ) {
-        if (!RateBasedSampler(samplingRate).sample()) return
+        if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
@@ -113,7 +113,7 @@ internal class SdkInternalLogger(
         samplingRate: Float,
         operationName: String
     ): PerformanceMetric? {
-        if (!RateBasedSampler(samplingRate).sample()) return null
+        if (!sample(samplingRate)) return null
 
         return when (metric) {
             TelemetryMetricType.MethodCalled -> {
@@ -130,7 +130,7 @@ internal class SdkInternalLogger(
         apiUsageEvent: InternalTelemetryEvent.ApiUsage,
         samplingRate: Float
     ) {
-        if (!RateBasedSampler(samplingRate).sample()) return
+        if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         rumFeature.sendEvent(apiUsageEvent)
     }
@@ -138,6 +138,10 @@ internal class SdkInternalLogger(
     // endregion
 
     // region Internal
+
+    fun sample(samplingRate: Float): Boolean {
+        return RateBasedSampler<Unit>(samplingRate).sample(Unit)
+    }
 
     private fun logToUser(
         level: InternalLogger.Level,
