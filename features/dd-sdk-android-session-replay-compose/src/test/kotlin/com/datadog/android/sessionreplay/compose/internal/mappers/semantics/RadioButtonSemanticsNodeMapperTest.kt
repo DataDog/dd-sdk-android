@@ -38,7 +38,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class RadioButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest() {
+internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedRadioButtonSemanticsNodeMapper: RadioButtonSemanticsNodeMapper
 
