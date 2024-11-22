@@ -106,12 +106,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network error (${status.throwable!!.message}); we will retry later." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of a network error (${throwable.javaClass.name}: ${throwable.message}); " +
+                "we will retry later. This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -130,12 +131,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a network error (${status.throwable!!.message}); we will retry later." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of a network error (${throwable.javaClass.name}: ${throwable.message}); " +
+                "we will retry later. This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -153,12 +155,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a DNS error (${status.throwable!!.message}); we will retry later." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of a DNS error (${throwable.javaClass.name}: ${throwable.message}); " +
+                "we will retry later. This request was attempted $fakeRequestAttempts time(s)."
         )
         verifyNoMoreInteractions(mockLogger)
     }
@@ -177,12 +180,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of a DNS error (${status.throwable!!.message}); we will retry later." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of a DNS error (${throwable.javaClass.name}: ${throwable.message}); " +
+                "we will retry later. This request was attempted $fakeRequestAttempts time(s)."
 
         )
         verifyNoMoreInteractions(mockLogger)
@@ -488,12 +492,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error (${status.throwable!!.message}); we will retry later." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of an unknown error (${throwable.javaClass.name}: ${throwable.message}); " +
+                "we will retry later. This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -511,12 +516,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an unknown error (${status.throwable!!.message}); we will retry later." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of an unknown error (${throwable.javaClass.name}: ${throwable.message}); " +
+                "we will retry later. This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -533,13 +539,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an error when creating the request (${status.throwable!!.message});" +
-                " the batch was dropped." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of an error when creating the request (${throwable.javaClass.name}: ${throwable.message}); " +
+                "the batch was dropped. This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
@@ -557,13 +563,13 @@ internal class UploadStatusTest {
         )
 
         // Then
+        val throwable = status.throwable!!
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER),
             "Batch $fakeRequestId [$fakeByteSize bytes] ($fakeContext) failed " +
-                "because of an error when creating the request (${status.throwable!!.message});" +
-                " the batch was dropped." +
-                " This request was attempted $fakeRequestAttempts time(s)."
+                "because of an error when creating the request (${throwable.javaClass.name}: ${throwable.message}); " +
+                "the batch was dropped. This request was attempted $fakeRequestAttempts time(s)."
         )
     }
 
