@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -38,12 +39,22 @@ internal fun InputSample() {
 
         var input2 by remember { mutableStateOf("Input of Outlined Text Field") }
         OutlinedTextField(
+            modifier = Modifier.padding(top = 8.dp),
             value = input2,
             textStyle = TextStyle(
                 color = Color.Red
             ),
             onValueChange = { input2 = it },
             label = { Text("OutlinedTextField") }
+        )
+
+        var input3 by remember { mutableStateOf("Input of Password Field") }
+        TextField(
+            modifier = Modifier.padding(top = 8.dp),
+            value = input3,
+            onValueChange = { input3 = it },
+            label = { Text("Passowrd") },
+            visualTransformation = PasswordVisualTransformation()
         )
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.withinComposeBenchmarkSpan
@@ -47,7 +46,6 @@ internal class RootSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         density: Float,
         mappingContext: MappingContext,
-        privacy: SessionReplayPrivacy,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
@@ -58,7 +56,8 @@ internal class RootSemanticsNodeMapper(
                 parentUiContext = UiContext(
                     parentContentColor = null,
                     density = density,
-                    privacy = privacy,
+                    imagePrivacy = mappingContext.imagePrivacy,
+                    textAndInputPrivacy = mappingContext.textAndInputPrivacy,
                     imageWireframeHelper = mappingContext.imageWireframeHelper
                 ),
                 asyncJobStatusCallback = asyncJobStatusCallback

@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.GenericFontFamily
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -140,14 +141,19 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
                 cornerRadius = fakeCornerRadius
             )
         )
-
+        val expectedText =
+            if (fakeUiContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
+                fakeEditText
+            } else {
+                "***"
+            }
         val expectedTextWireframe = MobileSegment.Wireframe.TextWireframe(
             id = (fakeSemanticsId.toLong() shl 32) + 1,
             x = (fakeBounds.left / fakeDensity).toLong(),
             y = (fakeBounds.top / fakeDensity).toLong(),
             width = (fakeBounds.size.width / fakeDensity).toLong(),
             height = (fakeBounds.size.height / fakeDensity).toLong(),
-            text = fakeEditText,
+            text = expectedText,
             textStyle = MobileSegment.TextStyle(
                 family = (fakeTextLayoutInfo.fontFamily as? GenericFontFamily)?.name
                     ?: DEFAULT_FONT_FAMILY,

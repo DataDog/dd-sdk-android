@@ -55,7 +55,6 @@ internal class DefaultImageWireframeHelper(
             return createContentPlaceholderWireframe(
                 id = id,
                 globalBounds = globalBounds,
-                density = density,
                 label = MASK_ALL_CONTENT_LABEL
             )
         }
@@ -65,7 +64,6 @@ internal class DefaultImageWireframeHelper(
             return createContentPlaceholderWireframe(
                 id = id,
                 globalBounds = globalBounds,
-                density = density,
                 label = MASK_CONTEXTUAL_CONTENT_LABEL
             )
         }
@@ -309,15 +307,14 @@ internal class DefaultImageWireframeHelper(
     private fun createContentPlaceholderWireframe(
         id: Long,
         globalBounds: GlobalBounds,
-        density: Float,
         label: String
     ): MobileSegment.Wireframe.PlaceholderWireframe {
         return MobileSegment.Wireframe.PlaceholderWireframe(
             id,
-            globalBounds.x.densityNormalized(density),
-            globalBounds.y.densityNormalized(density),
-            globalBounds.width.densityNormalized(density),
-            globalBounds.height.densityNormalized(density),
+            globalBounds.x,
+            globalBounds.y,
+            globalBounds.width,
+            globalBounds.height,
             label = label
         )
     }

@@ -12,9 +12,11 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -103,14 +105,18 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
             fakeUiContext,
             mockAsyncJobStatusCallback
         )
-
+        val expectedText = if (fakeUiContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL) {
+            StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
+        } else {
+            fakeTextLayoutInfo.text
+        }
         val expected = MobileSegment.Wireframe.TextWireframe(
             id = fakeSemanticsId.toLong(),
             x = (fakeBounds.left / fakeDensity).toLong(),
             y = (fakeBounds.top / fakeDensity).toLong(),
             width = (fakeBounds.size.width / fakeDensity).toLong(),
             height = (fakeBounds.size.height / fakeDensity).toLong(),
-            text = fakeTextLayoutInfo.text,
+            text = expectedText,
             textStyle = testedTextSemanticsNodeMapper.stubResolveTextStyle(
                 fakeUiContext,
                 fakeTextLayoutInfo

@@ -7,13 +7,15 @@
 package com.datadog.android.sessionreplay.compose.internal.data
 
 import androidx.compose.ui.unit.Density
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 
 internal data class UiContext(
     val parentContentColor: String?,
     val density: Float,
-    val privacy: SessionReplayPrivacy,
+    val textAndInputPrivacy: TextAndInputPrivacy,
+    val imagePrivacy: ImagePrivacy,
     val isInUserInputLayout: Boolean = false,
     val imageWireframeHelper: ImageWireframeHelper
 ) {
