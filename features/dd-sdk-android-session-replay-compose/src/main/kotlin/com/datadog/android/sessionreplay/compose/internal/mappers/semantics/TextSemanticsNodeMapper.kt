@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.transformCapturedText
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -36,7 +37,9 @@ internal open class TextSemanticsNodeMapper(
         semanticsNode: SemanticsNode
     ): MobileSegment.Wireframe.TextWireframe? {
         val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode)
-        val capturedText = textLayoutInfo?.text
+        val capturedText = textLayoutInfo?.text?.let {
+            transformCapturedText(it, parentContext.textAndInputPrivacy)
+        }
         val bounds = resolveBounds(semanticsNode)
         return capturedText?.let { text ->
             MobileSegment.Wireframe.TextWireframe(

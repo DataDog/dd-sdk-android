@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.semantics.SemanticsNode
-import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
@@ -45,8 +44,7 @@ internal class ImageSemanticsNodeMapper(
                 bitmap = bitmapInfo.bitmap,
                 density = parentContext.density,
                 isContextualImage = bitmapInfo.isContextualImage,
-                // TODO RUM-6192: Apply FGM here
-                imagePrivacy = ImagePrivacy.MASK_NONE,
+                imagePrivacy = parentContext.imagePrivacy,
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 clipping = null,
                 shapeStyle = null,
