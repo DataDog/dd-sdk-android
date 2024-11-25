@@ -93,6 +93,12 @@ open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper<T: a
 interface com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper<T: android.view.ViewGroup> : WireframeMapper<T>
 interface com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T: android.view.View>
   fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+class com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
+  constructor(com.datadog.android.api.InternalLogger = InternalLogger.UNBOUND)
+  fun createBitmap(Int, Int, android.graphics.Bitmap.Config, android.util.DisplayMetrics? = null): android.graphics.Bitmap?
+class com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
+  constructor(com.datadog.android.api.InternalLogger)
+  fun createCanvas(android.graphics.Bitmap): android.graphics.Canvas?
 open class com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper
   constructor(List<DrawableToColorMapper> = emptyList())
   override fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
