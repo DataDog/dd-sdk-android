@@ -86,31 +86,16 @@ internal fun Field.getSafe(target: Any?): Any? {
     return try {
         get(target)
     } catch (e: IllegalAccessException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name on $target through reflection, field is not accessible" },
-            e
-        )
+        logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_FIELD_NO_ACCESSIBLE, e)
         null
     } catch (e: IllegalArgumentException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name on $target through reflection, target has incompatible type" },
-            e
-        )
+        logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_INCOMPATIBLE_TYPE, e)
         null
     } catch (e: NullPointerException) {
         logNullPointerException(name, LOG_TYPE_FIELD, e)
         null
     } catch (e: ExceptionInInitializerError) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name on $target through reflection, initialization error" },
-            e
-        )
+        logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_INITIALIZATION_ERROR, e)
         null
     }
 }
@@ -119,20 +104,10 @@ internal fun getClassSafe(className: String): Class<*>? {
     return try {
         Class.forName(className)
     } catch (e: LinkageError) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get class $className through reflection" },
-            e
-        )
+        logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_LINKAGE_ERROR, e)
         null
     } catch (e: ExceptionInInitializerError) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get class $className through reflection, error in Class initialization" },
-            e
-        )
+        logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_INITIALIZATION_ERROR, e)
         null
     } catch (e: ClassNotFoundException) {
         logNoSuchException(className, LOG_TYPE_CLASS, e)
@@ -173,39 +148,38 @@ internal fun Class<*>.getDeclaredMethodSafe(methodName: String): Method? {
 }
 
 private fun logSecurityException(name: String, type: String, e: SecurityException) {
-    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.MAINTAINER,
-        {
-            "Unable to get $type $name through reflection"
-        },
-        e
-    )
+    logReflectionException(name = name, type = type, reason = LOG_REASON_SECURITY, e = e)
 }
 
 private fun logNullPointerException(name: String, type: String, e: NullPointerException) {
-    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.MAINTAINER,
-        {
-            "Unable to get $type $name through reflection, name is null"
-        },
-        e
-    )
+    logReflectionException(name = name, type = type, reason = "$name is null", e = e)
 }
 
 private fun logNoSuchException(name: String, type: String, e: ReflectiveOperationException) {
+    logReflectionException(name = name, type = type, reason = LOG_REASON_DEFAULT, e = e)
+}
+
+private fun logReflectionException(name: String, type: String, reason: String, e: Throwable) {
     (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.MAINTAINER,
-        {
-            "Unable to get $type $name through reflection, " +
-                "either because of obfuscation or dependency version mismatch"
-        },
-        e
+        level = InternalLogger.Level.ERROR,
+        targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+        messageBuilder = { "Unable to get $type [$name] through reflection: $reason" },
+        throwable = e,
+        onlyOnce = true,
+        additionalProperties = mapOf(
+            "reflection.type" to type,
+            "reflection.name" to name
+        )
     )
 }
 
-private const val LOG_TYPE_METHOD = "method"
-private const val LOG_TYPE_FIELD = "field"
-private const val LOG_TYPE_CLASS = "field"
+private const val LOG_TYPE_METHOD = "Method"
+private const val LOG_TYPE_FIELD = "Field"
+private const val LOG_TYPE_CLASS = "Class"
+private const val LOG_REASON_FIELD_NO_ACCESSIBLE = "Field is not accessible"
+private const val LOG_REASON_INCOMPATIBLE_TYPE = "Target has incompatible type"
+private const val LOG_REASON_DEFAULT =
+    "Either because of obfuscation or dependency version mismatch"
+private const val LOG_REASON_SECURITY = "Security exception"
+private const val LOG_REASON_LINKAGE_ERROR = "Linkage error"
+private const val LOG_REASON_INITIALIZATION_ERROR = "Error in initialization"
