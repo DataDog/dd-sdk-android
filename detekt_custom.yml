@@ -601,6 +601,9 @@ datadog:
       # endregion
       # region Java Collections
       - "java.util.ArrayList.forEach(kotlin.Function1)"
+      - "java.util.HashSet.add(kotlin.String)"
+      - "java.util.HashSet.clear()"
+      - "java.util.HashSet.remove(kotlin.String)"
       - "java.util.LinkedList.add(android.view.View)"
       - "java.util.LinkedList.add(com.datadog.android.privacy.TrackingConsentProviderCallback)"
       - "java.util.LinkedList.add(com.datadog.android.sessionreplay.internal.recorder.Node)"

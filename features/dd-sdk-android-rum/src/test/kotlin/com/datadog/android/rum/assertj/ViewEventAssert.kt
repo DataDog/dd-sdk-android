@@ -254,6 +254,18 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasNetworkSettledTime(
+        expected: Long?
+    ): ViewEventAssert {
+        assertThat(actual.view.networkSettledTime)
+            .overridingErrorMessage(
+                "Expected event to have networkSettledTime $expected" +
+                    " but was ${actual.view.networkSettledTime}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasLoadingType(
         expected: ViewEvent.LoadingType?
     ): ViewEventAssert {

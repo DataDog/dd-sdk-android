@@ -17,7 +17,6 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -35,6 +34,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -194,6 +194,11 @@ internal class RumViewScopeTest {
     @Mock
     private lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
 
+    @Mock
+    private lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
+
+    private var fakeNetworkSettledMetricValue: Long? = null
+
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
@@ -203,6 +208,8 @@ internal class RumViewScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeNetworkSettledMetricValue = forge.aNullable { aPositiveLong() }
+        whenever(mockNetworkSettledMetricResolver.resolveMetric()) doReturn fakeNetworkSettledMetricValue
         val isValidSource = forge.aBool()
 
         val fakeSource = if (isValidSource) {
@@ -286,7 +293,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockFeaturesContextResolver,
             trackFrustrations = true,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         mockSessionReplayContext(testedScope)
     }
@@ -388,7 +396,8 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             type = fakeViewEventType,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // Then
@@ -587,7 +596,8 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             type = expectedViewType,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -773,7 +783,8 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             type = viewType,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -828,7 +839,8 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             type = viewType,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -1408,7 +1420,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         mockSessionReplayContext(testedScope)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
@@ -1502,7 +1515,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         mockSessionReplayContext(testedScope)
 
@@ -1593,7 +1607,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -1690,7 +1705,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -5154,6 +5170,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(2)
                     hasErrorCount(1)
@@ -5442,6 +5459,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(2)
                     hasErrorCount(1)
@@ -5586,6 +5604,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(2)
                     hasErrorCount(1)
@@ -5877,6 +5896,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(2)
                     hasErrorCount(1)
@@ -6765,6 +6785,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -6841,6 +6862,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -6890,6 +6912,7 @@ internal class RumViewScopeTest {
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasLoadingType(null)
                     hasVersion(3)
                     hasErrorCount(0)
@@ -7012,6 +7035,7 @@ internal class RumViewScopeTest {
                     hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasLoadingTime(expectedViewLoadingTime)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
@@ -7100,6 +7124,7 @@ internal class RumViewScopeTest {
                     hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasLoadingTime(expectedViewLoadingTime)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
@@ -7190,6 +7215,7 @@ internal class RumViewScopeTest {
                     hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasLoadingTime(expectedViewLoadingTime)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
@@ -7262,6 +7288,7 @@ internal class RumViewScopeTest {
                     hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasLoadingTime(expectedViewLoadingTime)
+                    hasNetworkSettledTime(fakeNetworkSettledMetricValue)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
@@ -7313,6 +7340,28 @@ internal class RumViewScopeTest {
             15f
         )
         verifyNoInteractions(mockWriter)
+    }
+
+    // endregion
+
+    // region NetworkSettledTime
+
+    @Test
+    fun `M notify the networkSettledMetric W view was stopped`() {
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        verify(mockNetworkSettledMetricResolver).viewWasStopped()
+    }
+
+    @Test
+    fun `M notify the networkSettledMetric W view was created`() {
+        // Then
+        verify(mockNetworkSettledMetricResolver).viewWasCreated(fakeEventTime.nanoTime)
     }
 
     // endregion
