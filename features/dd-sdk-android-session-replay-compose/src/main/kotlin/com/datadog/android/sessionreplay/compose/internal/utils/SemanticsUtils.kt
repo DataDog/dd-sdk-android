@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.view.View
-import androidx.compose.animation.core.AnimationState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -21,7 +20,6 @@ import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
@@ -108,8 +106,8 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun resolveCheckPath(semanticsNode: SemanticsNode): Path? =
         resolveOnDrawInstance(semanticsNode)?.let { onDraw ->
-            ComposeReflection.CheckCacheField?.getSafe(onDraw)?.let { checkCache ->
-                ComposeReflection.CheckPathField?.getSafe(checkCache) as? Path
+            reflectionUtils.getCheckCache(onDraw)?.let { checkCache ->
+                reflectionUtils.getCheckPath(checkCache)
             }
         }
 
@@ -241,32 +239,33 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
     private fun resolveOnDrawInstance(semanticsNode: SemanticsNode): Any? {
         val drawBehindElement =
             semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
-                ComposeReflection.DrawBehindElementClass?.isInstance(modifierInfo.modifier) == true
+                reflectionUtils.isDrawBehindElementClass(modifierInfo.modifier)
             }?.modifier
 
         return drawBehindElement?.let {
-            ComposeReflection.OnDrawField?.getSafe(drawBehindElement)
+            reflectionUtils.getOnDraw(it)
         }
     }
 
     private fun resolveReflectedProperty(semanticsNode: SemanticsNode, fieldType: CheckmarkFieldType): Long? {
         val onDrawInstance = resolveOnDrawInstance(semanticsNode)
 
-        val checkmarkColor: AnimationState<*, *>? = onDrawInstance?.let {
+        val color = onDrawInstance?.let {
             when (fieldType) {
                 CheckmarkFieldType.FILL_COLOR -> {
-                    ComposeReflection.BoxColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+                    reflectionUtils.getBoxColor(onDrawInstance)
                 }
                 CheckmarkFieldType.CHECKMARK_COLOR -> {
-                    ComposeReflection.CheckColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+                    reflectionUtils.getCheckColor(onDrawInstance)
                 }
                 CheckmarkFieldType.BORDER_COLOR -> {
-                    ComposeReflection.BorderColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+                    reflectionUtils.getBorderColor(onDrawInstance)
                 }
             }
         }
 
-        val result = (checkmarkColor?.value as? androidx.compose.ui.graphics.Color)?.value
+        val result = (color?.value as? Color)
+            ?.value
 
         return result?.toLong()
     }
