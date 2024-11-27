@@ -119,6 +119,7 @@ internal class RumSessionScopeTest {
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
         whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
+        whenever(mockSdkCore.internalLogger) doReturn mock()
 
         initializeTestedScope()
     }

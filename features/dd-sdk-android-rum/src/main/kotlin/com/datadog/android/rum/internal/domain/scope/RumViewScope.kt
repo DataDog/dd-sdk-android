@@ -25,6 +25,8 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
+import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
@@ -59,6 +61,7 @@ internal open class RumViewScope(
     internal val type: RumViewType = RumViewType.FOREGROUND,
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
+    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver =
         NetworkSettledMetricResolver(internalLogger = sdkCore.internalLogger)
 ) : RumScope {
@@ -162,6 +165,7 @@ internal open class RumViewScope(
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
         }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
+        interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
     }
 
     // region RumScope
@@ -377,6 +381,14 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
 
         if (stopped) return
+
+        interactionToNextViewMetricResolver.onActionSent(
+            InternalInteractionContext(
+                viewId,
+                event.type,
+                event.eventTime.nanoTime
+            )
+        )
 
         if (activeActionScope != null) {
             if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
@@ -818,6 +830,7 @@ internal open class RumViewScope(
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>, eventType: EventType = EventType.DEFAULT) {
         val viewComplete = isViewComplete()
         val timeToSettled = networkSettledMetricResolver.resolveMetric()
+        val interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -916,6 +929,7 @@ internal open class RumViewScope(
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
                     networkSettledTime = timeToSettled,
+                    interactionToNextViewTime = interactionToNextViewTime,
                     loadingTime = viewLoadingTime
                 ),
                 usr = if (user.hasUserData()) {
@@ -1335,7 +1349,8 @@ internal open class RumViewScope(
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
             trackFrustrations: Boolean,
-            sampleRate: Float
+            sampleRate: Float,
+            interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -1350,7 +1365,8 @@ internal open class RumViewScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 trackFrustrations = trackFrustrations,
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
             )
         }
 

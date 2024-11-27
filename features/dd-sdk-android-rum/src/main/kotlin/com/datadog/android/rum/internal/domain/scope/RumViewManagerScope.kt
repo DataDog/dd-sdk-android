@@ -20,6 +20,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.util.Locale
@@ -38,7 +39,9 @@ internal class RumViewManagerScope(
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
     internal var applicationDisplayed: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
+        InteractionToNextViewMetricResolver(internalLogger = sdkCore.internalLogger)
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -198,7 +201,8 @@ internal class RumViewManagerScope(
             memoryVitalMonitor,
             frameRateVitalMonitor,
             trackFrustrations,
-            sampleRate
+            sampleRate,
+            interactionToNextViewMetricResolver
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -260,7 +264,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.BACKGROUND,
             trackFrustrations = trackFrustrations,
-            sampleRate = sampleRate
+            sampleRate = sampleRate,
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
         )
     }
 
@@ -283,7 +288,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
             trackFrustrations = trackFrustrations,
-            sampleRate = sampleRate
+            sampleRate = sampleRate,
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
         )
     }
 
