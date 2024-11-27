@@ -26,10 +26,16 @@ internal class ContainerSemanticsNodeMapper(
         val backgroundColor = semanticsUtils.resolveBackgroundColor(semanticsNode)?.let {
             convertColor(it)
         }
+        val textAndInputPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
+            ?: parentContext.textAndInputPrivacy
+        val imagePrivacy = semanticsUtils.getImagePrivacyOverride(semanticsNode)
+            ?: parentContext.imagePrivacy
         return SemanticsWireframe(
             wireframes = wireframes,
             uiContext = parentContext.copy(
-                parentContentColor = backgroundColor ?: parentContext.parentContentColor
+                parentContentColor = backgroundColor ?: parentContext.parentContentColor,
+                imagePrivacy = imagePrivacy,
+                textAndInputPrivacy = textAndInputPrivacy
             )
         )
     }

@@ -10,3 +10,10 @@ public final class com/datadog/android/sessionreplay/compose/ComposeExtensionSup
 public abstract interface annotation class com/datadog/android/sessionreplay/compose/ExperimentalSessionReplayApi : java/lang/annotation/Annotation {
 }
 
+public final class com/datadog/android/sessionreplay/compose/internal/ModifierExtKt {
+	public static final fun sessionReplayHide (Landroidx/compose/ui/Modifier;Z)Landroidx/compose/ui/Modifier;
+	public static final fun sessionReplayImagePrivacy (Landroidx/compose/ui/Modifier;Lcom/datadog/android/sessionreplay/ImagePrivacy;)Landroidx/compose/ui/Modifier;
+	public static final fun sessionReplayTextAndInputPrivacy (Landroidx/compose/ui/Modifier;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)Landroidx/compose/ui/Modifier;
+	public static final fun sessionReplayTouchPrivacy (Landroidx/compose/ui/Modifier;Lcom/datadog/android/sessionreplay/TouchPrivacy;)Landroidx/compose/ui/Modifier;
+}
+

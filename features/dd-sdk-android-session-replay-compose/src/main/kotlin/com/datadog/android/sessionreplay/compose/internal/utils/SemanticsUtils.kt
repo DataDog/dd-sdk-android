@@ -18,6 +18,12 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.compose.ImagePrivacySemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -208,5 +214,17 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
             fontSize = layoutInput.style.fontSize.value.toLong(),
             fontFamily = layoutInput.style.fontFamily
         )
+    }
+
+    internal fun getImagePrivacyOverride(semanticsNode: SemanticsNode): ImagePrivacy? {
+        return semanticsNode.config.getOrNull(ImagePrivacySemanticsPropertyKey)
+    }
+
+    internal fun getTextAndInputPrivacyOverride(semanticsNode: SemanticsNode): TextAndInputPrivacy? {
+        return semanticsNode.config.getOrNull(TextInputSemanticsPropertyKey)
+    }
+
+    internal fun getTouchPrivacyOverride(semanticsNode: SemanticsNode): TouchPrivacy? {
+        return semanticsNode.config.getOrNull(TouchSemanticsPropertyKey)
     }
 }
