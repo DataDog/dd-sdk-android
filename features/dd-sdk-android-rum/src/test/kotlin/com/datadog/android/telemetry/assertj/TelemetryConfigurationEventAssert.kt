@@ -280,6 +280,16 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.isMainProcess $expected " +
+                    "but was ${actual.telemetry.configuration.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     // endregion
 
     // region CrossPlatform Configuration
