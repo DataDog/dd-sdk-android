@@ -10,10 +10,12 @@ import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.lint.InternalApi
 
 /**
  * Wraps the Bitmap class to catch potential crashes.
  */
+@InternalApi
 class BitmapWrapper(
     private val logger: InternalLogger = InternalLogger.UNBOUND
 ) {

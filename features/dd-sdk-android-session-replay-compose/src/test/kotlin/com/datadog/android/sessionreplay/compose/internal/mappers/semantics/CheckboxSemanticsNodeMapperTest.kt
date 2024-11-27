@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.BOX_BORDER_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.CHECKBOX_CORNER_RADIUS
@@ -42,6 +43,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -106,6 +108,9 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
 
         whenever(mockUiContext.density)
             .thenReturn(fakeDensity)
+
+        whenever(mockUiContext.textAndInputPrivacy)
+            .thenReturn(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
 
         whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
             fakeBounds,
@@ -284,6 +289,7 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             parentContext = mockUiContext,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
+        assertThat(semanticsWireframe.wireframes).hasSize(2)
 
         val foregroundWireframe = semanticsWireframe.wireframes[1] as? MobileSegment.Wireframe.ShapeWireframe
         val expectedShapeStyle = MobileSegment.ShapeStyle(
@@ -471,5 +477,38 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         // Then
         assertThat(wireframes.wireframes).hasSize(1)
         assertThat(wireframes.wireframes[0]).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
+    }
+
+    @Test
+    fun `M show unchecked wireframe W map() { masked }`() {
+        // Given
+        whenever(mockUiContext.textAndInputPrivacy)
+            .thenReturn(TextAndInputPrivacy.MASK_ALL_INPUTS)
+
+        // When
+        val wireframes = testedMapper.map(
+            semanticsNode = mockSemanticsNode,
+            parentContext = mockUiContext,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+        assertThat(wireframes.wireframes).hasSize(1)
+        val actualWireframe = wireframes.wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
+        assertThat(actualWireframe).isNotNull
+
+        // Then
+        verify(mockUiContext.imageWireframeHelper, never()).createImageWireframeByBitmap(
+            id = any(),
+            globalBounds = any(),
+            bitmap = any(),
+            density = any(),
+            isContextualImage = any(),
+            imagePrivacy = any(),
+            asyncJobStatusCallback = any(),
+            clipping = anyOrNull(),
+            shapeStyle = anyOrNull(),
+            border = anyOrNull()
+        )
+        assertThat(actualWireframe?.shapeStyle?.backgroundColor).isEqualTo(DEFAULT_COLOR_WHITE)
+        assertThat(actualWireframe?.border?.color).isEqualTo(DEFAULT_COLOR_BLACK)
     }
 }
