@@ -19,15 +19,16 @@ import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.Chec
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import java.util.Locale
+import android.graphics.Path as AndroidPath
 
 internal class PathUtils(
     private val logger: InternalLogger = InternalLogger.UNBOUND,
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(logger),
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper()
 ) {
-    @Suppress("UnsafeThirdPartyFunctionCall") // handling IllegalArgumentException
     internal fun parseColorSafe(color: String): Int? {
         return try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // handling IllegalArgumentException
             Color.parseColor(color)
         } catch (e: IllegalArgumentException) {
             logger.log(
@@ -56,9 +57,9 @@ internal class PathUtils(
         return "#$alphaValue$rgbColor"
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // handling UnsupportedOperationException
-    internal fun asAndroidPathSafe(path: Path): android.graphics.Path? {
+    internal fun asAndroidPathSafe(path: Path): AndroidPath? {
         return try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // handling UnsupportedOperationException
             path.asAndroidPath()
         } catch (e: UnsupportedOperationException) {
             logger.log(
@@ -144,28 +145,18 @@ internal class PathUtils(
         checkmarkColor: Int
     ): Bitmap? {
         val canvas = canvasWrapper.createCanvas(bitmap) ?: return null
-        drawCanvasBackground(canvas, fillColor)
-        drawCanvasForeground(canvas, scaledPath, checkmarkColor)
+
+        // draw the background
+        canvas.drawColor(fillColor)
+
+        // draw the checkmark
+        drawPathToBitmap(checkmarkColor, scaledPath, canvas)
+
         return bitmap
     }
 
-    private fun drawCanvasBackground(
-        canvas: Canvas,
-        fillColor: Int
-    ) {
-        canvas.drawColor(fillColor)
-    }
-
-    private fun drawCanvasForeground(
-        canvas: Canvas,
-        path: Path,
-        checkmarkColor: Int
-    ) {
-        drawPathToBitmap(checkmarkColor, path, canvas)
-    }
-
     @Suppress("UnsafeThirdPartyFunctionCall") // handling IllegalArgumentException
-    private fun drawPathSafe(canvas: Canvas?, path: android.graphics.Path, paint: Paint) {
+    private fun drawPathSafe(canvas: Canvas?, path: AndroidPath, paint: Paint) {
         try {
             canvas?.drawPath(path, paint)
         } catch (e: IllegalArgumentException) {
