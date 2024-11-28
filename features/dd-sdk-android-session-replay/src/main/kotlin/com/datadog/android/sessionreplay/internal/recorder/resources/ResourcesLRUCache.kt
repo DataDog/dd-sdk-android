@@ -12,7 +12,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
 import android.graphics.drawable.LayerDrawable
-import androidx.annotation.VisibleForTesting
 import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
@@ -45,9 +44,7 @@ internal class ResourcesLRUCache(
     }
 
     @Synchronized
-    override fun put(element: Drawable, value: ByteArray) {
-        val key = generateKey(element)
-
+    override fun put(key: String, value: ByteArray) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
         invocationUtils.safeCallWithErrorLogging(
             call = { cache.put(key, value) },
@@ -56,11 +53,11 @@ internal class ResourcesLRUCache(
     }
 
     @Synchronized
-    override fun get(element: Drawable): ByteArray? =
+    override fun get(key: String): ByteArray? =
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
         invocationUtils.safeCallWithErrorLogging(
             call = {
-                cache.get(generateKey(element))
+                cache.get(key)
             },
             failureMessage = FAILURE_MSG_GET_CACHE
         )
@@ -76,9 +73,8 @@ internal class ResourcesLRUCache(
         )
     }
 
-    @VisibleForTesting
-    internal fun generateKey(drawable: Drawable): String =
-        generatePrefix(drawable) + System.identityHashCode(drawable)
+    internal fun generateKeyFromDrawable(element: Drawable): String =
+        generatePrefix(element) + System.identityHashCode(element)
 
     private fun generatePrefix(drawable: Drawable): String {
         return when (drawable) {

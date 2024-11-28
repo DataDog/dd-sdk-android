@@ -233,7 +233,8 @@ internal class ResourceResolver(
             bitmapCachesManager.putInBitmapPool(bitmap)
         }
 
-        bitmapCachesManager.putInResourceCache(drawable, resourceId)
+        val key = bitmapCachesManager.generateResourceKeyFromDrawable(drawable) ?: return
+        bitmapCachesManager.putInResourceCache(key, resourceId)
     }
 
     @WorkerThread
@@ -321,7 +322,10 @@ internal class ResourceResolver(
 
     private fun tryToGetResourceFromCache(
         drawable: Drawable
-    ): String? = bitmapCachesManager.getFromResourceCache(drawable)
+    ): String? {
+        val key = bitmapCachesManager.generateResourceKeyFromDrawable(drawable) ?: return null
+        return bitmapCachesManager.getFromResourceCache(key)
+    }
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&

@@ -47,6 +47,9 @@ internal class ResourcesLRUCacheTest {
     @Mock
     lateinit var mockInvocationUtils: InvocationUtils
 
+    @StringForgery
+    lateinit var fakeResourceKey: String
+
     val argumentCaptor = argumentCaptor<String>()
 
     @BeforeEach
@@ -61,7 +64,7 @@ internal class ResourcesLRUCacheTest {
     @Test
     fun `M return null W get() { item not in cache }`() {
         // When
-        val cacheItem = testedCache.get(mockDrawable)
+        val cacheItem = testedCache.get(fakeResourceKey)
 
         // Then
         assertThat(cacheItem).isNull()
@@ -73,57 +76,47 @@ internal class ResourcesLRUCacheTest {
     ) {
         // Given
         val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
-        testedCache.put(mockDrawable, fakeResourceIdByteArray)
+        testedCache.put(fakeResourceKey, fakeResourceIdByteArray)
 
         // When
-        val cacheItem = testedCache.get(mockDrawable)
+        val cacheItem = testedCache.get(fakeResourceKey)
 
         // Then
         assertThat(cacheItem).isEqualTo(fakeResourceIdByteArray)
     }
 
     @Test
-    fun `M not generate prefix W put() { animationDrawable }`(
-        @StringForgery fakeResourceId: String
-    ) {
+    fun `M not generate prefix W put() { animationDrawable }`() {
         // Given
-        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         val mockAnimationDrawable: AnimationDrawable = mock()
 
         // When
-        testedCache.put(mockAnimationDrawable, fakeResourceIdByteArray)
+        val key = testedCache.generateKeyFromDrawable(mockAnimationDrawable)
 
         // Then
-        val key = testedCache.generateKey(mockAnimationDrawable)
         assertThat(key).doesNotContain("-")
     }
 
     @Test
     fun `M generate key prefix with state W put() { drawableContainer }`(
-        @StringForgery fakeResourceId: String,
         forge: Forge
     ) {
         // Given
-        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         val mockStatelistDrawable: StateListDrawable = mock()
         val fakeStateArray = intArrayOf(forge.aPositiveInt())
         val expectedPrefix = fakeStateArray[0].toString() + "-"
         whenever(mockStatelistDrawable.state).thenReturn(fakeStateArray)
 
         // When
-        testedCache.put(mockStatelistDrawable, fakeResourceIdByteArray)
+        val key = testedCache.generateKeyFromDrawable(mockStatelistDrawable)
 
         // Then
-        val key = testedCache.generateKey(mockStatelistDrawable)
         assertThat(key).startsWith(expectedPrefix)
     }
 
     @Test
-    fun `M generate key prefix with layer hash W put() { layerDrawable }`(
-        @StringForgery fakeResourceId: String
-    ) {
+    fun `M generate key prefix with layer hash W put() { layerDrawable }`() {
         // Given
-        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         val mockRippleDrawable: RippleDrawable = mock()
         val mockBackgroundLayer: Drawable = mock()
         val mockForegroundLayer: Drawable = mock()
@@ -134,14 +127,12 @@ internal class ResourcesLRUCacheTest {
             .thenReturn(mockForegroundLayer)
         whenever(mockRippleDrawable.numberOfLayers).thenReturn(2)
 
-        testedCache.put(mockRippleDrawable, fakeResourceIdByteArray)
-
         val expectedPrefix = System.identityHashCode(mockBackgroundLayer).toString() + "-" +
             System.identityHashCode(mockForegroundLayer).toString() + "-"
         val expectedHash = System.identityHashCode(mockRippleDrawable).toString()
 
         // When
-        val key = testedCache.generateKey(mockRippleDrawable)
+        val key = testedCache.generateKeyFromDrawable(mockRippleDrawable)
 
         // Then
         assertThat(key).isEqualTo(expectedPrefix + expectedHash)
@@ -149,21 +140,18 @@ internal class ResourcesLRUCacheTest {
 
     @Test
     fun `M not generate key prefix W put() { layerDrawable with only one layer }`(
-        @StringForgery fakeResourceId: String,
         @Mock mockRippleDrawable: RippleDrawable,
         @Mock mockBackgroundLayer: Drawable
     ) {
         // Given
-        val fakeResourceIdByteArray = fakeResourceId.toByteArray(Charsets.UTF_8)
         whenever(mockRippleDrawable.numberOfLayers).thenReturn(1)
         whenever(mockRippleDrawable.safeGetDrawable(0)).thenReturn(mockBackgroundLayer)
-        testedCache.put(mockRippleDrawable, fakeResourceIdByteArray)
 
         val expectedPrefix = System.identityHashCode(mockBackgroundLayer).toString() + "-"
         val drawableHash = System.identityHashCode(mockRippleDrawable).toString()
 
         // When
-        val key = testedCache.generateKey(mockRippleDrawable)
+        val key = testedCache.generateKeyFromDrawable(mockRippleDrawable)
 
         // Then
         assertThat(key).isEqualTo(expectedPrefix + drawableHash)
