@@ -22,11 +22,13 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class ImageSemanticsNodeMapper(
-    colorStringFormatter: ColorStringFormatter
+    colorStringFormatter: ColorStringFormatter,
+    private val semanticsUtils: SemanticsUtils
 ) : AbstractSemanticsNodeMapper(colorStringFormatter) {
 
     override fun map(
@@ -37,6 +39,8 @@ internal class ImageSemanticsNodeMapper(
         val bounds = resolveBounds(semanticsNode)
         val bitmapInfo = resolveSemanticsPainter(semanticsNode)
         val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
+        val imagePrivacy =
+            semanticsUtils.getImagePrivacyOverride(semanticsNode) ?: parentContext.imagePrivacy
         val imageWireframe = if (bitmapInfo != null) {
             parentContext.imageWireframeHelper.createImageWireframeByBitmap(
                 id = semanticsNode.id.toLong(),
@@ -44,7 +48,7 @@ internal class ImageSemanticsNodeMapper(
                 bitmap = bitmapInfo.bitmap,
                 density = parentContext.density,
                 isContextualImage = bitmapInfo.isContextualImage,
-                imagePrivacy = parentContext.imagePrivacy,
+                imagePrivacy = imagePrivacy,
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 clipping = null,
                 shapeStyle = null,

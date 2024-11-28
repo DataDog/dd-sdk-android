@@ -174,6 +174,47 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         assertThat(actual.wireframes).contains(expectedShapeWireframe, expectedTextWireframe)
     }
 
+    @Test
+    fun `M pass down the override privacy W map() { privacy is overridden }`(forge: Forge) {
+        // Given
+        val mockSemanticsNode = mockSemanticsNodeWithBound {}
+        val fakeTextInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+        val innerBounds = rectToBounds(fakeBounds, fakeDensity)
+        whenever(mockSemanticsNode.config) doReturn mockSemanticsConfiguration
+        whenever(mockSemanticsConfiguration.getOrNull(SemanticsProperties.EditableText)) doReturn AnnotatedString(
+            fakeEditText
+        )
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn innerBounds
+        whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
+        whenever(mockSemanticsUtils.resolveBackgroundShape(mockSemanticsNode)) doReturn mockShape
+        whenever(
+            mockSemanticsUtils.resolveCornerRadius(
+                eq(mockShape),
+                any(),
+                any()
+            )
+        ) doReturn fakeCornerRadius
+        whenever(
+            mockSemanticsUtils.resolveCornerRadius(
+                mockShape,
+                fakeGlobalBounds,
+                mockDensity
+            )
+        ) doReturn fakeCornerRadius
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockSemanticsNode)) doReturn fakeTextInputPrivacy
+
+        // When
+        val result = testedTextFieldSemanticsNodeMapper.map(
+            mockSemanticsNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(result.uiContext?.textAndInputPrivacy).isEqualTo(fakeTextInputPrivacy)
+    }
+
     private fun mockSemanticsNode(): SemanticsNode {
         return mockSemanticsNodeWithBound {
             whenever(mockSemanticsNode.layoutInfo).doReturn(mockLayoutInfo)

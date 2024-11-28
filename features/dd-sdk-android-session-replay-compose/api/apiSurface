@@ -4,3 +4,7 @@ class com.datadog.android.sessionreplay.compose.ComposeExtensionSupport : com.da
   override fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
   override fun name(): String
 annotation com.datadog.android.sessionreplay.compose.ExperimentalSessionReplayApi
+fun androidx.compose.ui.Modifier.sessionReplayHide(Boolean): androidx.compose.ui.Modifier
+fun androidx.compose.ui.Modifier.sessionReplayImagePrivacy(com.datadog.android.sessionreplay.ImagePrivacy): androidx.compose.ui.Modifier
+fun androidx.compose.ui.Modifier.sessionReplayTextAndInputPrivacy(com.datadog.android.sessionreplay.TextAndInputPrivacy): androidx.compose.ui.Modifier
+fun androidx.compose.ui.Modifier.sessionReplayTouchPrivacy(com.datadog.android.sessionreplay.TouchPrivacy): androidx.compose.ui.Modifier

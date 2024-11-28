@@ -30,6 +30,7 @@ internal fun SampleSelectionScreen(
     onInputClicked: () -> Unit,
     onToggleClicked: () -> Unit,
     onSelectorsClicked: () -> Unit,
+    onFgmClicked: () -> Unit,
     onTabsClicked: () -> Unit
 ) {
     Column(
@@ -64,6 +65,10 @@ internal fun SampleSelectionScreen(
         StyledButton(
             text = "Selectors Sample",
             onClick = onSelectorsClicked
+        )
+        StyledButton(
+            text = "Fine Grained Masking Privacy Sample",
+            onClick = onFgmClicked
         )
         StyledButton(
             text = "Legacy Sample",
@@ -108,6 +113,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             onSelectorsClicked = {
                 navController.navigate(SampleScreen.Selectors.navigationRoute)
             },
+            onFgmClicked = {
+                navController.navigate(SampleScreen.FGM.navigationRoute)
+            },
             onLegacyClicked = {
                 navController.navigate(SampleScreen.Legacy.navigationRoute)
             }
@@ -134,6 +142,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         SelectorSample()
     }
 
+    composable(SampleScreen.FGM.navigationRoute) {
+        FineGrainedMaskingSample()
+    }
+
     composable(SampleScreen.Tabs.navigationRoute) {
         TabsSample()
     }
@@ -154,6 +166,7 @@ internal sealed class SampleScreen(
     object Toggle : SampleScreen("$COMPOSE_ROOT/toggle")
     object Tabs : SampleScreen("$COMPOSE_ROOT/tabs")
     object Selectors : SampleScreen("$COMPOSE_ROOT/selectors")
+    object FGM : SampleScreen("$COMPOSE_ROOT/fgm")
     object Legacy : SampleScreen("$COMPOSE_ROOT/legacy")
 
     companion object {
@@ -177,6 +190,8 @@ private fun PreviewSampleSelectionScreen() {
         onTypographyClicked = {
         },
         onSelectorsClicked = {
+        },
+        onFgmClicked = {
         },
         onTabsClicked = {
         }

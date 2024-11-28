@@ -27,7 +27,7 @@ internal class RootSemanticsNodeMapper(
         Role.RadioButton to RadioButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Tab to TabSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
-        Role.Image to ImageSemanticsNodeMapper(colorStringFormatter)
+        Role.Image to ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(

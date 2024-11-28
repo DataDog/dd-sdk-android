@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
@@ -29,11 +30,14 @@ internal class TextFieldSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
         var index = 0
+        val privacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
+            ?: parentContext.textAndInputPrivacy
         val shapeWireframe = resolveTextFieldShapeWireframe(parentContext, semanticsNode, index++)
-        val editTextWireframe = resolveEditTextWireframe(parentContext, semanticsNode, index)
+        val editTextWireframe =
+            resolveEditTextWireframe(parentContext, semanticsNode, privacy, index)
         return SemanticsWireframe(
             wireframes = listOfNotNull(shapeWireframe, editTextWireframe),
-            uiContext = null
+            uiContext = parentContext.copy(textAndInputPrivacy = privacy)
         )
     }
 
@@ -68,11 +72,12 @@ internal class TextFieldSemanticsNodeMapper(
     private fun resolveEditTextWireframe(
         parentContext: UiContext,
         semanticsNode: SemanticsNode,
+        textAndInputPrivacy: TextAndInputPrivacy,
         index: Int
     ): MobileSegment.Wireframe? {
         val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode)
         val editText = resolveEditText(semanticsNode.config)?.let {
-            transformCapturedText(it, parentContext.textAndInputPrivacy, true)
+            transformCapturedText(it, textAndInputPrivacy, true)
         }
         val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode)
         val textStyle = textLayoutInfo?.let {
