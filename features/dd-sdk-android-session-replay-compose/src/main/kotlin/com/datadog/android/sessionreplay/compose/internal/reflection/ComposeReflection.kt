@@ -64,8 +64,8 @@ internal object ComposeReflection {
     val AndroidImageBitmapClass = getClassSafe("androidx.compose.ui.graphics.AndroidImageBitmap")
     val BitmapField = AndroidImageBitmapClass?.getDeclaredFieldSafe("bitmap")
 
-    val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
-    val PainterFieldOfContentPainter = ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+    val ContentPainterElementClass = getClassSafe("coil.compose.ContentPainterElement")
+    val PainterFieldOfContentPainter = ContentPainterElementClass?.getDeclaredFieldSafe("painter")
 
     val AsyncImagePainterClass = getClassSafe("coil.compose.AsyncImagePainter")
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")

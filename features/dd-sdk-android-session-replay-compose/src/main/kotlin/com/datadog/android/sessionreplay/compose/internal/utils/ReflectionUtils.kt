@@ -6,19 +6,30 @@
 
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import android.graphics.Bitmap
 import android.view.View
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ImageField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 
 @Suppress("TooManyFunctions")
@@ -46,6 +57,10 @@ internal class ReflectionUtils {
 
     fun isAndroidComposeView(any: Any): Boolean {
         return ComposeReflection.AndroidComposeViewClass?.isInstance(any) == true
+    }
+
+    fun isAsyncImagePainter(painter: Painter): Boolean {
+        return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true
     }
 
     fun getOwner(composition: Composition): Any? {
@@ -96,5 +111,40 @@ internal class ReflectionUtils {
 
     fun getClipShape(modifier: Modifier): Shape? {
         return ComposeReflection.ClipShapeField?.getSafe(modifier) as? Shape
+    }
+
+    fun getBitmapInVectorPainter(vectorPainter: VectorPainter): Bitmap? {
+        val vector = ComposeReflection.VectorField?.getSafe(vectorPainter)
+        val cacheDrawScope = ComposeReflection.CacheDrawScopeField?.getSafe(vector)
+        val mCachedImage = ComposeReflection.CachedImageField?.getSafe(cacheDrawScope)
+        return mCachedImage?.let {
+            BitmapField?.getSafe(it) as? Bitmap
+        }
+    }
+
+    fun getBitmapInBitmapPainter(bitmapPainter: BitmapPainter): Bitmap? {
+        return ImageField?.getSafe(bitmapPainter)?.let { image ->
+            BitmapField?.getSafe(image) as? Bitmap
+        }
+    }
+
+    fun getLocalImagePainter(semanticsNode: SemanticsNode): Painter? {
+        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
+            PainterElementClass?.isInstance(it.modifier) == true
+        }?.modifier
+        return modifier?.let { PainterField?.getSafe(it) as? Painter }
+    }
+
+    fun getAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
+        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
+            ContentPainterElementClass?.isInstance(it.modifier) == true
+        }?.modifier
+        val asyncPainter = PainterFieldOfContentPainter?.getSafe(modifier)
+        val painter = PainterFieldOfAsyncImagePainter?.getSafe(asyncPainter) as? Painter
+        return painter
+    }
+
+    fun getNestedPainter(painter: Painter): Painter? {
+        return PainterFieldOfAsyncImagePainter?.getSafe(painter) as? Painter
     }
 }

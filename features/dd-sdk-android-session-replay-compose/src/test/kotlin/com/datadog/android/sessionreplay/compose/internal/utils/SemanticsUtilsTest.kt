@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import android.graphics.Bitmap
 import android.view.View
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.Placeable
@@ -35,6 +38,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -53,6 +57,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -377,6 +382,39 @@ class SemanticsUtilsTest {
 
         // Then
         assertThat(result).containsExactly(expected)
+    }
+
+    @Test
+    fun `M return local bitmap W resolveSemanticsPainter { local image }`() {
+        // Given
+        val mockVectorPainter = mock<VectorPainter>()
+        val mockBitmap = mock<Bitmap>()
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
+        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
+        whenever(mockBitmap.copy(any(), any())) doReturn mockBitmap
+
+        // When
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, false))
+    }
+
+    @Test
+    fun `M return async bitmap W resolveSemanticsPainter { async image }`() {
+        // Given
+        val mockBitmapPainter = mock<BitmapPainter>()
+        val mockBitmap = mock<Bitmap>()
+        whenever(mockReflectionUtils.getAsyncImagePainter(mockSemanticsNode)) doReturn mockBitmapPainter
+        whenever(mockReflectionUtils.getBitmapInBitmapPainter(mockBitmapPainter)) doReturn mockBitmap
+        whenever(mockReflectionUtils.isAsyncImagePainter(mockBitmapPainter)) doReturn false
+        whenever(mockBitmap.copy(any(), any())) doReturn mockBitmap
+
+        // When
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, true))
     }
 
     private fun rectToBounds(rect: Rect, density: Float): GlobalBounds {
