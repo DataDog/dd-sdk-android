@@ -6,12 +6,15 @@
 
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import android.graphics.Bitmap
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.getOrNull
@@ -24,6 +27,7 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ImagePrivacySemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -191,6 +195,37 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         val modifierColor = resolveModifierColor(semanticsNode)
         return layoutInput?.let {
             convertTextLayoutInfo(it, modifierColor)
+        }
+    }
+
+    internal fun resolveSemanticsPainter(
+        semanticsNode: SemanticsNode
+    ): BitmapInfo? {
+        var isContextualImage = false
+        var painter = reflectionUtils.getLocalImagePainter(semanticsNode)
+        if (painter == null) {
+            isContextualImage = true
+            painter = reflectionUtils.getAsyncImagePainter(semanticsNode)
+        }
+        // TODO RUM-6535: support more painters.
+        if (painter != null && reflectionUtils.isAsyncImagePainter(painter)) {
+            isContextualImage = true
+            painter = reflectionUtils.getNestedPainter(painter)
+        }
+        val bitmap = when (painter) {
+            is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
+            is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
+            else -> {
+                null
+            }
+        }
+
+        val newBitmap = bitmap?.let {
+            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
+            it.copy(Bitmap.Config.ARGB_8888, false)
+        }
+        return newBitmap?.let {
+            BitmapInfo(it, isContextualImage)
         }
     }
 
