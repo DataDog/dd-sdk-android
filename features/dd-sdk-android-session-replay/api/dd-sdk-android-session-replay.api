@@ -117,6 +117,16 @@ public final class com/datadog/android/sessionreplay/internal/recorder/obfuscato
 	public final fun getStringObfuscator ()Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator;
 }
 
+public final class com/datadog/android/sessionreplay/internal/recorder/resources/BitmapCachesManager {
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
+	public final fun generateResourceKeyFromDrawable (Landroid/graphics/drawable/Drawable;)Ljava/lang/String;
+	public final fun getBitmapByProperties (IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;
+	public final fun getFromResourceCache (Ljava/lang/String;)Ljava/lang/String;
+	public final fun putInBitmapPool (Landroid/graphics/Bitmap;)V
+	public final fun putInResourceCache (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun registerCallbacks (Landroid/content/Context;)V
+}
+
 public final class com/datadog/android/sessionreplay/internal/recorder/resources/DefaultDrawableCopier : com/datadog/android/sessionreplay/internal/recorder/resources/DrawableCopier {
 	public fun <init> ()V
 	public fun copy (Landroid/graphics/drawable/Drawable;Landroid/content/res/Resources;)Landroid/graphics/drawable/Drawable;

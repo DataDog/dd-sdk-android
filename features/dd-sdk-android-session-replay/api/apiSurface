@@ -59,6 +59,14 @@ interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringO
   fun obfuscate(String): String
   companion object 
     fun getStringObfuscator(): StringObfuscator
+class com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
+  constructor(com.datadog.android.api.InternalLogger)
+  fun registerCallbacks(android.content.Context)
+  fun putInResourceCache(String, String)
+  fun getFromResourceCache(String): String?
+  fun generateResourceKeyFromDrawable(android.graphics.drawable.Drawable): String?
+  fun putInBitmapPool(android.graphics.Bitmap)
+  fun getBitmapByProperties(Int, Int, android.graphics.Bitmap.Config): android.graphics.Bitmap?
 class com.datadog.android.sessionreplay.internal.recorder.resources.DefaultDrawableCopier : DrawableCopier
   override fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
 interface com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
