@@ -95,8 +95,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -136,8 +135,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -171,8 +169,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -207,8 +204,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -258,8 +254,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -293,8 +288,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -329,8 +323,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -467,8 +460,7 @@ internal class TreeViewTraversalTest {
             hiddenViewMapper = mockHiddenViewMapper,
             decorViewMapper = mockDecorViewMapper,
             viewUtilsInternal = mockViewUtilsInternal,
-            internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
+            internalLogger = mockInternalLogger
         )
 
         // When
