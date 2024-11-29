@@ -14,9 +14,12 @@
         }
       },
       "additionalProperties": {
-        "type": "integer"
+        "type": "integer",
+        "readOnly": true
       },
-      "required": [ "global"]
+      "required": [
+        "global"
+      ]
     },
     "flags": {
       "additionalProperties": {
@@ -24,8 +27,9 @@
       }
     },
     "tags": {
-      "additionalProperties":  {
-        "type": "string"
+      "additionalProperties": {
+        "type": "string",
+        "readOnly": false
       }
     }
   },
