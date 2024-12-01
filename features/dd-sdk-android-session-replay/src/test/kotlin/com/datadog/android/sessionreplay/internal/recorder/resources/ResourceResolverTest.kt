@@ -18,6 +18,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -141,7 +142,6 @@ internal class ResourceResolverTest {
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                resources = any(),
                 drawable = any(),
                 drawableWidth = any(),
                 drawableHeight = any(),
@@ -151,7 +151,7 @@ internal class ResourceResolverTest {
                 bitmapCreationCallback = any()
             )
         ).then {
-            (it.arguments[7] as ResourceResolver.BitmapCreationCallback).onReady(mockBitmap)
+            (it.arguments[6] as ResourceResolver.BitmapCreationCallback).onReady(mockBitmap)
         }
 
         // executeSafe is an extension so we have to mock the internal execute function
@@ -233,7 +233,6 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -342,7 +341,6 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -359,7 +357,6 @@ internal class ResourceResolverTest {
         whenever(mockResourcesLRUCache.get(fakeResourceKey)).thenReturn(null)
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                resources = any(),
                 drawable = any(),
                 drawableWidth = any(),
                 drawableHeight = any(),
@@ -369,7 +366,7 @@ internal class ResourceResolverTest {
                 bitmapCreationCallback = any()
             )
         ).then {
-            (it.arguments[7] as ResourceResolver.BitmapCreationCallback).onFailure()
+            (it.arguments[6] as ResourceResolver.BitmapCreationCallback).onFailure()
         }
 
         // When
@@ -459,7 +456,6 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -490,7 +486,6 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -547,7 +542,6 @@ internal class ResourceResolverTest {
             anyOrNull()
         )
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -582,7 +576,6 @@ internal class ResourceResolverTest {
             anyOrNull()
         )
         verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),
@@ -873,7 +866,6 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
-            resources = any(),
             drawable = any(),
             drawableWidth = any(),
             drawableHeight = any(),

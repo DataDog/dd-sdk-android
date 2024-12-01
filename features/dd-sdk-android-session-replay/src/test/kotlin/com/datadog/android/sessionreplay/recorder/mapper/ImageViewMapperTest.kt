@@ -16,12 +16,13 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -101,6 +102,9 @@ internal class ImageViewMapperTest {
     lateinit var mockDrawableToColorMapper: DrawableToColorMapper
 
     @Mock
+    lateinit var mockDrawableCopier: DrawableCopier
+
+    @Mock
     lateinit var mockGlobalBounds: GlobalBounds
 
     @Mock
@@ -113,7 +117,7 @@ internal class ImageViewMapperTest {
     lateinit var mockBackgroundConstantState: ConstantState
 
     @Mock
-    lateinit var stubClipping: MobileSegment.WireframeClip
+    lateinit var stubClipping: Rect
 
     @Mock
     lateinit var stubParentRect: Rect
@@ -197,7 +201,8 @@ internal class ImageViewMapperTest {
             colorStringFormatter = mockColorStringFormatter,
             viewBoundsResolver = mockViewBoundsResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
-            imageViewUtils = stubImageViewUtils
+            imageViewUtils = stubImageViewUtils,
+            drawableCopier = mockDrawableCopier
         )
     }
 

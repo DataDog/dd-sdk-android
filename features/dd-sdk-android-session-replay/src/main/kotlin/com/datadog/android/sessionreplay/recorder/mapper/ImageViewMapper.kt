@@ -9,10 +9,12 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.widget.ImageView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
+import com.datadog.android.internal.utils.ImageViewUtils
+import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.internal.utils.toWireframeClip
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -25,19 +27,22 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  */
 open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
     private val imageViewUtils: ImageViewUtils
+    private val drawableCopier: DrawableCopier
 
     @Suppress("Unused") // used by external mappers
     constructor(
         viewIdentifierResolver: ViewIdentifierResolver,
         colorStringFormatter: ColorStringFormatter,
         viewBoundsResolver: ViewBoundsResolver,
-        drawableToColorMapper: DrawableToColorMapper
+        drawableToColorMapper: DrawableToColorMapper,
+        drawableCopier: DrawableCopier
     ) : this(
         viewIdentifierResolver,
         colorStringFormatter,
         viewBoundsResolver,
         drawableToColorMapper,
-        ImageViewUtils
+        ImageViewUtils,
+        drawableCopier
     )
 
     internal constructor(
@@ -45,7 +50,8 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
         colorStringFormatter: ColorStringFormatter,
         viewBoundsResolver: ViewBoundsResolver,
         drawableToColorMapper: DrawableToColorMapper,
-        imageViewUtils: ImageViewUtils
+        imageViewUtils: ImageViewUtils,
+        drawableCopier: DrawableCopier
     ) : super(
         viewIdentifierResolver,
         colorStringFormatter,
@@ -53,6 +59,7 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
         drawableToColorMapper
     ) {
         this.imageViewUtils = imageViewUtils
+        this.drawableCopier = drawableCopier
     }
 
     @UiThread
@@ -76,7 +83,7 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
         val density = resources.displayMetrics.density
 
         val clipping = if (view.cropToPadding) {
-            imageViewUtils.calculateClipping(parentRect, contentRect, density)
+            imageViewUtils.calculateClipping(parentRect, contentRect, density).toWireframeClip()
         } else {
             null
         }
@@ -97,6 +104,7 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
             height = contentHeightPx,
             usePIIPlaceholder = true,
             drawable = drawable,
+            drawableCopier = drawableCopier,
             asyncJobStatusCallback = asyncJobStatusCallback,
             clipping = clipping,
             shapeStyle = null,
