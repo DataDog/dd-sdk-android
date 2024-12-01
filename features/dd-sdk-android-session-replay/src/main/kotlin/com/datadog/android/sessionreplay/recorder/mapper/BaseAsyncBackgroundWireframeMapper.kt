@@ -139,7 +139,8 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
             clipping = MobileSegment.WireframeClip(),
             shapeStyle = null,
             border = null,
-            prefix = PREFIX_BACKGROUND_DRAWABLE
+            prefix = PREFIX_BACKGROUND_DRAWABLE,
+            resourceIdCacheKey = null
         )
     }
 

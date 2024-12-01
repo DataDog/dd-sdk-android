@@ -49,6 +49,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -196,6 +197,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -237,6 +239,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -281,6 +284,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -306,6 +310,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -335,6 +340,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -365,6 +371,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -388,6 +395,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -410,6 +418,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -428,17 +437,18 @@ internal class DefaultImageWireframeHelperTest {
             .thenReturn(fakeGeneratedIdentifier)
         whenever(
             mockResourceResolver.resolveResourceId(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any()
+                resources = any(),
+                applicationContext = any(),
+                displayMetrics = any(),
+                originalDrawable = any(),
+                drawableCopier = any(),
+                drawableWidth = any(),
+                drawableHeight = any(),
+                resourceIdCacheKey = anyOrNull(),
+                resourceResolverCallback = any()
             )
         ).thenAnswer {
-            val callback = it.arguments[7] as ResourceResolverCallback
+            val callback = it.arguments[8] as ResourceResolverCallback
             callback.onSuccess(fakeResourceId)
         }
 
@@ -469,7 +479,8 @@ internal class DefaultImageWireframeHelperTest {
             border = mockBorder,
             asyncJobStatusCallback = mockAsyncJobStatusCallback,
             usePIIPlaceholder = true,
-            clipping = stubWireframeClip
+            clipping = stubWireframeClip,
+            resourceIdCacheKey = null
         )
 
         // Then
@@ -481,6 +492,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
         verify(mockAsyncJobStatusCallback).jobStarted()
@@ -556,9 +568,10 @@ internal class DefaultImageWireframeHelperTest {
 
         // When
         val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -572,10 +585,10 @@ internal class DefaultImageWireframeHelperTest {
         // Given
         whenever(
             mockViewUtilsInternal.resolveCompoundDrawableBounds(
-                any(),
-                any(),
-                any(),
-                any()
+                view = any(),
+                drawable = any(),
+                pixelsDensity = any(),
+                position = any()
             )
         ).thenReturn(fakeBounds)
         val fakeDrawables = arrayOf(null, mockDrawable, null, null)
@@ -584,9 +597,10 @@ internal class DefaultImageWireframeHelperTest {
 
         // When
         val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
@@ -602,6 +616,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
@@ -617,10 +632,10 @@ internal class DefaultImageWireframeHelperTest {
         // Given
         whenever(
             mockViewUtilsInternal.resolveCompoundDrawableBounds(
-                any(),
-                any(),
-                any(),
-                any()
+                view = any(),
+                drawable = any(),
+                pixelsDensity = any(),
+                position = any()
             )
         )
             .thenReturn(fakeBounds)
@@ -630,9 +645,10 @@ internal class DefaultImageWireframeHelperTest {
 
         // When
         val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
@@ -640,14 +656,15 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
         verify(mockResourceResolver, times(2)).resolveResourceId(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            argumentCaptor.capture()
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
+            resourceResolverCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
             it.onSuccess(fakeResourceId)
@@ -665,9 +682,10 @@ internal class DefaultImageWireframeHelperTest {
 
         // When
         val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -704,6 +722,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -717,6 +736,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
@@ -737,6 +757,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -750,6 +771,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
 
         )
@@ -764,7 +786,12 @@ internal class DefaultImageWireframeHelperTest {
         @Mock mockContext: Context
     ) {
         // Given
-        whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
+        whenever(
+            mockImageTypeResolver.isDrawablePII(
+                drawable = any(),
+                density = any()
+            )
+        ).thenReturn(true)
 
         val fakeGlobalX = forge.aPositiveInt()
         val fakeGlobalY = forge.aPositiveInt()
@@ -789,6 +816,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
@@ -816,6 +844,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -828,6 +857,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
     }
@@ -850,6 +880,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
