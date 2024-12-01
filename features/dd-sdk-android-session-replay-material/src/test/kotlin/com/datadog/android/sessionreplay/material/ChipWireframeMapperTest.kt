@@ -41,11 +41,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -176,7 +176,8 @@ class ChipWireframeMapperTest {
             clipping = isNull(),
             shapeStyle = isNull(),
             border = isNull(),
-            prefix = any()
+            prefix = any(),
+            resourceIdCacheKey = anyOrNull()
         )
     }
 

@@ -189,6 +189,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -226,6 +227,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -263,6 +265,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -289,6 +292,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -332,6 +336,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -376,6 +381,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -425,6 +431,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -446,6 +453,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -476,6 +484,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -503,6 +512,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -527,6 +537,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -561,6 +572,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -596,6 +608,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -628,6 +641,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -660,6 +674,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -683,6 +698,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -704,6 +720,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -740,6 +757,7 @@ internal class ResourceResolverTest {
                 drawableCopier = mockDrawableCopier,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
+                resourceIdCacheKey = null,
                 resourceResolverCallback = mockFirstCallback
             )
             Thread.sleep(1500)
@@ -754,6 +772,7 @@ internal class ResourceResolverTest {
                 drawableCopier = mockDrawableCopier,
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
+                resourceIdCacheKey = null,
                 resourceResolverCallback = mockSecondCallback
             )
             Thread.sleep(500)
@@ -848,6 +867,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -900,6 +920,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -914,6 +935,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -932,6 +954,7 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = fakeBitmapWidth,
             drawableHeight = fakeBitmapHeight,
+            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
@@ -940,6 +963,76 @@ internal class ResourceResolverTest {
             applicationId = eq(fakeApplicationid.toString()),
             resourceData = eq(fakeByteArray)
         )
+    }
+
+    @Test
+    fun `M return cache miss W resolveResourceId() { failed to generate resource key }`() {
+        // Given
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockDrawable)).thenReturn(null)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockDrawableCopier).copy(mockDrawable, mockResources)
+    }
+
+    @Test
+    fun `M use cache key W resolveResourceId() { cache hit, key provided } `(
+        @StringForgery fakeCacheKey: String
+    ) {
+        // Given
+        whenever(mockBitmapCachesManager.getFromResourceCache(fakeCacheKey)).thenReturn(fakeResourceId)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = fakeCacheKey,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M use cache key W resolveResourceId() { cache miss, key provided } `(
+        @StringForgery fakeCacheKey: String
+    ) {
+        // Given
+        whenever(mockBitmapCachesManager.getFromResourceCache(fakeCacheKey)).thenReturn(null)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            resourceIdCacheKey = fakeCacheKey,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockBitmapCachesManager).putInResourceCache(fakeCacheKey, fakeResourceId)
     }
 
     private fun createResourceResolver(): ResourceResolver = ResourceResolver(

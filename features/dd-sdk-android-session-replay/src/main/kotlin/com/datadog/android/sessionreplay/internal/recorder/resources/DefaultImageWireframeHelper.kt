@@ -115,7 +115,8 @@ internal class DefaultImageWireframeHelper(
         clipping: MobileSegment.WireframeClip?,
         shapeStyle: MobileSegment.ShapeStyle?,
         border: MobileSegment.ShapeBorder?,
-        prefix: String?
+        prefix: String?,
+        resourceIdCacheKey: String?
     ): MobileSegment.Wireframe? {
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(
@@ -204,6 +205,7 @@ internal class DefaultImageWireframeHelper(
             drawableCopier = drawableCopier,
             drawableWidth = width,
             drawableHeight = height,
+            resourceIdCacheKey = resourceIdCacheKey,
             resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
@@ -225,6 +227,7 @@ internal class DefaultImageWireframeHelper(
         textView: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
+        resourceIdCacheKey: String?,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
@@ -265,6 +268,7 @@ internal class DefaultImageWireframeHelper(
                     border = null,
                     usePIIPlaceholder = true,
                     clipping = MobileSegment.WireframeClip(),
+                    resourceIdCacheKey = resourceIdCacheKey,
                     asyncJobStatusCallback = asyncJobStatusCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
