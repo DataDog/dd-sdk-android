@@ -979,7 +979,6 @@ internal class ResourceResolverTest {
             drawableCopier = mockDrawableCopier,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            resourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 

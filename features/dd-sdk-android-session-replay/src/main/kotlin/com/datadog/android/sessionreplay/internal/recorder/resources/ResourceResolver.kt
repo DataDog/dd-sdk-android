@@ -80,7 +80,7 @@ internal class ResourceResolver(
         drawableCopier: DrawableCopier,
         drawableWidth: Int,
         drawableHeight: Int,
-        resourceIdCacheKey: String?,
+        resourceIdCacheKey: String? = null,
         resourceResolverCallback: ResourceResolverCallback
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)

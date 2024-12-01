@@ -85,7 +85,7 @@ interface ImageWireframeHelper {
         shapeStyle: MobileSegment.ShapeStyle? = null,
         border: MobileSegment.ShapeBorder? = null,
         prefix: String? = DRAWABLE_CHILD_NAME,
-        resourceIdCacheKey: String?
+        resourceIdCacheKey: String? = null
     ): MobileSegment.Wireframe?
 
     /**
