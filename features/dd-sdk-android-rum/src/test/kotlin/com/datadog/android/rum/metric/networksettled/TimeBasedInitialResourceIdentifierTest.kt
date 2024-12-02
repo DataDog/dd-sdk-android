@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.metric.networksettled
+package com.datadog.android.rum.metric.networksettled
 
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest

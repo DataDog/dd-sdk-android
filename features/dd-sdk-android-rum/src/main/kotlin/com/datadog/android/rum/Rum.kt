@@ -126,7 +126,7 @@ object Rum {
             trackFrustrations = rumFeature.trackFrustrations,
             sessionListener = rumFeature.sessionListener,
             executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline"),
-            networkSettledResourceIdentifier = rumFeature.networkSettledInitialResourceIdentifier
+            initialResourceIdentifier = rumFeature.initialResourceIdentifier
         )
     }
 

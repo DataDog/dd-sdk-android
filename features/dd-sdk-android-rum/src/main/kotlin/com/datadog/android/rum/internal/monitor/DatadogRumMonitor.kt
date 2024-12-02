@@ -43,8 +43,8 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
-import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
@@ -72,7 +72,7 @@ internal class DatadogRumMonitor(
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
     internal val executorService: ExecutorService,
-    internal val networkSettledResourceIdentifier: InitialResourceIdentifier
+    internal val initialResourceIdentifier: InitialResourceIdentifier
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -87,7 +87,7 @@ internal class DatadogRumMonitor(
         frameRateVitalMonitor,
         sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
         CombinedRumSessionListener(sessionListener, telemetryEventHandler),
-        networkSettledResourceIdentifier
+        initialResourceIdentifier
     )
 
     internal val keepAliveRunnable = Runnable {

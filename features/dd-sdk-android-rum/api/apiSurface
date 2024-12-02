@@ -82,7 +82,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useCustomEndpoint(String): Builder
     fun setSessionListener(RumSessionListener): Builder
-    fun setNetworkSettledInitialResourceIdentifier(com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier): Builder
+    fun setInitialResourceIdentifier(com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -167,16 +167,6 @@ interface com.datadog.android.rum.event.ViewEventMapper : com.datadog.android.ev
   override fun map(com.datadog.android.rum.model.ViewEvent): com.datadog.android.rum.model.ViewEvent
 data class com.datadog.android.rum.internal.domain.event.ResourceTiming
   constructor(Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L)
-interface com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
-  fun validate(NetworkSettledResourceContext): Boolean
-data class com.datadog.android.rum.internal.metric.networksettled.NetworkSettledResourceContext
-  constructor(String, Long, Long?)
-class com.datadog.android.rum.internal.metric.networksettled.TimeBasedInitialResourceIdentifier : InitialResourceIdentifier
-  constructor(Long = DEFAULT_TIME_THRESHOLD_MS)
-  override fun validate(NetworkSettledResourceContext): Boolean
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-  companion object 
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor
   fun waitForResourceTiming(Any)
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)
@@ -185,6 +175,16 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+interface com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+  fun validate(NetworkSettledResourceContext): Boolean
+data class com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
+  constructor(String, Long, Long?)
+class com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier : InitialResourceIdentifier
+  constructor(Long = DEFAULT_TIME_THRESHOLD_MS)
+  override fun validate(NetworkSettledResourceContext): Boolean
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+  companion object 
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream

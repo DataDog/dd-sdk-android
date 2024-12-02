@@ -13,9 +13,9 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
-import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.rum.internal.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -265,8 +265,8 @@ data class RumConfiguration internal constructor(
          * a threshold of 100ms.
          * @param initialResourceIdentifier the [InitialResourceIdentifier] to use.
          */
-        fun setNetworkSettledInitialResourceIdentifier(initialResourceIdentifier: InitialResourceIdentifier): Builder {
-            rumConfig = rumConfig.copy(networkSettledInitialResourceIdentifier = initialResourceIdentifier)
+        fun setInitialResourceIdentifier(initialResourceIdentifier: InitialResourceIdentifier): Builder {
+            rumConfig = rumConfig.copy(initialResourceIdentifier = initialResourceIdentifier)
             return this
         }
 

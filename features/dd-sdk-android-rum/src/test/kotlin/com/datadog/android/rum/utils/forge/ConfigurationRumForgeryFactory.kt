@@ -48,7 +48,7 @@ internal class ConfigurationRumForgeryFactory :
             vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
             sessionListener = mock(),
             additionalConfig = forge.aMap { aString() to aString() },
-            networkSettledInitialResourceIdentifier = mock()
+            initialResourceIdentifier = mock()
         )
     }
 }

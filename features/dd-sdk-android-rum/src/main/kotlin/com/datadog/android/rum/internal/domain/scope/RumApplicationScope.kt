@@ -18,8 +18,8 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
-import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -35,7 +35,7 @@ internal class RumApplicationScope(
     private val frameRateVitalMonitor: VitalMonitor,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val sessionListener: RumSessionListener?,
-    private val networkSettledResourceIdentifier: InitialResourceIdentifier
+    private val initialResourceIdentifier: InitialResourceIdentifier
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)
@@ -55,7 +55,7 @@ internal class RumApplicationScope(
             frameRateVitalMonitor,
             sessionListener,
             false,
-            networkSettledResourceIdentifier
+            initialResourceIdentifier
         )
     )
 
@@ -148,7 +148,7 @@ internal class RumApplicationScope(
             frameRateVitalMonitor,
             sessionListener,
             true,
-            networkSettledResourceIdentifier
+            initialResourceIdentifier
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
