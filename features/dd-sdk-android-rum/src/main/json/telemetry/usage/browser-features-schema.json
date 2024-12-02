@@ -7,6 +7,7 @@
   "oneOf": [
     {
       "required": ["feature"],
+      "title": "StartSessionReplayRecording",
       "properties": {
         "feature": {
           "type": "string",
@@ -21,6 +22,7 @@
     },
     {
       "required": ["feature"],
+      "title": "StartDurationVital",
       "properties": {
         "feature": {
           "type": "string",
@@ -31,6 +33,7 @@
     },
     {
       "required": ["feature"],
+      "title": "StopDurationVital",
       "properties": {
         "feature": {
           "type": "string",
@@ -41,6 +44,7 @@
     },
     {
       "required": ["feature"],
+      "title": "AddDurationVital",
       "properties": {
         "feature": {
           "type": "string",
