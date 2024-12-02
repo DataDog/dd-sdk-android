@@ -160,7 +160,12 @@ val Comment = TypeDefinition.Class(
                         false
                     )
                 ),
-                additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                    optional = true,
+                    readOnly = true
+                )
             ),
             true
         ),
@@ -169,7 +174,12 @@ val Comment = TypeDefinition.Class(
             TypeDefinition.Class(
                 name = "Flags",
                 properties = listOf(),
-                additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN)
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
+                    optional = true,
+                    readOnly = false
+                )
             ),
             true
         ),
@@ -178,7 +188,12 @@ val Comment = TypeDefinition.Class(
             TypeDefinition.Class(
                 name = "Tags",
                 properties = listOf(),
-                additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                    optional = true,
+                    readOnly = false
+                )
             ),
             true
         )
@@ -200,7 +215,12 @@ val Company = TypeDefinition.Class(
                         false
                     )
                 ),
-                additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                    optional = true,
+                    readOnly = false
+                )
             ),
             true
         ),
@@ -220,12 +240,22 @@ val Company = TypeDefinition.Class(
                         true
                     )
                 ),
-                additionalProperties = TypeDefinition.Class("?", emptyList())
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Class("?", emptyList()),
+                    optional = true,
+                    readOnly = false
+                )
             ),
             true
         )
     ),
-    additionalProperties = TypeDefinition.Class("?", emptyList())
+    additionalProperties = TypeProperty(
+        name = "",
+        type = TypeDefinition.Class("?", emptyList()),
+        optional = true,
+        readOnly = false
+    )
 )
 
 val Conflict = TypeDefinition.Class(
@@ -789,7 +819,12 @@ val AdditionalPropsMerged = TypeDefinition.Class(
                     TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
                     TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
                 ),
-                additionalProperties = TypeDefinition.Class("?", emptyList())
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Class("?", emptyList()),
+                    optional = true,
+                    readOnly = false
+                )
             ),
             true
         ),
@@ -812,7 +847,12 @@ val AdditionalPropsSingleMerge = TypeDefinition.Class(
                     TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
                     TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
                 ),
-                additionalProperties = TypeDefinition.Class("?", emptyList())
+                additionalProperties = TypeProperty(
+                    name = "",
+                    type = TypeDefinition.Class("?", emptyList()),
+                    optional = true,
+                    readOnly = false
+                )
             ),
             true
         ),
