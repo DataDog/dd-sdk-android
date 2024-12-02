@@ -104,6 +104,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setLongTaskEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setNetworkSettledInitialResourceIdentifier (Lcom/datadog/android/rum/internal/metric/networksettled/InitialResourceIdentifier;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setResourceEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSessionListener (Lcom/datadog/android/rum/RumSessionListener;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -285,6 +286,32 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 	public fun <init> ()V
 	public fun onFling (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
 	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
+}
+
+public abstract interface class com/datadog/android/rum/internal/metric/networksettled/InitialResourceIdentifier {
+	public abstract fun validate (Lcom/datadog/android/rum/internal/metric/networksettled/NetworkSettledResourceContext;)Z
+}
+
+public final class com/datadog/android/rum/internal/metric/networksettled/NetworkSettledResourceContext {
+	public fun <init> (Ljava/lang/String;JLjava/lang/Long;)V
+	public final fun copy (Ljava/lang/String;JLjava/lang/Long;)Lcom/datadog/android/rum/internal/metric/networksettled/NetworkSettledResourceContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/internal/metric/networksettled/NetworkSettledResourceContext;Ljava/lang/String;JLjava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/internal/metric/networksettled/NetworkSettledResourceContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/internal/metric/networksettled/TimeBasedInitialResourceIdentifier : com/datadog/android/rum/internal/metric/networksettled/InitialResourceIdentifier {
+	public static final field Companion Lcom/datadog/android/rum/internal/metric/networksettled/TimeBasedInitialResourceIdentifier$Companion;
+	public fun <init> ()V
+	public fun <init> (J)V
+	public synthetic fun <init> (JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun validate (Lcom/datadog/android/rum/internal/metric/networksettled/NetworkSettledResourceContext;)Z
+}
+
+public final class com/datadog/android/rum/internal/metric/networksettled/TimeBasedInitialResourceIdentifier$Companion {
 }
 
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {

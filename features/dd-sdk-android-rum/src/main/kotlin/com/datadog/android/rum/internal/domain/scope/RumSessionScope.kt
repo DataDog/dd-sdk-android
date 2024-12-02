@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
@@ -37,6 +38,7 @@ internal class RumSessionScope(
     frameRateVitalMonitor: VitalMonitor,
     private val sessionListener: RumSessionListener?,
     applicationDisplayed: Boolean,
+    networkSettledResourceIdentifier: InitialResourceIdentifier,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -66,7 +68,8 @@ internal class RumSessionScope(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         applicationDisplayed,
-        sampleRate
+        sampleRate,
+        networkSettledResourceIdentifier
     )
 
     init {

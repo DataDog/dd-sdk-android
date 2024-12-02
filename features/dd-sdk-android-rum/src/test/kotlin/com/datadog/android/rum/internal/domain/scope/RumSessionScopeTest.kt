@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -109,6 +110,9 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockSessionReplayFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -1273,6 +1277,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             applicationDisplayed = false,
+            networkSettledResourceIdentifier = mockNetworkSettledResourceIdentifier,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )

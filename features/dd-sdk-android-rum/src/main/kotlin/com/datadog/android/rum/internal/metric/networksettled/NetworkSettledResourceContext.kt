@@ -6,7 +6,14 @@
 
 package com.datadog.android.rum.internal.metric.networksettled
 
-internal data class NetworkSettledResourceContext(
+/**
+ * Represents the context of a network resource that has settled.
+ *
+ * @property resourceId The unique identifier of the network resource.
+ * @property eventCreatedAtNanos The timestamp (in nanoseconds) when the event was created.
+ * @property viewCreatedTimestamp The timestamp (in nanoseconds) when the view was created, or null if not applicable.
+ */
+data class NetworkSettledResourceContext(
     internal val resourceId: String,
     internal val eventCreatedAtNanos: Long,
     internal val viewCreatedTimestamp: Long?

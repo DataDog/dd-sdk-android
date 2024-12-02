@@ -108,6 +108,9 @@ internal class RumTest {
             }
             assertThat((lastValue.requestFactory as RumRequestFactory).customEndpointUrl)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.customEndpointUrl)
+            assertThat(lastValue.networkSettledInitialResourceIdentifier).isSameAs(
+                fakeRumConfiguration.featureConfiguration.networkSettledInitialResourceIdentifier
+            )
         }
     }
 
@@ -152,6 +155,8 @@ internal class RumTest {
 
         assertThat(telemetrySampler.getSampleRate())
             .isEqualTo(fakeRumConfiguration.featureConfiguration.telemetrySampleRate)
+        assertThat(monitor.networkSettledResourceIdentifier)
+            .isSameAs(fakeRumConfiguration.featureConfiguration.networkSettledInitialResourceIdentifier)
     }
 
     @Test

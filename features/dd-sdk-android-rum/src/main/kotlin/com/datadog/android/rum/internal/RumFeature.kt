@@ -50,6 +50,9 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.internal.metric.networksettled.NoOpInitialResourceIdentifier
+import com.datadog.android.rum.internal.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -127,6 +130,7 @@ internal class RumFeature(
     private var anrDetectorExecutorService: ExecutorService? = null
     internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
+    internal var networkSettledInitialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -136,7 +140,7 @@ internal class RumFeature(
 
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
-
+        networkSettledInitialResourceIdentifier = configuration.networkSettledInitialResourceIdentifier
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -530,6 +534,7 @@ internal class RumFeature(
         val trackNonFatalAnrs: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
+        val networkSettledInitialResourceIdentifier: InitialResourceIdentifier,
         val additionalConfig: Map<String, Any>
     )
 
@@ -573,6 +578,7 @@ internal class RumFeature(
             trackNonFatalAnrs = isTrackNonFatalAnrsEnabledByDefault(),
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
             sessionListener = NoOpRumSessionListener(),
+            networkSettledInitialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             additionalConfig = emptyMap()
         )
 

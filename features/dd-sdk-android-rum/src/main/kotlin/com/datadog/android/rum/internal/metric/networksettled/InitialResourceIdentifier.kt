@@ -8,8 +8,17 @@ package com.datadog.android.rum.internal.metric.networksettled
 
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * Interface for identifying initial network resources.
+ */
 @NoOpImplementation
-internal interface InitialResourceIdentifier {
+interface InitialResourceIdentifier {
+    /**
+     * Validates whether the given network resource context meets the criteria for an initial resource.
+     *
+     * @param context The context of the network resource to validate.
+     * @return `true` if the context meets the criteria, `false` otherwise.
+     */
     fun validate(
         context: NetworkSettledResourceContext
     ): Boolean

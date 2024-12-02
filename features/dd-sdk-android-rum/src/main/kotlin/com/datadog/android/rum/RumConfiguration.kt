@@ -13,6 +13,8 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.internal.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -254,6 +256,17 @@ data class RumConfiguration internal constructor(
          */
         fun setSessionListener(sessionListener: RumSessionListener): Builder {
             rumConfig = rumConfig.copy(sessionListener = sessionListener)
+            return this
+        }
+
+        /**
+         * Sets the identifier strategy for initial network resources used to compute the time to network settled
+         * in a RUM View event. By default, the SDK uses a [TimeBasedInitialResourceIdentifier] with
+         * a threshold of 100ms.
+         * @param initialResourceIdentifier the [InitialResourceIdentifier] to use.
+         */
+        fun setNetworkSettledInitialResourceIdentifier(initialResourceIdentifier: InitialResourceIdentifier): Builder {
+            rumConfig = rumConfig.copy(networkSettledInitialResourceIdentifier = initialResourceIdentifier)
             return this
         }
 

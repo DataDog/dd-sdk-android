@@ -7397,6 +7397,35 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M not notify networkSettledMetricResolver W view was stopped { different key }`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        assumeFalse(fakeOtherKey == fakeKey)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopView(fakeOtherKey, emptyMap()), mockWriter)
+
+        // Then
+        verify(mockNetworkSettledMetricResolver, never()).viewWasStopped()
+    }
+
+    @Test
+    fun `M not notify networkSettledMetricResolver W view was stopped { already stopped }`() {
+        // Given
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        verify(mockNetworkSettledMetricResolver, never()).viewWasStopped()
+    }
+
+    @Test
     fun `M notify the networkSettledMetricMetricResolver W view was created`() {
         // Then
         verify(mockNetworkSettledMetricResolver).viewWasCreated(fakeEventTime.nanoTime)
@@ -8928,7 +8957,8 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -8994,7 +9024,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -9048,7 +9079,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -9108,7 +9140,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         testedScope.handleEvent(
             RumRawEvent.StartResource(key, url, method, emptyMap()),
@@ -9174,7 +9207,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         testedScope.handleEvent(
             RumRawEvent.StartAction(type, name, forge.aBool(), emptyMap()),
@@ -9250,7 +9284,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         testedScope.handleEvent(
             RumRawEvent.StartResource(key, url, method, emptyMap()),
@@ -9326,7 +9361,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
         testedScope.handleEvent(
             RumRawEvent.StartAction(type, name, forge.aBool(), emptyMap()),
@@ -9383,7 +9419,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
@@ -9446,7 +9483,8 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
         )
 
         // When
