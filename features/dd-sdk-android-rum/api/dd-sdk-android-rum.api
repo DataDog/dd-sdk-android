@@ -304,6 +304,30 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
+public abstract interface class com/datadog/android/rum/metric/interactiontonextview/LastInteractionIdentifier {
+	public abstract fun validate (Lcom/datadog/android/rum/metric/interactiontonextview/PreviousViewLastInteractionContext;)Z
+}
+
+public final class com/datadog/android/rum/metric/interactiontonextview/PreviousViewLastInteractionContext {
+	public fun <init> (Lcom/datadog/android/rum/RumActionType;JLjava/lang/Long;)V
+	public final fun copy (Lcom/datadog/android/rum/RumActionType;JLjava/lang/Long;)Lcom/datadog/android/rum/metric/interactiontonextview/PreviousViewLastInteractionContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/metric/interactiontonextview/PreviousViewLastInteractionContext;Lcom/datadog/android/rum/RumActionType;JLjava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/metric/interactiontonextview/PreviousViewLastInteractionContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/metric/interactiontonextview/TimeBasedInteractionIdentifier : com/datadog/android/rum/metric/interactiontonextview/LastInteractionIdentifier {
+	public static final field Companion Lcom/datadog/android/rum/metric/interactiontonextview/TimeBasedInteractionIdentifier$Companion;
+	public fun <init> ()V
+	public fun <init> (J)V
+	public synthetic fun <init> (JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun validate (Lcom/datadog/android/rum/metric/interactiontonextview/PreviousViewLastInteractionContext;)Z
+}
+
+public final class com/datadog/android/rum/metric/interactiontonextview/TimeBasedInteractionIdentifier$Companion {
+}
+
 public abstract interface class com/datadog/android/rum/metric/networksettled/InitialResourceIdentifier {
 	public abstract fun validate (Lcom/datadog/android/rum/metric/networksettled/NetworkSettledResourceContext;)Z
 }

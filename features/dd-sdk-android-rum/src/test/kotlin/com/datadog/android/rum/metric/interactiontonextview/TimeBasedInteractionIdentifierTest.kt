@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.metric.interactiontonextview
+package com.datadog.android.rum.metric.interactiontonextview
 
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -30,13 +30,15 @@ internal class TimeBasedInteractionIdentifierTest {
 
     private lateinit var testedIdentifier: TimeBasedInteractionIdentifier
 
+    private var fakeTimestampThresholdInNanos: Long = 0L
     private var fakeTimestampThresholdInMs: Long = 0L
 
     // region setUp
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeTimestampThresholdInMs = TimeUnit.MILLISECONDS.toNanos(forge.aLong(min = 3000, max = 10000))
+        fakeTimestampThresholdInMs = forge.aLong(min = 3000, max = 10000)
+        fakeTimestampThresholdInNanos = TimeUnit.MILLISECONDS.toNanos(fakeTimestampThresholdInMs)
         testedIdentifier = TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
     }
 
@@ -48,7 +50,7 @@ internal class TimeBasedInteractionIdentifierTest {
     fun `M return true W validate { valid context }`(forge: Forge) {
         // Given
         val viewCreatedTimestamp = System.nanoTime()
-        val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(min = 0, max = fakeTimestampThresholdInMs)
+        val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(min = 0, max = fakeTimestampThresholdInNanos)
         val fakeValidContext = forge.getForgery(PreviousViewLastInteractionContext::class.java).copy(
             eventCreatedAtNanos = eventCreatedTimestamp,
             currentViewCreationTimestamp = viewCreatedTimestamp
@@ -66,8 +68,8 @@ internal class TimeBasedInteractionIdentifierTest {
         // Given
         val viewCreatedTimestamp = System.nanoTime()
         val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(
-            min = fakeTimestampThresholdInMs + 1,
-            max = fakeTimestampThresholdInMs + 10000
+            min = fakeTimestampThresholdInNanos + 1,
+            max = fakeTimestampThresholdInNanos + 10000
         )
         val fakeValidContext = forge.getForgery(PreviousViewLastInteractionContext::class.java).copy(
             eventCreatedAtNanos = eventCreatedTimestamp,

@@ -175,6 +175,14 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+  fun validate(PreviousViewLastInteractionContext): Boolean
+data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
+  constructor(com.datadog.android.rum.RumActionType, Long, Long?)
+class com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier : LastInteractionIdentifier
+  constructor(Long = DEFAULT_TIME_THRESHOLD_MS)
+  override fun validate(PreviousViewLastInteractionContext): Boolean
+  companion object 
 interface com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
   fun validate(NetworkSettledResourceContext): Boolean
 data class com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext

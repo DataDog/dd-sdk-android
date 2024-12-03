@@ -4,8 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.metric.interactiontonextview
+package com.datadog.android.rum.metric.interactiontonextview
 
-internal interface LastInteractionIdentifier {
+/**
+ * Interface for identifying the last interaction in the previous view.
+ * @param context The context of the last interaction to validate.
+ */
+interface LastInteractionIdentifier {
     fun validate(context: PreviousViewLastInteractionContext): Boolean
 }

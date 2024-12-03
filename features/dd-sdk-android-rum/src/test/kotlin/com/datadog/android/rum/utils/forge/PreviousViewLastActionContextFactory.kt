@@ -7,7 +7,7 @@
 package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.internal.metric.interactiontonextview.PreviousViewLastInteractionContext
+import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
