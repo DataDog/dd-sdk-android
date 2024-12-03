@@ -16,7 +16,7 @@ import com.datadog.android.rum.RumActionType
  * or null if not applicable.
  */
 data class PreviousViewLastInteractionContext(
-    internal val actionType: RumActionType,
-    internal val eventCreatedAtNanos: Long,
-    internal val currentViewCreationTimestamp: Long?
+    val actionType: RumActionType,
+    val eventCreatedAtNanos: Long,
+    val currentViewCreationTimestamp: Long?
 )

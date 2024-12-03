@@ -6,10 +6,16 @@
 
 package com.datadog.android.rum.metric.interactiontonextview
 
+import com.datadog.tools.annotation.NoOpImplementation
+
 /**
  * Interface for identifying the last interaction in the previous view.
- * @param context The context of the last interaction to validate.
  */
+@NoOpImplementation
 interface LastInteractionIdentifier {
+    /**
+     * Validates the last interaction in the previous view.
+     * @param context of the last interaction to validate
+     */
     fun validate(context: PreviousViewLastInteractionContext): Boolean
 }

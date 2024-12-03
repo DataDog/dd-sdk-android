@@ -14,6 +14,7 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
@@ -260,13 +261,24 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the identifier strategy for initial network resources used to compute the time to network settled
+         * Sets a custom identifier for initial network resources used to compute the time to network settled
          * in a RUM View event. By default, the SDK uses a [TimeBasedInitialResourceIdentifier] with
          * a threshold of 100ms.
          * @param initialResourceIdentifier the [InitialResourceIdentifier] to use.
          */
         fun setInitialResourceIdentifier(initialResourceIdentifier: InitialResourceIdentifier): Builder {
             rumConfig = rumConfig.copy(initialResourceIdentifier = initialResourceIdentifier)
+            return this
+        }
+
+        /**
+         * Sets a custom identifier for the last interaction in the previous view used to compute the time from
+         * the last interaction to the next view metric.
+         * By default, the SDK uses a [TimeBasedInteractionIdentifier] with a threshold of 3000ms.
+         * @param lastInteractionIdentifier the [LastInteractionIdentifier] to use.
+         */
+        fun setLastInteractionIdentifier(lastInteractionIdentifier: LastInteractionIdentifier): Builder {
+            rumConfig = rumConfig.copy(lastInteractionIdentifier = lastInteractionIdentifier)
             return this
         }
 

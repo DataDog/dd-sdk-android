@@ -7,6 +7,7 @@
 package com.datadog.android.rum.metric.interactiontonextview
 
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TimeBasedInteractionIdentifierTest {
+internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteractionIdentifier>() {
 
     private lateinit var testedIdentifier: TimeBasedInteractionIdentifier
 
@@ -40,6 +41,26 @@ internal class TimeBasedInteractionIdentifierTest {
         fakeTimestampThresholdInMs = forge.aLong(min = 3000, max = 10000)
         fakeTimestampThresholdInNanos = TimeUnit.MILLISECONDS.toNanos(fakeTimestampThresholdInMs)
         testedIdentifier = TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
+    }
+
+    override fun createInstance(forge: Forge): TimeBasedInteractionIdentifier {
+        return TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
+    }
+
+    override fun createEqualInstance(
+        source: TimeBasedInteractionIdentifier,
+        forge: Forge
+    ): TimeBasedInteractionIdentifier {
+        return TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
+    }
+
+    override fun createUnequalInstance(
+        source: TimeBasedInteractionIdentifier,
+        forge: Forge
+    ): TimeBasedInteractionIdentifier? {
+        return TimeBasedInteractionIdentifier(
+            fakeTimestampThresholdInMs + forge.aLong(min = 1, max = 1000)
+        )
     }
 
     // endregion

@@ -9,9 +9,9 @@ package com.datadog.android.rum.metric.interactiontonextview
 import java.util.concurrent.TimeUnit
 
 /**
- * A [LastInteractionIdentifier] that validates if the last interaction in the previous view
- * happened within a given time threshold. If the last interaction happened after the threshold,
- * the interaction is considered valid.
+ * A [LastInteractionIdentifier] that identifies the last action in the previous view as last interaction based
+ * on the time interval between the action timestamp and the moment the next view was created.
+ * If the last action happened in the given time interval, it is considered as the last interaction.
  * @param timeThresholdInMilliseconds The time threshold in milliseconds. Default is 3000ms.
  */
 class TimeBasedInteractionIdentifier(
@@ -25,6 +25,23 @@ class TimeBasedInteractionIdentifier(
             context.eventCreatedAtNanos - viewCreatedTime < timeThresholdInNanoSeconds
         } ?: false
     }
+
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TimeBasedInteractionIdentifier
+
+        return timeThresholdInNanoSeconds == other.timeThresholdInNanoSeconds
+    }
+
+    override fun hashCode(): Int {
+        return timeThresholdInNanoSeconds.hashCode()
+    }
+
+    // endregion
 
     companion object {
         internal const val DEFAULT_TIME_THRESHOLD_MS = 3000L

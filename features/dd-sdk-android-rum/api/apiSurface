@@ -83,6 +83,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun useCustomEndpoint(String): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun setInitialResourceIdentifier(com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier): Builder
+    fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -182,6 +183,8 @@ data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLast
 class com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier : LastInteractionIdentifier
   constructor(Long = DEFAULT_TIME_THRESHOLD_MS)
   override fun validate(PreviousViewLastInteractionContext): Boolean
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
   companion object 
 interface com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
   fun validate(NetworkSettledResourceContext): Boolean
