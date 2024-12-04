@@ -67,6 +67,9 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
 import com.datadog.android.rum.internal.vitals.VitalReader
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.NoOpInitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
@@ -131,6 +134,7 @@ internal class RumFeature(
     internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
+    internal var lastInteractionIdentifier: LastInteractionIdentifier = NoOpLastInteractionIdentifier()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -141,6 +145,7 @@ internal class RumFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
+        lastInteractionIdentifier = configuration.lastInteractionIdentifier
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -535,6 +540,7 @@ internal class RumFeature(
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
         val initialResourceIdentifier: InitialResourceIdentifier,
+        val lastInteractionIdentifier: LastInteractionIdentifier,
         val additionalConfig: Map<String, Any>
     )
 
@@ -579,6 +585,7 @@ internal class RumFeature(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
             sessionListener = NoOpRumSessionListener(),
             initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
+            lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
             additionalConfig = emptyMap()
         )
 

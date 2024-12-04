@@ -8,6 +8,9 @@ package com.datadog.android.rum.internal.metric.interactiontonextview
 
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
 
 internal class InteractionToNextViewMetricResolver(
     private val internalLogger: InternalLogger,

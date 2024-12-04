@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.metric.interactiontonextview
+package com.datadog.android.rum.metric.interactiontonextview
 
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,18 +27,40 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TimeBasedInteractionIdentifierTest {
+internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteractionIdentifier>() {
 
     private lateinit var testedIdentifier: TimeBasedInteractionIdentifier
 
+    private var fakeTimestampThresholdInNanos: Long = 0L
     private var fakeTimestampThresholdInMs: Long = 0L
 
     // region setUp
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeTimestampThresholdInMs = TimeUnit.MILLISECONDS.toNanos(forge.aLong(min = 3000, max = 10000))
+        fakeTimestampThresholdInMs = forge.aLong(min = 3000, max = 10000)
+        fakeTimestampThresholdInNanos = TimeUnit.MILLISECONDS.toNanos(fakeTimestampThresholdInMs)
         testedIdentifier = TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
+    }
+
+    override fun createInstance(forge: Forge): TimeBasedInteractionIdentifier {
+        return TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
+    }
+
+    override fun createEqualInstance(
+        source: TimeBasedInteractionIdentifier,
+        forge: Forge
+    ): TimeBasedInteractionIdentifier {
+        return TimeBasedInteractionIdentifier(fakeTimestampThresholdInMs)
+    }
+
+    override fun createUnequalInstance(
+        source: TimeBasedInteractionIdentifier,
+        forge: Forge
+    ): TimeBasedInteractionIdentifier? {
+        return TimeBasedInteractionIdentifier(
+            fakeTimestampThresholdInMs + forge.aLong(min = 1, max = 1000)
+        )
     }
 
     // endregion
@@ -48,7 +71,7 @@ internal class TimeBasedInteractionIdentifierTest {
     fun `M return true W validate { valid context }`(forge: Forge) {
         // Given
         val viewCreatedTimestamp = System.nanoTime()
-        val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(min = 0, max = fakeTimestampThresholdInMs)
+        val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(min = 0, max = fakeTimestampThresholdInNanos)
         val fakeValidContext = forge.getForgery(PreviousViewLastInteractionContext::class.java).copy(
             eventCreatedAtNanos = eventCreatedTimestamp,
             currentViewCreationTimestamp = viewCreatedTimestamp
@@ -66,8 +89,8 @@ internal class TimeBasedInteractionIdentifierTest {
         // Given
         val viewCreatedTimestamp = System.nanoTime()
         val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(
-            min = fakeTimestampThresholdInMs + 1,
-            max = fakeTimestampThresholdInMs + 10000
+            min = fakeTimestampThresholdInNanos + 1,
+            max = fakeTimestampThresholdInNanos + 10000
         )
         val fakeValidContext = forge.getForgery(PreviousViewLastInteractionContext::class.java).copy(
             eventCreatedAtNanos = eventCreatedTimestamp,

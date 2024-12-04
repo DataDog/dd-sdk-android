@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -113,6 +114,9 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
+
+    @Mock
+    lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -1278,6 +1282,7 @@ internal class RumSessionScopeTest {
             mockSessionListener,
             applicationDisplayed = false,
             networkSettledResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )

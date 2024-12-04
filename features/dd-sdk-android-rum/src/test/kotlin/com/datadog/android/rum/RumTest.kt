@@ -111,6 +111,9 @@ internal class RumTest {
             assertThat(lastValue.initialResourceIdentifier).isSameAs(
                 fakeRumConfiguration.featureConfiguration.initialResourceIdentifier
             )
+            assertThat(lastValue.lastInteractionIdentifier).isSameAs(
+                fakeRumConfiguration.featureConfiguration.lastInteractionIdentifier
+            )
         }
     }
 
@@ -155,8 +158,11 @@ internal class RumTest {
 
         assertThat(telemetrySampler.getSampleRate())
             .isEqualTo(fakeRumConfiguration.featureConfiguration.telemetrySampleRate)
-        assertThat(monitor.initialResourceIdentifier)
+        val rumApplicationScope = monitor.rootScope as RumApplicationScope
+        assertThat(rumApplicationScope.initialResourceIdentifier)
             .isSameAs(fakeRumConfiguration.featureConfiguration.initialResourceIdentifier)
+        assertThat(rumApplicationScope.lastInteractionIdentifier)
+            .isSameAs(fakeRumConfiguration.featureConfiguration.lastInteractionIdentifier)
     }
 
     @Test

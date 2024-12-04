@@ -42,6 +42,7 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
@@ -167,6 +168,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
+    @Mock
+    lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockExecutorService.submit(any())) doAnswer {
@@ -194,7 +198,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         testedMonitor.rootScope = mockScope
     }
@@ -217,7 +222,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         val rootScope = testedMonitor.rootScope
@@ -277,7 +283,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -315,7 +322,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -1648,7 +1656,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutor,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         // When
@@ -1694,7 +1703,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         // When
@@ -1727,7 +1737,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1912,7 +1923,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             mockExecutorService,
-            mockNetworkSettledResourceIdentifier
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         testedMonitor.startView(key, name, attributes)
         // When

@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.metric.interactiontonextview
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge

@@ -14,7 +14,7 @@ package com.datadog.android.rum.metric.networksettled
  * @property viewCreatedTimestamp The timestamp (in nanoseconds) when the view was created, or null if not applicable.
  */
 data class NetworkSettledResourceContext(
-    internal val resourceId: String,
-    internal val eventCreatedAtNanos: Long,
-    internal val viewCreatedTimestamp: Long?
+    val resourceId: String,
+    val eventCreatedAtNanos: Long,
+    val viewCreatedTimestamp: Long?
 )

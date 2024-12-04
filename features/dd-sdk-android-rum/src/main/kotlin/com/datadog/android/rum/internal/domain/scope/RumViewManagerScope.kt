@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.metric.interactiontonextview.Interaction
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -43,9 +44,14 @@ internal class RumViewManagerScope(
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
-    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
-        InteractionToNextViewMetricResolver(internalLogger = sdkCore.internalLogger)
+    lastInteractionIdentifier: LastInteractionIdentifier
 ) : RumScope {
+
+    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
+        InteractionToNextViewMetricResolver(
+            internalLogger = sdkCore.internalLogger,
+            lastInteractionIdentifier = lastInteractionIdentifier
+        )
 
     internal val childrenScopes = mutableListOf<RumScope>()
     internal var stopped = false
