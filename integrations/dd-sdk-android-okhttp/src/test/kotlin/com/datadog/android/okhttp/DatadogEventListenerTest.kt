@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.okhttp.test.elmyr.OkHttpIntegrationForgeConfigurator
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.reset
@@ -41,6 +42,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -83,6 +85,16 @@ internal class DatadogEventListenerTest {
             .message("lorem ipsum dolor sit amet…")
             .build()
 
+        whenever(rumMonitor.mockSdkCore.time).thenReturn(
+            stubTimeInfo(deviceTimeNs = 0),
+            // 30 here is just a big enough value - the amount of
+            // mocked method values that should be enough for all invocations
+            // of [SdkCore.time] property
+            *Array(30) {
+                stubTimeInfo(deviceTimeNs = (it + 1) * SHORT_SLEEP_NS)
+            }
+        )
+
         testedListener = DatadogEventListener(rumMonitor.mockSdkCore, fakeKey)
     }
 
@@ -110,21 +122,13 @@ internal class DatadogEventListenerTest {
 
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
         // Then
@@ -166,27 +170,16 @@ internal class DatadogEventListenerTest {
     fun `M send timing info W callEnd() for successful request`() {
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyEnd(mockCall, fakeByteCount)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.callEnd(mockCall)
 
         // Then
@@ -229,11 +222,8 @@ internal class DatadogEventListenerTest {
     fun `M send timing info W callEnd() for successful request with reused pool`() {
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyEnd(mockCall, fakeByteCount)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.callEnd(mockCall)
 
         // Then
@@ -254,8 +244,8 @@ internal class DatadogEventListenerTest {
             assertThat(timing.firstByteStart).isEqualTo(0L)
             assertThat(timing.firstByteDuration).isEqualTo(0L)
 
-            assertThat(timing.downloadStart).isGreaterThan(SHORT_SLEEP_NS)
-            assertThat(timing.downloadDuration).isGreaterThan(SHORT_SLEEP_NS)
+            assertThat(timing.downloadStart).isGreaterThanOrEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.downloadDuration).isGreaterThanOrEqualTo(SHORT_SLEEP_NS)
                 .isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
         }
     }
@@ -266,27 +256,16 @@ internal class DatadogEventListenerTest {
     ) {
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseBodyEnd(mockCall, fakeByteCount)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.callFailed(mockCall, IOException(error))
 
         // Then
@@ -332,21 +311,13 @@ internal class DatadogEventListenerTest {
 
         // When
         testedListener.callStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsStart(mockCall, fakeDomain)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.secureConnectEnd(mockCall, null)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersStart(mockCall)
-        Thread.sleep(SHORT_SLEEP_MS)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
         // Then
@@ -424,5 +395,17 @@ internal class DatadogEventListenerTest {
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(rumMonitor)
         }
+
+        private fun stubTimeInfo(
+            deviceTimeNs: Long = 0L,
+            serverTimeNs: Long = 0L,
+            serverTimeOffsetNs: Long = 0L,
+            serverTimeOffsetMs: Long = 0L
+        ) = TimeInfo(
+            deviceTimeNs = deviceTimeNs,
+            serverTimeNs = serverTimeNs,
+            serverTimeOffsetNs = serverTimeOffsetNs,
+            serverTimeOffsetMs = serverTimeOffsetMs
+        )
     }
 }
