@@ -7,6 +7,9 @@
 package com.datadog.android.rum.internal.metric.networksettled
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 
 internal class NetworkSettledMetricResolver(
     private val initialResourceIdentifier: InitialResourceIdentifier = TimeBasedInitialResourceIdentifier(),

@@ -21,6 +21,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -117,6 +118,9 @@ internal class RumContinuousActionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @Mock
+    lateinit var mockInteractionToNextViewMetricResolver: InteractionToNextViewMetricResolver
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
@@ -161,7 +165,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             trackFrustrations = true,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
         )
     }
 
@@ -267,6 +272,7 @@ internal class RumContinuousActionScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
+
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -1598,7 +1604,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
@@ -1685,7 +1692,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())

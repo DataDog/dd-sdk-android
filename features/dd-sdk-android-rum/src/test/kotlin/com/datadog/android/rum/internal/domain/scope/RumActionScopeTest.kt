@@ -22,6 +22,8 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
+import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -126,6 +128,9 @@ internal class RumActionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @Mock
+    lateinit var mockInteractionToNextViewMetricResolver: InteractionToNextViewMetricResolver
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
@@ -182,7 +187,8 @@ internal class RumActionScopeTest {
             TEST_MAX_DURATION_MS,
             mockFeaturesContextResolver,
             true,
-            fakeSampleRate
+            fakeSampleRate,
+            mockInteractionToNextViewMetricResolver
         )
     }
 
@@ -1648,7 +1654,8 @@ internal class RumActionScopeTest {
             TEST_MAX_DURATION_MS,
             mockFeaturesContextResolver,
             fakeTrackFrustrations,
-            fakeSampleRate
+            fakeSampleRate,
+            mockInteractionToNextViewMetricResolver
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeParentContext = fakeParentContext.copy(
@@ -1734,7 +1741,8 @@ internal class RumActionScopeTest {
             TEST_MAX_DURATION_MS,
             mockFeaturesContextResolver,
             fakeTrackFrustrations,
-            fakeSampleRate
+            fakeSampleRate,
+            mockInteractionToNextViewMetricResolver
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -2721,7 +2729,8 @@ internal class RumActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             trackFrustrations = false,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
         )
 
         // When
@@ -2804,6 +2813,42 @@ internal class RumActionScopeTest {
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
             .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Action(0))
+    }
+
+    @Test
+    fun `M notify the interactionToNextViewMetricResolver W handleEvent() { write succeeded }`() {
+        // When
+        testedScope.type = RumActionType.CUSTOM
+        val event = RumRawEvent.SendCustomActionNow()
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val eventDuration = lastValue.action.loadingTime
+            checkNotNull(eventDuration)
+            verify(mockInteractionToNextViewMetricResolver).onActionSent(
+                InternalInteractionContext(
+                    fakeParentContext.viewId.orEmpty(),
+                    testedScope.type,
+                    TimeUnit.MILLISECONDS.toNanos(lastValue.date) + eventDuration
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M not notify the interactionToNextViewMetricResolver W handleEvent() { write did not succeed }`() {
+        // Given
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.type = RumActionType.CUSTOM
+        val event = RumRawEvent.SendCustomActionNow()
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
     @Test

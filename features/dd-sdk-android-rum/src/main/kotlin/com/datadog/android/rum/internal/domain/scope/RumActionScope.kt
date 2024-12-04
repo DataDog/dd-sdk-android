@@ -14,6 +14,8 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
+import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -36,7 +38,8 @@ internal class RumActionScope(
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -215,6 +218,8 @@ internal class RumActionScope(
         val eventCrashCount = crashCount
         val eventLongTaskCount = longTaskCount
         val eventResourceCount = resourceCount
+        val viewId = getRumContext().viewId.orEmpty()
+        val actionDuration = max(endNanos - startedNanos, 1L)
 
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -254,7 +259,7 @@ internal class RumActionScope(
                     crash = ActionEvent.Crash(eventCrashCount),
                     longTask = ActionEvent.LongTask(eventLongTaskCount),
                     resource = ActionEvent.Resource(eventResourceCount),
-                    loadingTime = max(endNanos - startedNanos, 1L),
+                    loadingTime = actionDuration,
                     frustration = if (frustrations.isNotEmpty()) {
                         ActionEvent.Frustration(frustrations)
                     } else {
@@ -262,7 +267,7 @@ internal class RumActionScope(
                     }
                 ),
                 view = ActionEvent.ActionEventView(
-                    id = rumContext.viewId.orEmpty(),
+                    id = viewId,
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()
                 ),
@@ -318,6 +323,14 @@ internal class RumActionScope(
                 }
                 onSuccess {
                     it.eventSent(rumContext.viewId.orEmpty(), storageEvent)
+                    val eventTimestampAsNanos = TimeUnit.MILLISECONDS.toNanos(eventTimestamp)
+                    interactionToNextViewMetricResolver.onActionSent(
+                        InternalInteractionContext(
+                            actionType = actualType,
+                            viewId = viewId,
+                            eventCreatedAtNanos = eventTimestampAsNanos + actionDuration
+                        )
+                    )
                 }
             }
             .submit()
@@ -339,7 +352,8 @@ internal class RumActionScope(
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean,
-            sampleRate: Float
+            sampleRate: Float,
+            interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -352,7 +366,8 @@ internal class RumActionScope(
                 timestampOffset,
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations,
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
             )
         }
     }

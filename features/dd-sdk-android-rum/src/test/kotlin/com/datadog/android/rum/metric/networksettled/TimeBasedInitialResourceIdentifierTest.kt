@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.metric.networksettled
+package com.datadog.android.rum.metric.networksettled
 
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -16,30 +17,51 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
-internal class TimeRequestBasedValidatorTest {
+internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInitialResourceIdentifier>() {
 
     private lateinit var testedValidator: TimeBasedInitialResourceIdentifier
 
     @Forgery
     lateinit var fakeNetworkSettledResourceContext: NetworkSettledResourceContext
 
-    private var fakeIntervalThreshold: Long = 0L
+    private var fakeIntervalThresholdInMs: Long = 0L
+    private var fakeIntervalThresholdInNanos: Long = 0L
     private var fakeViewCreatedTimestamp: Long = 0L
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeViewCreatedTimestamp = forge.aTinyPositiveLong()
-        fakeIntervalThreshold = forge.aTinyPositiveLong()
+        fakeIntervalThresholdInMs = forge.aTinyPositiveLong()
+        fakeIntervalThresholdInNanos = TimeUnit.MILLISECONDS.toNanos(fakeIntervalThresholdInMs)
         fakeNetworkSettledResourceContext =
             fakeNetworkSettledResourceContext.copy(
                 viewCreatedTimestamp = fakeViewCreatedTimestamp
             )
-        testedValidator = TimeBasedInitialResourceIdentifier(fakeIntervalThreshold)
+        testedValidator = TimeBasedInitialResourceIdentifier(fakeIntervalThresholdInMs)
+    }
+
+    override fun createInstance(forge: Forge): TimeBasedInitialResourceIdentifier {
+        return TimeBasedInitialResourceIdentifier(fakeIntervalThresholdInMs)
+    }
+
+    override fun createEqualInstance(
+        source: TimeBasedInitialResourceIdentifier,
+        forge: Forge
+    ): TimeBasedInitialResourceIdentifier {
+        return TimeBasedInitialResourceIdentifier(fakeIntervalThresholdInMs)
+    }
+
+    override fun createUnequalInstance(
+        source: TimeBasedInitialResourceIdentifier,
+        forge: Forge
+    ): TimeBasedInitialResourceIdentifier? {
+        return TimeBasedInitialResourceIdentifier(fakeIntervalThresholdInMs + forge.aTinyPositiveLong())
     }
 
     // region Tests
@@ -62,7 +84,7 @@ internal class TimeRequestBasedValidatorTest {
         fakeNetworkSettledResourceContext =
             fakeNetworkSettledResourceContext.copy(
                 eventCreatedAtNanos =
-                fakeViewCreatedTimestamp + fakeIntervalThreshold + forge.aTinyPositiveLong()
+                fakeViewCreatedTimestamp + fakeIntervalThresholdInNanos + forge.aTinyPositiveLong()
             )
 
         // When
@@ -78,7 +100,7 @@ internal class TimeRequestBasedValidatorTest {
         fakeNetworkSettledResourceContext =
             fakeNetworkSettledResourceContext.copy(
                 eventCreatedAtNanos =
-                fakeViewCreatedTimestamp + forge.aLong(min = 0, max = fakeIntervalThreshold)
+                fakeViewCreatedTimestamp + forge.aLong(min = 0, max = fakeIntervalThresholdInNanos)
             )
 
         // When

@@ -47,7 +47,8 @@ internal class ConfigurationRumForgeryFactory :
             trackNonFatalAnrs = forge.aBool(),
             vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
             sessionListener = mock(),
-            additionalConfig = forge.aMap { aString() to aString() }
+            additionalConfig = forge.aMap { aString() to aString() },
+            initialResourceIdentifier = mock()
         )
     }
 }

@@ -67,6 +67,9 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
 import com.datadog.android.rum.internal.vitals.VitalReader
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.NoOpInitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -127,6 +130,7 @@ internal class RumFeature(
     private var anrDetectorExecutorService: ExecutorService? = null
     internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
+    internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -136,7 +140,7 @@ internal class RumFeature(
 
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
-
+        initialResourceIdentifier = configuration.initialResourceIdentifier
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -530,6 +534,7 @@ internal class RumFeature(
         val trackNonFatalAnrs: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
+        val initialResourceIdentifier: InitialResourceIdentifier,
         val additionalConfig: Map<String, Any>
     )
 
@@ -573,6 +578,7 @@ internal class RumFeature(
             trackNonFatalAnrs = isTrackNonFatalAnrsEnabledByDefault(),
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
             sessionListener = NoOpRumSessionListener(),
+            initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             additionalConfig = emptyMap()
         )
 

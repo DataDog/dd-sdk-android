@@ -26,7 +26,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
-import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
@@ -34,6 +33,7 @@ import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -62,8 +62,7 @@ internal open class RumViewScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
-    private val networkSettledMetricResolver: NetworkSettledMetricResolver =
-        NetworkSettledMetricResolver(internalLogger = sdkCore.internalLogger)
+    private val networkSettledMetricResolver: NetworkSettledMetricResolver
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -165,7 +164,7 @@ internal open class RumViewScope(
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
         }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
-        interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
+        interactionToNextViewMetricResolver.onViewCreated(viewId, eventTimestamp)
     }
 
     // region RumScope
@@ -330,10 +329,10 @@ internal open class RumViewScope(
         event: RumRawEvent.StopView,
         writer: DataWriter<Any>
     ) {
-        networkSettledMetricResolver.viewWasStopped()
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
+            networkSettledMetricResolver.viewWasStopped()
             stopScope(event, writer) {
                 // we should not reset the timestamp offset here as due to async nature of feature context update
                 // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
@@ -382,14 +381,6 @@ internal open class RumViewScope(
 
         if (stopped) return
 
-        interactionToNextViewMetricResolver.onActionSent(
-            InternalInteractionContext(
-                viewId,
-                event.type,
-                event.eventTime.nanoTime
-            )
-        )
-
         if (activeActionScope != null) {
             if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
                 // deliver it anyway, even if there is active action ongoing
@@ -400,7 +391,8 @@ internal open class RumViewScope(
                     serverTimeOffsetInMs,
                     featuresContextResolver,
                     trackFrustrations,
-                    sampleRate
+                    sampleRate,
+                    interactionToNextViewMetricResolver
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -423,7 +415,8 @@ internal open class RumViewScope(
                 serverTimeOffsetInMs,
                 featuresContextResolver,
                 trackFrustrations,
-                sampleRate
+                sampleRate,
+                interactionToNextViewMetricResolver
             )
         )
         pendingActionCount++
@@ -1350,7 +1343,8 @@ internal open class RumViewScope(
             frameRateVitalMonitor: VitalMonitor,
             trackFrustrations: Boolean,
             sampleRate: Float,
-            interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver
+            interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
+            networkSettledResourceIdentifier: InitialResourceIdentifier
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -1366,7 +1360,11 @@ internal open class RumViewScope(
                 frameRateVitalMonitor,
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
-                interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
+                interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+                networkSettledMetricResolver = NetworkSettledMetricResolver(
+                    networkSettledResourceIdentifier,
+                    sdkCore.internalLogger
+                )
             )
         }
 
