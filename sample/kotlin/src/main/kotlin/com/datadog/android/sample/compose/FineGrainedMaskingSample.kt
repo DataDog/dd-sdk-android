@@ -203,6 +203,4 @@ internal fun PreviewFineGrainedMaskingSample() {
 }
 
 private const val FAKE_TEXT =
-    "\"Beyond the silver mountains, a hidden village thrives under perpetual starlight. " +
-        "Mystical creatures guard ancient secrets, while the villagers weave dreams " +
-        "into reality, crafting magic from whispers and moonbeams.\""
+    "\"Beyond the silver mountains, a hidden village thrives under perpetual starlight. "
