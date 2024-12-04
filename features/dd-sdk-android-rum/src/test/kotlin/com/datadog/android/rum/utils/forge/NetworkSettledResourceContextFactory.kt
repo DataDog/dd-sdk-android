@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledResourceContext
+import com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID

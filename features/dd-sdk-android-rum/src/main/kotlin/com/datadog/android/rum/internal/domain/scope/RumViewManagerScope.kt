@@ -21,8 +21,10 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -40,6 +42,7 @@ internal class RumViewManagerScope(
     private val frameRateVitalMonitor: VitalMonitor,
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float,
+    internal val initialResourceIdentifier: InitialResourceIdentifier,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
         InteractionToNextViewMetricResolver(internalLogger = sdkCore.internalLogger)
 ) : RumScope {
@@ -202,7 +205,8 @@ internal class RumViewManagerScope(
             frameRateVitalMonitor,
             trackFrustrations,
             sampleRate,
-            interactionToNextViewMetricResolver
+            interactionToNextViewMetricResolver,
+            initialResourceIdentifier
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -265,7 +269,11 @@ internal class RumViewManagerScope(
             type = RumViewScope.RumViewType.BACKGROUND,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
-            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+            networkSettledMetricResolver = NetworkSettledMetricResolver(
+                initialResourceIdentifier,
+                sdkCore.internalLogger
+            )
         )
     }
 
@@ -289,7 +297,11 @@ internal class RumViewManagerScope(
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
-            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+            networkSettledMetricResolver = NetworkSettledMetricResolver(
+                initialResourceIdentifier,
+                sdkCore.internalLogger
+            )
         )
     }
 

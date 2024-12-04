@@ -4,9 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.metric.networksettled
+package com.datadog.android.rum.metric.networksettled
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
