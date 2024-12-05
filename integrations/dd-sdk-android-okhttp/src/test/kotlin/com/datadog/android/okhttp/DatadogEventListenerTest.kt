@@ -47,7 +47,6 @@ import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Proxy
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -58,7 +57,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(OkHttpIntegrationForgeConfigurator::class)
 internal class DatadogEventListenerTest {
 
-    lateinit var testedListener: EventListener
+    private lateinit var testedListener: EventListener
 
     @Mock
     lateinit var mockCall: Call
@@ -160,9 +159,9 @@ internal class DatadogEventListenerTest {
             assertThat(timing.sslDuration).isLessThan(timing.connectDuration)
 
             // All durations are consistent
-            assertThat(timing.dnsDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
-            assertThat(timing.connectDuration).isLessThan((SHORT_SLEEP_NS * 3) + MARGIN_NS)
-            assertThat(timing.firstByteDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.dnsDuration).isEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.connectDuration).isEqualTo(SHORT_SLEEP_NS * 3)
+            assertThat(timing.firstByteDuration).isEqualTo(SHORT_SLEEP_NS)
         }
     }
 
@@ -211,10 +210,10 @@ internal class DatadogEventListenerTest {
             assertThat(timing.sslDuration).isLessThan(timing.connectDuration)
 
             // All durations are consistent
-            assertThat(timing.dnsDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
-            assertThat(timing.connectDuration).isLessThan((SHORT_SLEEP_NS * 3) + MARGIN_NS)
-            assertThat(timing.firstByteDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
-            assertThat(timing.downloadDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.dnsDuration).isEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.connectDuration).isEqualTo(SHORT_SLEEP_NS * 3)
+            assertThat(timing.firstByteDuration).isEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.downloadDuration).isEqualTo(SHORT_SLEEP_NS)
         }
     }
 
@@ -244,9 +243,8 @@ internal class DatadogEventListenerTest {
             assertThat(timing.firstByteStart).isEqualTo(0L)
             assertThat(timing.firstByteDuration).isEqualTo(0L)
 
-            assertThat(timing.downloadStart).isGreaterThanOrEqualTo(SHORT_SLEEP_NS)
-            assertThat(timing.downloadDuration).isGreaterThanOrEqualTo(SHORT_SLEEP_NS)
-                .isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.downloadStart).isEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.downloadDuration).isEqualTo(SHORT_SLEEP_NS)
         }
     }
 
@@ -297,10 +295,10 @@ internal class DatadogEventListenerTest {
             assertThat(timing.sslDuration).isLessThan(timing.connectDuration)
 
             // All durations are consistent
-            assertThat(timing.dnsDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
-            assertThat(timing.connectDuration).isLessThan((SHORT_SLEEP_NS * 3) + MARGIN_NS)
-            assertThat(timing.firstByteDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
-            assertThat(timing.downloadDuration).isLessThan(SHORT_SLEEP_NS + MARGIN_NS)
+            assertThat(timing.dnsDuration).isEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.connectDuration).isEqualTo(SHORT_SLEEP_NS * 3)
+            assertThat(timing.firstByteDuration).isEqualTo(SHORT_SLEEP_NS)
+            assertThat(timing.downloadDuration).isEqualTo(SHORT_SLEEP_NS)
         }
     }
 
@@ -379,14 +377,7 @@ internal class DatadogEventListenerTest {
     }
 
     companion object {
-        private const val SHORT_SLEEP_MS = 5L
-
-        private val SHORT_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(SHORT_SLEEP_MS)
-
-        // Because the threading can be random sometimes, we need a margin for our timing assertions
-        // If the tests turn flaky again, we can increase this value
-        // TODO RUM-3845 let the DatdogEventListener use the SDKCore's time info to have more reliable assertions
-        private val MARGIN_NS = TimeUnit.MILLISECONDS.toNanos(60)
+        private const val SHORT_SLEEP_NS = 5000000L
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 
