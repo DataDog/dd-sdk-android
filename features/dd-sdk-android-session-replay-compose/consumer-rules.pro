@@ -44,6 +44,9 @@
 -keep class coil.compose.ContentPainterElement {
      <fields>;
 }
+-keep class coil.compose.ContentPainterModifier {
+     <fields>;
+}
 -keep class coil.compose.AsyncImagePainter {
      <fields>;
 }

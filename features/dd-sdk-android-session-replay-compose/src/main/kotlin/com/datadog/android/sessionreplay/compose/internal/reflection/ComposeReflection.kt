@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
+@Suppress("StringLiteralDuplication")
 internal object ComposeReflection {
     val WrappedCompositionClass = getClassSafe("androidx.compose.ui.platform.WrappedComposition")
 
@@ -64,8 +65,13 @@ internal object ComposeReflection {
     val AndroidImageBitmapClass = getClassSafe("androidx.compose.ui.graphics.AndroidImageBitmap")
     val BitmapField = AndroidImageBitmapClass?.getDeclaredFieldSafe("bitmap")
 
+    val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
+    val PainterFieldOfContentPainterModifier =
+        ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+
     val ContentPainterElementClass = getClassSafe("coil.compose.ContentPainterElement")
-    val PainterFieldOfContentPainter = ContentPainterElementClass?.getDeclaredFieldSafe("painter")
+    val PainterFieldOfContentPainterElement =
+        ContentPainterElementClass?.getDeclaredFieldSafe("painter")
 
     val AsyncImagePainterClass = getClassSafe("coil.compose.AsyncImagePainter")
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")

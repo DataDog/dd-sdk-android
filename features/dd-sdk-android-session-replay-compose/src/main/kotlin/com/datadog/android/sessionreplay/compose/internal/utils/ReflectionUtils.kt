@@ -23,13 +23,15 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ImageField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainter
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterElement
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterModifier
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 
 @Suppress("TooManyFunctions")
@@ -136,12 +138,16 @@ internal class ReflectionUtils {
     }
 
     fun getAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
-        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
-            ContentPainterElementClass?.isInstance(it.modifier) == true
-        }?.modifier
-        val asyncPainter = PainterFieldOfContentPainter?.getSafe(modifier)
-        val painter = PainterFieldOfAsyncImagePainter?.getSafe(asyncPainter) as? Painter
-        return painter
+        val asyncPainter = semanticsNode.layoutInfo.getModifierInfo().firstNotNullOfOrNull {
+            if (ContentPainterModifierClass?.isInstance(it.modifier) == true) {
+                PainterFieldOfContentPainterModifier?.getSafe(it.modifier)
+            } else if (ContentPainterElementClass?.isInstance(it.modifier) == true) {
+                PainterFieldOfContentPainterElement?.getSafe(it.modifier)
+            } else {
+                null
+            }
+        }
+        return PainterFieldOfAsyncImagePainter?.getSafe(asyncPainter) as? Painter
     }
 
     fun getNestedPainter(painter: Painter): Painter? {
