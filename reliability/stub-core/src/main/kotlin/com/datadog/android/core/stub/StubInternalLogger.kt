@@ -88,9 +88,10 @@ internal class StubInternalLogger : InternalLogger {
     }
 
     override fun logApiUsage(
-        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
-        samplingRate: Float
+        samplingRate: Float,
+        apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
     ) {
+        val apiUsageEvent = apiUsageEventBuilder()
         println("U [T]: ${apiUsageEvent.javaClass.simpleName} | $samplingRate%")
         apiUsageEvent.additionalProperties.log()
         val telemetryEvent = StubTelemetryEvent(
