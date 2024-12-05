@@ -31,7 +31,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *  @param viewBoundsResolver the [ViewBoundsResolver] to get a view boundaries in density independent units
  *  @param drawableToColorMapper the [DrawableToColorMapper] to convert a background drawable into a solid color
  */
-abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal constructor(
+abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
@@ -57,8 +57,16 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         return backgroundWireframe?.let { listOf(it) } ?: emptyList()
     }
 
+    /**
+     *  Function used to resolve the Wireframe to represent the view background, based on its type.
+     *
+     *  @param view the [View] to map
+     *  @param mappingContext the [MappingContext] which contains contextual data, useful for mapping.
+     *  @param asyncJobStatusCallback the [AsyncJobStatusCallback] callback used for internal async operations.
+     *  @param internalLogger the [InternalLogger], used for internal logging.
+     */
     @UiThread
-    private fun resolveViewBackground(
+    protected open fun resolveViewBackground(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
@@ -90,7 +98,16 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         }
     }
 
-    private fun resolveBackgroundAsShapeWireframe(
+    /**
+     *  Function used to resolve the view background as a Shape wireframe.
+     *
+     *  @param view the [View] to map
+     *  @param bounds the [GlobalBounds] of the view.
+     *  @param width the view width.
+     *  @param height the view height.
+     *  @param shapeStyle the optional [MobileSegment.ShapeStyle] to use.
+     */
+    protected open fun resolveBackgroundAsShapeWireframe(
         view: View,
         bounds: GlobalBounds,
         width: Int,
@@ -115,8 +132,18 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
         )
     }
 
+    /**
+     *  Function used to resolve the view background as a Image wireframe.
+     *
+     *  @param view the [View] to map
+     *  @param bounds the [GlobalBounds] of the view.
+     *  @param width the view width.
+     *  @param height the view height.
+     *  @param mappingContext the [MappingContext] which contains contextual data, useful for mapping.
+     *  @param asyncJobStatusCallback the [AsyncJobStatusCallback] callback used for internal async operations.
+     */
     @UiThread
-    private fun resolveBackgroundAsImageWireframe(
+    protected open fun resolveBackgroundAsImageWireframe(
         view: View,
         bounds: GlobalBounds,
         width: Int,

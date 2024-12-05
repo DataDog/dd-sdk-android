@@ -10,7 +10,7 @@ import androidx.annotation.UiThread
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper

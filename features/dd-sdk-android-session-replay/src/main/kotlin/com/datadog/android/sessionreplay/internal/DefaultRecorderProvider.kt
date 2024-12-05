@@ -47,6 +47,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -101,7 +102,8 @@ internal class DefaultRecorderProvider(
             colorStringFormatter = colorStringFormatter,
             viewBoundsResolver = viewBoundsResolver,
             drawableToColorMapper = drawableToColorMapper,
-            imageViewUtils = ImageViewUtils
+            imageViewUtils = ImageViewUtils,
+            drawableCopier = DefaultDrawableCopier()
         )
         val textViewMapper = TextViewMapper<TextView>(
             viewIdentifierResolver,

@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -99,6 +100,9 @@ internal class ImageViewMapperTest {
 
     @Mock
     lateinit var mockDrawableToColorMapper: DrawableToColorMapper
+
+    @Mock
+    lateinit var mockDrawableCopier: DrawableCopier
 
     @Mock
     lateinit var mockGlobalBounds: GlobalBounds
@@ -197,7 +201,8 @@ internal class ImageViewMapperTest {
             colorStringFormatter = mockColorStringFormatter,
             viewBoundsResolver = mockViewBoundsResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
-            imageViewUtils = stubImageViewUtils
+            imageViewUtils = stubImageViewUtils,
+            drawableCopier = mockDrawableCopier
         )
     }
 

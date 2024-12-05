@@ -141,7 +141,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -179,7 +178,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -214,7 +212,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -254,7 +251,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -279,7 +275,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -297,12 +292,13 @@ internal class DrawableUtilsTest {
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
-        whenever(mockConstantState.newDrawable(mockResources))
-            .thenReturn(null)
+        whenever(mockBitmap.isRecycled).thenReturn(true)
+        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any())).thenReturn(
+            null
+        )
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -325,7 +321,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -353,7 +348,6 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -379,14 +373,19 @@ internal class DrawableUtilsTest {
     }
 
     @Test
-    fun `M not use original drawable W createBitmapOfApproxSizeFromDrawable`() {
+    fun `M uses original drawable W createBitmapOfApproxSizeFromDrawable`() {
+        /**
+         * PR NOTE:
+         *  - This PR changes the logic so that createBitmapOfApproxSizeFromDrawable -> drawOnCanvas does not
+         *    create a copy of the original drawable. We should confirm that this is OK.
+         **/
+
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = mockResources,
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
@@ -396,10 +395,10 @@ internal class DrawableUtilsTest {
         )
 
         // Then
-        verify(mockDrawable, never()).setBounds(any(), any(), any(), any())
-        verify(mockDrawable, never()).draw(any())
-        verify(mockSecondDrawable).setBounds(any(), any(), any(), any())
-        verify(mockSecondDrawable).draw(any())
+        verify(mockDrawable).setBounds(any(), any(), any(), any())
+        verify(mockDrawable).draw(any())
+        verify(mockSecondDrawable, never()).setBounds(any(), any(), any(), any())
+        verify(mockSecondDrawable, never()).draw(any())
     }
 
     @Test
