@@ -350,6 +350,22 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         }
     }
 
+    @Test
+    fun `M return correct header type W headerTypesForUrl(String) {domain and subdomain has different types}`() {
+        val resolver = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf(
+                "bar.com" to setOf(TracingHeaderType.DATADOG),
+                "foo.bar.com" to setOf(TracingHeaderType.TRACECONTEXT)
+            )
+        )
+
+        assertThat(resolver.headerTypesForUrl("http://bar.com"))
+            .isEqualTo(setOf(TracingHeaderType.DATADOG))
+
+        assertThat(resolver.headerTypesForUrl("http://foo.bar.com"))
+            .isEqualTo(setOf(TracingHeaderType.TRACECONTEXT))
+    }
+
     companion object {
         private const val HOST_REGEX = "([a-z][a-z0-9_~-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
     }
