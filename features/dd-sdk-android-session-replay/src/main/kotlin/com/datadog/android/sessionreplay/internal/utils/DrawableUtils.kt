@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Color
@@ -39,14 +38,13 @@ internal class DrawableUtils(
      */
     @WorkerThread
     internal fun createBitmapOfApproxSizeFromDrawable(
-        resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT,
         config: Config = Config.ARGB_8888,
-        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback,
     ) {
         createScaledBitmap(
             drawableWidth,
@@ -59,7 +57,6 @@ internal class DrawableUtils(
                 override fun onSuccess(bitmap: Bitmap) {
                     executorService.submitSafe("drawOnCanvas", internalLogger) {
                         drawOnCanvas(
-                            resources,
                             bitmap,
                             drawable,
                             bitmapCreationCallback
@@ -103,27 +100,26 @@ internal class DrawableUtils(
 
     @WorkerThread
     private fun drawOnCanvas(
-        resources: Resources,
         bitmap: Bitmap,
         drawable: Drawable,
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        // don't use the original drawable - it will affect the view hierarchy
-        val newDrawable = drawable.constantState?.newDrawable(resources)?.apply {
-            // `constantState` contains only immutable properties of drawable,the state needs to be set manually
-            setState(drawable.current.state)
-        }
+        // PR NOTE:
+        // The logic to create a copy of the drawable was removed.
+        // We should verify that it is safe not to copy the drawable.
+        // Currently, this function seems to be used only with drawables that were already cloned.
+
         val canvas = canvasWrapper.createCanvas(bitmap)
 
-        if (canvas == null || newDrawable == null) {
+        if (canvas == null) {
             bitmapCreationCallback.onFailure()
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
 
-            newDrawable.setBounds(0, 0, canvas.width, canvas.height)
-            newDrawable.draw(canvas)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
             bitmapCreationCallback.onReady(bitmap)
         }
     }
