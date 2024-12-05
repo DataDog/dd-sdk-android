@@ -1041,6 +1041,7 @@ datadog:
       - "kotlin.collections.Set.any(kotlin.Function1)"
       - "kotlin.collections.Set.associate(kotlin.Function1)"
       - "kotlin.collections.Set.contains(com.datadog.android.trace.TracingHeaderType)"
+      - "kotlin.collections.Set.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.Set.forEach(kotlin.Function1)"
       - "kotlin.collections.Set.ifEmpty(kotlin.Function0)"
       - "kotlin.collections.Set.isEmpty()"
