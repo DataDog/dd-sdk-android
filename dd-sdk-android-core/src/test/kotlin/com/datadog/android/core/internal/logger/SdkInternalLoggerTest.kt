@@ -283,7 +283,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -316,7 +316,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -346,7 +346,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -377,7 +377,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -409,7 +409,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -442,7 +442,7 @@ internal class SdkInternalLoggerTest {
         }
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -469,7 +469,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val metricEvent = firstValue as InternalTelemetryEvent.Metric
             assertThat(metricEvent.message).isEqualTo(fakeMessage)
@@ -561,10 +561,10 @@ internal class SdkInternalLoggerTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
-        testedInternalLogger.logApiUsage(fakeApiUsageInternalTelemetryEvent, 100.0f)
+        testedInternalLogger.logApiUsage(100.0f) { fakeApiUsageInternalTelemetryEvent }
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val apiUsageEvent = firstValue as InternalTelemetryEvent.ApiUsage
             assertThat(apiUsageEvent).isEqualTo(fakeApiUsageInternalTelemetryEvent)
@@ -585,10 +585,7 @@ internal class SdkInternalLoggerTest {
 
         // When
         repeat(100) {
-            testedInternalLogger.logApiUsage(
-                fakeApiUsageInternalTelemetryEvent,
-                fakeSampleRate
-            )
+            testedInternalLogger.logApiUsage(fakeSampleRate) { fakeApiUsageInternalTelemetryEvent }
         }
 
         // Then
@@ -605,10 +602,7 @@ internal class SdkInternalLoggerTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
-        testedInternalLogger.logApiUsage(
-            fakeApiUsageInternalTelemetryEvent,
-            0.0f
-        )
+        testedInternalLogger.logApiUsage(0.0f) { fakeApiUsageInternalTelemetryEvent }
 
         // Then
         verify(mockRumFeatureScope, never()).sendEvent(any())
@@ -624,10 +618,9 @@ internal class SdkInternalLoggerTest {
 
         // When
         assertDoesNotThrow {
-            testedInternalLogger.logApiUsage(
-                fakeApiUsageInternalTelemetryEvent,
-                fakeSampleRate
-            )
+            testedInternalLogger.logApiUsage(fakeSampleRate) {
+                fakeApiUsageInternalTelemetryEvent
+            }
         }
     }
 
