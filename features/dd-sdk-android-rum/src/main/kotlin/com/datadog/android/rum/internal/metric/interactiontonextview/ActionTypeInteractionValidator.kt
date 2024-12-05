@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.metric.interactiontonextview
 
-import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.model.ActionEvent
 
 internal class ActionTypeInteractionValidator : InteractionIngestionValidator {
     override fun validate(
@@ -17,10 +17,10 @@ internal class ActionTypeInteractionValidator : InteractionIngestionValidator {
 
     companion object {
         private val ALLOWED_TYPES = setOf(
-            RumActionType.TAP,
-            RumActionType.SWIPE,
-            RumActionType.CLICK,
-            RumActionType.BACK
+            ActionEvent.ActionEventActionType.TAP,
+            ActionEvent.ActionEventActionType.SWIPE,
+            ActionEvent.ActionEventActionType.CLICK,
+            ActionEvent.ActionEventActionType.BACK
         )
     }
 }

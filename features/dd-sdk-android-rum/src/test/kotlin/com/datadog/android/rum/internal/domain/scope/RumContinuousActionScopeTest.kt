@@ -21,6 +21,8 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -333,6 +335,11 @@ internal class RumContinuousActionScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, type.toSchemaType(), fakeEvent.eventTime.nanoTime)
+            )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -398,6 +405,11 @@ internal class RumContinuousActionScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), fakeEvent.eventTime.nanoTime)
+            )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -416,6 +428,7 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap())
@@ -467,6 +480,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isSameAs(testedScope)
@@ -487,6 +505,7 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopResourceWithError(
@@ -500,6 +519,11 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -549,6 +573,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isSameAs(testedScope)
@@ -573,6 +602,7 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -587,7 +617,11 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
-
+        val expectedFrustrations = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
         // Then
         argumentCaptor<ActionEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -635,6 +669,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrations, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isSameAs(testedScope)
@@ -653,6 +692,7 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = mockEvent()
@@ -704,6 +744,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
@@ -728,9 +773,15 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+        val expectedFrustrations = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -780,6 +831,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrations, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
@@ -792,6 +848,7 @@ internal class RumContinuousActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -801,6 +858,11 @@ internal class RumContinuousActionScopeTest {
             threads = emptyList(),
             attributes = emptyMap()
         )
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -849,6 +911,11 @@ internal class RumContinuousActionScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -860,6 +927,7 @@ internal class RumContinuousActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -879,6 +947,11 @@ internal class RumContinuousActionScopeTest {
             threads = emptyList(),
             attributes = emptyMap()
         )
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -928,6 +1001,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
     }
@@ -935,6 +1013,7 @@ internal class RumContinuousActionScopeTest {
     @Test
     fun `M send Action immediately W handleEvent(StopView) {viewTreeChangeCount != 0}`() {
         // When
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -981,6 +1060,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -989,6 +1073,7 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.resourceCount = count
 
         // When
@@ -1038,6 +1123,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1046,6 +1136,7 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.longTaskCount = count
 
         // When
@@ -1095,6 +1186,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1103,7 +1199,13 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.errorCount = count
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
 
         // When
         fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
@@ -1157,6 +1259,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1166,8 +1273,14 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) fatalCount: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.errorCount = nonFatalCount + fatalCount
         testedScope.crashCount = fatalCount
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
 
         // When
         fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
@@ -1221,12 +1334,18 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
     @Test
     fun `M send Action immediately W handleEvent(StopSession) {viewTreeChangeCount != 0}`() {
         // When
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         fakeEvent = RumRawEvent.StopSession()
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -1273,6 +1392,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1281,6 +1405,7 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.resourceCount = count
 
         // When
@@ -1330,6 +1455,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1338,6 +1468,7 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.longTaskCount = count
 
         // When
@@ -1387,6 +1518,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1395,11 +1531,17 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) count: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.errorCount = count
 
         // When
         fakeEvent = RumRawEvent.StopSession()
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -1449,6 +1591,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1458,8 +1605,14 @@ internal class RumContinuousActionScopeTest {
         @LongForgery(1, 1024) fatalCount: Long
     ) {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.errorCount = nonFatalCount + fatalCount
         testedScope.crashCount = fatalCount
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) {
+            1
+        } else {
+            0
+        }
 
         // When
         fakeEvent = RumRawEvent.StopSession()
@@ -1513,6 +1666,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -1520,6 +1678,7 @@ internal class RumContinuousActionScopeTest {
     fun `M send Action after threshold W handleEvent(StopAction+any) {viewTreeChangeCount!=0}`() {
         // When
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -1568,6 +1727,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
     }
@@ -1602,6 +1766,7 @@ internal class RumContinuousActionScopeTest {
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
             syntheticsResultId = fakeResultId
@@ -1657,6 +1822,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
     }
@@ -1817,6 +1987,7 @@ internal class RumContinuousActionScopeTest {
         // Given
         testedScope.resourceCount = count
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1867,6 +2038,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
     }
@@ -1878,6 +2054,8 @@ internal class RumContinuousActionScopeTest {
         // Given
         testedScope.errorCount = count
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) 1 else 0
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1932,6 +2110,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
     }
@@ -1945,6 +2128,8 @@ internal class RumContinuousActionScopeTest {
         testedScope.errorCount = nonFatalCount + fatalCount
         testedScope.crashCount = fatalCount
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
+        val expectedFrustrationCount = if (fakeType == RumActionType.TAP) 1 else 0
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1998,6 +2183,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(expectedFrustrationCount, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
     }
@@ -2006,6 +2196,7 @@ internal class RumContinuousActionScopeTest {
     fun `M send Action only once W handleEvent(StopAction) + handleEvent(any) twice`() {
         // Given
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val expectedStoppedTimestamp = fakeEvent.eventTime.nanoTime
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2057,6 +2248,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, fakeType.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
         assertThat(result3).isNull()
@@ -2068,6 +2264,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.type = actionType
 
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
@@ -2120,6 +2317,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, testedScope.type.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
@@ -2188,6 +2390,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.type = actionType
 
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
@@ -2240,12 +2443,18 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, testedScope.type.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 
     @Test
     fun `M send custom Action immediately W handleEvent(StopSession) {no side effect}`() {
         // Given
+        val expectedStoppedTimestamp = fakeEventTime.nanoTime
         testedScope.type = RumActionType.CUSTOM
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
@@ -2299,6 +2508,11 @@ internal class RumContinuousActionScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, RumActionType.CUSTOM.toSchemaType(), expectedStoppedTimestamp)
+            )
         assertThat(result).isNull()
     }
 

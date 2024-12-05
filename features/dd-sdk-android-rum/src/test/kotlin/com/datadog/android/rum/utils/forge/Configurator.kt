@@ -63,5 +63,8 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(InternalTelemetryErrorLogForgeryFactory())
         forge.addFactory(InternalTelemetryConfigurationForgeryFactory())
         forge.addFactory(InternalTelemetryApiUsageForgeryFactory())
+
+        // RumRawEvent
+        forge.addFactory(ActionSentForgeryFactory())
     }
 }

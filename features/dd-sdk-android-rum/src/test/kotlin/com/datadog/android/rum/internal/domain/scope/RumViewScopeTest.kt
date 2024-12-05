@@ -2316,10 +2316,12 @@ internal class RumViewScopeTest {
     @Test
     fun `M send event W handleEvent(ActionSent) on active view`(
         @LongForgery(1) pending: Long,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @Forgery actionType: ActionEvent.ActionEventActionType,
+        @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
         testedScope.pendingActionCount = pending
 
         // When
@@ -2387,10 +2389,12 @@ internal class RumViewScopeTest {
     fun `M send event W handleEvent(ActionSent) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
         @IntForgery(0) frustrationCount: Int,
-        @Forgery fakeNewViewId: UUID
+        @Forgery fakeNewViewId: UUID,
+        @Forgery actionType: ActionEvent.ActionEventActionType,
+        @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
         testedScope.pendingActionCount = pending
         testedScope.viewId = fakeNewViewId.toString()
 
@@ -2459,12 +2463,14 @@ internal class RumViewScopeTest {
     fun `M do nothing W handleEvent(ActionSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @Forgery actionType: ActionEvent.ActionEventActionType,
+        @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount)
+        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount, actionType, actionEventTimestamp)
         testedScope.pendingActionCount = pending
 
         // When
@@ -3095,12 +3101,14 @@ internal class RumViewScopeTest {
 
     @Test
     fun `M send event W handleEvent(ActionSent) on stopped view`(
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @Forgery actionType: ActionEvent.ActionEventActionType,
+        @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = 1
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -3167,14 +3175,16 @@ internal class RumViewScopeTest {
     fun `M do nothing W handleEvent(ActionSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @Forgery actionType: ActionEvent.ActionEventActionType,
+        @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount)
+        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount, actionType, actionEventTimestamp)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -3277,13 +3287,16 @@ internal class RumViewScopeTest {
     @Test
     fun `M close the scope W handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
         @LongForgery(0) duration: Long,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @Forgery actionType: ActionEvent.ActionEventActionType,
+        @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
-        val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
+        val fakeActionSent =
+            RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -3707,13 +3720,6 @@ internal class RumViewScopeTest {
         assertThat(actionScope.attributes).containsAllEntriesOf(attributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
         assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
-        verify(mockInteractionToNextViewMetricResolver).onActionSent(
-            InternalInteractionContext(
-                testedScope.viewId,
-                fakeStartActionEvent.type,
-                fakeStartActionEvent.eventTime.nanoTime
-            )
-        )
     }
 
     @Test
@@ -3965,7 +3971,6 @@ internal class RumViewScopeTest {
         verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
         assertThat(testedScope.activeActionScope).isNull()
-        verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
     @Test
@@ -4162,7 +4167,6 @@ internal class RumViewScopeTest {
 
         assertThat(testedScope.pendingActionCount).isEqualTo(pending)
         assertThat(result).isSameAs(testedScope)
-        verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
     // endregion
@@ -7438,7 +7442,47 @@ internal class RumViewScopeTest {
     @Test
     fun `M notify the interactionToNextViewMetricResolver W view was created`() {
         // Then
-        verify(mockInteractionToNextViewMetricResolver).onViewCreated(testedScope.viewId, fakeEventTime.nanoTime)
+        verify(mockInteractionToNextViewMetricResolver).onViewCreated(
+            testedScope.viewId,
+            fakeEventTime.nanoTime
+        )
+    }
+
+    @Test
+    fun `M notify the interactionToNextViewMetricResolver W action was sent { valid view id }`(
+        @Forgery actionSent: RumRawEvent.ActionSent
+    ) {
+        // Given
+        val validActionSent = actionSent.copy(viewId = testedScope.viewId)
+
+        // When
+        testedScope.handleEvent(
+            validActionSent,
+            mockWriter
+        )
+
+        // Then
+        verify(mockInteractionToNextViewMetricResolver).onActionSent(
+            InternalInteractionContext(
+                validActionSent.viewId,
+                validActionSent.type,
+                validActionSent.eventEndTimestampInNanos
+            )
+        )
+    }
+
+    @Test
+    fun `M not notify the interactionToNextViewMetricResolver W action was sent { invalid view id }`(
+        @Forgery invalidActionSent: RumRawEvent.ActionSent
+    ) {
+        // When
+        testedScope.handleEvent(
+            invalidActionSent,
+            mockWriter
+        )
+
+        // Then
+        verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
     // endregion
@@ -8765,9 +8809,10 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
+        val applicationStartupNanos = forge.aPositiveLong()
         fakeEvent = RumRawEvent.ApplicationStarted(
             eventTime = Time(),
-            applicationStartupNanos = forge.aPositiveLong()
+            applicationStartupNanos = applicationStartupNanos
         )
 
         // When
@@ -8775,7 +8820,10 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventSent(testedScope.viewId, StorageEvent.Action(0))
+            .eventSent(
+                testedScope.viewId,
+                StorageEvent.Action(0, ActionEvent.ActionEventActionType.APPLICATION_START, applicationStartupNanos)
+            )
     }
 
     @Test
@@ -8784,10 +8832,12 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
+        val applicationStartupNanos = forge.aPositiveLong()
         fakeEvent = RumRawEvent.ApplicationStarted(
             eventTime = Time(),
-            applicationStartupNanos = forge.aPositiveLong()
+            applicationStartupNanos = applicationStartupNanos
         )
+
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
@@ -8795,7 +8845,10 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(testedScope.viewId, StorageEvent.Action(0))
+            .eventDropped(
+                testedScope.viewId,
+                StorageEvent.Action(0, ActionEvent.ActionEventActionType.APPLICATION_START, applicationStartupNanos)
+            )
     }
 
     @Test
@@ -8804,9 +8857,10 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
+        val applicationStartupNanos = forge.aPositiveLong()
         fakeEvent = RumRawEvent.ApplicationStarted(
             eventTime = Time(),
-            applicationStartupNanos = forge.aPositiveLong()
+            applicationStartupNanos = applicationStartupNanos
         )
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT))
@@ -8817,7 +8871,10 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(testedScope.viewId, StorageEvent.Action(0))
+            .eventDropped(
+                testedScope.viewId,
+                StorageEvent.Action(0, ActionEvent.ActionEventActionType.APPLICATION_START, applicationStartupNanos)
+            )
     }
 
     @Test
@@ -9169,6 +9226,7 @@ internal class RumViewScopeTest {
     fun `M not update the global attributes W handleEvent(Action Sent) on new started view`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
+        @LongForgery(0) actionEventTimestamp: Long,
         forge: Forge
     ) {
         // Given
@@ -9220,7 +9278,7 @@ internal class RumViewScopeTest {
         )
         // When
         testedScope.handleEvent(
-            RumRawEvent.ActionSent(testedScope.viewId, forge.anInt()),
+            RumRawEvent.ActionSent(testedScope.viewId, forge.anInt(), type.toSchemaType(), actionEventTimestamp),
             mockWriter
         )
 
@@ -9314,6 +9372,7 @@ internal class RumViewScopeTest {
     fun `M not update the global attributes W handleEvent(Action Sent) on stopped view`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
+        @LongForgery(0) actionEventTimestamp: Long,
         forge: Forge
     ) {
         // Given
@@ -9375,7 +9434,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.ActionSent(testedScope.viewId, forge.anInt()),
+            RumRawEvent.ActionSent(testedScope.viewId, forge.anInt(), type.toSchemaType(), actionEventTimestamp),
             mockWriter
         )
 

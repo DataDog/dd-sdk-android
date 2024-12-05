@@ -179,7 +179,7 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
 interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
   fun validate(PreviousViewLastInteractionContext): Boolean
 data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
-  constructor(com.datadog.android.rum.RumActionType, Long, Long?)
+  constructor(com.datadog.android.rum.model.ActionEvent.ActionEventActionType, Long, Long?)
 class com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier : LastInteractionIdentifier
   constructor(Long = DEFAULT_TIME_THRESHOLD_MS)
   override fun validate(PreviousViewLastInteractionContext): Boolean

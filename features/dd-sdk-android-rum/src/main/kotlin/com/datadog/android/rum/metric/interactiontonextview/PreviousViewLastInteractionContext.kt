@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.metric.interactiontonextview
 
-import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.model.ActionEvent
 
 /**
  * Represents the context of the last interaction in the previous view.
@@ -16,7 +16,7 @@ import com.datadog.android.rum.RumActionType
  * or null if not applicable.
  */
 data class PreviousViewLastInteractionContext(
-    val actionType: RumActionType,
+    val actionType: ActionEvent.ActionEventActionType,
     val eventCreatedAtNanos: Long,
     val currentViewCreationTimestamp: Long?
 )
