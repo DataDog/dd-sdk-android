@@ -74,27 +74,27 @@ internal constructor(
     override fun callStart(call: Call) {
         super.callStart(call)
         sendWaitForResourceTimingEvent()
-        callStart = System.nanoTime()
+        callStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun dnsStart(call: Call, domainName: String) {
         super.dnsStart(call, domainName)
         sendWaitForResourceTimingEvent()
-        dnsStart = System.nanoTime()
+        dnsStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
         super.dnsEnd(call, domainName, inetAddressList)
-        dnsEnd = System.nanoTime()
+        dnsEnd = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
         super.connectStart(call, inetSocketAddress, proxy)
         sendWaitForResourceTimingEvent()
-        connStart = System.nanoTime()
+        connStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
@@ -105,33 +105,33 @@ internal constructor(
         protocol: Protocol?
     ) {
         super.connectEnd(call, inetSocketAddress, proxy, protocol)
-        connEnd = System.nanoTime()
+        connEnd = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun secureConnectStart(call: Call) {
         super.secureConnectStart(call)
         sendWaitForResourceTimingEvent()
-        sslStart = System.nanoTime()
+        sslStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun secureConnectEnd(call: Call, handshake: Handshake?) {
         super.secureConnectEnd(call, handshake)
-        sslEnd = System.nanoTime()
+        sslEnd = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
         sendWaitForResourceTimingEvent()
-        headersStart = System.nanoTime()
+        headersStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
-        headersEnd = System.nanoTime()
+        headersEnd = sdkCore.time.deviceTimeNs
         if (response.code >= HttpURLConnection.HTTP_BAD_REQUEST) {
             sendTiming()
         }
@@ -141,13 +141,13 @@ internal constructor(
     override fun responseBodyStart(call: Call) {
         super.responseBodyStart(call)
         sendWaitForResourceTimingEvent()
-        bodyStart = System.nanoTime()
+        bodyStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun responseBodyEnd(call: Call, byteCount: Long) {
         super.responseBodyEnd(call, byteCount)
-        bodyEnd = System.nanoTime()
+        bodyEnd = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
