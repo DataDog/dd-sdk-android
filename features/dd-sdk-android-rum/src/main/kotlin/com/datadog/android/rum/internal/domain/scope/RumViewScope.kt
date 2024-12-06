@@ -27,6 +27,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
+import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
@@ -719,6 +720,12 @@ internal open class RumViewScope(
         if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingResourceCount--
             resourceCount++
+            networkSettledMetricResolver.resourceWasStopped(
+                InternalResourceContext(
+                    event.resourceId,
+                    event.resourceEndTimestampInNanos
+                )
+            )
             sendViewUpdate(event, writer)
         }
     }
@@ -773,6 +780,7 @@ internal open class RumViewScope(
 
     private fun onResourceDropped(event: RumRawEvent.ResourceDropped) {
         if (event.viewId == viewId || event.viewId in oldViewIds) {
+            networkSettledMetricResolver.resourceWasDropped(event.resourceId)
             pendingResourceCount--
         }
     }
