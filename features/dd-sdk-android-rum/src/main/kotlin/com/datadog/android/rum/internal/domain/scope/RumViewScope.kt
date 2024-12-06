@@ -382,14 +382,6 @@ internal open class RumViewScope(
 
         if (stopped) return
 
-        interactionToNextViewMetricResolver.onActionSent(
-            InternalInteractionContext(
-                viewId,
-                event.type,
-                event.eventTime.nanoTime
-            )
-        )
-
         if (activeActionScope != null) {
             if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
                 // deliver it anyway, even if there is active action ongoing
@@ -740,6 +732,13 @@ internal open class RumViewScope(
             pendingActionCount--
             actionCount++
             frustrationCount += event.frustrationCount
+            interactionToNextViewMetricResolver.onActionSent(
+                InternalInteractionContext(
+                    event.viewId,
+                    event.type,
+                    event.eventEndTimestampInNanos
+                )
+            )
             sendViewUpdate(event, writer)
         }
     }
@@ -1122,7 +1121,11 @@ internal open class RumViewScope(
             )
         }
             .apply {
-                val storageEvent = StorageEvent.Action(0)
+                val storageEvent = StorageEvent.Action(
+                    0,
+                    ActionEvent.ActionEventActionType.APPLICATION_START,
+                    event.applicationStartupNanos
+                )
                 onError { it.eventDropped(rumContext.viewId.orEmpty(), storageEvent) }
                 onSuccess { it.eventSent(rumContext.viewId.orEmpty(), storageEvent) }
             }

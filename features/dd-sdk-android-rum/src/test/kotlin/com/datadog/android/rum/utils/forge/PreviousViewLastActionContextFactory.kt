@@ -6,15 +6,15 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
+import com.datadog.android.rum.model.ActionEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class PreviousViewLastActionContextFactory : ForgeryFactory<PreviousViewLastInteractionContext> {
     override fun getForgery(forge: Forge): PreviousViewLastInteractionContext {
         return PreviousViewLastInteractionContext(
-            actionType = forge.aValueFrom(RumActionType::class.java),
+            actionType = forge.aValueFrom(ActionEvent.ActionEventActionType::class.java),
             eventCreatedAtNanos = forge.aPositiveLong(),
             currentViewCreationTimestamp = forge.aNullable { forge.aPositiveLong() }
         )

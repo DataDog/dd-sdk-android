@@ -6,18 +6,19 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
+import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.model.ActionEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID
 
-internal class InternalInteractionContextFactory : ForgeryFactory<InternalInteractionContext> {
-    override fun getForgery(forge: Forge): InternalInteractionContext {
-        return InternalInteractionContext(
+internal class ActionSentForgeryFactory : ForgeryFactory<RumRawEvent.ActionSent> {
+    override fun getForgery(forge: Forge): RumRawEvent.ActionSent {
+        return RumRawEvent.ActionSent(
             viewId = forge.getForgery<UUID>().toString(),
-            actionType = forge.aValueFrom(ActionEvent.ActionEventActionType::class.java),
-            eventCreatedAtNanos = forge.aPositiveLong()
+            frustrationCount = forge.anInt(min = 0),
+            type = forge.aValueFrom(ActionEvent.ActionEventActionType::class.java),
+            eventEndTimestampInNanos = forge.aPositiveLong()
         )
     }
 }

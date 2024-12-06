@@ -560,7 +560,9 @@ internal class DatadogRumMonitor(
             is StorageEvent.Action -> handleEvent(
                 RumRawEvent.ActionSent(
                     viewId,
-                    event.frustrationCount
+                    event.frustrationCount,
+                    event.type,
+                    event.eventEndTimestampInNanos
                 )
             )
 

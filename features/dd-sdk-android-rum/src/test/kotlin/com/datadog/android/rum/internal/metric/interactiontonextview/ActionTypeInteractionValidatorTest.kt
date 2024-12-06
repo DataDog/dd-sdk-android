@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.metric.interactiontonextview
 
-import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.model.ActionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
@@ -63,22 +63,22 @@ internal class ActionTypeInteractionValidatorTest {
             return listOf(
                 InternalInteractionContext(
                     "viewId",
-                    RumActionType.TAP,
+                    ActionEvent.ActionEventActionType.TAP,
                     System.nanoTime()
                 ),
                 InternalInteractionContext(
                     "viewId",
-                    RumActionType.CLICK,
+                    ActionEvent.ActionEventActionType.CLICK,
                     System.nanoTime()
                 ),
                 InternalInteractionContext(
                     "viewId",
-                    RumActionType.SWIPE,
+                    ActionEvent.ActionEventActionType.SWIPE,
                     System.nanoTime()
                 ),
                 InternalInteractionContext(
                     "viewId",
-                    RumActionType.BACK,
+                    ActionEvent.ActionEventActionType.BACK,
                     System.nanoTime()
                 )
             )
@@ -89,12 +89,12 @@ internal class ActionTypeInteractionValidatorTest {
             return listOf(
                 InternalInteractionContext(
                     "viewId",
-                    RumActionType.CUSTOM,
+                    ActionEvent.ActionEventActionType.CUSTOM,
                     System.nanoTime()
                 ),
                 InternalInteractionContext(
                     "viewId",
-                    RumActionType.SCROLL,
+                    ActionEvent.ActionEventActionType.SCROLL,
                     System.nanoTime()
                 )
             )

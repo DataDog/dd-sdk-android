@@ -6,10 +6,10 @@
 
 package com.datadog.android.rum.internal.metric.interactiontonextview
 
-import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.model.ActionEvent
 
 internal data class InternalInteractionContext(
     internal val viewId: String,
-    internal val actionType: RumActionType,
+    internal val actionType: ActionEvent.ActionEventActionType,
     internal val eventCreatedAtNanos: Long
 )

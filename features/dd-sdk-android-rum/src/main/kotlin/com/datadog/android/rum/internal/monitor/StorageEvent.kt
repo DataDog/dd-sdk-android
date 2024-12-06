@@ -6,9 +6,16 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.rum.model.ActionEvent
+
 internal sealed class StorageEvent {
     object View : StorageEvent()
-    data class Action(val frustrationCount: Int) : StorageEvent()
+    data class Action(
+        val frustrationCount: Int,
+        val type: ActionEvent.ActionEventActionType,
+        val eventEndTimestampInNanos: Long
+    ) : StorageEvent()
+
     object Resource : StorageEvent()
     object Error : StorageEvent()
     object LongTask : StorageEvent()

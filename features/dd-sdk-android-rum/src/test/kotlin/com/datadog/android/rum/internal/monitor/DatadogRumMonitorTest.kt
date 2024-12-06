@@ -44,6 +44,7 @@ import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
@@ -1384,9 +1385,11 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W eventSent {action}`(
         @StringForgery viewId: String,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @LongForgery(0) eventEndTimestamp: Long,
+        @Forgery actionType: ActionEvent.ActionEventActionType
     ) {
-        testedMonitor.eventSent(viewId, StorageEvent.Action(frustrationCount))
+        testedMonitor.eventSent(viewId, StorageEvent.Action(frustrationCount, actionType, eventEndTimestamp))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1395,6 +1398,8 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.ActionSent
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.frustrationCount).isEqualTo(frustrationCount)
+            assertThat(event.type).isEqualTo(actionType)
+            assertThat(event.eventEndTimestampInNanos).isEqualTo(eventEndTimestamp)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1468,9 +1473,11 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W eventDropped {action}`(
         @StringForgery viewId: String,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @LongForgery(0) eventEndTimestamp: Long,
+        @Forgery actionType: ActionEvent.ActionEventActionType
     ) {
-        testedMonitor.eventDropped(viewId, StorageEvent.Action(frustrationCount))
+        testedMonitor.eventDropped(viewId, StorageEvent.Action(frustrationCount, actionType, eventEndTimestamp))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
