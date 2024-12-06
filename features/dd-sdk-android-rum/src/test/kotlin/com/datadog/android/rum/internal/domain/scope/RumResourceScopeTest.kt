@@ -314,9 +314,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -387,9 +384,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -475,9 +469,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -553,9 +544,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -626,9 +614,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -718,9 +703,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -782,9 +764,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -837,9 +816,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -861,9 +837,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -970,9 +943,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -1044,9 +1014,6 @@ internal class RumResourceScopeTest {
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -1120,9 +1087,6 @@ internal class RumResourceScopeTest {
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -1196,9 +1160,6 @@ internal class RumResourceScopeTest {
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(result).isEqualTo(null)
     }
 
@@ -2499,9 +2460,6 @@ internal class RumResourceScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         verify(mockParentScope, never()).handleEvent(any(), any())
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(resultWaitForTiming).isSameAs(testedScope)
         assertThat(resultStop).isEqualTo(null)
     }
@@ -2571,9 +2529,6 @@ internal class RumResourceScopeTest {
         verify(mockParentScope, never()).handleEvent(any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(testedScope)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(resultStop).isEqualTo(null)
     }
 
@@ -2642,9 +2597,6 @@ internal class RumResourceScopeTest {
         verifyNoMoreInteractions(mockWriter)
         verify(mockParentScope, never()).handleEvent(any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
-        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
-            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
-        )
         assertThat(resultStop).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(null)
     }
@@ -2887,7 +2839,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Resource(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2908,7 +2863,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Resource(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2931,7 +2889,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Resource(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test

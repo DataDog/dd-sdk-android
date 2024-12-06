@@ -243,11 +243,11 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
             ),
             RumRawEvent.ErrorSent(fakeId),
             RumRawEvent.LongTaskSent(fakeId),
-            RumRawEvent.ResourceSent(fakeId),
+            RumRawEvent.ResourceSent(fakeId, getForgery<UUID>().toString(), aPositiveLong()),
             RumRawEvent.ActionDropped(fakeId),
             RumRawEvent.ErrorDropped(fakeId),
             RumRawEvent.LongTaskDropped(fakeId),
-            RumRawEvent.ResourceDropped(fakeId)
+            RumRawEvent.ResourceDropped(fakeId, getForgery<UUID>().toString())
         )
     )
 }

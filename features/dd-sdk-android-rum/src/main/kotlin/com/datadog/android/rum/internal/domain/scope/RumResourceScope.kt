@@ -188,7 +188,6 @@ internal class RumResourceScope(
         eventTime: Time,
         writer: DataWriter<Any>
     ) {
-        reportResourceStoppedMetric(eventTime.nanoTime)
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
@@ -303,10 +302,10 @@ internal class RumResourceScope(
             )
         }
             .onError {
-                it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Resource)
+                it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Resource(resourceId, eventTime.nanoTime))
             }
             .onSuccess {
-                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Resource)
+                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Resource(resourceId, eventTime.nanoTime))
             }
             .submit()
 

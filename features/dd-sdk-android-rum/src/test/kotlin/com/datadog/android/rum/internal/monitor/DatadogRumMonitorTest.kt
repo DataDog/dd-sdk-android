@@ -1406,9 +1406,11 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventSent {resource}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @StringForgery resourceId: String,
+        @LongForgery(0) resourceEndTimestampInNanos: Long
     ) {
-        testedMonitor.eventSent(viewId, StorageEvent.Resource)
+        testedMonitor.eventSent(viewId, StorageEvent.Resource(resourceId, resourceEndTimestampInNanos))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1416,6 +1418,8 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.ResourceSent
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.resourceId).isEqualTo(resourceId)
+            assertThat(event.resourceEndTimestampInNanos).isEqualTo(resourceEndTimestampInNanos)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1491,9 +1495,11 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventDropped {resource}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @StringForgery resourceId: String,
+        @LongForgery(0) resourceEndTimestampInNanos: Long
     ) {
-        testedMonitor.eventDropped(viewId, StorageEvent.Resource)
+        testedMonitor.eventDropped(viewId, StorageEvent.Resource(resourceId, resourceEndTimestampInNanos))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1501,6 +1507,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.ResourceDropped
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.resourceId).isEqualTo(resourceId)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
