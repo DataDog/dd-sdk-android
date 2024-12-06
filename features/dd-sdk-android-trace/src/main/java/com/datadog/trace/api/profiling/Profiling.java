@@ -1,9 +1,5 @@
 package com.datadog.trace.api.profiling;
 
-import com.datadog.trace.api.GlobalTracer;
-import com.datadog.trace.api.Tracer;
-import com.datadog.trace.api.internal.InternalTracer;
-
 public interface Profiling {
 
   /**
