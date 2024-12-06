@@ -42,7 +42,7 @@ interface com.datadog.android.api.InternalLogger
     - TELEMETRY
   fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
-  fun logMetric(() -> String, Map<String, Any?>, Float)
+  fun logMetric(() -> String, Map<String, Any?>, Float, Float? = null)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
   fun logApiUsage(Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
   companion object 

@@ -11,7 +11,10 @@ import com.datadog.android.internal.utils.loggableStackTrace
 @Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "UndocumentedPublicProperty")
 sealed class InternalTelemetryEvent {
 
-    sealed class Log(val message: String, val additionalProperties: Map<String, Any?>?) : InternalTelemetryEvent() {
+    sealed class Log(
+        val message: String,
+        val additionalProperties: Map<String, Any?>?
+    ) : InternalTelemetryEvent() {
         class Debug(message: String, additionalProperties: Map<String, Any?>?) : Log(message, additionalProperties)
 
         class Error(
@@ -56,4 +59,21 @@ sealed class InternalTelemetryEvent {
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()
+
+    companion object {
+
+        /* The sampling rate is used when creating metrics.
+         * Creating(head) sampling rate exist only for long-lived metrics like method performance.
+         * Creating(head) sampling rate is responsible for metric creation.
+         * Created metric still could not be sent.
+         * Sending depends on [REPORTING_SAMPLING_RATE_KEY] sample
+         */
+        const val CREATION_SAMPLING_RATE_KEY: String = "HEAD_SAMPLING_RATE_KEY"
+
+        /* This sampling rate is used for sending created metrics.
+         * Each metric should have reporting(tail) sampling rate.
+         * It's possible that metric has only reporting(tail) sampling rate.
+         */
+        const val REPORTING_SAMPLING_RATE_KEY: String = "TAIL_SAMPLING_RATE_KEY"
+    }
 }

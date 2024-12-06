@@ -6,6 +6,7 @@
 
 package com.datadog.android.api
 
+import androidx.annotation.FloatRange
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
@@ -107,13 +108,16 @@ interface InternalLogger {
      * @param messageBuilder the lambda building the metric message
      * @param additionalProperties additional properties to add to the metric
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
+     * @param creationSampleRate value between 0-100 that was applied for long-lived metrics. This value will not be
+     * applied, use [samplingRate] for sampling
      * metric will be applied in addition to the global telemetry sampling rate.
      */
     @InternalApi
     fun logMetric(
         messageBuilder: () -> String,
         additionalProperties: Map<String, Any?>,
-        samplingRate: Float
+        @FloatRange(from = 0.0, to = 100.0) samplingRate: Float,
+        @FloatRange(from = 0.0, to = 100.0) creationSampleRate: Float? = null
     )
 
     /**
@@ -129,7 +133,7 @@ interface InternalLogger {
     fun startPerformanceMeasure(
         callerClass: String,
         metric: TelemetryMetricType,
-        samplingRate: Float,
+        @FloatRange(from = 0.0, to = 100.0) samplingRate: Float,
         operationName: String
     ): PerformanceMetric?
 
@@ -137,11 +141,11 @@ interface InternalLogger {
      * Logs an API usage from the internal implementation.
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
      * event will be applied in addition to the global telemetry sampling rate. By default, the sampling rate is 15%.
-     * @param apiUsageEventBuilder  the lambda building the API event being tracked
+     * @param apiUsageEventBuilder the lambda building the API event being tracked
      */
     @InternalApi
     fun logApiUsage(
-        samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE,
+        @FloatRange(from = 0.0, to = 100.0) samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE,
         apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
     )
 

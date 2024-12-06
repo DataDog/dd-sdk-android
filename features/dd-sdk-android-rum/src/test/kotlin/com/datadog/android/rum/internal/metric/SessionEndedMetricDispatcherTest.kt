@@ -52,7 +52,12 @@ internal class SessionEndedMetricDispatcherTest {
     fun `M register session stop W call onSessionStopped()`(@StringForgery fakeSessionId: String) {
         // Given
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
-        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
 
         // When
         dispatcher.onSessionStopped(fakeSessionId)
@@ -72,8 +77,18 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId1, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId2, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId1,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId2,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
         viewEvent.copy(session = viewEvent.session.copy(id = fakeSessionId2)).apply {
             dispatcher.onViewTracked(fakeSessionId1, this)
         }
@@ -97,10 +112,30 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId1, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId2, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId3, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId4, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId1,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId2,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId3,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId4,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
 
         viewEvents.map {
             it.copy(session = it.session.copy(id = fakeSessionId2))
@@ -134,10 +169,30 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId1, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId2, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId3, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-        dispatcher.startMetric(fakeSessionId4, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId1,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId2,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId3,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.startMetric(
+            fakeSessionId4,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
 
         // Ends the last started session
         dispatcher.endMetric(fakeSessionId4, fakeNtpOffsetAtEnd)
@@ -166,7 +221,12 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
 
         viewEvents.map { it.copy(session = it.session.copy(id = fakeSessionId)) }.forEach {
             dispatcher.onViewTracked(fakeSessionId, it)
@@ -186,7 +246,12 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
         missedTypes.forEach {
             dispatcher.onMissedEventTracked(fakeSessionId, it)
         }
@@ -233,7 +298,12 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
         dispatcher.endMetric(fakeSessionId, fakeNtpOffsetAtEnd)
 
         // Then
@@ -250,7 +320,12 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
         dispatcher.endMetric(fakeSessionId, fakeNtpOffsetAtEnd)
 
         // Then
@@ -267,7 +342,12 @@ internal class SessionEndedMetricDispatcherTest {
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
 
         // When
-        dispatcher.startMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
         repeat(skippedFramesCount) {
             dispatcher.onSessionReplaySkippedFrameTracked(fakeSessionId)
         }

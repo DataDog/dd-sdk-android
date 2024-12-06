@@ -93,6 +93,12 @@
         }
       }
     },
+    "effective_sample_rate": {
+      "type": "integer",
+      "description": "The actual percentage of telemetry usage per event",
+      "minimum": 0,
+      "maximum": 100
+    },
     "experimental_features": {
       "type": "array",
       "description": "Enabled experimental features",

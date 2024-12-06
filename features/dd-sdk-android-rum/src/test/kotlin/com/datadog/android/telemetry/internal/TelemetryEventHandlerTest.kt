@@ -39,6 +39,7 @@ import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -136,6 +137,12 @@ internal class TelemetryEventHandlerTest {
 
     @StringForgery
     lateinit var fakeOsName: String
+
+    @StringForgery
+    lateinit var fakeAdditionalPropertyKey: String
+
+    @StringForgery
+    lateinit var fakeAdditionalPropertyValue: String
 
     private var fakeServerOffset: Long = 0L
 
@@ -1082,9 +1089,317 @@ internal class TelemetryEventHandlerTest {
         )
     }
 
+    @Test
+    fun `M not write any internal properties W handleEvent() { api usage event }`(
+        @Forgery fakeApiUsageEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        fakeApiUsageEvent.additionalProperties.also { properties ->
+            properties[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY] = "value that should not exist"
+            properties[InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY] = "value that should not exist"
+            properties[fakeAdditionalPropertyKey] = fakeAdditionalPropertyValue
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeApiUsageEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryUsageEvent
+            additionalPropertiesDoesNotContainsInternalKeys(
+                actualEvent.telemetry.additionalProperties,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        }
+    }
+
+    @Test
+    fun `M not write any internal properties W handleEvent() { metric event }`(
+        forge: Forge
+    ) {
+        val fakeMetricEvent = InternalTelemetryEvent.Metric(
+            message = forge.aString(),
+            additionalProperties = mapOf(
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to "value that should not exist",
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY to "value that should not exist",
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeMetricEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryDebugEvent
+            additionalPropertiesDoesNotContainsInternalKeys(
+                actualEvent.telemetry.additionalProperties,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        }
+    }
+
+    @Test
+    fun `M not write any internal properties W handleEvent() { log debug event }`(
+        forge: Forge
+    ) {
+        val fakeLogDebugEvent = InternalTelemetryEvent.Log.Debug(
+            message = forge.aString(),
+            additionalProperties = mapOf(
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to "value that should not exist",
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY to "value that should not exist",
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeLogDebugEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryDebugEvent
+            additionalPropertiesDoesNotContainsInternalKeys(
+                actualEvent.telemetry.additionalProperties,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        }
+    }
+
+    @Test
+    fun `M not write any internal properties W handleEvent() { log error event }`(
+        forge: Forge
+    ) {
+        val fakeLogDebugEvent = InternalTelemetryEvent.Log.Error(
+            message = forge.aString(),
+            additionalProperties = mapOf(
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to "value that should not exist",
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY to "value that should not exist",
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeLogDebugEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryErrorEvent
+            additionalPropertiesDoesNotContainsInternalKeys(
+                actualEvent.telemetry.additionalProperties,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        }
+    }
+
+    @Test
+    fun `M write correct effective rate W handleEvent() { api usage event }`(
+        @Forgery fakeApiUsageEvent: InternalTelemetryEvent.ApiUsage,
+        @Forgery fakeRumConfiguration: RumFeature.Configuration,
+        @FloatForgery(min = 0f, max = 100f) headSamplingRate: Float,
+        @FloatForgery(min = 0f, max = 100f) reportingSamplingRate: Float
+    ) {
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+        fakeApiUsageEvent.additionalProperties.also { properties ->
+            properties[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY] = reportingSamplingRate
+            properties[InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY] = headSamplingRate
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeApiUsageEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryUsageEvent
+            assertEffectiveSampleRate(
+                actualEvent.effectiveSampleRate,
+                reportingSamplingRate,
+                headSamplingRate,
+                fakeRumConfiguration.telemetrySampleRate,
+                fakeRumConfiguration.sampleRate
+
+            )
+        }
+    }
+
+    @Test
+    fun `M write correct effective rate W handleEvent() { metric event }`(
+        forge: Forge,
+        @Forgery fakeRumConfiguration: RumFeature.Configuration,
+        @FloatForgery(min = 0f, max = 100f) creatingSamplingRate: Float,
+        @FloatForgery(min = 0f, max = 100f) reportingSamplingRate: Float
+    ) {
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        val fakeMetricEvent = InternalTelemetryEvent.Metric(
+            message = forge.aString(),
+            additionalProperties = mapOf(
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to creatingSamplingRate,
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY to reportingSamplingRate,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeMetricEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryDebugEvent
+            assertEffectiveSampleRate(
+                actualEvent.effectiveSampleRate,
+                reportingSamplingRate,
+                creatingSamplingRate,
+                fakeRumConfiguration.telemetrySampleRate,
+                fakeRumConfiguration.sampleRate
+            )
+        }
+    }
+
+    @Test
+    fun `M write correct effective rate W handleEvent() { log debug event }`(
+        forge: Forge,
+        @Forgery fakeRumConfiguration: RumFeature.Configuration,
+        @FloatForgery(min = 0f, max = 100f) creatingSamplingRate: Float,
+        @FloatForgery(min = 0f, max = 100f) reportingSamplingRate: Float
+    ) {
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        val fakeDebugEvent = InternalTelemetryEvent.Log.Debug(
+            message = forge.aString(),
+            additionalProperties = mapOf(
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to creatingSamplingRate,
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY to reportingSamplingRate,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeDebugEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryDebugEvent
+            assertEffectiveSampleRate(
+                actualEvent.effectiveSampleRate,
+                reportingSamplingRate,
+                creatingSamplingRate,
+                fakeRumConfiguration.telemetrySampleRate,
+                fakeRumConfiguration.sampleRate
+            )
+        }
+    }
+
+    @Test
+    fun `M write correct effective rate W handleEvent() { log error event }`(
+        forge: Forge,
+        @Forgery fakeRumConfiguration: RumFeature.Configuration,
+        @FloatForgery(min = 0f, max = 100f) creatingSamplingRate: Float,
+        @FloatForgery(min = 0f, max = 100f) reportingSamplingRate: Float
+    ) {
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        val fakeErrorEvent = InternalTelemetryEvent.Log.Error(
+            message = forge.aString(),
+            additionalProperties = mapOf(
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to creatingSamplingRate,
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY to reportingSamplingRate,
+                fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
+            )
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeErrorEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryErrorEvent
+            assertEffectiveSampleRate(
+                actualEvent.effectiveSampleRate,
+                reportingSamplingRate,
+                creatingSamplingRate,
+                fakeRumConfiguration.telemetrySampleRate,
+                fakeRumConfiguration.sampleRate
+            )
+        }
+    }
+
+    @Test
+    fun `M write correct effective rate W handleEvent() { configuration event }`(
+        forge: Forge,
+        @Forgery fakeRumConfiguration: RumFeature.Configuration
+    ) {
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        val fakeConfigurationEvent = forge.getForgery<InternalTelemetryEvent.Configuration>()
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeConfigurationEvent), mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val actualEvent = firstValue as TelemetryConfigurationEvent
+            assertEffectiveSampleRate(
+                actualEvent.effectiveSampleRate,
+                100f,
+                fakeRumConfiguration.telemetryConfigurationSampleRate,
+                fakeRumConfiguration.telemetrySampleRate,
+                fakeRumConfiguration.sampleRate
+
+            )
+        }
+    }
+
+    private fun assertEffectiveSampleRate(
+        actualSampleRate: Long?,
+        vararg appliedSampleRates: Float
+    ) {
+        val expectedEffectiveSampleRate = appliedSampleRates.reduce { acc, item -> acc * item / 100f }.toLong()
+
+        assertThat(actualSampleRate)
+            .withFailMessage {
+                "expected:$expectedEffectiveSampleRate, " +
+                    "actual:$actualSampleRate\n" +
+                    "appliedSampleRates=${appliedSampleRates.joinToString { it.toString() }}"
+            }
+            .isEqualTo(expectedEffectiveSampleRate)
+    }
+
     // endregion
 
     // region Assertions
+
+    private fun additionalPropertiesDoesNotContainsInternalKeys(
+        additionalProperties: MutableMap<String, Any?>,
+        vararg expectedEntries: Pair<String, Any?>
+    ) {
+        assertThat(additionalProperties)
+            .doesNotContainKeys(
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY,
+                InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY
+            )
+
+        expectedEntries.forEach { (expectedKey, expectedValue) ->
+            assertThat(additionalProperties)
+                .extractingByKey(expectedKey).isEqualTo(expectedValue)
+        }
+    }
 
     private fun assertApiUsageMatchesInternalEvent(
         actual: TelemetryUsageEvent,

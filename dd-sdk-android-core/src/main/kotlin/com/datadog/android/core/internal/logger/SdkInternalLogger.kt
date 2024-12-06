@@ -96,13 +96,16 @@ internal class SdkInternalLogger(
     override fun logMetric(
         messageBuilder: () -> String,
         additionalProperties: Map<String, Any?>,
-        samplingRate: Float
+        samplingRate: Float,
+        creationSampleRate: Float?
     ) {
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
             additionalProperties = additionalProperties
+                .putIfAbsentOrMapIsNull(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY, creationSampleRate)
+                .putIfAbsentOrMapIsNull(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY, samplingRate)
         )
         rumFeature.sendEvent(metricEvent)
     }
@@ -120,7 +123,8 @@ internal class SdkInternalLogger(
                 MethodCalledTelemetry(
                     internalLogger = this,
                     operationName = operationName,
-                    callerClass = callerClass
+                    callerClass = callerClass,
+                    creationSampleRate = samplingRate
                 )
             }
         }
@@ -132,7 +136,17 @@ internal class SdkInternalLogger(
     ) {
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        rumFeature.sendEvent(apiUsageEventBuilder())
+
+        val event = apiUsageEventBuilder()
+        // safe to call it here both key and value are non null
+        // and [additionalProperties] is mutable
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        event.additionalProperties.putIfAbsent(
+            InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
+            samplingRate
+        )
+
+        rumFeature.sendEvent(event)
     }
 
     // endregion
@@ -251,6 +265,11 @@ internal class SdkInternalLogger(
         } else {
             this
         }
+    }
+
+    private fun Map<String, Any?>?.putIfAbsentOrMapIsNull(key: String, value: Float?): MutableMap<String, Any?> {
+        val mutableMap = this?.toMutableMap() ?: mutableMapOf()
+        return mutableMap.apply { putIfAbsent(key, value) }
     }
 
     companion object {

@@ -35,12 +35,13 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
     override fun endMetric(sessionId: String, ntpOffsetAtEndMs: Long) {
         // the argument is always non - null, so we can suppress the warning
         @Suppress("UnsafeThirdPartyFunctionCall")
-        val metric = metricsBySessionId.remove(sessionId)
-        metric?.let {
+        metricsBySessionId.remove(sessionId)?.let { metric: SessionEndedMetric ->
             internalLogger.logMetric(
                 messageBuilder = { SessionEndedMetric.RUM_SESSION_ENDED_METRIC_NAME },
-                additionalProperties = it.toMetricAttributes(ntpOffsetAtEndMs),
+                additionalProperties = metric.toMetricAttributes(ntpOffsetAtEndMs),
                 samplingRate = MethodCallSamplingRate.ALL.rate
+                // we don't need to provide creationSampleRate here because it equals to sessionSampleRate
+                // which will be applied to all telemetry events just before sending
             )
         }
     }

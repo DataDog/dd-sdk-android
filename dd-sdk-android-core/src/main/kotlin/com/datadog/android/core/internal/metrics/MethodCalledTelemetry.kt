@@ -16,12 +16,14 @@ import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
  * @param internalLogger - an instance of the internal logger.
  * @param operationName the operation name
  * @param callerClass - the class calling the performance metric.
+ * @param creationSampleRate - sampling frequency used to create the metric
  * @param startTime - the time when the metric is instantiated, to be used as the start point for the measurement.
  */
 internal class MethodCalledTelemetry(
     internal val internalLogger: InternalLogger,
     internal val operationName: String,
     internal val callerClass: String,
+    internal val creationSampleRate: Float,
     internal val startTime: Long = System.nanoTime()
 ) : PerformanceMetric {
 
@@ -38,7 +40,8 @@ internal class MethodCalledTelemetry(
         internalLogger.logMetric(
             messageBuilder = { METHOD_CALLED_METRIC_NAME },
             additionalProperties = additionalProperties,
-            samplingRate = MethodCallSamplingRate.ALL.rate // sampling is performed on start
+            samplingRate = MethodCallSamplingRate.ALL.rate, // sampling is performed on start
+            creationSampleRate = creationSampleRate
         )
     }
 

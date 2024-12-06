@@ -18,9 +18,12 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.RumFeature.Configuration
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.utils.HUNDRED
+import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -47,6 +50,11 @@ internal class TelemetryEventHandler(
     private val eventIDsSeenInCurrentSession = mutableSetOf<TelemetryEventId>()
     private var totalEventsSeenInCurrentSession = 0
 
+    private val rumConfig: Configuration?
+        get() = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.configuration
+
     @AnyThread
     @Suppress("LongMethod")
     fun handleEvent(
@@ -66,7 +74,8 @@ internal class TelemetryEventHandler(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
                         message = event.message,
-                        additionalProperties = event.additionalProperties
+                        additionalProperties = event.additionalProperties,
+                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
                     )
                 }
 
@@ -75,7 +84,8 @@ internal class TelemetryEventHandler(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
                         message = event.message,
-                        additionalProperties = event.additionalProperties
+                        additionalProperties = event.additionalProperties,
+                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
                     )
                 }
 
@@ -90,15 +100,19 @@ internal class TelemetryEventHandler(
                         message = event.message,
                         stack = event.resolveStacktrace(),
                         kind = event.resolveKind(),
-                        additionalProperties = event.additionalProperties
+                        additionalProperties = event.additionalProperties,
+                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
                     )
                 }
 
                 is InternalTelemetryEvent.Configuration -> {
                     createConfigurationEvent(
-                        datadogContext,
-                        timestamp,
-                        event
+                        datadogContext = datadogContext,
+                        timestamp = timestamp,
+                        event = event,
+                        effectiveSampleRate = computeEffectiveSampleRate(
+                            eventSpecificSamplingRate = rumConfig?.telemetryConfigurationSampleRate
+                        )
                     )
                 }
 
@@ -106,7 +120,8 @@ internal class TelemetryEventHandler(
                     createApiUsageEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
-                        event = event
+                        event = event,
+                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
                     )
                 }
 
@@ -167,10 +182,13 @@ internal class TelemetryEventHandler(
         datadogContext: DatadogContext,
         timestamp: Long,
         message: String,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>?,
+        effectiveSampleRate: Long
     ): TelemetryDebugEvent {
         val rumContext = datadogContext.rumContext()
-        val resolvedAdditionalProperties = additionalProperties?.toMutableMap() ?: mutableMapOf()
+        val resolvedAdditionalProperties = additionalProperties.orEmpty()
+            .toMutableMap()
+            .cleanUpInternalAttributes()
 
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
@@ -181,6 +199,7 @@ internal class TelemetryEventHandler(
             ) ?: TelemetryDebugEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
+            effectiveSampleRate = effectiveSampleRate,
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
             session = TelemetryDebugEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryDebugEvent.View(it) },
@@ -209,10 +228,13 @@ internal class TelemetryEventHandler(
         message: String,
         stack: String?,
         kind: String?,
+        effectiveSampleRate: Long,
         additionalProperties: Map<String, Any?>?
     ): TelemetryErrorEvent {
         val rumContext = datadogContext.rumContext()
-        val resolvedAdditionalProperties = additionalProperties?.toMutableMap() ?: mutableMapOf()
+        val resolvedAdditionalProperties = additionalProperties.orEmpty()
+            .toMutableMap()
+            .cleanUpInternalAttributes()
 
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
@@ -227,6 +249,7 @@ internal class TelemetryEventHandler(
             session = TelemetryErrorEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryErrorEvent.View(it) },
             action = rumContext.actionId?.let { TelemetryErrorEvent.Action(it) },
+            effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryErrorEvent.Telemetry(
                 message = message,
                 additionalProperties = resolvedAdditionalProperties,
@@ -256,7 +279,8 @@ internal class TelemetryEventHandler(
     private fun createConfigurationEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        event: InternalTelemetryEvent.Configuration
+        event: InternalTelemetryEvent.Configuration,
+        effectiveSampleRate: Long
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val sessionReplayFeatureContext =
@@ -271,9 +295,6 @@ internal class TelemetryEventHandler(
             sessionReplayFeatureContext[SESSION_REPLAY_TOUCH_PRIVACY_KEY] as? String
         val sessionReplayTextAndInputPrivacy =
             sessionReplayFeatureContext[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] as? String
-        val rumConfig = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.unwrap<RumFeature>()
-            ?.configuration
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
             is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
             is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
@@ -301,6 +322,7 @@ internal class TelemetryEventHandler(
             view = rumContext.viewId?.let { TelemetryConfigurationEvent.View(it) },
             action = rumContext.actionId?.let { TelemetryConfigurationEvent.Action(it) },
             experimentalFeatures = null,
+            effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryConfigurationEvent.Telemetry(
                 device = TelemetryConfigurationEvent.Device(
                     architecture = datadogContext.deviceInfo.architecture,
@@ -345,11 +367,15 @@ internal class TelemetryEventHandler(
     private fun createApiUsageEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        event: InternalTelemetryEvent.ApiUsage
-    ): TelemetryUsageEvent? {
+        event: InternalTelemetryEvent.ApiUsage,
+        effectiveSampleRate: Long
+    ): TelemetryUsageEvent {
         val rumContext = datadogContext.rumContext()
         return when (event) {
             is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> {
+                val resolvedAdditionalProperties = event.additionalProperties
+                    .cleanUpInternalAttributes()
+
                 TelemetryUsageEvent(
                     dd = TelemetryUsageEvent.Dd(),
                     date = timestamp,
@@ -363,8 +389,9 @@ internal class TelemetryEventHandler(
                     session = TelemetryUsageEvent.Session(rumContext.sessionId),
                     view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
                     action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
+                    effectiveSampleRate = effectiveSampleRate,
                     telemetry = TelemetryUsageEvent.Telemetry(
-                        additionalProperties = event.additionalProperties,
+                        additionalProperties = resolvedAdditionalProperties,
                         device = TelemetryUsageEvent.Device(
                             architecture = datadogContext.deviceInfo.architecture,
                             brand = datadogContext.deviceInfo.deviceBrand,
@@ -437,6 +464,37 @@ internal class TelemetryEventHandler(
     private fun DatadogContext.rumContext(): RumContext {
         val rumContext = featuresContext[Feature.RUM_FEATURE_NAME].orEmpty()
         return RumContext.fromFeatureContext(rumContext)
+    }
+
+    private fun computeEffectiveSampleRate(
+        properties: Map<String, Any?>? = null,
+        eventSpecificSamplingRate: Float? = null
+    ): Long {
+        val telemetrySampleRate = rumConfig?.telemetrySampleRate?.percent() ?: return 0L
+
+        val creatingSamplingRate = properties
+            ?.getFloat(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+            ?.percent() ?: 1.0
+
+        val reportingSamplingRate = properties
+            ?.getFloat(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ?.percent() ?: 1.0
+
+        val eventSamplingRate = eventSpecificSamplingRate?.percent() ?: 1.0
+
+        val sessionSampleRate = rumConfig?.sampleRate?.percent() ?: 1.0
+
+        val effectiveSampleRate =
+            telemetrySampleRate * creatingSamplingRate * reportingSamplingRate * eventSamplingRate * sessionSampleRate
+
+        return (effectiveSampleRate * HUNDRED).toLong()
+    }
+
+    private fun Map<String, Any?>.getFloat(key: String) = get(key) as? Float
+
+    private fun Map<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
+        remove(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+        remove(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
     }
 
     // endregion

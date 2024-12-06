@@ -322,7 +322,8 @@ internal class RumViewManagerScopeTest {
         verify(mockInternalLogger).logMetric(
             messageBuilderCaptor.capture(),
             additionalPropertiesCaptor.capture(),
-            eq(1f)
+            eq(1f),
+            eq(null)
         )
 
         assertThat(additionalPropertiesCaptor.firstValue).containsKey(RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS)
