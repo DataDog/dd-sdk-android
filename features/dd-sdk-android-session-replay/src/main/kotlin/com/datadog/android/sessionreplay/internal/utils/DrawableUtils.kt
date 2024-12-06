@@ -44,7 +44,7 @@ internal class DrawableUtils(
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT,
         config: Config = Config.ARGB_8888,
-        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback,
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
         createScaledBitmap(
             drawableWidth,

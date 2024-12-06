@@ -55,7 +55,7 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
         viewIdentifierResolver,
         colorStringFormatter,
         viewBoundsResolver,
-        drawableToColorMapper,
+        drawableToColorMapper
     ) {
         this.imageViewUtils = imageViewUtils
         this.drawableCopier = drawableCopier
