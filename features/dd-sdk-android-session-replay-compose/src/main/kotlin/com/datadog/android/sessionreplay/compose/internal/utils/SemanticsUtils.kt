@@ -25,6 +25,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ImagePrivacySemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
@@ -261,5 +262,9 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun getTouchPrivacyOverride(semanticsNode: SemanticsNode): TouchPrivacy? {
         return semanticsNode.config.getOrNull(TouchSemanticsPropertyKey)
+    }
+
+    internal fun isNodeHidden(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
     }
 }

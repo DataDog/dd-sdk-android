@@ -59,7 +59,7 @@ fun Modifier.sessionReplayTouchPrivacy(touchPrivacy: TouchPrivacy): Modifier {
     }
 }
 
-private val SessionReplayHidePropertyKey: SemanticsPropertyKey<Boolean> = SemanticsPropertyKey(
+internal val SessionReplayHidePropertyKey: SemanticsPropertyKey<Boolean> = SemanticsPropertyKey(
     name = "_dd_session_replay_hide"
 )
 

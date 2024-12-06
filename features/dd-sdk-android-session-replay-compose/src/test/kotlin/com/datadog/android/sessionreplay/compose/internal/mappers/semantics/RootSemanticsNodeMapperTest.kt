@@ -16,6 +16,7 @@ import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayCompose
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -70,6 +71,9 @@ class RootSemanticsNodeMapperTest {
     private lateinit var mockImageSemanticsNodeMapper: ImageSemanticsNodeMapper
 
     @Mock
+    private lateinit var mockComposeHiddenMapper: ComposeHiddenMapper
+
+    @Mock
     private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
 
     @Forgery
@@ -89,7 +93,8 @@ class RootSemanticsNodeMapperTest {
                 Role.Image to mockImageSemanticsNodeMapper
             ),
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
-            containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper
+            containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
+            composeHiddenMapper = mockComposeHiddenMapper
         )
     }
 
@@ -192,6 +197,39 @@ class RootSemanticsNodeMapperTest {
 
         // Then
         verify(mockImageSemanticsNodeMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M use ComposeHideMapper W node is hidden`(forge: Forge) {
+        // Given
+        val fakeRole = forge.anElementFrom(
+            listOf(
+                Role.Image,
+                Role.Tab,
+                Role.Button,
+                Role.Switch,
+                Role.RadioButton,
+                Role.DropdownList,
+                null
+            )
+        )
+        val mockSemanticsNode = mockSemanticsNode(fakeRole)
+        whenever(mockSemanticsUtils.isNodeHidden(mockSemanticsNode)) doReturn true
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockComposeHiddenMapper).map(
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)

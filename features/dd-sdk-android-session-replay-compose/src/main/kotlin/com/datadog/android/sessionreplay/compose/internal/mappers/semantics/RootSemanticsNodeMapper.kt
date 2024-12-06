@@ -43,6 +43,10 @@ internal class RootSemanticsNodeMapper(
     private val containerSemanticsNodeMapper: ContainerSemanticsNodeMapper = ContainerSemanticsNodeMapper(
         colorStringFormatter,
         semanticsUtils
+    ),
+    private val composeHiddenMapper: ComposeHiddenMapper = ComposeHiddenMapper(
+        colorStringFormatter,
+        semanticsUtils
     )
 ) {
 
@@ -78,6 +82,17 @@ internal class RootSemanticsNodeMapper(
         parentUiContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ) {
+        // If Hidden node is detected, add placeholder wireframe and return
+        if (semanticsUtils.isNodeHidden(semanticsNode)) {
+            composeHiddenMapper.map(
+                semanticsNode,
+                parentUiContext,
+                asyncJobStatusCallback
+            )?.let {
+                wireframes.addAll(it.wireframes)
+            }
+            return
+        }
         val mapper = getSemanticsNodeMapper(semanticsNode)
         updateTouchOverrideAreas(
             touchPrivacyManager = touchPrivacyManager,
