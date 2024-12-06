@@ -36,6 +36,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
+import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -2155,14 +2156,16 @@ internal class RumViewScopeTest {
 
     @Test
     fun `M send event W handleEvent(ResourceSent) on active view`(
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        forge: Forge
+
     ) {
         // Given
         testedScope.pendingResourceCount = pending
-        fakeEvent = RumRawEvent.ResourceSent(testedScope.viewId)
+        val fakeResourceEvent = forge.getForgery<RumRawEvent.ResourceSent>().copy(viewId = testedScope.viewId)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceEvent, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -2218,6 +2221,12 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
+        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
+            InternalResourceContext(
+                fakeResourceEvent.resourceId,
+                fakeResourceEvent.resourceEndTimestampInNanos
+            )
+        )
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
     }
@@ -2225,15 +2234,16 @@ internal class RumViewScopeTest {
     @Test
     fun `M send event W handleEvent(ResourceSent) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
-        @Forgery fakeNewViewId: UUID
+        @Forgery fakeNewViewId: UUID,
+        forge: Forge
     ) {
         // Given
         testedScope.pendingResourceCount = pending
-        fakeEvent = RumRawEvent.ResourceSent(testedScope.viewId)
+        val fakeResourceEvent = forge.getForgery<RumRawEvent.ResourceSent>().copy(testedScope.viewId)
         testedScope.viewId = fakeNewViewId.toString()
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceEvent, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -2289,6 +2299,12 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
+        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
+            InternalResourceContext(
+                fakeResourceEvent.resourceId,
+                fakeResourceEvent.resourceEndTimestampInNanos
+            )
+        )
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
     }
@@ -2296,19 +2312,21 @@ internal class RumViewScopeTest {
     @Test
     fun `M do nothing W handleEvent(ResourceSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        forge: Forge
     ) {
         // Given
         testedScope.pendingResourceCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ResourceSent(viewId)
+        fakeEvent = forge.getForgery<RumRawEvent.ResourceSent>().copy(viewId = viewId)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
         verifyNoInteractions(mockWriter)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(any())
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
     }
@@ -3011,14 +3029,16 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event W handleEvent(ResourceSent) on stopped view`() {
+    fun `M send event W handleEvent(ResourceSent) on stopped view`(
+        forge: Forge
+    ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingResourceCount = 1
-        fakeEvent = RumRawEvent.ResourceSent(testedScope.viewId)
+        val fakeResourceSent = forge.getForgery<RumRawEvent.ResourceSent>().copy(viewId = testedScope.viewId)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceSent, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -3074,6 +3094,12 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
+        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
+            InternalResourceContext(
+                resourceId = fakeResourceSent.resourceId,
+                eventCreatedAtNanos = fakeResourceSent.resourceEndTimestampInNanos
+            )
+        )
         assertThat(result).isNull()
         assertThat(testedScope.pendingResourceCount).isEqualTo(0)
     }
@@ -3081,20 +3107,22 @@ internal class RumViewScopeTest {
     @Test
     fun `M do nothing W handleEvent(ResourceSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        forge: Forge
     ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingResourceCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ResourceSent(viewId)
+        fakeEvent = forge.getForgery<RumRawEvent.ResourceSent>().copy(viewId = viewId)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
         verifyNoInteractions(mockWriter)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(any())
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
     }
@@ -4316,81 +4344,91 @@ internal class RumViewScopeTest {
 
     @Test
     fun `M decrease pending Resource W handleEvent(ResourceDropped) on active view`(
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        forge: Forge
     ) {
         // Given
         testedScope.pendingResourceCount = pending
-        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        val fakeResourceDrooped = forge.getForgery<RumRawEvent.ResourceDropped>().copy(testedScope.viewId)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceDrooped, mockWriter)
 
         // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
         assertThat(result).isSameAs(testedScope)
+        verify(mockNetworkSettledMetricResolver).resourceWasDropped(fakeResourceDrooped.resourceId)
     }
 
     @Test
     fun `M decrease pending Resource W handleEvent(ResourceDropped) on active view {viewId changed}`(
         @LongForgery(1) pending: Long,
-        @Forgery fakeNewViewId: UUID
+        @Forgery fakeNewViewId: UUID,
+        forge: Forge
     ) {
         // Given
         testedScope.pendingResourceCount = pending
-        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        val fakeResourceDropped = forge.getForgery<RumRawEvent.ResourceDropped>().copy(viewId = testedScope.viewId)
         testedScope.viewId = fakeNewViewId.toString()
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceDropped, mockWriter)
 
         // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
         assertThat(result).isSameAs(testedScope)
+        verify(mockNetworkSettledMetricResolver).resourceWasDropped(fakeResourceDropped.resourceId)
     }
 
     @Test
-    fun `M decrease pending Resource W handleEvent(ResourceDropped) on stopped view`() {
+    fun `M decrease pending Resource W handleEvent(ResourceDropped) on stopped view`(
+        forge: Forge
+    ) {
         // Given
         testedScope.pendingResourceCount = 1
-        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        val fakeResourceDropped = forge.getForgery<RumRawEvent.ResourceDropped>().copy(viewId = testedScope.viewId)
         testedScope.stopped = true
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceDropped, mockWriter)
 
         // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(0)
         assertThat(result).isNull()
+        verify(mockNetworkSettledMetricResolver).resourceWasDropped(fakeResourceDropped.resourceId)
     }
 
     @Test
     fun `M decrease pending Resource W handleEvent(ResourceDropped) on stopped view {viewId changed}`(
-        @Forgery fakeNewViewId: UUID
+        @Forgery fakeNewViewId: UUID,
+        forge: Forge
     ) {
         // Given
         testedScope.pendingResourceCount = 1
-        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        val fakeResourceDropped = forge.getForgery<RumRawEvent.ResourceDropped>().copy(viewId = testedScope.viewId)
         testedScope.stopped = true
         testedScope.viewId = fakeNewViewId.toString()
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeResourceDropped, mockWriter)
 
         // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(0)
         assertThat(result).isNull()
+        verify(mockNetworkSettledMetricResolver).resourceWasDropped(fakeResourceDropped.resourceId)
     }
 
     @Test
     fun `M do nothing W handleEvent(ResourceDropped) on active view {unknown viewId}`(
         @LongForgery(1) pending: Long,
-        @Forgery viewUuid: UUID
+        @Forgery viewUuid: UUID,
+        forge: Forge
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingResourceCount = pending
-        fakeEvent = RumRawEvent.ResourceDropped(viewId)
+        fakeEvent = forge.getForgery<RumRawEvent.ResourceDropped>().copy(viewId = viewId)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -4398,18 +4436,20 @@ internal class RumViewScopeTest {
         // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
         assertThat(result).isSameAs(testedScope)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasDropped(any())
     }
 
     @Test
     fun `M do nothing W handleEvent(ResourceDropped) on stopped view {unknown viewId}`(
         @LongForgery(1) pending: Long,
-        @Forgery viewUuid: UUID
+        @Forgery viewUuid: UUID,
+        forge: Forge
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingResourceCount = pending
-        fakeEvent = RumRawEvent.ResourceDropped(viewId)
+        fakeEvent = forge.getForgery<RumRawEvent.ResourceDropped>().copy(viewId = viewId)
         testedScope.stopped = true
 
         // When
@@ -4418,6 +4458,7 @@ internal class RumViewScopeTest {
         // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
         assertThat(result).isSameAs(testedScope)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasDropped(any())
     }
 
     @Test
@@ -9171,6 +9212,8 @@ internal class RumViewScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
+        val fakeResourceId = forge.getForgery<UUID>().toString()
+        val fakeResourceEndTimestamp = forge.aPositiveLong()
         whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
             // one for initialization
             fakeGlobalAttributes,
@@ -9210,7 +9253,7 @@ internal class RumViewScopeTest {
         )
         // When
         testedScope.handleEvent(
-            RumRawEvent.ResourceSent(testedScope.viewId),
+            RumRawEvent.ResourceSent(testedScope.viewId, fakeResourceId, fakeResourceEndTimestamp),
             mockWriter
         )
 
@@ -9311,6 +9354,8 @@ internal class RumViewScopeTest {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        val fakeResourceId = forge.getForgery<UUID>().toString()
+        val fakeResourceEndTimestamp = forge.aPositiveLong()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeViewStoppedGlobalAttributes)
         expectedAttributes.putAll(fakeStopEventAttributes)
@@ -9356,7 +9401,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.ResourceSent(testedScope.viewId),
+            RumRawEvent.ResourceSent(testedScope.viewId, fakeResourceId, fakeResourceEndTimestamp),
             mockWriter
         )
 

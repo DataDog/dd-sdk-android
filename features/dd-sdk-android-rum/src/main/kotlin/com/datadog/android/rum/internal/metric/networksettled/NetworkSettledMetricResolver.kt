@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.metric.networksettled
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
@@ -63,6 +64,11 @@ internal class NetworkSettledMetricResolver(
         }
     }
 
+    fun resourceWasDropped(resourceId: String) {
+        if (viewWasStopped) return
+        resourceStartedTimestamps.remove(resourceId)
+    }
+
     fun viewWasStopped() {
         viewWasStopped = true
         // clear all the resources for this view
@@ -75,6 +81,11 @@ internal class NetworkSettledMetricResolver(
         }
         lastComputedMetric = computeMetric()
         return lastComputedMetric
+    }
+
+    @VisibleForTesting
+    fun getResourceStartedCacheSize(): Int {
+        return resourceStartedTimestamps.size
     }
 
     @Suppress("ReturnCount")
