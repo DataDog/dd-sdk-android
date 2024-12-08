@@ -12,6 +12,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.util.DisplayMetrics
 import android.view.View
@@ -49,7 +50,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -170,6 +173,15 @@ internal class DefaultImageWireframeHelperTest {
             )
         ).thenReturn(fakeGeneratedIdentifier)
 
+        whenever(
+            mockViewUtilsInternal.resolveCompoundDrawableBounds(
+                view = any(),
+                drawable = any(),
+                pixelsDensity = any(),
+                position = any()
+            )
+        ).thenReturn(fakeBounds)
+
         testedHelper = DefaultImageWireframeHelper(
             logger = mockLogger,
             resourceResolver = mockResourceResolver,
@@ -179,318 +191,75 @@ internal class DefaultImageWireframeHelperTest {
         )
     }
 
-    // region createImageWireframe
-
     @Test
-    fun `M return content placeholder W createImageWireframeByDrawable() { ImagePrivacy MASK_ALL }`() {
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_ALL,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
-    }
-
-    @Test
-    fun `M return content placeholder W createImageWireframeByBitmap() { ImagePrivacy MASK_ALL }`() {
-        // When
-        val wireframe = testedHelper.createImageWireframeByBitmap(
-            id = fakeViewId,
-            bitmap = mockBitmap,
-            density = fakeDensity,
-            imagePrivacy = ImagePrivacy.MASK_ALL,
-            isContextualImage = false,
-            globalBounds = fakeBounds,
-            shapeStyle = null,
-            border = null,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
-    }
-
-    @Test
-    fun `M not return image wireframe W createImageWireframe(usePIIPlaceholder = true) { ImagePrivacy MASK_NONE }`() {
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_NONE,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
-    }
-
-    @Test
-    fun `M not return image wireframe W createImageWireframe { ImagePrivacy MASK_LARGE_ONLY & isContextual image}`() {
-        // When
-        val wireframe = testedHelper.createImageWireframeByBitmap(
-            id = fakeViewId,
-            bitmap = mockBitmap,
-            density = fakeDensity,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            isContextualImage = true,
-            globalBounds = fakeBounds,
-            shapeStyle = null,
-            border = null,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
-    }
-
-    @Test
-    fun `M return null W createImageWireframe() { application context is null }`() {
-        // Given
-        whenever(mockView.context.applicationContext).thenReturn(null)
-
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isNull()
-    }
-
-    @Test
-    fun `M send telemetry W createImageWireframeByDrawable() { application context is null }`() {
-        // Given
-        whenever(mockView.context.applicationContext).thenReturn(null)
-
-        // When
-        testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        mockLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, "android.view.View")
-        )
-    }
-
-    @Test
-    fun `M log error W createImageWireframeByDrawable() { resources is null }`() {
-        // Given
-        whenever(mockView.resources).thenReturn(null)
-
-        // When
-        testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        mockLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            RESOURCES_NULL_ERROR.format(Locale.US, "android.view.View")
-        )
-    }
-
-    @Test
-    fun `M return null W createImageWireframeByDrawable() { id is null }`() {
-        // Given
-        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
-            .thenReturn(null)
-
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isNull()
-        verifyNoInteractions(mockAsyncJobStatusCallback)
-    }
-
-    @Test
-    fun `M return null W createImageWireframeByDrawable() { drawable has no width }`() {
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 0,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isNull()
-    }
-
-    @Test
-    fun `M return null W createImageWireframeByDrawable() { drawable has no height }`() {
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 0,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isNull()
-    }
-
-    @Test
-    fun `M return wireframe W createImageWireframeByDrawable()`(
-        @Mock mockShapeStyle: MobileSegment.ShapeStyle,
-        @Mock mockBorder: MobileSegment.ShapeBorder,
-        @Mock stubWireframeClip: MobileSegment.WireframeClip
+    fun `M use intrinsic dimensions W createImageWireframeByBitmap { inset drawable }`(
+        @Mock mockInsetDrawable: InsetDrawable,
+        forge: Forge
     ) {
         // Given
-        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
-            .thenReturn(fakeGeneratedIdentifier)
-        whenever(
-            mockResourceResolver.resolveResourceId(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        ).thenAnswer {
-            val callback = it.arguments[7] as ResourceResolverCallback
-            callback.onSuccess(fakeResourceId)
-        }
-
-        val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
-            id = fakeGeneratedIdentifier,
-            x = fakeDrawableXY.first,
-            y = fakeDrawableXY.second,
-            width = fakeBounds.width,
-            height = fakeBounds.height,
-            shapeStyle = mockShapeStyle,
-            border = mockBorder,
-            resourceId = fakeResourceId,
-            clip = stubWireframeClip,
-            isEmpty = false
-        )
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+        whenever(mockInsetDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockInsetDrawable.intrinsicHeight).thenReturn(fakeHeight)
 
         // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
+        val placeholderWireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
             currentWireframeIndex = 0,
-            x = fakeDrawableXY.first,
-            y = fakeDrawableXY.second,
-            width = fakeBounds.width.toInt(),
-            height = fakeBounds.height.toInt(),
-            drawable = mockDrawable,
-            shapeStyle = mockShapeStyle,
-            border = mockBorder,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            x = 0,
+            y = 0,
+            width = fakeWidth,
+            height = fakeHeight,
+            drawable = mockInsetDrawable,
+            shapeStyle = null,
+            border = null,
             usePIIPlaceholder = true,
-            clipping = stubWireframeClip
-        )
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
-        verify(mockResourceResolver).resolveResourceId(
-            resources = any(),
-            applicationContext = any(),
-            displayMetrics = any(),
-            originalDrawable = any(),
-            drawableCopier = any(),
-            drawableWidth = any(),
-            drawableHeight = any(),
-            resourceResolverCallback = any()
-        )
-        verify(mockAsyncJobStatusCallback).jobStarted()
-        verify(mockAsyncJobStatusCallback).jobFinished()
-        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
-        assertThat(wireframe).isEqualTo(expectedWireframe)
+        assertThat(placeholderWireframe.width.toInt()).isEqualTo(fakeWidth)
+        assertThat(placeholderWireframe.height.toInt()).isEqualTo(fakeHeight)
     }
 
     @Test
-    fun `M return wireframe W createImageWireframeByBitmap()`(
+    fun `M use intrinsic dimensions W createImageWireframeByBitmap { layerDrawable no layers }`(
+        @Mock mockLayerDrawable: LayerDrawable,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+        whenever(mockLayerDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockLayerDrawable.intrinsicHeight).thenReturn(fakeHeight)
+        whenever(mockLayerDrawable.numberOfLayers).thenReturn(0)
+
+        // When
+        val placeholderWireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = fakeWidth,
+            height = fakeHeight,
+            drawable = mockLayerDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        ) as MobileSegment.Wireframe.PlaceholderWireframe
+
+        // Then
+        assertThat(placeholderWireframe.width.toInt()).isEqualTo(fakeWidth)
+        assertThat(placeholderWireframe.height.toInt()).isEqualTo(fakeHeight)
+    }
+
+    @Test
+    fun `M return wireframe W createImageWireframeByBitmap`(
         @Mock mockShapeStyle: MobileSegment.ShapeStyle,
         @Mock mockBorder: MobileSegment.ShapeBorder,
         @Mock stubWireframeClip: MobileSegment.WireframeClip
@@ -544,56 +313,159 @@ internal class DefaultImageWireframeHelperTest {
         assertThat(wireframe).isEqualTo(expectedWireframe)
     }
 
-    // endregion
-
-    // region createCompoundDrawableWireframes
+    // region createImageWireframeByBitmap
 
     @Test
-    fun `M return empty list W createCompoundDrawableWireframes() { no compound drawables }`() {
-        // Given
-        whenever(mockTextView.compoundDrawables)
-            .thenReturn(arrayOf(null, null, null, null))
-
+    fun `M return content placeholder W createImageWireframeByBitmap { ImagePrivacy MASK_ALL }`() {
         // When
-        val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
+        val wireframe = testedHelper.createImageWireframeByBitmap(
+            id = fakeViewId,
+            bitmap = mockBitmap,
+            density = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            isContextualImage = false,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         // Then
-        verifyNoInteractions(mockAsyncJobStatusCallback)
-        assertThat(wireframes).isEmpty()
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
     }
 
     @Test
-    fun `M return wireframe W createCompoundDrawableWireframes()`() {
-        // Given
-        whenever(
-            mockViewUtilsInternal.resolveCompoundDrawableBounds(
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        ).thenReturn(fakeBounds)
-        val fakeDrawables = arrayOf(null, mockDrawable, null, null)
-        whenever(mockTextView.compoundDrawables)
-            .thenReturn(fakeDrawables)
-
+    fun `M return placeholder W createImageWireframeByBitmap { MASK_LARGE_ONLY & isContextual }`() {
         // When
-        val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
+        val wireframe = testedHelper.createImageWireframeByBitmap(
+            id = fakeViewId,
+            bitmap = mockBitmap,
+            density = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            isContextualImage = true,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
-        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
-        val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
 
+    @Test
+    fun `M call jobFinished W createImageWireframeByBitmap { failure }`() {
+        // Given
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
+            .thenReturn(fakeGeneratedIdentifier)
+
+        whenever(
+            mockResourceResolver.resolveResourceId(
+                bitmap = any(),
+                resourceResolverCallback = any()
+            )
+        ).thenAnswer {
+            val callback = it.arguments[1] as ResourceResolverCallback
+            callback.onFailure()
+        }
+
+        // When
+        testedHelper.createImageWireframeByBitmap(
+            id = fakeViewId,
+            bitmap = mockBitmap,
+            density = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            isContextualImage = false,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
+    }
+
+    // endregion
+
+    // region createImageWireframeByDrawable
+
+    @Test
+    fun `M call jobFinished W createImageWireframeByDrawable { failure }`() {
+        // Given
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
+            .thenReturn(fakeGeneratedIdentifier)
+        whenever(
+            mockResourceResolver.resolveResourceId(
+                resources = any(),
+                applicationContext = any(),
+                displayMetrics = any(),
+                originalDrawable = any(),
+                drawableCopier = any(),
+                drawableWidth = any(),
+                drawableHeight = any(),
+                resourceIdCacheKey = anyOrNull(),
+                resourceResolverCallback = any()
+            )
+        ).thenAnswer {
+            val callback = it.arguments[8] as ResourceResolverCallback
+            callback.onFailure()
+        }
+
+        // When
+        testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
+    }
+
+    @Test
+    fun `M use resourceIdCacheKey W createImageWireframeByDrawable { key provided }`(
+        forge: Forge,
+        @StringForgery fakeResourceIdCacheKey: String
+    ) {
+        // Given
+        val fakeXPosition = forge.aPositiveLong()
+        val fakeYPosition = forge.aPositiveLong()
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+
+        // When
+        testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            currentWireframeIndex = 0,
+            x = fakeXPosition,
+            y = fakeYPosition,
+            width = fakeWidth,
+            height = fakeHeight,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = false,
+            resourceIdCacheKey = fakeResourceIdCacheKey,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
         verify(mockResourceResolver).resolveResourceId(
             resources = any(),
             applicationContext = any(),
@@ -602,82 +474,294 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourceResolverCallback = argumentCaptor.capture()
+            resourceIdCacheKey = eq(fakeResourceIdCacheKey),
+            resourceResolverCallback = any()
         )
-        argumentCaptor.allValues.forEach {
-            it.onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M return content placeholder W createImageWireframeByDrawable { ImagePrivacy MASK_ALL }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
+
+    @Test
+    fun `M not return image wireframe W createImageWireframeByDrawable { usePIIPlaceholder and MASK_NONE }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
+    }
+
+    @Test
+    fun `M return null W createImageWireframeByDrawable { application context is null }`() {
+        // Given
+        whenever(mockView.context.applicationContext).thenReturn(null)
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isNull()
+    }
+
+    @Test
+    fun `M send telemetry W createImageWireframeByDrawable { application context is null }`() {
+        // Given
+        whenever(mockView.context.applicationContext).thenReturn(null)
+
+        // When
+        testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, "android.view.View")
+        )
+    }
+
+    @Test
+    fun `M log error W createImageWireframeByDrawable { resources is null }`() {
+        // Given
+        whenever(mockView.resources).thenReturn(null)
+
+        // When
+        testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RESOURCES_NULL_ERROR.format(Locale.US, "android.view.View")
+        )
+    }
+
+    @Test
+    fun `M return null W createImageWireframeByDrawable { id is null }`() {
+        // Given
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
+            .thenReturn(null)
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isNull()
+        verifyNoInteractions(mockAsyncJobStatusCallback)
+    }
+
+    @Test
+    fun `M return null W createImageWireframeByDrawable { drawable has no width }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 100,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isNull()
+    }
+
+    @Test
+    fun `M return null W createImageWireframeByDrawable { drawable has no height }`() {
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null,
+            usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isNull()
+    }
+
+    @Test
+    fun `M return wireframe W createImageWireframeByDrawable`(
+        @Mock mockShapeStyle: MobileSegment.ShapeStyle,
+        @Mock mockBorder: MobileSegment.ShapeBorder,
+        @Mock stubWireframeClip: MobileSegment.WireframeClip
+    ) {
+        // Given
+        whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
+            .thenReturn(fakeGeneratedIdentifier)
+        whenever(
+            mockResourceResolver.resolveResourceId(
+                resources = any(),
+                applicationContext = any(),
+                displayMetrics = any(),
+                originalDrawable = any(),
+                drawableCopier = any(),
+                drawableWidth = any(),
+                drawableHeight = any(),
+                resourceIdCacheKey = anyOrNull(),
+                resourceResolverCallback = any()
+            )
+        ).thenAnswer {
+            val callback = it.arguments[8] as ResourceResolverCallback
+            callback.onSuccess(fakeResourceId)
         }
+
+        val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = fakeGeneratedIdentifier,
+            x = fakeDrawableXY.first,
+            y = fakeDrawableXY.second,
+            width = fakeBounds.width,
+            height = fakeBounds.height,
+            shapeStyle = mockShapeStyle,
+            border = mockBorder,
+            resourceId = fakeResourceId,
+            clip = stubWireframeClip,
+            isEmpty = false
+        )
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByDrawable(
+            view = mockView,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            currentWireframeIndex = 0,
+            x = fakeDrawableXY.first,
+            y = fakeDrawableXY.second,
+            width = fakeBounds.width.toInt(),
+            height = fakeBounds.height.toInt(),
+            drawable = mockDrawable,
+            shapeStyle = mockShapeStyle,
+            border = mockBorder,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            usePIIPlaceholder = true,
+            clipping = stubWireframeClip,
+            resourceIdCacheKey = null
+        )
+
+        // Then
+        verify(mockResourceResolver).resolveResourceId(
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
+            resourceResolverCallback = any()
+        )
         verify(mockAsyncJobStatusCallback).jobStarted()
         verify(mockAsyncJobStatusCallback).jobFinished()
-        assertThat(wireframes.size).isEqualTo(1)
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
+        assertThat(wireframe).isEqualTo(expectedWireframe)
     }
 
     @Test
-    fun `M return multiple wireframes W createCompoundDrawableWireframes() { multiple drawables }`() {
-        // Given
-        whenever(
-            mockViewUtilsInternal.resolveCompoundDrawableBounds(
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        )
-            .thenReturn(fakeBounds)
-        val fakeDrawables = arrayOf(null, mockDrawable, null, mockDrawable)
-        whenever(mockTextView.compoundDrawables)
-            .thenReturn(fakeDrawables)
-
-        // When
-        val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
-
-        // Then
-        val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
-        verify(mockResourceResolver, times(2)).resolveResourceId(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            argumentCaptor.capture()
-        )
-        argumentCaptor.allValues.forEach {
-            it.onSuccess(fakeResourceId)
-        }
-        verify(mockAsyncJobStatusCallback, times(2)).jobStarted()
-        verify(mockAsyncJobStatusCallback, times(2)).jobFinished()
-        assertThat(wireframes.size).isEqualTo(2)
-    }
-
-    @Test
-    fun `M skip invalid elements W createCompoundDrawableWireframes() { invalid indices }`() {
-        // Given
-        whenever(mockTextView.compoundDrawables)
-            .thenReturn(arrayOf(null, null, null, null, null, null))
-
-        // When
-        val wireframes = testedHelper.createCompoundDrawableWireframes(
-            mockTextView,
-            mockMappingContext,
-            0,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        verifyNoInteractions(mockAsyncJobStatusCallback)
-        assertThat(wireframes).isEmpty()
-    }
-
-    @Test
-    fun `M resolve view width and height W createImageWireframe() { RippleDrawable }`(
+    fun `M resolve view width and height W createImageWireframeByDrawable { RippleDrawable }`(
         @Mock mockDrawable: RippleDrawable,
         @Mock mockInsetDrawable: InsetDrawable,
         @Mock mockGradientDrawable: GradientDrawable,
@@ -704,6 +788,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -717,13 +802,14 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
 
     @Test
-    fun `M resolve drawable width and height W createImageWireframe() { TextView }`() {
+    fun `M resolve drawable width and height W createImageWireframeByDrawable { TextView }`() {
         // When
         testedHelper.createImageWireframeByDrawable(
             view = mockView,
@@ -737,6 +823,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -750,6 +837,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
 
         )
@@ -757,14 +845,19 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not try to resolve bitmap W createImageWireframe() { PII image }`(
+    fun `M not try to resolve bitmap W createImageWireframeByDrawable { PII image }`(
         forge: Forge,
         @Mock mockResources: Resources,
         @Mock mockDisplayMetrics: DisplayMetrics,
         @Mock mockContext: Context
     ) {
         // Given
-        whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
+        whenever(
+            mockImageTypeResolver.isDrawablePII(
+                drawable = any(),
+                density = any()
+            )
+        ).thenReturn(true)
 
         val fakeGlobalX = forge.aPositiveInt()
         val fakeGlobalY = forge.aPositiveInt()
@@ -789,6 +882,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
@@ -799,7 +893,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M try to resolve bitmap W createImageWireframe() { non-PII image }`() {
+    fun `M try to resolve bitmap W createImageWireframeByDrawable { non-PII image }`() {
         // Given
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(false)
 
@@ -816,6 +910,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -828,12 +923,13 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
     }
 
     @Test
-    fun `M return content placeholder W createImageWireframe() { PII image }`() {
+    fun `M return content placeholder W createImageWireframeByDrawable { PII image }`() {
         // Given
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
 
@@ -850,6 +946,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
+            resourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -857,6 +954,172 @@ internal class DefaultImageWireframeHelperTest {
         assertThat(actualWireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
         assertThat((actualWireframe as MobileSegment.Wireframe.PlaceholderWireframe).label)
             .isEqualTo(DefaultImageWireframeHelper.MASK_CONTEXTUAL_CONTENT_LABEL)
+    }
+
+    // endregion
+
+    // region createCompoundDrawableWireframes
+
+    @Test
+    fun `M use correct resourceIdCacheKeys W createCompoundDrawableWireframes { resourceIdCacheKey provided }`(
+        @StringForgery fakeResourceIdCacheKey: String
+    ) {
+        // Given
+        whenever(mockTextView.compoundDrawables)
+            .thenReturn(arrayOf(mockDrawable, mockDrawable, mockDrawable, mockDrawable))
+
+        // When
+        testedHelper.createCompoundDrawableWireframes(
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = fakeResourceIdCacheKey,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        mockTextView.compoundDrawables.forEachIndexed { index, _ ->
+            val compoundDrawableIndex = index + 1
+            val expectedKey = fakeResourceIdCacheKey + "_$compoundDrawableIndex"
+
+            // Then
+            verify(mockResourceResolver).resolveResourceId(
+                resources = any(),
+                applicationContext = any(),
+                displayMetrics = any(),
+                originalDrawable = any(),
+                drawableCopier = any(),
+                drawableWidth = any(),
+                drawableHeight = any(),
+                resourceIdCacheKey = eq(expectedKey),
+                resourceResolverCallback = any()
+            )
+        }
+    }
+
+    @Test
+    fun `M return empty list W createCompoundDrawableWireframes { no compound drawables }`() {
+        // Given
+        whenever(mockTextView.compoundDrawables)
+            .thenReturn(arrayOf(null, null, null, null))
+
+        // When
+        val wireframes = testedHelper.createCompoundDrawableWireframes(
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verifyNoInteractions(mockAsyncJobStatusCallback)
+        assertThat(wireframes).isEmpty()
+    }
+
+    @Test
+    fun `M return wireframe W createCompoundDrawableWireframes`() {
+        // Given
+        val fakeDrawables = arrayOf(null, mockDrawable, null, null)
+        whenever(mockTextView.compoundDrawables)
+            .thenReturn(fakeDrawables)
+
+        // When
+        val wireframes = testedHelper.createCompoundDrawableWireframes(
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
+
+        // Then
+        val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
+
+        verify(mockResourceResolver).resolveResourceId(
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
+            resourceResolverCallback = argumentCaptor.capture()
+        )
+        argumentCaptor.allValues.forEach {
+            it.onSuccess(fakeResourceId)
+        }
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        assertThat(wireframes.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `M return multiple wireframes W createCompoundDrawableWireframes { multiple drawables }`() {
+        // Given
+        whenever(
+            mockViewUtilsInternal.resolveCompoundDrawableBounds(
+                view = any(),
+                drawable = any(),
+                pixelsDensity = any(),
+                position = any()
+            )
+        )
+            .thenReturn(fakeBounds)
+        val fakeDrawables = arrayOf(null, mockDrawable, null, mockDrawable)
+        whenever(mockTextView.compoundDrawables)
+            .thenReturn(fakeDrawables)
+
+        // When
+        val wireframes = testedHelper.createCompoundDrawableWireframes(
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
+
+        // Then
+        val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
+        verify(mockResourceResolver, times(2)).resolveResourceId(
+            resources = any(),
+            applicationContext = any(),
+            displayMetrics = any(),
+            originalDrawable = any(),
+            drawableCopier = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            resourceIdCacheKey = anyOrNull(),
+            resourceResolverCallback = argumentCaptor.capture()
+        )
+        argumentCaptor.allValues.forEach {
+            it.onSuccess(fakeResourceId)
+        }
+        verify(mockAsyncJobStatusCallback, times(2)).jobStarted()
+        verify(mockAsyncJobStatusCallback, times(2)).jobFinished()
+        assertThat(wireframes.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `M skip invalid elements W createCompoundDrawableWireframes { invalid indices }`() {
+        // Given
+        whenever(mockTextView.compoundDrawables)
+            .thenReturn(arrayOf(null, null, null, null, null, null))
+
+        // When
+        val wireframes = testedHelper.createCompoundDrawableWireframes(
+            textView = mockTextView,
+            mappingContext = mockMappingContext,
+            prevWireframeIndex = 0,
+            resourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verifyNoInteractions(mockAsyncJobStatusCallback)
+        assertThat(wireframes).isEmpty()
     }
 
     // endregion

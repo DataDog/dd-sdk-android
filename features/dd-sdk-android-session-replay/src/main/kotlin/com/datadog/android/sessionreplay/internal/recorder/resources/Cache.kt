@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 internal interface Cache<K : Any, V : Any> {
 
     fun put(value: V) {}
-    fun put(element: K, value: V) {}
-    fun get(element: K): V? = null
+    fun put(key: String, value: V) {}
+    fun get(key: String): V? = null
     fun size(): Int
     fun clear()
 

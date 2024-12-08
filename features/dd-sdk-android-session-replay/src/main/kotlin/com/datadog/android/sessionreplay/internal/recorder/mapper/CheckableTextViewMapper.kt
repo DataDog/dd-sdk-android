@@ -125,6 +125,7 @@ internal abstract class CheckableTextViewMapper<T>(
                 border = null,
                 usePIIPlaceholder = true,
                 clipping = MobileSegment.WireframeClip(),
+                resourceIdCacheKey = null,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         }
