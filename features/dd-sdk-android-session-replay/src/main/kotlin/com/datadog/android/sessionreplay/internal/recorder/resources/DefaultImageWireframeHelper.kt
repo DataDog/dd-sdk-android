@@ -126,7 +126,9 @@ internal class DefaultImageWireframeHelper(
             height = height
         )
 
-        if (id == null || !drawableProperties.isValid()) return null
+        if (id == null || !drawableProperties.isValid()) {
+            return null
+        }
 
         val resources = view.resources
 
@@ -256,6 +258,11 @@ internal class DefaultImageWireframeHelper(
                 )
 
                 wireframeIndex++
+                val resourceCacheKey = if (resourceIdCacheKey != null) {
+                    "$resourceIdCacheKey" + "_$wireframeIndex"
+                } else {
+                    null
+                }
 
                 createImageWireframeByDrawable(
                     view = textView,
@@ -270,7 +277,7 @@ internal class DefaultImageWireframeHelper(
                     border = null,
                     usePIIPlaceholder = true,
                     clipping = MobileSegment.WireframeClip(),
-                    resourceIdCacheKey = resourceIdCacheKey + "_$wireframeIndex",
+                    resourceIdCacheKey = resourceCacheKey,
                     asyncJobStatusCallback = asyncJobStatusCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
