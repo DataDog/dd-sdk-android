@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.androidXMetrics)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXRecyclerView)
+    implementation(libs.androidXFragment)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
