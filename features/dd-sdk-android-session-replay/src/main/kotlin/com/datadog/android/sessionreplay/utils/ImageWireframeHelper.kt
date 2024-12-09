@@ -12,10 +12,10 @@ import android.view.View
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultDrawableCopier
-import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 
 /**
  * A Helper to handle capturing images in Session replay wireframes.
