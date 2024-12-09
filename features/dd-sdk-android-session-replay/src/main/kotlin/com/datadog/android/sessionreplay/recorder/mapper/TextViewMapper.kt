@@ -71,7 +71,7 @@ open class TextViewMapper<in T : TextView>(
                 textView = view,
                 mappingContext = mappingContext,
                 prevWireframeIndex = wireframes.size,
-                resourceIdCacheKey = null,
+                customResourceIdCacheKey = null,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         )

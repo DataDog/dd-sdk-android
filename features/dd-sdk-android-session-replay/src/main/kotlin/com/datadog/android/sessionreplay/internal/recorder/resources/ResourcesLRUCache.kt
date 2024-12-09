@@ -27,7 +27,7 @@ internal class ResourcesLRUCache(
                 return value.size
             }
         }
-) : Cache<Drawable, ByteArray>, ComponentCallbacks2 {
+) : Cache<String, ByteArray>, ComponentCallbacks2 {
 
     override fun onTrimMemory(level: Int) {
         cacheUtils.handleTrimMemory(level, cache)

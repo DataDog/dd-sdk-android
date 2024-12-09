@@ -14,7 +14,7 @@ import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 
 internal class BitmapCachesManager(
-    private val resourcesLRUCache: Cache<Drawable, ByteArray>,
+    private val resourcesLRUCache: Cache<String, ByteArray>,
     private val bitmapPool: BitmapPool,
     private val logger: InternalLogger
 ) {

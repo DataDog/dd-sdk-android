@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
@@ -49,9 +48,6 @@ internal class BitmapCachesManagerTest {
 
     @Mock
     lateinit var mockApplicationContext: Context
-
-    @Mock
-    lateinit var mockDrawable: Drawable
 
     @Mock
     lateinit var mockBitmap: Bitmap
@@ -193,7 +189,7 @@ internal class BitmapCachesManagerTest {
 
     private fun createBitmapCachesManager(
         bitmapPool: BitmapPool,
-        resourcesLRUCache: Cache<Drawable, ByteArray>,
+        resourcesLRUCache: Cache<String, ByteArray>,
         logger: InternalLogger
     ): BitmapCachesManager =
         BitmapCachesManager(
@@ -204,7 +200,7 @@ internal class BitmapCachesManagerTest {
 
     // this is in order to test having a class that implements
     // Cache, but does NOT implement ComponentCallbacks2
-    private class FakeNonComponentsCallbackCache : Cache<Drawable, ByteArray> {
+    private class FakeNonComponentsCallbackCache : Cache<String, ByteArray> {
 
         override fun size(): Int = 0
 

@@ -104,7 +104,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
                 shapeStyle = eq(null),
                 border = eq(null),
                 prefix = ArgumentMatchers.anyString(),
-                resourceIdCacheKey = anyOrNull()
+                customResourceIdCacheKey = anyOrNull()
             )
 
             assertThat(xCaptor.allValues).containsOnly(expectedThumbLeft, expectedTrackLeft)
@@ -204,7 +204,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             shapeStyle = any(),
             border = any(),
             prefix = any(),
-            resourceIdCacheKey = anyOrNull()
+            customResourceIdCacheKey = anyOrNull()
         )
     }
 }

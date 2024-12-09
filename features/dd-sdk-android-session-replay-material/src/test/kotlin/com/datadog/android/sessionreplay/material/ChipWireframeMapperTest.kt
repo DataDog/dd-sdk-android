@@ -177,7 +177,7 @@ class ChipWireframeMapperTest {
             shapeStyle = isNull(),
             border = isNull(),
             prefix = any(),
-            resourceIdCacheKey = anyOrNull()
+            customResourceIdCacheKey = anyOrNull()
         )
     }
 

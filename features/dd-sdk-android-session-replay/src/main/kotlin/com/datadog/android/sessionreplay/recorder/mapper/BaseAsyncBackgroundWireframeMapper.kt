@@ -140,7 +140,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> internal construc
             shapeStyle = null,
             border = null,
             prefix = PREFIX_BACKGROUND_DRAWABLE,
-            resourceIdCacheKey = null
+            customResourceIdCacheKey = null
         )
     }
 

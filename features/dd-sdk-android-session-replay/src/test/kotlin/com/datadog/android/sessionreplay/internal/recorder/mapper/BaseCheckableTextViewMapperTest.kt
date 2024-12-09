@@ -226,7 +226,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             shapeStyle = isNull(),
             border = isNull(),
             prefix = anyString(),
-            resourceIdCacheKey = anyOrNull()
+            customResourceIdCacheKey = anyOrNull()
         )
     }
 
@@ -271,7 +271,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             shapeStyle = isNull(),
             border = isNull(),
             prefix = anyString(),
-            resourceIdCacheKey = anyOrNull()
+            customResourceIdCacheKey = anyOrNull()
         )
     }
 

@@ -215,7 +215,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
@@ -249,7 +249,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
@@ -406,7 +406,7 @@ internal class DefaultImageWireframeHelperTest {
                 drawableCopier = any(),
                 drawableWidth = any(),
                 drawableHeight = any(),
-                resourceIdCacheKey = anyOrNull(),
+                customResourceIdCacheKey = anyOrNull(),
                 resourceResolverCallback = any()
             )
         ).thenAnswer {
@@ -427,7 +427,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -438,7 +438,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M use resourceIdCacheKey W createImageWireframeByDrawable { key provided }`(
+    fun `M use customResourceIdCacheKey W createImageWireframeByDrawable { key provided }`(
         forge: Forge,
         @StringForgery fakeResourceIdCacheKey: String
     ) {
@@ -461,7 +461,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = false,
-            resourceIdCacheKey = fakeResourceIdCacheKey,
+            customResourceIdCacheKey = fakeResourceIdCacheKey,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -474,7 +474,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourceIdCacheKey = eq(fakeResourceIdCacheKey),
+            customResourceIdCacheKey = eq(fakeResourceIdCacheKey),
             resourceResolverCallback = any()
         )
     }
@@ -494,7 +494,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -517,7 +517,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -543,7 +543,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -569,7 +569,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -599,7 +599,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -630,7 +630,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -654,7 +654,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -677,7 +677,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -703,7 +703,7 @@ internal class DefaultImageWireframeHelperTest {
                 drawableCopier = any(),
                 drawableWidth = any(),
                 drawableHeight = any(),
-                resourceIdCacheKey = anyOrNull(),
+                customResourceIdCacheKey = anyOrNull(),
                 resourceResolverCallback = any()
             )
         ).thenAnswer {
@@ -739,7 +739,7 @@ internal class DefaultImageWireframeHelperTest {
             asyncJobStatusCallback = mockAsyncJobStatusCallback,
             usePIIPlaceholder = true,
             clipping = stubWireframeClip,
-            resourceIdCacheKey = null
+            customResourceIdCacheKey = null
         )
 
         // Then
@@ -751,7 +751,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourceIdCacheKey = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
         verify(mockAsyncJobStatusCallback).jobStarted()
@@ -788,7 +788,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -802,7 +802,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            resourceIdCacheKey = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
@@ -823,7 +823,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -837,7 +837,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            resourceIdCacheKey = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
 
         )
@@ -882,7 +882,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
@@ -910,7 +910,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -923,7 +923,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourceIdCacheKey = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = any()
         )
     }
@@ -946,7 +946,7 @@ internal class DefaultImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -961,7 +961,7 @@ internal class DefaultImageWireframeHelperTest {
     // region createCompoundDrawableWireframes
 
     @Test
-    fun `M use correct resourceIdCacheKeys W createCompoundDrawableWireframes { resourceIdCacheKey provided }`(
+    fun `M use correct customResourceIdCacheKeys W createCompoundDrawableWireframes { key provided }`(
         @StringForgery fakeResourceIdCacheKey: String
     ) {
         // Given
@@ -973,13 +973,12 @@ internal class DefaultImageWireframeHelperTest {
             textView = mockTextView,
             mappingContext = mockMappingContext,
             prevWireframeIndex = 0,
-            resourceIdCacheKey = fakeResourceIdCacheKey,
+            customResourceIdCacheKey = fakeResourceIdCacheKey,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
         mockTextView.compoundDrawables.forEachIndexed { index, _ ->
-            val compoundDrawableIndex = index + 1
-            val expectedKey = fakeResourceIdCacheKey + "_$compoundDrawableIndex"
+            val expectedKey = fakeResourceIdCacheKey + "_$index"
 
             // Then
             verify(mockResourceResolver).resolveResourceId(
@@ -990,7 +989,7 @@ internal class DefaultImageWireframeHelperTest {
                 drawableCopier = any(),
                 drawableWidth = any(),
                 drawableHeight = any(),
-                resourceIdCacheKey = eq(expectedKey),
+                customResourceIdCacheKey = eq(expectedKey),
                 resourceResolverCallback = any()
             )
         }
@@ -1007,7 +1006,7 @@ internal class DefaultImageWireframeHelperTest {
             textView = mockTextView,
             mappingContext = mockMappingContext,
             prevWireframeIndex = 0,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
@@ -1028,7 +1027,7 @@ internal class DefaultImageWireframeHelperTest {
             textView = mockTextView,
             mappingContext = mockMappingContext,
             prevWireframeIndex = 0,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
@@ -1044,7 +1043,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourceIdCacheKey = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
@@ -1076,7 +1075,7 @@ internal class DefaultImageWireframeHelperTest {
             textView = mockTextView,
             mappingContext = mockMappingContext,
             prevWireframeIndex = 0,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
@@ -1091,7 +1090,7 @@ internal class DefaultImageWireframeHelperTest {
             drawableCopier = any(),
             drawableWidth = any(),
             drawableHeight = any(),
-            resourceIdCacheKey = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull(),
             resourceResolverCallback = argumentCaptor.capture()
         )
         argumentCaptor.allValues.forEach {
@@ -1113,7 +1112,7 @@ internal class DefaultImageWireframeHelperTest {
             textView = mockTextView,
             mappingContext = mockMappingContext,
             prevWireframeIndex = 0,
-            resourceIdCacheKey = null,
+            customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 

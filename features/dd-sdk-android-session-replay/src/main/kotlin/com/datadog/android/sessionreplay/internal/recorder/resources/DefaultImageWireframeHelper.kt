@@ -116,7 +116,7 @@ internal class DefaultImageWireframeHelper(
         shapeStyle: MobileSegment.ShapeStyle?,
         border: MobileSegment.ShapeBorder?,
         prefix: String?,
-        resourceIdCacheKey: String?
+        customResourceIdCacheKey: String?
     ): MobileSegment.Wireframe? {
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(
@@ -207,7 +207,7 @@ internal class DefaultImageWireframeHelper(
             drawableCopier = drawableCopier,
             drawableWidth = width,
             drawableHeight = height,
-            resourceIdCacheKey = resourceIdCacheKey,
+            customResourceIdCacheKey = customResourceIdCacheKey,
             resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
@@ -229,7 +229,7 @@ internal class DefaultImageWireframeHelper(
         textView: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
-        resourceIdCacheKey: String?,
+        customResourceIdCacheKey: String?,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
@@ -257,9 +257,8 @@ internal class DefaultImageWireframeHelper(
                     position = compoundDrawablePosition
                 )
 
-                wireframeIndex++
-                val resourceCacheKey = if (resourceIdCacheKey != null) {
-                    "$resourceIdCacheKey" + "_$wireframeIndex"
+                val resourceCacheKey = if (customResourceIdCacheKey != null) {
+                    "$customResourceIdCacheKey" + "_$compoundDrawableIndex"
                 } else {
                     null
                 }
@@ -267,7 +266,7 @@ internal class DefaultImageWireframeHelper(
                 createImageWireframeByDrawable(
                     view = textView,
                     imagePrivacy = mappingContext.imagePrivacy,
-                    currentWireframeIndex = wireframeIndex,
+                    currentWireframeIndex = ++wireframeIndex,
                     x = drawableCoordinates.x,
                     y = drawableCoordinates.y,
                     width = drawable.intrinsicWidth,
@@ -277,7 +276,7 @@ internal class DefaultImageWireframeHelper(
                     border = null,
                     usePIIPlaceholder = true,
                     clipping = MobileSegment.WireframeClip(),
-                    resourceIdCacheKey = resourceCacheKey,
+                    customResourceIdCacheKey = resourceCacheKey,
                     asyncJobStatusCallback = asyncJobStatusCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)

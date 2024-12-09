@@ -65,7 +65,7 @@ interface ImageWireframeHelper {
      * @param shapeStyle provides a custom shape (e.g. rounded corners) to the image wireframe
      * @param border provides a custom border to the image wireframe
      * @param prefix a prefix identifying the drawable in the parent view's context
-     * @param resourceIdCacheKey an optional key with which to cache or retrieve from the resource cache.
+     * @param customResourceIdCacheKey an optional key with which to cache or retrieve from the resource cache.
      * If this key is not provided then one will be generated from the drawable.
      */
     // TODO RUM-3666 limit the number of params to this function
@@ -85,7 +85,7 @@ interface ImageWireframeHelper {
         shapeStyle: MobileSegment.ShapeStyle? = null,
         border: MobileSegment.ShapeBorder? = null,
         prefix: String? = DRAWABLE_CHILD_NAME,
-        resourceIdCacheKey: String?
+        customResourceIdCacheKey: String?
     ): MobileSegment.Wireframe?
 
     /**
@@ -93,7 +93,7 @@ interface ImageWireframeHelper {
      * @param textView the [TextView] to capture the compound drawables from.
      * @param mappingContext the [MappingContext] for the [TextView].
      * @param prevWireframeIndex the index of the previous wireframe in the list of wireframes for the [TextView].
-     * @param resourceIdCacheKey an optional key with which to cache or retrieve from the resource cache.
+     * @param customResourceIdCacheKey an optional key with which to cache or retrieve from the resource cache.
      * If this key is not provided then one will be generated from the drawable.
      * @param asyncJobStatusCallback the callback for the async capture process.
      */
@@ -102,7 +102,7 @@ interface ImageWireframeHelper {
         textView: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
-        resourceIdCacheKey: String?,
+        customResourceIdCacheKey: String?,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MutableList<MobileSegment.Wireframe>
 

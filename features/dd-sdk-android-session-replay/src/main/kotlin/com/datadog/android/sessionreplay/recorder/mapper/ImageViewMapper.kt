@@ -102,7 +102,7 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
             shapeStyle = null,
             border = null,
             prefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
-            resourceIdCacheKey = null
+            customResourceIdCacheKey = null
         )?.let {
             wireframes.add(it)
         }
