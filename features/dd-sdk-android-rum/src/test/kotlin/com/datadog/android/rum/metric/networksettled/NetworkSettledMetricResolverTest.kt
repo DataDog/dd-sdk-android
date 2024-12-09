@@ -253,6 +253,33 @@ internal class NetworkSettledMetricResolverTest {
     }
 
     @Test
+    fun `M skip last value W resolveMetric(){ view was stopped, last resource was dropped }`(forge: Forge) {
+        // Given
+        val startTimestamps = forge.forgeStartTimestamps(size = 2)
+        val stopTimestamps = startTimestamps.mapToStopTimestamps(forge)
+        val fakeResourcesIds = forge.aList(size = 2) {
+            forge.getForgery<UUID>().toString()
+        }
+        val expectedMetricValue = stopTimestamps[0] - fakeViewStartTime
+        testedMetric.resourceWasStarted(
+            InternalResourceContext(fakeResourcesIds[0], startTimestamps[0])
+        )
+        testedMetric.resourceWasStarted(
+            InternalResourceContext(fakeResourcesIds[1], stopTimestamps[1])
+        )
+        testedMetric.resourceWasStopped(
+            InternalResourceContext(fakeResourcesIds[0], stopTimestamps[0])
+        )
+        testedMetric.resourceWasDropped(fakeResourcesIds[1])
+
+        // When
+        val metricValue = testedMetric.resolveMetric()
+
+        // Then
+        assertThat(metricValue).isEqualTo(expectedMetricValue)
+    }
+
+    @Test
     fun `M return null W resolveMetric(){ no resource was validated }`(forge: Forge) {
         // Given
         val startTimestamps = forge.forgeStartTimestamps()
@@ -296,6 +323,46 @@ internal class NetworkSettledMetricResolverTest {
 
         // Then
         assertThat(metricValue).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveMetric(){ resource was dropped }`(forge: Forge) {
+        // Given
+        val startTimestamp = System.nanoTime()
+        val fakeResourceContext = forge.getForgery<InternalResourceContext>()
+        testedMetric.resourceWasStarted(InternalResourceContext(fakeResourceContext.resourceId, startTimestamp))
+        testedMetric.resourceWasDropped(fakeResourceContext.resourceId)
+
+        // When
+        val metricValue = testedMetric.resolveMetric()
+
+        // Then
+        assertThat(metricValue).isNull()
+    }
+
+    // endregion
+
+    // region view stopped
+
+    @Test
+    fun `M cleanup W viewWasStopped`(forge: Forge) {
+        // Given
+        val startTimestamps = forge.forgeStartTimestamps()
+        val fakeResourcesIds = forge.aList(size = startTimestamps.size) {
+            forge.getForgery<UUID>().toString()
+        }
+        fakeResourcesIds.forEachIndexed { index, id ->
+            testedMetric.resourceWasStarted(
+                InternalResourceContext(id, startTimestamps[index])
+            )
+        }
+        assertThat(testedMetric.getResourceStartedCacheSize()).isEqualTo(fakeResourcesIds.size)
+
+        // When
+        testedMetric.viewWasStopped()
+
+        // Then
+        assertThat(testedMetric.getResourceStartedCacheSize()).isEqualTo(0)
     }
 
     // endregion

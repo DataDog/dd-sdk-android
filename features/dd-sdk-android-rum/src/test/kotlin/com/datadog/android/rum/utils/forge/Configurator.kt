@@ -66,5 +66,7 @@ internal class Configurator : BaseConfigurator() {
 
         // RumRawEvent
         forge.addFactory(ActionSentForgeryFactory())
+        forge.addFactory(ResourceSentForgeryFactory())
+        forge.addFactory(ResourceDroppedForgeryFactory())
     }
 }
