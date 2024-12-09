@@ -99,6 +99,8 @@ datadog:
       - "com.datadog.android.api.feature.FeatureScope.withWriteContext"
     mainThreadSwitchingCalls:
       - "android.widget.LinearLayout.post"
+  PoorPerformanceMethodsUsage:
+    active: true
   TodoWithoutTask:
     active: true
     deprecatedPrefixes:
