@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -50,16 +50,18 @@ internal class BitmapCachesManagerTest {
     lateinit var mockApplicationContext: Context
 
     @Mock
-    lateinit var mockDrawable: Drawable
-
-    @Mock
     lateinit var mockBitmap: Bitmap
 
     @StringForgery
     lateinit var fakeResourceId: String
 
+    @StringForgery
+    lateinit var fakeResourceKey: String
+
     @BeforeEach
     fun `set up`() {
+        whenever(mockResourcesCache.generateKeyFromDrawable(any())).thenReturn(fakeResourceId)
+
         testedCachesManager = createBitmapCachesManager(
             bitmapPool = mockBitmapPool,
             resourcesLRUCache = mockResourcesCache,
@@ -103,20 +105,20 @@ internal class BitmapCachesManagerTest {
     @Test
     fun `M put in resource cache W putInResourceCache`() {
         // When
-        testedCachesManager.putInResourceCache(mockDrawable, fakeResourceId)
+        testedCachesManager.putInResourceCache(fakeResourceKey, fakeResourceId)
 
         // Then
-        verify(mockResourcesCache).put(mockDrawable, fakeResourceId.toByteArray(Charsets.UTF_8))
+        verify(mockResourcesCache).put(fakeResourceKey, fakeResourceId.toByteArray(Charsets.UTF_8))
     }
 
     @Test
     fun `M get resource from resource cache W getFromResourceCache { resource exists in cache }`() {
         // Given
         val fakeCacheData = fakeResourceId.toByteArray(Charsets.UTF_8)
-        whenever(mockResourcesCache.get(mockDrawable)).thenReturn(fakeCacheData)
+        whenever(mockResourcesCache.get(fakeResourceKey)).thenReturn(fakeCacheData)
 
         // When
-        val result = testedCachesManager.getFromResourceCache(mockDrawable)
+        val result = testedCachesManager.getFromResourceCache(fakeResourceKey)
 
         // Then
         assertThat(result).isEqualTo(fakeResourceId)
@@ -125,10 +127,10 @@ internal class BitmapCachesManagerTest {
     @Test
     fun `M get null from resource cache W getFromResourceCache { resource not in cache }`() {
         // When
-        val result = testedCachesManager.getFromResourceCache(mockDrawable)
+        val result = testedCachesManager.getFromResourceCache(fakeResourceKey)
 
         // Then
-        verify(mockResourcesCache).get(mockDrawable)
+        verify(mockResourcesCache).get(fakeResourceKey)
         assertThat(result).isNull()
     }
 
@@ -187,7 +189,7 @@ internal class BitmapCachesManagerTest {
 
     private fun createBitmapCachesManager(
         bitmapPool: BitmapPool,
-        resourcesLRUCache: Cache<Drawable, ByteArray>,
+        resourcesLRUCache: Cache<String, ByteArray>,
         logger: InternalLogger
     ): BitmapCachesManager =
         BitmapCachesManager(
@@ -198,7 +200,7 @@ internal class BitmapCachesManagerTest {
 
     // this is in order to test having a class that implements
     // Cache, but does NOT implement ComponentCallbacks2
-    private class FakeNonComponentsCallbackCache : Cache<Drawable, ByteArray> {
+    private class FakeNonComponentsCallbackCache : Cache<String, ByteArray> {
 
         override fun size(): Int = 0
 

@@ -80,11 +80,12 @@ internal class ResourceResolver(
         drawableCopier: DrawableCopier,
         drawableWidth: Int,
         drawableHeight: Int,
+        customResourceIdCacheKey: String?,
         resourceResolverCallback: ResourceResolverCallback
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
 
-        val resourceId = tryToGetResourceFromCache(drawable = originalDrawable)
+        val resourceId = tryToGetResourceFromCache(drawable = originalDrawable, key = customResourceIdCacheKey)
 
         if (resourceId != null) {
             // if we got here it means we saw the bitmap before,
@@ -115,6 +116,7 @@ internal class ResourceResolver(
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
                 bitmapFromDrawable = bitmapFromDrawable,
+                customResourceIdCacheKey = customResourceIdCacheKey,
                 resolveResourceCallback = object : ResolveResourceCallback {
                     override fun onResolved(resourceId: String, resourceData: ByteArray) {
                         resourceItemCreationHandler.queueItem(resourceId, resourceData)
@@ -141,12 +143,14 @@ internal class ResourceResolver(
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
         bitmapFromDrawable: Bitmap?,
+        customResourceIdCacheKey: String?,
         resolveResourceCallback: ResolveResourceCallback
     ) {
         val handledBitmap = if (bitmapFromDrawable != null) {
             tryToGetBitmapFromBitmapDrawable(
                 drawable = drawable as BitmapDrawable,
                 bitmapFromDrawable = bitmapFromDrawable,
+                customResourceIdCacheKey = customResourceIdCacheKey,
                 resolveResourceCallback = resolveResourceCallback
             )
         } else {
@@ -160,6 +164,7 @@ internal class ResourceResolver(
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
+                customResourceIdCacheKey = customResourceIdCacheKey,
                 resolveResourceCallback = resolveResourceCallback
             )
         }
@@ -195,6 +200,7 @@ internal class ResourceResolver(
         bitmap: Bitmap,
         compressedBitmapBytes: ByteArray,
         shouldCacheBitmap: Boolean,
+        customResourceIdCacheKey: String?,
         resolveResourceCallback: ResolveResourceCallback
     ) {
         // failed to get image data
@@ -217,6 +223,7 @@ internal class ResourceResolver(
             shouldCacheBitmap = shouldCacheBitmap,
             bitmap = bitmap,
             resourceId = resourceId,
+            customResourceIdCacheKey = customResourceIdCacheKey,
             drawable = drawable
         )
 
@@ -227,13 +234,17 @@ internal class ResourceResolver(
         shouldCacheBitmap: Boolean,
         bitmap: Bitmap,
         resourceId: String,
+        customResourceIdCacheKey: String?,
         drawable: Drawable
     ) {
         if (shouldCacheBitmap) {
             bitmapCachesManager.putInBitmapPool(bitmap)
         }
 
-        bitmapCachesManager.putInResourceCache(drawable, resourceId)
+        val key = customResourceIdCacheKey
+            ?: bitmapCachesManager.generateResourceKeyFromDrawable(drawable)
+            ?: return
+        bitmapCachesManager.putInResourceCache(key, resourceId)
     }
 
     @WorkerThread
@@ -243,6 +254,7 @@ internal class ResourceResolver(
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
+        customResourceIdCacheKey: String?,
         resolveResourceCallback: ResolveResourceCallback
     ) {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
@@ -267,6 +279,7 @@ internal class ResourceResolver(
                         bitmap = bitmap,
                         compressedBitmapBytes = compressedBitmapBytes,
                         shouldCacheBitmap = true,
+                        customResourceIdCacheKey = customResourceIdCacheKey,
                         resolveResourceCallback = resolveResourceCallback
                     )
                 }
@@ -284,6 +297,7 @@ internal class ResourceResolver(
     private fun tryToGetBitmapFromBitmapDrawable(
         drawable: BitmapDrawable,
         bitmapFromDrawable: Bitmap,
+        customResourceIdCacheKey: String?,
         resolveResourceCallback: ResolveResourceCallback
     ): Bitmap? {
         val scaledBitmap = drawableUtils.createScaledBitmap(bitmapFromDrawable)
@@ -313,6 +327,7 @@ internal class ResourceResolver(
             bitmap = scaledBitmap,
             compressedBitmapBytes = compressedBitmapBytes,
             shouldCacheBitmap = shouldCacheBitmap,
+            customResourceIdCacheKey = customResourceIdCacheKey,
             resolveResourceCallback = resolveResourceCallback
         )
 
@@ -320,8 +335,14 @@ internal class ResourceResolver(
     }
 
     private fun tryToGetResourceFromCache(
-        drawable: Drawable
-    ): String? = bitmapCachesManager.getFromResourceCache(drawable)
+        drawable: Drawable,
+        key: String?
+    ): String? {
+        val cacheKey = key
+            ?: bitmapCachesManager.generateResourceKeyFromDrawable(drawable)
+            ?: return null
+        return bitmapCachesManager.getFromResourceCache(cacheKey)
+    }
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&
