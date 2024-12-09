@@ -14,6 +14,15 @@
 -keepclassmembers class androidx.compose.foundation.text.modifiers.TextStringSimpleElement {
      <fields>;
 }
+-keepclassmembers class androidx.compose.material.CheckDrawingCache {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.material.CheckboxKt {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.draw.DrawBehindElement {
+     <fields>;
+}
 -keepclassmembers class androidx.compose.foundation.BackgroundElement {
      <fields>;
 }

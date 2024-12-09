@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.wrappers
+package com.datadog.android.sessionreplay.recorder.wrappers
 
 import android.graphics.Bitmap
 import com.datadog.android.api.InternalLogger
