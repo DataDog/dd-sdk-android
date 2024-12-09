@@ -334,7 +334,6 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
-            networkSettledMetricResolver.viewWasStopped()
             stopScope(event, writer) {
                 // we should not reset the timestamp offset here as due to async nature of feature context update
                 // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
@@ -841,6 +840,7 @@ internal open class RumViewScope(
             cpuVitalMonitor.unregister(cpuVitalListener)
             memoryVitalMonitor.unregister(memoryVitalListener)
             frameRateVitalMonitor.unregister(frameRateVitalListener)
+            networkSettledMetricResolver.viewWasStopped()
         }
     }
 

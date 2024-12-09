@@ -141,6 +141,16 @@ class RumEventAssert(actual: JsonObject) :
         return this
     }
 
+    fun hasNetworkSettledTime(time: Long, offset: Offset<Long>): RumEventAssert {
+        hasField("view.network_settled_time", time, offset = offset)
+        return this
+    }
+
+    fun doesNotHaveNetworkSettledTime(): RumEventAssert {
+        doesNotHaveField("view.network_settled_time")
+        return this
+    }
+
     // endregion
 
     companion object {
