@@ -191,10 +191,15 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(
             textLayoutResults
         )
-        val layoutInput = textLayoutResults.firstOrNull()?.layoutInput
-        val modifierColor = resolveModifierColor(semanticsNode)
-        return layoutInput?.let {
-            convertTextLayoutInfo(it, modifierColor)
+        return textLayoutResults.firstOrNull()?.let { textLayoutResult ->
+            val layoutInput = textLayoutResult.layoutInput
+            val multiParagraphCapturedText = if (textLayoutResult.didOverflowHeight) {
+                reflectionUtils.getMultiParagraphCapturedText(textLayoutResult.multiParagraph)
+            } else {
+                null
+            }
+            val modifierColor = resolveModifierColor(semanticsNode)
+            convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor)
         }
     }
 
@@ -240,10 +245,11 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     private fun convertTextLayoutInfo(
         layoutInput: TextLayoutInput,
+        multiParagraphCapturedText: String?,
         modifierColor: Color?
     ): TextLayoutInfo {
         return TextLayoutInfo(
-            text = resolveAnnotatedString(layoutInput.text),
+            text = multiParagraphCapturedText ?: resolveAnnotatedString(layoutInput.text),
             color = modifierColor?.value ?: layoutInput.style.color.value,
             textAlign = layoutInput.style.textAlign,
             fontSize = layoutInput.style.fontSize.value.toLong(),
