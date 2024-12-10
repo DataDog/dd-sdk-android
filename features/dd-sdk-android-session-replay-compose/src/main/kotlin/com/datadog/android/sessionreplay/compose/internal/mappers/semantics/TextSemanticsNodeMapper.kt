@@ -26,11 +26,17 @@ internal open class TextSemanticsNodeMapper(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
         val textAndInputPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
             ?: parentContext.textAndInputPrivacy
         val textWireframe = resolveTextWireFrame(parentContext, semanticsNode, textAndInputPrivacy)
+        val backgroundWireframes = resolveModifierWireframes(semanticsNode)
+        wireframes.addAll(backgroundWireframes)
+        textWireframe?.let {
+            wireframes.add(it)
+        }
         return SemanticsWireframe(
-            wireframes = listOfNotNull(textWireframe),
+            wireframes = wireframes.toList(),
             parentContext.copy(textAndInputPrivacy = textAndInputPrivacy)
         )
     }

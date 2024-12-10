@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.MultiParagraph
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -280,8 +281,7 @@ class SemanticsUtilsTest {
         whenever(mockResult.action) doReturn mockAction
         whenever(textLayoutResult.layoutInput) doReturn mockTextLayoutInput
         doAnswer { invocation ->
-            @Suppress("UNCHECKED_CAST")
-            (invocation.arguments[0] as MutableList<TextLayoutResult>).add(textLayoutResult)
+            invocation.getArgument<MutableList<TextLayoutResult>>(0).add(textLayoutResult)
             true
         }.whenever(mockAction).invoke(textLayoutResults)
         whenever(mockTextLayoutInput.style) doReturn mockTextStyle
@@ -301,6 +301,64 @@ class SemanticsUtilsTest {
         // Then
         val expected = TextLayoutInfo(
             text = resolveAnnotatedString(fakeText),
+            color = fakeModifierColorValue,
+            textAlign = fakeTextAlign,
+            fontSize = fakeFontSize.toLong(),
+            fontFamily = fakeFontFamily
+        )
+        assertThat(result).isEqualTo(expected)
+    }
+
+    @Test
+    fun `M return TextLayoutInfo W resolveTextLayoutInfo with text overflow`(forge: Forge) {
+        // Given
+        val fakeText = AnnotatedString(forge.aString())
+        val fakeCapturedText = forge.aString()
+        val fakeColorValue = forge.aLong().toULong()
+        val fakeModifierColorValue = forge.aLong().toULong()
+        val fakeFontSize = forge.aFloat()
+        val fakeFontFamily = forge.anElementFrom(
+            FontFamily.Serif,
+            FontFamily.SansSerif,
+            FontFamily.Cursive,
+            FontFamily.Monospace,
+            FontFamily.Default
+        )
+        val fakeTextAlign = forge.anElementFrom(TextAlign.values())
+        val mockResult = mock<AccessibilityAction<(MutableList<TextLayoutResult>) -> Boolean>>()
+        val mockAction = mock<(MutableList<TextLayoutResult>) -> Boolean>()
+        val textLayoutResult = mock<TextLayoutResult>()
+        val textLayoutResults = mutableListOf<TextLayoutResult>()
+        val mockTextLayoutInput = mock<TextLayoutInput>()
+        val mockTextStyle = mock<TextStyle>()
+        val mockMultiParagraph = mock<MultiParagraph>()
+        whenever(mockConfig.getOrNull(SemanticsActions.GetTextLayoutResult)) doReturn mockResult
+        whenever(mockResult.action) doReturn mockAction
+        whenever(textLayoutResult.layoutInput) doReturn mockTextLayoutInput
+        whenever(textLayoutResult.didOverflowHeight) doReturn true
+        whenever(textLayoutResult.multiParagraph) doReturn mockMultiParagraph
+        doAnswer { invocation ->
+            invocation.getArgument<MutableList<TextLayoutResult>>(0).add(textLayoutResult)
+            true
+        }.whenever(mockAction).invoke(textLayoutResults)
+        whenever(mockTextLayoutInput.style) doReturn mockTextStyle
+        whenever(mockTextLayoutInput.text) doReturn fakeText
+        whenever(mockTextStyle.color) doReturn Color(fakeColorValue)
+        whenever(mockTextStyle.textAlign) doReturn fakeTextAlign
+        whenever(mockTextStyle.fontSize) doReturn TextUnit(fakeFontSize, TextUnitType.Sp)
+        whenever(mockTextStyle.fontFamily) doReturn fakeFontFamily
+        whenever(mockReflectionUtils.isTextStringSimpleElement(mockModifier)) doReturn true
+        whenever(mockReflectionUtils.getColorProducerColor(mockModifier)) doReturn Color(
+            fakeModifierColorValue
+        )
+        whenever(mockReflectionUtils.getMultiParagraphCapturedText(mockMultiParagraph)) doReturn fakeCapturedText
+
+        // When
+        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)
+
+        // Then
+        val expected = TextLayoutInfo(
+            text = fakeCapturedText,
             color = fakeModifierColorValue,
             textAlign = fakeTextAlign,
             fontSize = fakeFontSize.toLong(),
