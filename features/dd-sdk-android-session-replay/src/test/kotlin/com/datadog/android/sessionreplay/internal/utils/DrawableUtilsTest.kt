@@ -374,12 +374,6 @@ internal class DrawableUtilsTest {
 
     @Test
     fun `M uses original drawable W createBitmapOfApproxSizeFromDrawable`() {
-        /**
-         * PR NOTE:
-         *  - This PR changes the logic so that createBitmapOfApproxSizeFromDrawable -> drawOnCanvas does not
-         *    create a copy of the original drawable. We should confirm that this is OK.
-         **/
-
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)

@@ -104,11 +104,6 @@ internal class DrawableUtils(
         drawable: Drawable,
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        // PR NOTE:
-        // The logic to create a copy of the drawable was removed.
-        // We should verify that it is safe not to copy the drawable.
-        // Currently, this function seems to be used only with drawables that were already cloned.
-
         val canvas = canvasWrapper.createCanvas(bitmap)
 
         if (canvas == null) {
