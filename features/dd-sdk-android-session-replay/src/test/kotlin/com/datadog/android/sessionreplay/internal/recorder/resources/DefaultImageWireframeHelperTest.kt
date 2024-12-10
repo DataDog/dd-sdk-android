@@ -513,7 +513,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not return image wireframe W createImageWireframe(usePIIPlaceholder = true) { ImagePrivacy MASK_NONE }`() {
+    fun `M not return image wireframe W createImageWireframeByDrawable(usePIIPlaceholder = true) { ImagePrivacy MASK_NONE }`() {
         // When
         val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
@@ -536,7 +536,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not return image wireframe W createImageWireframe { ImagePrivacy MASK_LARGE_ONLY & isContextual image}`() {
+    fun `M not return image wireframe W createImageWireframeByBitmap { ImagePrivacy MASK_LARGE_ONLY & isContextual image}`() {
         // When
         val wireframe = testedHelper.createImageWireframeByBitmap(
             id = fakeViewId,
@@ -555,7 +555,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframe() { application context is null }`() {
+    fun `M return null W createImageWireframeByDrawable() { application context is null }`() {
         // Given
         whenever(mockView.context.applicationContext).thenReturn(null)
 
@@ -959,7 +959,7 @@ internal class DefaultImageWireframeHelperTest {
         }
         verify(mockAsyncJobStatusCallback, times(2)).jobStarted()
         verify(mockAsyncJobStatusCallback, times(2)).jobFinished()
-        assertThat(wireframes.size).isEqualTo(2)
+        assertThat(wireframes).hasSize(2)
     }
 
     @Test
@@ -1067,7 +1067,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not try to resolve bitmap W createImageWireframe() { PII image }`(
+    fun `M not try to resolve bitmap W createImageWireframeByDrawable() { PII image }`(
         forge: Forge,
         @Mock mockResources: Resources,
         @Mock mockDisplayMetrics: DisplayMetrics,
@@ -1115,7 +1115,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M try to resolve bitmap W createImageWireframe() { non-PII image }`() {
+    fun `M try to resolve bitmap W createImageWireframeByDrawable() { non-PII image }`() {
         // Given
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(false)
 
@@ -1151,7 +1151,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return content placeholder W createImageWireframe() { PII image }`() {
+    fun `M return content placeholder W createImageWireframeByDrawable() { PII image }`() {
         // Given
         whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
 
