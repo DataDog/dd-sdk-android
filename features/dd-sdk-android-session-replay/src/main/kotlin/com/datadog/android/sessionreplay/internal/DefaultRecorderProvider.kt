@@ -22,6 +22,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -41,7 +42,6 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
-import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper

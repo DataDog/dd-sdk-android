@@ -513,7 +513,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not return image wireframe W createImageWireframeByDrawable(usePIIPlaceholder = true) { ImagePrivacy MASK_NONE }`() {
+    fun `M not return image wireframe W createImageWireframeByDrawable(usePIIPlaceholder = true) { MASK_NONE }`() {
         // When
         val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
@@ -536,7 +536,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M not return image wireframe W createImageWireframeByBitmap { ImagePrivacy MASK_LARGE_ONLY & isContextual image}`() {
+    fun `M not return image wireframe W createImageWireframeByBitmap { MASK_LARGE_ONLY & isContextual image}`() {
         // When
         val wireframe = testedHelper.createImageWireframeByBitmap(
             id = fakeViewId,

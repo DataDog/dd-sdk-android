@@ -5,9 +5,9 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.SeekBar
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper.Companion.TRACK_HEIGHT_IN_PX
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.AbstractWireframeMapperTest
