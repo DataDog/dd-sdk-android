@@ -17,9 +17,9 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_CHECKED_DRAWABLE_INDEX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckableTextViewMapper.Companion.CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
-import com.datadog.android.sessionreplay.internal.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -43,6 +43,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -224,7 +225,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             clipping = eq(MobileSegment.WireframeClip()),
             shapeStyle = isNull(),
             border = isNull(),
-            prefix = anyString()
+            prefix = anyString(),
+            customResourceIdCacheKey = anyOrNull()
         )
     }
 
@@ -268,7 +270,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
             clipping = eq(MobileSegment.WireframeClip()),
             shapeStyle = isNull(),
             border = isNull(),
-            prefix = anyString()
+            prefix = anyString(),
+            customResourceIdCacheKey = anyOrNull()
         )
     }
 

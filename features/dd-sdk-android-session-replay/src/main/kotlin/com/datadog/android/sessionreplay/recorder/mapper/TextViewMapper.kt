@@ -11,8 +11,8 @@ import android.view.Gravity
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -34,10 +34,10 @@ open class TextViewMapper<in T : TextView>(
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper
 ) : BaseAsyncBackgroundWireframeMapper<T>(
-    viewIdentifierResolver,
-    colorStringFormatter,
-    viewBoundsResolver,
-    drawableToColorMapper
+    viewIdentifierResolver = viewIdentifierResolver,
+    colorStringFormatter = colorStringFormatter,
+    viewBoundsResolver = viewBoundsResolver,
+    drawableToColorMapper = drawableToColorMapper
 ) {
 
     @UiThread
@@ -54,24 +54,25 @@ open class TextViewMapper<in T : TextView>(
 
         val density = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
-            view,
-            density
+            view = view,
+            screenDensity = density
         )
 
         wireframes.add(
             createTextWireframe(
-                view,
-                mappingContext,
-                viewGlobalBounds
+                textView = view,
+                mappingContext = mappingContext,
+                viewGlobalBounds = viewGlobalBounds
             )
         )
 
         wireframes.addAll(
             mappingContext.imageWireframeHelper.createCompoundDrawableWireframes(
-                view,
-                mappingContext,
-                wireframes.size,
-                asyncJobStatusCallback
+                textView = view,
+                mappingContext = mappingContext,
+                prevWireframeIndex = wireframes.size,
+                customResourceIdCacheKey = null,
+                asyncJobStatusCallback = asyncJobStatusCallback
             )
         )
 
