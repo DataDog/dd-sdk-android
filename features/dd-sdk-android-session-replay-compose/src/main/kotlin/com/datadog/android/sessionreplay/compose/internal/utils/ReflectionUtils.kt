@@ -7,10 +7,12 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.view.View
+import androidx.compose.animation.core.AnimationState
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
@@ -46,6 +48,10 @@ internal class ReflectionUtils {
 
     fun isAndroidComposeView(any: Any): Boolean {
         return ComposeReflection.AndroidComposeViewClass?.isInstance(any) == true
+    }
+
+    fun isDrawBehindElementClass(modifier: Modifier): Boolean {
+        return ComposeReflection.DrawBehindElementClass?.isInstance(modifier) == true
     }
 
     fun getOwner(composition: Composition): Any? {
@@ -96,5 +102,29 @@ internal class ReflectionUtils {
 
     fun getClipShape(modifier: Modifier): Shape? {
         return ComposeReflection.ClipShapeField?.getSafe(modifier) as? Shape
+    }
+
+    fun getOnDraw(modifier: Modifier): Any? {
+        return ComposeReflection.OnDrawField?.getSafe(modifier)
+    }
+
+    fun getBoxColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.BoxColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
+    fun getCheckColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.CheckColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
+    fun getBorderColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.BorderColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
+    fun getCheckCache(onDrawInstance: Any): Any? {
+        return ComposeReflection.CheckCacheField?.getSafe(onDrawInstance)
+    }
+
+    fun getCheckPath(checkCache: Any): Path? {
+        return ComposeReflection.CheckPathField?.getSafe(checkCache) as? Path
     }
 }
