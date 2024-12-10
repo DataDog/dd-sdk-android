@@ -42,9 +42,6 @@ internal class ResourcesLRUCacheTest {
     private lateinit var testedCache: ResourcesLRUCache
 
     @Mock
-    lateinit var mockDrawable: Drawable
-
-    @Mock
     lateinit var mockInvocationUtils: InvocationUtils
 
     @StringForgery
@@ -86,7 +83,7 @@ internal class ResourcesLRUCacheTest {
     }
 
     @Test
-    fun `M not generate prefix W put() { animationDrawable }`() {
+    fun `M not generate prefix W generateKeyFromDrawable() { animationDrawable }`() {
         // Given
         val mockAnimationDrawable: AnimationDrawable = mock()
 
@@ -98,7 +95,7 @@ internal class ResourcesLRUCacheTest {
     }
 
     @Test
-    fun `M generate key prefix with state W put() { drawableContainer }`(
+    fun `M generate key prefix with state W generateKeyFromDrawable() { drawableContainer }`(
         forge: Forge
     ) {
         // Given
@@ -115,7 +112,7 @@ internal class ResourcesLRUCacheTest {
     }
 
     @Test
-    fun `M generate key prefix with layer hash W put() { layerDrawable }`() {
+    fun `M generate key prefix with layer hash W generateKeyFromDrawable() { layerDrawable }`() {
         // Given
         val mockRippleDrawable: RippleDrawable = mock()
         val mockBackgroundLayer: Drawable = mock()
@@ -139,7 +136,7 @@ internal class ResourcesLRUCacheTest {
     }
 
     @Test
-    fun `M not generate key prefix W put() { layerDrawable with only one layer }`(
+    fun `M not generate key prefix W generateKeyFromDrawable() { layerDrawable with only one layer }`(
         @Mock mockRippleDrawable: RippleDrawable,
         @Mock mockBackgroundLayer: Drawable
     ) {
