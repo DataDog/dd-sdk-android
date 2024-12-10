@@ -891,7 +891,8 @@ internal class DefaultImageWireframeHelperTest {
             customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
-        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
+
+        assertThat(wireframes[0]).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
 
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
@@ -939,7 +940,8 @@ internal class DefaultImageWireframeHelperTest {
             customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
-        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
+
+        assertThat(wireframes[0]).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
 
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
@@ -1270,7 +1272,8 @@ internal class DefaultImageWireframeHelperTest {
             customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
-        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
+
+        assertThat(wireframes[0]).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
 
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
@@ -1318,7 +1321,8 @@ internal class DefaultImageWireframeHelperTest {
             customResourceIdCacheKey = null,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
-        wireframes[0] as MobileSegment.Wireframe.ImageWireframe
+
+        assertThat(wireframes[0]).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
 
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()

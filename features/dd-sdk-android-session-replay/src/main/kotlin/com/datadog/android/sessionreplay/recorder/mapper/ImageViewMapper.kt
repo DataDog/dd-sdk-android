@@ -11,7 +11,6 @@ import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.internal.utils.densityNormalized
-import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.internal.utils.toWireframeClip
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext

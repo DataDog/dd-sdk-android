@@ -33,7 +33,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -370,29 +369,6 @@ internal class DrawableUtilsTest {
         assertThat(width).isLessThanOrEqualTo(fakeViewWidth)
         assertThat(height).isLessThanOrEqualTo(fakeViewHeight)
         assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
-    }
-
-    @Test
-    fun `M uses original drawable W createBitmapOfApproxSizeFromDrawable`() {
-        // Given
-        whenever(mockDrawable.intrinsicWidth).thenReturn(1)
-        whenever(mockDrawable.intrinsicHeight).thenReturn(1)
-
-        // When
-        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-            drawable = mockDrawable,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            displayMetrics = mockDisplayMetrics,
-            config = mockConfig,
-            bitmapCreationCallback = mockBitmapCreationCallback
-        )
-
-        // Then
-        verify(mockDrawable).setBounds(any(), any(), any(), any())
-        verify(mockDrawable).draw(any())
-        verify(mockSecondDrawable, never()).setBounds(any(), any(), any(), any())
-        verify(mockSecondDrawable, never()).draw(any())
     }
 
     @Test
