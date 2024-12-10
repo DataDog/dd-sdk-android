@@ -7430,6 +7430,64 @@ internal class RumViewScopeTest {
     // region NetworkSettledTime
 
     @Test
+    fun `M mark the resource as stopped W handleEvent(ErrorSent) { resource information present }`(
+        @StringForgery resourceId: String,
+        @LongForgery(0) resourceStopTimestampInNanos: Long
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, resourceId, resourceStopTimestampInNanos)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockNetworkSettledMetricResolver).resourceWasStopped(
+            InternalResourceContext(
+                resourceId,
+                resourceStopTimestampInNanos
+            )
+        )
+    }
+
+    @Test
+    fun `M mark the resource as dropped W handleEvent(ErrorDropped) { resource information present }`(
+        @StringForgery resourceId: String
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId, resourceId)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockNetworkSettledMetricResolver).resourceWasDropped(resourceId)
+    }
+
+    @Test
+    fun `M not interact with networkSettledMetricResolver W handleEvent(ErrorSent) { resource info not present }`() {
+        // Given
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(any())
+    }
+
+    @Test
+    fun `M not interact with networkSettledMetricResolver W handleEvent(ErrorDropped) { resource info not present }`() {
+        // Given
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasDropped(any())
+    }
+
+    @Test
     fun `M notify the networkSettledMetricResolver W view was stopped`() {
         // When
         testedScope.handleEvent(
@@ -7476,9 +7534,9 @@ internal class RumViewScopeTest {
         verify(mockNetworkSettledMetricResolver).viewWasCreated(fakeEventTime.nanoTime)
     }
 
-    // endregion
+// endregion
 
-    // region InteractionToNextViewTime
+// region InteractionToNextViewTime
 
     @Test
     fun `M notify the interactionToNextViewMetricResolver W view was created`() {
@@ -7526,9 +7584,9 @@ internal class RumViewScopeTest {
         verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
-    // endregion
+// endregion
 
-    // region Vitals
+// region Vitals
 
     @Test
     fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {CPU}`(
@@ -8142,9 +8200,9 @@ internal class RumViewScopeTest {
         verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
     }
 
-    // endregion
+// endregion
 
-    // region Cross-platform performance metrics
+// region Cross-platform performance metrics
 
     @Test
     fun `M send update W handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterBuildTime }`(
@@ -8329,9 +8387,9 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    // endregion
+// endregion
 
-    // region Feature Flags
+// region Feature Flags
 
     @Test
     fun `M send event W handleEvent(AddFeatureFlagEvaluation) on active view`(
@@ -8471,9 +8529,9 @@ internal class RumViewScopeTest {
         }
     }
 
-    // endregion
+// endregion
 
-    // region Feature Flags Batch
+// region Feature Flags Batch
 
     @Test
     fun `M send event W handleEvent(AddFeatureFlagEvaluations) on active view`(
@@ -8630,9 +8688,9 @@ internal class RumViewScopeTest {
         }
     }
 
-    // endregion
+// endregion
 
-    // region Stopping Sessions
+// region Stopping Sessions
 
     @Test
     fun `M set view to inactive and send update W handleEvent { StopSession }`() {
@@ -8658,9 +8716,9 @@ internal class RumViewScopeTest {
         }
     }
 
-    // endregion
+// endregion
 
-    // region write notification
+// region write notification
 
     @Test
     fun `M notify about success W handleEvent(AddError+non-fatal) { write succeeded }`(
@@ -8688,7 +8746,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventSent(testedScope.viewId, StorageEvent.Error)
+            .eventSent(testedScope.viewId, StorageEvent.Error())
     }
 
     @Test
@@ -8718,7 +8776,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(testedScope.viewId, StorageEvent.Error)
+            .eventDropped(testedScope.viewId, StorageEvent.Error())
     }
 
     @Test
@@ -8750,7 +8808,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(testedScope.viewId, StorageEvent.Error)
+            .eventDropped(testedScope.viewId, StorageEvent.Error())
     }
 
     @Test
@@ -8779,7 +8837,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor, never())
-            .eventSent(testedScope.viewId, StorageEvent.Error)
+            .eventSent(testedScope.viewId, StorageEvent.Error())
     }
 
     @Test
@@ -8809,7 +8867,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor, never())
-            .eventDropped(testedScope.viewId, StorageEvent.Error)
+            .eventDropped(testedScope.viewId, StorageEvent.Error())
     }
 
     @Test
@@ -8841,7 +8899,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor, never())
-            .eventDropped(testedScope.viewId, StorageEvent.Error)
+            .eventDropped(testedScope.viewId, StorageEvent.Error())
     }
 
     @Test
@@ -9030,9 +9088,9 @@ internal class RumViewScopeTest {
             .eventDropped(testedScope.viewId, StorageEvent.FrozenFrame)
     }
 
-    // endregion
+// endregion
 
-    // region Misc
+// region Misc
 
     @ParameterizedTest
     @MethodSource("brokenTimeRawEventData")
@@ -9077,9 +9135,9 @@ internal class RumViewScopeTest {
         )
     }
 
-    // endregion
+// endregion
 
-    // region Global Attributes
+// region Global Attributes
 
     @Test
     fun `M update the global attributes W handleEvent(StopView)`(
@@ -9544,7 +9602,7 @@ internal class RumViewScopeTest {
         assertThat(result).isNull()
     }
 
-    // endregion
+// endregion
 
     @Test
     fun `M produce event safe for serialization W handleEvent()`(
@@ -9622,7 +9680,7 @@ internal class RumViewScopeTest {
         }
     }
 
-    // region Internal
+// region Internal
 
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()
@@ -9659,7 +9717,7 @@ internal class RumViewScopeTest {
         ).thenReturn(fakeReplayRecordsCount)
     }
 
-    // endregion
+// endregion
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
 

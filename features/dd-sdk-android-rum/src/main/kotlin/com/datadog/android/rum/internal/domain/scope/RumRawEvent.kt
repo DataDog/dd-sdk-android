@@ -129,6 +129,8 @@ internal sealed class RumRawEvent {
 
     internal data class ErrorSent(
         val viewId: String,
+        val resourceId: String? = null,
+        val resourceEndTimestampInNanos: Long? = null,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
@@ -151,6 +153,7 @@ internal sealed class RumRawEvent {
 
     internal data class ErrorDropped(
         val viewId: String,
+        val resourceId: String? = null,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

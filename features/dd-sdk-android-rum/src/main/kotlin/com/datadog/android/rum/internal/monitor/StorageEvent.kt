@@ -15,8 +15,9 @@ internal sealed class StorageEvent {
         val type: ActionEvent.ActionEventActionType,
         val eventEndTimestampInNanos: Long
     ) : StorageEvent()
+
     data class Resource(val resourceId: String, val resourceStopTimestampInNanos: Long) : StorageEvent()
-    object Error : StorageEvent()
+    data class Error(val resourceId: String? = null, val resourceStopTimestampInNanos: Long? = null) : StorageEvent()
     object LongTask : StorageEvent()
     object FrozenFrame : StorageEvent()
 }

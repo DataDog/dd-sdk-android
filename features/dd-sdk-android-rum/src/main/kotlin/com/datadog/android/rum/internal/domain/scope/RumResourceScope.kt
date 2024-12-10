@@ -139,7 +139,6 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
         attributes.putAll(event.attributes)
-        reportResourceStoppedMetric(event.eventTime.nanoTime)
         sendError(
             event.message,
             event.source,
@@ -147,7 +146,8 @@ internal class RumResourceScope(
             event.throwable.loggableStackTrace(),
             event.throwable.javaClass.canonicalName,
             ErrorEvent.Category.EXCEPTION,
-            writer
+            writer,
+            event.eventTime.nanoTime
         )
     }
 
@@ -157,7 +157,6 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-        reportResourceStoppedMetric(event.eventTime.nanoTime)
         attributes.putAll(event.attributes)
 
         val errorCategory =
@@ -170,13 +169,8 @@ internal class RumResourceScope(
             event.stackTrace,
             event.errorType,
             errorCategory,
-            writer
-        )
-    }
-
-    private fun reportResourceStoppedMetric(eventTimeStamp: Long) {
-        networkSettledMetricResolver.resourceWasStopped(
-            InternalResourceContext(resourceId, eventTimeStamp)
+            writer,
+            event.eventTime.nanoTime
         )
     }
 
@@ -345,7 +339,8 @@ internal class RumResourceScope(
         stackTrace: String?,
         errorType: String?,
         errorCategory: ErrorEvent.Category?,
-        writer: DataWriter<Any>
+        writer: DataWriter<Any>,
+        resourceStopTimestampInNanos: Long
     ) {
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         val errorFingerprint = attributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
@@ -446,10 +441,13 @@ internal class RumResourceScope(
             )
         }
             .onError {
-                it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error)
+                it.eventDropped(
+                    rumContext.viewId.orEmpty(),
+                    StorageEvent.Error(resourceId, resourceStopTimestampInNanos)
+                )
             }
             .onSuccess {
-                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error)
+                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error(resourceId, resourceStopTimestampInNanos))
             }
             .submit()
 

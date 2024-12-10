@@ -574,7 +574,14 @@ internal class DatadogRumMonitor(
                 )
             )
 
-            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorSent(viewId))
+            is StorageEvent.Error -> handleEvent(
+                RumRawEvent.ErrorSent(
+                    viewId,
+                    event.resourceId,
+                    event.resourceStopTimestampInNanos
+                )
+            )
+
             is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
             is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskSent(viewId, true))
             is StorageEvent.View -> {
@@ -587,7 +594,7 @@ internal class DatadogRumMonitor(
         when (event) {
             is StorageEvent.Action -> handleEvent(RumRawEvent.ActionDropped(viewId))
             is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceDropped(viewId, event.resourceId))
-            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId))
+            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId, event.resourceId))
             is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskDropped(viewId, false))
             is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskDropped(viewId, true))
             is StorageEvent.View -> {

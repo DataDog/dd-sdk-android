@@ -1428,7 +1428,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, StorageEvent.Error)
+        testedMonitor.eventSent(viewId, StorageEvent.Error())
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1516,7 +1516,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, StorageEvent.Error)
+        testedMonitor.eventDropped(viewId, StorageEvent.Error())
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
