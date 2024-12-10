@@ -91,8 +91,8 @@ internal class BitmapPool(
     }
 
     @Synchronized
-    override fun get(element: String): Bitmap? {
-        val bitmapsWithReqDimensions = bitmapsBySize[element] ?: return null
+    override fun get(key: String): Bitmap? {
+        val bitmapsWithReqDimensions = bitmapsBySize[key] ?: return null
 
         // find the first unused bitmap, mark it as used and return it
         return bitmapsWithReqDimensions.find {

@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import androidx.annotation.VisibleForTesting
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.internal.utils.densityNormalized
 
 internal class ImageTypeResolver {
     fun isDrawablePII(drawable: Drawable, density: Float): Boolean {

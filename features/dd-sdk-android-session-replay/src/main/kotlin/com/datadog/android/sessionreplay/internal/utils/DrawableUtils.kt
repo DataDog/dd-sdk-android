@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Color
@@ -39,7 +38,6 @@ internal class DrawableUtils(
      */
     @WorkerThread
     internal fun createBitmapOfApproxSizeFromDrawable(
-        resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
@@ -59,7 +57,6 @@ internal class DrawableUtils(
                 override fun onSuccess(bitmap: Bitmap) {
                     executorService.submitSafe("drawOnCanvas", internalLogger) {
                         drawOnCanvas(
-                            resources,
                             bitmap,
                             drawable,
                             bitmapCreationCallback
@@ -103,27 +100,21 @@ internal class DrawableUtils(
 
     @WorkerThread
     private fun drawOnCanvas(
-        resources: Resources,
         bitmap: Bitmap,
         drawable: Drawable,
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        // don't use the original drawable - it will affect the view hierarchy
-        val newDrawable = drawable.constantState?.newDrawable(resources)?.apply {
-            // `constantState` contains only immutable properties of drawable,the state needs to be set manually
-            setState(drawable.current.state)
-        }
         val canvas = canvasWrapper.createCanvas(bitmap)
 
-        if (canvas == null || newDrawable == null) {
+        if (canvas == null) {
             bitmapCreationCallback.onFailure()
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
 
-            newDrawable.setBounds(0, 0, canvas.width, canvas.height)
-            newDrawable.draw(canvas)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
             bitmapCreationCallback.onReady(bitmap)
         }
     }
