@@ -55,6 +55,7 @@ internal class ChipWireframeMapper(
                 height = view.chipDrawable.intrinsicHeight,
                 usePIIPlaceholder = false,
                 drawable = view.chipDrawable,
+                customResourceIdCacheKey = null,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         backgroundWireframe?.let {

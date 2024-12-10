@@ -298,7 +298,8 @@ internal class ImageViewMapperTest {
                 clipping = anyOrNull(),
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
-                prefix = anyOrNull()
+                prefix = anyOrNull(),
+                customResourceIdCacheKey = anyOrNull()
             )
         ).thenReturn(expectedImageWireframe)
 
@@ -330,7 +331,8 @@ internal class ImageViewMapperTest {
                 clipping = anyOrNull(),
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
-                prefix = anyOrNull()
+                prefix = anyOrNull(),
+                customResourceIdCacheKey = anyOrNull()
             )
     }
 
@@ -460,7 +462,8 @@ internal class ImageViewMapperTest {
                 clipping = anyOrNull(),
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
-                prefix = eq(expectedPrefix)
+                prefix = eq(expectedPrefix),
+                customResourceIdCacheKey = anyOrNull()
             )
         )
             .thenReturn(returnedWireframe)

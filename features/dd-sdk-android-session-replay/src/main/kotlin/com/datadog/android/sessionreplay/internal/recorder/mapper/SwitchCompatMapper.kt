@@ -97,6 +97,7 @@ internal open class SwitchCompatMapper(
                 shapeStyle = null,
                 border = null,
                 usePIIPlaceholder = true,
+                customResourceIdCacheKey = null,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         }
@@ -141,6 +142,7 @@ internal open class SwitchCompatMapper(
                 border = null,
                 usePIIPlaceholder = true,
                 clipping = null,
+                customResourceIdCacheKey = null,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         }
