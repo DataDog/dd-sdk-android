@@ -575,8 +575,8 @@ internal open class RumViewScope(
             .apply {
                 if (!isFatal) {
                     // if fatal, then we don't have time for the notification, app is crashing
-                    onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error) }
-                    onSuccess { it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error) }
+                    onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
+                    onSuccess { it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
                 }
             }
             .submit()
@@ -774,6 +774,14 @@ internal open class RumViewScope(
         if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingErrorCount--
             errorCount++
+            if (event.resourceId != null && event.resourceEndTimestampInNanos != null) {
+                networkSettledMetricResolver.resourceWasStopped(
+                    InternalResourceContext(
+                        event.resourceId,
+                        event.resourceEndTimestampInNanos
+                    )
+                )
+            }
             sendViewUpdate(event, writer)
         }
     }
@@ -794,6 +802,9 @@ internal open class RumViewScope(
     private fun onErrorDropped(event: RumRawEvent.ErrorDropped) {
         if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingErrorCount--
+            if (event.resourceId != null) {
+                networkSettledMetricResolver.resourceWasDropped(event.resourceId)
+            }
         }
     }
 
