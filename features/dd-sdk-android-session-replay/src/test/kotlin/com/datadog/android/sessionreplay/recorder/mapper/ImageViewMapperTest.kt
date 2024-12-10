@@ -18,7 +18,7 @@ import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
+import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -117,7 +117,7 @@ internal class ImageViewMapperTest {
     lateinit var mockBackgroundConstantState: ConstantState
 
     @Mock
-    lateinit var stubClipping: MobileSegment.WireframeClip
+    lateinit var stubClipping: Rect
 
     @Mock
     lateinit var stubParentRect: Rect

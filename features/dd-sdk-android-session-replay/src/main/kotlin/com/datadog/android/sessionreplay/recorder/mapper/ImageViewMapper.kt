@@ -9,8 +9,10 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.widget.ImageView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
+import com.datadog.android.internal.utils.ImageViewUtils
+import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.SessionReplay
+import com.datadog.android.sessionreplay.internal.utils.toWireframeClip
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
@@ -82,7 +84,7 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
         val density = resources.displayMetrics.density
 
         val clipping = if (view.cropToPadding) {
-            imageViewUtils.calculateClipping(parentRect, contentRect, density)
+            imageViewUtils.calculateClipping(parentRect, contentRect, density).toWireframeClip()
         } else {
             null
         }

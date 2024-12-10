@@ -17,7 +17,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier

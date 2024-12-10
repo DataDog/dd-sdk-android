@@ -4,17 +4,15 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.utils
+package com.datadog.android.internal.utils
 
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.ImageView
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal object ImageViewUtils {
-    internal fun resolveParentRectAbsPosition(view: View): Rect {
+object ImageViewUtils {
+    fun resolveParentRectAbsPosition(view: View): Rect {
         val coords = IntArray(2)
         // this will always have size >= 2
         @Suppress("UnsafeThirdPartyFunctionCall")
@@ -31,7 +29,7 @@ internal object ImageViewUtils {
         )
     }
 
-    internal fun calculateClipping(parentRect: Rect, childRect: Rect, density: Float): MobileSegment.WireframeClip {
+    fun calculateClipping(parentRect: Rect, childRect: Rect, density: Float): Rect {
         val left = if (childRect.left < parentRect.left) {
             parentRect.left - childRect.left
         } else {
@@ -52,16 +50,15 @@ internal object ImageViewUtils {
         } else {
             0
         }
-
-        return MobileSegment.WireframeClip(
-            left = left.densityNormalized(density).toLong(),
-            top = top.densityNormalized(density).toLong(),
-            right = right.densityNormalized(density).toLong(),
-            bottom = bottom.densityNormalized(density).toLong()
+        return Rect(
+            left.densityNormalized(density),
+            top.densityNormalized(density),
+            right.densityNormalized(density),
+            bottom.densityNormalized(density)
         )
     }
 
-    internal fun resolveContentRectWithScaling(
+    fun resolveContentRectWithScaling(
         imageView: ImageView,
         drawable: Drawable
     ): Rect {
