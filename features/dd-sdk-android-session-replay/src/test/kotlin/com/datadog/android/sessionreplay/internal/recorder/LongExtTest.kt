@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery

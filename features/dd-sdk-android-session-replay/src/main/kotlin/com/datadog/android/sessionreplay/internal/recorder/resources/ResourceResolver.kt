@@ -18,6 +18,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
@@ -110,8 +111,8 @@ internal class ResourceResolver(
         // do in the background
         threadPoolExecutor.executeSafe("resolveResourceId", logger) {
             createBitmap(
-                resources = resources,
                 drawable = originalDrawable,
+                copiedDrawable = copiedDrawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
@@ -137,8 +138,8 @@ internal class ResourceResolver(
 
     @WorkerThread
     private fun createBitmap(
-        resources: Resources,
         drawable: Drawable,
+        copiedDrawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
@@ -148,7 +149,7 @@ internal class ResourceResolver(
     ) {
         val handledBitmap = if (bitmapFromDrawable != null) {
             tryToGetBitmapFromBitmapDrawable(
-                drawable = drawable as BitmapDrawable,
+                drawable = drawable,
                 bitmapFromDrawable = bitmapFromDrawable,
                 customResourceIdCacheKey = customResourceIdCacheKey,
                 resolveResourceCallback = resolveResourceCallback
@@ -159,8 +160,7 @@ internal class ResourceResolver(
 
         if (handledBitmap == null) {
             tryToDrawNewBitmap(
-                resources = resources,
-                drawable = drawable,
+                drawable = copiedDrawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
@@ -249,7 +249,6 @@ internal class ResourceResolver(
 
     @WorkerThread
     private fun tryToDrawNewBitmap(
-        resources: Resources,
         drawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
@@ -258,7 +257,6 @@ internal class ResourceResolver(
         resolveResourceCallback: ResolveResourceCallback
     ) {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
-            resources = resources,
             drawable = drawable,
             drawableWidth = drawableWidth,
             drawableHeight = drawableHeight,
@@ -295,7 +293,7 @@ internal class ResourceResolver(
     @WorkerThread
     @Suppress("ReturnCount")
     private fun tryToGetBitmapFromBitmapDrawable(
-        drawable: BitmapDrawable,
+        drawable: Drawable,
         bitmapFromDrawable: Bitmap,
         customResourceIdCacheKey: String?,
         resolveResourceCallback: ResolveResourceCallback
