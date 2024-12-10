@@ -10,13 +10,18 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
@@ -36,6 +41,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -62,10 +69,19 @@ class ViewLoadingTimeMetricsTests {
     private lateinit var viewName: String
 
     @StringForgery
+    private lateinit var previousViewKey: String
+
+    @StringForgery
+    private lateinit var previousViewName: String
+
+    @StringForgery
     private lateinit var resourceKey: String
 
     @StringForgery(regex = "https://[a-z]+/[a-z]+\\.com")
     private lateinit var resourceUrl: String
+
+    @StringForgery
+    private lateinit var lastInteractionName: String
 
     @IntForgery(200, 599)
     private var resourceStatus: Int = 0
@@ -141,7 +157,7 @@ class ViewLoadingTimeMetricsTests {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasResourceCount(1)
             }
             .hasRumEvent(index = 3) {
@@ -152,7 +168,7 @@ class ViewLoadingTimeMetricsTests {
                 hasSource("android")
                 hasType("view")
                 hasViewUrl(viewKey)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasViewName(viewName)
             }
     }
@@ -217,7 +233,7 @@ class ViewLoadingTimeMetricsTests {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasResourceCount(1)
             }
             .hasRumEvent(index = 3) {
@@ -229,7 +245,7 @@ class ViewLoadingTimeMetricsTests {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasResourceCount(1)
             }
             .hasRumEvent(index = 4) {
@@ -241,7 +257,7 @@ class ViewLoadingTimeMetricsTests {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasResourceCount(1)
             }
             .hasRumEvent(index = 5) {
@@ -252,7 +268,7 @@ class ViewLoadingTimeMetricsTests {
                 hasSource("android")
                 hasType("view")
                 hasViewUrl(viewKey)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasViewName(viewName)
             }
     }
@@ -316,7 +332,7 @@ class ViewLoadingTimeMetricsTests {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasErrorCount(1)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasResourceCount(0)
             }
             .hasRumEvent(index = 3) {
@@ -328,7 +344,7 @@ class ViewLoadingTimeMetricsTests {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasErrorCount(1)
-                hasNetworkSettledTime(appExpectedTtnsTime, METRIC_OFFSET_IN_NANOSECONDS)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
                 hasViewName(viewName)
             }
     }
@@ -649,7 +665,751 @@ class ViewLoadingTimeMetricsTests {
 
     // endregion
 
+    // region Interaction to next view
+
+    @ParameterizedTest
+    @MethodSource("getValidLastInteractionTypes")
+    fun `M provide the ITNV metric for current view W last action on previous view was sent { valid type }`(
+        validActionType: RumActionType
+    ) {
+        // Given
+        val fakeRumConfiguration = configurationBuilder().build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        val appExpectedItnvTime = runSuccessfulItnvTestScenario(monitor, validActionType)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(previousViewName)
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
+            }
+    }
+
+    @ParameterizedTest
+    @MethodSource("getNonValidLastInteractionTypes")
+    fun `M not provide the ITNV metric for current view W last action on previous view was sent { invalid type }`(
+        invalidActionType: RumActionType
+    ) {
+        // Given
+        val fakeRumConfiguration = configurationBuilder().build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        runSuccessfulItnvTestScenario(monitor, invalidActionType)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveInteractionToNextViewTime()
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
+            }
+    }
+
+    @RepeatedTest(10)
+    fun `M not provide the ITNV metric for current view W last action on previous view was dropped`(
+        forge: Forge
+    ) {
+        // Given
+        val validActionType = forge.aValidLastInteractionActionType()
+        val fakeRumConfiguration = configurationBuilder()
+            .setActionEventMapper { null }
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        runSuccessfulItnvTestScenario(monitor, validActionType)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(4)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(0)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveInteractionToNextViewTime()
+            }
+            .hasRumEvent(index = 3) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
+            }
+    }
+
+    @RepeatedTest(10)
+    fun `M provide the ITNV metric for current view W using custom identifier, action validated`(
+        forge: Forge
+    ) {
+        // Given
+        val validActionType = forge.aValidLastInteractionActionType()
+        val fakeRumConfiguration = configurationBuilder()
+            .setLastInteractionIdentifier(object : LastInteractionIdentifier {
+                override fun validate(context: PreviousViewLastInteractionContext): Boolean {
+                    return true
+                }
+            })
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        val appExpectedItnvTime = runSuccessfulItnvTestScenario(monitor, validActionType)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
+            }
+    }
+
+    @RepeatedTest(10)
+    fun `M not provide the ITNV metric for current view W using custom identifier, action not validated`(
+        forge: Forge
+    ) {
+        // Given
+        val validActionType = forge.aValidLastInteractionActionType()
+        val fakeRumConfiguration = configurationBuilder()
+            .setLastInteractionIdentifier(object : LastInteractionIdentifier {
+                override fun validate(context: PreviousViewLastInteractionContext): Boolean {
+                    return false
+                }
+            })
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        runUnsuccessfulItnvTestScenario(monitor, validActionType)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveInteractionToNextViewTime()
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
+            }
+    }
+
+    @RepeatedTest(10)
+    fun `M provide the ITNV metric for current view W using time based identifier, threshold respected`(
+        forge: Forge
+    ) {
+        // Given
+        val validActionType = forge.aValidLastInteractionActionType()
+        val fakeRumConfiguration = configurationBuilder()
+            .setLastInteractionIdentifier(TimeBasedInteractionIdentifier())
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+        val appExpectedItnvTime = runSuccessfulItnvTestScenario(monitor, validActionType)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
+            }
+    }
+
+    @RepeatedTest(2)
+    fun `M not provide the ITNV metric for current view W using time based identifier, threshold surpassed`(
+        forge: Forge
+    ) {
+        // Given
+        val validActionType = forge.aValidLastInteractionActionType()
+        val fakeRumConfiguration = configurationBuilder()
+            .setLastInteractionIdentifier(TimeBasedInteractionIdentifier())
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        monitor.startView(previousViewKey, previousViewName, emptyMap())
+        monitor.startAction(validActionType, lastInteractionName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopAction(validActionType, lastInteractionName, emptyMap())
+        monitor.stopView(previousViewKey, emptyMap())
+        // Wait for more than the default threshold in the default identifier (3000ms)
+        Thread.sleep(3000 + 10)
+        monitor.startView(viewKey, viewName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopView(viewKey, emptyMap())
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveInteractionToNextViewTime()
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
+            }
+    }
+
+    @RepeatedTest(2)
+    fun `M not provide the ITNV metric for current view W using time based identifier {custom threshold, failed}`(
+        forge: Forge
+    ) {
+        // Given
+        val customThreshold = forge.aLong(min = 300, max = 4000)
+        val validActionType = forge.aValidLastInteractionActionType()
+        val fakeRumConfiguration = configurationBuilder()
+            .setLastInteractionIdentifier(TimeBasedInteractionIdentifier(customThreshold))
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+        val monitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        monitor.startView(previousViewKey, previousViewName, emptyMap())
+        monitor.startAction(validActionType, lastInteractionName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopAction(validActionType, lastInteractionName, emptyMap())
+        monitor.stopView(previousViewKey, emptyMap())
+        // Wait for more than the custom threshold
+        Thread.sleep(customThreshold + 10)
+        monitor.startView(viewKey, viewName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopView(viewKey, emptyMap())
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(6)
+            .hasRumEvent(index = 0) {
+                // Initial previous view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                doesNotHaveField("feature_flag")
+            }
+            .hasRumEvent(index = 1) {
+                // Action event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasActionName(lastInteractionName)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+            }
+            .hasRumEvent(index = 3) {
+                // Previous view stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
+            }
+            .hasRumEvent(index = 4) {
+                // New View Event
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveInteractionToNextViewTime()
+            }
+            .hasRumEvent(index = 5) {
+                // View stopped
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
+            }
+    }
+
+    // endregion
+
     // region internals
+
+    private fun Forge.aValidLastInteractionActionType(): RumActionType {
+        return aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.CUSTOM, RumActionType.SCROLL))
+    }
+
+    private fun runSuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType): Long {
+        monitor.startView(previousViewKey, previousViewName, emptyMap())
+        monitor.startAction(rumActionType, lastInteractionName, emptyMap())
+        Thread.sleep(100)
+        val stopActionTime = System.nanoTime()
+        monitor.stopAction(rumActionType, lastInteractionName, emptyMap())
+        monitor.stopView(previousViewKey, emptyMap())
+        val startViewTime = System.nanoTime()
+        monitor.startView(viewKey, viewName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopView(viewKey, emptyMap())
+        return (startViewTime - stopActionTime)
+    }
+
+    private fun runUnsuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType) {
+        monitor.startView(previousViewKey, previousViewName, emptyMap())
+        monitor.startAction(rumActionType, lastInteractionName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopAction(rumActionType, lastInteractionName, emptyMap())
+        monitor.stopView(previousViewKey, emptyMap())
+        monitor.startView(viewKey, viewName, emptyMap())
+        Thread.sleep(100)
+        monitor.stopView(viewKey, emptyMap())
+    }
 
     private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)
         .trackNonFatalAnrs(false)
@@ -659,12 +1419,31 @@ class ViewLoadingTimeMetricsTests {
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
 
-        private val METRIC_OFFSET_IN_NANOSECONDS = Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
+        private val TTNS_METRIC_OFFSET_IN_NANOSECONDS = Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
+        private val ITNV_METRIC_OFFSET_IN_NANOSECONDS = Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(mainLooper)
+        }
+
+        @JvmStatic
+        fun getValidLastInteractionTypes(): List<RumActionType> {
+            return listOf(
+                RumActionType.TAP,
+                RumActionType.SWIPE,
+                RumActionType.CLICK,
+                RumActionType.BACK
+            )
+        }
+
+        @JvmStatic
+        fun getNonValidLastInteractionTypes(): List<RumActionType> {
+            return listOf(
+                RumActionType.SCROLL,
+                RumActionType.CUSTOM
+            )
         }
     }
 }

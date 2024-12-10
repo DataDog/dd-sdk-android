@@ -151,6 +151,16 @@ class RumEventAssert(actual: JsonObject) :
         return this
     }
 
+    fun hasInteractionToNextViewTime(time: Long, offset: Offset<Long>): RumEventAssert {
+        hasField("view.interaction_to_next_view_time", time, offset = offset)
+        return this
+    }
+
+    fun doesNotHaveInteractionToNextViewTime(): RumEventAssert {
+        doesNotHaveField("view.interaction_to_next_view_time")
+        return this
+    }
+
     // endregion
 
     companion object {

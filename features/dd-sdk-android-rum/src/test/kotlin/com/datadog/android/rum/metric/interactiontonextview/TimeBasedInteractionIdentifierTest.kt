@@ -70,8 +70,8 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
     @Test
     fun `M return true W validate { valid context }`(forge: Forge) {
         // Given
-        val viewCreatedTimestamp = System.nanoTime()
-        val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(min = 0, max = fakeTimestampThresholdInNanos)
+        val eventCreatedTimestamp = System.nanoTime()
+        val viewCreatedTimestamp = eventCreatedTimestamp + forge.aLong(min = 0, max = fakeTimestampThresholdInNanos)
         val fakeValidContext = forge.getForgery(PreviousViewLastInteractionContext::class.java).copy(
             eventCreatedAtNanos = eventCreatedTimestamp,
             currentViewCreationTimestamp = viewCreatedTimestamp
@@ -87,8 +87,8 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
     @Test
     fun `M return false W validate { invalid context }`(forge: Forge) {
         // Given
-        val viewCreatedTimestamp = System.nanoTime()
-        val eventCreatedTimestamp = viewCreatedTimestamp + forge.aLong(
+        val eventCreatedTimestamp = System.nanoTime()
+        val viewCreatedTimestamp = eventCreatedTimestamp + forge.aLong(
             min = fakeTimestampThresholdInNanos + 1,
             max = fakeTimestampThresholdInNanos + 10000
         )

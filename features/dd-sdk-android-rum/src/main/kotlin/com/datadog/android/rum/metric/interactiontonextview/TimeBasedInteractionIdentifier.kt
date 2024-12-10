@@ -22,7 +22,7 @@ class TimeBasedInteractionIdentifier(
 
     override fun validate(context: PreviousViewLastInteractionContext): Boolean {
         return context.currentViewCreationTimestamp?.let { viewCreatedTime ->
-            context.eventCreatedAtNanos - viewCreatedTime < timeThresholdInNanoSeconds
+            viewCreatedTime - context.eventCreatedAtNanos < timeThresholdInNanoSeconds
         } ?: false
     }
 
