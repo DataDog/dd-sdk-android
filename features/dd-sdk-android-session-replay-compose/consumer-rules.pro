@@ -56,4 +56,12 @@
 -keep class androidx.compose.ui.graphics.GraphicsLayerElement{
     <fields>;
 }
-
+-keep class androidx.compose.ui.text.ParagraphInfo{
+    <fields>;
+}
+-keep class androidx.compose.ui.text.AndroidParagraph{
+    <fields>;
+}
+-keep class androidx.compose.ui.text.android.TextLayout{
+    <fields>;
+}

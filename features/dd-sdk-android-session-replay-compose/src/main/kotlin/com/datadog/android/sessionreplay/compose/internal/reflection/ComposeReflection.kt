@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.reflection
 
+import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -75,6 +76,16 @@ internal object ComposeReflection {
 
     val AsyncImagePainterClass = getClassSafe("coil.compose.AsyncImagePainter")
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")
+
+    // Region of MultiParagraph text
+    val ParagraphInfoListField =
+        MultiParagraph::class.java.getDeclaredFieldSafe("paragraphInfoList")
+    val ParagraphInfoClass = getClassSafe("androidx.compose.ui.text.ParagraphInfo")
+    val ParagraphField = ParagraphInfoClass?.getDeclaredFieldSafe("paragraph")
+    val AndroidParagraphClass = getClassSafe("androidx.compose.ui.text.AndroidParagraph")
+    val LayoutField = AndroidParagraphClass?.getDeclaredFieldSafe("layout")
+    val TextLayoutClass = getClassSafe("androidx.compose.ui.text.android.TextLayout")
+    val StaticLayoutField = TextLayoutClass?.getDeclaredFieldSafe("layout")
 }
 
 internal fun Field.accessible(): Field {
