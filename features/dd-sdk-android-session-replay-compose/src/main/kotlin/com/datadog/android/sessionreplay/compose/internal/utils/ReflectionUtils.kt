@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
+import android.text.StaticLayout
 import android.view.View
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
+import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
@@ -26,12 +28,14 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ImageField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterElement
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterModifier
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 
 @Suppress("TooManyFunctions")
@@ -152,5 +156,14 @@ internal class ReflectionUtils {
 
     fun getNestedPainter(painter: Painter): Painter? {
         return PainterFieldOfAsyncImagePainter?.getSafe(painter) as? Painter
+    }
+
+    fun getMultiParagraphCapturedText(multiParagraph: MultiParagraph): String? {
+        val infoList = ComposeReflection.ParagraphInfoListField?.getSafe(multiParagraph) as? List<*>
+        val paragraphInfo = infoList?.firstOrNull()
+        val paragraph = ComposeReflection.ParagraphField?.getSafe(paragraphInfo)
+        val layout = LayoutField?.getSafe(paragraph)
+        val staticLayout = StaticLayoutField?.getSafe(layout) as? StaticLayout
+        return staticLayout?.text?.toString()
     }
 }
