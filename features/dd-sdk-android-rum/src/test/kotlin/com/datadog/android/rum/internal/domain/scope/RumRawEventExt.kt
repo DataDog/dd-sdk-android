@@ -11,6 +11,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -234,14 +235,19 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
             RumRawEvent.ResetSession(),
             RumRawEvent.KeepAlive(),
             RumRawEvent.StopView(getForgery(), emptyMap()),
-            RumRawEvent.ActionSent(fakeId, aPositiveInt()),
+            RumRawEvent.ActionSent(
+                fakeId,
+                aPositiveInt(),
+                aValueFrom(ActionEvent.ActionEventActionType::class.java),
+                aPositiveLong()
+            ),
             RumRawEvent.ErrorSent(fakeId),
             RumRawEvent.LongTaskSent(fakeId),
-            RumRawEvent.ResourceSent(fakeId),
+            RumRawEvent.ResourceSent(fakeId, getForgery<UUID>().toString(), aPositiveLong()),
             RumRawEvent.ActionDropped(fakeId),
             RumRawEvent.ErrorDropped(fakeId),
             RumRawEvent.LongTaskDropped(fakeId),
-            RumRawEvent.ResourceDropped(fakeId)
+            RumRawEvent.ResourceDropped(fakeId, getForgery<UUID>().toString())
         )
     )
 }

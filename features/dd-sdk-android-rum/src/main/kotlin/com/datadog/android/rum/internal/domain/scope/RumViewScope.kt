@@ -25,12 +25,17 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
+import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
+import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -57,7 +62,9 @@ internal open class RumViewScope(
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
     private val trackFrustrations: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
+    private val networkSettledMetricResolver: NetworkSettledMetricResolver
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -158,6 +165,8 @@ internal open class RumViewScope(
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=${rumContext.sessionId}")
             Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
         }
+        networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
+        interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
     }
 
     // region RumScope
@@ -430,7 +439,8 @@ internal open class RumViewScope(
             firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
             featuresContextResolver,
-            sampleRate
+            sampleRate,
+            networkSettledMetricResolver
         )
         pendingResourceCount++
     }
@@ -564,8 +574,8 @@ internal open class RumViewScope(
             .apply {
                 if (!isFatal) {
                     // if fatal, then we don't have time for the notification, app is crashing
-                    onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error) }
-                    onSuccess { it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error) }
+                    onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
+                    onSuccess { it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
                 }
             }
             .submit()
@@ -709,6 +719,12 @@ internal open class RumViewScope(
         if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingResourceCount--
             resourceCount++
+            networkSettledMetricResolver.resourceWasStopped(
+                InternalResourceContext(
+                    event.resourceId,
+                    event.resourceEndTimestampInNanos
+                )
+            )
             sendViewUpdate(event, writer)
         }
     }
@@ -722,6 +738,13 @@ internal open class RumViewScope(
             pendingActionCount--
             actionCount++
             frustrationCount += event.frustrationCount
+            interactionToNextViewMetricResolver.onActionSent(
+                InternalInteractionContext(
+                    event.viewId,
+                    event.type,
+                    event.eventEndTimestampInNanos
+                )
+            )
             sendViewUpdate(event, writer)
         }
     }
@@ -750,12 +773,21 @@ internal open class RumViewScope(
         if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingErrorCount--
             errorCount++
+            if (event.resourceId != null && event.resourceEndTimestampInNanos != null) {
+                networkSettledMetricResolver.resourceWasStopped(
+                    InternalResourceContext(
+                        event.resourceId,
+                        event.resourceEndTimestampInNanos
+                    )
+                )
+            }
             sendViewUpdate(event, writer)
         }
     }
 
     private fun onResourceDropped(event: RumRawEvent.ResourceDropped) {
         if (event.viewId == viewId || event.viewId in oldViewIds) {
+            networkSettledMetricResolver.resourceWasDropped(event.resourceId)
             pendingResourceCount--
         }
     }
@@ -769,6 +801,9 @@ internal open class RumViewScope(
     private fun onErrorDropped(event: RumRawEvent.ErrorDropped) {
         if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingErrorCount--
+            if (event.resourceId != null) {
+                networkSettledMetricResolver.resourceWasDropped(event.resourceId)
+            }
         }
     }
 
@@ -805,12 +840,15 @@ internal open class RumViewScope(
             cpuVitalMonitor.unregister(cpuVitalListener)
             memoryVitalMonitor.unregister(memoryVitalListener)
             frameRateVitalMonitor.unregister(frameRateVitalListener)
+            networkSettledMetricResolver.viewWasStopped()
         }
     }
 
     @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>, eventType: EventType = EventType.DEFAULT) {
         val viewComplete = isViewComplete()
+        val timeToSettled = networkSettledMetricResolver.resolveMetric()
+        val interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -908,6 +946,8 @@ internal open class RumViewScope(
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
+                    networkSettledTime = timeToSettled,
+                    interactionToNextViewTime = interactionToNextViewTime,
                     loadingTime = viewLoadingTime
                 ),
                 usr = if (user.hasUserData()) {
@@ -1100,7 +1140,11 @@ internal open class RumViewScope(
             )
         }
             .apply {
-                val storageEvent = StorageEvent.Action(0)
+                val storageEvent = StorageEvent.Action(
+                    0,
+                    ActionEvent.ActionEventActionType.APPLICATION_START,
+                    event.applicationStartupNanos
+                )
                 onError { it.eventDropped(rumContext.viewId.orEmpty(), storageEvent) }
                 onSuccess { it.eventSent(rumContext.viewId.orEmpty(), storageEvent) }
             }
@@ -1327,7 +1371,9 @@ internal open class RumViewScope(
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
             trackFrustrations: Boolean,
-            sampleRate: Float
+            sampleRate: Float,
+            interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
+            networkSettledResourceIdentifier: InitialResourceIdentifier
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -1342,7 +1388,12 @@ internal open class RumViewScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 trackFrustrations = trackFrustrations,
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+                networkSettledMetricResolver = NetworkSettledMetricResolver(
+                    networkSettledResourceIdentifier,
+                    sdkCore.internalLogger
+                )
             )
         }
 

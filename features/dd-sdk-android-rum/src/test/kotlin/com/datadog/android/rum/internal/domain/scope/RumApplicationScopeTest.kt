@@ -20,6 +20,8 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -110,6 +112,12 @@ internal class RumApplicationScopeTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Mock
+    lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
+
+    @Mock
+    lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
@@ -127,7 +135,9 @@ internal class RumApplicationScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockDispatcher,
-            mockSessionListener
+            mockSessionListener,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
     }
 

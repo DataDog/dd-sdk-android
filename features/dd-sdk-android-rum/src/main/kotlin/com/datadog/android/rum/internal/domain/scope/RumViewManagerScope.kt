@@ -20,8 +20,12 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -38,8 +42,16 @@ internal class RumViewManagerScope(
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
     internal var applicationDisplayed: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    internal val initialResourceIdentifier: InitialResourceIdentifier,
+    lastInteractionIdentifier: LastInteractionIdentifier
 ) : RumScope {
+
+    private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
+        InteractionToNextViewMetricResolver(
+            internalLogger = sdkCore.internalLogger,
+            lastInteractionIdentifier = lastInteractionIdentifier
+        )
 
     internal val childrenScopes = mutableListOf<RumScope>()
     internal var stopped = false
@@ -198,7 +210,9 @@ internal class RumViewManagerScope(
             memoryVitalMonitor,
             frameRateVitalMonitor,
             trackFrustrations,
-            sampleRate
+            sampleRate,
+            interactionToNextViewMetricResolver,
+            initialResourceIdentifier
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -260,7 +274,12 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.BACKGROUND,
             trackFrustrations = trackFrustrations,
-            sampleRate = sampleRate
+            sampleRate = sampleRate,
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+            networkSettledMetricResolver = NetworkSettledMetricResolver(
+                initialResourceIdentifier,
+                sdkCore.internalLogger
+            )
         )
     }
 
@@ -283,7 +302,12 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
             trackFrustrations = trackFrustrations,
-            sampleRate = sampleRate
+            sampleRate = sampleRate,
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+            networkSettledMetricResolver = NetworkSettledMetricResolver(
+                initialResourceIdentifier,
+                sdkCore.internalLogger
+            )
         )
     }
 

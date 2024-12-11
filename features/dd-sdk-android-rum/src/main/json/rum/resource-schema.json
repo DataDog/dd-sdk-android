@@ -69,6 +69,50 @@
               "minimum": 0,
               "readOnly": true
             },
+            "encoded_body_size": {
+              "type": "integer",
+              "description": "Size in octet of the resource before removing any applied content encodings",
+              "minimum": 0,
+              "readOnly": true
+            },
+            "decoded_body_size": {
+              "type": "integer",
+              "description": "Size in octet of the resource after removing any applied encoding",
+              "minimum": 0,
+              "readOnly": true
+            },
+            "transfer_size": {
+              "type": "integer",
+              "description": "Size in octet of the fetched resource",
+              "minimum": 0,
+              "readOnly": true
+            },
+            "render_blocking_status": {
+              "type": "string",
+              "description": "Render blocking status of the resource",
+              "enum": ["blocking", "non-blocking"],
+              "readOnly": true
+            },
+            "worker": {
+              "type": "object",
+              "description": "Worker phase properties",
+              "required": ["duration", "start"],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in nanoseconds of the resource worker phase",
+                  "minimum": 0,
+                  "readOnly": true
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in nanoseconds between start of the request and start of the worker phase",
+                  "minimum": 0,
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
             "redirect": {
               "type": "object",
               "description": "Redirect phase properties",
@@ -187,6 +231,11 @@
                   "readOnly": true
                 }
               },
+              "readOnly": true
+            },
+            "protocol": {
+              "type": "string",
+              "description": "Network protocol used to fetch the resource (e.g., 'http/1.1', 'h2')",
               "readOnly": true
             },
             "provider": {

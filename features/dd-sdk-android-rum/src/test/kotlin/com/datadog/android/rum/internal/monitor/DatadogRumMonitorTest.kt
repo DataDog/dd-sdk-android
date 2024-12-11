@@ -42,6 +42,9 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
@@ -163,6 +166,12 @@ internal class DatadogRumMonitorTest {
     @Forgery
     lateinit var fakeTimeInfo: TimeInfo
 
+    @Mock
+    lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
+
+    @Mock
+    lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockExecutorService.submit(any())) doAnswer {
@@ -189,7 +198,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         testedMonitor.rootScope = mockScope
     }
@@ -211,7 +222,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         val rootScope = testedMonitor.rootScope
@@ -270,7 +283,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -307,7 +322,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -1368,9 +1385,11 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W eventSent {action}`(
         @StringForgery viewId: String,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @LongForgery(0) eventEndTimestamp: Long,
+        @Forgery actionType: ActionEvent.ActionEventActionType
     ) {
-        testedMonitor.eventSent(viewId, StorageEvent.Action(frustrationCount))
+        testedMonitor.eventSent(viewId, StorageEvent.Action(frustrationCount, actionType, eventEndTimestamp))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1379,15 +1398,19 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.ActionSent
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.frustrationCount).isEqualTo(frustrationCount)
+            assertThat(event.type).isEqualTo(actionType)
+            assertThat(event.eventEndTimestampInNanos).isEqualTo(eventEndTimestamp)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
     fun `M delegate event to rootScope W eventSent {resource}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @StringForgery resourceId: String,
+        @LongForgery(0) resourceEndTimestampInNanos: Long
     ) {
-        testedMonitor.eventSent(viewId, StorageEvent.Resource)
+        testedMonitor.eventSent(viewId, StorageEvent.Resource(resourceId, resourceEndTimestampInNanos))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1395,6 +1418,8 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.ResourceSent
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.resourceId).isEqualTo(resourceId)
+            assertThat(event.resourceEndTimestampInNanos).isEqualTo(resourceEndTimestampInNanos)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1403,7 +1428,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, StorageEvent.Error)
+        testedMonitor.eventSent(viewId, StorageEvent.Error())
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1452,9 +1477,11 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W eventDropped {action}`(
         @StringForgery viewId: String,
-        @IntForgery(0) frustrationCount: Int
+        @IntForgery(0) frustrationCount: Int,
+        @LongForgery(0) eventEndTimestamp: Long,
+        @Forgery actionType: ActionEvent.ActionEventActionType
     ) {
-        testedMonitor.eventDropped(viewId, StorageEvent.Action(frustrationCount))
+        testedMonitor.eventDropped(viewId, StorageEvent.Action(frustrationCount, actionType, eventEndTimestamp))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1468,9 +1495,11 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventDropped {resource}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @StringForgery resourceId: String,
+        @LongForgery(0) resourceEndTimestampInNanos: Long
     ) {
-        testedMonitor.eventDropped(viewId, StorageEvent.Resource)
+        testedMonitor.eventDropped(viewId, StorageEvent.Resource(resourceId, resourceEndTimestampInNanos))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1478,6 +1507,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.ResourceDropped
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.resourceId).isEqualTo(resourceId)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -1486,7 +1516,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, StorageEvent.Error)
+        testedMonitor.eventDropped(viewId, StorageEvent.Error())
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1639,7 +1669,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutor
+            mockExecutor,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         // When
@@ -1684,7 +1716,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
 
         // When
@@ -1716,7 +1750,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1900,7 +1936,9 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockNetworkSettledResourceIdentifier,
+            mockLastInteractionIdentifier
         )
         testedMonitor.startView(key, name, attributes)
         // When

@@ -6,11 +6,18 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.rum.model.ActionEvent
+
 internal sealed class StorageEvent {
     object View : StorageEvent()
-    data class Action(val frustrationCount: Int) : StorageEvent()
-    object Resource : StorageEvent()
-    object Error : StorageEvent()
+    data class Action(
+        val frustrationCount: Int,
+        val type: ActionEvent.ActionEventActionType,
+        val eventEndTimestampInNanos: Long
+    ) : StorageEvent()
+
+    data class Resource(val resourceId: String, val resourceStopTimestampInNanos: Long) : StorageEvent()
+    data class Error(val resourceId: String? = null, val resourceStopTimestampInNanos: Long? = null) : StorageEvent()
     object LongTask : StorageEvent()
     object FrozenFrame : StorageEvent()
 }

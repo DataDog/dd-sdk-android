@@ -17,6 +17,8 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -37,6 +39,8 @@ internal class RumSessionScope(
     frameRateVitalMonitor: VitalMonitor,
     private val sessionListener: RumSessionListener?,
     applicationDisplayed: Boolean,
+    networkSettledResourceIdentifier: InitialResourceIdentifier,
+    lastInteractionIdentifier: LastInteractionIdentifier,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -66,7 +70,9 @@ internal class RumSessionScope(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         applicationDisplayed,
-        sampleRate
+        sampleRate,
+        networkSettledResourceIdentifier,
+        lastInteractionIdentifier
     )
 
     init {
