@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -68,6 +69,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -86,6 +90,7 @@ internal class SnapshotProducerTest {
             mockImageWireframeHelper,
             mockTreeViewTraversal,
             mockOptionSelectorDetector,
+            mockTouchPrivacyManager,
             mockInternalLogger
         )
     }

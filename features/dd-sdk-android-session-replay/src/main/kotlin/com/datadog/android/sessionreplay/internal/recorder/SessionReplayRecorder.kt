@@ -182,12 +182,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             viewIdentifierResolver = viewIdentifierResolver
                         ),
                         viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger,
-                        touchPrivacyManager = touchPrivacyManager
+                        internalLogger = internalLogger
                     ),
                     ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                     ),
+                    touchPrivacyManager,
                     internalLogger = internalLogger
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,

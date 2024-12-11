@@ -10,33 +10,35 @@ import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
-internal class ContainerSemanticsNodeMapper(
+internal class ComposeHiddenMapper(
     colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
+    semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
-    ): SemanticsWireframe {
-        val wireframes = resolveModifierWireframes(semanticsNode)
-        val backgroundColor = semanticsUtils.resolveBackgroundColor(semanticsNode)?.let {
-            convertColor(it)
-        }
-        val textAndInputPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
-            ?: parentContext.textAndInputPrivacy
-        val imagePrivacy = semanticsUtils.getImagePrivacyOverride(semanticsNode)
-            ?: parentContext.imagePrivacy
+    ): SemanticsWireframe? {
+        val id = resolveId(semanticsNode)
+        val viewGlobalBounds = resolveBounds(semanticsNode)
         return SemanticsWireframe(
-            wireframes = wireframes,
-            uiContext = parentContext.copy(
-                parentContentColor = backgroundColor ?: parentContext.parentContentColor,
-                imagePrivacy = imagePrivacy,
-                textAndInputPrivacy = textAndInputPrivacy
-            )
+            wireframes = MobileSegment.Wireframe.PlaceholderWireframe(
+                id = id,
+                x = viewGlobalBounds.x,
+                y = viewGlobalBounds.y,
+                width = viewGlobalBounds.width,
+                height = viewGlobalBounds.height,
+                label = HIDDEN_VIEW_PLACEHOLDER_TEXT
+            ).let { listOf(it) },
+            uiContext = parentContext
         )
+    }
+
+    internal companion object {
+        internal const val HIDDEN_VIEW_PLACEHOLDER_TEXT = "Hidden"
     }
 }

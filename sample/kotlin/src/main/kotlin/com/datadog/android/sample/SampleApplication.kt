@@ -257,11 +257,7 @@ class SampleApplication : Application() {
             TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
         }
 
-        val touchPrivacy = if (shouldMaskAll) {
-            TouchPrivacy.HIDE
-        } else {
-            TouchPrivacy.SHOW
-        }
+        val touchPrivacy = TouchPrivacy.SHOW
 
         GlobalRumMonitor.get().addAttribute("imagePrivacy", imagePrivacy)
         GlobalRumMonitor.get().addAttribute("textAndInputPrivacy", textAndInputPrivacy)

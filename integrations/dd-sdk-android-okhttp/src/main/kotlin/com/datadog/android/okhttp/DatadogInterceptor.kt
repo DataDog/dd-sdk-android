@@ -433,7 +433,7 @@ open class DatadogInterceptor internal constructor(
     /**
      * A Builder for the [DatadogInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [com.datadog.trace.api.GlobalTracer],
+     * be automatically tracked by this interceptor. If registering a [io.opentracing.util.GlobalTracer],
      * the tracer must be configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration

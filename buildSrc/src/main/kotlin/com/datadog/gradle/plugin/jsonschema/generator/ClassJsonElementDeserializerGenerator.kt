@@ -317,7 +317,7 @@ class ClassJsonElementDeserializerGenerator(
 
     @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendAdditionalPropertiesDeserialization(
-        additionalProperties: TypeDefinition,
+        additionalProperties: TypeProperty,
         hasKnownProperties: Boolean,
         rootTypeName: String
     ) {
@@ -325,7 +325,7 @@ class ClassJsonElementDeserializerGenerator(
             "val %L = mutableMapOf<%T, %T>()",
             Identifier.PARAM_ADDITIONAL_PROPS,
             STRING,
-            additionalProperties.additionalPropertyTypeName(rootTypeName)
+            additionalProperties.type.additionalPropertyTypeName(rootTypeName)
         )
         beginControlFlow(
             "for (entry in %L.entrySet())",
@@ -339,14 +339,14 @@ class ClassJsonElementDeserializerGenerator(
             )
         }
 
-        if (additionalProperties is TypeDefinition.Class) {
+        if (additionalProperties.type is TypeDefinition.Class) {
             addStatement(
                 "%L[entry.key] = entry.value",
                 Identifier.PARAM_ADDITIONAL_PROPS
             )
         } else {
             appendDeserializedProperty(
-                propertyType = additionalProperties,
+                propertyType = additionalProperties.type,
                 assignee = "${Identifier.PARAM_ADDITIONAL_PROPS}[entry.key]",
                 getter = "entry.value",
                 nullable = false,

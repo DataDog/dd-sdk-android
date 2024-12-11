@@ -16,7 +16,6 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
-import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
@@ -35,8 +34,7 @@ internal class TreeViewTraversal(
     private val hiddenViewMapper: HiddenViewMapper,
     private val decorViewMapper: WireframeMapper<View>,
     private val viewUtilsInternal: ViewUtilsInternal,
-    private val internalLogger: InternalLogger,
-    private val touchPrivacyManager: TouchPrivacyManager
+    private val internalLogger: InternalLogger
 ) {
 
     @Suppress("ReturnCount")
@@ -59,7 +57,7 @@ internal class TreeViewTraversal(
 
         // try to resolve from the exhaustive type mappers
         var mapper = findMapperForView(view)
-        updateTouchOverrideAreas(view)
+        updateTouchOverrideAreas(view, mappingContext)
 
         if (isHidden(view)) {
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
@@ -123,7 +121,7 @@ internal class TreeViewTraversal(
         view.getTag(R.id.datadog_hidden) == true
 
     @UiThread
-    private fun updateTouchOverrideAreas(view: View) {
+    private fun updateTouchOverrideAreas(view: View, mappingContext: MappingContext) {
         val touchPrivacy = view.getTag(R.id.datadog_touch_privacy)
 
         if (touchPrivacy != null) {
@@ -144,7 +142,7 @@ internal class TreeViewTraversal(
 
             try {
                 val privacyLevel = TouchPrivacy.valueOf(touchPrivacy.toString().uppercase(Locale.US))
-                touchPrivacyManager.addTouchOverrideArea(viewArea, privacyLevel)
+                mappingContext.touchPrivacyManager.addTouchOverrideArea(viewArea, privacyLevel)
             } catch (e: IllegalArgumentException) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,

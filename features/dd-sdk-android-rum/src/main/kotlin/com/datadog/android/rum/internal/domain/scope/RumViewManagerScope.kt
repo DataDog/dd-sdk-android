@@ -164,13 +164,13 @@ internal class RumViewManagerScope(
                 InternalLogger.Target.USER,
                 { MESSAGE_MISSING_VIEW }
             )
-            internalLogger.logApiUsage(
+            internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = event.overwrite,
                     noView = true,
                     noActiveView = false
                 )
-            )
+            }
             // we should return here and not add the event to the session ended metric missed events as we already
             // send the API usage telemetry
             return

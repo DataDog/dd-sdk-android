@@ -127,12 +127,12 @@ internal class SdkInternalLogger(
     }
 
     override fun logApiUsage(
-        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
-        samplingRate: Float
+        samplingRate: Float,
+        apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
     ) {
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        rumFeature.sendEvent(apiUsageEvent)
+        rumFeature.sendEvent(apiUsageEventBuilder())
     }
 
     // endregion

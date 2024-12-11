@@ -53,7 +53,7 @@ class FakeInternalLogger : InternalLogger {
         return null
     }
 
-    override fun logApiUsage(apiUsageEvent: InternalTelemetryEvent.ApiUsage, samplingRate: Float) {
+    override fun logApiUsage(samplingRate: Float, apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage) {
         // do nothing
     }
 }

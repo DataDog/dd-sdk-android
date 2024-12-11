@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.recorder
 
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 
 /**
@@ -18,6 +19,7 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
  * @param imageWireframeHelper a helper tool to capture images within a View
  * @param textAndInputPrivacy the text and input privacy level to use when building the wireframes
  * @param imagePrivacy the image recording configuration to use when building the wireframes
+ * @param touchPrivacyManager the manager to handle touch privacy area.
  * @param hasOptionSelectorParent tells if one of the parents of the current [android.view.View]
  * is an option selector type (e.g. time picker, date picker, drop - down list)
  */
@@ -26,5 +28,6 @@ data class MappingContext(
     val imageWireframeHelper: ImageWireframeHelper,
     val textAndInputPrivacy: TextAndInputPrivacy,
     val imagePrivacy: ImagePrivacy,
+    val touchPrivacyManager: TouchPrivacyManager,
     val hasOptionSelectorParent: Boolean = false
 )

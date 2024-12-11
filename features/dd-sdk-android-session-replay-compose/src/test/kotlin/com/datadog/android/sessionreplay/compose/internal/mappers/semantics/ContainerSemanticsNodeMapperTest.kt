@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -106,6 +108,27 @@ internal class ContainerSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
                 parentContentColor = fakeBackgroundColorHexString
             )
         )
+    }
+
+    @Test
+    fun `M pass down the override privacy W map() { privacy is overridden }`(forge: Forge) {
+        // Given
+        val fakeImagePrivacy = forge.aValueFrom(ImagePrivacy::class.java)
+        val fakeTextInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+        val mockSemanticsNode = mockSemanticsNode()
+        whenever(mockSemanticsUtils.getImagePrivacyOverride(mockSemanticsNode)) doReturn fakeImagePrivacy
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockSemanticsNode)) doReturn fakeTextInputPrivacy
+
+        // When
+        val result = testedContainerSemanticsNodeMapper.map(
+            mockSemanticsNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(result.uiContext?.imagePrivacy).isEqualTo(fakeImagePrivacy)
+        assertThat(result.uiContext?.textAndInputPrivacy).isEqualTo(fakeTextInputPrivacy)
     }
 
     private fun mockSemanticsNode(): SemanticsNode {

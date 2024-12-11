@@ -48,10 +48,11 @@ class DefaultFirstPartyHostHeaderTypeResolver(
     /** @inheritdoc */
     override fun headerTypesForUrl(url: HttpUrl): Set<TracingHeaderType> {
         val host = url.host
-        val filteredHosts = knownHosts.filter {
-            it.key == "*" || it.key == host || host.endsWith(".${it.key}")
-        }
-        return filteredHosts.values.flatten().toSet()
+
+        return knownHosts[host]
+            ?: knownHosts.entries.firstOrNull { host.endsWith(".${it.key}") }?.value
+            ?: knownHosts["*"]
+            ?: emptySet()
     }
 
     /** @inheritdoc */
