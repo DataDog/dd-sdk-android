@@ -127,6 +127,59 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         assertThat(actual.wireframes).contains(expected)
     }
 
+    @Test
+    fun `M return the mask wireframe wireframe W map {textInputPrivacy is MASK_ALL}`() {
+        // Given
+        val mockNode = mockSemanticsNodeWithBound {}
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockNode)) doReturn TextAndInputPrivacy.MASK_ALL
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
+            fakeBounds,
+            fakeDensity
+        )
+        val actual = testedTextSemanticsNodeMapper.map(
+            mockNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback
+        )
+        val expectedText = StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
+        val expected = MobileSegment.Wireframe.TextWireframe(
+            id = fakeSemanticsId.toLong(),
+            x = (fakeBounds.left / fakeDensity).toLong(),
+            y = (fakeBounds.top / fakeDensity).toLong(),
+            width = (fakeBounds.size.width / fakeDensity).toLong(),
+            height = (fakeBounds.size.height / fakeDensity).toLong(),
+            text = expectedText,
+            textStyle = testedTextSemanticsNodeMapper.stubResolveTextStyle(
+                fakeUiContext,
+                fakeTextLayoutInfo
+            ),
+            textPosition = testedTextSemanticsNodeMapper.stubResolveTextAlign(fakeTextLayoutInfo)
+        )
+
+        assertThat(actual.wireframes).contains(expected)
+    }
+
+    @Test
+    fun `M pass down the override privacy W privacy is override`(forge: Forge) {
+        val mockSemanticsNode = mockSemanticsNodeWithBound {}
+
+        // Given
+        val fakeTextInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockSemanticsNode)) doReturn fakeTextInputPrivacy
+
+        // When
+        val result = testedTextSemanticsNodeMapper.map(
+            mockSemanticsNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(result.uiContext?.textAndInputPrivacy).isEqualTo(fakeTextInputPrivacy)
+    }
+
     class StubTextSemanticsNodeMapper(
         colorStringFormatter: ColorStringFormatter,
         semanticsUtils: SemanticsUtils = SemanticsUtils()

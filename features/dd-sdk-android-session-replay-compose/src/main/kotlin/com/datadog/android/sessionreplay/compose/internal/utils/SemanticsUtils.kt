@@ -6,53 +6,56 @@
 
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import android.graphics.Bitmap
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.compose.ImagePrivacySemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
+import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
+import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
-import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
-internal class SemanticsUtils {
+internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = ReflectionUtils()) {
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
-        val composition = CompositionField?.getSafe(view) as? Composition
-        if (ComposeReflection.WrappedCompositionClass?.isInstance(composition) == true) {
-            val owner = ComposeReflection.OwnerField?.getSafe(composition)
-            if (ComposeReflection.AndroidComposeViewClass?.isInstance(owner) == true) {
-                val semanticsOwner = ComposeReflection.SemanticsOwner?.getSafe(owner) as? SemanticsOwner
-                val rootNode = semanticsOwner?.unmergedRootSemanticsNode
-                return rootNode
+        reflectionUtils.apply {
+            getComposition(view)?.takeIf { isWrappedCompositionClass(it) }?.let { composition ->
+                getOwner(composition)?.takeIf { isAndroidComposeView(it) }?.let { owner ->
+                    val semanticsOwner = reflectionUtils.getSemanticsOwner(owner)
+                    return semanticsOwner?.unmergedRootSemanticsNode
+                }
             }
         }
         return null
     }
 
-    internal fun resolveOuterBounds(semanticsNode: SemanticsNode): GlobalBounds {
+    private fun resolveOuterBounds(semanticsNode: SemanticsNode): GlobalBounds {
         var currentBounds = resolveInnerBounds(semanticsNode)
         semanticsNode.layoutInfo.getModifierInfo().filter {
-            (ComposeReflection.PaddingElementClass?.isInstance(it.modifier) == true)
+            reflectionUtils.isPaddingElement(it.modifier)
         }.forEach {
-            val top = ComposeReflection.TopField?.getSafe(it.modifier) as? Float ?: 0.0f
-            val start = ComposeReflection.StartField?.getSafe(it.modifier) as? Float ?: 0.0f
-            val end = ComposeReflection.EndField?.getSafe(it.modifier) as? Float ?: 0.0f
-            val bottom = ComposeReflection.BottomField?.getSafe(it.modifier) as? Float ?: 0.0f
+            val top = reflectionUtils.getTopPadding(it.modifier)
+            val start = reflectionUtils.getStartPadding(it.modifier)
+            val end = reflectionUtils.getEndPadding(it.modifier)
+            val bottom = reflectionUtils.getBottomPadding(it.modifier)
             currentBounds = GlobalBounds(
                 x = currentBounds.x - start.toLong(),
                 y = currentBounds.y - top.toLong(),
@@ -79,15 +82,15 @@ internal class SemanticsUtils {
         // -> background(): retrieve the color and use `currentBackgroundInfo` to generate wireframes,
         //                  then reset `currentBackgroundInfo`.
         semanticsNode.layoutInfo.getModifierInfo().forEach { modifierInfo ->
-            if (ComposeReflection.BackgroundElementClass?.isInstance(modifierInfo.modifier) == true) {
-                val color = ComposeReflection.ColorField?.getSafe(modifierInfo.modifier) as? Long
+            if (reflectionUtils.isBackgroundElement(modifierInfo.modifier)) {
+                val color = reflectionUtils.getColor(modifierInfo.modifier)
                 currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds, color = color)
                 backgroundInfoList.add(currentBackgroundInfo)
                 currentBackgroundInfo = BackgroundInfo()
-            } else if (ComposeReflection.PaddingElementClass?.isInstance(modifierInfo.modifier) == true) {
+            } else if (reflectionUtils.isPaddingElement(modifierInfo.modifier)) {
                 currentBounds = shrinkInnerBounds(modifierInfo.modifier, currentBounds)
                 currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds)
-            } else if (ComposeReflection.GraphicsLayerElementClass?.isInstance(modifierInfo.modifier) == true) {
+            } else if (reflectionUtils.isGraphicsLayerElement(modifierInfo.modifier)) {
                 val cornerRadius =
                     resolveClipShape(modifierInfo.modifier, currentBounds, density) ?: 0f
                 currentBackgroundInfo = currentBackgroundInfo.copy(cornerRadius = cornerRadius)
@@ -99,31 +102,26 @@ internal class SemanticsUtils {
     internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? {
         val backgroundModifierInfo =
             semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
-                ComposeReflection.BackgroundElementClass?.isInstance(modifierInfo.modifier) == true
+                reflectionUtils.isBackgroundElement(modifierInfo.modifier)
             }
-        return backgroundModifierInfo?.let {
-            ComposeReflection.ColorField?.getSafe(it.modifier) as? Long
-        }
+        return backgroundModifierInfo?.let { reflectionUtils.getColor(it.modifier) }
     }
 
     internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? {
-        val backgroundModifierInfo =
-            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
-                ComposeReflection.BackgroundElementClass?.isInstance(modifierInfo.modifier) == true
-            }
-        return backgroundModifierInfo?.let {
-            ComposeReflection.ShapeField?.getSafe(it.modifier) as? Shape
-        }
+        val backgroundModifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
+            reflectionUtils.isBackgroundElement(it.modifier)
+        }?.modifier
+        return backgroundModifier?.let { reflectionUtils.getShape(it) }
     }
 
     private fun shrinkInnerBounds(
         modifier: Modifier,
         currentBounds: GlobalBounds
     ): GlobalBounds {
-        val top = ComposeReflection.TopField?.getSafe(modifier) as? Float ?: 0.0f
-        val start = ComposeReflection.StartField?.getSafe(modifier) as? Float ?: 0.0f
-        val end = ComposeReflection.EndField?.getSafe(modifier) as? Float ?: 0.0f
-        val bottom = ComposeReflection.BottomField?.getSafe(modifier) as? Float ?: 0.0f
+        val top = reflectionUtils.getTopPadding(modifier)
+        val start = reflectionUtils.getStartPadding(modifier)
+        val end = reflectionUtils.getEndPadding(modifier)
+        val bottom = reflectionUtils.getBottomPadding(modifier)
         return GlobalBounds(
             x = currentBounds.x + start.toLong(),
             y = currentBounds.y + top.toLong(),
@@ -150,9 +148,7 @@ internal class SemanticsUtils {
     }
 
     private fun resolveInnerSize(semanticsNode: SemanticsNode): Size? {
-        val layoutNode = LayoutNodeField?.getSafe(semanticsNode)
-        val innerLayerCoordinator = layoutNode?.let { GetInnerLayerCoordinatorMethod?.invoke(it) }
-        val placeable = innerLayerCoordinator as? Placeable
+        val placeable = reflectionUtils.getPlaceable(semanticsNode)
         val height = placeable?.height
         val width = placeable?.width
         return if (height != null && width != null) {
@@ -167,9 +163,8 @@ internal class SemanticsUtils {
         currentBounds: GlobalBounds,
         density: Density
     ): Float? {
-        val shape = ComposeReflection.ClipShapeField?.getSafe(modifier) as? Shape
-        return shape?.let {
-            resolveCornerRadius(it, currentBounds, density)
+        return reflectionUtils.getClipShape(modifier)?.let { shape ->
+            resolveCornerRadius(shape, currentBounds, density)
         }
     }
 
@@ -198,18 +193,78 @@ internal class SemanticsUtils {
             textLayoutResults
         )
         val layoutInput = textLayoutResults.firstOrNull()?.layoutInput
+        val modifierColor = resolveModifierColor(semanticsNode)
         return layoutInput?.let {
-            convertTextLayoutInfo(it)
+            convertTextLayoutInfo(it, modifierColor)
         }
     }
 
-    private fun convertTextLayoutInfo(layoutInput: TextLayoutInput): TextLayoutInfo {
+    internal fun resolveSemanticsPainter(
+        semanticsNode: SemanticsNode
+    ): BitmapInfo? {
+        var isContextualImage = false
+        var painter = reflectionUtils.getLocalImagePainter(semanticsNode)
+        if (painter == null) {
+            isContextualImage = true
+            painter = reflectionUtils.getAsyncImagePainter(semanticsNode)
+        }
+        // TODO RUM-6535: support more painters.
+        if (painter != null && reflectionUtils.isAsyncImagePainter(painter)) {
+            isContextualImage = true
+            painter = reflectionUtils.getNestedPainter(painter)
+        }
+        val bitmap = when (painter) {
+            is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
+            is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
+            else -> {
+                null
+            }
+        }
+
+        val newBitmap = bitmap?.let {
+            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
+            it.copy(Bitmap.Config.ARGB_8888, false)
+        }
+        return newBitmap?.let {
+            BitmapInfo(it, isContextualImage)
+        }
+    }
+
+    private fun resolveModifierColor(semanticsNode: SemanticsNode): Color? {
+        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
+            reflectionUtils.isTextStringSimpleElement(it.modifier)
+        }?.modifier
+        return modifier?.let {
+            reflectionUtils.getColorProducerColor(it)
+        }
+    }
+
+    private fun convertTextLayoutInfo(
+        layoutInput: TextLayoutInput,
+        modifierColor: Color?
+    ): TextLayoutInfo {
         return TextLayoutInfo(
             text = resolveAnnotatedString(layoutInput.text),
-            color = layoutInput.style.color.value,
+            color = modifierColor?.value ?: layoutInput.style.color.value,
             textAlign = layoutInput.style.textAlign,
             fontSize = layoutInput.style.fontSize.value.toLong(),
             fontFamily = layoutInput.style.fontFamily
         )
+    }
+
+    internal fun getImagePrivacyOverride(semanticsNode: SemanticsNode): ImagePrivacy? {
+        return semanticsNode.config.getOrNull(ImagePrivacySemanticsPropertyKey)
+    }
+
+    internal fun getTextAndInputPrivacyOverride(semanticsNode: SemanticsNode): TextAndInputPrivacy? {
+        return semanticsNode.config.getOrNull(TextInputSemanticsPropertyKey)
+    }
+
+    internal fun getTouchPrivacyOverride(semanticsNode: SemanticsNode): TouchPrivacy? {
+        return semanticsNode.config.getOrNull(TouchSemanticsPropertyKey)
+    }
+
+    internal fun isNodeHidden(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
     }
 }

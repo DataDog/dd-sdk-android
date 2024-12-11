@@ -706,6 +706,9 @@ internal class RumEventSerializerTest {
                     if (configuration.batchUploadFrequency != null) {
                         hasField("batch_upload_frequency", configuration.batchUploadFrequency!!)
                     }
+                    if (configuration.isMainProcess != null) {
+                        hasField("is_main_process", configuration.isMainProcess!!)
+                    }
                 }
             }
 

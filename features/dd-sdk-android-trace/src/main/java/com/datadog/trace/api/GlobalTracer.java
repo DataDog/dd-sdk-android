@@ -5,12 +5,21 @@ import com.datadog.trace.api.internal.InternalTracer;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import kotlin.Deprecated;
+import kotlin.DeprecationLevel;
+import kotlin.ReplaceWith;
+
 /**
  * A global reference to the registered Datadog tracer.
  *
  * <p>OpenTracing's GlobalTracer cannot be cast to its DDTracer implementation, so this class exists
  * to provide a global window to datadog-specific features.
  */
+@Deprecated(
+        message = "Use [io.opentracing.util.GlobalTracer] instead, this class will be removed soon",
+        replaceWith = @ReplaceWith(expression = "GlobalTracer", imports = "io.opentracing.util"),
+        level = DeprecationLevel.ERROR
+)
 public class GlobalTracer {
   private static final Tracer NO_OP =
       new Tracer() {

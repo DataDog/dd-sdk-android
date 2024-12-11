@@ -258,13 +258,13 @@ internal open class RumViewScope(
                 InternalLogger.Target.USER,
                 { NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE }
             )
-            internalLogger.logApiUsage(
+            internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = event.overwrite,
                     noView = false,
                     noActiveView = true
                 )
-            )
+            }
         }
 
         if (canUpdateViewLoadingTime) {
@@ -286,13 +286,13 @@ internal open class RumViewScope(
                 InternalLogger.Target.USER,
                 { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, viewLoadingTime, viewName) }
             )
-            internalLogger.logApiUsage(
+            internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = false,
                     noView = false,
                     noActiveView = false
                 )
-            )
+            }
         } else if (event.overwrite) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -306,13 +306,13 @@ internal open class RumViewScope(
                     )
                 }
             )
-            internalLogger.logApiUsage(
+            internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = true,
                     noView = false,
                     noActiveView = false
                 )
-            )
+            }
         }
         viewLoadingTime = newLoadingTime
         sendViewUpdate(event, writer)

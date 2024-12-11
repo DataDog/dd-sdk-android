@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
@@ -25,20 +26,23 @@ internal open class TextSemanticsNodeMapper(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
-        val textWireframe = resolveTextWireFrame(parentContext, semanticsNode)
+        val textAndInputPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
+            ?: parentContext.textAndInputPrivacy
+        val textWireframe = resolveTextWireFrame(parentContext, semanticsNode, textAndInputPrivacy)
         return SemanticsWireframe(
             wireframes = listOfNotNull(textWireframe),
-            parentContext
+            parentContext.copy(textAndInputPrivacy = textAndInputPrivacy)
         )
     }
 
     protected fun resolveTextWireFrame(
         parentContext: UiContext,
-        semanticsNode: SemanticsNode
+        semanticsNode: SemanticsNode,
+        textAndInputPrivacy: TextAndInputPrivacy
     ): MobileSegment.Wireframe.TextWireframe? {
         val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode)
         val capturedText = textLayoutInfo?.text?.let {
-            transformCapturedText(it, parentContext.textAndInputPrivacy)
+            transformCapturedText(it, textAndInputPrivacy)
         }
         val bounds = resolveBounds(semanticsNode)
         return capturedText?.let { text ->

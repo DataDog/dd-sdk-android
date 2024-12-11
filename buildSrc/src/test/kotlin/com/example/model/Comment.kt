@@ -11,6 +11,7 @@ import kotlin.Array
 import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
+import kotlin.collections.Map
 import kotlin.collections.MutableMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
@@ -89,7 +90,7 @@ public data class Comment(
 
     public data class Ratings(
         public val global: Long,
-        public val additionalProperties: MutableMap<String, Long> = mutableMapOf(),
+        public val additionalProperties: Map<String, Long> = mapOf(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

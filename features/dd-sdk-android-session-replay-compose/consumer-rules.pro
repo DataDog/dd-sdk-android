@@ -41,6 +41,9 @@
 -keep class androidx.compose.ui.graphics.AndroidImageBitmap {
      <fields>;
 }
+-keep class coil.compose.ContentPainterElement {
+     <fields>;
+}
 -keep class coil.compose.ContentPainterModifier {
      <fields>;
 }

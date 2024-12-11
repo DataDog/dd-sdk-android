@@ -10,9 +10,14 @@ import android.graphics.Point
 import android.graphics.Rect
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.sessionreplay.TouchPrivacy
 
-internal class TouchPrivacyManager(
+/**
+ * Manager to handle touch privacy area.
+ */
+@InternalApi
+class TouchPrivacyManager(
     private val globalTouchPrivacy: TouchPrivacy
 ) {
     // areas on screen where overrides are applied
@@ -25,8 +30,11 @@ internal class TouchPrivacyManager(
     // the overrides when they are no longer needed.
     private val nextOverrideAreas = HashMap<Rect, TouchPrivacy>()
 
+    /**
+     * Adds touch area with [TouchPrivacy] override.
+     */
     @UiThread
-    internal fun addTouchOverrideArea(bounds: Rect, touchPrivacy: TouchPrivacy) {
+    fun addTouchOverrideArea(bounds: Rect, touchPrivacy: TouchPrivacy) {
         nextOverrideAreas[bounds] = touchPrivacy
     }
 

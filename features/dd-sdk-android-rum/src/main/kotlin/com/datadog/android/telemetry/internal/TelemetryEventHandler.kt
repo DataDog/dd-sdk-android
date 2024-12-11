@@ -335,7 +335,8 @@ internal class TelemetryEventHandler(
                     touchPrivacyLevel = sessionReplayTouchPrivacy,
                     textAndInputPrivacyLevel = sessionReplayTextAndInputPrivacy,
                     startRecordingImmediately = startRecordingImmediately,
-                    batchProcessingLevel = event.batchProcessingLevel.toLong()
+                    batchProcessingLevel = event.batchProcessingLevel.toLong(),
+                    isMainProcess = datadogContext.processInfo.isMainProcess
                 )
             )
         )
