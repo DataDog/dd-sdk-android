@@ -273,4 +273,8 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
     internal fun isNodeHidden(semanticsNode: SemanticsNode): Boolean {
         return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
     }
+
+    internal fun getInteropView(semanticsNode: SemanticsNode): View? {
+        return reflectionUtils.getInteropView(semanticsNode)
+    }
 }

@@ -19,7 +19,8 @@ internal class MappingContextForgeryFactory : ForgeryFactory<MappingContext> {
             textAndInputPrivacy = forge.getForgery(),
             imagePrivacy = forge.getForgery(),
             hasOptionSelectorParent = forge.aBool(),
-            touchPrivacyManager = mock()
+            touchPrivacyManager = mock(),
+            interopViewCallback = mock()
         )
     }
 }

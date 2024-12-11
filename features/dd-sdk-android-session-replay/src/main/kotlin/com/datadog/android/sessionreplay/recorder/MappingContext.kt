@@ -22,6 +22,8 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
  * @param touchPrivacyManager the manager to handle touch privacy area.
  * @param hasOptionSelectorParent tells if one of the parents of the current [android.view.View]
  * is an option selector type (e.g. time picker, date picker, drop - down list)
+ * @param interopViewCallback the callback for Jetpack Compose semantics tree to call
+ * when there is an interop view to map.
  */
 data class MappingContext(
     val systemInformation: SystemInformation,
@@ -29,5 +31,6 @@ data class MappingContext(
     val textAndInputPrivacy: TextAndInputPrivacy,
     val imagePrivacy: ImagePrivacy,
     val touchPrivacyManager: TouchPrivacyManager,
-    val hasOptionSelectorParent: Boolean = false
+    val hasOptionSelectorParent: Boolean = false,
+    val interopViewCallback: InteropViewCallback
 )

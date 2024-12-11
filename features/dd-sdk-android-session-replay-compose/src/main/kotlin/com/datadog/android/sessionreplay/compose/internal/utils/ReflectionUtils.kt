@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInteropViewMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ImageField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
@@ -165,5 +166,9 @@ internal class ReflectionUtils {
         val layout = LayoutField?.getSafe(paragraph)
         val staticLayout = StaticLayoutField?.getSafe(layout) as? StaticLayout
         return staticLayout?.text?.toString()
+    }
+
+    fun getInteropView(semanticsNode: SemanticsNode): View? {
+        return GetInteropViewMethod?.invoke(semanticsNode.layoutInfo) as? View
     }
 }

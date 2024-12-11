@@ -23,6 +23,7 @@ internal object ComposeReflection {
     val OwnerField = WrappedCompositionClass?.getDeclaredFieldSafe("owner")
 
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
+    val GetInteropViewMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInteropView")
 
     val SemanticsNodeClass = getClassSafe("androidx.compose.ui.semantics.SemanticsNode")
     val LayoutNodeField = SemanticsNodeClass?.getDeclaredFieldSafe("layoutNode")

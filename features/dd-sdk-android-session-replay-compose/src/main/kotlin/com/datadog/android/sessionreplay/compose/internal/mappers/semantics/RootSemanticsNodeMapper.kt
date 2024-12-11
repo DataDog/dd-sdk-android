@@ -50,6 +50,7 @@ internal class RootSemanticsNodeMapper(
     )
 ) {
 
+    @UiThread
     internal fun createComposeWireframes(
         semanticsNode: SemanticsNode,
         density: Float,
@@ -69,18 +70,21 @@ internal class RootSemanticsNodeMapper(
                     textAndInputPrivacy = mappingContext.textAndInputPrivacy,
                     imageWireframeHelper = mappingContext.imageWireframeHelper
                 ),
-                asyncJobStatusCallback = asyncJobStatusCallback
+                asyncJobStatusCallback = asyncJobStatusCallback,
+                mappingContext = mappingContext
             )
         }
         return wireframes
     }
 
+    @UiThread
     private fun createComposerWireframes(
         semanticsNode: SemanticsNode,
         touchPrivacyManager: TouchPrivacyManager,
         wireframes: MutableList<MobileSegment.Wireframe>,
         parentUiContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        mappingContext: MappingContext
     ) {
         // If Hidden node is detected, add placeholder wireframe and return
         if (semanticsUtils.isNodeHidden(semanticsNode)) {
@@ -93,6 +97,16 @@ internal class RootSemanticsNodeMapper(
             }
             return
         }
+
+        val interopView = semanticsUtils.getInteropView(semanticsNode)
+
+        if (interopView != null) {
+            val interopViewWireframes =
+                mappingContext.interopViewCallback.map(interopView, mappingContext)
+            wireframes.addAll(interopViewWireframes)
+            return
+        }
+
         val mapper = getSemanticsNodeMapper(semanticsNode)
         updateTouchOverrideAreas(
             touchPrivacyManager = touchPrivacyManager,
@@ -119,7 +133,8 @@ internal class RootSemanticsNodeMapper(
                     touchPrivacyManager = touchPrivacyManager,
                     wireframes = wireframes,
                     parentUiContext = currentUiContext,
-                    asyncJobStatusCallback = asyncJobStatusCallback
+                    asyncJobStatusCallback = asyncJobStatusCallback,
+                    mappingContext = mappingContext
                 )
             }
         }
