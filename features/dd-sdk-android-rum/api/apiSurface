@@ -1604,7 +1604,7 @@ data class com.datadog.android.rum.model.RumVitalEvent
       fun fromJson(kotlin.String): ContainerView
       fun fromJsonObject(com.google.gson.JsonObject): ContainerView
   data class Custom
-    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Number> = mutableMapOf())
+    constructor(kotlin.collections.Map<kotlin.String, kotlin.Number> = mapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Custom
