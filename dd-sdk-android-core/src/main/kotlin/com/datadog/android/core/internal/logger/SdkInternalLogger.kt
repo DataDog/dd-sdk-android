@@ -104,8 +104,8 @@ internal class SdkInternalLogger(
         val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
             additionalProperties = additionalProperties
-                .putIfAbsentOrMapIsNull(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY, creationSampleRate)
-                .putIfAbsentOrMapIsNull(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY, samplingRate)
+                .putIfNotExistOrMapIsNull(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY, creationSampleRate)
+                .putIfNotExistOrMapIsNull(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY, samplingRate)
         )
         rumFeature.sendEvent(metricEvent)
     }
@@ -138,10 +138,7 @@ internal class SdkInternalLogger(
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
 
         val event = apiUsageEventBuilder()
-        // safe to call it here both key and value are non null
-        // and [additionalProperties] is mutable
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        event.additionalProperties.putIfAbsent(
+        event.additionalProperties.putIfNotExist(
             InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
             samplingRate
         )
@@ -267,9 +264,20 @@ internal class SdkInternalLogger(
         }
     }
 
-    private fun Map<String, Any?>?.putIfAbsentOrMapIsNull(key: String, value: Float?): MutableMap<String, Any?> {
+    private fun Map<String, Any?>?.putIfNotExistOrMapIsNull(key: String, value: Float?): MutableMap<String, Any?> {
         val mutableMap = this?.toMutableMap() ?: mutableMapOf()
-        return mutableMap.apply { putIfAbsent(key, value) }
+        return mutableMap.apply { putIfNotExist(key, value ?: return@apply) }
+    }
+
+    // This method same as putIfAbsent but putIfAbsent requires SDK version >= 24
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun <K, V> MutableMap<K, V>.putIfNotExist(key: K, value: V): V? {
+        var v: V? = get(key)
+        if (v == null) {
+            v = put(key, value)
+        }
+
+        return v
     }
 
     companion object {

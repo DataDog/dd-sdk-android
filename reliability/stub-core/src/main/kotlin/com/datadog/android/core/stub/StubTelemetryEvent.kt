@@ -15,13 +15,16 @@ import com.datadog.android.api.InternalLogger
  * @param additionalProperties a map of additional properties
  * @param samplingRate the (optional) sampling rate to avoid spamming the same message in our telemetry org
  * @param level the (optional) level attached to Log telemetry events
+ * @param creationSampleRate the (optional) sampling rate to avoid spamming the same message in our telemetry org for
+ * long-lived metrics like method performance measure
  */
 data class StubTelemetryEvent(
     val type: Type,
     val message: String,
     val additionalProperties: Map<String, Any?>,
     val samplingRate: Float? = null,
-    val level: InternalLogger.Level? = null
+    val level: InternalLogger.Level? = null,
+    val creationSampleRate: Float? = null
 ) {
     /**
      * The type of Telemetry event.

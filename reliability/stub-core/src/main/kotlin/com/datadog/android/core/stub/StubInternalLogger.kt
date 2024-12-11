@@ -77,7 +77,8 @@ internal class StubInternalLogger : InternalLogger {
             type = StubTelemetryEvent.Type.METRIC,
             message = message,
             additionalProperties = additionalProperties,
-            samplingRate = samplingRate
+            samplingRate = samplingRate,
+            creationSampleRate = creationSampleRate
         )
         telemetryEventsWritten.add(telemetryEvent)
     }

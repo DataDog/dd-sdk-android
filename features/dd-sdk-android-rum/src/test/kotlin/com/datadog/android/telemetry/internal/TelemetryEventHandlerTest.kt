@@ -47,6 +47,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -1367,18 +1368,18 @@ internal class TelemetryEventHandlerTest {
     }
 
     private fun assertEffectiveSampleRate(
-        actualSampleRate: Long?,
+        actualSampleRate: Number?,
         vararg appliedSampleRates: Float
     ) {
-        val expectedEffectiveSampleRate = appliedSampleRates.reduce { acc, item -> acc * item / 100f }.toLong()
+        val expectedEffectiveSampleRate = appliedSampleRates.reduce { acc, item -> acc * item / 100f }
 
-        assertThat(actualSampleRate)
+        assertThat(actualSampleRate as Float)
             .withFailMessage {
                 "expected:$expectedEffectiveSampleRate, " +
                     "actual:$actualSampleRate\n" +
                     "appliedSampleRates=${appliedSampleRates.joinToString { it.toString() }}"
             }
-            .isEqualTo(expectedEffectiveSampleRate)
+            .isEqualTo(expectedEffectiveSampleRate, within(0.001f))
     }
 
     // endregion

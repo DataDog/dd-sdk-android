@@ -183,7 +183,7 @@ internal class TelemetryEventHandler(
         timestamp: Long,
         message: String,
         additionalProperties: Map<String, Any?>?,
-        effectiveSampleRate: Long
+        effectiveSampleRate: Float
     ): TelemetryDebugEvent {
         val rumContext = datadogContext.rumContext()
         val resolvedAdditionalProperties = additionalProperties.orEmpty()
@@ -228,7 +228,7 @@ internal class TelemetryEventHandler(
         message: String,
         stack: String?,
         kind: String?,
-        effectiveSampleRate: Long,
+        effectiveSampleRate: Float,
         additionalProperties: Map<String, Any?>?
     ): TelemetryErrorEvent {
         val rumContext = datadogContext.rumContext()
@@ -280,7 +280,7 @@ internal class TelemetryEventHandler(
         datadogContext: DatadogContext,
         timestamp: Long,
         event: InternalTelemetryEvent.Configuration,
-        effectiveSampleRate: Long
+        effectiveSampleRate: Float
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val sessionReplayFeatureContext =
@@ -368,7 +368,7 @@ internal class TelemetryEventHandler(
         datadogContext: DatadogContext,
         timestamp: Long,
         event: InternalTelemetryEvent.ApiUsage,
-        effectiveSampleRate: Long
+        effectiveSampleRate: Float
     ): TelemetryUsageEvent {
         val rumContext = datadogContext.rumContext()
         return when (event) {
@@ -469,8 +469,8 @@ internal class TelemetryEventHandler(
     private fun computeEffectiveSampleRate(
         properties: Map<String, Any?>? = null,
         eventSpecificSamplingRate: Float? = null
-    ): Long {
-        val telemetrySampleRate = rumConfig?.telemetrySampleRate?.percent() ?: return 0L
+    ): Float {
+        val telemetrySampleRate = rumConfig?.telemetrySampleRate?.percent() ?: return 0f
 
         val creatingSamplingRate = properties
             ?.getFloat(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
@@ -487,7 +487,7 @@ internal class TelemetryEventHandler(
         val effectiveSampleRate =
             telemetrySampleRate * creatingSamplingRate * reportingSamplingRate * eventSamplingRate * sessionSampleRate
 
-        return (effectiveSampleRate * HUNDRED).toLong()
+        return (effectiveSampleRate * HUNDRED).toFloat()
     }
 
     private fun Map<String, Any?>.getFloat(key: String) = get(key) as? Float
