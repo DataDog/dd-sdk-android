@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Path
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
@@ -23,6 +24,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.RESOURCES_NULL_ERROR
+import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver.Companion.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -191,6 +193,8 @@ internal class DefaultImageWireframeHelperTest {
         )
     }
 
+    // region createImageWireframeByBitmap
+
     @Test
     fun `M return wireframe W createImageWireframeByBitmap`(
         @Mock mockShapeStyle: MobileSegment.ShapeStyle,
@@ -199,7 +203,7 @@ internal class DefaultImageWireframeHelperTest {
     ) {
         // Given
         whenever(
-            mockResourceResolver.resolveResourceId(
+            mockResourceResolver.resolveResourceIdFromBitmap(
                 bitmap = any(),
                 resourceResolverCallback = any()
             )
@@ -236,7 +240,7 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromBitmap(
             bitmap = any(),
             resourceResolverCallback = any()
         )
@@ -245,8 +249,6 @@ internal class DefaultImageWireframeHelperTest {
         verifyNoMoreInteractions(mockAsyncJobStatusCallback)
         assertThat(wireframe).isEqualTo(expectedWireframe)
     }
-
-    // region createImageWireframeByBitmap
 
     @Test
     fun `M return content placeholder W createImageWireframeByBitmap { ImagePrivacy MASK_ALL }`() {
@@ -293,7 +295,7 @@ internal class DefaultImageWireframeHelperTest {
             .thenReturn(fakeGeneratedIdentifier)
 
         whenever(
-            mockResourceResolver.resolveResourceId(
+            mockResourceResolver.resolveResourceIdFromBitmap(
                 bitmap = any(),
                 resourceResolverCallback = any()
             )
@@ -331,7 +333,7 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeGeneratedIdentifier)
         whenever(
-            mockResourceResolver.resolveResourceId(
+            mockResourceResolver.resolveResourceIdFromDrawable(
                 resources = any(),
                 applicationContext = any(),
                 displayMetrics = any(),
@@ -399,7 +401,7 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -666,7 +668,7 @@ internal class DefaultImageWireframeHelperTest {
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeGeneratedIdentifier)
         whenever(
-            mockResourceResolver.resolveResourceId(
+            mockResourceResolver.resolveResourceIdFromDrawable(
                 resources = any(),
                 applicationContext = any(),
                 displayMetrics = any(),
@@ -714,7 +716,7 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -739,7 +741,7 @@ internal class DefaultImageWireframeHelperTest {
     ) {
         // Given
         whenever(
-            mockResourceResolver.resolveResourceId(
+            mockResourceResolver.resolveResourceIdFromBitmap(
                 bitmap = any(),
                 resourceResolverCallback = any()
             )
@@ -776,7 +778,7 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromBitmap(
             bitmap = any(),
             resourceResolverCallback = any()
         )
@@ -906,7 +908,7 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
 
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -954,7 +956,7 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
-        verify(mockResourceResolver, times(2)).resolveResourceId(
+        verify(mockResourceResolver, times(2)).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -1027,7 +1029,7 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -1062,7 +1064,7 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         val captor = argumentCaptor<Int>()
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -1148,7 +1150,7 @@ internal class DefaultImageWireframeHelperTest {
         )
 
         // Then
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -1223,7 +1225,7 @@ internal class DefaultImageWireframeHelperTest {
             val expectedKey = fakeResourceIdCacheKey + "_$index"
 
             // Then
-            verify(mockResourceResolver).resolveResourceId(
+            verify(mockResourceResolver).resolveResourceIdFromDrawable(
                 resources = any(),
                 applicationContext = any(),
                 displayMetrics = any(),
@@ -1287,7 +1289,7 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
 
-        verify(mockResourceResolver).resolveResourceId(
+        verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -1335,7 +1337,7 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
-        verify(mockResourceResolver, times(2)).resolveResourceId(
+        verify(mockResourceResolver, times(2)).resolveResourceIdFromDrawable(
             resources = any(),
             applicationContext = any(),
             displayMetrics = any(),
@@ -1372,6 +1374,197 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         verifyNoInteractions(mockAsyncJobStatusCallback)
         assertThat(wireframes).isEmpty()
+    }
+
+    // endregion
+
+    // region createImageWireframeByPath
+
+    @Test
+    fun `M return content placeholder W createImageWireframeByPath { ImagePrivacy MASK_ALL }`(
+        @Mock mockPath: Path,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+        val fakeStrokeWidth = forge.aPositiveInt()
+        val fakeStrokeColor = forge.aPositiveInt()
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByPath(
+            id = fakeViewId,
+            path = mockPath,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            isContextualImage = false,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            density = fakeDensity,
+            strokeWidth = fakeStrokeWidth,
+            strokeColor = fakeStrokeColor,
+            targetWidth = fakeWidth,
+            targetHeight = fakeHeight,
+            customResourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
+
+    @Test
+    fun `M return content placeholder W createImageWireframeByPath { ImagePrivacy MASK_LARGE_ONLY }`(
+        @Mock mockPath: Path,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWidth = forge.anInt(min = IMAGE_DIMEN_CONSIDERED_PII_IN_DP)
+        val fakeHeight = forge.anInt(min = IMAGE_DIMEN_CONSIDERED_PII_IN_DP)
+        val fakeStrokeWidth = forge.aPositiveInt()
+        val fakeStrokeColor = forge.aPositiveInt()
+        whenever(mockImageTypeResolver.isPIIByDimensions(any(), any())).thenReturn(true)
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByPath(
+            id = fakeViewId,
+            path = mockPath,
+            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+            isContextualImage = true,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            density = fakeDensity,
+            strokeWidth = fakeStrokeWidth,
+            strokeColor = fakeStrokeColor,
+            targetWidth = fakeWidth,
+            targetHeight = fakeHeight,
+            customResourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+    }
+
+    @Test
+    fun `M return image wireframe W createImageWireframeByPath`(
+        @Mock mockPath: Path,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+        val fakeStrokeWidth = forge.aPositiveInt()
+        val fakeStrokeColor = forge.aPositiveInt()
+
+        whenever(
+            mockResourceResolver.resolveResourceIdFromPath(
+                path = any(),
+                strokeColor = any(),
+                strokeWidth = any(),
+                desiredWidth = any(),
+                desiredHeight = any(),
+                customResourceIdCacheKey = anyOrNull(),
+                resourceResolverCallback = any()
+            )
+        ).thenAnswer {
+            val callback = it.arguments[6] as ResourceResolverCallback
+            callback.onSuccess(fakeResourceId)
+        }
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByPath(
+            id = fakeViewId,
+            path = mockPath,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            isContextualImage = false,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            density = fakeDensity,
+            strokeWidth = fakeStrokeWidth,
+            strokeColor = fakeStrokeColor,
+            targetWidth = fakeWidth,
+            targetHeight = fakeHeight,
+            customResourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
+        verify(mockResourceResolver).resolveResourceIdFromPath(
+            path = any(),
+            strokeColor = eq(fakeStrokeColor),
+            strokeWidth = eq(fakeStrokeWidth),
+            desiredWidth = eq(fakeWidth),
+            desiredHeight = eq(fakeHeight),
+            customResourceIdCacheKey = anyOrNull(),
+            resourceResolverCallback = any()
+        )
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
+    }
+
+    @Test
+    fun `M call jobFinished W createImageWireframeFromPath { failure }`(
+        @Mock mockPath: Path,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+        val fakeStrokeWidth = forge.aPositiveInt()
+        val fakeStrokeColor = forge.aPositiveInt()
+
+        whenever(
+            mockResourceResolver.resolveResourceIdFromPath(
+                path = any(),
+                strokeColor = any(),
+                strokeWidth = any(),
+                desiredWidth = any(),
+                desiredHeight = any(),
+                customResourceIdCacheKey = anyOrNull(),
+                resourceResolverCallback = any()
+            )
+        ).thenAnswer {
+            val callback = it.arguments[6] as ResourceResolverCallback
+            callback.onFailure()
+        }
+
+        // When
+        val wireframe = testedHelper.createImageWireframeByPath(
+            id = fakeViewId,
+            path = mockPath,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            isContextualImage = false,
+            globalBounds = fakeBounds,
+            shapeStyle = null,
+            border = null,
+            density = fakeDensity,
+            strokeWidth = fakeStrokeWidth,
+            strokeColor = fakeStrokeColor,
+            targetWidth = fakeWidth,
+            targetHeight = fakeHeight,
+            customResourceIdCacheKey = null,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.ImageWireframe::class.java)
+        verify(mockResourceResolver).resolveResourceIdFromPath(
+            path = any(),
+            strokeColor = eq(fakeStrokeColor),
+            strokeWidth = eq(fakeStrokeWidth),
+            desiredWidth = eq(fakeWidth),
+            desiredHeight = eq(fakeHeight),
+            customResourceIdCacheKey = anyOrNull(),
+            resourceResolverCallback = any()
+        )
+        verify(mockAsyncJobStatusCallback).jobStarted()
+        verify(mockAsyncJobStatusCallback).jobFinished()
+        verifyNoMoreInteractions(mockAsyncJobStatusCallback)
     }
 
     // endregion

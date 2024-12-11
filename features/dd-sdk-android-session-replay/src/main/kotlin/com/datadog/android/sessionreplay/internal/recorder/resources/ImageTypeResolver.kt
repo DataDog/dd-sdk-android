@@ -14,12 +14,15 @@ import com.datadog.android.internal.utils.densityNormalized
 internal class ImageTypeResolver {
     fun isDrawablePII(drawable: Drawable, density: Float): Boolean {
         val isNotGradient = drawable !is GradientDrawable
-        val widthAboveThreshold = drawable.intrinsicWidth.densityNormalized(density) >=
-            IMAGE_DIMEN_CONSIDERED_PII_IN_DP
-        val heightAboveThreshold = drawable.intrinsicHeight.densityNormalized(density) >=
-            IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+        val widthDp = drawable.intrinsicWidth.densityNormalized(density)
+        val heightDp = drawable.intrinsicHeight.densityNormalized(density)
 
-        return isNotGradient && (widthAboveThreshold || heightAboveThreshold)
+        return isNotGradient && isPIIByDimensions(widthDp, heightDp)
+    }
+
+    fun isPIIByDimensions(width: Int, height: Int): Boolean {
+        val isGreaterThan = width >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP || height >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+        return isGreaterThan
     }
 
     internal companion object {

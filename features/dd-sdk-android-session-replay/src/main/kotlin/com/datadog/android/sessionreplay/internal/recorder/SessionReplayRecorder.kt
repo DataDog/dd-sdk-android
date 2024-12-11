@@ -40,6 +40,7 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
+import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
@@ -151,6 +152,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         val resourceResolver = ResourceResolver(
             applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
+            pathUtils = PathUtils(internalLogger, bitmapCachesManager),
             bitmapCachesManager = bitmapCachesManager,
             drawableUtils = DrawableUtils(
                 internalLogger,

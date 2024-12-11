@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
-import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
@@ -18,8 +17,11 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.BOX_BORDER_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.CHECKBOX_CORNER_RADIUS
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.CHECKBOX_SIZE_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.DEFAULT_COLOR_BLACK
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.DEFAULT_COLOR_WHITE
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.STROKE_WIDTH_DP
+import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -91,10 +93,10 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
     private lateinit var mockPath: Path
 
     @Mock
-    private lateinit var mockBitmap: Bitmap
+    private lateinit var mockPathUtils: PathUtils
 
     @Mock
-    private lateinit var mockPathUtils: PathUtils
+    private lateinit var mockColorUtils: ColorUtils
 
     @Mock
     private lateinit var mockImageWireframeHelper: ImageWireframeHelper
@@ -122,14 +124,17 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             whenever(mockSemanticsNode.config).doReturn(mockConfig)
         }
 
-        whenever(mockPath.getBounds())
-            .thenReturn(fakeBounds)
+        whenever(mockPathUtils.asAndroidPathSafe(any()))
+            .thenReturn(mock())
 
         whenever(mockSemanticsUtils.resolveCheckmarkColor(mockSemanticsNode))
             .thenReturn(fakeCheckmarkColor)
 
         whenever(mockSemanticsUtils.resolveBorderColor(mockSemanticsNode))
             .thenReturn(fakeBorderColor)
+
+        whenever(mockSemanticsUtils.resolveCheckPath(mockSemanticsNode))
+            .thenReturn(mockPath)
 
         mockColorStringFormatter(fakeBorderColor, fakeBorderColorHexString)
         mockColorStringFormatter(fakeFillColor, fakeFillColorHexString)
@@ -138,7 +143,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         testedMapper = CheckboxSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,
             semanticsUtils = mockSemanticsUtils,
-            pathUtils = mockPathUtils
+            pathUtils = mockPathUtils,
+            colorUtils = mockColorUtils
         )
     }
 
@@ -308,9 +314,6 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
             .thenReturn(ToggleableState.On)
 
-        whenever(mockSemanticsUtils.resolveCheckPath(mockSemanticsNode))
-            .thenReturn(mockPath)
-
         // When
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
@@ -334,9 +337,6 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         // Given
         whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
             .thenReturn(ToggleableState.On)
-
-        whenever(mockSemanticsUtils.resolveCheckPath(mockSemanticsNode))
-            .thenReturn(mockPath)
 
         // When
         val semanticsWireframe = testedMapper.map(
@@ -364,34 +364,32 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
             .thenReturn(ToggleableState.On)
 
-        whenever(mockPathUtils.asAndroidPathSafe(any())).thenReturn(mock())
-
-        whenever(mockSemanticsUtils.resolveCheckPath(mockSemanticsNode))
-            .thenReturn(mockPath)
-
         whenever(mockSemanticsUtils.resolveCheckboxFillColor(mockSemanticsNode))
             .thenReturn(fakeFillColor)
 
-        whenever(
-            mockPathUtils.convertPathToBitmap(
-                checkPath = eq(mockPath),
-                fillColor = anyOrNull(),
-                checkmarkColor = anyOrNull()
-            )
-        ) doReturn mockBitmap
+        whenever(mockColorUtils.parseColorSafe(fakeFillColorHexString))
+            .thenReturn(fakeFillColor.toInt())
+
+        whenever(mockColorUtils.parseColorSafe(fakeCheckmarkColorHexString))
+            .thenReturn(fakeCheckmarkColor.toInt())
 
         whenever(
-            mockUiContext.imageWireframeHelper.createImageWireframeByBitmap(
+            mockUiContext.imageWireframeHelper.createImageWireframeByPath(
                 id = any(),
                 globalBounds = eq(fakeGlobalBounds),
-                bitmap = eq(mockBitmap),
+                path = any(),
+                strokeColor = eq(fakeCheckmarkColor.toInt()),
+                strokeWidth = eq(STROKE_WIDTH_DP.toInt()),
+                targetWidth = eq(CHECKBOX_SIZE_DP),
+                targetHeight = eq(CHECKBOX_SIZE_DP),
                 density = eq(fakeDensity),
-                isContextualImage = eq(false),
                 imagePrivacy = eq(ImagePrivacy.MASK_NONE),
+                isContextualImage = eq(false),
                 asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
                 clipping = eq(null),
                 shapeStyle = eq(null),
-                border = eq(null)
+                border = eq(null),
+                customResourceIdCacheKey = eq(null)
             )
         ).thenReturn(mock<MobileSegment.Wireframe.ImageWireframe>())
 
@@ -414,17 +412,22 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         )
 
         // Then
-        verify(mockUiContext.imageWireframeHelper).createImageWireframeByBitmap(
+        verify(mockUiContext.imageWireframeHelper).createImageWireframeByPath(
             id = any(),
             globalBounds = eq(fakeGlobalBounds),
-            bitmap = eq(mockBitmap),
+            path = any(),
+            strokeColor = eq(fakeCheckmarkColor.toInt()),
+            strokeWidth = eq(STROKE_WIDTH_DP.toInt()),
+            targetWidth = eq(CHECKBOX_SIZE_DP),
+            targetHeight = eq(CHECKBOX_SIZE_DP),
             density = eq(fakeDensity),
             isContextualImage = eq(false),
             imagePrivacy = eq(ImagePrivacy.MASK_NONE),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
             clipping = eq(null),
             shapeStyle = eq(expectedShapeStyle),
-            border = eq(expectedBorder)
+            border = eq(expectedBorder),
+            customResourceIdCacheKey = eq(null)
         )
     }
 
@@ -436,34 +439,32 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
             .thenReturn(ToggleableState.On)
 
-        whenever(mockPathUtils.asAndroidPathSafe(any())).thenReturn(mock())
-
-        whenever(mockSemanticsUtils.resolveCheckPath(mockSemanticsNode))
-            .thenReturn(mockPath)
-
         whenever(mockSemanticsUtils.resolveCheckboxFillColor(mockSemanticsNode))
             .thenReturn(fakeFillColor)
 
-        whenever(
-            mockPathUtils.convertPathToBitmap(
-                checkPath = eq(mockPath),
-                fillColor = anyOrNull(),
-                checkmarkColor = anyOrNull()
-            )
-        ).thenReturn(mockBitmap)
+        whenever(mockColorUtils.parseColorSafe(fakeFillColorHexString))
+            .thenReturn(fakeFillColor.toInt())
+
+        whenever(mockColorUtils.parseColorSafe(fakeCheckmarkColorHexString))
+            .thenReturn(fakeCheckmarkColor.toInt())
 
         whenever(
-            mockUiContext.imageWireframeHelper.createImageWireframeByBitmap(
+            mockUiContext.imageWireframeHelper.createImageWireframeByPath(
                 id = any(),
-                globalBounds = any(),
-                bitmap = any(),
-                density = any(),
-                isContextualImage = any(),
-                imagePrivacy = any(),
-                asyncJobStatusCallback = any(),
-                clipping = anyOrNull(),
+                globalBounds = eq(fakeGlobalBounds),
+                path = any(),
+                strokeColor = eq(fakeCheckmarkColor.toInt()),
+                strokeWidth = eq(STROKE_WIDTH_DP.toInt()),
+                targetWidth = eq(CHECKBOX_SIZE_DP),
+                targetHeight = eq(CHECKBOX_SIZE_DP),
+                density = eq(fakeDensity),
+                isContextualImage = eq(false),
+                imagePrivacy = eq(ImagePrivacy.MASK_NONE),
+                asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+                clipping = eq(null),
                 shapeStyle = anyOrNull(),
-                border = anyOrNull()
+                border = anyOrNull(),
+                customResourceIdCacheKey = eq(null)
             )
         ).thenReturn(mock<MobileSegment.Wireframe.ImageWireframe>())
 
