@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -31,10 +33,11 @@ internal fun SampleSelectionScreen(
     onToggleClicked: () -> Unit,
     onSelectorsClicked: () -> Unit,
     onFgmClicked: () -> Unit,
-    onTabsClicked: () -> Unit
+    onTabsClicked: () -> Unit,
+    onInteropViewClicked: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -74,6 +77,10 @@ internal fun SampleSelectionScreen(
             text = "Legacy Sample",
             onClick = onLegacyClicked
         )
+        StyledButton(
+            text = "InteropView",
+            onClick = onInteropViewClicked
+        )
     }
 }
 
@@ -92,6 +99,7 @@ private fun StyledButton(
     )
 }
 
+@Suppress("LongMethod")
 internal fun NavGraphBuilder.selectionNavigation(navController: NavHostController) {
     composable(SampleScreen.Root.navigationRoute) {
         SampleSelectionScreen(
@@ -118,6 +126,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             },
             onLegacyClicked = {
                 navController.navigate(SampleScreen.Legacy.navigationRoute)
+            },
+            onInteropViewClicked = {
+                navController.navigate(SampleScreen.InteropView.navigationRoute)
             }
         )
     }
@@ -150,6 +161,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         TabsSample()
     }
 
+    composable(SampleScreen.InteropView.navigationRoute) {
+        InteropViewSample()
+    }
+
     activity(SampleScreen.Legacy.navigationRoute) {
         activityClass = LegacyComposeActivity::class
     }
@@ -168,6 +183,7 @@ internal sealed class SampleScreen(
     object Selectors : SampleScreen("$COMPOSE_ROOT/selectors")
     object FGM : SampleScreen("$COMPOSE_ROOT/fgm")
     object Legacy : SampleScreen("$COMPOSE_ROOT/legacy")
+    object InteropView : SampleScreen("$COMPOSE_ROOT/interop_view")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -194,6 +210,8 @@ private fun PreviewSampleSelectionScreen() {
         onFgmClicked = {
         },
         onTabsClicked = {
+        },
+        onInteropViewClicked = {
         }
     )
 }

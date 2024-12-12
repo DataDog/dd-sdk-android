@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import android.view.View
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
@@ -233,6 +234,27 @@ class RootSemanticsNodeMapperTest {
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M call interop callback W semantics node has interop view`() {
+        val mockSemanticsNode = mockSemanticsNode(null)
+        val mockView = mock<View>()
+        whenever(mockSemanticsUtils.getInteropView(mockSemanticsNode)) doReturn mockView
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(fakeMappingContext.interopViewCallback).map(
+            eq(mockView),
+            eq(fakeMappingContext)
         )
     }
 

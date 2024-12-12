@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import androidx.annotation.UiThread
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
@@ -31,6 +32,7 @@ internal class ComposeViewMapper(
     viewBoundsResolver,
     drawableToColorMapper
 ) {
+    @UiThread
     override fun map(
         view: ComposeView,
         mappingContext: MappingContext,
