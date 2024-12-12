@@ -15,11 +15,12 @@ import android.widget.TextView
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
@@ -117,7 +118,8 @@ internal class DefaultImageWireframeHelper(
         clipping: MobileSegment.WireframeClip?,
         shapeStyle: MobileSegment.ShapeStyle?,
         border: MobileSegment.ShapeBorder?,
-        prefix: String?
+        prefix: String?,
+        customResourceIdCacheKey: String?
     ): MobileSegment.Wireframe? {
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(
@@ -127,7 +129,9 @@ internal class DefaultImageWireframeHelper(
             height = height
         )
 
-        if (id == null || !drawableProperties.isValid()) return null
+        if (id == null || !drawableProperties.isValid()) {
+            return null
+        }
 
         val resources = view.resources
 
@@ -206,6 +210,7 @@ internal class DefaultImageWireframeHelper(
             drawableCopier = drawableCopier,
             drawableWidth = width,
             drawableHeight = height,
+            customResourceIdCacheKey = customResourceIdCacheKey,
             resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
@@ -227,6 +232,7 @@ internal class DefaultImageWireframeHelper(
         textView: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
+        customResourceIdCacheKey: String?,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
@@ -254,6 +260,12 @@ internal class DefaultImageWireframeHelper(
                     position = compoundDrawablePosition
                 )
 
+                val resourceCacheKey = if (customResourceIdCacheKey != null) {
+                    "$customResourceIdCacheKey" + "_$compoundDrawableIndex"
+                } else {
+                    null
+                }
+
                 createImageWireframeByDrawable(
                     view = textView,
                     imagePrivacy = mappingContext.imagePrivacy,
@@ -267,6 +279,7 @@ internal class DefaultImageWireframeHelper(
                     border = null,
                     usePIIPlaceholder = true,
                     clipping = MobileSegment.WireframeClip(),
+                    customResourceIdCacheKey = resourceCacheKey,
                     asyncJobStatusCallback = asyncJobStatusCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)

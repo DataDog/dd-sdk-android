@@ -108,6 +108,22 @@ public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/utils/ImageViewUtils {
+	public static final field INSTANCE Lcom/datadog/android/internal/utils/ImageViewUtils;
+	public final fun calculateClipping (Landroid/graphics/Rect;Landroid/graphics/Rect;F)Landroid/graphics/Rect;
+	public final fun resolveContentRectWithScaling (Landroid/widget/ImageView;Landroid/graphics/drawable/Drawable;Landroid/widget/ImageView$ScaleType;)Landroid/graphics/Rect;
+	public static synthetic fun resolveContentRectWithScaling$default (Lcom/datadog/android/internal/utils/ImageViewUtils;Landroid/widget/ImageView;Landroid/graphics/drawable/Drawable;Landroid/widget/ImageView$ScaleType;ILjava/lang/Object;)Landroid/graphics/Rect;
+	public final fun resolveParentRectAbsPosition (Landroid/view/View;)Landroid/graphics/Rect;
+}
+
+public final class com/datadog/android/internal/utils/IntExtKt {
+	public static final fun densityNormalized (IF)I
+}
+
+public final class com/datadog/android/internal/utils/LongExtKt {
+	public static final fun densityNormalized (JF)J
+}
+
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }

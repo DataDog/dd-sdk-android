@@ -22,6 +22,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -41,12 +42,12 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
-import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -101,7 +102,8 @@ internal class DefaultRecorderProvider(
             colorStringFormatter = colorStringFormatter,
             viewBoundsResolver = viewBoundsResolver,
             drawableToColorMapper = drawableToColorMapper,
-            imageViewUtils = ImageViewUtils
+            imageViewUtils = ImageViewUtils,
+            drawableCopier = DefaultDrawableCopier()
         )
         val textViewMapper = TextViewMapper<TextView>(
             viewIdentifierResolver,

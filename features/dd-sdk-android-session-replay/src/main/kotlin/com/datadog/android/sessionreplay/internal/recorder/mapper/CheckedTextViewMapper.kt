@@ -10,7 +10,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
 import android.widget.CheckedTextView
 import androidx.annotation.UiThread
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
