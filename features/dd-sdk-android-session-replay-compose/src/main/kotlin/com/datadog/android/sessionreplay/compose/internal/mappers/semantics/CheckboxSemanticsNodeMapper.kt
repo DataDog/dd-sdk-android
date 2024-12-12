@@ -38,7 +38,7 @@ internal class CheckboxSemanticsNodeMapper(
     ): SemanticsWireframe {
         val globalBounds = resolveBounds(semanticsNode)
 
-        val checkableWireframes = if (parentContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
+        val checkableWireframes = if (isCheckboxMasked(parentContext)) {
             listOf(
                 resolveMaskedCheckable(
                     semanticsNode = semanticsNode,
@@ -46,12 +46,12 @@ internal class CheckboxSemanticsNodeMapper(
                 )
             )
         } else {
-            // Resolves checkable view regardless the state
-            resolveCheckable(
-                semanticsNode = semanticsNode,
+            createCheckboxWireframe(
                 parentContext = parentContext,
                 asyncJobStatusCallback = asyncJobStatusCallback,
-                globalBounds = globalBounds
+                semanticsNode = semanticsNode,
+                globalBounds = globalBounds,
+                currentIndex = 0
             )
         }
 
@@ -60,6 +60,9 @@ internal class CheckboxSemanticsNodeMapper(
             wireframes = checkableWireframes
         )
     }
+
+    private fun isCheckboxMasked(parentContext: UiContext): Boolean =
+        parentContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
 
     private fun resolveMaskedCheckable(
         semanticsNode: SemanticsNode,
@@ -75,72 +78,39 @@ internal class CheckboxSemanticsNodeMapper(
         )
     }
 
-    private fun resolveCheckable(
-        semanticsNode: SemanticsNode,
-        parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback,
-        globalBounds: GlobalBounds
-    ): List<MobileSegment.Wireframe> {
-        return if (isCheckboxChecked(semanticsNode)) {
-            createCheckedState(
-                parentContext = parentContext,
-                asyncJobStatusCallback = asyncJobStatusCallback,
-                semanticsNode = semanticsNode,
-                globalBounds = globalBounds,
-                currentIndex = 0
-            )
-        } else {
-            val borderColor =
-                semanticsUtils.resolveBorderColor(semanticsNode)
-                    ?.let { rawColor ->
-                        convertColor(rawColor)
-                    } ?: DEFAULT_COLOR_BLACK
-
-            listOf(
-                createUncheckedState(
-                    semanticsNode = semanticsNode,
-                    globalBounds = globalBounds,
-                    backgroundColor = DEFAULT_COLOR_WHITE,
-                    borderColor = borderColor,
-                    currentIndex = 0
-                )
-            )
-        }
-    }
-
-    private fun createCheckedState(
+    private fun createCheckboxWireframe(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
         currentIndex: Int
     ): List<MobileSegment.Wireframe> {
+        val borderColor = resolveBorderColor(semanticsNode)
         val rawFillColor = semanticsUtils.resolveCheckboxFillColor(semanticsNode)
         val rawCheckmarkColor = semanticsUtils.resolveCheckmarkColor(semanticsNode)
-
-        val fillColorRgba = rawFillColor?.let {
-            convertColor(it)
-        } ?: DEFAULT_COLOR_WHITE
-        val checkmarkColorRgba = rawCheckmarkColor?.let {
-            convertColor(it)
-        } ?: getFallbackCheckmarkColor(DEFAULT_COLOR_WHITE)
-
+        val fillColorRgba = rawFillColor?.let { convertColor(it) } ?: DEFAULT_COLOR_WHITE
+        val checkmarkColorRgba = rawCheckmarkColor?.let { convertColor(it) }
+            ?: getFallbackCheckmarkColor(DEFAULT_COLOR_WHITE)
         val parsedFillColor = colorUtils.parseColorSafe(fillColorRgba)
-        val parsedCheckmarkColor = colorUtils.parseColorSafe(checkmarkColorRgba)
+        val isChecked = isCheckboxChecked(semanticsNode)
+        val checkmarkColor = resolveCheckmarkColor(isChecked, checkmarkColorRgba, parsedFillColor)
+
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
-        if (parsedFillColor != null && parsedCheckmarkColor != null) {
-            val androidPath = semanticsUtils
-                .resolveCheckPath(semanticsNode)?.let { checkPath ->
-                    pathUtils.asAndroidPathSafe(checkPath)
-                }
+        if (parsedFillColor != null && checkmarkColor != null) {
+            val composePath = semanticsUtils
+                .resolveCheckPath(semanticsNode)
+
+            val androidPath = composePath?.let { checkPath ->
+                pathUtils.asAndroidPathSafe(checkPath)
+            }
 
             if (androidPath != null) {
                 parentContext.imageWireframeHelper.createImageWireframeByPath(
                     id = resolveId(semanticsNode, currentIndex),
                     globalBounds = globalBounds,
                     path = androidPath,
-                    strokeColor = parsedCheckmarkColor,
+                    strokeColor = checkmarkColor,
                     strokeWidth = STROKE_WIDTH_DP.toInt(),
                     targetWidth = CHECKBOX_SIZE_DP,
                     targetHeight = CHECKBOX_SIZE_DP,
@@ -155,7 +125,7 @@ internal class CheckboxSemanticsNodeMapper(
                         cornerRadius = CHECKBOX_CORNER_RADIUS
                     ),
                     border = MobileSegment.ShapeBorder(
-                        color = fillColorRgba,
+                        color = borderColor,
                         width = BOX_BORDER_WIDTH_DP
                     ),
                     customResourceIdCacheKey = null
@@ -173,24 +143,34 @@ internal class CheckboxSemanticsNodeMapper(
         return createManualCheckedWireframe(
             semanticsNode = semanticsNode,
             globalBounds = globalBounds,
-            backgroundColor = fillColorRgba
+            backgroundColor = fillColorRgba,
+            borderColor = borderColor
         )
+    }
+
+    private fun resolveCheckmarkColor(isChecked: Boolean, checkmarkColorRgba: String, fillColor: Int?): Int? =
+        if (isChecked) {
+            colorUtils.parseColorSafe(checkmarkColorRgba)
+        } else {
+            fillColor
+        }
+
+    private fun resolveBorderColor(semanticsNode: SemanticsNode): String {
+        return semanticsUtils.resolveBorderColor(semanticsNode)
+            ?.let { rawColor ->
+                convertColor(rawColor)
+            } ?: DEFAULT_COLOR_BLACK
     }
 
     private fun createManualCheckedWireframe(
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
-        backgroundColor: String
+        backgroundColor: String,
+        borderColor: String
     ): List<MobileSegment.Wireframe> {
         val strokeColor = getFallbackCheckmarkColor(backgroundColor)
 
         val wireframesList = mutableListOf<MobileSegment.Wireframe>()
-
-        val borderColor =
-            semanticsUtils.resolveBorderColor(semanticsNode)
-                ?.let { rawColor ->
-                    convertColor(rawColor)
-                } ?: DEFAULT_COLOR_BLACK
 
         val background = createUncheckedState(
             semanticsNode = semanticsNode,

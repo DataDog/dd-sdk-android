@@ -72,6 +72,9 @@ class RootSemanticsNodeMapperTest {
     private lateinit var mockImageSemanticsNodeMapper: ImageSemanticsNodeMapper
 
     @Mock
+    private lateinit var mockCheckboxSemanticsNodeMapper: CheckboxSemanticsNodeMapper
+
+    @Mock
     private lateinit var mockComposeHiddenMapper: ComposeHiddenMapper
 
     @Mock
@@ -91,7 +94,8 @@ class RootSemanticsNodeMapperTest {
                 Role.RadioButton to mockRadioButtonSemanticsNodeMapper,
                 Role.Tab to mockTabSemanticsNodeMapper,
                 Role.Button to mockButtonSemanticsNodeMapper,
-                Role.Image to mockImageSemanticsNodeMapper
+                Role.Image to mockImageSemanticsNodeMapper,
+                Role.Checkbox to mockCheckboxSemanticsNodeMapper
             ),
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
             containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
@@ -198,6 +202,27 @@ class RootSemanticsNodeMapperTest {
 
         // Then
         verify(mockImageSemanticsNodeMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M use CheckboxSemanticsNodeMapper W map { role is Checkbox }`() {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(Role.Checkbox)
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockCheckboxSemanticsNodeMapper).map(
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)

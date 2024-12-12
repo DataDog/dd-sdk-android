@@ -407,7 +407,7 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         )
 
         val expectedBorder = MobileSegment.ShapeBorder(
-            color = fakeFillColorHexString,
+            color = fakeBorderColorHexString,
             width = BOX_BORDER_WIDTH_DP
         )
 
